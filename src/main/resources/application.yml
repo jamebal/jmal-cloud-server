@@ -1,0 +1,18 @@
+server:
+  port: 8088
+spring:
+  servlet:
+    multipart:
+      max-file-size: 30MB
+      max-request-size: 100MB
+  application:
+    name: file
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/jmalcloud
+  cache:
+    type: caffeine
+    caffeine:
+      spec: initialCapacity=100,maximumSize=500,expireAfterWrite=30s
+
+root-path: /Users/jmal/temp/filetest/rootpath
