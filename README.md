@@ -3,6 +3,9 @@
 
  [jmal-cloud-server](https://github.com/jamebal/jmal-cloud-view) 的后端服务
  
+ ## dependency
+ mongodb
+ 
  ## License
  
  [MIT](https://github.com/jamebal/jmal-cloud-server/blob/master/LICENSE) license.
