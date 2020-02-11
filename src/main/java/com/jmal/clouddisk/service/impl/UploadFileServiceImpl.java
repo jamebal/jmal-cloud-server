@@ -27,7 +27,6 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import sun.net.www.content.image.png;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -308,7 +307,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
                 response.setHeader("X-Accel-Redirect", path);
             }
             if (isDownload) {
-                response.setHeader("Content-Disposition", "attachment; filename=" + filename);
+                response.setHeader("Content-Disposition", "attachment;filename=\"" + filename + "\"");
                 OutputStream out = response.getOutputStream();
                 if(fileDocument.getContent() != null){
                     out.write(fileDocument.getContent());

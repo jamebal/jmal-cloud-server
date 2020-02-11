@@ -19,8 +19,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -45,12 +43,13 @@ public class UploadController {
     @Value("${root-path}")
     String rootPath;
 
-    /**
+    /***
      * 文件列表
-     *
+     * @param upload
      * @param pageIndex
      * @param pageSize
      * @return
+     * @throws CommonException
      */
     @GetMapping("/list")
     public ResponseResult list(UploadApiParam upload, int pageIndex, int pageSize) throws CommonException {
@@ -67,7 +66,6 @@ public class UploadController {
     @ResponseBody
     public ResponseResult uploadPost(UploadApiParam upload) throws IOException {
         upload.setRootPath(rootPath);
-        System.out.println("upload:" + upload.toString());
         return fileService.upload(upload);
     }
 
@@ -80,7 +78,6 @@ public class UploadController {
     @ResponseBody
     public ResponseResult uploadFolder(UploadApiParam upload) {
         upload.setRootPath(rootPath);
-        System.out.println("upload-folder:" + upload.toString());
         return fileService.uploadFolder(upload);
     }
 
@@ -93,7 +90,6 @@ public class UploadController {
     @ResponseBody
     public ResponseResult checkUpload(UploadApiParam upload) {
         upload.setRootPath(rootPath);
-        System.out.println("check:" + upload.toString());
         return fileService.checkChunkUploaded(upload);
     }
 
@@ -107,7 +103,6 @@ public class UploadController {
     @ResponseBody
     public ResponseResult merge(UploadApiParam upload) throws IOException {
         upload.setRootPath(rootPath);
-        System.out.println("merge:" + upload.toString());
         return fileService.merge(upload);
     }
 
@@ -152,7 +147,6 @@ public class UploadController {
      */
     @GetMapping("/download")
     public void downLoad(HttpServletRequest request, HttpServletResponse response, String[] fileIds) throws IOException {
-        System.out.println("download...");
         if (fileIds != null && fileIds.length > 0) {
             List<String> list = Arrays.asList(fileIds);
             fileService.nginx(request, response, list, true);
