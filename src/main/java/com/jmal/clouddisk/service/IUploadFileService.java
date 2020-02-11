@@ -46,7 +46,7 @@ public interface IUploadFileService {
      * @param upload
      * @return
      */
-    ResponseResult checkChunkUploaded(UploadApiParam upload);
+    ResponseResult checkChunkUploaded(UploadApiParam upload) throws IOException;
 
     /***
      * 合并文件

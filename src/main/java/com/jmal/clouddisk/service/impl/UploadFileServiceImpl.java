@@ -328,7 +328,6 @@ public class UploadFileServiceImpl implements IUploadFileService {
         UploadResponse uploadResponse = new UploadResponse();
         int currentChunkSize = upload.getCurrentChunkSize();
         long totalSize = upload.getTotalSize();
-        int chunkNumber = upload.getChunkNumber();
         String filename = upload.getFilename();
         String md5 = upload.getIdentifier();
         MultipartFile file = upload.getFile();
@@ -354,7 +353,8 @@ public class UploadFileServiceImpl implements IUploadFileService {
             setResumeCache(upload);
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
             uploadResponse.setUpload(true);
-            if (chunkNumber == upload.getTotalChunks()) {
+            // 检测是否已经上传完了所有分片,上传完了则需要合并
+            if (checkIsNeedMerge(upload)) {
                 uploadResponse.setMerge(true);
             }
         }
@@ -450,6 +450,23 @@ public class UploadFileServiceImpl implements IUploadFileService {
     }
 
     /***
+     * 获取已经保存的分片索引
+     */
+    private List<Integer> getSavedChunk(UploadApiParam upload){
+        String md5 = upload.getIdentifier();
+        return resumeCache.get(md5, key -> createResumeCache(upload));
+    }
+
+    /***
+     * 检测是否需要合并
+     */
+    private boolean checkIsNeedMerge(UploadApiParam upload){
+        int totalChunks = upload.getTotalChunks();
+        List<Integer> chunkList = getSavedChunk(upload);
+        return totalChunks == chunkList.size();
+    }
+
+    /***
      * 读取分片文件是否存在
      * @return
      */
@@ -480,7 +497,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @return
      */
     @Override
-    public ResponseResult checkChunkUploaded(UploadApiParam upload) {
+    public ResponseResult checkChunkUploaded(UploadApiParam upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
         String md5 = upload.getIdentifier();
         String path = getUserDirectory(upload.getCurrentDirectory());
@@ -492,9 +509,15 @@ public class UploadFileServiceImpl implements IUploadFileService {
             // 文件已存在
             uploadResponse.setPass(true);
         } else {
+            int totalChunks = upload.getTotalChunks();
             List<Integer> chunks = resumeCache.get(md5, key -> createResumeCache(upload));
             // 返回已存在的分片
             uploadResponse.setResume(chunks);
+            assert chunks != null;
+            if(totalChunks == chunks.size()){
+                // 文件不存在,并且已经上传了所有的分片,则合并保存文件
+                merge(upload);
+            }
         }
         uploadResponse.setUpload(true);
         return ResultUtil.success(uploadResponse);
