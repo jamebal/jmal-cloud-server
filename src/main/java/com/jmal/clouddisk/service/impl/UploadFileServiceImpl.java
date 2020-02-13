@@ -281,7 +281,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @throws IOException
      */
     @Override
-    public String nginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws IOException {
+    public void nginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws IOException {
         String username = userService.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN));
         FileDocument fileDocument = getFileInfo(fileIds, username);
         if(fileDocument != null){
@@ -315,8 +315,43 @@ public class UploadFileServiceImpl implements IUploadFileService {
                 out.flush();
             }
         }
-        return null;
     }
+
+    /***
+     * 重命名
+     * @param username
+     * @param id
+     * @return
+     */
+    @Override
+    public ResponseResult rename(String newFileName, String username, String id) {
+        FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
+        if (fileDocument != null) {
+            String currentDirectory = getUserDirectory(fileDocument.getPath());
+            String filePath = rootPath + File.separator + username + currentDirectory;
+            File file = new File(filePath + fileDocument.getName());
+            if(file.renameTo(new File(filePath + newFileName))){
+                Query query = new Query();
+                query.addCriteria(Criteria.where("_id").is(id));
+                Update update = new Update();
+                update.set("name",newFileName);
+                mongoTemplate.upsert(query,update,COLLECTION_NAME);
+            } else {
+                return ResultUtil.error("重命名失败");
+            }
+            return ResultUtil.success(true);
+        } else {
+            return ResultUtil.error("数据库查询失败");
+        }
+    }
+
+    public static void main(String[] args) {
+        String srcDir = "/Users/jmal/Downloads/6451.zip";
+//        FileUtil.rename(new File(srcDir), "12345", true, false);
+        System.out.println(new File(srcDir).renameTo(new File("/Users/jmal/Downloads/6452")));;
+    }
+
+
 
     /***
      * 保存文件(分片)
@@ -350,13 +385,14 @@ public class UploadFileServiceImpl implements IUploadFileService {
             // 这时保存的每个块, 块先存好, 后续会调合并接口, 将所有块合成一个大文件
             // 保存在用户的tmp目录下
             File chunkFile = new File(upload.getRootPath() + File.separator + upload.getUsername() + File.separator + "tmp" + File.separator + md5 + File.separator + upload.getChunkNumber());
-            setResumeCache(upload);
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
             uploadResponse.setUpload(true);
+            setResumeCache(upload);
             // 检测是否已经上传完了所有分片,上传完了则需要合并
             if (checkIsNeedMerge(upload)) {
                 uploadResponse.setMerge(true);
             }
+
         }
         return ResultUtil.success(uploadResponse);
     }

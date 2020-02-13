@@ -224,4 +224,17 @@ public class UploadController {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }
     }
+
+    /***
+     * 重命名
+     * @param newFileName
+     * @param username
+     * @param id
+     * @return
+     * @throws CommonException
+     */
+    @GetMapping("/rename")
+    public ResponseResult rename(String newFileName, String username, String id) throws CommonException {
+        return fileService.rename(newFileName, username, id);
+    }
 }

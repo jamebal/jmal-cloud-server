@@ -104,8 +104,16 @@ public interface IUploadFileService {
      * @param response
      * @param fileIds
      * @param isDownload
-     * @return
      * @throws IOException
      */
-    String nginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws IOException;
+    void nginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws IOException;
+
+    /***
+     * 重名名
+     * @param newFileName
+     * @param username
+     * @param id
+     * @return
+     */
+    ResponseResult rename(String newFileName, String username, String id);
 }
