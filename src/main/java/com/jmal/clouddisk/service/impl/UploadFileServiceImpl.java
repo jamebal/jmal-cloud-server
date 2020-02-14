@@ -141,7 +141,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
     private long getFolderSize(String userId, String path) {
         List<Bson> list = Arrays.asList(
                 match(and(eq("userId", userId),
-                        eq("isFolder", false), regex("path", path))),
+                        eq("isFolder", false), regex("path", "^"+path))),
                 group(new BsonNull(), sum("totalSize", "$size")));
         AggregateIterable<Document> aggregate = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
         long totalSize = 0;
@@ -167,13 +167,17 @@ public class UploadFileServiceImpl implements IUploadFileService {
     public Optional<FileDocument> getById(String id, String username) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
-            String currentDirectory = getUserDirectory(fileDocument.getPath());
-            File file = new File(rootPath + File.separator + username + currentDirectory + fileDocument.getName());
-            byte[] content = FileUtil.readBytes(file);
-            fileDocument.setContent(content);
+            setContent(username, fileDocument);
             return Optional.of(fileDocument);
         }
         return Optional.empty();
+    }
+
+    private void setContent(String username, FileDocument fileDocument) {
+        String currentDirectory = getUserDirectory(fileDocument.getPath());
+        File file = new File(rootPath + File.separator + username + currentDirectory + fileDocument.getName());
+        byte[] content = FileUtil.readBytes(file);
+        fileDocument.setContent(content);
     }
 
     /***
@@ -189,10 +193,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             if (fileDocument.getContent() != null) {
                 return Optional.of(fileDocument);
             } else {
-                String currentDirectory = getUserDirectory(fileDocument.getPath());
-                File file = new File(rootPath + File.separator + username + currentDirectory + fileDocument.getName());
-                byte[] data = FileUtil.readBytes(file);
-                fileDocument.setContent(data);
+                setContent(username, fileDocument);
                 return Optional.of(fileDocument);
             }
         }
@@ -231,7 +232,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
                 List<Bson> selectFolders = new ArrayList<>();
                 for (FileDocument document : fileDocuments) {
-                    selectFolders.add(regex("path", document.getPath() + document.getName()));
+                    selectFolders.add(regex("path", "^"+document.getPath() + document.getName()));
                 }
 
                 List<String> selectFiles = new ArrayList<>();
@@ -243,7 +244,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
                 List<Bson> list = Arrays.asList(
                         match(and(eq("userId", fileDocument.getUserId()),
-                                regex("path", parentPath))),
+                                regex("path", "^"+parentPath))),
                         match(or(Arrays.asList(
                                 or(selectFolders),
                                 in("name", selectFiles)))));
@@ -259,6 +260,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
                             String relativeFileName = doc.getString("name");
                             long fileSize = doc.getLong("size");
                             res.append(String.format("%s %d %s %s\n", "-", fileSize, URLEncoder.encode(File.separator + username + relativePath + relativeFileName, "UTF-8"), temp + relativePath.substring(parentPath.length()) + relativeFileName));
+                            System.out.println(String.format("%s %d %s %s\n", "-", fileSize, File.separator + username + relativePath + relativeFileName, temp + relativePath.substring(parentPath.length()) + relativeFileName));
                         }
                     }
                 }
@@ -344,14 +346,6 @@ public class UploadFileServiceImpl implements IUploadFileService {
             return ResultUtil.error("数据库查询失败");
         }
     }
-
-    public static void main(String[] args) {
-        String srcDir = "/Users/jmal/Downloads/6451.zip";
-//        FileUtil.rename(new File(srcDir), "12345", true, false);
-        System.out.println(new File(srcDir).renameTo(new File("/Users/jmal/Downloads/6452")));;
-    }
-
-
 
     /***
      * 保存文件(分片)
@@ -469,6 +463,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         update.set("userId", userId);
         update.set("isFolder", true);
         update.set("path", path);
+        update.set("pathname", folderName);
         update.set("name", folderName);
         update.set("uploadDate", date);
         update.set("updateDate", date);
@@ -724,7 +719,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             if (fileDocument.getIsFolder()) {
                 // 删除文件夹及其下的所有文件
                 Query query1 = new Query();
-                query1.addCriteria(Criteria.where("path").regex(fileDocument.getPath() + fileDocument.getName()));
+                query1.addCriteria(Criteria.where("path").regex("^"+fileDocument.getPath() + fileDocument.getName()));
                 mongoTemplate.remove(query1, COLLECTION_NAME);
                 isDel = true;
             }

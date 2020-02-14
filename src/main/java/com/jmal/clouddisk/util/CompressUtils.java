@@ -177,17 +177,4 @@ public class CompressUtils {
 
     }
 
-    private static String getUserDirectory(String currentDirectory) {
-        String mongodbEndPath = "/";
-        if (StringUtils.isEmpty(currentDirectory)) {
-            currentDirectory = "/";
-        } else {
-            if (!currentDirectory.endsWith(mongodbEndPath)) {
-                currentDirectory += "/";
-            }
-        }
-        currentDirectory = currentDirectory.replaceAll("/", File.separator);
-        return currentDirectory;
-    }
-
 }
