@@ -98,7 +98,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             long update = TimeUntils.getMilli(updateDate);
             fileDocument.setAgoTime(now - update);
             if (fileDocument.getIsFolder()) {
-                String path = fileDocument.getPath() + fileDocument.getName();
+                String path = fileDocument.getPath() + fileDocument.getPathname();
                 long size = getFolderSize(fileDocument.getUserId(), path);
                 fileDocument.setSize(size);
             }
@@ -232,7 +232,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
                 List<Bson> selectFolders = new ArrayList<>();
                 for (FileDocument document : fileDocuments) {
-                    selectFolders.add(regex("path", "^"+document.getPath() + document.getName()));
+                    selectFolders.add(regex("path", "^"+document.getPath() + document.getPathname()));
                 }
 
                 List<String> selectFiles = new ArrayList<>();
@@ -719,7 +719,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             if (fileDocument.getIsFolder()) {
                 // 删除文件夹及其下的所有文件
                 Query query1 = new Query();
-                query1.addCriteria(Criteria.where("path").regex("^"+fileDocument.getPath() + fileDocument.getName()));
+                query1.addCriteria(Criteria.where("path").regex("^"+fileDocument.getPath() + fileDocument.getPathname()));
                 mongoTemplate.remove(query1, COLLECTION_NAME);
                 isDel = true;
             }
