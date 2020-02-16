@@ -38,13 +38,15 @@ public interface IUploadFileService {
      * 上传文件夹
      * @param upload
      * @return
+     * @throws CommonException
      */
-    ResponseResult uploadFolder(UploadApiParam upload);
+    ResponseResult uploadFolder(UploadApiParam upload) throws CommonException;
 
     /***
      * 检查文件/分片是否存在
      * @param upload
      * @return
+     * @throws IOException
      */
     ResponseResult checkChunkUploaded(UploadApiParam upload) throws IOException;
 

@@ -35,10 +35,10 @@ public class FileDocument {
      */
     private String name;
 
-    /***
-     * 此名称为只读,只用于文件夹,主要是为了方便修改文件夹的名称
-     */
-    private String pathname;
+//    /***
+//     * 此名称为只读,只用于文件夹,主要是为了方便修改文件夹的名称
+//     */
+//    private String pathname;
 
     /***
      * 文件大小

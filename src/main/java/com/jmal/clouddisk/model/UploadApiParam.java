@@ -66,6 +66,11 @@ public class UploadApiParam {
     String currentDirectory;
 
     /***
+     * 当前目录,用户的实际磁盘目录
+     */
+    String currentAbsoluteDirectory;
+
+    /***
      * 是否是文件夹
      */
     Boolean isFolder;

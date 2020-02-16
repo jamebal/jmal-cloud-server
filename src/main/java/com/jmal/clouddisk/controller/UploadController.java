@@ -78,7 +78,7 @@ public class UploadController {
      */
     @PostMapping("upload-folder")
     @ResponseBody
-    public ResponseResult uploadFolder(UploadApiParam upload) {
+    public ResponseResult uploadFolder(UploadApiParam upload) throws CommonException {
         upload.setRootPath(rootPath);
         System.out.println("upload-folder:" + upload.toString());
         return fileService.uploadFolder(upload);
