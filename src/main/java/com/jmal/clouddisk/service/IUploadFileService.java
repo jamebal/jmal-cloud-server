@@ -69,6 +69,28 @@ public interface IUploadFileService {
     ResponseResult listFiles(UploadApiParam upload, int pageIndex, int pageSize) throws CommonException;
 
     /***
+     * 搜索文件
+     * @param upload
+     * @param keyword
+     * @param pageIndex
+     * @param pageSize
+     * @return
+     * @throws CommonException
+     */
+    ResponseResult searchFile(UploadApiParam upload, String keyword, int pageIndex, int pageSize) throws CommonException;
+
+    /***
+     * 搜索文件并打开文件夹
+     * @param upload
+     * @param id
+     * @param pageIndex
+     * @param pageSize
+     * @return
+     * @throws CommonException
+     */
+    ResponseResult searchFileAndOpenDir(UploadApiParam upload, String id, int pageIndex, int pageSize) throws CommonException;
+
+    /***
      * 收藏文件或文件夹
      * @param fileId
      * @return
@@ -118,4 +140,5 @@ public interface IUploadFileService {
      * @return
      */
     ResponseResult rename(String newFileName, String username, String id);
+
 }

@@ -85,13 +85,20 @@ public class UploadFileServiceImpl implements IUploadFileService {
     @Override
     public ResponseResult listFiles(UploadApiParam upload, int pageIndex, int pageSize) throws CommonException {
         String userId = upload.getUserId();
+        String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
+        List<FileDocument> list = getFileDocuments(upload, pageIndex, pageSize, Criteria.where("userId").is(userId), Criteria.where("path").is(currentDirectory));
+        return ResultUtil.success(list);
+    }
+
+    private List<FileDocument> getFileDocuments(UploadApiParam upload, int pageIndex, int pageSize, Criteria... criteriaList) {
+        String userId = upload.getUserId();
         if (StringUtils.isEmpty(userId)) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg() + "userId");
         }
-        String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
         Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userId));
-        query.addCriteria(Criteria.where("path").is(currentDirectory));
+        for (Criteria criteria : criteriaList) {
+            query.addCriteria(criteria);
+        }
         long skip = (pageIndex - 1) * pageSize;
         query.skip(skip);
         query.limit(pageSize);
@@ -108,13 +115,28 @@ public class UploadFileServiceImpl implements IUploadFileService {
                 fileDocument.setSize(size);
             }
         }).collect(toList());
-
         // 按文件名排序
         list.sort(this::compareByFileName);
+        return list;
+    }
 
+    @Override
+    public ResponseResult searchFile(UploadApiParam upload, String keyword, int pageIndex, int pageSize) throws CommonException {
+        String userId = upload.getUserId();
+        Criteria criteria1= Criteria.where("name").regex(keyword);
+        List<FileDocument> list = getFileDocuments(upload, pageIndex, pageSize, criteria1, Criteria.where("userId").is(userId));
         return ResultUtil.success(list);
     }
 
+    @Override
+    public ResponseResult searchFileAndOpenDir(UploadApiParam upload, String id, int pageIndex, int pageSize) throws CommonException {
+        String userId = upload.getUserId();
+        FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
+        assert fileDocument != null;
+        Criteria criteria1= Criteria.where("path").regex("^"+fileDocument.getPath()+fileDocument.getName());
+        List<FileDocument> list = getFileDocuments(upload, pageIndex, pageSize, criteria1, Criteria.where("userId").is(userId));
+        return ResultUtil.success(list);
+    }
 
     /***
      * 根据文件名排序

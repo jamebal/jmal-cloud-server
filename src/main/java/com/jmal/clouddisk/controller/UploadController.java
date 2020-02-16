@@ -58,6 +58,28 @@ public class UploadController {
     }
 
     /***
+     * 搜索文件
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    @GetMapping("/search-file")
+    public ResponseResult searchFile(UploadApiParam upload, String keyword, int pageIndex, int pageSize) throws CommonException {
+        return fileService.searchFile(upload, keyword, pageIndex, pageSize);
+    }
+
+    /***
+     * 搜索文件并打开文件夹
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    @GetMapping("/search-file-open")
+    public ResponseResult searchFileAndOpenDir(UploadApiParam upload, String id, int pageIndex, int pageSize) throws CommonException {
+        return fileService.searchFileAndOpenDir(upload, id, pageIndex, pageSize);
+    }
+
+    /***
      * 文件上传
      * @param upload
      * @return
@@ -238,4 +260,5 @@ public class UploadController {
     public ResponseResult rename(String newFileName, String username, String id) throws CommonException {
         return fileService.rename(newFileName, username, id);
     }
+
 }
