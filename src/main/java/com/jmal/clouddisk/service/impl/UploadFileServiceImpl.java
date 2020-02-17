@@ -84,10 +84,21 @@ public class UploadFileServiceImpl implements IUploadFileService {
      */
     @Override
     public ResponseResult listFiles(UploadApiParam upload, int pageIndex, int pageSize) throws CommonException {
+        ResponseResult<Object> result = ResultUtil.genResult();
         String userId = upload.getUserId();
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
         List<FileDocument> list = getFileDocuments(upload, pageIndex, pageSize, Criteria.where("userId").is(userId), Criteria.where("path").is(currentDirectory));
-        return ResultUtil.success(list);
+        result.setData(list);
+        result.setCount(getFileDocumentsCount(Criteria.where("userId").is(userId), Criteria.where("path").is(currentDirectory)));
+        return result;
+    }
+
+    private long getFileDocumentsCount( Criteria... criteriaList) {
+        Query query = new Query();
+        for (Criteria criteria : criteriaList) {
+            query.addCriteria(criteria);
+        }
+        return mongoTemplate.count(query, COLLECTION_NAME);
     }
 
     private List<FileDocument> getFileDocuments(UploadApiParam upload, int pageIndex, int pageSize, Criteria... criteriaList) {
@@ -122,21 +133,27 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
     @Override
     public ResponseResult searchFile(UploadApiParam upload, String keyword, int pageIndex, int pageSize) throws CommonException {
+        ResponseResult<Object> result = ResultUtil.genResult();
         String userId = upload.getUserId();
         Criteria criteria1= Criteria.where("name").regex(keyword);
         List<FileDocument> list = getFileDocuments(upload, pageIndex, pageSize, criteria1, Criteria.where("userId").is(userId));
-        return ResultUtil.success(list);
+        result.setData(list);
+        result.setCount(getFileDocumentsCount(criteria1, Criteria.where("userId").is(userId)));
+        return result;
     }
 
     @Override
     public ResponseResult searchFileAndOpenDir(UploadApiParam upload, String id, int pageIndex, int pageSize) throws CommonException {
+        ResponseResult<Object> result = ResultUtil.genResult();
         String userId = upload.getUserId();
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         assert fileDocument != null;
         String currentDirectory = getUserDirectory(fileDocument.getPath()+fileDocument.getName());
-        Criteria criteria1= Criteria.where("path").is(currentDirectory);
-        List<FileDocument> list = getFileDocuments(upload, pageIndex, pageSize, criteria1, Criteria.where("userId").is(userId));
-        return ResultUtil.success(list);
+        Criteria criteria= Criteria.where("path").is(currentDirectory);
+        List<FileDocument> list = getFileDocuments(upload, pageIndex, pageSize, criteria, Criteria.where("userId").is(userId));
+        result.setData(list);
+        result.setCount(getFileDocumentsCount(criteria, Criteria.where("userId").is(userId)));
+        return result;
     }
 
     /***
