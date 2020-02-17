@@ -133,7 +133,8 @@ public class UploadFileServiceImpl implements IUploadFileService {
         String userId = upload.getUserId();
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         assert fileDocument != null;
-        Criteria criteria1= Criteria.where("path").regex("^"+fileDocument.getPath()+fileDocument.getName());
+        String currentDirectory = getUserDirectory(fileDocument.getPath()+fileDocument.getName());
+        Criteria criteria1= Criteria.where("path").is(currentDirectory);
         List<FileDocument> list = getFileDocuments(upload, pageIndex, pageSize, criteria1, Criteria.where("userId").is(userId));
         return ResultUtil.success(list);
     }
