@@ -32,7 +32,7 @@ public class AuthServiceImpl implements IAuthService {
     private Cache<String,String> tokenCache = CaffeineUtil.getTokenCache();
 
     @Override
-    public ResponseResult login(String userName, String password) {
+    public ResponseResult<Object> login(String userName, String password) {
         Query query = new Query();
         query.addCriteria(Criteria.where("username").is(userName));
         User user = mongoTemplate.findOne(query, User.class, UserServiceImpl.COLLECTION_NAME);
@@ -55,13 +55,13 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
-    public ResponseResult logout(String token) {
+    public ResponseResult<Object> logout(String token) {
         tokenCache.invalidate(token);
         return ResultUtil.success();
     }
 
     @Override
-    public ResponseResult authentication(String userName, String token) {
+    public ResponseResult<Object> authentication(String userName, String token) {
         return ResultUtil.success();
     }
 }

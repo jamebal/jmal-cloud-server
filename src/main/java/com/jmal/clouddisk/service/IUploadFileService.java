@@ -32,7 +32,7 @@ public interface IUploadFileService {
      * @return
      * @throws IOException
      */
-    ResponseResult upload(UploadApiParam upload) throws IOException;
+    ResponseResult<Object> upload(UploadApiParam upload) throws IOException;
 
     /***
      * 上传文件夹
@@ -40,7 +40,7 @@ public interface IUploadFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult uploadFolder(UploadApiParam upload) throws CommonException;
+    ResponseResult<Object> uploadFolder(UploadApiParam upload) throws CommonException;
 
     /***
      * 检查文件/分片是否存在
@@ -48,7 +48,7 @@ public interface IUploadFileService {
      * @return
      * @throws IOException
      */
-    ResponseResult checkChunkUploaded(UploadApiParam upload) throws IOException;
+    ResponseResult<Object> checkChunkUploaded(UploadApiParam upload) throws IOException;
 
     /***
      * 合并文件
@@ -56,7 +56,7 @@ public interface IUploadFileService {
      * @return
      * @throws IOException
      */
-    ResponseResult merge(UploadApiParam upload) throws IOException;
+    ResponseResult<Object> merge(UploadApiParam upload) throws IOException;
 
     /***
      * 文件列表
@@ -66,7 +66,7 @@ public interface IUploadFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult listFiles(UploadApiParam upload, int pageIndex, int pageSize) throws CommonException;
+    ResponseResult<Object> listFiles(UploadApiParam upload, int pageIndex, int pageSize) throws CommonException;
 
     /***
      * 搜索文件
@@ -77,7 +77,7 @@ public interface IUploadFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult searchFile(UploadApiParam upload, String keyword, int pageIndex, int pageSize) throws CommonException;
+    ResponseResult<Object> searchFile(UploadApiParam upload, String keyword, int pageIndex, int pageSize) throws CommonException;
 
     /***
      * 搜索文件并打开文件夹
@@ -88,7 +88,7 @@ public interface IUploadFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult searchFileAndOpenDir(UploadApiParam upload, String id, int pageIndex, int pageSize) throws CommonException;
+    ResponseResult<Object> searchFileAndOpenDir(UploadApiParam upload, String id, int pageIndex, int pageSize) throws CommonException;
 
     /***
      * 收藏文件或文件夹
@@ -96,14 +96,14 @@ public interface IUploadFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult favorite(String fileId) throws CommonException;
+    ResponseResult<Object> favorite(String fileId) throws CommonException;
 
     /***
      * 取消收藏
      * @param id
      * @return
      */
-    ResponseResult unFavorite(String id);
+    ResponseResult<Object> unFavorite(String id);
 
     /***
      * 删除
@@ -111,7 +111,7 @@ public interface IUploadFileService {
      * @param fileIds
      * @return
      */
-    ResponseResult delete(String username, List<String> fileIds);
+    ResponseResult<Object> delete(String username, List<String> fileIds);
 
     /***
      * 显示缩略图
@@ -139,6 +139,6 @@ public interface IUploadFileService {
      * @param id
      * @return
      */
-    ResponseResult rename(String newFileName, String username, String id);
+    ResponseResult<Object> rename(String newFileName, String username, String id);
 
 }

@@ -12,36 +12,36 @@ public interface IUserService {
     /***
      * 添加用户
      * @param user user
-     * @return ResponseResult
+     * @return ResponseResult<Object>
      */
-    ResponseResult add(User user);
+    ResponseResult<Object> add(User user);
 
     /***
      * 删除用户
      * @param id id
-     * @return ResponseResult
+     * @return ResponseResult<Object>
      */
-    ResponseResult delete(String id);
+    ResponseResult<Object> delete(String id);
 
     /***
      * 修改用户
      * @param user user
-     * @return ResponseResult
+     * @return ResponseResult<Object>
      */
-    ResponseResult update(User user);
+    ResponseResult<Object> update(User user);
 
     /***
      * 用户信息
      * @param token token
-     * @return ResponseResult
+     * @return ResponseResult<Object>
      */
-    ResponseResult userInfo(String token);
+    ResponseResult<Object> userInfo(String token);
 
     /***
      * 用户列表
-     * @return ResponseResult
+     * @return ResponseResult<Object>
      */
-    ResponseResult userList();
+    ResponseResult<Object> userList();
 
     /***
      * 验证用户名
@@ -53,34 +53,34 @@ public interface IUserService {
 //    /***
 //     * 添加用户组
 //     * @param user user
-//     * @return ResponseResult
+//     * @return ResponseResult<Object>
 //     */
-//    ResponseResult addGroup(User user);
+//    ResponseResult<Object> addGroup(User user);
 //
 //    /***
 //     * 删除用户组
 //     * @param id id
-//     * @return ResponseResult
+//     * @return ResponseResult<Object>
 //     */
-//    ResponseResult deleteGroup(String id);
+//    ResponseResult<Object> deleteGroup(String id);
 //
 //    /***
 //     * 修改用户组
 //     * @param user user
-//     * @return ResponseResult
+//     * @return ResponseResult<Object>
 //     */
-//    ResponseResult updateGroup(User user);
+//    ResponseResult<Object> updateGroup(User user);
 //
 //    /***
 //     * 用户组信息
 //     * @param id id
-//     * @return ResponseResult
+//     * @return ResponseResult<Object>
 //     */
-//    ResponseResult groupInfo(String id);
+//    ResponseResult<Object> groupInfo(String id);
 //
 //    /***
 //     * 用户列表
-//     * @return ResponseResult
+//     * @return ResponseResult<Object>
 //     */
-//    ResponseResult groupList();
+//    ResponseResult<Object> groupList();
 }

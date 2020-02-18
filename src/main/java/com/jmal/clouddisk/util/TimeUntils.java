@@ -1,13 +1,20 @@
 package com.jmal.clouddisk.util;
 
-import com.jmal.clouddisk.common.exception.CommonException;
-import com.jmal.clouddisk.common.exception.ExceptionType;
-import org.springframework.util.StringUtils;
-
-import java.time.*;
+import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.concurrent.TimeUnit;
+
+import org.springframework.util.StringUtils;
+
+import com.jmal.clouddisk.common.exception.CommonException;
+import com.jmal.clouddisk.common.exception.ExceptionType;
 
 /**
  * @Description 时间工具类
@@ -117,10 +124,6 @@ public class TimeUntils {
     private static final long SECOND_UNIT = 1000;
     private static final long MINUTE_UNIT = SECOND_UNIT * 60;
     private static final long HOUR_UNIT = MINUTE_UNIT * 60;
-    private static final long DAY_UNIT = HOUR_UNIT * 24;
-    private static final long WEEK_UNIT = HOUR_UNIT * 7;
-    private static final long MONTH_UNIT = DAY_UNIT * 30;
-    private static final long YEAR_UNIT = MONTH_UNIT * 12;
 
     public static String getAgoTime(long now , LocalDateTime updateDate){
 

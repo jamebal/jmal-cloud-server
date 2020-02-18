@@ -31,8 +31,8 @@ public class CommonExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     @ResponseBody
-    public ResponseResult exceptionHandler(Exception e){
-        ResponseResult result;
+    public ResponseResult<Object> exceptionHandler(Exception e){
+        ResponseResult<Object> result;
         if(e instanceof CommonException) {
             result = ResultUtil.error(((CommonException) e).getCode(), ((CommonException) e).getMsg());
         }else if(e instanceof MissingServletRequestParameterException){
@@ -61,7 +61,7 @@ public class CommonExceptionHandler {
      */
     @ExceptionHandler(CommonException.class)
     @ResponseBody
-    public ResponseResult exceptionHandler(CommonException e){
+    public ResponseResult<Object> exceptionHandler(CommonException e){
         return ResultUtil.error(e.getCode(), e.getMsg());
     }
 }

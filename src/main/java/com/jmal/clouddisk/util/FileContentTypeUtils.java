@@ -34,7 +34,12 @@ public class FileContentTypeUtils {
      * 2.static 静态代码块
      */
     private static Map<String , String> contentType = new HashMap<String , String>(){
-        {
+        /**
+		 * 
+		 */
+		private static final long serialVersionUID = -5418984619984073478L;
+
+		{
             put("jpg","image/jpeg");
             put("jpeg","image/jpeg");
         }

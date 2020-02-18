@@ -1,20 +1,38 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.io.FileUtil;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.jmal.clouddisk.AuthInterceptor;
-import com.jmal.clouddisk.common.exception.CommonException;
-import com.jmal.clouddisk.common.exception.ExceptionType;
-import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.UploadApiParam;
-import com.jmal.clouddisk.model.UploadResponse;
-import com.jmal.clouddisk.service.IUploadFileService;
-import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.util.*;
-import com.mongodb.client.AggregateIterable;
-import lombok.extern.slf4j.Slf4j;
-import net.coobird.thumbnailator.Thumbnails;
-import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
+import static com.mongodb.client.model.Accumulators.sum;
+import static com.mongodb.client.model.Aggregates.group;
+import static com.mongodb.client.model.Aggregates.match;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.in;
+import static com.mongodb.client.model.Filters.or;
+import static com.mongodb.client.model.Filters.regex;
+import static java.util.stream.Collectors.toList;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
+import java.text.Collator;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -28,21 +46,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.net.URLEncoder;
-import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
-import java.text.Collator;
-import java.time.LocalDateTime;
-import java.util.*;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.jmal.clouddisk.AuthInterceptor;
+import com.jmal.clouddisk.common.exception.CommonException;
+import com.jmal.clouddisk.common.exception.ExceptionType;
+import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.UploadApiParam;
+import com.jmal.clouddisk.model.UploadResponse;
+import com.jmal.clouddisk.service.IUploadFileService;
+import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.util.CaffeineUtil;
+import com.jmal.clouddisk.util.FileContentTypeUtils;
+import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.TimeUntils;
+import com.mongodb.client.AggregateIterable;
 
-import static com.mongodb.client.model.Accumulators.sum;
-import static com.mongodb.client.model.Aggregates.group;
-import static com.mongodb.client.model.Aggregates.match;
-import static com.mongodb.client.model.Filters.*;
-import static java.util.stream.Collectors.toList;
+import cn.hutool.core.io.FileUtil;
+import lombok.extern.slf4j.Slf4j;
+import net.coobird.thumbnailator.Thumbnails;
+import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
 
 /**
  * @Description 文件管理
@@ -83,7 +106,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @return
      */
     @Override
-    public ResponseResult listFiles(UploadApiParam upload, int pageIndex, int pageSize) throws CommonException {
+    public ResponseResult<Object> listFiles(UploadApiParam upload, int pageIndex, int pageSize) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
         String userId = upload.getUserId();
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
@@ -132,7 +155,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
     }
 
     @Override
-    public ResponseResult searchFile(UploadApiParam upload, String keyword, int pageIndex, int pageSize) throws CommonException {
+    public ResponseResult<Object> searchFile(UploadApiParam upload, String keyword, int pageIndex, int pageSize) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
         String userId = upload.getUserId();
         Criteria criteria1= Criteria.where("name").regex(keyword);
@@ -143,7 +166,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
     }
 
     @Override
-    public ResponseResult searchFileAndOpenDir(UploadApiParam upload, String id, int pageIndex, int pageSize) throws CommonException {
+    public ResponseResult<Object> searchFileAndOpenDir(UploadApiParam upload, String id, int pageIndex, int pageSize) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
         String userId = upload.getUserId();
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
@@ -371,7 +394,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @return
      */
     @Override
-    public ResponseResult rename(String newFileName, String username, String id) {
+    public ResponseResult<Object> rename(String newFileName, String username, String id) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
             String currentDirectory = getUserDirectory(fileDocument.getPath());
@@ -426,7 +449,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @return
      */
     @Override
-    public ResponseResult upload(UploadApiParam upload) throws IOException {
+    public ResponseResult<Object> upload(UploadApiParam upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
         int currentChunkSize = upload.getCurrentChunkSize();
         long totalSize = upload.getTotalSize();
@@ -470,7 +493,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @return
      */
     @Override
-    public ResponseResult uploadFolder(UploadApiParam upload) throws CommonException {
+    public ResponseResult<Object> uploadFolder(UploadApiParam upload) throws CommonException {
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
         // 新建文件夹
         String userDirectoryFilePath = getUserDirectoryFilePath(upload);
@@ -612,7 +635,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @return
      */
     @Override
-    public ResponseResult checkChunkUploaded(UploadApiParam upload) throws IOException {
+    public ResponseResult<Object> checkChunkUploaded(UploadApiParam upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
         String md5 = upload.getIdentifier();
         String path = getUserDirectory(upload.getCurrentDirectory());
@@ -643,8 +666,9 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @param upload
      * @return
      */
-    @Override
-    public ResponseResult merge(UploadApiParam upload) throws IOException {
+    @SuppressWarnings("resource")
+	@Override
+    public ResponseResult<Object> merge(UploadApiParam upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
         String md5 = upload.getIdentifier();
         String filename = upload.getFilename();
@@ -759,7 +783,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @throws CommonException
      */
     @Override
-    public ResponseResult favorite(String fileId) throws CommonException {
+    public ResponseResult<Object> favorite(String fileId) throws CommonException {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
         Update update = new Update();
@@ -774,7 +798,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @return
      */
     @Override
-    public ResponseResult unFavorite(String fileId) {
+    public ResponseResult<Object> unFavorite(String fileId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
         Update update = new Update();
@@ -789,7 +813,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @return
      */
     @Override
-    public ResponseResult delete(String username, List<String> fileIds) {
+    public ResponseResult<Object> delete(String username, List<String> fileIds) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds));
         List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);

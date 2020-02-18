@@ -13,7 +13,11 @@ import java.util.function.Function;
  */
 public class CommonException extends RuntimeException {
 
-    private final int code;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private final int code;
     private final String msg;
 
     public CommonException(int code, String msg) {

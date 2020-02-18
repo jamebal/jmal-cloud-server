@@ -33,7 +33,7 @@ public class UserServiceImpl implements IUserService {
     MongoTemplate mongoTemplate;
 
     @Override
-    public ResponseResult add(User user) {
+    public ResponseResult<Object> add(User user) {
         User user1 = getUserInfoByName(user.getUsername());
         if(user1 == null){
             mongoTemplate.save(user, COLLECTION_NAME);
@@ -42,7 +42,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public ResponseResult delete(String id) {
+    public ResponseResult<Object> delete(String id) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(id));
         mongoTemplate.remove(query, COLLECTION_NAME);
@@ -50,7 +50,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public ResponseResult update(User user) {
+    public ResponseResult<Object> update(User user) {
         Query query = new Query();
         String userId = user.getId();
         if(!StringUtils.isEmpty(userId)){
@@ -73,7 +73,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public ResponseResult userInfo(String token) {
+    public ResponseResult<Object> userInfo(String token) {
 
         String username = tokenCache.getIfPresent(token);
         if(StringUtils.isEmpty(username)){
@@ -89,7 +89,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public ResponseResult userList() {
+    public ResponseResult<Object> userList() {
         Query query = new Query();
         List<User> userList = mongoTemplate.find(query,User.class,COLLECTION_NAME);
         return ResultUtil.success(userList);

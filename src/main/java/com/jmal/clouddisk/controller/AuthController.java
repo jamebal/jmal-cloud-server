@@ -25,13 +25,13 @@ public class AuthController {
 
     @PostMapping("/login")
     @ResponseBody
-    public ResponseResult login(@RequestBody User user){
+    public ResponseResult<Object> login(@RequestBody User user){
         return authService.login(user.getUsername(), user.getPassword());
     }
 
     @GetMapping("/logout")
     @ResponseBody
-    public ResponseResult logout(HttpServletRequest request){
+    public ResponseResult<Object> logout(HttpServletRequest request){
         String token = request.getHeader(AuthInterceptor.JMAL_TOKEN);
         return authService.logout(token);
     }

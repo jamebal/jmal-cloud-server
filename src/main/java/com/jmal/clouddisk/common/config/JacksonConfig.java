@@ -22,7 +22,6 @@ public class JacksonConfig {
         ObjectMapper objectMapper = builder.createXmlMapper(false).build();
         //通过该方法对mapper对象进行设置，所有序列化的对象都将按改规则进行系列化，属性为NULL 不序列化
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        objectMapper.setFilterProvider(new JacksonJsonFilter());
         return objectMapper;
     }
 

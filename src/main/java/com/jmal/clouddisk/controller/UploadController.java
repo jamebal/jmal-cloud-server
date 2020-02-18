@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -53,7 +52,7 @@ public class UploadController {
      * @throws CommonException
      */
     @GetMapping("/list")
-    public ResponseResult list(UploadApiParam upload, int pageIndex, int pageSize) throws CommonException {
+    public ResponseResult<Object> list(UploadApiParam upload, int pageIndex, int pageSize) throws CommonException {
         return fileService.listFiles(upload, pageIndex, pageSize);
     }
 
@@ -64,7 +63,7 @@ public class UploadController {
      * @throws CommonException
      */
     @GetMapping("/search-file")
-    public ResponseResult searchFile(UploadApiParam upload, String keyword, int pageIndex, int pageSize) throws CommonException {
+    public ResponseResult<Object> searchFile(UploadApiParam upload, String keyword, int pageIndex, int pageSize) throws CommonException {
         return fileService.searchFile(upload, keyword, pageIndex, pageSize);
     }
 
@@ -75,7 +74,7 @@ public class UploadController {
      * @throws CommonException
      */
     @GetMapping("/search-file-open")
-    public ResponseResult searchFileAndOpenDir(UploadApiParam upload, String id, int pageIndex, int pageSize) throws CommonException {
+    public ResponseResult<Object> searchFileAndOpenDir(UploadApiParam upload, String id, int pageIndex, int pageSize) throws CommonException {
         return fileService.searchFileAndOpenDir(upload, id, pageIndex, pageSize);
     }
 
@@ -87,7 +86,7 @@ public class UploadController {
      */
     @PostMapping("upload")
     @ResponseBody
-    public ResponseResult uploadPost(UploadApiParam upload) throws IOException {
+    public ResponseResult<Object> uploadPost(UploadApiParam upload) throws IOException {
         upload.setRootPath(rootPath);
         System.out.println("upload:" + upload.toString());
         return fileService.upload(upload);
@@ -100,7 +99,7 @@ public class UploadController {
      */
     @PostMapping("upload-folder")
     @ResponseBody
-    public ResponseResult uploadFolder(UploadApiParam upload) throws CommonException {
+    public ResponseResult<Object> uploadFolder(UploadApiParam upload) throws CommonException {
         upload.setRootPath(rootPath);
         System.out.println("upload-folder:" + upload.toString());
         return fileService.uploadFolder(upload);
@@ -113,7 +112,7 @@ public class UploadController {
      */
     @GetMapping("upload")
     @ResponseBody
-    public ResponseResult checkUpload(UploadApiParam upload) throws IOException {
+    public ResponseResult<Object> checkUpload(UploadApiParam upload) throws IOException {
         upload.setRootPath(rootPath);
         System.out.println("check:" + upload.toString());
         return fileService.checkChunkUploaded(upload);
@@ -127,7 +126,7 @@ public class UploadController {
      */
     @PostMapping("merge")
     @ResponseBody
-    public ResponseResult merge(UploadApiParam upload) throws IOException {
+    public ResponseResult<Object> merge(UploadApiParam upload) throws IOException {
         upload.setRootPath(rootPath);
         System.out.println("merge:" + upload.toString());
         return fileService.merge(upload);
@@ -211,7 +210,7 @@ public class UploadController {
      * @throws CommonException
      */
     @PostMapping("/favorite")
-    public ResponseResult favorite(HttpServletRequest request, String id) throws CommonException {
+    public ResponseResult<Object> favorite(HttpServletRequest request, String id) throws CommonException {
         ResultUtil.checkParamIsNull(id);
         service.getUserName(request.getHeader(AuthInterceptor.JMAL_TOKEN));
         return fileService.favorite(id);
@@ -225,7 +224,7 @@ public class UploadController {
      * @throws CommonException
      */
     @PostMapping("/unFavorite")
-    public ResponseResult unFavorite(HttpServletRequest request, String id) throws CommonException {
+    public ResponseResult<Object> unFavorite(HttpServletRequest request, String id) throws CommonException {
         ResultUtil.checkParamIsNull(id);
         service.getUserName(request.getHeader(AuthInterceptor.JMAL_TOKEN));
         return fileService.unFavorite(id);
@@ -239,7 +238,7 @@ public class UploadController {
      * @throws CommonException
      */
     @DeleteMapping("/delete")
-    public ResponseResult delete(String username, String[] fileIds) throws CommonException {
+    public ResponseResult<Object> delete(String username, String[] fileIds) throws CommonException {
         if (fileIds != null && fileIds.length > 0) {
             List<String> list = Arrays.asList(fileIds);
             return fileService.delete(username, list);
@@ -257,7 +256,7 @@ public class UploadController {
      * @throws CommonException
      */
     @GetMapping("/rename")
-    public ResponseResult rename(String newFileName, String username, String id) throws CommonException {
+    public ResponseResult<Object> rename(String newFileName, String username, String id) throws CommonException {
         return fileService.rename(newFileName, username, id);
     }
 
