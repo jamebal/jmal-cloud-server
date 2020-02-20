@@ -38,6 +38,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -136,6 +137,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         long skip = (pageIndex - 1) * pageSize;
         query.skip(skip);
         query.limit(pageSize);
+        query.with(new Sort(Sort.Direction.DESC,"isFolder"));
         List<FileDocument> list = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
         long now = System.currentTimeMillis();
 
