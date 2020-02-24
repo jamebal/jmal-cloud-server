@@ -2,8 +2,8 @@ package com.jmal.clouddisk.util;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-
-import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * CaffeineUtil
@@ -15,7 +15,7 @@ public class CaffeineUtil {
     /***
      * 断点续传
      */
-    private static Cache<String, List<Integer>> resumeCache;
+    private static Cache<String, CopyOnWriteArrayList<Integer>> resumeCache;
 
     /***
      * 用户token
@@ -31,7 +31,7 @@ public class CaffeineUtil {
         }
     }
 
-    public static Cache<String, List<Integer>> getResumeCache(){
+    public static Cache<String, CopyOnWriteArrayList<Integer>> getResumeCache(){
         if(resumeCache == null){
             syncInitResumeCache();
         }
