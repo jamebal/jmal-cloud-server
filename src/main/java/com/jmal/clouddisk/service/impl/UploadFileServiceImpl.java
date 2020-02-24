@@ -29,6 +29,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,6 +39,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -88,6 +90,11 @@ public class UploadFileServiceImpl implements IUploadFileService {
      */
     private static final String DIR_SEPARATOR = "/";
 
+    /***
+     * 保存分片的目录
+     */
+    private static final String TEMPORARY_DIRECTORY = "temporary directory";
+
     private static final String COLLECTION_NAME = "fileDocument";
 
     private static final String CONTENT_TYPE_IMAGE = "image";
@@ -95,7 +102,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
     @Value("${root-path}")
     String rootPath;
 
-    private Cache<String, List<Integer>> resumeCache = CaffeineUtil.getResumeCache();
+    private Cache<String, CopyOnWriteArrayList<Integer>> resumeCache = CaffeineUtil.getResumeCache();
 
 
     /***
@@ -136,6 +143,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         long skip = (pageIndex - 1) * pageSize;
         query.skip(skip);
         query.limit(pageSize);
+        query.with(new Sort(Sort.Direction.DESC,"isFolder"));
         List<FileDocument> list = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
         long now = System.currentTimeMillis();
 
@@ -474,10 +482,10 @@ public class UploadFileServiceImpl implements IUploadFileService {
             // 落地保存文件
             // 这时保存的每个块, 块先存好, 后续会调合并接口, 将所有块合成一个大文件
             // 保存在用户的tmp目录下
-            File chunkFile = new File(upload.getRootPath() + File.separator + upload.getUsername() + File.separator + "tmp" + File.separator + md5 + File.separator + upload.getChunkNumber());
+            File chunkFile = new File(upload.getRootPath() + File.separator + TEMPORARY_DIRECTORY + File.separator + upload.getUsername() + File.separator + md5 + File.separator + upload.getChunkNumber());
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
-            uploadResponse.setUpload(true);
             setResumeCache(upload);
+            uploadResponse.setUpload(true);
             // 检测是否已经上传完了所有分片,上传完了则需要合并
             if (checkIsNeedMerge(upload)) {
                 uploadResponse.setMerge(true);
@@ -500,15 +508,13 @@ public class UploadFileServiceImpl implements IUploadFileService {
         //没有分片,直接存
         File dir = new File(upload.getRootPath() + File.separator + upload.getUsername() + userDirectoryFilePath);
         if(!dir.exists()){
-            if(dir.mkdir()){
-                // 保存文件夹信息
-                saveFolderInfo(upload, date);
-                return ResultUtil.success();
+            if(!dir.mkdir()){
+                return ResultUtil.error(String.format("创建文件夹失败,dir:%s",upload.getFilename()));
             }
-        }else{
-            return ResultUtil.success(1);
         }
-        return ResultUtil.error("创建文件夹失败");
+        // 保存文件夹信息
+        saveFolderInfo(upload, date);
+        return ResultUtil.success();
     }
 
     /***
@@ -580,8 +586,9 @@ public class UploadFileServiceImpl implements IUploadFileService {
     private void setResumeCache(UploadApiParam upload) {
         int chunkNumber = upload.getChunkNumber();
         String md5 = upload.getIdentifier();
-        List<Integer> chunks = resumeCache.get(md5, key -> createResumeCache(upload));
-        if (chunks != null) {
+        CopyOnWriteArrayList<Integer> chunks = resumeCache.get(md5, key -> createResumeCache(upload));
+        assert chunks != null;
+        if (!chunks.contains(chunkNumber)) {
             chunks.add(chunkNumber);
             resumeCache.put(md5, chunks);
         }
@@ -590,7 +597,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
     /***
      * 获取已经保存的分片索引
      */
-    private List<Integer> getSavedChunk(UploadApiParam upload){
+    private CopyOnWriteArrayList<Integer> getSavedChunk(UploadApiParam upload){
         String md5 = upload.getIdentifier();
         return resumeCache.get(md5, key -> createResumeCache(upload));
     }
@@ -600,7 +607,8 @@ public class UploadFileServiceImpl implements IUploadFileService {
      */
     private boolean checkIsNeedMerge(UploadApiParam upload){
         int totalChunks = upload.getTotalChunks();
-        List<Integer> chunkList = getSavedChunk(upload);
+        CopyOnWriteArrayList<Integer> chunkList = getSavedChunk(upload);
+        System.out.println("totalChunks:"+totalChunks+",chunkList:"+chunkList.size());
         return totalChunks == chunkList.size();
     }
 
@@ -608,11 +616,11 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * 读取分片文件是否存在
      * @return
      */
-    private List<Integer> createResumeCache(UploadApiParam upload) {
-        List<Integer> resumeList = new ArrayList<>();
+    private CopyOnWriteArrayList<Integer> createResumeCache(UploadApiParam upload) {
+        CopyOnWriteArrayList<Integer> resumeList = new CopyOnWriteArrayList<>();
         String md5 = upload.getIdentifier();
         // 读取tmp分片目录所有文件
-        File f = new File(upload.getRootPath() + File.separator + upload.getUsername() + File.separator + "tmp" + File.separator + md5);
+        File f = new File(upload.getRootPath() + File.separator + TEMPORARY_DIRECTORY + File.separator + upload.getUsername() + File.separator + md5);
         if (f.exists()) {
             // 排除目录，只要文件
             File[] fileArray = f.listFiles(pathName -> !pathName.isDirectory());
@@ -677,8 +685,8 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
 
-        // 读取目录所有文件
-        File f = new File(upload.getRootPath() + File.separator + upload.getUsername() + File.separator + "tmp" + File.separator + md5);
+        // 读取tmp目录所有文件
+        File f = new File(upload.getRootPath()  + File.separator + TEMPORARY_DIRECTORY + File.separator + File.separator + upload.getUsername() + File.separator + md5);
         // 排除目录，只要文件
         File[] fileArray = f.listFiles(pathName -> !pathName.isDirectory());
 
@@ -756,7 +764,11 @@ public class UploadFileServiceImpl implements IUploadFileService {
             currentDirectory = DIR_SEPARATOR;
         }
         if (upload.getIsFolder()) {
-            currentDirectory += DIR_SEPARATOR + upload.getFilename();
+            if(upload.getFolderPath() != null){
+                currentDirectory += DIR_SEPARATOR + upload.getFolderPath();
+            } else {
+                currentDirectory += DIR_SEPARATOR + upload.getFilename();
+            }
         } else {
             currentDirectory += DIR_SEPARATOR + upload.getRelativePath();
         }
