@@ -536,6 +536,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         fileDocument.setMd5(md5);
         fileDocument.setName(filename);
         fileDocument.setIsFolder(upload.getIsFolder());
+        fileDocument.setIsFavorite(false);
         fileDocument.setUploadDate(date);
         fileDocument.setUpdateDate(date);
         fileDocument.setSuffix(upload.getSuffix());
@@ -580,6 +581,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         update.set("name", folderName);
         update.set("uploadDate", date);
         update.set("updateDate", date);
+        update.set("isFavorite", false);
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
     }
 
