@@ -99,6 +99,11 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
     private static final String CONTENT_TYPE_IMAGE = "image";
 
+    /***
+     * 前端文件夹树的第一级的文件Id
+     */
+    private static final String FIRST_FILE_TREE_ID = "0";
+
     @Value("${root-path}")
     String rootPath;
 
@@ -201,6 +206,29 @@ public class UploadFileServiceImpl implements IUploadFileService {
         Criteria criteria= Criteria.where("path").is(currentDirectory);
         return getCountResponseResult(upload, result, criteria);
     }
+
+    private FileDocument getFileDocumentById(String fileId){
+        if(StringUtils.isEmpty(fileId) || FIRST_FILE_TREE_ID.equals(fileId)){
+            return null;
+        }
+        return mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
+    }
+
+    private String getRelativePathByFileId(FileDocument fileDocument){
+        if(fileDocument == null){
+            return getUserDirectory(null);
+        }
+        if(fileDocument.getIsFolder()){
+            return getUserDirectory(fileDocument.getPath() + fileDocument.getName());
+        }
+        String currentDirectory = fileDocument.getPath() + fileDocument.getName();
+        return currentDirectory.replaceAll(DIR_SEPARATOR, File.separator);
+    }
+
+    private String getUserDir(String userName){
+        return rootPath + File.separator + userName;
+    }
+
 
     /***
      * 查找下级目录
@@ -467,6 +495,135 @@ public class UploadFileServiceImpl implements IUploadFileService {
             return ResultUtil.error("数据库查询失败");
         }
     }
+
+    /***
+     * 移动文件/文件夹
+     * @param upload
+     * @param froms 文件/文件夹id
+     * @param to 文件夹id
+     * @return
+     * @throws CommonException
+     */
+    @Override
+    public ResponseResult move(UploadApiParam upload, List<String> froms, String to) {
+        // 复制
+        ResponseResult result = getCopyResult(upload, froms, to);
+        if (result != null) {
+            return result;
+        }
+        // 删除
+        return delete(upload.getUsername(),froms);
+    }
+
+    private ResponseResult getCopyResult(UploadApiParam upload, List<String> froms, String to) {
+        for (String from : froms) {
+            ResponseResult result = copy(upload, from, to);
+            if(result.getCode() != 0 && result.getCode() != -2){
+                return result;
+            }
+        }
+        return null;
+    }
+
+    /***
+     * 复制文件/文件夹
+     * @param upload
+     * @param froms 文件/文件夹id
+     * @param to 文件夹id
+     * @return
+     * @throws CommonException
+     */
+    @Override
+    public ResponseResult copy(UploadApiParam upload, List<String> froms, String to) {
+        // 复制
+        ResponseResult result = getCopyResult(upload, froms, to);
+        if (result != null) {
+            return result;
+        }
+        return ResultUtil.success();
+    }
+
+    private ResponseResult<Object> copy(UploadApiParam upload, String from, String to){
+        FileDocument formFileDocument = getFileDocumentById(from);
+        String fromPath = getRelativePathByFileId(formFileDocument);
+        String fromFilePath = getUserDir(upload.getUsername()) + fromPath;
+        FileDocument toFileDocument = getFileDocumentById(to);
+        String toPath = getRelativePathByFileId(toFileDocument);
+        String toFilePath = getUserDir(upload.getUsername()) + toPath;
+        if(formFileDocument != null){
+            FileUtil.copy(fromFilePath,toFilePath,true);
+            if(formFileDocument.getIsFolder()){
+                // 复制文件夹
+                // 复制其本身
+                FileDocument copyFileDocument = copyFileDocument(formFileDocument, toPath);
+                if(isExistsOfToCopy(copyFileDocument, toPath)){
+                    return ResultUtil.warning("所选目录已存在该文件夹!");
+                }
+                mongoTemplate.save(copyFileDocument,COLLECTION_NAME);
+                // 复制其下的子文件或目录
+                Query query = new Query();
+                query.addCriteria(Criteria.where("path").regex("^" + fromPath));
+                List<FileDocument> formList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+                formList = formList.stream().peek(fileDocument -> {
+                    String oldPath = fileDocument.getPath();
+                    String newPath = toPath + oldPath.substring(1);
+                    copyFileDocument(fileDocument,newPath);
+                }).collect(toList());
+                mongoTemplate.insert(formList,COLLECTION_NAME);
+            }else{
+                // 复制文件
+                // 复制其本身
+                FileDocument copyFileDocument = copyFileDocument(formFileDocument, toPath);
+                if(isExistsOfToCopy(copyFileDocument, toPath)){
+                    return ResultUtil.warning("所选目录已存在该文件!");
+                }
+                mongoTemplate.save(copyFileDocument,COLLECTION_NAME);
+            }
+            return ResultUtil.success();
+        }
+        return ResultUtil.error("服务器开小差了, 请稍后再试...");
+    }
+
+    /***
+     * 复制更新数据
+     * @param formFileDocument
+     * @param toPath
+     * @return
+     */
+    private FileDocument copyFileDocument(FileDocument formFileDocument, String toPath) {
+        formFileDocument.setId(null);
+        formFileDocument.setPath(toPath);
+        formFileDocument.setUpdateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
+        return formFileDocument;
+    }
+
+    /***
+     * 目标目录是否存该文件
+     * @param formFileDocument
+     * @param toPath
+     * @return
+     */
+    private boolean isExistsOfToCopy(FileDocument formFileDocument, String toPath) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("path").is(toPath));
+        query.addCriteria(Criteria.where("name").is(formFileDocument.getName()));
+        return mongoTemplate.exists(query,COLLECTION_NAME);
+    }
+
+//    private Update getUpdate(FileDocument fileDocument){
+//        Update update = new Update();
+//        update.set("userId", fileDocument.getUserId());
+//        update.set("path", fileDocument.getPath());
+//        update.set("isFolder", fileDocument.getIsFolder());
+//        update.set("name", fileDocument.getName());
+//        update.set("size", fileDocument.getSize());
+//        update.set("uploadDate", fileDocument.getUploadDate());
+//        update.set("updateDate", LocalDateTime.now(TimeUntils.ZONE_ID));
+//        update.set("md5", fileDocument.getMd5());
+//        update.set("contentType", fileDocument.getContentType());
+//        update.set("suffix", fileDocument.getSuffix());
+//        return update;
+//    }
 
     private static String replaceStart(String str, CharSequence searchStr, CharSequence replacement){
         return replacement+str.substring(searchStr.length());

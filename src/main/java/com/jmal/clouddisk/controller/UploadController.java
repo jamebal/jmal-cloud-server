@@ -269,4 +269,40 @@ public class UploadController {
         return fileService.rename(newFileName, username, id);
     }
 
+    /***
+     * 移动文件/文件夹
+     * @param upload
+     * @param froms 文件/文件夹id
+     * @param to 文件夹id
+     * @return
+     * @throws CommonException
+     */
+    @GetMapping("/move")
+    public ResponseResult move(UploadApiParam upload, String[] froms, String to) throws CommonException {
+        if (froms != null && froms.length > 0) {
+            List<String> list = Arrays.asList(froms);
+            return fileService.move(upload, list, to);
+        } else {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
+        }
+    }
+
+    /***
+     * 复制文件/文件夹
+     * @param upload
+     * @param froms 文件/文件夹id
+     * @param to 文件夹id
+     * @return
+     * @throws CommonException
+     */
+    @GetMapping("/copy")
+    public ResponseResult copy(UploadApiParam upload, String[] froms, String to) throws CommonException {
+        if (froms != null && froms.length > 0) {
+            List<String> list = Arrays.asList(froms);
+            return fileService.copy(upload, list, to);
+        } else {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
+        }
+    }
+
 }

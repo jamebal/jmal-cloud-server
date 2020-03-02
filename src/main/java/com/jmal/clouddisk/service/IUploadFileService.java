@@ -143,4 +143,21 @@ public interface IUploadFileService {
      */
     ResponseResult<Object> rename(String newFileName, String username, String id);
 
+    /***
+     * 移动文件/文件夹
+     * @param upload
+     * @param froms
+     * @param to
+     * @return
+     */
+    ResponseResult move(UploadApiParam upload, List<String> froms, String to);
+
+    /***
+     * 复制文件/文件夹
+     * @param upload
+     * @param froms
+     * @param to
+     * @return
+     */
+    ResponseResult copy(UploadApiParam upload, List<String> froms, String to);
 }

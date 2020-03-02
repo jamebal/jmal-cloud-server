@@ -46,6 +46,13 @@ public class ResultUtil {
 		return result;
 	}
 
+	public static ResponseResult<Object> warning(String msg){
+		ResponseResult<Object> result = new ResponseResult<>();
+		result.setCode(-2);
+		result.setMessage(msg);
+		return result;
+	}
+
 	/***
 	 * 检查参数是否为空
 	 * @param params
