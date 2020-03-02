@@ -84,4 +84,7 @@ public class UploadApiParam {
     String folderPath;
     String suffix;
     String contentType;
+
+    Integer pageIndex;
+    Integer pageSize;
 }

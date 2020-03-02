@@ -46,14 +46,23 @@ public class UploadController {
     /***
      * 文件列表
      * @param upload
-     * @param pageIndex
-     * @param pageSize
      * @return
      * @throws CommonException
      */
     @GetMapping("/list")
-    public ResponseResult<Object> list(UploadApiParam upload, int pageIndex, int pageSize) throws CommonException {
-        return fileService.listFiles(upload, pageIndex, pageSize);
+    public ResponseResult<Object> list(UploadApiParam upload) throws CommonException {
+        return fileService.listFiles(upload);
+    }
+
+    /***
+     * 查找下级目录
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    @GetMapping("/query-file-tree")
+    public ResponseResult<Object> queryFileTree(UploadApiParam upload, String fileId) throws CommonException {
+        return fileService.queryFileTree(upload,fileId);
     }
 
     /***
@@ -63,8 +72,8 @@ public class UploadController {
      * @throws CommonException
      */
     @GetMapping("/search-file")
-    public ResponseResult<Object> searchFile(UploadApiParam upload, String keyword, int pageIndex, int pageSize) throws CommonException {
-        return fileService.searchFile(upload, keyword, pageIndex, pageSize);
+    public ResponseResult<Object> searchFile(UploadApiParam upload, String keyword) throws CommonException {
+        return fileService.searchFile(upload, keyword);
     }
 
     /***
@@ -74,8 +83,8 @@ public class UploadController {
      * @throws CommonException
      */
     @GetMapping("/search-file-open")
-    public ResponseResult<Object> searchFileAndOpenDir(UploadApiParam upload, String id, int pageIndex, int pageSize) throws CommonException {
-        return fileService.searchFileAndOpenDir(upload, id, pageIndex, pageSize);
+    public ResponseResult<Object> searchFileAndOpenDir(UploadApiParam upload, String id) throws CommonException {
+        return fileService.searchFileAndOpenDir(upload, id);
     }
 
     /***
