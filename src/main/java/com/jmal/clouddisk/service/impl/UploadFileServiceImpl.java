@@ -99,6 +99,11 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
     private static final String CONTENT_TYPE_IMAGE = "image";
 
+    /***
+     * 前端文件夹树的第一级的文件Id
+     */
+    private static final String FIRST_FILE_TREE_ID = "0";
+
     @Value("${root-path}")
     String rootPath;
 
@@ -108,41 +113,35 @@ public class UploadFileServiceImpl implements IUploadFileService {
     /***
      * 文件列表
      * @param upload
-     * @param pageIndex
-     * @param pageSize
      * @return
      */
     @Override
-    public ResponseResult<Object> listFiles(UploadApiParam upload, int pageIndex, int pageSize) throws CommonException {
+    public ResponseResult<Object> listFiles(UploadApiParam upload) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
-        String userId = upload.getUserId();
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
-        List<FileDocument> list = getFileDocuments(upload, pageIndex, pageSize, Criteria.where("userId").is(userId), Criteria.where("path").is(currentDirectory));
+        List<FileDocument> list = getFileDocuments(upload, Criteria.where("path").is(currentDirectory));
         result.setData(list);
-        result.setCount(getFileDocumentsCount(Criteria.where("userId").is(userId), Criteria.where("path").is(currentDirectory)));
+        result.setCount(getFileDocumentsCount(upload, Criteria.where("path").is(currentDirectory)));
         return result;
     }
 
-    private long getFileDocumentsCount( Criteria... criteriaList) {
+    private long getFileDocumentsCount(UploadApiParam upload, Criteria... criteriaList) {
         Query query = new Query();
+        query.addCriteria(Criteria.where("userId").is(upload.getUserId()));
         for (Criteria criteria : criteriaList) {
             query.addCriteria(criteria);
         }
         return mongoTemplate.count(query, COLLECTION_NAME);
     }
 
-    private List<FileDocument> getFileDocuments(UploadApiParam upload, int pageIndex, int pageSize, Criteria... criteriaList) {
-        String userId = upload.getUserId();
-        if (StringUtils.isEmpty(userId)) {
-            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg() + "userId");
+    private List<FileDocument> getFileDocuments(UploadApiParam upload, Criteria... criteriaList) {
+        Query query = getQuery(upload, criteriaList);
+        Integer pageSize = upload.getPageSize(),pageIndex = upload.getPageIndex();
+        if(pageSize != null && pageIndex != null){
+            long skip = (pageIndex - 1) * pageSize;
+            query.skip(skip);
+            query.limit(pageSize);
         }
-        Query query = new Query();
-        for (Criteria criteria : criteriaList) {
-            query.addCriteria(criteria);
-        }
-        long skip = (pageIndex - 1) * pageSize;
-        query.skip(skip);
-        query.limit(pageSize);
         query.with(new Sort(Sort.Direction.DESC,"isFolder"));
         List<FileDocument> list = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
         long now = System.currentTimeMillis();
@@ -162,29 +161,92 @@ public class UploadFileServiceImpl implements IUploadFileService {
         return list;
     }
 
-    @Override
-    public ResponseResult<Object> searchFile(UploadApiParam upload, String keyword, int pageIndex, int pageSize) throws CommonException {
-        ResponseResult<Object> result = ResultUtil.genResult();
+    private List<FileDocument> getDirDocuments(UploadApiParam upload, Criteria... criteriaList) {
+        Query query = getQuery(upload, criteriaList);
+        query.addCriteria(Criteria.where("isFolder").is(true));
+        List<FileDocument> list = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+        // 按文件名排序
+        list.sort(this::compareByFileName);
+        return list;
+    }
+
+    private Query getQuery(UploadApiParam upload, Criteria[] criteriaList) {
         String userId = upload.getUserId();
+        if (StringUtils.isEmpty(userId)) {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg() + "userId");
+        }
+        Query query = new Query();
+        query.addCriteria(Criteria.where("userId").is(userId));
+        for (Criteria criteria : criteriaList) {
+            query.addCriteria(criteria);
+        }
+        return query;
+    }
+
+    @Override
+    public ResponseResult<Object> searchFile(UploadApiParam upload, String keyword) throws CommonException {
+        ResponseResult<Object> result = ResultUtil.genResult();
         Criteria criteria1= Criteria.where("name").regex(keyword);
-        List<FileDocument> list = getFileDocuments(upload, pageIndex, pageSize, criteria1, Criteria.where("userId").is(userId));
+        return getCountResponseResult(upload, result, criteria1);
+    }
+
+    private ResponseResult<Object> getCountResponseResult(UploadApiParam upload, ResponseResult<Object> result, Criteria... criteriaList) {
+        List<FileDocument> list = getFileDocuments(upload, criteriaList);
         result.setData(list);
-        result.setCount(getFileDocumentsCount(criteria1, Criteria.where("userId").is(userId)));
+        result.setCount(getFileDocumentsCount(upload,criteriaList));
         return result;
     }
 
     @Override
-    public ResponseResult<Object> searchFileAndOpenDir(UploadApiParam upload, String id, int pageIndex, int pageSize) throws CommonException {
+    public ResponseResult<Object> searchFileAndOpenDir(UploadApiParam upload, String id) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
-        String userId = upload.getUserId();
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         assert fileDocument != null;
         String currentDirectory = getUserDirectory(fileDocument.getPath()+fileDocument.getName());
         Criteria criteria= Criteria.where("path").is(currentDirectory);
-        List<FileDocument> list = getFileDocuments(upload, pageIndex, pageSize, criteria, Criteria.where("userId").is(userId));
-        result.setData(list);
-        result.setCount(getFileDocumentsCount(criteria, Criteria.where("userId").is(userId)));
-        return result;
+        return getCountResponseResult(upload, result, criteria);
+    }
+
+    private FileDocument getFileDocumentById(String fileId){
+        if(StringUtils.isEmpty(fileId) || FIRST_FILE_TREE_ID.equals(fileId)){
+            return null;
+        }
+        return mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
+    }
+
+    private String getRelativePathByFileId(FileDocument fileDocument){
+        if(fileDocument == null){
+            return getUserDirectory(null);
+        }
+        if(fileDocument.getIsFolder()){
+            return getUserDirectory(fileDocument.getPath() + fileDocument.getName());
+        }
+        String currentDirectory = fileDocument.getPath() + fileDocument.getName();
+        return currentDirectory.replaceAll(DIR_SEPARATOR, File.separator);
+    }
+
+    private String getUserDir(String userName){
+        return rootPath + File.separator + userName;
+    }
+
+
+    /***
+     * 查找下级目录
+     * @param upload
+     * @param fileId
+     * @return
+     */
+    @Override
+    public ResponseResult<Object> queryFileTree(UploadApiParam upload, String fileId) {
+        String currentDirectory = getUserDirectory(null);
+        if(!StringUtils.isEmpty(fileId)){
+            FileDocument fileDocument = mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
+            assert fileDocument != null;
+            currentDirectory = getUserDirectory(fileDocument.getPath()+fileDocument.getName());
+        }
+        Criteria criteria= Criteria.where("path").is(currentDirectory);
+        List<FileDocument> list = getDirDocuments(upload, criteria);
+        return ResultUtil.success(list);
     }
 
     /***
@@ -248,6 +310,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         }
         return Optional.empty();
     }
+
 
     private void setContent(String username, FileDocument fileDocument) {
         String currentDirectory = getUserDirectory(fileDocument.getPath());
@@ -336,7 +399,6 @@ public class UploadFileServiceImpl implements IUploadFileService {
                             String relativeFileName = doc.getString("name");
                             long fileSize = doc.getLong("size");
                             res.append(String.format("%s %d %s %s\n", "-", fileSize, URLEncoder.encode(File.separator + username + relativePath + relativeFileName, "UTF-8"), temp + relativePath.substring(parentPath.length()) + relativeFileName));
-                            System.out.println(String.format("%s %d %s %s\n", "-", fileSize, File.separator + username + relativePath + relativeFileName, temp + relativePath.substring(parentPath.length()) + relativeFileName));
                         }
                     }
                 }
@@ -433,6 +495,135 @@ public class UploadFileServiceImpl implements IUploadFileService {
             return ResultUtil.error("数据库查询失败");
         }
     }
+
+    /***
+     * 移动文件/文件夹
+     * @param upload
+     * @param froms 文件/文件夹id
+     * @param to 文件夹id
+     * @return
+     * @throws CommonException
+     */
+    @Override
+    public ResponseResult move(UploadApiParam upload, List<String> froms, String to) {
+        // 复制
+        ResponseResult result = getCopyResult(upload, froms, to);
+        if (result != null) {
+            return result;
+        }
+        // 删除
+        return delete(upload.getUsername(),froms);
+    }
+
+    private ResponseResult getCopyResult(UploadApiParam upload, List<String> froms, String to) {
+        for (String from : froms) {
+            ResponseResult result = copy(upload, from, to);
+            if(result.getCode() != 0 && result.getCode() != -2){
+                return result;
+            }
+        }
+        return null;
+    }
+
+    /***
+     * 复制文件/文件夹
+     * @param upload
+     * @param froms 文件/文件夹id
+     * @param to 文件夹id
+     * @return
+     * @throws CommonException
+     */
+    @Override
+    public ResponseResult copy(UploadApiParam upload, List<String> froms, String to) {
+        // 复制
+        ResponseResult result = getCopyResult(upload, froms, to);
+        if (result != null) {
+            return result;
+        }
+        return ResultUtil.success();
+    }
+
+    private ResponseResult<Object> copy(UploadApiParam upload, String from, String to){
+        FileDocument formFileDocument = getFileDocumentById(from);
+        String fromPath = getRelativePathByFileId(formFileDocument);
+        String fromFilePath = getUserDir(upload.getUsername()) + fromPath;
+        FileDocument toFileDocument = getFileDocumentById(to);
+        String toPath = getRelativePathByFileId(toFileDocument);
+        String toFilePath = getUserDir(upload.getUsername()) + toPath;
+        if(formFileDocument != null){
+            FileUtil.copy(fromFilePath,toFilePath,true);
+            if(formFileDocument.getIsFolder()){
+                // 复制文件夹
+                // 复制其本身
+                FileDocument copyFileDocument = copyFileDocument(formFileDocument, toPath);
+                if(isExistsOfToCopy(copyFileDocument, toPath)){
+                    return ResultUtil.warning("所选目录已存在该文件夹!");
+                }
+                mongoTemplate.save(copyFileDocument,COLLECTION_NAME);
+                // 复制其下的子文件或目录
+                Query query = new Query();
+                query.addCriteria(Criteria.where("path").regex("^" + fromPath));
+                List<FileDocument> formList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+                formList = formList.stream().peek(fileDocument -> {
+                    String oldPath = fileDocument.getPath();
+                    String newPath = toPath + oldPath.substring(1);
+                    copyFileDocument(fileDocument,newPath);
+                }).collect(toList());
+                mongoTemplate.insert(formList,COLLECTION_NAME);
+            }else{
+                // 复制文件
+                // 复制其本身
+                FileDocument copyFileDocument = copyFileDocument(formFileDocument, toPath);
+                if(isExistsOfToCopy(copyFileDocument, toPath)){
+                    return ResultUtil.warning("所选目录已存在该文件!");
+                }
+                mongoTemplate.save(copyFileDocument,COLLECTION_NAME);
+            }
+            return ResultUtil.success();
+        }
+        return ResultUtil.error("服务器开小差了, 请稍后再试...");
+    }
+
+    /***
+     * 复制更新数据
+     * @param formFileDocument
+     * @param toPath
+     * @return
+     */
+    private FileDocument copyFileDocument(FileDocument formFileDocument, String toPath) {
+        formFileDocument.setId(null);
+        formFileDocument.setPath(toPath);
+        formFileDocument.setUpdateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
+        return formFileDocument;
+    }
+
+    /***
+     * 目标目录是否存该文件
+     * @param formFileDocument
+     * @param toPath
+     * @return
+     */
+    private boolean isExistsOfToCopy(FileDocument formFileDocument, String toPath) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("path").is(toPath));
+        query.addCriteria(Criteria.where("name").is(formFileDocument.getName()));
+        return mongoTemplate.exists(query,COLLECTION_NAME);
+    }
+
+//    private Update getUpdate(FileDocument fileDocument){
+//        Update update = new Update();
+//        update.set("userId", fileDocument.getUserId());
+//        update.set("path", fileDocument.getPath());
+//        update.set("isFolder", fileDocument.getIsFolder());
+//        update.set("name", fileDocument.getName());
+//        update.set("size", fileDocument.getSize());
+//        update.set("uploadDate", fileDocument.getUploadDate());
+//        update.set("updateDate", LocalDateTime.now(TimeUntils.ZONE_ID));
+//        update.set("md5", fileDocument.getMd5());
+//        update.set("contentType", fileDocument.getContentType());
+//        update.set("suffix", fileDocument.getSuffix());
+//        return update;
+//    }
 
     private static String replaceStart(String str, CharSequence searchStr, CharSequence replacement){
         return replacement+str.substring(searchStr.length());
@@ -536,6 +727,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         fileDocument.setMd5(md5);
         fileDocument.setName(filename);
         fileDocument.setIsFolder(upload.getIsFolder());
+        fileDocument.setIsFavorite(false);
         fileDocument.setUploadDate(date);
         fileDocument.setUpdateDate(date);
         fileDocument.setSuffix(upload.getSuffix());
@@ -580,6 +772,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         update.set("name", folderName);
         update.set("uploadDate", date);
         update.set("updateDate", date);
+        update.set("isFavorite", false);
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
     }
 

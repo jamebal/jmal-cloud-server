@@ -27,6 +27,14 @@ public interface IUploadFileService {
     Optional<FileDocument> getById(String id, String username);
 
     /***
+     * 查找下级目录
+     * @param upload
+     * @param fileId
+     * @return
+     */
+    ResponseResult<Object> queryFileTree(UploadApiParam upload, String fileId);
+
+    /***
      * 上传文件
      * @param upload
      * @return
@@ -61,34 +69,28 @@ public interface IUploadFileService {
     /***
      * 文件列表
      * @param upload
-     * @param pageIndex
-     * @param pageSize
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> listFiles(UploadApiParam upload, int pageIndex, int pageSize) throws CommonException;
+    ResponseResult<Object> listFiles(UploadApiParam upload) throws CommonException;
 
     /***
      * 搜索文件
      * @param upload
      * @param keyword
-     * @param pageIndex
-     * @param pageSize
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> searchFile(UploadApiParam upload, String keyword, int pageIndex, int pageSize) throws CommonException;
+    ResponseResult<Object> searchFile(UploadApiParam upload, String keyword) throws CommonException;
 
     /***
      * 搜索文件并打开文件夹
      * @param upload
      * @param id
-     * @param pageIndex
-     * @param pageSize
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> searchFileAndOpenDir(UploadApiParam upload, String id, int pageIndex, int pageSize) throws CommonException;
+    ResponseResult<Object> searchFileAndOpenDir(UploadApiParam upload, String id) throws CommonException;
 
     /***
      * 收藏文件或文件夹
@@ -141,4 +143,21 @@ public interface IUploadFileService {
      */
     ResponseResult<Object> rename(String newFileName, String username, String id);
 
+    /***
+     * 移动文件/文件夹
+     * @param upload
+     * @param froms
+     * @param to
+     * @return
+     */
+    ResponseResult move(UploadApiParam upload, List<String> froms, String to);
+
+    /***
+     * 复制文件/文件夹
+     * @param upload
+     * @param froms
+     * @param to
+     * @return
+     */
+    ResponseResult copy(UploadApiParam upload, List<String> froms, String to);
 }
