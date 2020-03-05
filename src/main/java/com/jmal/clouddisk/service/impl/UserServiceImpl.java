@@ -89,6 +89,14 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
+    public User userInfoById(String userId) {
+        if(StringUtils.isEmpty(userId)){
+            return null;
+        }
+        return mongoTemplate.findById(userId,User.class,COLLECTION_NAME);
+    }
+
+    @Override
     public ResponseResult<Object> userList() {
         Query query = new Query();
         List<User> userList = mongoTemplate.find(query,User.class,COLLECTION_NAME);

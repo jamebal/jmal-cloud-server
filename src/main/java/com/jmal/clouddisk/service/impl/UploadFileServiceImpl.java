@@ -20,6 +20,7 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.Collator;
 import java.time.LocalDateTime;
@@ -137,13 +138,13 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
     private List<FileDocument> getFileDocuments(UploadApiParam upload, Criteria... criteriaList) {
         Query query = getQuery(upload, criteriaList);
-        Integer pageSize = upload.getPageSize(),pageIndex = upload.getPageIndex();
-        if(pageSize != null && pageIndex != null){
+        Integer pageSize = upload.getPageSize(), pageIndex = upload.getPageIndex();
+        if (pageSize != null && pageIndex != null) {
             long skip = (pageIndex - 1) * pageSize;
             query.skip(skip);
             query.limit(pageSize);
         }
-        query.with(new Sort(Sort.Direction.DESC,"isFolder"));
+        query.with(new Sort(Sort.Direction.DESC, "isFolder"));
         List<FileDocument> list = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
         long now = System.currentTimeMillis();
 
@@ -187,14 +188,14 @@ public class UploadFileServiceImpl implements IUploadFileService {
     @Override
     public ResponseResult<Object> searchFile(UploadApiParam upload, String keyword) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
-        Criteria criteria1= Criteria.where("name").regex(keyword);
+        Criteria criteria1 = Criteria.where("name").regex(keyword);
         return getCountResponseResult(upload, result, criteria1);
     }
 
     private ResponseResult<Object> getCountResponseResult(UploadApiParam upload, ResponseResult<Object> result, Criteria... criteriaList) {
         List<FileDocument> list = getFileDocuments(upload, criteriaList);
         result.setData(list);
-        result.setCount(getFileDocumentsCount(upload,criteriaList));
+        result.setCount(getFileDocumentsCount(upload, criteriaList));
         return result;
     }
 
@@ -203,30 +204,30 @@ public class UploadFileServiceImpl implements IUploadFileService {
         ResponseResult<Object> result = ResultUtil.genResult();
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         assert fileDocument != null;
-        String currentDirectory = getUserDirectory(fileDocument.getPath()+fileDocument.getName());
-        Criteria criteria= Criteria.where("path").is(currentDirectory);
+        String currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
+        Criteria criteria = Criteria.where("path").is(currentDirectory);
         return getCountResponseResult(upload, result, criteria);
     }
 
-    private FileDocument getFileDocumentById(String fileId){
-        if(StringUtils.isEmpty(fileId) || FIRST_FILE_TREE_ID.equals(fileId)){
+    private FileDocument getFileDocumentById(String fileId) {
+        if (StringUtils.isEmpty(fileId) || FIRST_FILE_TREE_ID.equals(fileId)) {
             return null;
         }
         return mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
     }
 
-    private String getRelativePathByFileId(FileDocument fileDocument){
-        if(fileDocument == null){
+    private String getRelativePathByFileId(FileDocument fileDocument) {
+        if (fileDocument == null) {
             return getUserDirectory(null);
         }
-        if(fileDocument.getIsFolder()){
+        if (fileDocument.getIsFolder()) {
             return getUserDirectory(fileDocument.getPath() + fileDocument.getName());
         }
         String currentDirectory = fileDocument.getPath() + fileDocument.getName();
         return currentDirectory.replaceAll(DIR_SEPARATOR, File.separator);
     }
 
-    private String getUserDir(String userName){
+    private String getUserDir(String userName) {
         return rootPath + File.separator + userName;
     }
 
@@ -240,12 +241,12 @@ public class UploadFileServiceImpl implements IUploadFileService {
     @Override
     public ResponseResult<Object> queryFileTree(UploadApiParam upload, String fileId) {
         String currentDirectory = getUserDirectory(null);
-        if(!StringUtils.isEmpty(fileId)){
+        if (!StringUtils.isEmpty(fileId)) {
             FileDocument fileDocument = mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
             assert fileDocument != null;
-            currentDirectory = getUserDirectory(fileDocument.getPath()+fileDocument.getName());
+            currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
         }
-        Criteria criteria= Criteria.where("path").is(currentDirectory);
+        Criteria criteria = Criteria.where("path").is(currentDirectory);
         List<FileDocument> list = getDirDocuments(upload, criteria);
         return ResultUtil.success(list);
     }
@@ -280,7 +281,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
     private long getFolderSize(String userId, String path) {
         List<Bson> list = Arrays.asList(
                 match(and(eq("userId", userId),
-                        eq("isFolder", false), regex("path", "^"+path))),
+                        eq("isFolder", false), regex("path", "^" + path))),
                 group(new BsonNull(), sum("totalSize", "$size")));
         AggregateIterable<Document> aggregate = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
         long totalSize = 0;
@@ -330,12 +331,10 @@ public class UploadFileServiceImpl implements IUploadFileService {
     public Optional<FileDocument> thumbnail(String id, String username) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
-            if (fileDocument.getContent() != null) {
-                return Optional.of(fileDocument);
-            } else {
+            if (fileDocument.getContent() == null) {
                 setContent(username, fileDocument);
-                return Optional.of(fileDocument);
             }
+            return Optional.of(fileDocument);
         }
         return Optional.empty();
     }
@@ -372,7 +371,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
                 List<Bson> selectFolders = new ArrayList<>();
                 for (FileDocument document : fileDocuments) {
-                    selectFolders.add(regex("path", "^"+document.getPath() + document.getName()));
+                    selectFolders.add(regex("path", "^" + document.getPath() + document.getName()));
                 }
 
                 List<String> selectFiles = new ArrayList<>();
@@ -384,7 +383,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
                 List<Bson> list = Arrays.asList(
                         match(and(eq("userId", fileDocument.getUserId()),
-                                regex("path", "^"+parentPath))),
+                                regex("path", "^" + parentPath))),
                         match(or(Arrays.asList(
                                 or(selectFolders),
                                 in("name", selectFiles)))));
@@ -425,7 +424,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
     public void nginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws IOException {
         String username = userService.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN));
         FileDocument fileDocument = getFileInfo(fileIds, username);
-        if(fileDocument != null){
+        if (fileDocument != null) {
             String filename = fileDocument.getName();
             String path = fileDocument.getPath();
             //获取浏览器名（IE/Chrome/firefox）目前主流的四大浏览器内核Trident(IE)、Gecko(Firefox内核)、WebKit(Safari内核,Chrome内核原型,开源)以及Presto(Opera前内核) (已废弃)
@@ -440,17 +439,17 @@ public class UploadFileServiceImpl implements IUploadFileService {
             }
             response.setHeader("Content-Type", fileDocument.getContentType());
             response.setHeader("X-Accel-Charset", "utf-8");
-            if(fileDocument.getIsFolder()){
+            if (fileDocument.getIsFolder()) {
                 response.setHeader("Content-Disposition", "attachment; filename=test.zip");
                 response.setHeader("X-Archive-Files", "zip");
                 response.setHeader("X-Archive-Charset", "utf-8");
-            }else{
+            } else {
                 response.setHeader("X-Accel-Redirect", path);
             }
             if (isDownload) {
                 response.setHeader("Content-Disposition", "attachment;filename=\"" + filename + "\"");
                 OutputStream out = response.getOutputStream();
-                if(fileDocument.getContent() != null){
+                if (fileDocument.getContent() != null) {
                     out.write(fileDocument.getContent());
                 }
                 out.flush();
@@ -471,18 +470,18 @@ public class UploadFileServiceImpl implements IUploadFileService {
             String currentDirectory = getUserDirectory(fileDocument.getPath());
             String filePath = rootPath + File.separator + username + currentDirectory;
             File file = new File(filePath + fileDocument.getName());
-            if(fileDocument.getIsFolder()){
+            if (fileDocument.getIsFolder()) {
                 Query query = new Query();
                 String searchPath = currentDirectory + fileDocument.getName();
                 String newPath = currentDirectory + newFileName;
-                query.addCriteria(Criteria.where("path").regex("^"+searchPath));
+                query.addCriteria(Criteria.where("path").regex("^" + searchPath));
                 List<FileDocument> documentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
                 // 修改该文件夹下的所有文件的path
                 documentList.parallelStream().forEach(rep -> {
                     String path = rep.getPath();
                     String newFilePath = replaceStart(path, searchPath, newPath);
                     Update update = new Update();
-                    update.set("path",newFilePath);
+                    update.set("path", newFilePath);
                     Query query1 = new Query();
                     query1.addCriteria(Criteria.where("_id").is(rep.getId()));
                     mongoTemplate.upsert(query1, update, COLLECTION_NAME);
@@ -513,13 +512,13 @@ public class UploadFileServiceImpl implements IUploadFileService {
             return result;
         }
         // 删除
-        return delete(upload.getUsername(),froms);
+        return delete(upload.getUsername(), froms);
     }
 
     private ResponseResult getCopyResult(UploadApiParam upload, List<String> froms, String to) {
         for (String from : froms) {
             ResponseResult result = copy(upload, from, to);
-            if(result.getCode() != 0 && result.getCode() != -2){
+            if (result.getCode() != 0 && result.getCode() != -2) {
                 return result;
             }
         }
@@ -551,32 +550,35 @@ public class UploadFileServiceImpl implements IUploadFileService {
             query.addCriteria(Criteria.where("contentType").is(CONTENT_TYPE_MARK_DOWN));
             List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
             return ResultUtil.success(fileDocumentList);
-        }else{
+        } else {
             FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, COLLECTION_NAME);
-            if(fileDocument != null){
-                fileDocument.setContentText(new String(fileDocument.getContent()));
+            if (fileDocument != null) {
+                String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
+                String currentDirectory = getUserDirectory(fileDocument.getPath());
+                File file = new File(rootPath + File.separator + username + currentDirectory + fileDocument.getName());
+                fileDocument.setContentText(FileUtil.readString(file, StandardCharsets.UTF_8));
             }
             return ResultUtil.success(fileDocument);
         }
     }
 
-    private ResponseResult<Object> copy(UploadApiParam upload, String from, String to){
+    private ResponseResult<Object> copy(UploadApiParam upload, String from, String to) {
         FileDocument formFileDocument = getFileDocumentById(from);
         String fromPath = getRelativePathByFileId(formFileDocument);
         String fromFilePath = getUserDir(upload.getUsername()) + fromPath;
         FileDocument toFileDocument = getFileDocumentById(to);
         String toPath = getRelativePathByFileId(toFileDocument);
         String toFilePath = getUserDir(upload.getUsername()) + toPath;
-        if(formFileDocument != null){
-            FileUtil.copy(fromFilePath,toFilePath,true);
-            if(formFileDocument.getIsFolder()){
+        if (formFileDocument != null) {
+            FileUtil.copy(fromFilePath, toFilePath, true);
+            if (formFileDocument.getIsFolder()) {
                 // 复制文件夹
                 // 复制其本身
                 FileDocument copyFileDocument = copyFileDocument(formFileDocument, toPath);
-                if(isExistsOfToCopy(copyFileDocument, toPath)){
+                if (isExistsOfToCopy(copyFileDocument, toPath)) {
                     return ResultUtil.warning("所选目录已存在该文件夹!");
                 }
-                mongoTemplate.save(copyFileDocument,COLLECTION_NAME);
+                mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
                 // 复制其下的子文件或目录
                 Query query = new Query();
                 query.addCriteria(Criteria.where("path").regex("^" + fromPath));
@@ -584,17 +586,17 @@ public class UploadFileServiceImpl implements IUploadFileService {
                 formList = formList.stream().peek(fileDocument -> {
                     String oldPath = fileDocument.getPath();
                     String newPath = toPath + oldPath.substring(1);
-                    copyFileDocument(fileDocument,newPath);
+                    copyFileDocument(fileDocument, newPath);
                 }).collect(toList());
-                mongoTemplate.insert(formList,COLLECTION_NAME);
-            }else{
+                mongoTemplate.insert(formList, COLLECTION_NAME);
+            } else {
                 // 复制文件
                 // 复制其本身
                 FileDocument copyFileDocument = copyFileDocument(formFileDocument, toPath);
-                if(isExistsOfToCopy(copyFileDocument, toPath)){
+                if (isExistsOfToCopy(copyFileDocument, toPath)) {
                     return ResultUtil.warning("所选目录已存在该文件!");
                 }
-                mongoTemplate.save(copyFileDocument,COLLECTION_NAME);
+                mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
             }
             return ResultUtil.success();
         }
@@ -624,7 +626,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("path").is(toPath));
         query.addCriteria(Criteria.where("name").is(formFileDocument.getName()));
-        return mongoTemplate.exists(query,COLLECTION_NAME);
+        return mongoTemplate.exists(query, COLLECTION_NAME);
     }
 
 //    private Update getUpdate(FileDocument fileDocument){
@@ -642,17 +644,17 @@ public class UploadFileServiceImpl implements IUploadFileService {
 //        return update;
 //    }
 
-    private static String replaceStart(String str, CharSequence searchStr, CharSequence replacement){
-        return replacement+str.substring(searchStr.length());
+    private static String replaceStart(String str, CharSequence searchStr, CharSequence replacement) {
+        return replacement + str.substring(searchStr.length());
     }
 
     private boolean renameFile(String newFileName, String id, String filePath, File file) {
-        if(file.renameTo(new File(filePath + newFileName))){
+        if (file.renameTo(new File(filePath + newFileName))) {
             Query query = new Query();
             query.addCriteria(Criteria.where("_id").is(id));
             Update update = new Update();
-            update.set("name",newFileName);
-            mongoTemplate.upsert(query,update,COLLECTION_NAME);
+            update.set("name", newFileName);
+            mongoTemplate.upsert(query, update, COLLECTION_NAME);
         } else {
             return true;
         }
@@ -715,9 +717,9 @@ public class UploadFileServiceImpl implements IUploadFileService {
         String userDirectoryFilePath = getUserDirectoryFilePath(upload);
         //没有分片,直接存
         File dir = new File(upload.getRootPath() + File.separator + upload.getUsername() + userDirectoryFilePath);
-        if(!dir.exists()){
-            if(!dir.mkdir()){
-                return ResultUtil.error(String.format("创建文件夹失败,dir:%s",upload.getFilename()));
+        if (!dir.exists()) {
+            if (!dir.mkdir()) {
+                return ResultUtil.error(String.format("创建文件夹失败,dir:%s", upload.getFilename()));
             }
         }
         // 保存文件夹信息
@@ -761,7 +763,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
                 log.warn(e.getMessage());
             }
         }
-        if(contentType.contains(CONTENT_TYPE_MARK_DOWN)) {
+        if (contentType.contains(CONTENT_TYPE_MARK_DOWN)) {
             // 写入markdown内容
             fileDocument.setContent(toByteArray(upload.getInputStream()));
         }
@@ -821,7 +823,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
     /***
      * 获取已经保存的分片索引
      */
-    private CopyOnWriteArrayList<Integer> getSavedChunk(UploadApiParam upload){
+    private CopyOnWriteArrayList<Integer> getSavedChunk(UploadApiParam upload) {
         String md5 = upload.getIdentifier();
         return resumeCache.get(md5, key -> createResumeCache(upload));
     }
@@ -829,10 +831,10 @@ public class UploadFileServiceImpl implements IUploadFileService {
     /***
      * 检测是否需要合并
      */
-    private boolean checkIsNeedMerge(UploadApiParam upload){
+    private boolean checkIsNeedMerge(UploadApiParam upload) {
         int totalChunks = upload.getTotalChunks();
         CopyOnWriteArrayList<Integer> chunkList = getSavedChunk(upload);
-        System.out.println("totalChunks:"+totalChunks+",chunkList:"+chunkList.size());
+        System.out.println("totalChunks:" + totalChunks + ",chunkList:" + chunkList.size());
         return totalChunks == chunkList.size();
     }
 
@@ -884,7 +886,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             // 返回已存在的分片
             uploadResponse.setResume(chunks);
             assert chunks != null;
-            if(totalChunks == chunks.size()){
+            if (totalChunks == chunks.size()) {
                 // 文件不存在,并且已经上传了所有的分片,则合并保存文件
                 merge(upload);
             }
@@ -899,7 +901,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @return
      */
     @SuppressWarnings("resource")
-	@Override
+    @Override
     public ResponseResult<Object> merge(UploadApiParam upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
         String md5 = upload.getIdentifier();
@@ -910,7 +912,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
 
         // 读取tmp目录所有文件
-        File f = new File(upload.getRootPath()  + File.separator + TEMPORARY_DIRECTORY + File.separator + File.separator + upload.getUsername() + File.separator + md5);
+        File f = new File(upload.getRootPath() + File.separator + TEMPORARY_DIRECTORY + File.separator + File.separator + upload.getUsername() + File.separator + md5);
         // 排除目录，只要文件
         File[] fileArray = f.listFiles(pathName -> !pathName.isDirectory());
 
@@ -988,7 +990,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             currentDirectory = DIR_SEPARATOR;
         }
         if (upload.getIsFolder()) {
-            if(upload.getFolderPath() != null){
+            if (upload.getFolderPath() != null) {
                 currentDirectory += DIR_SEPARATOR + upload.getFolderPath();
             } else {
                 currentDirectory += DIR_SEPARATOR + upload.getFilename();
@@ -1062,7 +1064,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             if (fileDocument.getIsFolder()) {
                 // 删除文件夹及其下的所有文件
                 Query query1 = new Query();
-                query1.addCriteria(Criteria.where("path").regex("^"+fileDocument.getPath() + fileDocument.getName()));
+                query1.addCriteria(Criteria.where("path").regex("^" + fileDocument.getPath() + fileDocument.getName()));
                 mongoTemplate.remove(query1, COLLECTION_NAME);
                 isDel = true;
             }

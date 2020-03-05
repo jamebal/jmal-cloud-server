@@ -38,6 +38,13 @@ public interface IUserService {
     ResponseResult<Object> userInfo(String token);
 
     /***
+     * 用户信息
+     * @param userId userId
+     * @return ResponseResult<Object>
+     */
+    User userInfoById(String userId);
+
+    /***
      * 用户列表
      * @return ResponseResult<Object>
      */
