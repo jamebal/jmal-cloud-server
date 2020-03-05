@@ -20,7 +20,6 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.Collator;
 import java.time.LocalDateTime;
@@ -35,6 +34,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.jmal.clouddisk.util.*;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -58,11 +58,6 @@ import com.jmal.clouddisk.model.UploadApiParam;
 import com.jmal.clouddisk.model.UploadResponse;
 import com.jmal.clouddisk.service.IUploadFileService;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.util.CaffeineUtil;
-import com.jmal.clouddisk.util.FileContentTypeUtils;
-import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
-import com.jmal.clouddisk.util.TimeUntils;
 import com.mongodb.client.AggregateIterable;
 
 import cn.hutool.core.io.FileUtil;
@@ -562,6 +557,46 @@ public class UploadFileServiceImpl implements IUploadFileService {
         }
     }
 
+    /***
+     * 新建文档
+     * @param upload
+     * @return
+     */
+    @Override
+    public ResponseResult<Object> newMarkdown(UploadApiParam upload) {
+        upload.setIsFolder(false);
+        String filename = upload.getFilename();
+        String md5 = CalcMD5.getMd5(upload.getContentText());
+        //用户磁盘目录
+        String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
+        LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
+        File file = new File(rootPath + File.separator + upload.getUsername() + currentDirectory + filename);
+        FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
+        // 保存文件信息
+        upload.setSuffix(FileUtil.extName(filename));
+        FileDocument fileDocument = new FileDocument();
+        fileDocument.setPath(currentDirectory);
+        fileDocument.setSize(upload.getContentText().length());
+        fileDocument.setContentType(CONTENT_TYPE_MARK_DOWN);
+        fileDocument.setContentText(upload.getContentText());
+        fileDocument.setMd5(md5);
+        fileDocument.setName(filename);
+        fileDocument.setIsFolder(false);
+        fileDocument.setIsFavorite(false);
+        fileDocument.setUploadDate(date);
+        fileDocument.setUpdateDate(date);
+        fileDocument.setSuffix(upload.getSuffix());
+        fileDocument.setUserId(upload.getUserId());
+        mongoTemplate.save(fileDocument, COLLECTION_NAME);
+        return ResultUtil.success();
+    }
+
+//    public static void main(String[] args) {
+//        String path = "/Users/jmal/temp/filetest/rootpath/jmal/新建文档.md";
+//        File file = new File(path);
+//        FileUtil.writeString(path+"ffff", file, StandardCharsets.UTF_8);
+//    }
+
     private ResponseResult<Object> copy(UploadApiParam upload, String from, String to) {
         FileDocument formFileDocument = getFileDocumentById(from);
         String fromPath = getRelativePathByFileId(formFileDocument);
@@ -765,7 +800,8 @@ public class UploadFileServiceImpl implements IUploadFileService {
         }
         if (contentType.contains(CONTENT_TYPE_MARK_DOWN)) {
             // 写入markdown内容
-            fileDocument.setContent(toByteArray(upload.getInputStream()));
+            byte[] content = toByteArray(upload.getInputStream());
+            fileDocument.setContentText(new String(content,0,content.length,StandardCharsets.UTF_8));
         }
         mongoTemplate.save(fileDocument, COLLECTION_NAME);
     }

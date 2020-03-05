@@ -1,13 +1,16 @@
 package com.jmal.clouddisk.controller;
 
 import com.jmal.clouddisk.common.exception.CommonException;
+import com.jmal.clouddisk.model.UploadApiParam;
 import com.jmal.clouddisk.service.IUploadFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -15,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
  * @blame jmal
  */
 @Controller
-@RequestMapping("/public")
 @Api(tags = "markdown")
 public class MarkDownController {
 
@@ -34,9 +36,22 @@ public class MarkDownController {
      * @return
      * @throws CommonException
      */
-    @GetMapping("/p")
+    @GetMapping("/public/p")
     @ResponseBody
     public ResponseResult<Object> getMarkDownContent(String mark) throws CommonException {
         return fileService.getMarkDownContent(mark);
+    }
+
+    /***
+     * 新建文档
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    @PostMapping("/markdown/add")
+    @ResponseBody
+    public ResponseResult<Object> newMarkdown(@RequestBody UploadApiParam upload) throws CommonException {
+        ResultUtil.checkParamIsNull(upload.getUserId(),upload.getUsername(),upload.getFilename(),upload.getContentText());
+        return fileService.newMarkdown(upload);
     }
 }

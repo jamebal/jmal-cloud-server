@@ -85,6 +85,8 @@ public class UploadApiParam {
     String suffix;
     String contentType;
 
+    String contentText;
+
     Integer pageIndex;
     Integer pageSize;
 }

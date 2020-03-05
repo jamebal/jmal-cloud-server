@@ -167,4 +167,11 @@ public interface IUploadFileService {
      * @return
      */
     ResponseResult<Object> getMarkDownContent(String mark);
+
+    /***
+     * 新建文档
+     * @param upload
+     * @return
+     */
+    ResponseResult<Object> newMarkdown(UploadApiParam upload);
 }
