@@ -98,6 +98,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
     private static final String COLLECTION_NAME = "fileDocument";
 
     private static final String CONTENT_TYPE_IMAGE = "image";
+    private static final String CONTENT_TYPE_MARK_DOWN = "text/markdown";
 
     /***
      * 前端文件夹树的第一级的文件Id
@@ -543,6 +544,22 @@ public class UploadFileServiceImpl implements IUploadFileService {
         return ResultUtil.success();
     }
 
+    @Override
+    public ResponseResult<Object> getMarkDownContent(String mark) {
+        if (StringUtils.isEmpty(mark)) {
+            Query query = new Query();
+            query.addCriteria(Criteria.where("contentType").is(CONTENT_TYPE_MARK_DOWN));
+            List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+            return ResultUtil.success(fileDocumentList);
+        }else{
+            FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, COLLECTION_NAME);
+            if(fileDocument != null){
+                fileDocument.setContentText(new String(fileDocument.getContent()));
+            }
+            return ResultUtil.success(fileDocument);
+        }
+    }
+
     private ResponseResult<Object> copy(UploadApiParam upload, String from, String to){
         FileDocument formFileDocument = getFileDocumentById(from);
         String fromPath = getRelativePathByFileId(formFileDocument);
@@ -659,10 +676,10 @@ public class UploadFileServiceImpl implements IUploadFileService {
         String userDirectoryFilePath = getUserDirectoryFilePath(upload);
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
         if (currentChunkSize == totalSize) {
-            //没有分片,直接存
+            // 没有分片,直接存
             File chunkFile = new File(upload.getRootPath() + File.separator + upload.getUsername() + userDirectoryFilePath);
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
-            //保存文件信息
+            // 保存文件信息
             upload.setInputStream(file.getInputStream());
             upload.setContentType(file.getContentType());
             upload.setSuffix(FileUtil.extName(filename));
@@ -744,7 +761,21 @@ public class UploadFileServiceImpl implements IUploadFileService {
                 log.warn(e.getMessage());
             }
         }
+        if(contentType.contains(CONTENT_TYPE_MARK_DOWN)) {
+            // 写入markdown内容
+            fileDocument.setContent(toByteArray(upload.getInputStream()));
+        }
         mongoTemplate.save(fileDocument, COLLECTION_NAME);
+    }
+
+    private static byte[] toByteArray(InputStream input) throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int n;
+        while (-1 != (n = input.read(buffer))) {
+            output.write(buffer, 0, n);
+        }
+        return output.toByteArray();
     }
 
     /***

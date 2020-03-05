@@ -160,4 +160,11 @@ public interface IUploadFileService {
      * @return
      */
     ResponseResult copy(UploadApiParam upload, List<String> froms, String to);
+
+    /***
+     * 获取markdown内容
+     * @param mark
+     * @return
+     */
+    ResponseResult<Object> getMarkDownContent(String mark);
 }
