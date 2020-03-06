@@ -582,20 +582,10 @@ public class UploadFileServiceImpl implements IUploadFileService {
         fileDocument.setMd5(md5);
         fileDocument.setName(filename);
         fileDocument.setIsFolder(false);
-        fileDocument.setIsFavorite(false);
-        fileDocument.setUploadDate(date);
-        fileDocument.setUpdateDate(date);
-        fileDocument.setSuffix(upload.getSuffix());
-        fileDocument.setUserId(upload.getUserId());
+        saveFileInfo(upload, date, fileDocument);
         mongoTemplate.save(fileDocument, COLLECTION_NAME);
         return ResultUtil.success();
     }
-
-//    public static void main(String[] args) {
-//        String path = "/Users/jmal/temp/filetest/rootpath/jmal/新建文档.md";
-//        File file = new File(path);
-//        FileUtil.writeString(path+"ffff", file, StandardCharsets.UTF_8);
-//    }
 
     private ResponseResult<Object> copy(UploadApiParam upload, String from, String to) {
         FileDocument formFileDocument = getFileDocumentById(from);
@@ -753,9 +743,12 @@ public class UploadFileServiceImpl implements IUploadFileService {
         //没有分片,直接存
         File dir = new File(upload.getRootPath() + File.separator + upload.getUsername() + userDirectoryFilePath);
         if (!dir.exists()) {
-            if (!dir.mkdir()) {
-                return ResultUtil.error(String.format("创建文件夹失败,dir:%s", upload.getFilename()));
-            }
+            FileUtil.mkdir(dir);
+//            if (!dir.mkdir()) {
+//                String error = String.format("创建文件夹失败,dir:%s", dir.getAbsolutePath());
+//                log.error(error);
+//                return ResultUtil.error(error);
+//            }
         }
         // 保存文件夹信息
         saveFolderInfo(upload, date);
@@ -781,11 +774,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         fileDocument.setMd5(md5);
         fileDocument.setName(filename);
         fileDocument.setIsFolder(upload.getIsFolder());
-        fileDocument.setIsFavorite(false);
-        fileDocument.setUploadDate(date);
-        fileDocument.setUpdateDate(date);
-        fileDocument.setSuffix(upload.getSuffix());
-        fileDocument.setUserId(upload.getUserId());
+        saveFileInfo(upload, date, fileDocument);
         if (contentType.startsWith(CONTENT_TYPE_IMAGE)) {
             // 生成缩略图
             Thumbnails.Builder<? extends InputStream> thumbnail = Thumbnails.of(upload.getInputStream());
@@ -804,6 +793,20 @@ public class UploadFileServiceImpl implements IUploadFileService {
             fileDocument.setContentText(new String(content,0,content.length,StandardCharsets.UTF_8));
         }
         mongoTemplate.save(fileDocument, COLLECTION_NAME);
+    }
+
+    /***
+     * 部分文件信息
+     * @param upload
+     * @param date
+     * @param fileDocument
+     */
+    private void saveFileInfo(UploadApiParam upload, LocalDateTime date, FileDocument fileDocument) {
+        fileDocument.setIsFavorite(false);
+        fileDocument.setUploadDate(date);
+        fileDocument.setUpdateDate(date);
+        fileDocument.setSuffix(upload.getSuffix());
+        fileDocument.setUserId(upload.getUserId());
     }
 
     private static byte[] toByteArray(InputStream input) throws IOException {
@@ -964,7 +967,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         File parentFile = outputFile.getParentFile();
         if (!parentFile.exists()) {
             if (!parentFile.mkdirs()) {
-                throw new CommonException(-1, "创建文件夹失败");
+                throw new CommonException(-1, String.format("创建文件夹失败,dir:%s", parentFile.getAbsolutePath()));
             }
         }
         // 创建文件
