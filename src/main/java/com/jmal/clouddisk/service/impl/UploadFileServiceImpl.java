@@ -587,6 +587,29 @@ public class UploadFileServiceImpl implements IUploadFileService {
         return ResultUtil.success();
     }
 
+    /***
+     * 编辑文档
+     * @param upload
+     * @return
+     */
+    @Override
+    public ResponseResult<Object> editMarkdown(UploadApiParam upload) {
+        FileDocument fileDocument = mongoTemplate.findById(upload.getFileId(), FileDocument.class, COLLECTION_NAME);
+        String filename = upload.getFilename();
+        //用户磁盘目录
+        String currentDirectory = getUserDirectory(Objects.requireNonNull(fileDocument).getPath());
+        LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
+        File file = new File(rootPath + File.separator + upload.getUsername() + currentDirectory + filename);
+        FileUtil.del(rootPath + File.separator + upload.getUsername() + currentDirectory + fileDocument.getName());
+        FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
+        Update update = new Update();
+        update.set("name", upload.getFilename());
+        update.set("contentText", upload.getContentText());
+        Query query = new Query().addCriteria(Criteria.where("_id").is(upload.getFileId()));
+        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        return ResultUtil.success();
+    }
+
     private ResponseResult<Object> copy(UploadApiParam upload, String from, String to) {
         FileDocument formFileDocument = getFileDocumentById(from);
         String fromPath = getRelativePathByFileId(formFileDocument);

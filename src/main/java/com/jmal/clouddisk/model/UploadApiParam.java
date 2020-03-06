@@ -38,6 +38,10 @@ public class UploadApiParam {
      */
     String filename;
     /***
+     * 文件Id
+     */
+    String fileId;
+    /***
      * 相对路径,上传文件夹是会用到
      */
     String relativePath;

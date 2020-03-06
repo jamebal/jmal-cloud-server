@@ -54,4 +54,17 @@ public class MarkDownController {
         ResultUtil.checkParamIsNull(upload.getUserId(),upload.getUsername(),upload.getFilename(),upload.getContentText());
         return fileService.newMarkdown(upload);
     }
+
+    /***
+     * 编辑文档
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    @PostMapping("/markdown/edit")
+    @ResponseBody
+    public ResponseResult<Object> editMarkdown(@RequestBody UploadApiParam upload) throws CommonException {
+        ResultUtil.checkParamIsNull(upload.getFileId(),upload.getUserId(),upload.getUsername(),upload.getFilename(),upload.getContentText());
+        return fileService.editMarkdown(upload);
+    }
 }
