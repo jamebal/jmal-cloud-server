@@ -130,9 +130,19 @@ public interface IUploadFileService {
      * @param response
      * @param fileIds
      * @param isDownload
-     * @throws IOException
+     * @throws CommonException
      */
-    void nginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws IOException;
+    void nginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws CommonException;
+
+    /***
+     * 转给Nginx处理(共有的,任何人都和访问)
+     * @param request
+     * @param response
+     * @param fileIds
+     * @param isDownload
+     * @throws CommonException
+     */
+    void publicNginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws CommonException;
 
     /***
      * 重名名
@@ -181,4 +191,13 @@ public interface IUploadFileService {
      * @return
      */
     ResponseResult<Object> editMarkdown(UploadApiParam upload);
+
+    /***
+     * 上传文档里的图片
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    ResponseResult<Object> uploadMarkdownImage(UploadApiParam upload) throws CommonException ;
+
 }

@@ -171,7 +171,7 @@ public class FileSorter implements Comparator<File> {
         }
     }
 
-    //for test
+    //for rwlock
     public static void main(String[] args) {
 
         File[] list = new File("/Users/jmal/temp/filetest/rootpath/jmal/").listFiles();
@@ -179,7 +179,7 @@ public class FileSorter implements Comparator<File> {
         printFileArray(list);
     }
 
-    //for test
+    //for rwlock
     private static void printFileArray(File[] list) {
 
         System.out.println("文件大小\t\t文件修改日期\t\t文件类型\t\t文件名称");

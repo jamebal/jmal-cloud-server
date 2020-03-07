@@ -69,7 +69,7 @@ public class CompressUtils {
 
         FileDocument fileDocument3 = new FileDocument();
         fileDocument3.setIsFolder(false);
-        fileDocument3.setName("test.jpg");
+        fileDocument3.setName("rwlock.jpg");
         fileDocuments.add(fileDocument3);
 
         zip(startPath, fileDocuments, startPath + "download.zip");

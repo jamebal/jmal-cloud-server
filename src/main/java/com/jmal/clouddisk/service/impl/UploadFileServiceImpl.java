@@ -34,6 +34,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.jmal.clouddisk.model.User;
 import com.jmal.clouddisk.util.*;
 import org.bson.BsonNull;
 import org.bson.Document;
@@ -340,7 +341,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @param username
      * @return
      */
-    private FileDocument getFileInfo(List<String> fileIds, String username) throws UnsupportedEncodingException {
+    private FileDocument getFileInfo(List<String> fileIds, String username) throws CommonException{
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds));
         List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
@@ -393,7 +394,11 @@ public class UploadFileServiceImpl implements IUploadFileService {
                             String relativePath = doc.getString("path");
                             String relativeFileName = doc.getString("name");
                             long fileSize = doc.getLong("size");
-                            res.append(String.format("%s %d %s %s\n", "-", fileSize, URLEncoder.encode(File.separator + username + relativePath + relativeFileName, "UTF-8"), temp + relativePath.substring(parentPath.length()) + relativeFileName));
+                            try {
+                                res.append(String.format("%s %d %s %s\n", "-", fileSize, URLEncoder.encode(File.separator + username + relativePath + relativeFileName, "UTF-8"), temp + relativePath.substring(parentPath.length()) + relativeFileName));
+                            } catch (UnsupportedEncodingException e) {
+                                throw new CommonException(-1,e.getMessage());
+                            }
                         }
                     }
                 }
@@ -408,6 +413,28 @@ public class UploadFileServiceImpl implements IUploadFileService {
     }
 
     /***
+     * 交给nginx处理(共有的,任何人都和访问)
+     * @param request
+     * @param response
+     * @param fileIds
+     * @param isDownload
+     * @throws IOException
+     */
+    @Override
+    public void publicNginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws CommonException {
+        FileDocument f = mongoTemplate.findById(fileIds.get(0),FileDocument.class, COLLECTION_NAME);
+        if(f != null){
+            User user = userService.userInfoById(f.getUserId());
+            FileDocument fileDocument = getFileInfo(fileIds, user.getUsername());
+            try {
+                nginx(request, response, isDownload, fileDocument);
+            } catch (IOException e) {
+                throw new CommonException(-1,e.getMessage());
+            }
+        }
+    }
+
+    /***
      * 交给nginx处理
      * @param request
      * @param response
@@ -416,9 +443,17 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @throws IOException
      */
     @Override
-    public void nginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws IOException {
+    public void nginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws CommonException {
         String username = userService.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN));
         FileDocument fileDocument = getFileInfo(fileIds, username);
+        try {
+            nginx(request, response, isDownload, fileDocument);
+        } catch (IOException e) {
+            throw new CommonException(-1,e.getMessage());
+        }
+    }
+
+    private void nginx(HttpServletRequest request, HttpServletResponse response, boolean isDownload, FileDocument fileDocument) throws IOException {
         if (fileDocument != null) {
             String filename = fileDocument.getName();
             String path = fileDocument.getPath();
@@ -435,7 +470,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             response.setHeader("Content-Type", fileDocument.getContentType());
             response.setHeader("X-Accel-Charset", "utf-8");
             if (fileDocument.getIsFolder()) {
-                response.setHeader("Content-Disposition", "attachment; filename=test.zip");
+                response.setHeader("Content-Disposition", "attachment; filename=rwlock.zip");
                 response.setHeader("X-Archive-Files", "zip");
                 response.setHeader("X-Archive-Charset", "utf-8");
             } else {
@@ -608,6 +643,64 @@ public class UploadFileServiceImpl implements IUploadFileService {
         Query query = new Query().addCriteria(Criteria.where("_id").is(upload.getFileId()));
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
         return ResultUtil.success();
+    }
+
+    /***
+     * 上传文档里的图片
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    @Override
+    public ResponseResult<Object> uploadMarkdownImage(UploadApiParam upload) throws CommonException {
+        MultipartFile multipartFile = upload.getFile();
+        try {
+            String markName = upload.getFilename();
+            upload.setTotalSize(multipartFile.getSize());
+            upload.setIsFolder(false);
+            String fileName = System.currentTimeMillis()+multipartFile.getOriginalFilename();
+            upload.setFilename(fileName);
+            upload.setRelativePath(fileName);
+
+            String[] docPaths = new String[]{"Image","Document Image",markName};
+            String docPath = "/Image/Document Image/"+markName;
+            upload.setCurrentDirectory(docPath);
+            //用户磁盘目录
+            String userDirectoryFilePath = getUserDirectoryFilePath(upload);
+            LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
+
+            String username = upload.getUsername();
+            String userId = upload.getUserId();
+            String directoryPath = upload.getRootPath() + File.separator + upload.getUsername() + getUserDirectory(docPath);
+            File dir = new File(directoryPath);
+            if(!dir.exists()){
+                StringBuilder parentPath = new StringBuilder();
+                for (int i = 0; i < docPaths.length; i++) {
+                    UploadApiParam uploadApiParam = new UploadApiParam();
+                    uploadApiParam.setIsFolder(true);
+                    uploadApiParam.setFilename(docPaths[i]);
+                    uploadApiParam.setUsername(username);
+                    uploadApiParam.setUserId(userId);
+                    if(i > 0){
+                        uploadApiParam.setCurrentDirectory(parentPath.toString());
+                    }
+                    uploadFolder(uploadApiParam);
+                    parentPath.append("/").append(docPaths[i]);
+                }
+            }
+            // 没有分片,直接存
+            File newFile = new File(upload.getRootPath() + File.separator + upload.getUsername() + userDirectoryFilePath);
+            FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
+            // 保存文件信息
+            upload.setInputStream(multipartFile.getInputStream());
+            upload.setContentType(multipartFile.getContentType());
+            upload.setSuffix(FileUtil.extName(fileName));
+            FileDocument fileDocument = saveFileInfo(upload, CalcMD5.calcMD5(newFile), date);
+            return ResultUtil.success(fileDocument.getId());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return ResultUtil.error("添加图片失败");
     }
 
     private ResponseResult<Object> copy(UploadApiParam upload, String from, String to) {
@@ -784,7 +877,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @param md5
      * @param date
      */
-    private void saveFileInfo(UploadApiParam upload, String md5, LocalDateTime date) throws IOException {
+    private FileDocument saveFileInfo(UploadApiParam upload, String md5, LocalDateTime date) throws IOException {
         String contentType = upload.getContentType();
         FileDocument fileDocument = new FileDocument();
         String filename = upload.getFilename();
@@ -815,7 +908,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             byte[] content = toByteArray(upload.getInputStream());
             fileDocument.setContentText(new String(content,0,content.length,StandardCharsets.UTF_8));
         }
-        mongoTemplate.save(fileDocument, COLLECTION_NAME);
+        return mongoTemplate.save(fileDocument, COLLECTION_NAME);
     }
 
     /***

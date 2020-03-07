@@ -10,6 +10,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 
+/***
+ * 计算文件md5
+ * @blame jmal
+ */
 public class CalcMD5 {
 
     private static MessageDigest md5;
@@ -39,7 +43,7 @@ public class CalcMD5 {
      * @param file
      * @return 返回文件的md5字符串，如果计算过程中任务的状态变为取消或暂停，返回null， 如果有其他异常，返回空字符串
      */
-    protected static String calcMD5(File file) {
+    public static String calcMD5(File file) {
         try (InputStream stream = Files.newInputStream(file.toPath(), StandardOpenOption.READ)) {
             MessageDigest digest = MessageDigest.getInstance("MD5");
             byte[] buf = new byte[8192];

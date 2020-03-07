@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -166,7 +167,7 @@ public class UploadController {
      * @return
      */
     @GetMapping("/preview/{filename}")
-    public void preview(HttpServletRequest request, HttpServletResponse response, String[] fileIds,@PathVariable String filename) throws IOException {
+    public void preview(HttpServletRequest request, HttpServletResponse response, String[] fileIds,@PathVariable String filename) throws CommonException {
         if (fileIds != null && fileIds.length > 0) {
             List<String> list = Arrays.asList(fileIds);
             fileService.nginx(request, response, list, false);
@@ -181,7 +182,7 @@ public class UploadController {
      * @return
      */
     @GetMapping("/download")
-    public void downLoad(HttpServletRequest request, HttpServletResponse response, String[] fileIds) throws IOException {
+    public void downLoad(HttpServletRequest request, HttpServletResponse response, String[] fileIds) throws CommonException {
         System.out.println("download...");
         if (fileIds != null && fileIds.length > 0) {
             List<String> list = Arrays.asList(fileIds);
@@ -303,6 +304,33 @@ public class UploadController {
         } else {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }
+    }
+
+    /***
+     * 上传文档里的图片
+     * @param upload
+     * @return
+     * @throws IOException
+     */
+    @PostMapping("/upload-markdown-image")
+    @ResponseBody
+    public ResponseResult<Object> uploadMarkdownImage(UploadApiParam upload) throws CommonException {
+        upload.setRootPath(rootPath);
+        System.out.println("upload-markdown-image:" + upload.toString());
+        return fileService.uploadMarkdownImage(upload);
+    }
+
+    /**
+     * 预览文档里的图片
+     * @param fileId fileId
+     * @return
+     */
+    @GetMapping("/public/image/{fileId}")
+    public void imagePreview(HttpServletRequest request, HttpServletResponse response, @PathVariable String fileId) throws CommonException {
+        ResultUtil.checkParamIsNull(fileId);
+        List<String> list = new ArrayList<>();
+        list.add(fileId);
+        fileService.publicNginx(request, response, list, false);
     }
 
 }
