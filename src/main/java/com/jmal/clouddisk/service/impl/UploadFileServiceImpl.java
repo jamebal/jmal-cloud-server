@@ -638,6 +638,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         FileUtil.del(rootPath + File.separator + upload.getUsername() + currentDirectory + fileDocument.getName());
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
         Update update = new Update();
+        update.set("size", FileUtil.size(file));
         update.set("name", upload.getFilename());
         update.set("contentText", upload.getContentText());
         Query query = new Query().addCriteria(Criteria.where("_id").is(upload.getFileId()));
