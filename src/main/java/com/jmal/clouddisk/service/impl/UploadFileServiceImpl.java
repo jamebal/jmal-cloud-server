@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -946,9 +948,32 @@ public class UploadFileServiceImpl implements IUploadFileService {
         if (contentType.contains(CONTENT_TYPE_MARK_DOWN)) {
             // 写入markdown内容
             byte[] content = toByteArray(upload.getInputStream());
+            String mardownContent = new String(content,0,content.length,StandardCharsets.UTF_8);
             fileDocument.setContentText(new String(content,0,content.length,StandardCharsets.UTF_8));
         }
         return mongoTemplate.save(fileDocument, COLLECTION_NAME);
+    }
+
+    public static void main(String[] args) {
+
+        String c = "![image-20200304223538382](ugfhqbauoiq2fbbsd) \n" +
+                "![image-20200304223538382](http://dsfasdfas) \n" +
+                "![image-20200304223538382](cczxzca)\n" +
+                "![image-20200304223538382](ugfhqsadfasdfasfdasdfbauoiq2fbbsd)\n";
+
+        Pattern pattern = Pattern.compile("(?:!\\[(.*)\\]\\((.*)\\))+");
+        Pattern pattern1 = Pattern.compile("\\]\\((.[^http]*)\\)");
+
+        System.out.println(pattern.matcher(c).usePattern(pattern1).replaceAll("]("+"FFFF"+")"));
+//        Matcher m = pattern.matcher(c).usePattern(pattern1);
+//        if (m.find()) {
+//            System.out.println("Found value: " + m.group(0) );
+//            System.out.println("Found value: " + m.group(1) );
+//            System.out.println("Found value: " + m.group(2) );
+//        } else {
+//            System.out.println("NO MATCH");
+//        }
+
     }
 
     /***
