@@ -435,6 +435,45 @@ public class UploadFileServiceImpl implements IUploadFileService {
     }
 
     /***
+     * 交给nginx处理(共有的,任何人都和访问)
+     * @param request
+     * @param response
+     * @param fileIds
+     * @param isDownload
+     * @throws IOException
+     */
+    @Override
+    public void publicNginx(HttpServletRequest request, HttpServletResponse response, String relativePath, String userId) throws CommonException {
+
+        User user = userService.userInfoById(userId);
+        if(user == null){
+            return;
+        }
+        String username = user.getUsername();
+        String userDirectory = getUserFilePath(relativePath);
+        String absolutePath = File.separator + username + userDirectory;
+        File file = new File(rootPath + absolutePath);
+        String filename = FileUtil.getName(file);
+        try{
+            //获取浏览器名（IE/Chrome/firefox）目前主流的四大浏览器内核Trident(IE)、Gecko(Firefox内核)、WebKit(Safari内核,Chrome内核原型,开源)以及Presto(Opera前内核) (已废弃)
+            String gecko = "Gecko", webKit = "WebKit";
+            String userAgent = request.getHeader("User-Agent");
+            if (userAgent.contains(gecko) || userAgent.contains(webKit)) {
+                absolutePath = new String(absolutePath.getBytes(StandardCharsets.UTF_8), "ISO8859-1");
+                filename = new String(filename.getBytes(StandardCharsets.UTF_8), "ISO8859-1");
+            } else {
+                absolutePath = URLEncoder.encode(absolutePath, "UTF-8");
+                filename = URLEncoder.encode(filename, "UTF-8");
+            }
+            response.setHeader("Content-Type", FileContentTypeUtils.getContentType(FileUtil.extName(filename)));
+            response.setHeader("X-Accel-Charset", "utf-8");
+            response.setHeader("X-Accel-Redirect", absolutePath);
+        }catch (Exception e){
+            throw new CommonException(-1,e.getMessage());
+        }
+    }
+
+    /***
      * 交给nginx处理
      * @param request
      * @param response
@@ -1168,6 +1207,13 @@ public class UploadFileServiceImpl implements IUploadFileService {
         }
         currentDirectory = currentDirectory.replaceAll(DIR_SEPARATOR, File.separator);
         return currentDirectory;
+    }
+
+    private String getUserFilePath(String relativePath) {
+        if (!StringUtils.isEmpty(relativePath)) {
+            relativePath = relativePath.replaceAll(DIR_SEPARATOR, File.separator);
+        }
+        return relativePath;
     }
 
     /***

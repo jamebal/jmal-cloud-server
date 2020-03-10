@@ -333,4 +333,15 @@ public class UploadController {
         fileService.publicNginx(request, response, list, false);
     }
 
+    /**
+     * 预览文档里的图片
+     * @param relativePath relativePath
+     * @return
+     */
+    @GetMapping("/public/view")
+    public void imageRelativePath(HttpServletRequest request, HttpServletResponse response, String relativePath,String userId) throws CommonException {
+        ResultUtil.checkParamIsNull(relativePath,userId);
+        fileService.publicNginx(request, response, relativePath, userId);
+    }
+
 }

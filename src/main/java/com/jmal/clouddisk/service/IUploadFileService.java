@@ -145,6 +145,16 @@ public interface IUploadFileService {
     void publicNginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws CommonException;
 
     /***
+     * 转给Nginx处理(共有的,任何人都和访问)
+     * @param request
+     * @param response
+     * @param relativePath
+     * @param userId
+     * @throws CommonException
+     */
+    void publicNginx(HttpServletRequest request, HttpServletResponse response, String relativePath, String userId) throws CommonException;
+
+    /***
      * 重名名
      * @param newFileName
      * @param username
