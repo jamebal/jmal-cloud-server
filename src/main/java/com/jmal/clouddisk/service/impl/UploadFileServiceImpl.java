@@ -624,10 +624,12 @@ public class UploadFileServiceImpl implements IUploadFileService {
         } else {
             FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, COLLECTION_NAME);
             if (fileDocument != null) {
-                String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
-                String currentDirectory = getUserDirectory(fileDocument.getPath());
-                File file = new File(rootPath + File.separator + username + currentDirectory + fileDocument.getName());
-                fileDocument.setContentText(FileUtil.readString(file, StandardCharsets.UTF_8));
+//                String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
+//                String currentDirectory = getUserDirectory(fileDocument.getPath());
+//                File file = new File(rootPath + File.separator + username + currentDirectory + fileDocument.getName());
+                String content = fileDocument.getContentText();
+                content = replaceAll(content, fileDocument.getPath(), fileDocument.getUserId());
+                fileDocument.setContentText(content);
             }
             return ResultUtil.success(fileDocument);
         }
@@ -949,31 +951,39 @@ public class UploadFileServiceImpl implements IUploadFileService {
             // 写入markdown内容
             byte[] content = toByteArray(upload.getInputStream());
             String mardownContent = new String(content,0,content.length,StandardCharsets.UTF_8);
-            fileDocument.setContentText(new String(content,0,content.length,StandardCharsets.UTF_8));
+//            mardownContent = replaceAll(mardownContent, fileDocument.getPath(), upload.getUserId());
+            fileDocument.setContentText(mardownContent);
         }
         return mongoTemplate.save(fileDocument, COLLECTION_NAME);
     }
 
-    public static void main(String[] args) {
-
-        String c = "![image-20200304223538382](ugfhqbauoiq2fbbsd) \n" +
-                "![image-20200304223538382](http://dsfasdfas) \n" +
-                "![image-20200304223538382](cczxzca)\n" +
-                "![image-20200304223538382](ugfhqsadfasdfasfdasdfbauoiq2fbbsd)\n";
-
-        Pattern pattern = Pattern.compile("(?:!\\[(.*)\\]\\((.*)\\))+");
-        Pattern pattern1 = Pattern.compile("\\]\\((.[^http]*)\\)");
-
-        System.out.println(pattern.matcher(c).usePattern(pattern1).replaceAll("]("+"FFFF"+")"));
-//        Matcher m = pattern.matcher(c).usePattern(pattern1);
-//        if (m.find()) {
-//            System.out.println("Found value: " + m.group(0) );
-//            System.out.println("Found value: " + m.group(1) );
-//            System.out.println("Found value: " + m.group(2) );
-//        } else {
-//            System.out.println("NO MATCH");
-//        }
-
+    /***
+     * 替换markdown中的图片url
+     * @param input
+     * @return
+     */
+    public static String replaceAll(CharSequence input, String path, String userId) {
+        Pattern pattern = Pattern.compile("!\\[(.*)\\]\\((.*)\\)");
+        Pattern pattern1 = Pattern.compile("(?<=]\\()[^\\)]+");
+        Matcher matcher = pattern.matcher(input).usePattern(pattern1);
+        matcher.reset();
+        boolean result = matcher.find();
+        if (result) {
+            StringBuffer sb = new StringBuffer();
+            do {
+                //"/file/public/view?relativePath="+path + oldSrc +"&userId="+userId;
+                String value = matcher.group(0);
+                if(value.matches("(?!([hH][tT]{2}[pP]:/*|[hH][tT]{2}[pP][sS]:/*|[fF][tT][pP]:/*)).*?$+")){
+                    String replacement = "/file/public/view?relativePath="+ path + value +"&userId="+userId;
+                    System.out.println("replacement: "+replacement);
+                    matcher.appendReplacement(sb, replacement);
+                }
+                result = matcher.find();
+            } while (result);
+            matcher.appendTail(sb);
+            return sb.toString();
+        }
+        return matcher.toMatchResult().toString();
     }
 
     /***
