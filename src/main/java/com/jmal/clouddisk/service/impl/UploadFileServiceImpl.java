@@ -973,7 +973,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             do {
                 //"/file/public/view?relativePath="+path + oldSrc +"&userId="+userId;
                 String value = matcher.group(0);
-                if(value.matches("(?!([hH][tT]{2}[pP]:/*|[hH][tT]{2}[pP][sS]:/*|[fF][tT][pP]:/*)).*?$+")){
+                if(value.matches("(?!([hH][tT]{2}[pP]:/*|[hH][tT]{2}[pP][sS]:/*|[fF][tT][pP]:/*)).*?$+") && !value.startsWith("/file/public/image")){
                     String replacement = "/file/public/view?relativePath="+ path + value +"&userId="+userId;
                     System.out.println("replacement: "+replacement);
                     matcher.appendReplacement(sb, replacement);
