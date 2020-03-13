@@ -151,7 +151,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             long update = TimeUntils.getMilli(updateDate);
             fileDocument.setAgoTime(now - update);
             if (fileDocument.getIsFolder()) {
-                String path = fileDocument.getPath() + fileDocument.getName();
+                String path = fileDocument.getPath() + fileDocument.getName() + File.separator;
                 long size = getFolderSize(fileDocument.getUserId(), path);
                 fileDocument.setSize(size);
             }
@@ -624,12 +624,16 @@ public class UploadFileServiceImpl implements IUploadFileService {
         } else {
             FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, COLLECTION_NAME);
             if (fileDocument != null) {
-//                String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
-//                String currentDirectory = getUserDirectory(fileDocument.getPath());
-//                File file = new File(rootPath + File.separator + username + currentDirectory + fileDocument.getName());
-                String content = fileDocument.getContentText();
-                content = replaceAll(content, fileDocument.getPath(), fileDocument.getUserId());
-                fileDocument.setContentText(content);
+                if(fileDocument.getContentType().equals(CONTENT_TYPE_MARK_DOWN)){
+                    String content = fileDocument.getContentText();
+                    content = replaceAll(content, fileDocument.getPath(), fileDocument.getUserId());
+                    fileDocument.setContentText(content);
+                }else{
+                    String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
+                    String currentDirectory = getUserDirectory(fileDocument.getPath());
+                    File file = new File(rootPath + File.separator + username + currentDirectory + fileDocument.getName());
+                    fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
+                }
             }
             return ResultUtil.success(fileDocument);
         }
@@ -975,7 +979,6 @@ public class UploadFileServiceImpl implements IUploadFileService {
                 String value = matcher.group(0);
                 if(value.matches("(?!([hH][tT]{2}[pP]:/*|[hH][tT]{2}[pP][sS]:/*|[fF][tT][pP]:/*)).*?$+") && !value.startsWith("/file/public/image")){
                     String replacement = "/file/public/view?relativePath="+ path + value +"&userId="+userId;
-                    System.out.println("replacement: "+replacement);
                     matcher.appendReplacement(sb, replacement);
                 }
                 result = matcher.find();
