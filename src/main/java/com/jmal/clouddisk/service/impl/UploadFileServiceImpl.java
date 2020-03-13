@@ -768,13 +768,16 @@ public class UploadFileServiceImpl implements IUploadFileService {
                     return ResultUtil.warning("所选目录已存在该文件夹!");
                 }
                 mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
+
+                String newParentPath = getRelativePathByFileId(copyFileDocument);
+
                 // 复制其下的子文件或目录
                 Query query = new Query();
                 query.addCriteria(Criteria.where("path").regex("^" + fromPath));
                 List<FileDocument> formList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
                 formList = formList.stream().peek(fileDocument -> {
                     String oldPath = fileDocument.getPath();
-                    String newPath = toPath + oldPath.substring(1);
+                    String newPath = oldPath.replaceFirst("^"+fromPath, newParentPath);
                     copyFileDocument(fileDocument, newPath);
                 }).collect(toList());
                 mongoTemplate.insert(formList, COLLECTION_NAME);
