@@ -10,16 +10,10 @@ import static com.mongodb.client.model.Filters.or;
 import static com.mongodb.client.model.Filters.regex;
 import static java.util.stream.Collectors.toList;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URLEncoder;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.Collator;
 import java.time.LocalDateTime;
@@ -618,16 +612,35 @@ public class UploadFileServiceImpl implements IUploadFileService {
     public ResponseResult<Object> getMarkDownContent(String mark) {
         if (StringUtils.isEmpty(mark)) {
             Query query = new Query();
+            query.addCriteria(Criteria.where("isFavorite").is(true));
             query.addCriteria(Criteria.where("contentType").is(CONTENT_TYPE_MARK_DOWN));
             List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+            fileDocumentList = fileDocumentList.parallelStream().peek(fileDocument -> {
+                User user = userService.userInfoById(fileDocument.getUserId());
+                String avatar = user.getAvatar();
+                fileDocument.setUsername(user.getUsername());
+                String filename = fileDocument.getName();
+                fileDocument.setName(filename.substring(0,filename.length()-fileDocument.getSuffix().length()-1));
+                LocalDateTime date = fileDocument.getUploadDate();
+                StringBuilder sb = new StringBuilder();
+                sb.append(date.getYear()).append("年")
+                        .append(date.getMonthValue()).append("月")
+                        .append(date.getDayOfMonth()).append("日");
+                fileDocument.setUploadTime(sb.toString());
+                fileDocument.setAvatar(avatar);
+                String text = fileDocument.getContentText();
+                BufferedReader br = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(text.getBytes(Charset.forName("utf8"))), Charset.forName("utf8")));
+            }).collect(toList());
             return ResultUtil.success(fileDocumentList);
         } else {
             FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, COLLECTION_NAME);
             if (fileDocument != null) {
                 if(fileDocument.getContentType().equals(CONTENT_TYPE_MARK_DOWN)){
                     String content = fileDocument.getContentText();
-                    content = replaceAll(content, fileDocument.getPath(), fileDocument.getUserId());
-                    fileDocument.setContentText(content);
+                    if(!StringUtils.isEmpty(content)){
+                        content = replaceAll(content, fileDocument.getPath(), fileDocument.getUserId());
+                        fileDocument.setContentText(content);
+                    }
                 }else{
                     String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
                     String currentDirectory = getUserDirectory(fileDocument.getPath());
@@ -636,6 +649,15 @@ public class UploadFileServiceImpl implements IUploadFileService {
                 }
             }
             return ResultUtil.success(fileDocument);
+        }
+    }
+
+    public static void main(String[] args) {
+        String text = "# Juc并发编程\\r\\n\\r\\n学习方式，后面的讲课方式：\\r\\n\\r\\n1、拒绝念PPT\\r\\n\\r\\n2、所有的课程笔记手动记录\\r\\n\\r\\n3、所有项目从头开始\\r\\n\\r\\n## 1、什么是JUC\\r\\n\\r\\nJUC：就是我们Java原生的并发包，和一些常用的工具类！\\r\\n![image-20200301212335672](Juc并发编程课堂笔记.assets/image-20200301212335672.png) \\n\\r\\n\\r\\n学完之后，很多知识，但是不知道怎么去用！每学习一个知识点，学完之后，可以替换工作中用到的代码！\\r\\n\\r\\n\\r\\n\\r\\n## 2、线程基础知识回顾\\r\\n\\r\\n> 什么是进程和线程？\\r\\n\\r\\n进程：QQ.exe  \\r\\n\\r\\n线程：打字、自动保存.....\\r\\n\\r\\n";
+        BufferedReader br = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(text.getBytes(Charset.forName("utf8"))), Charset.forName("utf8")));
+        String[] s = text.split("(?m)^\\s*$[\\n|\\r\\n]");
+        for (String s1 : s) {
+            System.out.println(s1);
         }
     }
 
@@ -989,7 +1011,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             matcher.appendTail(sb);
             return sb.toString();
         }
-        return matcher.toMatchResult().toString();
+        return input.toString();
     }
 
     /***

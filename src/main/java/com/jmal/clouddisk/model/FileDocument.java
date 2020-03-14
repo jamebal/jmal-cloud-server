@@ -18,6 +18,9 @@ public class FileDocument {
 
     private String userId;
 
+    private String username;
+    private String avatar;
+
     /***
      * 文件路径(根路径为"/")
      */
@@ -43,6 +46,10 @@ public class FileDocument {
      * 上传时间
      */
     private LocalDateTime uploadDate;
+    /***
+     * 上传时间
+     */
+    private String uploadTime;
     /***
      * 修改时间
      */
