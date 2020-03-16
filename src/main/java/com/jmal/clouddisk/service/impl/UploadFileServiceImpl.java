@@ -17,12 +17,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.Collator;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,6 +25,11 @@ import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.drew.imaging.jpeg.JpegMetadataReader;
+import com.drew.imaging.jpeg.JpegProcessingException;
+import com.drew.metadata.Directory;
+import com.drew.metadata.Metadata;
+import com.drew.metadata.Tag;
 import com.jmal.clouddisk.model.User;
 import com.jmal.clouddisk.util.*;
 import org.bson.BsonNull;
@@ -277,6 +277,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
                 group(new BsonNull(), sum("totalSize", "$size")));
         AggregateIterable<Document> aggregate = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
         long totalSize = 0;
+        list.forEach(System.out::println);
         Document doc = aggregate.first();
         if (doc != null) {
             Object object = doc.get("totalSize");
@@ -653,11 +654,27 @@ public class UploadFileServiceImpl implements IUploadFileService {
     }
 
     public static void main(String[] args) {
-        String text = "# Juc并发编程\\r\\n\\r\\n学习方式，后面的讲课方式：\\r\\n\\r\\n1、拒绝念PPT\\r\\n\\r\\n2、所有的课程笔记手动记录\\r\\n\\r\\n3、所有项目从头开始\\r\\n\\r\\n## 1、什么是JUC\\r\\n\\r\\nJUC：就是我们Java原生的并发包，和一些常用的工具类！\\r\\n![image-20200301212335672](Juc并发编程课堂笔记.assets/image-20200301212335672.png) \\n\\r\\n\\r\\n学完之后，很多知识，但是不知道怎么去用！每学习一个知识点，学完之后，可以替换工作中用到的代码！\\r\\n\\r\\n\\r\\n\\r\\n## 2、线程基础知识回顾\\r\\n\\r\\n> 什么是进程和线程？\\r\\n\\r\\n进程：QQ.exe  \\r\\n\\r\\n线程：打字、自动保存.....\\r\\n\\r\\n";
-        BufferedReader br = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(text.getBytes(Charset.forName("utf8"))), Charset.forName("utf8")));
-        String[] s = text.split("(?m)^\\s*$[\\n|\\r\\n]");
-        for (String s1 : s) {
-            System.out.println(s1);
+
+        System.out.println("开始读取图片信息...");
+        long stime =  System.currentTimeMillis();
+        File jpegFile = new File("/Users/jmal/Pictures/IMG_0958.jpg");
+        Metadata metadata;
+        try {
+            metadata = JpegMetadataReader.readMetadata(jpegFile);
+            Iterator<Directory> it = metadata.getDirectories().iterator();
+            while (it.hasNext()) {
+                Directory exif = it.next();
+                Iterator<Tag> tags = exif.getTags().iterator();
+                while (tags.hasNext()) {
+                    Tag tag = (Tag) tags.next();
+                    System.out.println(tag);
+                }
+            }
+            System.out.println("图片信息读取完成！耗时:"+(System.currentTimeMillis()-stime));
+        } catch (JpegProcessingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -967,7 +984,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         if (contentType.startsWith(CONTENT_TYPE_IMAGE)) {
             // 生成缩略图
             Thumbnails.Builder<? extends InputStream> thumbnail = Thumbnails.of(upload.getInputStream());
-            thumbnail.size(100, 100);
+            thumbnail.size(256, 256);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             try {
                 thumbnail.toOutputStream(out);

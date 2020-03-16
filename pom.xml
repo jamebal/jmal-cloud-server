@@ -48,6 +48,13 @@
             <version>0.4.8</version>
         </dependency>
 
+        <!--获取图片拍摄信息-->
+        <dependency>
+            <groupId>com.drewnoakes</groupId>
+            <artifactId>metadata-extractor</artifactId>
+            <version>2.12.0</version>
+        </dependency>
+
         <!--文件的压缩和解压-->
         <dependency>
             <groupId>org.xerial.snappy</groupId>
