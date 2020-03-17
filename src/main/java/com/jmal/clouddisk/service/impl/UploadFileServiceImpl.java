@@ -277,7 +277,6 @@ public class UploadFileServiceImpl implements IUploadFileService {
                 group(new BsonNull(), sum("totalSize", "$size")));
         AggregateIterable<Document> aggregate = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
         long totalSize = 0;
-        list.forEach(System.out::println);
         Document doc = aggregate.first();
         if (doc != null) {
             Object object = doc.get("totalSize");

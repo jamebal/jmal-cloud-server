@@ -14,11 +14,12 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * @Description UserController
+ * @Description markdown
  * @blame jmal
  */
 @Controller
 @Api(tags = "markdown")
+@RestController
 public class MarkDownController {
 
     @Autowired
