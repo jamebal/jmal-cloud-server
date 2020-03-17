@@ -23,4 +23,22 @@ public interface IShareService {
      * @return
      */
     ResponseResult<Object> accessShare(String shareId);
+
+    ShareBO getShare(String share);
+
+    /***
+     * 检查是否过期
+     * @param shareBO
+     * @return
+     */
+    boolean checkWhetherExpired(ShareBO shareBO);
+
+    /***
+     * 检查是否过期
+     * @param share
+     * @return
+     */
+    boolean checkWhetherExpired(String share);
+
+    ResponseResult<Object> accessShareOpenDir(ShareBO share, String fileId);
 }

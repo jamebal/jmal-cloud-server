@@ -43,13 +43,43 @@ public class ShareServiceImpl implements IShareService {
 
     @Override
     public ResponseResult<Object> accessShare(String shareId) {
-        ShareBO shareBO = mongoTemplate.findById(shareId, ShareBO.class);
+        ShareBO shareBO = mongoTemplate.findById(shareId, ShareBO.class, COLLECTION_NAME);
         if(shareBO == null){
             return ResultUtil.error(-2,"该链接已失效");
         }
         UploadApiParam uploadApiParam = new UploadApiParam();
         uploadApiParam.setUserId(shareBO.getUserId());
         return fileService.searchFileAndOpenDir(uploadApiParam, shareBO.getFileId());
+    }
+
+    @Override
+    public ShareBO getShare(String share) {
+        return mongoTemplate.findById(share, ShareBO.class, COLLECTION_NAME);
+    }
+
+    @Override
+    public boolean checkWhetherExpired(ShareBO shareBO) {
+        if(shareBO != null){
+            LocalDateTime expireDate = shareBO.getExpireDate();
+            if(expireDate == null){
+                return true;
+            }
+            LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
+            return expireDate.compareTo(now) > 0;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean checkWhetherExpired(String share) {
+        return false;
+    }
+
+    @Override
+    public ResponseResult<Object> accessShareOpenDir(ShareBO shareBO, String fileId) {
+        UploadApiParam uploadApiParam = new UploadApiParam();
+        uploadApiParam.setUserId(shareBO.getUserId());
+        return fileService.searchFileAndOpenDir(uploadApiParam, fileId);
     }
 
     private ShareBO findByFileId(String fileId){
