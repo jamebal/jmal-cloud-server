@@ -62,7 +62,6 @@ public class ShareController {
     @GetMapping("/public/access-share")
     @ResponseBody
     public ResponseResult<Object> accessShare(@RequestParam String share) throws CommonException {
-        boolean whetherExpired = shareService.checkWhetherExpired(share);
         ResultUtil.checkParamIsNull(share);
         return shareService.accessShare(share);
     }
@@ -91,7 +90,7 @@ public class ShareController {
     @GetMapping("/public/s/download")
     public void downLoad(HttpServletRequest request, HttpServletResponse response,@RequestParam String share, String[] fileIds) throws CommonException, IOException {
         boolean whetherExpired = shareService.checkWhetherExpired(share);
-        if(!whetherExpired){
+        if(whetherExpired){
             if (fileIds != null && fileIds.length > 0) {
                 List<String> list = Arrays.asList(fileIds);
                 fileService.publicNginx(request, response, list, true);

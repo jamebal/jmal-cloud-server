@@ -72,7 +72,7 @@ public class ShareServiceImpl implements IShareService {
 
     @Override
     public boolean checkWhetherExpired(String share) {
-        return false;
+        return checkWhetherExpired(getShare(share));
     }
 
     @Override
