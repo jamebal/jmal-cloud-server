@@ -324,6 +324,10 @@ public class UploadFileServiceImpl implements IUploadFileService {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
             if (fileDocument.getContent() == null) {
+                if(StringUtils.isEmpty(username)){
+                    User user = userService.userInfoById(fileDocument.getUserId());
+                    username = user.getUsername();
+                }
                 setContent(username, fileDocument);
             }
             return Optional.of(fileDocument);
