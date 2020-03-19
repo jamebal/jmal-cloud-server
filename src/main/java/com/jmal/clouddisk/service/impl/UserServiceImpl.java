@@ -85,6 +85,7 @@ public class UserServiceImpl implements IUserService {
         }
         query.addCriteria(Criteria.where("username").is(username));
         User user = mongoTemplate.findOne(query,User.class,COLLECTION_NAME);
+        user.setPassword(null);
         return ResultUtil.success(user);
     }
 

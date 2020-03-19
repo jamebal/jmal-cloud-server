@@ -16,3 +16,6 @@ spring:
       spec: initialCapacity=100,maximumSize=500,expireAfterWrite=30s
 
 root-path: /Users/jmal/temp/filetest/rootpath
+jmal:
+  name: jmal
+  status: Holiday

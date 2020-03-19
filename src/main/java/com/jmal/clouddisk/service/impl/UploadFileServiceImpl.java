@@ -25,6 +25,10 @@ import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import cn.hutool.core.codec.Rot;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.symmetric.AES;
 import com.drew.imaging.jpeg.JpegMetadataReader;
 import com.drew.imaging.jpeg.JpegProcessingException;
 import com.drew.metadata.Directory;
@@ -97,6 +101,8 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * 前端文件夹树的第一级的文件Id
      */
     private static final String FIRST_FILE_TREE_ID = "0";
+
+    private static final AES aes = SecureUtil.aes();
 
     @Value("${root-path}")
     String rootPath;
@@ -450,7 +456,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             return;
         }
         String username = user.getUsername();
-        String userDirectory = getUserFilePath(relativePath);
+        String userDirectory = getUserFilePath(aes.decryptStr(relativePath));
         String absolutePath = File.separator + username + userDirectory;
         File file = new File(rootPath + absolutePath);
         String filename = FileUtil.getName(file);
@@ -613,7 +619,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
     }
 
     @Override
-    public ResponseResult<Object> getMarkDownContent(String mark) {
+    public ResponseResult<Object> getMarkDownContent(String mark) throws CommonException {
         if (StringUtils.isEmpty(mark)) {
             Query query = new Query();
             query.addCriteria(Criteria.where("isFavorite").is(true));
@@ -658,27 +664,31 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
     public static void main(String[] args) {
 
-        System.out.println("开始读取图片信息...");
-        long stime =  System.currentTimeMillis();
-        File jpegFile = new File("/Users/jmal/Pictures/IMG_0958.jpg");
-        Metadata metadata;
-        try {
-            metadata = JpegMetadataReader.readMetadata(jpegFile);
-            Iterator<Directory> it = metadata.getDirectories().iterator();
-            while (it.hasNext()) {
-                Directory exif = it.next();
-                Iterator<Tag> tags = exif.getTags().iterator();
-                while (tags.hasNext()) {
-                    Tag tag = (Tag) tags.next();
-                    System.out.println(tag);
-                }
-            }
-            System.out.println("图片信息读取完成！耗时:"+(System.currentTimeMillis()-stime));
-        } catch (JpegProcessingException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        String e = aes.encryptBase64("/myBlog/mardown/media/15838958658731/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%2031.png");
+        System.out.println(e);
+        System.out.println(aes.decryptStr(e));
+
+//        System.out.println("开始读取图片信息...");
+//        long stime =  System.currentTimeMillis();
+//        File jpegFile = new File("/Users/jmal/Pictures/IMG_0958.jpg");
+//        Metadata metadata;
+//        try {
+//            metadata = JpegMetadataReader.readMetadata(jpegFile);
+//            Iterator<Directory> it = metadata.getDirectories().iterator();
+//            while (it.hasNext()) {
+//                Directory exif = it.next();
+//                Iterator<Tag> tags = exif.getTags().iterator();
+//                while (tags.hasNext()) {
+//                    Tag tag = (Tag) tags.next();
+//                    System.out.println(tag);
+//                }
+//            }
+//            System.out.println("图片信息读取完成！耗时:"+(System.currentTimeMillis()-stime));
+//        } catch (JpegProcessingException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
     /***
@@ -1011,7 +1021,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
      * @param input
      * @return
      */
-    public static String replaceAll(CharSequence input, String path, String userId) {
+    public static String replaceAll(CharSequence input, String path, String userId) throws CommonException {
         Pattern pattern = Pattern.compile("!\\[(.*)\\]\\((.*)\\)");
         Pattern pattern1 = Pattern.compile("(?<=]\\()[^\\)]+");
         Matcher matcher = pattern.matcher(input).usePattern(pattern1);
@@ -1023,7 +1033,13 @@ public class UploadFileServiceImpl implements IUploadFileService {
                 //"/file/public/view?relativePath="+path + oldSrc +"&userId="+userId;
                 String value = matcher.group(0);
                 if(value.matches("(?!([hH][tT]{2}[pP]:/*|[hH][tT]{2}[pP][sS]:/*|[fF][tT][pP]:/*)).*?$+") && !value.startsWith("/file/public/image")){
-                    String replacement = "/file/public/view?relativePath="+ path + value +"&userId="+userId;
+                    String relativepath = aes.encryptBase64(path + value);
+                    try {
+                        relativepath = URLEncoder.encode(relativepath,"UTF-8");
+                    } catch (UnsupportedEncodingException e) {
+                        throw new CommonException(-1,e.getMessage());
+                    }
+                    String replacement = "/file/public/view?relativePath="+ relativepath +"&userId="+userId;
                     matcher.appendReplacement(sb, replacement);
                 }
                 result = matcher.find();

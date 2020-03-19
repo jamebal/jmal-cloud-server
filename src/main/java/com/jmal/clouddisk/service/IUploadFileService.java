@@ -8,6 +8,7 @@ import com.jmal.clouddisk.util.ResponseResult;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Optional;
 
@@ -186,7 +187,7 @@ public interface IUploadFileService {
      * @param mark
      * @return
      */
-    ResponseResult<Object> getMarkDownContent(String mark);
+    ResponseResult<Object> getMarkDownContent(String mark) throws CommonException;
 
     /***
      * 新建文档
@@ -208,6 +209,6 @@ public interface IUploadFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> uploadMarkdownImage(UploadApiParam upload) throws CommonException ;
+    ResponseResult<Object> uploadMarkdownImage(UploadApiParam upload) throws CommonException;
 
 }
