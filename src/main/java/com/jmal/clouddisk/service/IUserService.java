@@ -1,20 +1,21 @@
 package com.jmal.clouddisk.service;
 
-import com.jmal.clouddisk.model.User;
+import com.jmal.clouddisk.model.Consumer;
 import com.jmal.clouddisk.util.ResponseResult;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
- * IUserService
+ * IConsumerService
  *
  * @blame jmal
  */
 public interface IUserService {
     /***
      * 添加用户
-     * @param user user
+     * @param Consumer Consumer
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> add(User user);
+    ResponseResult<Object> add(Consumer Consumer);
 
     /***
      * 删除用户
@@ -25,24 +26,25 @@ public interface IUserService {
 
     /***
      * 修改用户
-     * @param user user
+     * @param Consumer Consumer
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> update(User user);
+    ResponseResult<Object> update(Consumer Consumer, MultipartFile blobAvatar);
 
     /***
      * 用户信息
-     * @param token token
-     * @return ResponseResult<Object>
+     * @param token
+     * @param takeUpSpace 是否显示占用空间
+     * @return
      */
-    ResponseResult<Object> userInfo(String token);
+    ResponseResult<Object> userInfo(String token,Boolean takeUpSpace);
 
     /***
      * 用户信息
-     * @param userId userId
+     * @param ConsumerId ConsumerId
      * @return ResponseResult<Object>
      */
-    User userInfoById(String userId);
+    Consumer userInfoById(String ConsumerId);
 
     /***
      * 用户列表
@@ -59,10 +61,10 @@ public interface IUserService {
 
 //    /***
 //     * 添加用户组
-//     * @param user user
+//     * @param Consumer Consumer
 //     * @return ResponseResult<Object>
 //     */
-//    ResponseResult<Object> addGroup(User user);
+//    ResponseResult<Object> addGroup(Consumer Consumer);
 //
 //    /***
 //     * 删除用户组
@@ -73,10 +75,10 @@ public interface IUserService {
 //
 //    /***
 //     * 修改用户组
-//     * @param user user
+//     * @param Consumer Consumer
 //     * @return ResponseResult<Object>
 //     */
-//    ResponseResult<Object> updateGroup(User user);
+//    ResponseResult<Object> updateGroup(Consumer Consumer);
 //
 //    /***
 //     * 用户组信息

@@ -76,6 +76,13 @@ public interface IUploadFileService {
     ResponseResult<Object> listFiles(UploadApiParam upload) throws CommonException;
 
     /***
+     * 用户占用空间
+     * @return
+     * @throws CommonException
+     */
+    long takeUpSpace(String userId) throws CommonException;
+
+    /***
      * 搜索文件
      * @param upload
      * @param keyword
@@ -210,5 +217,13 @@ public interface IUploadFileService {
      * @throws CommonException
      */
     ResponseResult<Object> uploadMarkdownImage(UploadApiParam upload) throws CommonException;
+
+    /***
+     * 上传用户图片
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    String uploadConsumerImage(UploadApiParam upload) throws CommonException;
 
 }

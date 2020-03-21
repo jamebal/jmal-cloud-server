@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * @Description 用户模型
@@ -11,7 +12,7 @@ import org.springframework.data.annotation.Id;
  */
 @Data
 @ApiModel
-public class User {
+public class Consumer {
     @ApiModelProperty(hidden = true)
     @Id
     String id;
@@ -26,14 +27,30 @@ public class User {
      */
     @ApiModelProperty(value = "头像", example = "https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif")
     String avatar;
+
     /***
-     * 介绍
+     * 标语
+     */
+    String slogan;
+
+    /***
+     * 简介
      */
     String introduction;
+
+    /***
+     * 角色
+     */
     String[] roles;
     /***
      * 默认配额, 10G
      */
     @ApiModelProperty(value = "默认配额",example = "10")
-    int quota;
+    Integer quota;
+
+    /***
+     * 已使用的空间
+     */
+    Long takeUpSpace;
+
 }

@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.controller;
 
 import com.jmal.clouddisk.AuthInterceptor;
-import com.jmal.clouddisk.model.User;
+import com.jmal.clouddisk.model.Consumer;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.util.ResponseResult;
 import io.swagger.annotations.Api;
@@ -25,7 +25,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @ResponseBody
-    public ResponseResult<Object> login(@RequestBody User user){
+    public ResponseResult<Object> login(@RequestBody Consumer user){
         return authService.login(user.getUsername(), user.getPassword());
     }
 

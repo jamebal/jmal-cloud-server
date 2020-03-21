@@ -34,7 +34,7 @@ import com.drew.imaging.jpeg.JpegProcessingException;
 import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
-import com.jmal.clouddisk.model.User;
+import com.jmal.clouddisk.model.Consumer;
 import com.jmal.clouddisk.util.*;
 import org.bson.BsonNull;
 import org.bson.Document;
@@ -107,6 +107,12 @@ public class UploadFileServiceImpl implements IUploadFileService {
     @Value("${root-path}")
     String rootPath;
 
+    @Value("${user-img}")
+    String userImg;
+
+    @Value("${document-img}")
+    String documentImg;
+
     private Cache<String, CopyOnWriteArrayList<Integer>> resumeCache = CaffeineUtil.getResumeCache();
 
 
@@ -123,6 +129,26 @@ public class UploadFileServiceImpl implements IUploadFileService {
         result.setData(list);
         result.setCount(getFileDocumentsCount(upload, Criteria.where("path").is(currentDirectory)));
         return result;
+    }
+
+    /***
+     * 用户已使用空间
+     * @param userId
+     * @return
+     * @throws CommonException
+     */
+    @Override
+    public long takeUpSpace(String userId) throws CommonException {
+
+        List list = Arrays.asList(
+                match(eq("userId", userId)),
+                group(new BsonNull(), sum("totalSize", "$size")));
+        AggregateIterable<Document> aggregateIterable =  mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
+        Document doc = aggregateIterable.first();
+        if(doc != null){
+            return doc.getLong("totalSize");
+        }
+        return 0;
     }
 
     private long getFileDocumentsCount(UploadApiParam upload, Criteria... criteriaList) {
@@ -331,7 +357,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         if (fileDocument != null) {
             if (fileDocument.getContent() == null) {
                 if(StringUtils.isEmpty(username)){
-                    User user = userService.userInfoById(fileDocument.getUserId());
+                    Consumer user = userService.userInfoById(fileDocument.getUserId());
                     username = user.getUsername();
                 }
                 setContent(username, fileDocument);
@@ -430,7 +456,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
     public void publicNginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws CommonException {
         FileDocument f = mongoTemplate.findById(fileIds.get(0),FileDocument.class, COLLECTION_NAME);
         if(f != null){
-            User user = userService.userInfoById(f.getUserId());
+            Consumer user = userService.userInfoById(f.getUserId());
             FileDocument fileDocument = getFileInfo(fileIds, user.getUsername());
             try {
                 nginx(request, response, isDownload, fileDocument);
@@ -451,7 +477,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
     @Override
     public void publicNginx(HttpServletRequest request, HttpServletResponse response, String relativePath, String userId) throws CommonException {
 
-        User user = userService.userInfoById(userId);
+        Consumer user = userService.userInfoById(userId);
         if(user == null){
             return;
         }
@@ -626,7 +652,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             query.addCriteria(Criteria.where("contentType").is(CONTENT_TYPE_MARK_DOWN));
             List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
             fileDocumentList = fileDocumentList.parallelStream().peek(fileDocument -> {
-                User user = userService.userInfoById(fileDocument.getUserId());
+                Consumer user = userService.userInfoById(fileDocument.getUserId());
                 String avatar = user.getAvatar();
                 fileDocument.setUsername(user.getUsername());
                 String filename = fileDocument.getName();
@@ -801,6 +827,63 @@ public class UploadFileServiceImpl implements IUploadFileService {
             e.printStackTrace();
         }
         return ResultUtil.error("添加图片失败");
+    }
+
+    /***
+     * 上传文档里的图片
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    @Override
+    public String uploadConsumerImage(UploadApiParam upload) throws CommonException {
+        MultipartFile multipartFile = upload.getFile();
+        try {
+            upload.setTotalSize(multipartFile.getSize());
+            upload.setIsFolder(false);
+            String fileName = upload.getFilename();
+            upload.setFilename(fileName);
+            upload.setRelativePath(fileName);
+
+            String[] docPaths = new String[]{"Image"};
+            String docPath = "/Image";
+            upload.setCurrentDirectory(docPath);
+            //用户磁盘目录
+            String userDirectoryFilePath = getUserDirectoryFilePath(upload);
+            LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
+
+            String username = upload.getUsername();
+            String userId = upload.getUserId();
+            String directoryPath = rootPath + File.separator + upload.getUsername() + getUserDirectory(docPath);
+            File dir = new File(directoryPath);
+            if(!dir.exists()){
+                StringBuilder parentPath = new StringBuilder();
+                for (int i = 0; i < docPaths.length; i++) {
+                    UploadApiParam uploadApiParam = new UploadApiParam();
+                    uploadApiParam.setIsFolder(true);
+                    uploadApiParam.setFilename(docPaths[i]);
+                    uploadApiParam.setUsername(username);
+                    uploadApiParam.setUserId(userId);
+                    if(i > 0){
+                        uploadApiParam.setCurrentDirectory(parentPath.toString());
+                    }
+                    uploadFolder(uploadApiParam);
+                    parentPath.append("/").append(docPaths[i]);
+                }
+            }
+            // 没有分片,直接存
+            File newFile = new File(rootPath + File.separator + upload.getUsername() + userDirectoryFilePath);
+            FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
+            // 保存文件信息
+            upload.setInputStream(multipartFile.getInputStream());
+            upload.setContentType(multipartFile.getContentType());
+            upload.setSuffix(FileUtil.extName(fileName));
+            FileDocument fileDocument = saveFileInfo(upload, CalcMD5.calcMD5(newFile), date);
+            return fileDocument.getId();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     private ResponseResult<Object> copy(UploadApiParam upload, String from, String to) {

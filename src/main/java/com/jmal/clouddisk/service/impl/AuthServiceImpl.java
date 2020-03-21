@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import com.jmal.clouddisk.model.User;
+import com.jmal.clouddisk.model.Consumer;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -35,7 +35,7 @@ public class AuthServiceImpl implements IAuthService {
     public ResponseResult<Object> login(String userName, String password) {
         Query query = new Query();
         query.addCriteria(Criteria.where("username").is(userName));
-        User user = mongoTemplate.findOne(query, User.class, UserServiceImpl.COLLECTION_NAME);
+        Consumer user = mongoTemplate.findOne(query, Consumer.class, UserServiceImpl.COLLECTION_NAME);
         if(user == null){
             return ResultUtil.error("该用户不存在");
         }else{
@@ -46,6 +46,7 @@ public class AuthServiceImpl implements IAuthService {
                     String token = TokenUtil.createTokens(userName);
                     map.put("token",TokenUtil.createTokens(userName));
                     map.put("username",userName);
+                    map.put("userId",user.getId());
                     tokenCache.put(token,userName);
                     return ResultUtil.success(map);
                 }

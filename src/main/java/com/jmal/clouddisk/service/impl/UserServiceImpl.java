@@ -3,11 +3,14 @@ package com.jmal.clouddisk.service.impl;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.common.exception.CommonException;
 import com.jmal.clouddisk.common.exception.ExceptionType;
-import com.jmal.clouddisk.model.User;
+import com.jmal.clouddisk.model.Consumer;
+import com.jmal.clouddisk.model.UploadApiParam;
+import com.jmal.clouddisk.service.IUploadFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.TimeUntils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -15,6 +18,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -32,9 +36,12 @@ public class UserServiceImpl implements IUserService {
     @Autowired
     MongoTemplate mongoTemplate;
 
+    @Autowired
+    IUploadFileService fileService;
+
     @Override
-    public ResponseResult<Object> add(User user) {
-        User user1 = getUserInfoByName(user.getUsername());
+    public ResponseResult<Object> add(Consumer user) {
+        Consumer user1 = getUserInfoByName(user.getUsername());
         if(user1 == null){
             mongoTemplate.save(user, COLLECTION_NAME);
         }
@@ -50,7 +57,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public ResponseResult<Object> update(User user) {
+    public ResponseResult<Object> update(Consumer user, MultipartFile blobAvatar) {
         Query query = new Query();
         String userId = user.getId();
         if(!StringUtils.isEmpty(userId)){
@@ -64,43 +71,62 @@ public class UserServiceImpl implements IUserService {
             }
         }
         Update update = new Update();
-        update.set("username", user.getUsername());
-        update.set("showName", user.getShowName());
-        update.set("password", user.getPassword());
-        update.set("quota", user.getQuota());
+        String showName = user.getShowName();
+        if(!StringUtils.isEmpty(showName)){
+            update.set("showName", showName);
+        }
+        Integer quota = user.getQuota();
+        if(quota != null){
+            update.set("quota", quota);
+        }
+        String slogan = user.getSlogan();
+        if(!StringUtils.isEmpty(slogan)){
+            update.set("slogan", slogan);
+        }
+        String introduction = user.getIntroduction();
+        if(!StringUtils.isEmpty(introduction)){
+            update.set("introduction", introduction);
+        }else{
+            update.set("introduction", "");
+        }
+        String fileId = "";
+        if(blobAvatar != null){
+            Consumer consumer = mongoTemplate.findById(userId,Consumer.class,COLLECTION_NAME);
+            UploadApiParam upload = new UploadApiParam();
+            upload.setUserId(userId);
+            upload.setUsername(consumer.getUsername());
+            int size = (int) blobAvatar.getSize();
+            upload.setFilename("avatar-"+ TimeUntils.getStringTime(System.currentTimeMillis()) +".jpeg");
+            upload.setFile(blobAvatar);
+            fileId = fileService.uploadConsumerImage(upload);
+            update.set("avatar", fileId);
+        }
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
-        return ResultUtil.success();
+        return ResultUtil.success(fileId);
     }
 
     @Override
-    public ResponseResult<Object> userInfo(String token) {
-
-        String username = tokenCache.getIfPresent(token);
-        if(StringUtils.isEmpty(username)){
-            return ResultUtil.success(null);
+    public ResponseResult<Object> userInfo(String id, Boolean takeUpSpace) {
+        Consumer consumer = mongoTemplate.findById(id,Consumer.class,COLLECTION_NAME);
+        consumer.setPassword(null);
+        if(takeUpSpace != null && takeUpSpace) {
+            consumer.setTakeUpSpace(fileService.takeUpSpace(consumer.getId()));
         }
-        Query query = new Query();
-        if(StringUtils.isEmpty(username)){
-            ResultUtil.error("verification failed");
-        }
-        query.addCriteria(Criteria.where("username").is(username));
-        User user = mongoTemplate.findOne(query,User.class,COLLECTION_NAME);
-        user.setPassword(null);
-        return ResultUtil.success(user);
+        return ResultUtil.success(consumer);
     }
 
     @Override
-    public User userInfoById(String userId) {
+    public Consumer userInfoById(String userId) {
         if(StringUtils.isEmpty(userId)){
             return null;
         }
-        return mongoTemplate.findById(userId,User.class,COLLECTION_NAME);
+        return mongoTemplate.findById(userId,Consumer.class,COLLECTION_NAME);
     }
 
     @Override
     public ResponseResult<Object> userList() {
         Query query = new Query();
-        List<User> userList = mongoTemplate.find(query,User.class,COLLECTION_NAME);
+        List<Consumer> userList = mongoTemplate.find(query,Consumer.class,COLLECTION_NAME);
         return ResultUtil.success(userList);
     }
 
@@ -116,10 +142,10 @@ public class UserServiceImpl implements IUserService {
         return username;
     }
 
-    private User getUserInfoByName(String name){
+    private Consumer getUserInfoByName(String name){
         Query query = new Query();
         query.addCriteria(Criteria.where("username").is(name));
-        return mongoTemplate.findOne(query,User.class,COLLECTION_NAME);
+        return mongoTemplate.findOne(query,Consumer.class,COLLECTION_NAME);
     }
 
 }
