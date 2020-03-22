@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.crypto.SecureUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.model.Consumer;
 import com.jmal.clouddisk.service.IAuthService;
@@ -41,7 +42,7 @@ public class AuthServiceImpl implements IAuthService {
         }else{
             String userPassword = user.getPassword();
             if(!StringUtils.isEmpty(password)){
-                if(password.equals(userPassword)){
+                if(SecureUtil.md5(password).equals(userPassword)){
                     Map<String,String> map = new HashMap<>(3);
                     String token = TokenUtil.createTokens(userName);
                     map.put("token",TokenUtil.createTokens(userName));
@@ -64,5 +65,21 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     public ResponseResult<Object> authentication(String userName, String token) {
         return ResultUtil.success();
+    }
+
+    @Override
+    public ResponseResult<Object> validOldPass(String id, String password) {
+        Consumer user = mongoTemplate.findById(id, Consumer.class, UserServiceImpl.COLLECTION_NAME);
+        if(user == null){
+            return ResultUtil.warning("该用户不存在");
+        }else{
+            String userPassword = user.getPassword();
+            if(!StringUtils.isEmpty(password)){
+                if(SecureUtil.md5(password).equals(userPassword)){
+                    return ResultUtil.success();
+                }
+            }
+        }
+        return ResultUtil.warning("密码错误");
     }
 }

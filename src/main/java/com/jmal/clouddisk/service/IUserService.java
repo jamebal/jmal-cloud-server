@@ -37,7 +37,7 @@ public interface IUserService {
      * @param takeUpSpace 是否显示占用空间
      * @return
      */
-    ResponseResult<Object> userInfo(String token,Boolean takeUpSpace);
+    ResponseResult<Object> userInfo(String token,Boolean takeUpSpace,Boolean returnPassWord);
 
     /***
      * 用户信息
@@ -58,6 +58,20 @@ public interface IUserService {
      * @return
      */
     String getUserName(String token);
+
+    /***
+     * 修改用户密码
+     * @param consumer
+     * @return
+     */
+    ResponseResult<Object> updatePass(Consumer consumer);
+
+    /***
+     * 重置密码
+     * @param consumer
+     * @return
+     */
+    ResponseResult<Object> resetPass(Consumer consumer);
 
 //    /***
 //     * 添加用户组

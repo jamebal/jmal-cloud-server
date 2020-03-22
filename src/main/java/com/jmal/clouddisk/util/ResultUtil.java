@@ -25,6 +25,13 @@ public class ResultUtil {
 		return result;
 	}
 
+	public static <T> ResponseResult<Object> successMsg(String message){
+		ResponseResult<Object> result = new ResponseResult<>();
+		result.setCode(0);
+		result.setMessage(message);
+		return result;
+	}
+
 	public static ResponseResult<Object> success(){
 		ResponseResult<Object> result = new ResponseResult<>();
 		result.setCode(0);

@@ -61,9 +61,9 @@ public class ShareController {
      */
     @GetMapping("/public/access-share")
     @ResponseBody
-    public ResponseResult<Object> accessShare(@RequestParam String share) throws CommonException {
+    public ResponseResult<Object> accessShare(@RequestParam String share, Integer pageIndex, Integer pageSize) throws CommonException {
         ResultUtil.checkParamIsNull(share);
-        return shareService.accessShare(share);
+        return shareService.accessShare(share, pageIndex, pageSize);
     }
 
     /***
@@ -74,12 +74,12 @@ public class ShareController {
      */
     @GetMapping("public/access-share/open")
     @ResponseBody
-    public ResponseResult<Object> accessShareOpenDir(@RequestParam String share, @RequestParam String fileId) throws CommonException {
+    public ResponseResult<Object> accessShareOpenDir(@RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize) throws CommonException {
         ShareBO shareBO = shareService.getShare(share);
         if(!shareService.checkWhetherExpired(shareBO)){
             return ResultUtil.warning("该分享以过期");
         }
-        return shareService.accessShareOpenDir(shareBO, fileId);
+        return shareService.accessShareOpenDir(shareBO, fileId, pageIndex, pageSize );
     }
 
     /**

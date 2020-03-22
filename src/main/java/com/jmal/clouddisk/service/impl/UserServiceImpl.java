@@ -1,5 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.common.exception.CommonException;
 import com.jmal.clouddisk.common.exception.ExceptionType;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -43,7 +46,14 @@ public class UserServiceImpl implements IUserService {
     public ResponseResult<Object> add(Consumer user) {
         Consumer user1 = getUserInfoByName(user.getUsername());
         if(user1 == null){
+            if(user.getQuota() == null){
+                user.setQuota(10);
+            }
+            user.setPassword(SecureUtil.md5(user.getPassword()));
+            user.setCreateTime(System.currentTimeMillis());
             mongoTemplate.save(user, COLLECTION_NAME);
+        }else{
+            return ResultUtil.warning("该用户已存在");
         }
         return ResultUtil.success();
     }
@@ -106,11 +116,13 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public ResponseResult<Object> userInfo(String id, Boolean takeUpSpace) {
+    public ResponseResult<Object> userInfo(String id, Boolean takeUpSpace, Boolean returnPassword) {
         Consumer consumer = mongoTemplate.findById(id,Consumer.class,COLLECTION_NAME);
-        consumer.setPassword(null);
         if(takeUpSpace != null && takeUpSpace) {
             consumer.setTakeUpSpace(fileService.takeUpSpace(consumer.getId()));
+        }
+        if(returnPassword == null || !returnPassword ){
+            consumer.setPassword(null);
         }
         return ResultUtil.success(consumer);
     }
@@ -140,6 +152,50 @@ public class UserServiceImpl implements IUserService {
             throw new CommonException(ExceptionType.PERMISSION_DENIED.getCode(),ExceptionType.PERMISSION_DENIED.getMsg());
         }
         return username;
+    }
+
+    /***
+     * 修改密码
+     * @param consumer
+     * @return
+     */
+    @Override
+    public ResponseResult<Object> updatePass(Consumer consumer) {
+        String userId = consumer.getId();
+        String newPassword = consumer.getPassword();
+        if(!StringUtils.isEmpty(userId) && !StringUtils.isEmpty(newPassword)){
+            Consumer consumer1 = mongoTemplate.findById(userId, Consumer.class,COLLECTION_NAME);
+            String oldPassword = consumer1.getPassword();
+            if(newPassword.equals(oldPassword)){
+                return ResultUtil.warning("新密码不能于旧密码相同!");
+            }
+            Query query = new Query();
+            query.addCriteria(Criteria.where("_id").is(userId));
+            Update update = new Update();
+            update.set("password", SecureUtil.md5(newPassword));
+            mongoTemplate.upsert(query,update,COLLECTION_NAME);
+            return ResultUtil.successMsg("修改成功!");
+        }
+        return ResultUtil.warning("修改失败!");
+    }
+
+    /***
+     * 重置密码
+     * @param consumer
+     * @return
+     */
+    @Override
+    public ResponseResult<Object> resetPass(Consumer consumer) {
+        String userId = consumer.getId();
+        if(!StringUtils.isEmpty(userId)){
+            Query query = new Query();
+            query.addCriteria(Criteria.where("_id").is(userId));
+            Update update = new Update();
+            update.set("password", SecureUtil.md5("jmalcloud"));
+            mongoTemplate.upsert(query,update,COLLECTION_NAME);
+            return ResultUtil.successMsg("重置密码成功!");
+        }
+        return ResultUtil.error("重置失败!");
     }
 
     private Consumer getUserInfoByName(String name){

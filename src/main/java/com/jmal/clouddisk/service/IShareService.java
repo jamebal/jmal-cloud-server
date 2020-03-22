@@ -22,7 +22,7 @@ public interface IShareService {
      * @param shareId
      * @return
      */
-    ResponseResult<Object> accessShare(String shareId);
+    ResponseResult<Object> accessShare(String shareId, Integer pageIndex, Integer pageSize);
 
     ShareBO getShare(String share);
 
@@ -40,5 +40,5 @@ public interface IShareService {
      */
     boolean checkWhetherExpired(String share);
 
-    ResponseResult<Object> accessShareOpenDir(ShareBO share, String fileId);
+    ResponseResult<Object> accessShareOpenDir(ShareBO share, String fileId, Integer pageIndex, Integer pageSize);
 }

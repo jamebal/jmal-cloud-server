@@ -31,4 +31,12 @@ public interface IAuthService {
      * @return ResponseResult<Object>
      */
     ResponseResult<Object> authentication(String userName, String token);
+
+    /***
+     * 检验旧密码
+     * @param id
+     * @param password
+     * @return
+     */
+    ResponseResult<Object> validOldPass(String id, String password);
 }

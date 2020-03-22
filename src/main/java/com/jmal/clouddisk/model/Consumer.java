@@ -6,6 +6,8 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
+
 /**
  * @Description 用户模型
  * @blame jmal
@@ -22,6 +24,8 @@ public class Consumer {
     String showName;
     @ApiModelProperty(value = "密码", example = "123456")
     String password;
+
+    Long createTime;
     /***
      * 头像
      */

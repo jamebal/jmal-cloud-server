@@ -226,4 +226,5 @@ public interface IUploadFileService {
      */
     String uploadConsumerImage(UploadApiParam upload) throws CommonException;
 
+    FileDocument getById(String fileId);
 }

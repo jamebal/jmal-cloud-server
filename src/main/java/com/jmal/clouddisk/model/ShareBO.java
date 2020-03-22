@@ -25,6 +25,8 @@ public class ShareBO {
      * 文件Id
      */
     private String fileId;
+
+    private Boolean isFile;
     /***
      * 创建时间
      */

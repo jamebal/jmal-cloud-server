@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
+import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareBO;
 import com.jmal.clouddisk.model.UploadApiParam;
 import com.jmal.clouddisk.service.IShareService;
@@ -14,6 +15,9 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @Description 分享
@@ -42,13 +46,26 @@ public class ShareServiceImpl implements IShareService {
     }
 
     @Override
-    public ResponseResult<Object> accessShare(String shareId) {
+    public ResponseResult<Object> accessShare(String shareId, Integer pageIndex, Integer pageSize) {
         ShareBO shareBO = mongoTemplate.findById(shareId, ShareBO.class, COLLECTION_NAME);
         if(shareBO == null){
-            return ResultUtil.error(-2,"该链接已失效");
+            return ResultUtil.success("该链接已失效");
+        }
+        if(!checkWhetherExpired(shareBO)){
+            return ResultUtil.success("该链接已失效");
         }
         UploadApiParam uploadApiParam = new UploadApiParam();
+        uploadApiParam.setPageIndex(pageIndex);
+        uploadApiParam.setPageSize(pageSize);
         uploadApiParam.setUserId(shareBO.getUserId());
+        if(shareBO.getIsFile()){
+            List<FileDocument> list = new ArrayList<>();
+            FileDocument fileDocument = fileService.getById(shareBO.getFileId());
+            if(fileDocument != null){
+                list.add(fileDocument);
+            }
+            return ResultUtil.success(list);
+        }
         return fileService.searchFileAndOpenDir(uploadApiParam, shareBO.getFileId());
     }
 
@@ -76,9 +93,11 @@ public class ShareServiceImpl implements IShareService {
     }
 
     @Override
-    public ResponseResult<Object> accessShareOpenDir(ShareBO shareBO, String fileId) {
+    public ResponseResult<Object> accessShareOpenDir(ShareBO shareBO, String fileId, Integer pageIndex, Integer pageSize) {
         UploadApiParam uploadApiParam = new UploadApiParam();
         uploadApiParam.setUserId(shareBO.getUserId());
+        uploadApiParam.setPageIndex(pageIndex);
+        uploadApiParam.setPageSize(pageSize);
         return fileService.searchFileAndOpenDir(uploadApiParam, fileId);
     }
 

@@ -337,7 +337,6 @@ public class UploadFileServiceImpl implements IUploadFileService {
         return Optional.empty();
     }
 
-
     private void setContent(String username, FileDocument fileDocument) {
         String currentDirectory = getUserDirectory(fileDocument.getPath());
         File file = new File(rootPath + File.separator + username + currentDirectory + fileDocument.getName());
@@ -884,6 +883,11 @@ public class UploadFileServiceImpl implements IUploadFileService {
             e.printStackTrace();
         }
         return "";
+    }
+
+    @Override
+    public FileDocument getById(String fileId) {
+        return mongoTemplate.findById(fileId,FileDocument.class,COLLECTION_NAME);
     }
 
     private ResponseResult<Object> copy(UploadApiParam upload, String from, String to) {

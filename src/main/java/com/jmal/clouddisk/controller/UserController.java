@@ -25,7 +25,7 @@ public class UserController {
     @ApiOperation(value = "添加用户")
     @PostMapping("/add")
     @ResponseBody
-    public ResponseResult<Object> add(@RequestBody Consumer Consumer){
+    public ResponseResult<Object> add(Consumer Consumer){
         return service.add(Consumer);
     }
 
@@ -43,11 +43,25 @@ public class UserController {
         return service.update(Consumer,blobAvatar);
     }
 
+    @ApiOperation(value = "修改用户密码")
+    @PostMapping("/update-pass")
+    @ResponseBody
+    public ResponseResult<Object> updatePass(Consumer Consumer){
+        return service.updatePass(Consumer);
+    }
+
+    @ApiOperation(value = "重置密码")
+    @PostMapping("/reset-pass")
+    @ResponseBody
+    public ResponseResult<Object> resetPass(Consumer Consumer){
+        return service.resetPass(Consumer);
+    }
+
     @ApiOperation(value = "用户信息")
     @GetMapping("/userInfo")
     @ResponseBody
-    public ResponseResult<Object> ConsumerInfo(@RequestParam String id,Boolean takeUpSpace){
-        return service.userInfo(id, takeUpSpace);
+    public ResponseResult<Object> ConsumerInfo(@RequestParam String id,Boolean takeUpSpace,Boolean returnPassWord){
+        return service.userInfo(id, takeUpSpace, returnPassWord);
     }
 
     @ApiOperation(value = "用户信息列表")

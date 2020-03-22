@@ -29,6 +29,17 @@ public class AuthController {
         return authService.login(user.getUsername(), user.getPassword());
     }
 
+    /***
+     * 校验旧密码
+     * @param user
+     * @return
+     */
+    @PostMapping("/valid-old-pass")
+    @ResponseBody
+    public ResponseResult<Object> validOldPass(Consumer user){
+        return authService.validOldPass(user.getId(), user.getPassword());
+    }
+
     @GetMapping("/logout")
     @ResponseBody
     public ResponseResult<Object> logout(HttpServletRequest request){
