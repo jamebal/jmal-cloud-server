@@ -30,28 +30,28 @@ public class UserController {
     }
 
     @ApiOperation(value = "删除用户")
-    @GetMapping("/delete")
+    @DeleteMapping("/delete")
     @ResponseBody
     public ResponseResult<Object> delete(@RequestParam String id){
         return service.delete(id);
     }
 
     @ApiOperation(value = "修改用户")
-    @PostMapping("/update")
+    @PutMapping("/update")
     @ResponseBody
     public ResponseResult<Object> update(Consumer Consumer, MultipartFile blobAvatar){
         return service.update(Consumer,blobAvatar);
     }
 
     @ApiOperation(value = "修改用户密码")
-    @PostMapping("/update-pass")
+    @PutMapping("/update-pass")
     @ResponseBody
     public ResponseResult<Object> updatePass(Consumer Consumer){
         return service.updatePass(Consumer);
     }
 
     @ApiOperation(value = "重置密码")
-    @PostMapping("/reset-pass")
+    @PutMapping("/reset-pass")
     @ResponseBody
     public ResponseResult<Object> resetPass(Consumer Consumer){
         return service.resetPass(Consumer);

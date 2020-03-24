@@ -1,9 +1,9 @@
-package com.jmal.clouddisk;
+package com.jmal.clouddisk.interceptor;
 
 import com.alibaba.fastjson.JSON;
 import com.github.benmanes.caffeine.cache.Cache;
-import com.jmal.clouddisk.common.exception.CommonException;
-import com.jmal.clouddisk.common.exception.ExceptionType;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;

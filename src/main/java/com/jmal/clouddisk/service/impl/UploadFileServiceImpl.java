@@ -19,23 +19,22 @@ import java.text.Collator;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import cn.hutool.core.codec.Rot;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
-import com.drew.imaging.jpeg.JpegMetadataReader;
-import com.drew.imaging.jpeg.JpegProcessingException;
-import com.drew.metadata.Directory;
-import com.drew.metadata.Metadata;
-import com.drew.metadata.Tag;
-import com.jmal.clouddisk.model.Consumer;
+import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.listener.FileListener;
+import com.jmal.clouddisk.listener.TempDirFilter;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.util.*;
+import org.apache.commons.io.monitor.FileAlterationMonitor;
+import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -51,12 +50,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import com.jmal.clouddisk.AuthInterceptor;
-import com.jmal.clouddisk.common.exception.CommonException;
-import com.jmal.clouddisk.common.exception.ExceptionType;
-import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.UploadApiParam;
-import com.jmal.clouddisk.model.UploadResponse;
+import com.jmal.clouddisk.interceptor.AuthInterceptor;
+import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.service.IUploadFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.mongodb.client.AggregateIterable;
@@ -82,18 +77,13 @@ public class UploadFileServiceImpl implements IUploadFileService {
     @Autowired
     IUserService userService;
 
-    /***
-     * 文件路径分隔符,mongodb里专用
-     */
-    private static final String DIR_SEPARATOR = "/";
+    @Autowired
+    FilePropertie filePropertie;
 
-    /***
-     * 保存分片的目录
-     */
-    private static final String TEMPORARY_DIRECTORY = "temporary directory";
+    @Autowired
+    FileService fileService;
 
     private static final String COLLECTION_NAME = "fileDocument";
-
     private static final String CONTENT_TYPE_IMAGE = "image";
     private static final String CONTENT_TYPE_MARK_DOWN = "text/markdown";
 
@@ -104,14 +94,14 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
     private static final AES aes = SecureUtil.aes();
 
-    @Value("${root-path}")
-    String rootPath;
-
-    @Value("${user-img}")
-    String userImg;
-
-    @Value("${document-img}")
-    String documentImg;
+//    @Value("${root-path}")
+//    String filePropertie.getRootDir();
+//
+//    @Value("${user-img}")
+//    String userImg;
+//
+//    @Value("${document-img}")
+//    String documentImg;
 
     private Cache<String, CopyOnWriteArrayList<Integer>> resumeCache = CaffeineUtil.getResumeCache();
 
@@ -248,11 +238,11 @@ public class UploadFileServiceImpl implements IUploadFileService {
             return getUserDirectory(fileDocument.getPath() + fileDocument.getName());
         }
         String currentDirectory = fileDocument.getPath() + fileDocument.getName();
-        return currentDirectory.replaceAll(DIR_SEPARATOR, File.separator);
+        return currentDirectory.replaceAll(filePropertie.getSeparator(), File.separator);
     }
 
     private String getUserDir(String userName) {
-        return rootPath + File.separator + userName;
+        return filePropertie.getRootDir() + File.separator + userName;
     }
 
 
@@ -339,7 +329,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
     private void setContent(String username, FileDocument fileDocument) {
         String currentDirectory = getUserDirectory(fileDocument.getPath());
-        File file = new File(rootPath + File.separator + username + currentDirectory + fileDocument.getName());
+        File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
         byte[] content = FileUtil.readBytes(file);
         fileDocument.setContent(content);
     }
@@ -483,7 +473,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         String username = user.getUsername();
         String userDirectory = getUserFilePath(aes.decryptStr(relativePath));
         String absolutePath = File.separator + username + userDirectory;
-        File file = new File(rootPath + absolutePath);
+        File file = new File(filePropertie.getRootDir() + absolutePath);
         String filename = FileUtil.getName(file);
         try{
             //获取浏览器名（IE/Chrome/firefox）目前主流的四大浏览器内核Trident(IE)、Gecko(Firefox内核)、WebKit(Safari内核,Chrome内核原型,开源)以及Presto(Opera前内核) (已废弃)
@@ -568,7 +558,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
             String currentDirectory = getUserDirectory(fileDocument.getPath());
-            String filePath = rootPath + File.separator + username + currentDirectory;
+            String filePath = filePropertie.getRootDir() + File.separator + username + currentDirectory;
             File file = new File(filePath + fileDocument.getName());
             if (fileDocument.getIsFolder()) {
                 Query query = new Query();
@@ -679,41 +669,12 @@ public class UploadFileServiceImpl implements IUploadFileService {
                 }else{
                     String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
                     String currentDirectory = getUserDirectory(fileDocument.getPath());
-                    File file = new File(rootPath + File.separator + username + currentDirectory + fileDocument.getName());
+                    File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
                     fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
                 }
             }
             return ResultUtil.success(fileDocument);
         }
-    }
-
-    public static void main(String[] args) {
-
-        String e = aes.encryptBase64("/myBlog/mardown/media/15838958658731/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%2031.png");
-        System.out.println(e);
-        System.out.println(aes.decryptStr(e));
-
-//        System.out.println("开始读取图片信息...");
-//        long stime =  System.currentTimeMillis();
-//        File jpegFile = new File("/Users/jmal/Pictures/IMG_0958.jpg");
-//        Metadata metadata;
-//        try {
-//            metadata = JpegMetadataReader.readMetadata(jpegFile);
-//            Iterator<Directory> it = metadata.getDirectories().iterator();
-//            while (it.hasNext()) {
-//                Directory exif = it.next();
-//                Iterator<Tag> tags = exif.getTags().iterator();
-//                while (tags.hasNext()) {
-//                    Tag tag = (Tag) tags.next();
-//                    System.out.println(tag);
-//                }
-//            }
-//            System.out.println("图片信息读取完成！耗时:"+(System.currentTimeMillis()-stime));
-//        } catch (JpegProcessingException e) {
-//            e.printStackTrace();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
     }
 
     /***
@@ -729,7 +690,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         //用户磁盘目录
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
-        File file = new File(rootPath + File.separator + upload.getUsername() + currentDirectory + filename);
+        File file = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + currentDirectory + filename);
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
         // 保存文件信息
         upload.setSuffix(FileUtil.extName(filename));
@@ -758,8 +719,8 @@ public class UploadFileServiceImpl implements IUploadFileService {
         //用户磁盘目录
         String currentDirectory = getUserDirectory(Objects.requireNonNull(fileDocument).getPath());
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
-        File file = new File(rootPath + File.separator + upload.getUsername() + currentDirectory + filename);
-        FileUtil.del(rootPath + File.separator + upload.getUsername() + currentDirectory + fileDocument.getName());
+        File file = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + currentDirectory + filename);
+        FileUtil.del(filePropertie.getRootDir() + File.separator + upload.getUsername() + currentDirectory + fileDocument.getName());
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
         Update update = new Update();
         update.set("size", FileUtil.size(file));
@@ -796,7 +757,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
             String username = upload.getUsername();
             String userId = upload.getUserId();
-            String directoryPath = upload.getRootPath() + File.separator + upload.getUsername() + getUserDirectory(docPath);
+            String directoryPath = filePropertie.getRootDir() + File.separator + upload.getUsername() + getUserDirectory(docPath);
             File dir = new File(directoryPath);
             if(!dir.exists()){
                 StringBuilder parentPath = new StringBuilder();
@@ -814,7 +775,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
                 }
             }
             // 没有分片,直接存
-            File newFile = new File(upload.getRootPath() + File.separator + upload.getUsername() + userDirectoryFilePath);
+            File newFile = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + userDirectoryFilePath);
             FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             // 保存文件信息
             upload.setInputStream(multipartFile.getInputStream());
@@ -829,7 +790,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
     }
 
     /***
-     * 上传文档里的图片
+     * 上传用户图片
      * @param upload
      * @return
      * @throws CommonException
@@ -853,7 +814,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
             String username = upload.getUsername();
             String userId = upload.getUserId();
-            String directoryPath = rootPath + File.separator + upload.getUsername() + getUserDirectory(docPath);
+            String directoryPath = filePropertie.getRootDir() + File.separator + upload.getUsername() + getUserDirectory(docPath);
             File dir = new File(directoryPath);
             if(!dir.exists()){
                 StringBuilder parentPath = new StringBuilder();
@@ -871,7 +832,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
                 }
             }
             // 没有分片,直接存
-            File newFile = new File(rootPath + File.separator + upload.getUsername() + userDirectoryFilePath);
+            File newFile = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + userDirectoryFilePath);
             FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             // 保存文件信息
             upload.setInputStream(multipartFile.getInputStream());
@@ -1010,7 +971,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
         if (currentChunkSize == totalSize) {
             // 没有分片,直接存
-            File chunkFile = new File(upload.getRootPath() + File.separator + upload.getUsername() + userDirectoryFilePath);
+            File chunkFile = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + userDirectoryFilePath);
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
             // 保存文件信息
             upload.setInputStream(file.getInputStream());
@@ -1023,7 +984,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
             // 落地保存文件
             // 这时保存的每个块, 块先存好, 后续会调合并接口, 将所有块合成一个大文件
             // 保存在用户的tmp目录下
-            File chunkFile = new File(upload.getRootPath() + File.separator + TEMPORARY_DIRECTORY + File.separator + upload.getUsername() + File.separator + md5 + File.separator + upload.getChunkNumber());
+            File chunkFile = new File(filePropertie.getRootDir() + File.separator + filePropertie.getChunkFileDir() + File.separator + upload.getUsername() + File.separator + md5 + File.separator + upload.getChunkNumber());
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
             setResumeCache(upload);
             uploadResponse.setUpload(true);
@@ -1047,7 +1008,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         // 新建文件夹
         String userDirectoryFilePath = getUserDirectoryFilePath(upload);
         //没有分片,直接存
-        File dir = new File(upload.getRootPath() + File.separator + upload.getUsername() + userDirectoryFilePath);
+        File dir = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + userDirectoryFilePath);
         if (!dir.exists()) {
             FileUtil.mkdir(dir);
 //            if (!dir.mkdir()) {
@@ -1227,7 +1188,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         CopyOnWriteArrayList<Integer> resumeList = new CopyOnWriteArrayList<>();
         String md5 = upload.getIdentifier();
         // 读取tmp分片目录所有文件
-        File f = new File(upload.getRootPath() + File.separator + TEMPORARY_DIRECTORY + File.separator + upload.getUsername() + File.separator + md5);
+        File f = new File(filePropertie.getRootDir() + File.separator + filePropertie.getChunkFileDir() + File.separator + upload.getUsername() + File.separator + md5);
         if (f.exists()) {
             // 排除目录，只要文件
             File[] fileArray = f.listFiles(pathName -> !pathName.isDirectory());
@@ -1293,7 +1254,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
 
         // 读取tmp目录所有文件
-        File f = new File(upload.getRootPath() + File.separator + TEMPORARY_DIRECTORY + File.separator + File.separator + upload.getUsername() + File.separator + md5);
+        File f = new File(filePropertie.getRootDir() + File.separator + filePropertie.getChunkFileDir() + File.separator + File.separator + upload.getUsername() + File.separator + md5);
         // 排除目录，只要文件
         File[] fileArray = f.listFiles(pathName -> !pathName.isDirectory());
 
@@ -1304,7 +1265,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         fileList.sort(UploadFileServiceImpl::compare);
 
         //fileName：沿用原始的文件名，或者可以使用随机的字符串作为新文件名，但是要 保留原文件的后缀类型
-        File outputFile = new File(upload.getRootPath() + File.separator + upload.getUsername() + userDirectoryFilePath);
+        File outputFile = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + userDirectoryFilePath);
 
         File parentFile = outputFile.getParentFile();
         if (!parentFile.exists()) {
@@ -1368,36 +1329,36 @@ public class UploadFileServiceImpl implements IUploadFileService {
     private String getUserDirectoryFilePath(UploadApiParam upload) {
         String currentDirectory = upload.getCurrentDirectory();
         if (StringUtils.isEmpty(currentDirectory)) {
-            currentDirectory = DIR_SEPARATOR;
+            currentDirectory = filePropertie.getSeparator();
         }
         if (upload.getIsFolder()) {
             if (upload.getFolderPath() != null) {
-                currentDirectory += DIR_SEPARATOR + upload.getFolderPath();
+                currentDirectory += filePropertie.getSeparator() + upload.getFolderPath();
             } else {
-                currentDirectory += DIR_SEPARATOR + upload.getFilename();
+                currentDirectory += filePropertie.getSeparator() + upload.getFilename();
             }
         } else {
-            currentDirectory += DIR_SEPARATOR + upload.getRelativePath();
+            currentDirectory += filePropertie.getSeparator() + upload.getRelativePath();
         }
-        currentDirectory = currentDirectory.replaceAll(DIR_SEPARATOR, File.separator);
+        currentDirectory = currentDirectory.replaceAll(filePropertie.getSeparator(), File.separator);
         return currentDirectory;
     }
 
     private String getUserDirectory(String currentDirectory) {
         if (StringUtils.isEmpty(currentDirectory)) {
-            currentDirectory = DIR_SEPARATOR;
+            currentDirectory = filePropertie.getSeparator();
         } else {
-            if (!currentDirectory.endsWith(DIR_SEPARATOR)) {
-                currentDirectory += DIR_SEPARATOR;
+            if (!currentDirectory.endsWith(filePropertie.getSeparator())) {
+                currentDirectory += filePropertie.getSeparator();
             }
         }
-        currentDirectory = currentDirectory.replaceAll(DIR_SEPARATOR, File.separator);
+        currentDirectory = currentDirectory.replaceAll(filePropertie.getSeparator(), File.separator);
         return currentDirectory;
     }
 
     private String getUserFilePath(String relativePath) {
         if (!StringUtils.isEmpty(relativePath)) {
-            relativePath = relativePath.replaceAll(DIR_SEPARATOR, File.separator);
+            relativePath = relativePath.replaceAll(filePropertie.getSeparator(), File.separator);
         }
         return relativePath;
     }
@@ -1446,7 +1407,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         boolean isDel = false;
         for (FileDocument fileDocument : fileDocuments) {
             String currentDirectory = getUserDirectory(fileDocument.getPath());
-            String filePath = rootPath + File.separator + username + currentDirectory + fileDocument.getName();
+            String filePath = filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName();
             File file = new File(filePath);
             isDel = FileUtil.del(file);
             if (fileDocument.getIsFolder()) {

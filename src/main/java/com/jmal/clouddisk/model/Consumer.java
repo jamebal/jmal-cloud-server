@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Data
 @ApiModel
 public class Consumer {
-    @ApiModelProperty(hidden = true)
+
     @Id
     String id;
     @ApiModelProperty(value = "用户名", example = "jmal")

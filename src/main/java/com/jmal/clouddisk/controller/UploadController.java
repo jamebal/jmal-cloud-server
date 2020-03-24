@@ -1,14 +1,16 @@
 package com.jmal.clouddisk.controller;
 
-import com.jmal.clouddisk.AuthInterceptor;
-import com.jmal.clouddisk.common.exception.CommonException;
-import com.jmal.clouddisk.common.exception.ExceptionType;
+import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.interceptor.AuthInterceptor;
+import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.UploadApiParam;
 import com.jmal.clouddisk.service.IUploadFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -31,6 +33,7 @@ import java.util.Optional;
  * @Date 2020-01-27 12:59
  * @blame jmal
  */
+@Api(tags = "文件管理")
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 public class UploadController {
@@ -41,15 +44,13 @@ public class UploadController {
     @Autowired
     IUserService service;
 
-    @Value("${root-path}")
-    String rootPath;
-
     /***
      * 文件列表
      * @param upload
      * @return
      * @throws CommonException
      */
+    @ApiOperation("文件列表")
     @GetMapping("/list")
     public ResponseResult<Object> list(UploadApiParam upload) throws CommonException {
         return fileService.listFiles(upload);
@@ -61,6 +62,7 @@ public class UploadController {
      * @return
      * @throws CommonException
      */
+    @ApiOperation("查找下级目录")
     @GetMapping("/query-file-tree")
     public ResponseResult<Object> queryFileTree(UploadApiParam upload, String fileId) throws CommonException {
         return fileService.queryFileTree(upload,fileId);
@@ -72,6 +74,7 @@ public class UploadController {
      * @return
      * @throws CommonException
      */
+    @ApiOperation("搜索文件")
     @GetMapping("/search-file")
     public ResponseResult<Object> searchFile(UploadApiParam upload, String keyword) throws CommonException {
         return fileService.searchFile(upload, keyword);
@@ -83,6 +86,7 @@ public class UploadController {
      * @return
      * @throws CommonException
      */
+    @ApiOperation("搜索文件并打开文件夹")
     @GetMapping("/search-file-open")
     public ResponseResult<Object> searchFileAndOpenDir(UploadApiParam upload, String id) throws CommonException {
         return fileService.searchFileAndOpenDir(upload, id);
@@ -94,10 +98,10 @@ public class UploadController {
      * @return
      * @throws IOException
      */
+    @ApiOperation("文件上传")
     @PostMapping("upload")
     @ResponseBody
     public ResponseResult<Object> uploadPost(UploadApiParam upload) throws IOException {
-        upload.setRootPath(rootPath);
         System.out.println("upload:" + upload.toString());
         return fileService.upload(upload);
     }
@@ -107,10 +111,10 @@ public class UploadController {
      * @param upload
      * @return
      */
+    @ApiOperation("文件夹上传")
     @PostMapping("upload-folder")
     @ResponseBody
     public ResponseResult<Object> uploadFolder(UploadApiParam upload) throws CommonException {
-        upload.setRootPath(rootPath);
         System.out.println("upload-folder:" + upload.toString());
         return fileService.uploadFolder(upload);
     }
@@ -120,10 +124,10 @@ public class UploadController {
      * @param upload
      * @return
      */
+    @ApiOperation("检查文件/分片是否存在")
     @GetMapping("upload")
     @ResponseBody
     public ResponseResult<Object> checkUpload(UploadApiParam upload) throws IOException {
-        upload.setRootPath(rootPath);
         System.out.println("check:" + upload.toString());
         return fileService.checkChunkUploaded(upload);
     }
@@ -134,10 +138,10 @@ public class UploadController {
      * @return
      * @throws IOException
      */
+    @ApiOperation("合并文件")
     @PostMapping("merge")
     @ResponseBody
     public ResponseResult<Object> merge(UploadApiParam upload) throws IOException {
-        upload.setRootPath(rootPath);
         System.out.println("merge:" + upload.toString());
         return fileService.merge(upload);
     }
@@ -147,6 +151,7 @@ public class UploadController {
      * @param id 文件id
      * @return
      */
+    @ApiOperation("在线显示文件")
     @GetMapping("/view")
     public ResponseEntity<Object> serveFileOnline(HttpServletRequest request, String id) {
         ResultUtil.checkParamIsNull(id);
@@ -166,6 +171,7 @@ public class UploadController {
      * @param fileIds fileIds
      * @return
      */
+    @ApiOperation("预览文件")
     @GetMapping("/preview/{filename}")
     public void preview(HttpServletRequest request, HttpServletResponse response, String[] fileIds,@PathVariable String filename) throws CommonException {
         if (fileIds != null && fileIds.length > 0) {
@@ -181,6 +187,7 @@ public class UploadController {
      * @param fileIds
      * @return
      */
+    @ApiOperation("下载文件 转到 Nginx 下载")
     @GetMapping("/download")
     public void downLoad(HttpServletRequest request, HttpServletResponse response, String[] fileIds) throws CommonException {
         System.out.println("download...");
@@ -198,6 +205,7 @@ public class UploadController {
      * @param id 文件id
      * @return
      */
+    @ApiOperation("显示缩略图")
     @GetMapping("/view/thumbnail")
     public ResponseEntity<Object> thumbnail(HttpServletRequest request, String id) throws IOException {
         ResultUtil.checkParamIsNull(id);
@@ -219,6 +227,7 @@ public class UploadController {
      * @return
      * @throws CommonException
      */
+    @ApiOperation("收藏文件或文件夹")
     @PostMapping("/favorite")
     public ResponseResult<Object> favorite(HttpServletRequest request, String id) throws CommonException {
         ResultUtil.checkParamIsNull(id);
@@ -233,6 +242,7 @@ public class UploadController {
      * @return
      * @throws CommonException
      */
+    @ApiOperation("取消收藏")
     @PostMapping("/unFavorite")
     public ResponseResult<Object> unFavorite(HttpServletRequest request, String id) throws CommonException {
         ResultUtil.checkParamIsNull(id);
@@ -247,6 +257,7 @@ public class UploadController {
      * @return
      * @throws CommonException
      */
+    @ApiOperation("删除文件")
     @DeleteMapping("/delete")
     public ResponseResult<Object> delete(String username, String[] fileIds) throws CommonException {
         if (fileIds != null && fileIds.length > 0) {
@@ -265,6 +276,7 @@ public class UploadController {
      * @return
      * @throws CommonException
      */
+    @ApiOperation("重命名")
     @GetMapping("/rename")
     public ResponseResult<Object> rename(String newFileName, String username, String id) throws CommonException {
         return fileService.rename(newFileName, username, id);
@@ -278,6 +290,7 @@ public class UploadController {
      * @return
      * @throws CommonException
      */
+    @ApiOperation("移动文件/文件夹")
     @GetMapping("/move")
     public ResponseResult move(UploadApiParam upload, String[] froms, String to) throws CommonException {
         if (froms != null && froms.length > 0) {
@@ -296,6 +309,7 @@ public class UploadController {
      * @return
      * @throws CommonException
      */
+    @ApiOperation("复制文件/文件夹")
     @GetMapping("/copy")
     public ResponseResult copy(UploadApiParam upload, String[] froms, String to) throws CommonException {
         if (froms != null && froms.length > 0) {
@@ -305,43 +319,4 @@ public class UploadController {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }
     }
-
-    /***
-     * 上传文档里的图片
-     * @param upload
-     * @return
-     * @throws IOException
-     */
-    @PostMapping("/upload-markdown-image")
-    @ResponseBody
-    public ResponseResult<Object> uploadMarkdownImage(UploadApiParam upload) throws CommonException {
-        upload.setRootPath(rootPath);
-        System.out.println("upload-markdown-image:" + upload.toString());
-        return fileService.uploadMarkdownImage(upload);
-    }
-
-    /**
-     * 预览文档里的图片
-     * @param fileId fileId
-     * @return
-     */
-    @GetMapping("/public/image/{fileId}")
-    public void imagePreview(HttpServletRequest request, HttpServletResponse response, @PathVariable String fileId) throws CommonException {
-        ResultUtil.checkParamIsNull(fileId);
-        List<String> list = new ArrayList<>();
-        list.add(fileId);
-        fileService.publicNginx(request, response, list, false);
-    }
-
-    /**
-     * 预览文档里的图片
-     * @param relativePath relativePath
-     * @return
-     */
-    @GetMapping("/public/view")
-    public void imageRelativePath(HttpServletRequest request, HttpServletResponse response, String relativePath,String userId) throws CommonException {
-        ResultUtil.checkParamIsNull(relativePath,userId);
-        fileService.publicNginx(request, response, relativePath, userId);
-    }
-
 }

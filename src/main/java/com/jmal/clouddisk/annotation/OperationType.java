@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.common.annotation;
+package com.jmal.clouddisk.annotation;
 
 /**
  * OperationType 数据操作类型枚举

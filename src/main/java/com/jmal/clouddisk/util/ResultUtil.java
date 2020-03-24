@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.util;
 
-import com.jmal.clouddisk.common.exception.CommonException;
-import com.jmal.clouddisk.common.exception.ExceptionType;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
 
 /**
  * ResultUtil

@@ -1,10 +1,13 @@
 package com.jmal.clouddisk.controller;
 
-import com.jmal.clouddisk.AuthInterceptor;
+import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.Consumer;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.util.ResponseResult;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -16,32 +19,27 @@ import javax.servlet.http.HttpServletRequest;
  *
  * @blame jmal
  */
-@Controller
+@RestController
 @Api(tags = "登录认证")
 public class AuthController {
 
     @Autowired
     IAuthService authService;
 
+    @ApiOperation("登录")
     @PostMapping("/login")
-    @ResponseBody
     public ResponseResult<Object> login(@RequestBody Consumer user){
         return authService.login(user.getUsername(), user.getPassword());
     }
 
-    /***
-     * 校验旧密码
-     * @param user
-     * @return
-     */
+    @ApiOperation("校验旧密码")
     @PostMapping("/valid-old-pass")
-    @ResponseBody
-    public ResponseResult<Object> validOldPass(Consumer user){
+    public ResponseResult<Object> validOldPass(@RequestBody Consumer user){
         return authService.validOldPass(user.getId(), user.getPassword());
     }
 
+    @ApiOperation("登出")
     @GetMapping("/logout")
-    @ResponseBody
     public ResponseResult<Object> logout(HttpServletRequest request){
         String token = request.getHeader(AuthInterceptor.JMAL_TOKEN);
         return authService.logout(token);

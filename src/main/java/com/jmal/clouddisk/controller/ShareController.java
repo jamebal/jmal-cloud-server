@@ -1,15 +1,15 @@
 package com.jmal.clouddisk.controller;
 
-import com.jmal.clouddisk.AuthInterceptor;
-import com.jmal.clouddisk.common.exception.CommonException;
-import com.jmal.clouddisk.common.exception.ExceptionType;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareBO;
-import com.jmal.clouddisk.model.UploadApiParam;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUploadFileService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -30,7 +30,7 @@ import java.util.Optional;
  * @Author jmal
  * @Date 2020-03-17 16:22
  */
-@Controller
+@Api(tags = "文件分享")
 @RestController
 public class ShareController {
 
@@ -46,6 +46,7 @@ public class ShareController {
      * @return
      * @throws CommonException
      */
+    @ApiOperation("生成分享链接")
     @PostMapping("/share/generate")
     @ResponseBody
     public ResponseResult<Object> generateLink(@RequestBody ShareBO share) throws CommonException {
@@ -59,6 +60,7 @@ public class ShareController {
      * @return
      * @throws CommonException
      */
+    @ApiOperation("访问分享链接")
     @GetMapping("/public/access-share")
     @ResponseBody
     public ResponseResult<Object> accessShare(@RequestParam String share, Integer pageIndex, Integer pageSize) throws CommonException {
@@ -72,6 +74,7 @@ public class ShareController {
      * @return
      * @throws CommonException
      */
+    @ApiOperation("访问分享链接里的目录")
     @GetMapping("public/access-share/open")
     @ResponseBody
     public ResponseResult<Object> accessShareOpenDir(@RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize) throws CommonException {
@@ -87,6 +90,7 @@ public class ShareController {
      * @param fileIds
      * @return
      */
+    @ApiOperation("下载文件 转到 Nginx 下载")
     @GetMapping("/public/s/download")
     public void downLoad(HttpServletRequest request, HttpServletResponse response,@RequestParam String share, String[] fileIds) throws CommonException, IOException {
         boolean whetherExpired = shareService.checkWhetherExpired(share);
@@ -112,6 +116,7 @@ public class ShareController {
      * @param fileIds fileIds
      * @return
      */
+    @ApiOperation("预览文件")
     @GetMapping("/public/s/preview/{filename}")
     public void preview(HttpServletRequest request, HttpServletResponse response, String[] fileIds,@PathVariable String filename) throws CommonException {
         if (fileIds != null && fileIds.length > 0) {
@@ -128,6 +133,7 @@ public class ShareController {
      * @param id 文件id
      * @return
      */
+    @ApiOperation("显示缩略图")
     @GetMapping("/public/s/view/thumbnail")
     public ResponseEntity<Object> thumbnail(HttpServletRequest request, String id) throws IOException {
         ResultUtil.checkParamIsNull(id);

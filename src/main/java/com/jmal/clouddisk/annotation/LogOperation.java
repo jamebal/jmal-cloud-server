@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.common.annotation;
+package com.jmal.clouddisk.annotation;
 
 import lombok.Data;
 

@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.service;
 
-import com.jmal.clouddisk.common.exception.CommonException;
+import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.UploadApiParam;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -8,7 +8,6 @@ import com.jmal.clouddisk.util.ResponseResult;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Optional;
 

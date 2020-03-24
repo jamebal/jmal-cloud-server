@@ -1,4 +1,4 @@
-//package com.jmal.clouddisk.common.config;
+//package com.jmal.clouddisk.config;
 //
 //import com.fasterxml.jackson.annotation.JsonFilter;
 //import com.fasterxml.jackson.core.JsonGenerator;
@@ -37,7 +37,7 @@
 //        return new SimpleBeanPropertyFilter() {
 //
 //            @Override
-//            public void serializeAsField(Object pojo, JsonGenerator jgen, 
+//            public void serializeAsField(Object pojo, JsonGenerator jgen,
 //                    SerializerProvider prov, PropertyWriter writer)
 //                    throws Exception {
 //                if (apply(pojo.getClass(), writer.getName())) {

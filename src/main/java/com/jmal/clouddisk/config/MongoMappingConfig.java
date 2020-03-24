@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.common.config;
+package com.jmal.clouddisk.config;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.annotation.Bean;

@@ -1,7 +1,4 @@
-package com.jmal.clouddisk.common.exception;
-
-import java.util.HashMap;
-import java.util.Map;
+package com.jmal.clouddisk.exception;
 
 /**
  * @Description 异常枚举
@@ -82,13 +79,5 @@ public enum ExceptionType {
     ExceptionType(int code, String msg) {
         this.code = code;
         this.msg = msg;
-    }
-
-    public Map<Integer,String> printCodeMsg(){
-        Map<Integer,String> map = new HashMap<>();
-        for(ExceptionType exceptionType: ExceptionType.values()){
-            map.put(exceptionType.getCode(),exceptionType.getMsg());
-        }
-        return map;
     }
 }

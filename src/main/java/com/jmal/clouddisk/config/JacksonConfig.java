@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.common.config;
+package com.jmal.clouddisk.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;

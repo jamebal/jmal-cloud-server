@@ -1,10 +1,9 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.github.benmanes.caffeine.cache.Cache;
-import com.jmal.clouddisk.common.exception.CommonException;
-import com.jmal.clouddisk.common.exception.ExceptionType;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.Consumer;
 import com.jmal.clouddisk.model.UploadApiParam;
 import com.jmal.clouddisk.service.IUploadFileService;
@@ -22,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -145,7 +143,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public String getUserName(String token) {
         if(StringUtils.isEmpty(token)){
-            throw new CommonException(ExceptionType.PERMISSION_DENIED.getCode(),ExceptionType.PERMISSION_DENIED.getMsg());
+            throw new CommonException(ExceptionType.PERMISSION_DENIED.getCode(), ExceptionType.PERMISSION_DENIED.getMsg());
         }
         String username = tokenCache.getIfPresent(token);
         if(StringUtils.isEmpty(username)){

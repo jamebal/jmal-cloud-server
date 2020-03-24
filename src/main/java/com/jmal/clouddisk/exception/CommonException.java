@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.common.exception;
+package com.jmal.clouddisk.exception;
 
 import org.springframework.util.StringUtils;
 
@@ -14,7 +14,7 @@ import java.util.function.Function;
 public class CommonException extends RuntimeException {
 
     /**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
 	private final int code;

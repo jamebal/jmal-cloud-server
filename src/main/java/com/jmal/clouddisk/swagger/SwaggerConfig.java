@@ -25,6 +25,7 @@ import springfox.documentation.builders.ParameterBuilder;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.schema.ModelRef;
+import springfox.documentation.service.Contact;
 import springfox.documentation.service.Parameter;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.DocumentationCache;
@@ -57,31 +58,15 @@ public class SwaggerConfig {
 
     @Bean(value = "defaultApi")
     public Docket createDocket(){
-        //在配置好的配置类中增加此段代码即可
-        ParameterBuilder ticketPar1 = new ParameterBuilder();
-        ParameterBuilder ticketPar2 = new ParameterBuilder();
-        List<Parameter> pars = new ArrayList<>();
-        //name表示名称，description表示描述
-        ticketPar1.name("token").description("token")
-                .modelRef(new ModelRef("string")).parameterType("header")
-                .required(true).defaultValue("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJXRUIiLCJpc3MiOiJTZXJ2aWNlIiwidXNlck5hbWUiOiJhZG1pbiIsImV4cCI6MTU2NjUyODc4MywiaWF0IjoxNTY1OTIzOTgzfQ.-VG8fE5I27eAYdjbwnEizXV13Jx2kTturRjUZXWD8kA").build();
-        //添加完此处一定要把下边的带***的也加上否则不生效
-        pars.add(ticketPar1.build());
-
-        ticketPar2.name("username").description("用户名")
-                .modelRef(new ModelRef("string")).parameterType("header")
-                .required(true).defaultValue("admin").build();
-        pars.add(ticketPar2.build());
-
-
         return new Docket(DocumentationType.SWAGGER_2)
-                .apiInfo(new ApiInfoBuilder().title("Jmal Cloud - FileUpdate API")
+                .apiInfo(new ApiInfoBuilder().title("Jmal Cloud 云盘后端API文档")
                         .description("Jmal Cloud - FileUpdate API Document")
+                        .contact(new Contact("jmal","www.jmal.top","zhushilun084@163.com"))
                         .version("1.0").build())
                 .select()
                 .apis(RequestHandlerSelectors.basePackage("com.jmal.clouddisk.controller"))
                 .paths(PathSelectors.any())
-                .build().globalOperationParameters(pars);
+                .build();
     }
 
     /**
@@ -171,7 +156,7 @@ public class SwaggerConfig {
          */
         @RequestMapping
         public ModelAndView index() {
-            return new ModelAndView("redirect:" + DEFAULT_PATH + "/swagger-ui.html");
+            return new ModelAndView("redirect:" + DEFAULT_PATH + "/doc.html");
         }
 
         @RequestMapping("/swagger-resources/configuration/security")

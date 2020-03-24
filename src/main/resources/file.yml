@@ -1,0 +1,7 @@
+file:
+  #文件存储根目录
+  rootDir: /Users/jmal/temp/filetest/rootpath
+  #用户图片目录 (相当于 ${rootPath}/${username}/Image/)
+  userImgDir: /Image
+  #用户mardown图片上传目录 (相当于 ${rootPath}/${username}/Image/Document Image/)
+  documentDir: /Image/Document Image
