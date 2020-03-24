@@ -16,19 +16,18 @@ import java.util.concurrent.TimeUnit;
  */
 public class TempDirFilter implements FileFilter {
 
-    private Path rootPath;
+    private String rootPath;
     private String[] filterDirPath;
 
-    public TempDirFilter(Path rootPath, String... filterDirPath){
+    public TempDirFilter(String rootPath, String... filterDirPath){
         this.rootPath = rootPath;
         this.filterDirPath = filterDirPath;
     }
 
     @Override
     public boolean accept(File pathname) {
-        String dirpath =  pathname.getAbsolutePath().replace(rootPath + File.separator,"");
         for (String dirPath : filterDirPath) {
-            if(pathname.toPath().endsWith(dirPath)){
+            if(pathname.toPath().startsWith(Paths.get(rootPath,dirPath))){
                 return false;
             }
         }
@@ -36,14 +35,14 @@ public class TempDirFilter implements FileFilter {
     }
 
     public static void main(String[] args) throws Exception {
-        Path rootDir = Paths.get("/Users/jmal/temp/plugins");
+        String rootDir = "/Users/jmal/temp/plugins";
         // 轮询间隔 1 秒
         long interval = TimeUnit.SECONDS.toMillis(1);
         // 创建过滤器
         TempDirFilter tempDirFilter = new TempDirFilter(rootDir,"temporary directory");
 
         // 使用过滤器
-        FileAlterationObserver observer = new FileAlterationObserver(new File(rootDir.toString()), tempDirFilter);
+        FileAlterationObserver observer = new FileAlterationObserver(new File(rootDir), tempDirFilter);
         // 不使用过滤器
 //        FileAlterationObserver observer = new FileAlterationObserver(new File(rootDir));
         observer.addListener(new FileListener());

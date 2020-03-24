@@ -7,6 +7,7 @@ import com.jmal.clouddisk.util.ResponseResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -226,4 +227,11 @@ public interface IUploadFileService {
     String uploadConsumerImage(UploadApiParam upload) throws CommonException;
 
     FileDocument getById(String fileId);
+
+    /***
+     * 创建文件/文件夹(mongodb)
+     * @param username
+     * @param file
+     */
+    void createFile(String username, File file);
 }

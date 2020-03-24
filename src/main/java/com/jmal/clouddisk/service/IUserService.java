@@ -73,6 +73,13 @@ public interface IUserService {
      */
     ResponseResult<Object> resetPass(Consumer consumer);
 
+    /***
+     * 获取用户userId
+     * @param username
+     * @return
+     */
+    String getUserIdByUserName(String username);
+
 //    /***
 //     * 添加用户组
 //     * @param Consumer Consumer

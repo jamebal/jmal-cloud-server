@@ -6,6 +6,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
+import java.nio.file.Paths;
+
 /**
  * @Description 文件存储配置类
  * @Author jmal
@@ -24,5 +27,18 @@ public class FilePropertie {
     /***
      * 文件监控扫描时间间隔(秒)
      */
-    private Long timeInterval = 10l;
+    private Long timeInterval = 2L;
+
+    public String getRootDir(){
+        return Paths.get(rootDir).toString();
+    }
+
+    public String getUserImgDir(){
+        return userImgDir.replaceAll("/", File.separator);
+    }
+
+    public String getDocumentImgDir(){
+        return documentImgDir.replaceAll("/", File.separator);
+    }
+
 }

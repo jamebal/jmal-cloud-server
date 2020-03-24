@@ -37,26 +37,29 @@ public class ApplicationInit implements ApplicationRunner {
     @Autowired
     FilePropertie filePropertie;
 
+    @Autowired
+    FileListener fileListener;
+
     @Override
     public void run(ApplicationArguments args) throws Exception {
         Path rootDir = Paths.get(filePropertie.getRootDir());
         if(!Files.exists(rootDir)){
             Files.createDirectories(rootDir);
         }
-        // 轮询间隔 1 秒
+        // 轮询间隔(秒)
         long interval = TimeUnit.SECONDS.toMillis(filePropertie.getTimeInterval());
         // 创建过滤器
-        TempDirFilter tempDirFilter = new TempDirFilter(rootDir,filePropertie.getChunkFileDir());
+        TempDirFilter tempDirFilter = new TempDirFilter(filePropertie.getRootDir(),filePropertie.getChunkFileDir());
 
         // 使用过滤器
         FileAlterationObserver observer = new FileAlterationObserver(new File(filePropertie.getRootDir()), tempDirFilter);
         // 不使用过滤器
 //        FileAlterationObserver observer = new FileAlterationObserver(new File(rootDir));
-        observer.addListener(new FileListener());
+        observer.addListener(fileListener);
         //创建文件变化监听器
         FileAlterationMonitor monitor = new FileAlterationMonitor(interval, observer);
         // 开始监控
         monitor.start();
-        log.info("文件监控服务已开启, 监控目录:{},忽略目录:{}",rootDir,rootDir.toString() + File.separator + filePropertie.getChunkFileDir());
+        log.info("文件监控服务已开启,轮询间隔:{}秒, 监控目录:{},忽略目录:{}",filePropertie.getTimeInterval(),rootDir,rootDir.toString() + File.separator + filePropertie.getChunkFileDir());
     }
 }

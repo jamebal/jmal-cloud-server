@@ -15,6 +15,8 @@ import java.net.URLEncoder;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -29,17 +31,12 @@ import javax.servlet.http.HttpServletResponse;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.listener.FileListener;
-import com.jmal.clouddisk.listener.TempDirFilter;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.util.*;
-import org.apache.commons.io.monitor.FileAlterationMonitor;
-import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -851,6 +848,45 @@ public class UploadFileServiceImpl implements IUploadFileService {
         return mongoTemplate.findById(fileId,FileDocument.class,COLLECTION_NAME);
     }
 
+    @Override
+    public void createFile(String username, File file) {
+        String fileAbsolutePath = file.getAbsolutePath();
+        String fileName = file.getName();
+        String relativePath = fileAbsolutePath.substring(filePropertie.getRootDir().length(),fileAbsolutePath.length()-fileName.length()-1);
+        String userId = userService.getUserIdByUserName(username);
+        if(StringUtils.isEmpty(userId)){
+            return;
+        }
+        Query query = new Query();
+        query.addCriteria(Criteria.where("userId").is(userId));
+        query.addCriteria(Criteria.where("path").is(relativePath));
+        query.addCriteria(Criteria.where("name").is(fileName));
+        // 文件是否存在
+        boolean fileExists = mongoTemplate.exists(query,COLLECTION_NAME);
+        if(fileExists){
+            return;
+        }
+        LocalDateTime nowDateTime = LocalDateTime.now(TimeUntils.ZONE_ID);
+        Update update = new Update();
+        update.set("userId",userId);
+        update.set("name",fileName);
+        update.set("path",relativePath);
+        update.set("isFolder",file.isDirectory());
+        update.set("updateDate",nowDateTime);
+        update.set("updateDate",nowDateTime);
+        if(file.isFile()){
+            long size = file.length();
+            update.set("size", size);
+            update.set("md5",size + relativePath + fileName);
+            String suffix = FileUtil.extName(fileName);
+            update.set("contentType",FileContentTypeUtils.getContentType(suffix));
+            update.set("suffix",suffix);
+            update.set("isFavorite",false);
+        }
+        mongoTemplate.upsert(query,update,COLLECTION_NAME);
+    }
+
+
     private ResponseResult<Object> copy(UploadApiParam upload, String from, String to) {
         FileDocument formFileDocument = getFileDocumentById(from);
         String fromPath = getRelativePathByFileId(formFileDocument);
@@ -920,21 +956,6 @@ public class UploadFileServiceImpl implements IUploadFileService {
         query.addCriteria(Criteria.where("name").is(formFileDocument.getName()));
         return mongoTemplate.exists(query, COLLECTION_NAME);
     }
-
-//    private Update getUpdate(FileDocument fileDocument){
-//        Update update = new Update();
-//        update.set("userId", fileDocument.getUserId());
-//        update.set("path", fileDocument.getPath());
-//        update.set("isFolder", fileDocument.getIsFolder());
-//        update.set("name", fileDocument.getName());
-//        update.set("size", fileDocument.getSize());
-//        update.set("uploadDate", fileDocument.getUploadDate());
-//        update.set("updateDate", LocalDateTime.now(TimeUntils.ZONE_ID));
-//        update.set("md5", fileDocument.getMd5());
-//        update.set("contentType", fileDocument.getContentType());
-//        update.set("suffix", fileDocument.getSuffix());
-//        return update;
-//    }
 
     private static String replaceStart(String str, CharSequence searchStr, CharSequence replacement) {
         return replacement + str.substring(searchStr.length());

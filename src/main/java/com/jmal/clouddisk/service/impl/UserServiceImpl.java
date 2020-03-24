@@ -13,6 +13,7 @@ import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -194,6 +195,16 @@ public class UserServiceImpl implements IUserService {
             return ResultUtil.successMsg("重置密码成功!");
         }
         return ResultUtil.error("重置失败!");
+    }
+
+    @Cacheable(value="getUserIdByUserName",key="#username")
+    @Override
+    public String getUserIdByUserName(String username) {
+        Consumer consumer = getUserInfoByName(username);
+        if(consumer != null){
+            return consumer.getId();
+        }
+        return null;
     }
 
     private Consumer getUserInfoByName(String name){
