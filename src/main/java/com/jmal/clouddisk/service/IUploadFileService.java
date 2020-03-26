@@ -234,4 +234,11 @@ public interface IUploadFileService {
      * @param file
      */
     void createFile(String username, File file);
+
+    /***
+     * 删除文件/文件夹(mongodb)
+     * @param username
+     * @param file
+     */
+    void deleteFile(String username, File file);
 }

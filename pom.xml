@@ -130,6 +130,11 @@
             <artifactId>java-jwt</artifactId>
             <version>3.8.0</version>
         </dependency>
+        <!-- springboot 缓存自动配置-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>

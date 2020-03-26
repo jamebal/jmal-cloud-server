@@ -44,7 +44,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
                 return;
             }
             fileService.createFile(username,file);
-            log.info("用户:{},新建文件:{}",username,file.getAbsolutePath());
+//            log.info("用户:{},新建文件:{}",username,file.getAbsolutePath());
         }catch (Exception e){
             log.error("新建文件后续操作失败");
         }
@@ -56,7 +56,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onFileChange(File file) {
         try{
             String username = ownerOfChangeFile(file.getAbsolutePath());
-            log.info("用户:{},修改文件:{}",username,file.getAbsolutePath());
+//            log.info("用户:{},修改文件:{}",username,file.getAbsolutePath());
         }catch (Exception e){
             log.error("修改文件后续操作失败");
         }
@@ -68,7 +68,11 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onFileDelete(File file) {
         try{
             String username = ownerOfChangeFile(file.getAbsolutePath());
-            log.info("用户:{},删除文件:{}",username,file.getAbsolutePath());
+            if(StringUtils.isEmpty(username)){
+                return;
+            }
+            fileService.deleteFile(username,file);
+//            log.info("用户:{},删除文件:{}",username,file.getAbsolutePath());
         }catch (Exception e){
             log.error("删除文件后续操作失败");
         }
@@ -80,7 +84,11 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onDirectoryCreate(File directory) {
         try{
             String username = ownerOfChangeFile(directory.getAbsolutePath());
-            log.info("用户:{},新建目录:{}",username,directory.getAbsolutePath());
+            if(StringUtils.isEmpty(username)){
+                return;
+            }
+            fileService.createFile(username,directory);
+//            log.info("用户:{},新建目录:{}",username,directory.getAbsolutePath());
         }catch (Exception e){
             log.error("新建目录后续操作失败");
         }
@@ -92,7 +100,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onDirectoryChange(File directory) {
         try{
             String username = ownerOfChangeFile(directory.getAbsolutePath());
-            log.info("用户:{},修改目录:{}",username,directory.getAbsolutePath());
+//            log.info("用户:{},修改目录:{}",username,directory.getAbsolutePath());
         }catch (Exception e){
             log.error("修改目录后续操作失败");
         }
@@ -104,7 +112,11 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onDirectoryDelete(File directory) {
         try{
             String username = ownerOfChangeFile(directory.getAbsolutePath());
-            log.info("用户:{},删除目录:{}",username,directory.getAbsolutePath());
+            if(StringUtils.isEmpty(username)){
+                return;
+            }
+            fileService.deleteFile(username,directory);
+//            log.info("用户:{},删除目录:{}",username,directory.getAbsolutePath());
         }catch (Exception e){
             log.error("删除目录后续操作失败");
         }

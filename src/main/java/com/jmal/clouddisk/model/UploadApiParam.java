@@ -4,6 +4,7 @@ import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.Map;
 
 /**
  * @Description UploadApiParam
@@ -89,8 +90,14 @@ public class UploadApiParam {
     String suffix;
     String contentType;
 
+    String queryFileType;
+
     String contentText;
 
     Integer pageIndex;
     Integer pageSize;
+
+    String sortableProp;
+    String order;
+
 }

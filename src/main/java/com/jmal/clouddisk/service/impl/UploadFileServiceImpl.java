@@ -112,9 +112,40 @@ public class UploadFileServiceImpl implements IUploadFileService {
     public ResponseResult<Object> listFiles(UploadApiParam upload) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
-        List<FileDocument> list = getFileDocuments(upload, Criteria.where("path").is(currentDirectory));
+        Criteria criteria = new Criteria();
+        String queryFileType = upload.getQueryFileType();
+        if(!StringUtils.isEmpty(queryFileType)){
+            switch (upload.getQueryFileType()){
+                case "audio":
+                    criteria = Criteria.where("contentType").regex("^audio");
+                    break;
+                case "video":
+                    criteria = Criteria.where("contentType").regex("^video");
+                    break;
+                case "image":
+                    criteria = Criteria.where("contentType").regex("^image");
+                    break;
+                case "text":
+                    criteria = Criteria.where("suffix").in(filePropertie.getSimText());
+                    break;
+                case "document":
+                    criteria = Criteria.where("suffix").in(filePropertie.getDoument());
+                    break;
+                default:
+                    criteria = Criteria.where("path").is(currentDirectory);
+                    break;
+            }
+        }else{
+            Boolean isFolder = upload.getIsFolder();
+            if(isFolder != null){
+                criteria = Criteria.where("isFolder").is(isFolder);
+            }else{
+                criteria = Criteria.where("path").is(currentDirectory);
+            }
+        }
+        List<FileDocument> list = getFileDocuments(upload, criteria);
         result.setData(list);
-        result.setCount(getFileDocumentsCount(upload, Criteria.where("path").is(currentDirectory)));
+        result.setCount(getFileDocumentsCount(upload, criteria));
         return result;
     }
 
@@ -155,7 +186,17 @@ public class UploadFileServiceImpl implements IUploadFileService {
             query.skip(skip);
             query.limit(pageSize);
         }
-        query.with(new Sort(Sort.Direction.DESC, "isFolder"));
+        String order = upload.getOrder();
+        if(!StringUtils.isEmpty(order)){
+            String sortableProp = upload.getSortableProp();
+            Sort.Direction direction = Sort.Direction.ASC;
+            if("descending".equals(order)){
+                direction = Sort.Direction.DESC;
+            }
+            query.with(new Sort(direction, sortableProp));
+        }else{
+            query.with(new Sort(Sort.Direction.DESC, "isFolder"));
+        }
         List<FileDocument> list = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
         long now = System.currentTimeMillis();
 
@@ -170,7 +211,9 @@ public class UploadFileServiceImpl implements IUploadFileService {
             }
         }).collect(toList());
         // 按文件名排序
-        list.sort(this::compareByFileName);
+        if(StringUtils.isEmpty(order)){
+            list.sort(this::compareByFileName);
+        }
         return list;
     }
 
@@ -852,7 +895,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
     public void createFile(String username, File file) {
         String fileAbsolutePath = file.getAbsolutePath();
         String fileName = file.getName();
-        String relativePath = fileAbsolutePath.substring(filePropertie.getRootDir().length(),fileAbsolutePath.length()-fileName.length()-1);
+        String relativePath = fileAbsolutePath.substring(filePropertie.getRootDir().length()+username.length()+1,fileAbsolutePath.length()-fileName.length());
         String userId = userService.getUserIdByUserName(username);
         if(StringUtils.isEmpty(userId)){
             return;
@@ -884,6 +927,26 @@ public class UploadFileServiceImpl implements IUploadFileService {
             update.set("isFavorite",false);
         }
         mongoTemplate.upsert(query,update,COLLECTION_NAME);
+    }
+
+    @Override
+    public void deleteFile(String username, File file) {
+        String fileAbsolutePath = file.getAbsolutePath();
+        String fileName = file.getName();
+        String relativePath = fileAbsolutePath.substring(filePropertie.getRootDir().length()+username.length()+1,fileAbsolutePath.length()-fileName.length());
+        String userId = userService.getUserIdByUserName(username);
+        if(StringUtils.isEmpty(userId)){
+            return;
+        }
+        Query query = new Query();
+        query.addCriteria(Criteria.where("userId").is(userId));
+        query.addCriteria(Criteria.where("path").is(relativePath));
+        query.addCriteria(Criteria.where("name").is(fileName));
+        // 文件是否存在
+        boolean fileExists = mongoTemplate.exists(query,COLLECTION_NAME);
+        if(fileExists){
+            mongoTemplate.remove(query,COLLECTION_NAME);
+        }
     }
 
 

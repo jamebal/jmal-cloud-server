@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 /**
  * @Description 文件存储配置类
@@ -24,6 +25,9 @@ public class FilePropertie {
     private String userImgDir = "/Image/";
     private String documentImgDir = "/Image/Document/Image/";
     private String separator = "/";
+    private String[] simText = {"txt","html","htm","asp","jsp","xml","json","properties","md","gitignore","java","py","c","cpp","sql","sh","bat","m","bas","prg","cmd"};
+    private String[] doument = {"pdf","doc","docs","xls","xl"};
+
     /***
      * 文件监控扫描时间间隔(秒)
      */
@@ -41,4 +45,11 @@ public class FilePropertie {
         return documentImgDir.replaceAll("/", File.separator);
     }
 
+//    public String[] getSimText(){
+//        return this.simTextType.split("\\,");
+//    }
+//
+//    public void setSimTextType(String simText){
+//        System.out.println("setSimTextType");
+//    }
 }

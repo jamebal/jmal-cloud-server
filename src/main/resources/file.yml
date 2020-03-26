@@ -5,3 +5,7 @@ file:
   userImgDir: /Image
   #用户mardown图片上传目录 (相当于 ${rootPath}/${username}/Image/Document Image/)
   documentDir: /Image/Document Image
+  #文本类型
+  simText: [txt,html,htm,asp,jsp,xml,json,properties,md,gitignore,java,py,c,cpp,sql,sh,bat,m,bas,prg,cmd]
+  #文档类型
+  doument: ["pdf","word","doc","docs","xls","xl"]

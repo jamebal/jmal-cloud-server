@@ -14,10 +14,3 @@ spring:
     type: caffeine
     caffeine:
       spec: initialCapacity=100,maximumSize=500,expireAfterWrite=30s
-
-## 文件根目录(绝对路径)
-#root-path: /Users/jmal/temp/filetest/rootpath
-## 用户图片目录(头像,首页图片等等)(相对路径,是在 root-path 下的)
-#user-img: /Image/
-## 文档图片目录(编辑markdown时上传的图片位置)(相对路径,同上)
-#document-img: /Image/Document Image/
