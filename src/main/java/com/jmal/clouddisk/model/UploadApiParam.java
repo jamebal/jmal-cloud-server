@@ -100,4 +100,6 @@ public class UploadApiParam {
     String sortableProp;
     String order;
 
+    Boolean isFavorite;
+
 }

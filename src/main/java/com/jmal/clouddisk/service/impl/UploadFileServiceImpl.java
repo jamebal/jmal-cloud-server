@@ -15,13 +15,10 @@ import java.net.URLEncoder;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.text.Collator;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -91,15 +88,6 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
     private static final AES aes = SecureUtil.aes();
 
-//    @Value("${root-path}")
-//    String filePropertie.getRootDir();
-//
-//    @Value("${user-img}")
-//    String userImg;
-//
-//    @Value("${document-img}")
-//    String documentImg;
-
     private Cache<String, CopyOnWriteArrayList<Integer>> resumeCache = CaffeineUtil.getResumeCache();
 
 
@@ -136,11 +124,14 @@ public class UploadFileServiceImpl implements IUploadFileService {
                     break;
             }
         }else{
+            criteria = Criteria.where("path").is(currentDirectory);
             Boolean isFolder = upload.getIsFolder();
             if(isFolder != null){
                 criteria = Criteria.where("isFolder").is(isFolder);
-            }else{
-                criteria = Criteria.where("path").is(currentDirectory);
+            }
+            Boolean isFavorite = upload.getIsFavorite();
+            if(isFavorite != null){
+                criteria = Criteria.where("isFavorite").is(isFavorite);
             }
         }
         List<FileDocument> list = getFileDocuments(upload, criteria);
