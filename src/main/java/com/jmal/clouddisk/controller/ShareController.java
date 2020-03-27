@@ -4,6 +4,7 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareBO;
+import com.jmal.clouddisk.model.UploadApiParam;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUploadFileService;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -52,6 +53,32 @@ public class ShareController {
     public ResponseResult<Object> generateLink(@RequestBody ShareBO share) throws CommonException {
         ResultUtil.checkParamIsNull(share.getFileId(), share.getUserId());
         return shareService.generateLink(share);
+    }
+
+    /***
+     * 取消分享
+     * @param share
+     * @return
+     * @throws CommonException
+     */
+    @ApiOperation("取消分享")
+    @DeleteMapping("/share/cancel")
+    @ResponseBody
+    public ResponseResult<Object> cancelShare(String shareId,String userId) throws CommonException {
+        ResultUtil.checkParamIsNull(shareId, userId);
+        return shareService.cancelShare(shareId, userId);
+    }
+
+    /***
+     * 分享列表
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    @ApiOperation("分享列表")
+    @GetMapping("/share/list")
+    public ResponseResult<Object> sharelist(UploadApiParam upload) throws CommonException {
+        return shareService.sharelist(upload);
     }
 
     /***

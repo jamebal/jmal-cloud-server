@@ -29,6 +29,7 @@ import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.*;
 import org.bson.BsonNull;
 import org.bson.Document;
@@ -76,6 +77,9 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
     @Autowired
     FileService fileService;
+
+    @Autowired
+    IShareService shareService;
 
     private static final String COLLECTION_NAME = "fileDocument";
     private static final String CONTENT_TYPE_IMAGE = "image";
@@ -939,7 +943,6 @@ public class UploadFileServiceImpl implements IUploadFileService {
             mongoTemplate.remove(query,COLLECTION_NAME);
         }
     }
-
 
     private ResponseResult<Object> copy(UploadApiParam upload, String from, String to) {
         FileDocument formFileDocument = getFileDocumentById(from);
