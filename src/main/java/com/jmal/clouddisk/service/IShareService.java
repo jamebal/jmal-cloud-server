@@ -64,5 +64,5 @@ public interface IShareService {
      * @param share
      * @return
      */
-    ResponseResult<Object> cancelShare(String shareId, String userId);
+    ResponseResult<Object> cancelShare(String[] shareId, String userId);
 }

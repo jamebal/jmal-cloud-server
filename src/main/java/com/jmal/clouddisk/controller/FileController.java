@@ -5,14 +5,13 @@ import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.UploadApiParam;
-import com.jmal.clouddisk.service.IUploadFileService;
+import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -36,10 +34,10 @@ import java.util.Optional;
 @Api(tags = "文件管理")
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
-public class UploadController {
+public class FileController {
 
     @Autowired
-    private IUploadFileService fileService;
+    private IFileService fileService;
 
     @Autowired
     IUserService service;
@@ -146,24 +144,38 @@ public class UploadController {
         return fileService.merge(upload);
     }
 
-    /**
-     * 在线显示文件
+//    /**
+//     * 在线显示文件
+//     * @param id 文件id
+//     * @return
+//     */
+//    @ApiOperation("在线显示文件")
+//    @GetMapping("/view")
+//    public ResponseEntity<Object> serveFileOnline(String id,String username) {
+//        ResultUtil.checkParamIsNull(id,username);
+//        Optional<FileDocument> file = fileService.getById(id, username);
+//        return file.<ResponseEntity<Object>>map(fileDocument ->
+//                ResponseEntity.ok()
+//                        .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + fileDocument.getName())
+//                        .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
+//                        .header(HttpHeaders.CONTENT_LENGTH, fileDocument.getSize() + "").header("Connection", "close")
+//                        .header(HttpHeaders.CONTENT_LENGTH, fileDocument.getSize() + "")
+//                        .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
+//                        .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+//    }
+
+    /***
+     * 读取simText文件
      * @param id 文件id
+     * @param username
      * @return
+     * @throws CommonException
      */
-    @ApiOperation("在线显示文件")
-    @GetMapping("/view")
-    public ResponseEntity<Object> serveFileOnline(HttpServletRequest request, String id) {
-        ResultUtil.checkParamIsNull(id);
-        Optional<FileDocument> file = fileService.getById(id, service.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN)));
-        return file.<ResponseEntity<Object>>map(fileDocument ->
-                ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + fileDocument.getName())
-                        .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
-                        .header(HttpHeaders.CONTENT_LENGTH, fileDocument.getSize() + "").header("Connection", "close")
-                        .header(HttpHeaders.CONTENT_LENGTH, fileDocument.getSize() + "")
-                        .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
-                        .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+    @ApiOperation("读取simText文件")
+    @GetMapping("/preview/text")
+    public ResponseResult<Object> preview(String id,String username) throws CommonException {
+        ResultUtil.checkParamIsNull(id,username);
+        return ResultUtil.success(fileService.getById(id, username));
     }
 
     /**

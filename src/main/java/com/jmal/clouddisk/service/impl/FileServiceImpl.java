@@ -27,8 +27,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
+import com.google.common.io.Files;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.*;
 import org.bson.BsonNull;
@@ -47,7 +49,6 @@ import org.springframework.web.multipart.MultipartFile;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.exception.CommonException;
-import com.jmal.clouddisk.service.IUploadFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.mongodb.client.AggregateIterable;
 
@@ -64,7 +65,7 @@ import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
  */
 @Service
 @Slf4j
-public class UploadFileServiceImpl implements IUploadFileService {
+public class FileServiceImpl implements IFileService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
@@ -74,9 +75,6 @@ public class UploadFileServiceImpl implements IUploadFileService {
 
     @Autowired
     FilePropertie filePropertie;
-
-    @Autowired
-    FileService fileService;
 
     @Autowired
     IShareService shareService;
@@ -363,10 +361,12 @@ public class UploadFileServiceImpl implements IUploadFileService {
     }
 
     private void setContent(String username, FileDocument fileDocument) {
-        String currentDirectory = getUserDirectory(fileDocument.getPath());
-        File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
-        byte[] content = FileUtil.readBytes(file);
-        fileDocument.setContent(content);
+        if(StringUtils.isEmpty(fileDocument.getContentText())){
+            String currentDirectory = getUserDirectory(fileDocument.getPath());
+            File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
+            byte[] content = FileUtil.readBytes(file);
+            fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
+        }
     }
 
     /***
@@ -668,12 +668,43 @@ public class UploadFileServiceImpl implements IUploadFileService {
         return ResultUtil.success();
     }
 
+    /***
+     * 新建文档
+     * @param upload
+     * @return
+     */
+    @Override
+    public ResponseResult<Object> newMarkdown(UploadApiParam upload) {
+        upload.setIsFolder(false);
+        String filename = upload.getFilename();
+        String md5 = CalcMD5.getMd5(upload.getContentText());
+        //用户磁盘目录
+        String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
+        LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
+        File file = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + currentDirectory + filename);
+        FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
+        // 保存文件信息
+        upload.setSuffix(FileUtil.extName(filename));
+        FileDocument fileDocument = new FileDocument();
+        fileDocument.setPath(currentDirectory);
+        fileDocument.setSize(upload.getContentText().length());
+        fileDocument.setContentType(CONTENT_TYPE_MARK_DOWN);
+        fileDocument.setContentText(upload.getContentText());
+        fileDocument.setMd5(md5);
+        fileDocument.setName(filename);
+        fileDocument.setIsFolder(false);
+        saveFileInfo(upload, date, fileDocument);
+        mongoTemplate.save(fileDocument, COLLECTION_NAME);
+        return ResultUtil.success();
+    }
+
     @Override
     public ResponseResult<Object> getMarkDownContent(String mark) throws CommonException {
         if (StringUtils.isEmpty(mark)) {
             Query query = new Query();
             query.addCriteria(Criteria.where("isFavorite").is(true));
             query.addCriteria(Criteria.where("contentType").is(CONTENT_TYPE_MARK_DOWN));
+            query.with(new Sort(Sort.Direction.DESC,"uploadDate"));
             List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
             fileDocumentList = fileDocumentList.parallelStream().peek(fileDocument -> {
                 Consumer user = userService.userInfoById(fileDocument.getUserId());
@@ -713,36 +744,6 @@ public class UploadFileServiceImpl implements IUploadFileService {
     }
 
     /***
-     * 新建文档
-     * @param upload
-     * @return
-     */
-    @Override
-    public ResponseResult<Object> newMarkdown(UploadApiParam upload) {
-        upload.setIsFolder(false);
-        String filename = upload.getFilename();
-        String md5 = CalcMD5.getMd5(upload.getContentText());
-        //用户磁盘目录
-        String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
-        LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
-        File file = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + currentDirectory + filename);
-        FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
-        // 保存文件信息
-        upload.setSuffix(FileUtil.extName(filename));
-        FileDocument fileDocument = new FileDocument();
-        fileDocument.setPath(currentDirectory);
-        fileDocument.setSize(upload.getContentText().length());
-        fileDocument.setContentType(CONTENT_TYPE_MARK_DOWN);
-        fileDocument.setContentText(upload.getContentText());
-        fileDocument.setMd5(md5);
-        fileDocument.setName(filename);
-        fileDocument.setIsFolder(false);
-        saveFileInfo(upload, date, fileDocument);
-        mongoTemplate.save(fileDocument, COLLECTION_NAME);
-        return ResultUtil.success();
-    }
-
-    /***
      * 编辑文档
      * @param upload
      * @return
@@ -761,6 +762,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         update.set("size", FileUtil.size(file));
         update.set("name", upload.getFilename());
         update.set("contentText", upload.getContentText());
+        update.set("updateDate",date);
         Query query = new Query().addCriteria(Criteria.where("_id").is(upload.getFileId()));
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
         return ResultUtil.success();
@@ -1340,7 +1342,7 @@ public class UploadFileServiceImpl implements IUploadFileService {
         List<File> fileList = new ArrayList<>(Arrays.asList(Objects.requireNonNull(fileArray)));
 
         // 从小到大排序
-        fileList.sort(UploadFileServiceImpl::compare);
+        fileList.sort(FileServiceImpl::compare);
 
         //fileName：沿用原始的文件名，或者可以使用随机的字符串作为新文件名，但是要 保留原文件的后缀类型
         File outputFile = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + userDirectoryFilePath);

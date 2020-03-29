@@ -6,7 +6,7 @@ import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareBO;
 import com.jmal.clouddisk.model.UploadApiParam;
 import com.jmal.clouddisk.service.IShareService;
-import com.jmal.clouddisk.service.IUploadFileService;
+import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.annotations.Api;
@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -39,7 +38,7 @@ public class ShareController {
     IShareService shareService;
 
     @Autowired
-    IUploadFileService fileService;
+    IFileService fileService;
 
     /***
      * 生成分享链接
@@ -64,7 +63,7 @@ public class ShareController {
     @ApiOperation("取消分享")
     @DeleteMapping("/share/cancel")
     @ResponseBody
-    public ResponseResult<Object> cancelShare(String shareId,String userId) throws CommonException {
+    public ResponseResult<Object> cancelShare(String[] shareId,String userId) throws CommonException {
         ResultUtil.checkParamIsNull(shareId, userId);
         return shareService.cancelShare(shareId, userId);
     }

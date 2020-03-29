@@ -13,11 +13,11 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * IUploadFileService
+ * IFileService
  *
  * @blame jmal
  */
-public interface IUploadFileService {
+public interface IFileService {
 
     /***
      * 在线显示文件

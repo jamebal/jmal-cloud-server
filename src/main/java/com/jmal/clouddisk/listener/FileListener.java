@@ -1,19 +1,15 @@
 package com.jmal.clouddisk.listener;
 
 import com.jmal.clouddisk.model.FilePropertie;
-import com.jmal.clouddisk.service.IUploadFileService;
-import lombok.extern.log4j.Log4j;
+import com.jmal.clouddisk.service.IFileService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * 文件变化监听器
@@ -32,7 +28,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     FilePropertie filePropertie;
 
     @Autowired
-    IUploadFileService fileService;
+    IFileService fileService;
 
     /**
      * 文件创建执行
@@ -44,7 +40,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
                 return;
             }
             fileService.createFile(username,file);
-//            log.info("用户:{},新建文件:{}",username,file.getAbsolutePath());
+            log.info("用户:{},新建文件:{}",username,file.getAbsolutePath());
         }catch (Exception e){
             log.error("新建文件后续操作失败");
         }
@@ -56,7 +52,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onFileChange(File file) {
         try{
             String username = ownerOfChangeFile(file.getAbsolutePath());
-//            log.info("用户:{},修改文件:{}",username,file.getAbsolutePath());
+            log.info("用户:{},修改文件:{}",username,file.getAbsolutePath());
         }catch (Exception e){
             log.error("修改文件后续操作失败");
         }
@@ -72,7 +68,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
                 return;
             }
             fileService.deleteFile(username,file);
-//            log.info("用户:{},删除文件:{}",username,file.getAbsolutePath());
+            log.info("用户:{},删除文件:{}",username,file.getAbsolutePath());
         }catch (Exception e){
             log.error("删除文件后续操作失败");
         }
@@ -88,7 +84,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
                 return;
             }
             fileService.createFile(username,directory);
-//            log.info("用户:{},新建目录:{}",username,directory.getAbsolutePath());
+            log.info("用户:{},新建目录:{}",username,directory.getAbsolutePath());
         }catch (Exception e){
             log.error("新建目录后续操作失败");
         }
@@ -100,7 +96,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onDirectoryChange(File directory) {
         try{
             String username = ownerOfChangeFile(directory.getAbsolutePath());
-//            log.info("用户:{},修改目录:{}",username,directory.getAbsolutePath());
+            log.info("用户:{},修改目录:{}",username,directory.getAbsolutePath());
         }catch (Exception e){
             log.error("修改目录后续操作失败");
         }
@@ -116,7 +112,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
                 return;
             }
             fileService.deleteFile(username,directory);
-//            log.info("用户:{},删除目录:{}",username,directory.getAbsolutePath());
+            log.info("用户:{},删除目录:{}",username,directory.getAbsolutePath());
         }catch (Exception e){
             log.error("删除目录后续操作失败");
         }

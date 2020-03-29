@@ -3,8 +3,8 @@ package com.jmal.clouddisk.service.impl;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareBO;
 import com.jmal.clouddisk.model.UploadApiParam;
+import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
-import com.jmal.clouddisk.service.IUploadFileService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
@@ -13,16 +13,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.querydsl.QuerydslUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * @Description 分享
@@ -35,7 +31,7 @@ public class ShareServiceImpl implements IShareService {
     private static final String COLLECTION_NAME = "share";
 
     @Autowired
-    IUploadFileService fileService;
+    IFileService fileService;
 
     @Autowired
     MongoTemplate mongoTemplate;
@@ -155,10 +151,10 @@ public class ShareServiceImpl implements IShareService {
     }
 
     @Override
-    public ResponseResult<Object> cancelShare(String shareId, String userId) {
+    public ResponseResult<Object> cancelShare(String[] shareId, String userId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("userId").is(userId));
-        query.addCriteria(Criteria.where("_id").is(shareId));
+        query.addCriteria(Criteria.where("_id").in(shareId));
         mongoTemplate.remove(query,COLLECTION_NAME);
         return ResultUtil.success();
     }

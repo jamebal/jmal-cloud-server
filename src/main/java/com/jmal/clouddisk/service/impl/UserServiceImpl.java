@@ -6,7 +6,7 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.Consumer;
 import com.jmal.clouddisk.model.UploadApiParam;
-import com.jmal.clouddisk.service.IUploadFileService;
+import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -39,7 +39,7 @@ public class UserServiceImpl implements IUserService {
     MongoTemplate mongoTemplate;
 
     @Autowired
-    IUploadFileService fileService;
+    IFileService fileService;
 
     @Override
     public ResponseResult<Object> add(Consumer user) {

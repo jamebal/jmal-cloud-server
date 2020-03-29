@@ -1,16 +1,14 @@
 package com.jmal.clouddisk.controller;
 
 import com.jmal.clouddisk.exception.CommonException;
-import com.jmal.clouddisk.model.FilePropertie;
 import com.jmal.clouddisk.model.UploadApiParam;
-import com.jmal.clouddisk.service.IUploadFileService;
+import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,7 +27,7 @@ import java.util.List;
 public class MarkDownController {
 
     @Autowired
-    private IUploadFileService fileService;
+    private IFileService fileService;
 
     @Autowired
     IUserService service;
