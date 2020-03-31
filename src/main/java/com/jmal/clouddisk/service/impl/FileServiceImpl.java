@@ -354,18 +354,21 @@ public class FileServiceImpl implements IFileService {
     public Optional<FileDocument> getById(String id, String username) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
-            setContent(username, fileDocument);
+            setContent(username, fileDocument,true);
             return Optional.of(fileDocument);
         }
         return Optional.empty();
     }
 
-    private void setContent(String username, FileDocument fileDocument) {
+    private void setContent(String username, FileDocument fileDocument, boolean isStr) {
         if(StringUtils.isEmpty(fileDocument.getContentText())){
             String currentDirectory = getUserDirectory(fileDocument.getPath());
             File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
-            byte[] content = FileUtil.readBytes(file);
-            fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
+            if(isStr){
+                fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
+            }else{
+                fileDocument.setContent(FileUtil.readBytes(file));
+            }
         }
     }
 
@@ -384,7 +387,7 @@ public class FileServiceImpl implements IFileService {
                     Consumer user = userService.userInfoById(fileDocument.getUserId());
                     username = user.getUsername();
                 }
-                setContent(username, fileDocument);
+                setContent(username, fileDocument, false);
             }
             return Optional.of(fileDocument);
         }
@@ -901,9 +904,19 @@ public class FileServiceImpl implements IFileService {
         query.addCriteria(Criteria.where("userId").is(userId));
         query.addCriteria(Criteria.where("path").is(relativePath));
         query.addCriteria(Criteria.where("name").is(fileName));
+
+        String suffix = FileUtil.extName(fileName);
+        String contentType = FileContentTypeUtils.getContentType(suffix);
+
         // 文件是否存在
         boolean fileExists = mongoTemplate.exists(query,COLLECTION_NAME);
         if(fileExists){
+            if(contentType.contains("audio")){
+                Update update = new Update();
+                Music music = AudioFileUtils.readAudio(file);
+                update.set("music", music);
+                mongoTemplate.upsert(query,update,COLLECTION_NAME);
+            }
             return;
         }
         LocalDateTime nowDateTime = LocalDateTime.now(TimeUntils.ZONE_ID);
@@ -918,8 +931,30 @@ public class FileServiceImpl implements IFileService {
             long size = file.length();
             update.set("size", size);
             update.set("md5",size + relativePath + fileName);
-            String suffix = FileUtil.extName(fileName);
-            update.set("contentType",FileContentTypeUtils.getContentType(suffix));
+            if(contentType.contains("audio")){
+               Music music = AudioFileUtils.readAudio(file);
+               update.set("music", music);
+            }
+            if (contentType.startsWith(CONTENT_TYPE_IMAGE)) {
+                // 生成缩略图
+                Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(file);
+                thumbnail.size(256, 256);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                try {
+                    thumbnail.toOutputStream(out);
+                    update.set("content", out.toByteArray());
+                } catch (UnsupportedFormatException e) {
+                    log.warn(e.getMessage());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (contentType.contains(CONTENT_TYPE_MARK_DOWN)) {
+                // 写入markdown内容
+                String markDownContent = FileUtil.readString(file,StandardCharsets.UTF_8);
+                update.set("contentText", markDownContent);
+            }
+            update.set("contentType", contentType);
             update.set("suffix",suffix);
             update.set("isFavorite",false);
         }
@@ -963,19 +998,17 @@ public class FileServiceImpl implements IFileService {
                     return ResultUtil.warning("所选目录已存在该文件夹!");
                 }
                 mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
-
-                String newParentPath = getRelativePathByFileId(copyFileDocument);
-
-                // 复制其下的子文件或目录
-                Query query = new Query();
-                query.addCriteria(Criteria.where("path").regex("^" + fromPath));
-                List<FileDocument> formList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
-                formList = formList.stream().peek(fileDocument -> {
-                    String oldPath = fileDocument.getPath();
-                    String newPath = oldPath.replaceFirst("^"+fromPath, newParentPath);
-                    copyFileDocument(fileDocument, newPath);
-                }).collect(toList());
-                mongoTemplate.insert(formList, COLLECTION_NAME);
+//                String newParentPath = getRelativePathByFileId(copyFileDocument);
+//                // 复制其下的子文件或目录
+//                Query query = new Query();
+//                query.addCriteria(Criteria.where("path").regex("^" + fromPath));
+//                List<FileDocument> formList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+//                formList = formList.stream().peek(fileDocument -> {
+//                    String oldPath = fileDocument.getPath();
+//                    String newPath = oldPath.replaceFirst("^"+fromPath, newParentPath);
+//                    copyFileDocument(fileDocument, newPath);
+//                }).collect(toList());
+//                mongoTemplate.insert(formList, COLLECTION_NAME);
             } else {
                 // 复制文件
                 // 复制其本身

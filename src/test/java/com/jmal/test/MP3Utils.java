@@ -1,22 +1,26 @@
+package com.jmal.test;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
-import com.jmal.test.Music;
 import lombok.extern.slf4j.Slf4j;
+import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.exceptions.CannotReadException;
 import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
 import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
 import org.jaudiotagger.audio.mp3.MP3File;
+import org.jaudiotagger.tag.FieldKey;
+import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.TagException;
+import org.jaudiotagger.tag.datatype.Artwork;
+import org.jaudiotagger.tag.flac.FlacTag;
 import org.jaudiotagger.tag.id3.AbstractID3v2Frame;
 import org.jaudiotagger.tag.id3.AbstractID3v2Tag;
+import org.jaudiotagger.tag.id3.ID3v23Tag;
 import org.jaudiotagger.tag.id3.framebody.*;
-import sun.rmi.runtime.Log;
 
 /**
  * MP3工具类
@@ -28,50 +32,61 @@ public class MP3Utils {
     public static void main(String[] args) {
         MP3File mp3File = null;
         try {
-            mp3File = (MP3File) AudioFileIO.read(new File("/Users/jmal/Music/网易云音乐/岑宁儿 - 追光者.mp3"));
-            AbstractID3v2Tag tag = mp3File.getID3v2Tag();
-            String songName = "";
-            String singer = "";
-            String album = "";
-            if(tag != null && tag.frameMap != null){
-                if(tag.frameMap.get("TIT2") != null){
-                    AbstractID3v2Frame frame = (AbstractID3v2Frame)tag.frameMap.get("TIT2");//歌名
-                    FrameBodyTIT2 frameBodyTIT2 = (FrameBodyTIT2)frame.getBody();
-                    songName = frameBodyTIT2.getText();
-                    if(StrUtil.isEmpty(songName)){
-                        songName = "未知歌曲";
-                    }
-                    log.info(songName);
-                }
-                if(tag.frameMap.get("TPE1") != null){
-                    AbstractID3v2Frame frame = (AbstractID3v2Frame)tag.frameMap.get("TPE1");//歌手
-                    FrameBodyTPE1 frameBodyTPE1 = (FrameBodyTPE1)frame.getBody();
-                    singer = frameBodyTPE1.getText();
-                    if(StrUtil.isEmpty(singer)){
-                        singer = "未知歌手";
-                    }
-                    log.info(singer);
-                }
-                if(tag.frameMap.get("TALB") != null){
-                    AbstractID3v2Frame frame = (AbstractID3v2Frame)tag.frameMap.get("TALB");//歌手
-                    FrameBodyTALB frameBodyTALB = (FrameBodyTALB)frame.getBody();
-                    album = frameBodyTALB.getText();
-                    if(StrUtil.isEmpty(album)){
-                        album = "未知专辑";
-                    }
-                    log.info(album);
+            AudioFile audioFile = AudioFileIO.read(new File("/Users/jmal/Music/网易云音乐/Mark Petrie - New Light No Synth.mp3"));
+            Tag audioFileTag = audioFile.getTag();
+            if(audioFileTag instanceof FlacTag){
+                FlacTag tag = (FlacTag) audioFileTag;
+                System.out.println(tag.getFirst(FieldKey.TITLE));
+                Artwork artwork = tag.getFirstArtwork();
+                if(artwork != null){
+                    byte[] cover = artwork.getBinaryData();
+                    FileUtil.writeBytes(cover,"/Users/jmal/Music/网易云音乐/岑宁儿 - 追光者/cover.png");
                 }
             }
-            // 封面
-            AbstractID3v2Frame frame4 = (AbstractID3v2Frame) tag.getFrame("APIC");
-            FrameBodyAPIC body4 = (FrameBodyAPIC) frame4.getBody();
-            byte[] cover = body4.getImageData();
-            FileUtil.writeBytes(cover,"/Users/jmal/Music/网易云音乐/岑宁儿 - 追光者/cover.png");
-
-            //
-            AbstractID3v2Frame frame5 = (AbstractID3v2Frame) tag.getFrame("COMM");
-            FrameBodyCOMM body5 = (FrameBodyCOMM) frame5.getBody();
-            System.out.println(body5.getDescription());
+            if(audioFileTag instanceof ID3v23Tag){
+                ID3v23Tag tag = (ID3v23Tag) audioFileTag;
+                String songName = "";
+                String singer = "";
+                String album = "";
+                if(tag != null && tag.frameMap != null){
+                    if(tag.frameMap.get("TIT2") != null){
+                        AbstractID3v2Frame frame = (AbstractID3v2Frame)tag.frameMap.get("TIT2");//歌名
+                        FrameBodyTIT2 frameBodyTIT2 = (FrameBodyTIT2)frame.getBody();
+                        songName = frameBodyTIT2.getText();
+                        if(StrUtil.isEmpty(songName)){
+                            songName = "未知歌曲";
+                        }
+                        log.info(songName);
+                    }
+                    if(tag.frameMap.get("TPE1") != null){
+                        AbstractID3v2Frame frame = (AbstractID3v2Frame)tag.frameMap.get("TPE1");//歌手
+                        FrameBodyTPE1 frameBodyTPE1 = (FrameBodyTPE1)frame.getBody();
+                        singer = frameBodyTPE1.getText();
+                        if(StrUtil.isEmpty(singer)){
+                            singer = "未知歌手";
+                        }
+                        log.info(singer);
+                    }
+                    if(tag.frameMap.get("TALB") != null){
+                        AbstractID3v2Frame frame = (AbstractID3v2Frame)tag.frameMap.get("TALB");//歌手
+                        FrameBodyTALB frameBodyTALB = (FrameBodyTALB)frame.getBody();
+                        album = frameBodyTALB.getText();
+                        if(StrUtil.isEmpty(album)){
+                            album = "未知专辑";
+                        }
+                        log.info(album);
+                    }
+                }
+                // 封面
+                AbstractID3v2Frame frame4 = (AbstractID3v2Frame) tag.getFrame("APIC");
+                FrameBodyAPIC body4 = (FrameBodyAPIC) frame4.getBody();
+                byte[] cover = body4.getImageData();
+                FileUtil.writeBytes(cover,"/Users/jmal/Music/网易云音乐/岑宁儿 - 追光者/cover.png");
+                //
+                AbstractID3v2Frame frame5 = (AbstractID3v2Frame) tag.getFrame("COMM");
+                FrameBodyCOMM body5 = (FrameBodyCOMM) frame5.getBody();
+                System.out.println(body5.getDescription());
+            }
         } catch (CannotReadException e) {
             e.printStackTrace();
         } catch (IOException e) {

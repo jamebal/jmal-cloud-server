@@ -104,4 +104,6 @@ public class FileDocument {
      */
     private Long shareExpirationDate;
 
+    private Music music;
+
 }
