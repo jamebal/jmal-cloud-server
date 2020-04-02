@@ -33,6 +33,7 @@ import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.*;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -1174,7 +1175,7 @@ public class FileServiceImpl implements IFileService {
 //            mardownContent = replaceAll(mardownContent, fileDocument.getPath(), upload.getUserId());
             fileDocument.setContentText(mardownContent);
         }
-        return mongoTemplate.save(fileDocument, COLLECTION_NAME);
+        return saveFileInfo(fileDocument);
     }
 
     /***
@@ -1262,6 +1263,24 @@ public class FileServiceImpl implements IFileService {
         update.set("updateDate", date);
         update.set("isFavorite", false);
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
+    }
+
+    private FileDocument saveFileInfo(FileDocument fileDocument){
+        Query query = new Query();
+        query.addCriteria(Criteria.where("userId").is(fileDocument.getUserId()));
+        query.addCriteria(Criteria.where("isFolder").is(fileDocument.getIsFolder()));
+        query.addCriteria(Criteria.where("path").is(fileDocument.getPath()));
+        query.addCriteria(Criteria.where("name").is(fileDocument.getName()));
+        FileDocument res = mongoTemplate.findOne(query,FileDocument.class,COLLECTION_NAME);
+        if(res != null){
+            Update update = new Update();
+            update.set("size",fileDocument.getSize());
+            update.set("md5",fileDocument.getMd5());
+            mongoTemplate.upsert(query, update, COLLECTION_NAME);
+            res.setSize(fileDocument.getSize());
+            res.setMd5(fileDocument.getMd5());
+        }
+        return res;
     }
 
     private void setResumeCache(UploadApiParam upload) {
