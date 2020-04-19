@@ -226,8 +226,29 @@ public class FileController {
                 ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + fileDocument.getName())
                         .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
-                        .header(HttpHeaders.CONTENT_LENGTH, fileDocument.getContent().length + "").header("Connection", "close")
                         .header(HttpHeaders.CONTENT_LENGTH, fileDocument.getContent().length + "")
+                        .header("Connection", "close")
+                        .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
+                        .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+    }
+
+    /**
+     * 显示缩略图(mp3封面)
+     *
+     * @param id 文件id
+     * @return
+     */
+    @ApiOperation("显示缩略图(mp3封面)")
+    @GetMapping("/view/cover")
+    public ResponseEntity<Object> coverOfMp3(HttpServletRequest request, String id) throws IOException {
+        ResultUtil.checkParamIsNull(id);
+        Optional<FileDocument> file = fileService.coverOfMp3(id, service.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN)));
+        return file.<ResponseEntity<Object>>map(fileDocument ->
+                ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + fileDocument.getName())
+                        .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
+                        .header(HttpHeaders.CONTENT_LENGTH, fileDocument.getContent().length + "")
+                        .header("Connection", "close")
                         .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
                         .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
     }

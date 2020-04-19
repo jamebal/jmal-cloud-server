@@ -2,7 +2,9 @@ package com.jmal.test;
 
 public class GCDemo {
     public static void main(String[] args) throws InterruptedException {
-        System.out.println("Hello,World");
-        Thread.sleep(Integer.MAX_VALUE);
+        String s1 = "a"+"b"+"c";
+        String s2 = "ab";
+        String s3 = s2 + "c";
+        System.out.println(s1 == s2);
     }
 }

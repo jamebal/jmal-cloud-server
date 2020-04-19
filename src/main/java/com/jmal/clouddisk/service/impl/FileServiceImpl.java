@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import cn.hutool.core.codec.Base64;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import com.google.common.io.Files;
@@ -191,6 +192,7 @@ public class FileServiceImpl implements IFileService {
         }else{
             query.with(new Sort(Sort.Direction.DESC, "isFolder"));
         }
+        query.fields().exclude("content").exclude("music.coverBase64");
         List<FileDocument> list = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
         long now = System.currentTimeMillis();
 
@@ -383,16 +385,31 @@ public class FileServiceImpl implements IFileService {
     public Optional<FileDocument> thumbnail(String id, String username) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
-            if (fileDocument.getContent() == null) {
-                if(StringUtils.isEmpty(username)){
-                    Consumer user = userService.userInfoById(fileDocument.getUserId());
-                    username = user.getUsername();
+            if(fileDocument.getContent() == null){
+                String currentDirectory = getUserDirectory(fileDocument.getPath());
+                File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
+                if(file.exists()){
+                    fileDocument.setContent(FileUtil.readBytes(file));
                 }
-                setContent(username, fileDocument, false);
             }
             return Optional.of(fileDocument);
         }
         return Optional.empty();
+    }
+
+    @Override
+    public Optional<FileDocument> coverOfMp3(String id, String userName) throws CommonException {
+        FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
+        fileDocument.setContentType("image/png");
+        fileDocument.setName("cover");
+        String base64 = Optional.ofNullable(fileDocument).map(FileDocument::getMusic).map(Music::getCoverBase64).orElseGet(() -> "");
+        fileDocument.setContent(Base64.decode(base64));
+        return Optional.of(fileDocument);
+    }
+
+    public static void main(String[] args) {
+        FileDocument fileDocument = null;
+        System.out.println(Optional.ofNullable(fileDocument).map(FileDocument::getMusic).map(Music::getCoverBase64).orElseGet(() -> "").getBytes());
     }
 
     /***
@@ -926,7 +943,7 @@ public class FileServiceImpl implements IFileService {
         update.set("name",fileName);
         update.set("path",relativePath);
         update.set("isFolder",file.isDirectory());
-        update.set("updateDate",nowDateTime);
+        update.set("uploadDate",nowDateTime);
         update.set("updateDate",nowDateTime);
         if(file.isFile()){
             long size = file.length();
@@ -990,7 +1007,6 @@ public class FileServiceImpl implements IFileService {
         String toPath = getRelativePathByFileId(toFileDocument);
         String toFilePath = getUserDir(upload.getUsername()) + toPath;
         if (formFileDocument != null) {
-            FileUtil.copy(fromFilePath, toFilePath, true);
             if (formFileDocument.getIsFolder()) {
                 // 复制文件夹
                 // 复制其本身
@@ -1019,6 +1035,7 @@ public class FileServiceImpl implements IFileService {
                 }
                 mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
             }
+            FileUtil.copy(fromFilePath, toFilePath, true);
             return ResultUtil.success();
         }
         return ResultUtil.error("服务器开小差了, 请稍后再试...");

@@ -130,7 +130,15 @@ public interface IFileService {
      * @return
      * @throws IOException
      */
-    Optional<FileDocument> thumbnail(String id, String userName) throws IOException;
+    Optional<FileDocument> thumbnail(String id, String userName) throws CommonException;
+
+    /***
+     * 显示缩略图(mp3封面)
+     * @param id
+     * @param userName
+     * @return
+     */
+    Optional<FileDocument> coverOfMp3(String id, String userName) throws CommonException;
 
     /***
      * 转给Nginx处理
@@ -241,4 +249,5 @@ public interface IFileService {
      * @param file
      */
     void deleteFile(String username, File file);
+
 }

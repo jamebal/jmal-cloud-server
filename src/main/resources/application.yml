@@ -1,6 +1,8 @@
 server:
   port: 8088
 spring:
+  profiles:
+    active: dev
   servlet:
     multipart:
       max-file-size: 30MB
@@ -14,3 +16,8 @@ spring:
     type: caffeine
     caffeine:
       spec: initialCapacity=100,maximumSize=500,expireAfterWrite=30s
+
+# 日志级别,生产环境改为warn
+logging:
+  level:
+    root: debug

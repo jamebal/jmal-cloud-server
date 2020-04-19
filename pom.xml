@@ -159,6 +159,11 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <!--maven插件打包时会打两个jar包，一个是普通的jar包，一个是可执行的jar包，默认的名字会一样的，可执行jar包会覆盖掉普通jar包-->
+                <!--加了这个配置，打包的时候，可执行的jar包的名字和普通jar包的名字不一样，可执行jar包就不会覆盖普通jar包了-->
+                <configuration>
+                    <classifier>exec</classifier>
+                </configuration>
             </plugin>
         </plugins>
     </build>
