@@ -43,14 +43,6 @@ public class CommonExceptionHandler {
         }else if(e instanceof ParseException){
             result = ResultUtil.error(ExceptionType.UNPARSEABLE_DATE.getCode(),ExceptionType.UNPARSEABLE_DATE.getMsg());
         }else{
-            // 接收到请求，记录请求内容
-            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attributes != null) {
-                HttpServletResponse response = attributes.getResponse();
-                if(response != null) {
-                    response.setStatus(400);
-                }
-            }
             log.error(e.getMessage(),e);
             result = ResultUtil.error(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
         }

@@ -832,14 +832,14 @@ public class FileServiceImpl implements IFileService {
                     parentPath.append("/").append(docPaths[i]);
                 }
             }
-            // 没有分片,直接存
             File newFile = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + userDirectoryFilePath);
-            FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             // 保存文件信息
             upload.setInputStream(multipartFile.getInputStream());
             upload.setContentType(multipartFile.getContentType());
             upload.setSuffix(FileUtil.extName(fileName));
-            FileDocument fileDocument = saveFileInfo(upload, CalcMD5.calcMD5(newFile), date);
+            FileDocument fileDocument = saveFileInfo(upload, upload.getTotalSize() + fileName, date);
+            // 没有分片,直接存
+            FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             return ResultUtil.success(fileDocument.getId());
         } catch (IOException e) {
             e.printStackTrace();
@@ -891,12 +891,12 @@ public class FileServiceImpl implements IFileService {
             }
             // 没有分片,直接存
             File newFile = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + userDirectoryFilePath);
-            FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             // 保存文件信息
             upload.setInputStream(multipartFile.getInputStream());
             upload.setContentType(multipartFile.getContentType());
             upload.setSuffix(FileUtil.extName(fileName));
-            FileDocument fileDocument = saveFileInfo(upload, CalcMD5.calcMD5(newFile), date);
+            FileDocument fileDocument = saveFileInfo(upload, upload.getTotalSize() + fileName, date);
+            FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             return fileDocument.getId();
         } catch (IOException e) {
             e.printStackTrace();
@@ -1103,12 +1103,12 @@ public class FileServiceImpl implements IFileService {
         if (currentChunkSize == totalSize) {
             // 没有分片,直接存
             File chunkFile = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + userDirectoryFilePath);
-            FileUtil.writeFromStream(file.getInputStream(), chunkFile);
             // 保存文件信息
             upload.setInputStream(file.getInputStream());
             upload.setContentType(file.getContentType());
             upload.setSuffix(FileUtil.extName(filename));
             saveFileInfo(upload, md5, date);
+            FileUtil.writeFromStream(file.getInputStream(), chunkFile);
             uploadResponse.setUpload(true);
         } else {
             // 多个分片
@@ -1296,6 +1296,8 @@ public class FileServiceImpl implements IFileService {
             mongoTemplate.upsert(query, update, COLLECTION_NAME);
             res.setSize(fileDocument.getSize());
             res.setMd5(fileDocument.getMd5());
+        }else{
+            return mongoTemplate.save(fileDocument,COLLECTION_NAME);
         }
         return res;
     }
