@@ -118,6 +118,18 @@ public class FileController {
     }
 
     /***
+     * 新建文件夹
+     * @param new_folder
+     * @return
+     */
+    @ApiOperation("新建文件夹")
+    @PostMapping("new_folder")
+    @ResponseBody
+    public ResponseResult<Object> newFolder(UploadApiParam upload) throws CommonException {
+        return fileService.newFolder(upload);
+    }
+
+    /***
      * 检查文件/分片是否存在
      * @param upload
      * @return

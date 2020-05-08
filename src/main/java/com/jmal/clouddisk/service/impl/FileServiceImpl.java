@@ -1154,6 +1154,36 @@ public class FileServiceImpl implements IFileService {
     }
 
     /***
+     * 新建文件夹
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    @Override
+    public ResponseResult<Object> newFolder(UploadApiParam upload) throws CommonException {
+        LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
+        // 新建文件夹
+        String userDirectoryFilePath = getUserDirectoryFilePath(upload);
+        File dir = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + userDirectoryFilePath);
+
+        FileDocument fileDocument = new FileDocument();
+        fileDocument.setIsFolder(true);
+        fileDocument.setName(upload.getFilename());
+
+        String path = getUserDirectory(upload.getCurrentDirectory());
+        fileDocument.setPath(path);
+
+        fileDocument.setUserId(upload.getUserId());
+        fileDocument.setUploadDate(date);
+        fileDocument.setUpdateDate(date);
+        FileDocument res = mongoTemplate.save(fileDocument,COLLECTION_NAME);
+        if(!dir.exists()){
+            FileUtil.mkdir(dir);
+        }
+        return ResultUtil.success(res);
+    }
+
+    /***
      * 保存文件信息
      * @param upload
      * @param md5

@@ -52,6 +52,14 @@ public interface IFileService {
     ResponseResult<Object> uploadFolder(UploadApiParam upload) throws CommonException;
 
     /***
+     * 新建文件夹
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    ResponseResult<Object> newFolder(UploadApiParam upload) throws CommonException;
+
+    /***
      * 检查文件/分片是否存在
      * @param upload
      * @return
@@ -249,5 +257,4 @@ public interface IFileService {
      * @param file
      */
     void deleteFile(String username, File file);
-
 }
