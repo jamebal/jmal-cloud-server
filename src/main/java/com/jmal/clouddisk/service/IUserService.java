@@ -80,6 +80,19 @@ public interface IUserService {
      */
     String getUserIdByUserName(String username);
 
+    /***
+     * 是否有用户
+     * @return
+     */
+    ResponseResult<Object> hasUser();
+
+    /***
+     * 初始化创建管理员
+     * @param consumer
+     * @return
+     */
+    ResponseResult<Object> initialization(Consumer consumer);
+
 //    /***
 //     * 添加用户组
 //     * @param Consumer Consumer

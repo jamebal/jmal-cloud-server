@@ -208,6 +208,27 @@ public class UserServiceImpl implements IUserService {
         return null;
     }
 
+    @Override
+    public ResponseResult<Object> hasUser() {
+        Query query = new Query();
+        return ResultUtil.success(true).count(mongoTemplate.count(query,COLLECTION_NAME));
+    }
+
+    @Override
+    public ResponseResult<Object> initialization(Consumer user) {
+        Query query = new Query();
+        long count = mongoTemplate.count(query,COLLECTION_NAME);
+        if(count < 1){
+            user.setRoles(new String[]{"admin"});
+            user.setShowName(user.getUsername());
+            user.setQuota(15);
+            user.setPassword(SecureUtil.md5(user.getPassword()));
+            user.setCreateTime(System.currentTimeMillis());
+            mongoTemplate.save(user, COLLECTION_NAME);
+        }
+        return ResultUtil.success();
+    }
+
     private Consumer getUserInfoByName(String name){
         Query query = new Query();
         query.addCriteria(Criteria.where("username").is(name));

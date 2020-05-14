@@ -25,8 +25,8 @@ public class UserController {
     @ApiOperation(value = "添加用户")
     @PostMapping("/add")
     @ResponseBody
-    public ResponseResult<Object> add(Consumer Consumer){
-        return service.add(Consumer);
+    public ResponseResult<Object> add(Consumer consumer){
+        return service.add(consumer);
     }
 
     @ApiOperation(value = "删除用户")
@@ -70,4 +70,5 @@ public class UserController {
     public ResponseResult<Object> ConsumerList(){
         return service.userList();
     }
+
 }

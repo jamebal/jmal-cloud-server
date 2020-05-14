@@ -32,28 +32,28 @@ public class ResultUtil {
 		return result;
 	}
 
-	public static ResponseResult<Object> success(){
+	public static <T> ResponseResult<Object> success(){
 		ResponseResult<Object> result = new ResponseResult<>();
 		result.setCode(0);
 		result.setMessage(true);
 		return result;
 	}
 
-	public static ResponseResult<Object> error(int code, String msg){
+	public static <T> ResponseResult<Object> error(int code, String msg){
 		ResponseResult<Object> result = new ResponseResult<>();
 		result.setCode(code);
 		result.setMessage(msg);
 		return result;
 	}
 
-	public static ResponseResult<Object> error(String msg){
+	public static <T> ResponseResult<Object> error(String msg){
 		ResponseResult<Object> result = new ResponseResult<>();
 		result.setCode(-1);
 		result.setMessage(msg);
 		return result;
 	}
 
-	public static ResponseResult<Object> warning(String msg){
+	public static <T> ResponseResult<Object> warning(String msg){
 		ResponseResult<Object> result = new ResponseResult<>();
 		result.setCode(-2);
 		result.setMessage(msg);

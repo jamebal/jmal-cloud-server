@@ -3,6 +3,7 @@ package com.jmal.clouddisk.controller;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.Consumer;
 import com.jmal.clouddisk.service.IAuthService;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -25,6 +26,8 @@ public class AuthController {
 
     @Autowired
     IAuthService authService;
+    @Autowired
+    IUserService userService;
 
     @ApiOperation("登录")
     @PostMapping("/login")
@@ -43,5 +46,19 @@ public class AuthController {
     public ResponseResult<Object> logout(HttpServletRequest request){
         String token = request.getHeader(AuthInterceptor.JMAL_TOKEN);
         return authService.logout(token);
+    }
+
+    @ApiOperation(value = "是否有用户")
+    @GetMapping("/public/has_user")
+    @ResponseBody
+    public ResponseResult<Object> hasUser(){
+        return userService.hasUser();
+    }
+
+    @ApiOperation(value = "初始化创建管理员")
+    @PostMapping("/public/initialization")
+    @ResponseBody
+    public ResponseResult<Object> initialization(Consumer consumer){
+        return userService.initialization(consumer);
     }
 }
