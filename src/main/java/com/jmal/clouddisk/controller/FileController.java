@@ -100,7 +100,6 @@ public class FileController {
     @PostMapping("upload")
     @ResponseBody
     public ResponseResult<Object> uploadPost(UploadApiParam upload) throws IOException {
-        System.out.println("upload:" + upload.toString());
         return fileService.upload(upload);
     }
 
@@ -113,7 +112,6 @@ public class FileController {
     @PostMapping("upload-folder")
     @ResponseBody
     public ResponseResult<Object> uploadFolder(UploadApiParam upload) throws CommonException {
-        System.out.println("upload-folder:" + upload.toString());
         return fileService.uploadFolder(upload);
     }
 
@@ -138,7 +136,6 @@ public class FileController {
     @GetMapping("upload")
     @ResponseBody
     public ResponseResult<Object> checkUpload(UploadApiParam upload) throws IOException {
-        System.out.println("check:" + upload.toString());
         return fileService.checkChunkUploaded(upload);
     }
 
@@ -152,7 +149,6 @@ public class FileController {
     @PostMapping("merge")
     @ResponseBody
     public ResponseResult<Object> merge(UploadApiParam upload) throws IOException {
-        System.out.println("merge:" + upload.toString());
         return fileService.merge(upload);
     }
 
@@ -214,7 +210,6 @@ public class FileController {
     @ApiOperation("下载文件 转到 Nginx 下载")
     @GetMapping("/download")
     public void downLoad(HttpServletRequest request, HttpServletResponse response, String[] fileIds) throws CommonException {
-        System.out.println("download...");
         if (fileIds != null && fileIds.length > 0) {
             List<String> list = Arrays.asList(fileIds);
             fileService.nginx(request, response, list, true);

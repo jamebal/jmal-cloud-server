@@ -210,7 +210,15 @@ public class FileServiceImpl implements IFileService {
         if(StringUtils.isEmpty(order)){
             list.sort(this::compareByFileName);
         }
+        if(!StringUtils.isEmpty(order) && "name".equals(upload.getSortableProp())){
+            list.sort(this::compareByFileName);
+            list.sort(this::desc);
+        }
         return list;
+    }
+
+    private int desc(FileDocument f1,FileDocument f2){
+        return -1;
     }
 
     private List<FileDocument> getDirDocuments(UploadApiParam upload, Criteria... criteriaList) {
