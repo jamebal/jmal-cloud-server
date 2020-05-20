@@ -1559,12 +1559,12 @@ public class FileServiceImpl implements IFileService {
      * @throws CommonException
      */
     @Override
-    public ResponseResult<Object> favorite(String fileId) throws CommonException {
+    public ResponseResult<Object> favorite(List<String> fileIds) throws CommonException {
         Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(fileId));
+        query.addCriteria(Criteria.where("_id").in(fileIds));
         Update update = new Update();
         update.set("isFavorite", true);
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         return ResultUtil.success();
     }
 
@@ -1574,12 +1574,12 @@ public class FileServiceImpl implements IFileService {
      * @return
      */
     @Override
-    public ResponseResult<Object> unFavorite(String fileId) {
+    public ResponseResult<Object> unFavorite(List<String> fileIds) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(fileId));
+        query.addCriteria(Criteria.where("_id").in(fileIds));
         Update update = new Update();
         update.set("isFavorite", false);
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         return ResultUtil.success();
     }
 

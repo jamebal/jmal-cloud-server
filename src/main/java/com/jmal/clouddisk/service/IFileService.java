@@ -110,18 +110,18 @@ public interface IFileService {
 
     /***
      * 收藏文件或文件夹
-     * @param fileId
+     * @param fileIds
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> favorite(String fileId) throws CommonException;
+    ResponseResult<Object> favorite(List<String> fileIds) throws CommonException;
 
     /***
      * 取消收藏
-     * @param id
+     * @param fileIds
      * @return
      */
-    ResponseResult<Object> unFavorite(String id);
+    ResponseResult<Object> unFavorite(List<String> fileIds);
 
     /***
      * 删除

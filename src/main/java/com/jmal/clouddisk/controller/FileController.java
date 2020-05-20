@@ -263,31 +263,37 @@ public class FileController {
     /***
      * 收藏文件或文件夹
      * @param request
-     * @param id 文件id
+     * @param fileIds 文件id
      * @return
      * @throws CommonException
      */
     @ApiOperation("收藏文件或文件夹")
     @PostMapping("/favorite")
-    public ResponseResult<Object> favorite(HttpServletRequest request, String id) throws CommonException {
-        ResultUtil.checkParamIsNull(id);
-        service.getUserName(request.getHeader(AuthInterceptor.JMAL_TOKEN));
-        return fileService.favorite(id);
+    public ResponseResult<Object> favorite(String[] fileIds) throws CommonException {
+        if (fileIds != null && fileIds.length > 0) {
+            List<String> list = Arrays.asList(fileIds);
+            return fileService.favorite(list);
+        } else {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
+        }
     }
 
     /***
      * 取消收藏
      * @param request
-     * @param id 文件id
+     * @param fileIds 文件id
      * @return
      * @throws CommonException
      */
     @ApiOperation("取消收藏")
     @PostMapping("/unFavorite")
-    public ResponseResult<Object> unFavorite(HttpServletRequest request, String id) throws CommonException {
-        ResultUtil.checkParamIsNull(id);
-        service.getUserName(request.getHeader(AuthInterceptor.JMAL_TOKEN));
-        return fileService.unFavorite(id);
+    public ResponseResult<Object> unFavorite(String[] fileIds) throws CommonException {
+        if (fileIds != null && fileIds.length > 0) {
+            List<String> list = Arrays.asList(fileIds);
+            return fileService.unFavorite(list);
+        } else {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
+        }
     }
 
     /***
