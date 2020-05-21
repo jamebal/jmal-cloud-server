@@ -37,6 +37,10 @@ public class FilePropertie {
         return Paths.get(rootDir).toString();
     }
 
+    public String getChunkFileDir() {
+        return chunkFileDir;
+    }
+
     public String getUserImgDir(){
         return userImgDir.replaceAll("/", File.separator);
     }

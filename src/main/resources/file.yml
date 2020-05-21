@@ -1,10 +1,12 @@
 file:
   #文件存储根目录
   rootDir: /Users/jmal/temp/filetest/rootpath
-  #用户图片目录 (相当于 ${rootPath}/${username}/Image/)
-  userImgDir: /Image
-  #用户mardown图片上传目录 (相当于 ${rootPath}/${username}/Image/Document Image/)
-  documentDir: /Image/Document Image
+  #断点续传的临时文件目录名称 位于rootDir下
+  chunkFileDir: ugyuvgbhnouvghjbnk
+#  #用户图片目录 (相当于 ${rootDir}/${username}/Image/)
+#  userImgDir: /Image
+#  #用户mardown图片上传目录 (相当于 ${rootDir}/${username}/Image/Document Image/)
+#  documentDir: /Image/Document Image
   #文本类型
   simText: [txt,html,htm,asp,jsp,xml,json,properties,md,gitignore,java,py,c,cpp,sql,sh,bat,m,bas,prg,cmd]
   #文档类型

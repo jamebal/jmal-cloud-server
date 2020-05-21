@@ -200,7 +200,6 @@ public class UserServiceImpl implements IUserService {
     @Cacheable(value="getUserIdByUserName",key="#username")
     @Override
     public String getUserIdByUserName(String username) {
-        System.out.println("getUserIdByUserName");
         Consumer consumer = getUserInfoByName(username);
         if(consumer != null){
             return consumer.getId();

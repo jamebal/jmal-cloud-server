@@ -415,11 +415,6 @@ public class FileServiceImpl implements IFileService {
         return Optional.of(fileDocument);
     }
 
-    public static void main(String[] args) {
-        FileDocument fileDocument = null;
-        System.out.println(Optional.ofNullable(fileDocument).map(FileDocument::getMusic).map(Music::getCoverBase64).orElseGet(() -> "").getBytes());
-    }
-
     /***
      * 获取文件信息
      * @param fileIds
@@ -1365,7 +1360,6 @@ public class FileServiceImpl implements IFileService {
     private boolean checkIsNeedMerge(UploadApiParam upload) {
         int totalChunks = upload.getTotalChunks();
         CopyOnWriteArrayList<Integer> chunkList = getSavedChunk(upload);
-        System.out.println("totalChunks:" + totalChunks + ",chunkList:" + chunkList.size());
         return totalChunks == chunkList.size();
     }
 
