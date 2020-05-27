@@ -2,11 +2,13 @@ package com.jmal.clouddisk.controller;
 
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.model.Consumer;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareBO;
 import com.jmal.clouddisk.model.UploadApiParam;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IFileService;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.annotations.Api;
@@ -39,6 +41,9 @@ public class ShareController {
 
     @Autowired
     IFileService fileService;
+
+    @Autowired
+    IUserService userService;
 
     /***
      * 生成分享链接
@@ -172,5 +177,26 @@ public class ShareController {
                         .header(HttpHeaders.CONTENT_LENGTH, fileDocument.getContent().length + "")
                         .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
                         .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+    }
+
+    /***
+     * 读取simText文件
+     * @param id 文件id
+     * @param username
+     * @return
+     * @throws CommonException
+     */
+    @ApiOperation("读取simText文件")
+    @GetMapping("/public/s/preview/text")
+    public ResponseResult<Object> preview(@RequestParam String shareId,@RequestParam String fileId) throws CommonException {
+        ShareBO shareBO = shareService.getShare(shareId);
+        if(!shareService.checkWhetherExpired(shareBO)){
+            return ResultUtil.warning("该分享以过期");
+        }
+        Consumer consumer = userService.userInfoById(shareBO.getUserId());
+        if(consumer == null){
+            return ResultUtil.warning("该分享以过期");
+        }
+        return ResultUtil.success(fileService.getById(fileId,consumer.getUsername()));
     }
 }
