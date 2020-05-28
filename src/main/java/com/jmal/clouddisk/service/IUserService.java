@@ -93,6 +93,13 @@ public interface IUserService {
      */
     ResponseResult<Object> initialization(Consumer consumer);
 
+    /***
+     * 获取用户名
+     * @param userId
+     * @return
+     */
+    String getUserNameById(String userId);
+
 //    /***
 //     * 添加用户组
 //     * @param Consumer Consumer

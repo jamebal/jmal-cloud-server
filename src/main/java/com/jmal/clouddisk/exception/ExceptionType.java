@@ -60,6 +60,11 @@ public enum ExceptionType {
     PARAMETERS_VALUE(10, "参数值不对"),
 
     /**
+     * 用户不存在
+     */
+    USER_NOT_FIND(11, "用户不存在"),
+
+    /**
      * 参数值不对
      */
     OFFLINE(11, "离线");

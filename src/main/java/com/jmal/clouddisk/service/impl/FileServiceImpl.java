@@ -15,6 +15,9 @@ import java.net.URLEncoder;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -28,7 +31,6 @@ import javax.servlet.http.HttpServletResponse;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
-import com.google.common.io.Files;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IFileService;
@@ -1000,6 +1002,62 @@ public class FileServiceImpl implements IFileService {
         if(fileExists){
             mongoTemplate.remove(query,COLLECTION_NAME);
         }
+    }
+
+    /***
+     * 解压zip文件
+     * @param fileId
+     * @return
+     * @throws CommonException
+     */
+    @Override
+    public ResponseResult<Object> unzip(String fileId) throws CommonException {
+        try {
+            String filePath = getFilePathByFileId(fileId);
+            // 解压到当前文件夹
+            String destDir = filePath.substring(0,filePath.length()-FileUtil.extName(new File(filePath)).length()-1);
+            CompressUtils.unzip(filePath, destDir);
+            return ResultUtil.success(destDir);
+        } catch (Exception e){
+            return ResultUtil.error("解压失败!");
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        String filePath = "/Users/jmal/Downloads/elasticsearch-head-master.zip";
+        CompressUtils.unzip(filePath,filePath.substring(0,filePath.length()-FileUtil.extName(new File(filePath)).length()-1));
+    }
+
+    /***
+     * 根据fileId获取File
+     * @param fileId
+     * @return
+     */
+    private File getFileByFileId(String fileId) throws CommonException {
+        return new File(getFilePathByFileId(fileId));
+    }
+
+    /***
+     * 根据fileId获取FilePath
+     * @param fileId
+     * @return
+     */
+    private String getFilePathByFileId(String fileId) throws CommonException {
+        FileDocument fileDocument = getById(fileId);
+        if(fileDocument == null){
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
+        String username = userService.getUserNameById(fileDocument.getUserId());
+        if(StringUtils.isEmpty(username)){
+            throw new CommonException(ExceptionType.USER_NOT_FIND);
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append(filePropertie.getRootDir()).append(File.separator).append(username).append(getUserDirectory(fileDocument.getPath())).append(fileDocument.getName());
+        Path path = Paths.get(sb.toString());
+        if(!Files.exists(path)){
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
+        return sb.toString();
     }
 
     private ResponseResult<Object> copy(UploadApiParam upload, String from, String to) {
