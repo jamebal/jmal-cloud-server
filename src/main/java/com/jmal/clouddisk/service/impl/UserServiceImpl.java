@@ -228,6 +228,17 @@ public class UserServiceImpl implements IUserService {
         return ResultUtil.success();
     }
 
+    @Override
+    public String getUserNameById(String userId) {
+        if(!StringUtils.isEmpty(userId)){
+            Consumer consumer = mongoTemplate.findById(userId,Consumer.class,COLLECTION_NAME);
+            if(consumer != null){
+                return consumer.getUsername();
+            }
+        }
+        return null;
+    }
+
     private Consumer getUserInfoByName(String name){
         Query query = new Query();
         query.addCriteria(Criteria.where("username").is(name));

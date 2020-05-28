@@ -365,4 +365,16 @@ public class FileController {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }
     }
+
+    /***
+     * 解压zip文件
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    @ApiOperation("解压zip文件")
+    @GetMapping("/unzip")
+    public ResponseResult copy(@RequestParam String fileId) throws CommonException {
+        return fileService.unzip(fileId);
+    }
 }

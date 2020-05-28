@@ -257,4 +257,12 @@ public interface IFileService {
      * @param file
      */
     void deleteFile(String username, File file);
+
+    /***
+     * 解压zip文件
+     * @param fileId
+     * @return
+     * @throws CommonException
+     */
+    ResponseResult<Object> unzip(String fileId) throws CommonException;
 }
