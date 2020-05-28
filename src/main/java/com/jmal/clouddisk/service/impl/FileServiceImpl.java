@@ -1017,15 +1017,6 @@ public class FileServiceImpl implements IFileService {
     }
 
     /***
-     * 根据fileId获取File
-     * @param fileId
-     * @return
-     */
-    private File getFileByFileId(String fileId) throws CommonException {
-        return new File(getFilePathByFileId(fileId));
-    }
-
-    /***
      * 根据fileId获取FilePath
      * @param fileId
      * @return
