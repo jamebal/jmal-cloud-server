@@ -13,7 +13,6 @@ import static java.util.stream.Collectors.toList;
 import java.io.*;
 import java.net.URLEncoder;
 import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.Collator;
 import java.time.LocalDateTime;
@@ -28,13 +27,11 @@ import javax.servlet.http.HttpServletResponse;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
-import com.google.common.io.Files;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.*;
-import com.mongodb.client.result.UpdateResult;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -104,7 +101,7 @@ public class FileServiceImpl implements IFileService {
     public ResponseResult<Object> listFiles(UploadApiParam upload) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
-        Criteria criteria = new Criteria();
+        Criteria criteria;
         String queryFileType = upload.getQueryFileType();
         if(!StringUtils.isEmpty(queryFileType)){
             switch (upload.getQueryFileType()){
@@ -118,10 +115,10 @@ public class FileServiceImpl implements IFileService {
                     criteria = Criteria.where("contentType").regex("^image");
                     break;
                 case "text":
-                    criteria = Criteria.where("suffix").in(filePropertie.getSimText());
+                    criteria = Criteria.where("suffix").in(Arrays.asList(filePropertie.getSimText()));
                     break;
                 case "document":
-                    criteria = Criteria.where("suffix").in(filePropertie.getDoument());
+                    criteria = Criteria.where("suffix").in(Arrays.asList(filePropertie.getDoument()));
                     break;
                 default:
                     criteria = Criteria.where("path").is(currentDirectory);
@@ -153,11 +150,11 @@ public class FileServiceImpl implements IFileService {
     @Override
     public long takeUpSpace(String userId) throws CommonException {
 
-        List list = Arrays.asList(
+        List<Bson> list = Arrays.asList(
                 match(eq("userId", userId)),
                 group(new BsonNull(), sum("totalSize", "$size")));
-        AggregateIterable<Document> aggregateIterable =  mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
-        Document doc = aggregateIterable.first();
+        AggregateIterable aggregateIterable =  mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
+        Document doc = (Document) aggregateIterable.first();
         if(doc != null){
             return doc.getLong("totalSize");
         }
@@ -365,21 +362,17 @@ public class FileServiceImpl implements IFileService {
     public Optional<FileDocument> getById(String id, String username) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
-            setContent(username, fileDocument,true);
+            setContent(username, fileDocument);
             return Optional.of(fileDocument);
         }
         return Optional.empty();
     }
 
-    private void setContent(String username, FileDocument fileDocument, boolean isStr) {
+    private void setContent(String username, FileDocument fileDocument) {
         if(StringUtils.isEmpty(fileDocument.getContentText())){
             String currentDirectory = getUserDirectory(fileDocument.getPath());
             File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
-            if(isStr){
-                fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
-            }else{
-                fileDocument.setContent(FileUtil.readBytes(file));
-            }
+            fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
         }
     }
 
@@ -408,9 +401,12 @@ public class FileServiceImpl implements IFileService {
     @Override
     public Optional<FileDocument> coverOfMp3(String id, String userName) throws CommonException {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
+        if(fileDocument == null){
+            return Optional.empty();
+        }
         fileDocument.setContentType("image/png");
         fileDocument.setName("cover");
-        String base64 = Optional.ofNullable(fileDocument).map(FileDocument::getMusic).map(Music::getCoverBase64).orElseGet(() -> "");
+        String base64 = Optional.of(fileDocument).map(FileDocument::getMusic).map(Music::getCoverBase64).orElse("");
         fileDocument.setContent(Base64.decode(base64));
         return Optional.of(fileDocument);
     }
@@ -438,7 +434,6 @@ public class FileServiceImpl implements IFileService {
             if (size == 1 && !fileDocument.getIsFolder()) {
                 // 单个文件
                 fileDocument.setPath(filePath);
-                return fileDocument;
             } else {
                 fileDocument.setIsFolder(true);
                 // 压缩文件夹
@@ -485,8 +480,8 @@ public class FileServiceImpl implements IFileService {
                 fileDocument.setPath(zipFilePath);
                 fileDocument.setName(zipFilename);
                 fileDocument.setContent(res.toString().getBytes(StandardCharsets.UTF_8));
-                return fileDocument;
             }
+            return fileDocument;
 
         }
         return null;
@@ -518,8 +513,8 @@ public class FileServiceImpl implements IFileService {
      * 交给nginx处理(共有的,任何人都和访问)
      * @param request
      * @param response
-     * @param fileIds
-     * @param isDownload
+     * @param relativePath
+     * @param userId
      * @throws IOException
      */
     @Override
@@ -737,14 +732,11 @@ public class FileServiceImpl implements IFileService {
                 String filename = fileDocument.getName();
                 fileDocument.setName(filename.substring(0,filename.length()-fileDocument.getSuffix().length()-1));
                 LocalDateTime date = fileDocument.getUploadDate();
-                StringBuilder sb = new StringBuilder();
-                sb.append(date.getYear()).append("年")
-                        .append(date.getMonthValue()).append("月")
-                        .append(date.getDayOfMonth()).append("日");
-                fileDocument.setUploadTime(sb.toString());
+                String sb = date.getYear() + "年" +
+                        date.getMonthValue() + "月" +
+                        date.getDayOfMonth() + "日";
+                fileDocument.setUploadTime(sb);
                 fileDocument.setAvatar(avatar);
-                String text = fileDocument.getContentText();
-                BufferedReader br = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(text.getBytes(Charset.forName("utf8"))), Charset.forName("utf8")));
             }).collect(toList());
             return ResultUtil.success(fileDocumentList);
         } else {
@@ -878,18 +870,13 @@ public class FileServiceImpl implements IFileService {
             String directoryPath = filePropertie.getRootDir() + File.separator + upload.getUsername() + getUserDirectory(docPath);
             File dir = new File(directoryPath);
             if(!dir.exists()){
-                StringBuilder parentPath = new StringBuilder();
-                for (int i = 0; i < docPaths.length; i++) {
+                for (String path : docPaths) {
                     UploadApiParam uploadApiParam = new UploadApiParam();
                     uploadApiParam.setIsFolder(true);
-                    uploadApiParam.setFilename(docPaths[i]);
+                    uploadApiParam.setFilename(path);
                     uploadApiParam.setUsername(username);
                     uploadApiParam.setUserId(userId);
-                    if(i > 0){
-                        uploadApiParam.setCurrentDirectory(parentPath.toString());
-                    }
                     uploadFolder(uploadApiParam);
-                    parentPath.append("/").append(docPaths[i]);
                 }
             }
             // 没有分片,直接存
@@ -1221,9 +1208,8 @@ public class FileServiceImpl implements IFileService {
         if (contentType.contains(CONTENT_TYPE_MARK_DOWN)) {
             // 写入markdown内容
             byte[] content = toByteArray(upload.getInputStream());
-            String mardownContent = new String(content,0,content.length,StandardCharsets.UTF_8);
-//            mardownContent = replaceAll(mardownContent, fileDocument.getPath(), upload.getUserId());
-            fileDocument.setContentText(mardownContent);
+            String markDownContent = new String(content,0,content.length,StandardCharsets.UTF_8);
+            fileDocument.setContentText(markDownContent);
         }
         return saveFileInfo(fileDocument);
     }
@@ -1234,8 +1220,8 @@ public class FileServiceImpl implements IFileService {
      * @return
      */
     public static String replaceAll(CharSequence input, String path, String userId) throws CommonException {
-        Pattern pattern = Pattern.compile("!\\[(.*)\\]\\((.*)\\)");
-        Pattern pattern1 = Pattern.compile("(?<=]\\()[^\\)]+");
+        Pattern pattern = Pattern.compile("!\\[(.*)]\\((.*)\\)");
+        Pattern pattern1 = Pattern.compile("(?<=]\\()[^)]+");
         Matcher matcher = pattern.matcher(input).usePattern(pattern1);
         matcher.reset();
         boolean result = matcher.find();
@@ -1548,7 +1534,7 @@ public class FileServiceImpl implements IFileService {
 
     /***
      * 收藏文件或文件夹
-     * @param fileId
+     * @param fileIds
      * @return
      * @throws CommonException
      */
@@ -1564,7 +1550,7 @@ public class FileServiceImpl implements IFileService {
 
     /***
      * 取消收藏
-     * @param fileId
+     * @param fileIds
      * @return
      */
     @Override
