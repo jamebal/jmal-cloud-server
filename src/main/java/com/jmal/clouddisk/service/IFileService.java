@@ -28,6 +28,14 @@ public interface IFileService {
     Optional<FileDocument> getById(String id, String username);
 
     /***
+     * 根据path读取simText文件
+     * @param path
+     * @param username
+     * @return
+     */
+    ResponseResult<Object> previewTextByPath(String path, String username) throws CommonException;
+
+    /***
      * 查找下级目录
      * @param upload
      * @param fileId
@@ -261,8 +269,19 @@ public interface IFileService {
     /***
      * 解压zip文件
      * @param fileId
+     * @param destFileId
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> unzip(String fileId) throws CommonException;
+    ResponseResult<Object> unzip(String fileId, String destFileId) throws CommonException;
+
+    /***
+     * 获取目录下的文件
+     * @param path
+     * @param username
+     * @param tempDir
+     * @return
+     * @throws CommonException
+     */
+    ResponseResult<Object> listfiles(String path, String username, boolean tempDir) throws CommonException;
 }

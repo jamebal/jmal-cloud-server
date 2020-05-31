@@ -181,9 +181,22 @@ public class FileController {
      */
     @ApiOperation("读取simText文件")
     @GetMapping("/preview/text")
-    public ResponseResult<Object> preview(String id,String username) throws CommonException {
+    public ResponseResult<Object> previewText(@RequestParam String id,String username) throws CommonException {
         ResultUtil.checkParamIsNull(id,username);
         return ResultUtil.success(fileService.getById(id, username));
+    }
+
+    /***
+     * 根据path读取simText文件
+     * @param path 文件path
+     * @param username
+     * @return
+     * @throws CommonException
+     */
+    @ApiOperation("根据path读取simText文件")
+    @GetMapping("/preview/path/text")
+    public ResponseResult<Object> previewTextByPath(@RequestParam String path,@RequestParam String username) throws CommonException {
+        return fileService.previewTextByPath(path, username);
     }
 
     /**
@@ -368,13 +381,29 @@ public class FileController {
 
     /***
      * 解压zip文件
-     * @param upload
+     * @param fileId 要解压的文件
+     * @param destFileId 目标目录
      * @return
      * @throws CommonException
      */
     @ApiOperation("解压zip文件")
     @GetMapping("/unzip")
-    public ResponseResult copy(@RequestParam String fileId) throws CommonException {
-        return fileService.unzip(fileId);
+    public ResponseResult unzip(@RequestParam String fileId, String destFileId) throws CommonException {
+        return fileService.unzip(fileId, destFileId);
+    }
+
+    /***
+     * 获取目录下的文件
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    @ApiOperation("获取目录下的文件")
+    @GetMapping("/listfiles")
+    public ResponseResult listfiles(@RequestParam String path, @RequestParam String username, Boolean tempDir) throws CommonException {
+        if(tempDir == null){
+            tempDir = false;
+        }
+        return fileService.listfiles(path, username, tempDir);
     }
 }

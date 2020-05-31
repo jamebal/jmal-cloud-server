@@ -63,7 +63,7 @@ public class AudioFileUtils {
                         music.setSinger(singer);
                     }
                     if(tag.frameMap.get("TALB") != null){
-                        AbstractID3v2Frame frame = (AbstractID3v2Frame)tag.frameMap.get("TALB");//歌手
+                        AbstractID3v2Frame frame = (AbstractID3v2Frame)tag.frameMap.get("TALB");//专辑
                         FrameBodyTALB frameBodyTALB = (FrameBodyTALB)frame.getBody();
                         album = frameBodyTALB.getText();
                         if(StrUtil.isEmpty(album)){

@@ -39,6 +39,7 @@ public enum ExceptionType {
      * 本地系统上传数据到平台的问题
      */
     UPLOAD_LSC_EXCEPRION(6, "本地系统上传数据到平台的问题"),
+
     /***
      * 文件不存在
      */
@@ -60,14 +61,19 @@ public enum ExceptionType {
     PARAMETERS_VALUE(10, "参数值不对"),
 
     /**
-     * 用户不存在
-     */
-    USER_NOT_FIND(11, "用户不存在"),
-
-    /**
      * 参数值不对
      */
-    OFFLINE(11, "离线");
+    OFFLINE(11, "离线"),
+
+    /**
+     * 用户不存在
+     */
+    USER_NOT_FIND(12, "用户不存在"),
+
+    /***
+     * 目录不存在
+     */
+    DIR_NOT_FIND(13, "目录不存在");
 
 
     public int getCode() {

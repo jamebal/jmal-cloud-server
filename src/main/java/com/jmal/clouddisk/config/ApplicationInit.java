@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 
 /**
- * @Description 启动项目时创建mongodb索引
+ * @Description 启动时开启文件目录监控
  * @Date 2020-02-21 14:54
  * @blame jmal
  */
@@ -60,6 +60,6 @@ public class ApplicationInit implements ApplicationRunner {
         FileAlterationMonitor monitor = new FileAlterationMonitor(interval, observer);
         // 开始监控
         monitor.start();
-        log.info("文件监控服务已开启,轮询间隔:{}秒, 监控目录:{},忽略目录:{}",filePropertie.getTimeInterval(),rootDir,rootDir.toString() + File.separator + filePropertie.getChunkFileDir());
+        log.info("\r\n文件监控服务已开启:\r\n轮询间隔:{}秒\n监控目录:{}\n忽略目录:{}",filePropertie.getTimeInterval(),rootDir,rootDir.toString() + File.separator + filePropertie.getChunkFileDir());
     }
 }

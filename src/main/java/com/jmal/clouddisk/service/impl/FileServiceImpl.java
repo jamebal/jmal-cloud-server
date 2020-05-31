@@ -371,6 +371,18 @@ public class FileServiceImpl implements IFileService {
         return Optional.empty();
     }
 
+    @Override
+    public ResponseResult<Object> previewTextByPath(String path, String username) throws CommonException{
+        File file = new File(filePropertie.getRootDir() + File.separator + username + path);
+        if(!file.exists()){
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
+        FileDocument fileDocument = new FileDocument();
+        fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
+        return ResultUtil.success(fileDocument);
+    }
+
+
     private void setContent(String username, FileDocument fileDocument) {
         if(StringUtils.isEmpty(fileDocument.getContentText())){
             String currentDirectory = getUserDirectory(fileDocument.getPath());
@@ -995,47 +1007,118 @@ public class FileServiceImpl implements IFileService {
     /***
      * 解压zip文件
      * @param fileId
+     * @param destFileId
      * @return
      * @throws CommonException
      */
     @Override
-    public ResponseResult<Object> unzip(String fileId) throws CommonException {
+    public ResponseResult<Object> unzip(String fileId, String destFileId) throws CommonException {
         try {
-            String filePath = getFilePathByFileId(fileId);
-            // 解压到当前文件夹
-            String destDir = filePath.substring(0,filePath.length()-FileUtil.extName(new File(filePath)).length()-1);
-            CompressUtils.unzip(filePath, destDir);
-            return ResultUtil.success(destDir);
+            FileDocument fileDocument = getById(fileId);
+            if(fileDocument == null){
+                throw new CommonException(ExceptionType.FILE_NOT_FIND);
+            }
+            String username = userService.getUserNameById(fileDocument.getUserId());
+            if(StringUtils.isEmpty(username)){
+                throw new CommonException(ExceptionType.USER_NOT_FIND);
+            }
+            String filePath = getFilePathByFileId(username,fileDocument);
+
+            String destDir;
+            boolean isWrite = false;
+            if(StringUtils.isEmpty(destFileId)){
+                // 没有目标目录, 则预览解压到临时目录
+                destDir = Paths.get(filePropertie.getRootDir(),filePropertie.getChunkFileDir(),username,fileDocument.getName()).toString();
+            }else{
+                if(fileId.equals(destFileId)){
+                    // 解压到当前文件夹
+                    destDir = filePath.substring(0, filePath.length()-FileUtil.extName(new File(filePath)).length()-1);
+                }else{
+                    // 其他目录
+                    FileDocument fileDocument1 = getById(destFileId);
+                    destDir = getFilePathByFileId(username,fileDocument);
+                }
+                isWrite = true;
+            }
+
+            CompressUtils.unzip(filePath, destDir, isWrite);
+            return ResultUtil.success(listfile(username, destDir, !isWrite));
         } catch (Exception e){
             return ResultUtil.error("解压失败!");
         }
     }
 
-    public static void main(String[] args) throws IOException {
-        String filePath = "/Users/jmal/Downloads/elasticsearch-head-master.zip";
-        CompressUtils.unzip(filePath,filePath.substring(0,filePath.length()-FileUtil.extName(new File(filePath)).length()-1));
+    /***
+     * 获取目录下的文件
+     * @param path
+     * @param username
+     * @param tempDir
+     * @return
+     */
+    @Override
+    public ResponseResult<Object> listfiles(String path,String username, boolean tempDir) {
+        String dirPath;
+        if(tempDir){
+            dirPath = Paths.get(filePropertie.getRootDir(),filePropertie.getChunkFileDir(),username,path).toString();
+        }else{
+            dirPath = Paths.get(filePropertie.getRootDir(),username,path).toString();
+        }
+        return ResultUtil.success(listfile(username, dirPath, tempDir));
     }
 
     /***
-     * 根据fileId获取FilePath
-     * @param fileId
-     * @return
+     * 获取目录下的文件
+     * @param username
+     * @param dir
      */
-    private String getFilePathByFileId(String fileId) throws CommonException {
-        FileDocument fileDocument = getById(fileId);
-        if(fileDocument == null){
+    private List<Map> listfile(String username, String dirPath, boolean tempDir) {
+        File dir = new File(dirPath);
+        if(!dir.exists()){
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
-        String username = userService.getUserNameById(fileDocument.getUserId());
-        if(StringUtils.isEmpty(username)){
-            throw new CommonException(ExceptionType.USER_NOT_FIND);
-        }
+        File[] fileList = dir.listFiles();
+        return Arrays.asList(fileList).stream().map(file -> {
+            Map<String,Object> map = new HashMap<>(8);
+            String filename = file.getName();
+            String suffix = FileUtil.extName(filename);
+            boolean isFolder = file.isDirectory();
+            map.put("name", filename);
+            map.put("isFolder", file.isDirectory());
+            map.put("isLeaf", !isFolder);
+            map.put("suffix", suffix);
+            map.put("contentType", FileContentTypeUtils.getContentType(suffix));
+            String path;
+            Path dirPaths = Paths.get(file.getPath());
+            if(tempDir){
+                path = dirPaths.subpath(Paths.get(filePropertie.getRootDir(),filePropertie.getChunkFileDir(),username).getNameCount(),dirPaths.getNameCount()).toString();
+            }else{
+                path = dirPaths.subpath(Paths.get(filePropertie.getRootDir(),username).getNameCount(),dirPaths.getNameCount()).toString();
+            }
+            map.put("path", path);
+            return map;
+        }).collect(toList());
+    }
+
+    public static void main(String[] args) {
+        Path dirs = Paths.get("/Users/jmal/temp/filetest/rootpath/ugyuvgbhnouvghjbnk/jmal/elasticsearch-head-master.zip");
+        System.out.println(dirs.subpath(7,dirs.getNameCount()));
+    }
+
+    /***
+     * 根据username 和 fileDocument 获取FilePath
+     * @param username
+     * @param fileDocument
+     * @return
+     * @throws CommonException
+     */
+    private String getFilePathByFileId(String username, FileDocument fileDocument) throws CommonException {
         StringBuilder sb = new StringBuilder();
         sb.append(filePropertie.getRootDir()).append(File.separator).append(username).append(getUserDirectory(fileDocument.getPath())).append(fileDocument.getName());
         Path path = Paths.get(sb.toString());
         if(!Files.exists(path)){
-            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+            throw new CommonException(ExceptionType.DIR_NOT_FIND);
         }
+
         return sb.toString();
     }
 
@@ -1155,7 +1238,12 @@ public class FileServiceImpl implements IFileService {
             // 落地保存文件
             // 这时保存的每个块, 块先存好, 后续会调合并接口, 将所有块合成一个大文件
             // 保存在用户的tmp目录下
-            File chunkFile = new File(filePropertie.getRootDir() + File.separator + filePropertie.getChunkFileDir() + File.separator + upload.getUsername() + File.separator + md5 + File.separator + upload.getChunkNumber());
+            StringBuilder sb = new StringBuilder();
+            sb.append(filePropertie.getRootDir()).append(File.separator)
+                    .append(filePropertie.getChunkFileDir()).append(File.separator)
+                    .append(upload.getUsername()).append(File.separatorChar)
+                    .append(md5).append(File.separatorChar).append(upload.getChunkNumber());
+            File chunkFile = new File(sb.toString());
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
             setResumeCache(upload);
             uploadResponse.setUpload(true);

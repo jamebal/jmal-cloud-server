@@ -70,13 +70,14 @@ public class ResultUtil {
 			if(param != null){
 				if(param instanceof String){
 					if(!"".equals(param) && !"null".equals(param)){
-						return;
+						continue;
 					}
 				}
-				return;
+				continue;
+			}else{
+				throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(),ExceptionType.MISSING_PARAMETERS.getMsg());
 			}
 		}
-		throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(),ExceptionType.MISSING_PARAMETERS.getMsg());
 	}
 
 }
