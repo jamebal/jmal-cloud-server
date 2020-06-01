@@ -1045,7 +1045,7 @@ public class FileServiceImpl implements IFileService {
                 isWrite = true;
             }
 
-            CompressUtils.unzip(filePath, destDir, isWrite);
+            CompressUtils.decompress(filePath, destDir, isWrite);
             return ResultUtil.success(listfile(username, destDir, !isWrite));
         } catch (Exception e){
             return ResultUtil.error("解压失败!");

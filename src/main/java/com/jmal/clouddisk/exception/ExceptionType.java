@@ -73,7 +73,17 @@ public enum ExceptionType {
     /***
      * 目录不存在
      */
-    DIR_NOT_FIND(13, "目录不存在");
+    DIR_NOT_FIND(13, "目录不存在"),
+
+    /***
+     * 解压失败
+     */
+    FAIL_DECOMPRESS(14, "解压失败"),
+
+    /***
+     * 无法识别的文件
+     */
+    UNRECOGNIZED_FILE(15, "无法识别的文件");
 
 
     public int getCode() {
