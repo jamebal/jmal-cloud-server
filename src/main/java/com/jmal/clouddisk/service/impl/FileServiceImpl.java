@@ -911,7 +911,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public FileDocument getById(String fileId) {
-        return mongoTemplate.findById(fileId,FileDocument.class,COLLECTION_NAME);
+        return getFileDocumentById(fileId);
     }
 
     @Override
@@ -1035,8 +1035,12 @@ public class FileServiceImpl implements IFileService {
                     destDir = filePath.substring(0, filePath.length()-FileUtil.extName(new File(filePath)).length()-1);
                 }else{
                     // 其他目录
-                    FileDocument fileDocument1 = getById(destFileId);
-                    destDir = getFilePathByFileId(username,fileDocument);
+                    FileDocument dest = getById(destFileId);
+                    if(dest != null){
+                        destDir = getFilePathByFileId(username,dest);
+                    }else{
+                        destDir = Paths.get(filePropertie.getRootDir(),username).toString();
+                    }
                 }
                 isWrite = true;
             }
@@ -1097,11 +1101,6 @@ public class FileServiceImpl implements IFileService {
             map.put("path", path);
             return map;
         }).collect(toList());
-    }
-
-    public static void main(String[] args) {
-        Path dirs = Paths.get("/Users/jmal/temp/filetest/rootpath/ugyuvgbhnouvghjbnk/jmal/elasticsearch-head-master.zip");
-        System.out.println(dirs.subpath(7,dirs.getNameCount()));
     }
 
     /***

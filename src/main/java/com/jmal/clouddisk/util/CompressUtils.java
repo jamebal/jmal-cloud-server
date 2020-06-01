@@ -142,26 +142,19 @@ public class CompressUtils {
                     System.out.println(entry.getName());
                 }
             }
-            int i = 0;
             while (Objects.nonNull(entry = in.getNextEntry())) {
-                if(i > 100){
-                    break;
-                }else{
-                    if (in.canReadEntryData(entry)) {
-                        File file = Paths.get(destDir, entry.getName()).toFile();
-                        writeFile(isWrite, in, entry, file);
-                    } else {
-                        System.out.println(entry.getName());
-                    }
+                if (in.canReadEntryData(entry)) {
+                    File file = Paths.get(destDir, entry.getName()).toFile();
+                    writeFile(isWrite, in, entry, file);
+                } else {
+                    System.out.println(entry.getName());
                 }
-                i++;
             }
         }
 
     }
 
     private static void writeFile(boolean isWrite, ArchiveInputStream in, ArchiveEntry entry, File file) throws IOException {
-        System.out.println(file.getPath());
         if (entry.isDirectory()) {
             if (!file.exists()) {
                 file.mkdirs();
@@ -175,14 +168,6 @@ public class CompressUtils {
                 }
             }
         }
-    }
-
-    public static void main(String[] args) throws IOException {
-        long stime = System.currentTimeMillis();
-        String filePath = "/Users/jmal/Downloads/归档.zip";
-        String destDir = "/Users/jmal/Downloads/归档";
-        CompressUtils.unzip(filePath, destDir, false);
-        System.out.println(System.currentTimeMillis() - stime);
     }
 
 }
