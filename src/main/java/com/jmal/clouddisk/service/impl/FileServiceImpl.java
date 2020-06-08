@@ -362,7 +362,7 @@ public class FileServiceImpl implements IFileService {
      * @throws IOException
      */
     @Override
-    public Optional<FileDocument> getById(String id, String username) {
+    public Optional<Object> getById(String id, String username) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
             setContent(username, fileDocument);
@@ -373,7 +373,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public ResponseResult<Object> previewTextByPath(String path, String username) throws CommonException{
-        File file = new File(filePropertie.getRootDir() + File.separator + username + path);
+        File file = new File(Paths.get(filePropertie.getRootDir(),username,path).toString());
         if(!file.exists()){
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
@@ -388,6 +388,7 @@ public class FileServiceImpl implements IFileService {
             String currentDirectory = getUserDirectory(fileDocument.getPath());
             File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
             fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
+
         }
     }
 

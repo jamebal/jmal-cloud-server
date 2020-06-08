@@ -25,7 +25,7 @@ public interface IFileService {
      * @param username
      * @return
      */
-    Optional<FileDocument> getById(String id, String username);
+    Optional<Object> getById(String id, String username);
 
     /***
      * 根据path读取simText文件
