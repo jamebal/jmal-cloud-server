@@ -38,25 +38,50 @@ public class CaffeineUtil {
 
     @PostConstruct
     public void initCache(){
-        resumeCache = Caffeine.newBuilder().build();
-        writtenCache = Caffeine.newBuilder().build();
-        unWrittenCache = Caffeine.newBuilder().build();
-        tokenCache = Caffeine.newBuilder().expireAfterWrite(7, TimeUnit.DAYS).build();
+        initMyCache();
+    }
+
+    public static void initMyCache(){
+        if(resumeCache == null){
+            resumeCache = Caffeine.newBuilder().build();
+        }
+        if(writtenCache == null){
+            writtenCache = Caffeine.newBuilder().build();
+        }
+        if(unWrittenCache == null){
+            unWrittenCache = Caffeine.newBuilder().build();
+        }
+        if(tokenCache == null){
+            tokenCache = Caffeine.newBuilder().expireAfterWrite(7, TimeUnit.DAYS).build();
+        }
     }
 
     public static Cache<String, CopyOnWriteArrayList<Integer>> getResumeCache(){
+        if(resumeCache == null){
+            initMyCache();
+        }
         return resumeCache;
     }
 
     public static Cache<String, CopyOnWriteArrayList<Integer>> getWrittenCache(){
+        if(writtenCache == null){
+            initMyCache();
+        }
         return writtenCache;
     }
 
     public static Cache<String, CopyOnWriteArrayList<Integer>> getUnWrittenCacheCache(){
+        if(unWrittenCache == null){
+            initMyCache();
+        }
         return unWrittenCache;
     }
 
+
     public static Cache<String, String> getTokenCache(){
+        if(tokenCache == null){
+            initMyCache();
+        }
         return tokenCache;
     }
 

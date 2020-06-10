@@ -83,7 +83,12 @@ public enum ExceptionType {
     /***
      * 无法识别的文件
      */
-    UNRECOGNIZED_FILE(15, "无法识别的文件");
+    UNRECOGNIZED_FILE(15, "无法识别的文件"),
+
+    /***
+     * 合并文件失败
+     */
+    FAIL_MERGA_FILE(16, "合并文件失败");
 
 
     public int getCode() {

@@ -24,6 +24,9 @@ import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -61,6 +64,7 @@ import cn.hutool.core.io.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
+import sun.security.krb5.internal.Ticket;
 
 /**
  * @Description 文件管理
@@ -1254,11 +1258,9 @@ public class FileServiceImpl implements IFileService {
             // 检测是否已经上传完了所有分片,上传完了则需要合并
             if (checkIsNeedMerge(upload)) {
                 uploadResponse.setMerge(true);
-            }else{
-                // 追加分片
-                appendChunkFile(upload);
             }
-
+            // 追加分片
+            appendChunkFile(upload);
         }
         return ResultUtil.success(uploadResponse);
     }
@@ -1279,7 +1281,7 @@ public class FileServiceImpl implements IFileService {
 
         // 以写入的分片
         CopyOnWriteArrayList<Integer> writtenChunks = writtenCache.get(md5, key ->  new CopyOnWriteArrayList<>());
-        Path filePath = Paths.get(filePropertie.getRootDir(),upload.getUsername(),getUserDirectoryFilePath(upload));
+        Path filePath = Paths.get(filePropertie.getRootDir(),filePropertie.getChunkFileDir(),upload.getUsername(),upload.getFilename());
         if(Files.exists(filePath) && writtenChunks.size() > 0){
             // 继续追加
             for (int unWrittenChunk : unWrittenChunks) {
@@ -1287,6 +1289,13 @@ public class FileServiceImpl implements IFileService {
             }
         }else{
             // 首次写入
+            if(Files.exists(filePath)){
+                try {
+                    Files.delete(filePath);
+                } catch (IOException e) {
+                    throw new CommonException(ExceptionType.FAIL_MERGA_FILE);
+                }
+            }
             appenFile(upload, unWrittenChunks, writtenChunks);
         }
     }
@@ -1304,7 +1313,7 @@ public class FileServiceImpl implements IFileService {
         // 分片文件
         File file = Paths.get(filePropertie.getRootDir(),filePropertie.getChunkFileDir(),upload.getUsername(),md5,chunk+"").toFile();
         // 目标文件
-        File outputFile = Paths.get(filePropertie.getRootDir(),upload.getUsername(),getUserDirectoryFilePath(upload)).toFile();
+        File outputFile = Paths.get(filePropertie.getRootDir(),filePropertie.getChunkFileDir(),upload.getUsername(),upload.getFilename()).toFile();
         long postion = outputFile.length();
         long count = file.length();
         try(FileOutputStream fileOutputStream = new FileOutputStream(outputFile,true);
@@ -1315,11 +1324,11 @@ public class FileServiceImpl implements IFileService {
                 outChannel.write(byteBuffer,postion);
                 writtenChunks.add(chunk);
                 writtenCache.put(md5, writtenChunks);
-                unWrittenChunks.remove(chunk);
+                unWrittenChunks.remove(unWrittenChunks.indexOf(chunk));
                 unWrittenCache.put(md5,unWrittenChunks);
             }
         }catch (IOException e){
-            throw new CommonException(-1, "合并文件失败");
+            throw new CommonException(ExceptionType.FAIL_MERGA_FILE);
         }
     }
 
@@ -1621,69 +1630,15 @@ public class FileServiceImpl implements IFileService {
     public ResponseResult<Object> merge(UploadApiParam upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
 //        String md5 = upload.getIdentifier();
-//        String filename = upload.getFilename();
-//        // 用户磁盘目录
-//        String userDirectoryFilePath = getUserDirectoryFilePath(upload);
-//
-//        LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
-//
-//        // 读取tmp目录所有文件
-//        File f = new File(filePropertie.getRootDir() + File.separator + filePropertie.getChunkFileDir() + File.separator + File.separator + upload.getUsername() + File.separator + md5);
-//        // 排除目录，只要文件
-//        File[] fileArray = f.listFiles(pathName -> !pathName.isDirectory());
-//
-//        // 转成集合，便于排序
-//        List<File> fileList = new ArrayList<>(Arrays.asList(Objects.requireNonNull(fileArray)));
-//
-//        // 从小到大排序
-//        fileList.sort(FileServiceImpl::compare);
-//
-//        //fileName：沿用原始的文件名，或者可以使用随机的字符串作为新文件名，但是要 保留原文件的后缀类型
-//        File outputFile = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + userDirectoryFilePath);
-//
-//        File parentFile = outputFile.getParentFile();
-//        if (!parentFile.exists()) {
-//            if (!parentFile.mkdirs()) {
-//                throw new CommonException(-1, String.format("创建文件夹失败,dir:%s", parentFile.getAbsolutePath()));
-//            }
-//        }
-//        // 创建文件
-//        if (!outputFile.exists()) {
-//            if (!outputFile.createNewFile()) {
-//                throw new CommonException(-1, "创建文件失败");
-//            }
-//        }
-//        // 输出流
-//        FileOutputStream fileOutputStream = new FileOutputStream(outputFile);
-//        FileChannel outChannel = fileOutputStream.getChannel();
-//        // 合并，核心就是FileChannel，将多个文件合并为一个文件
-//        FileChannel inChannel;
-//        for (File file : fileList) {
-//            inChannel = new FileInputStream(file).getChannel();
-//            inChannel.transferTo(0, inChannel.size(), outChannel);
-//            inChannel.close();
-//            // 删除分片
-//            if (!file.delete()) {
-//                throw new CommonException(-1, "删除分片失败");
-//            }
-//        }
-//        // 关闭流
-//        fileOutputStream.close();
-//        outChannel.close();
-//        // 清除文件夹
-//        if (f.isDirectory() && f.exists()) {
-//            if (!f.delete()) {
-//                throw new CommonException(-1, "清除文件失败");
-//            }
-//        }
-//        //保存文件信息
-//        upload.setInputStream(FileUtil.getInputStream(outputFile));
-//        String extName = FileUtil.extName(filename);
-//        upload.setSuffix(extName);
-//        upload.setContentType(FileContentTypeUtils.getContentType(extName));
-//        saveFileInfo(upload, md5, date);
-//        //清除缓存
+//        File file = Paths.get(filePropertie.getRootDir(),filePropertie.getChunkFileDir(),upload.getUsername(),upload.getFilename()).toFile();
+//        File outputFile = Paths.get(filePropertie.getRootDir(),upload.getUsername(),getUserDirectoryFilePath(upload)).toFile();
+//        // 清除缓存
 //        resumeCache.invalidate(md5);
+//        writtenCache.invalidate(md5);
+//        unWrittenCache.invalidate(md5);
+//        File chunkDir = Paths.get(filePropertie.getRootDir(),filePropertie.getChunkFileDir(),upload.getUsername(),md5).toFile();
+//        FileUtil.del(chunkDir);
+//        FileUtil.move(file,outputFile,true);
         uploadResponse.setUpload(true);
         return ResultUtil.success(uploadResponse);
     }

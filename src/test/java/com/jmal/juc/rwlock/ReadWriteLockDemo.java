@@ -16,9 +16,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class ReadWriteLockDemo {
     public static void main(String[] args) {
 //        // 不加锁
-//        MyCache myCache = new MyCache();
+        MyCache myCache = new MyCache();
         // 枷锁
-        MyCacheLock myCache = new MyCacheLock();
+//        MyCacheLock myCache = new MyCacheLock();
         // 模拟线程
         // 写
         for (int i = 1; i <= 5; i++) {
@@ -40,14 +40,14 @@ class MyCache {
     private volatile Map<String, Object> map = new HashMap<>();
 
     // 读 ： 可以被多个线程同时读
-    private void get(String key) {
+    public void get(String key) {
         System.out.println(Thread.currentThread().getName() + "读取" + key);
         Object o = map.get(key);
         System.out.println(Thread.currentThread().getName() + "读取结果:" + o);
     }
 
     // 写 ：应该是保证原子性 , 不应该被打扰
-    private void put(String key, Object value) {
+    public void put(String key, Object value) {
         System.out.println(Thread.currentThread().getName() + "写入" + key);
         map.put(key, value);
         System.out.println(Thread.currentThread().getName() + "写入ok");
