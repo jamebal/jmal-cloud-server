@@ -152,26 +152,6 @@ public class FileController {
         return fileService.merge(upload);
     }
 
-//    /**
-//     * 在线显示文件
-//     * @param id 文件id
-//     * @return
-//     */
-//    @ApiOperation("在线显示文件")
-//    @GetMapping("/view")
-//    public ResponseEntity<Object> serveFileOnline(String id,String username) {
-//        ResultUtil.checkParamIsNull(id,username);
-//        Optional<FileDocument> file = fileService.getById(id, username);
-//        return file.<ResponseEntity<Object>>map(fileDocument ->
-//                ResponseEntity.ok()
-//                        .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + fileDocument.getName())
-//                        .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
-//                        .header(HttpHeaders.CONTENT_LENGTH, fileDocument.getSize() + "").header("Connection", "close")
-//                        .header(HttpHeaders.CONTENT_LENGTH, fileDocument.getSize() + "")
-//                        .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
-//                        .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
-//    }
-
     /***
      * 读取simText文件
      * @param id 文件id

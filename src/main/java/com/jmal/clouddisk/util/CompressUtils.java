@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.FileDocument;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
@@ -35,6 +36,7 @@ import java.util.zip.ZipInputStream;
  *
  * @blame jmal
  */
+@Slf4j
 public class CompressUtils {
 
     public static void decompress(String filePath, String outputDir, boolean isWrite) {
@@ -57,6 +59,7 @@ public class CompressUtils {
                 throw new CommonException(ExceptionType.UNRECOGNIZED_FILE);
             }
         } catch (IOException e) {
+            log.error(e.getMessage(),e);
             throw new CommonException(ExceptionType.FAIL_DECOMPRESS);
         }
     }

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 /**
  * CaffeineUtil
@@ -32,6 +33,11 @@ public class CaffeineUtil {
     private static Cache<String, CopyOnWriteArrayList<Integer>> unWrittenCache;
 
     /***
+     * 分片写锁
+     */
+    private static Cache<String, Lock> chunkWriteLockCache;
+
+    /***
      * 用户token
      */
     private static Cache<String, String> tokenCache;
@@ -53,6 +59,9 @@ public class CaffeineUtil {
         }
         if(tokenCache == null){
             tokenCache = Caffeine.newBuilder().expireAfterWrite(7, TimeUnit.DAYS).build();
+        }
+        if(chunkWriteLockCache == null){
+            chunkWriteLockCache = Caffeine.newBuilder().build();
         }
     }
 
@@ -83,6 +92,13 @@ public class CaffeineUtil {
             initMyCache();
         }
         return tokenCache;
+    }
+
+    public static Cache<String, Lock> getChunkWriteLockCache(){
+        if(chunkWriteLockCache == null){
+            initMyCache();
+        }
+        return chunkWriteLockCache;
     }
 
 }

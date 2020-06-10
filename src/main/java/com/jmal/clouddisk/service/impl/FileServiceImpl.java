@@ -102,6 +102,7 @@ public class FileServiceImpl implements IFileService {
     private Cache<String, CopyOnWriteArrayList<Integer>> resumeCache = CaffeineUtil.getResumeCache();
     private Cache<String, CopyOnWriteArrayList<Integer>> writtenCache = CaffeineUtil.getWrittenCache();
     private Cache<String, CopyOnWriteArrayList<Integer>> unWrittenCache = CaffeineUtil.getUnWrittenCacheCache();
+    private Cache<String, Lock> chunkWriteLockCache = CaffeineUtil.getChunkWriteLockCache();
 
     /***
      * 文件列表
@@ -396,7 +397,6 @@ public class FileServiceImpl implements IFileService {
             String currentDirectory = getUserDirectory(fileDocument.getPath());
             File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
             fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
-
         }
     }
 
@@ -1278,25 +1278,28 @@ public class FileServiceImpl implements IFileService {
             unWrittenChunks.add(chunkNumber);
             unWrittenCache.put(md5, unWrittenChunks);
         }
-
         // 以写入的分片
         CopyOnWriteArrayList<Integer> writtenChunks = writtenCache.get(md5, key ->  new CopyOnWriteArrayList<>());
         Path filePath = Paths.get(filePropertie.getRootDir(),filePropertie.getChunkFileDir(),upload.getUsername(),upload.getFilename());
-        if(Files.exists(filePath) && writtenChunks.size() > 0){
-            // 继续追加
-            for (int unWrittenChunk : unWrittenChunks) {
+        Lock lock = chunkWriteLockCache.get(md5,key -> new ReentrantLock());
+        lock.lock();
+        try{
+            if(Files.exists(filePath) && writtenChunks.size() > 0){
+                // 继续追加
+                for (int unWrittenChunk : unWrittenChunks) {
+                    appenFile(upload, unWrittenChunks, writtenChunks);
+                }
+            }else{
+                // 首次写入
+                if(Files.exists(filePath)){
+                    Files.delete(filePath);
+                }
                 appenFile(upload, unWrittenChunks, writtenChunks);
             }
-        }else{
-            // 首次写入
-            if(Files.exists(filePath)){
-                try {
-                    Files.delete(filePath);
-                } catch (IOException e) {
-                    throw new CommonException(ExceptionType.FAIL_MERGA_FILE);
-                }
-            }
-            appenFile(upload, unWrittenChunks, writtenChunks);
+        }catch (Exception e){
+            throw new CommonException(ExceptionType.FAIL_MERGA_FILE);
+        }finally {
+            lock.unlock();
         }
     }
 
@@ -1625,20 +1628,28 @@ public class FileServiceImpl implements IFileService {
      * @param upload
      * @return
      */
-    @SuppressWarnings("resource")
     @Override
     public ResponseResult<Object> merge(UploadApiParam upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
-//        String md5 = upload.getIdentifier();
-//        File file = Paths.get(filePropertie.getRootDir(),filePropertie.getChunkFileDir(),upload.getUsername(),upload.getFilename()).toFile();
-//        File outputFile = Paths.get(filePropertie.getRootDir(),upload.getUsername(),getUserDirectoryFilePath(upload)).toFile();
-//        // 清除缓存
-//        resumeCache.invalidate(md5);
-//        writtenCache.invalidate(md5);
-//        unWrittenCache.invalidate(md5);
-//        File chunkDir = Paths.get(filePropertie.getRootDir(),filePropertie.getChunkFileDir(),upload.getUsername(),md5).toFile();
-//        FileUtil.del(chunkDir);
-//        FileUtil.move(file,outputFile,true);
+        String md5 = upload.getIdentifier();
+        File file = Paths.get(filePropertie.getRootDir(),filePropertie.getChunkFileDir(),upload.getUsername(),upload.getFilename()).toFile();
+        File outputFile = Paths.get(filePropertie.getRootDir(),upload.getUsername(),getUserDirectoryFilePath(upload)).toFile();
+        // 清除缓存
+        resumeCache.invalidate(md5);
+        writtenCache.invalidate(md5);
+        unWrittenCache.invalidate(md5);
+        chunkWriteLockCache.invalidate(md5);
+        File chunkDir = Paths.get(filePropertie.getRootDir(),filePropertie.getChunkFileDir(),upload.getUsername(),md5).toFile();
+        FileUtil.del(chunkDir);
+        FileUtil.move(file,outputFile,true);
+
+        //保存文件信息
+        upload.setInputStream(FileUtil.getInputStream(outputFile));
+        String extName = FileUtil.extName(upload.getFilename());
+        upload.setSuffix(extName);
+        upload.setContentType(FileContentTypeUtils.getContentType(extName));
+        saveFileInfo(upload, md5, LocalDateTime.now(TimeUntils.ZONE_ID));
+
         uploadResponse.setUpload(true);
         return ResultUtil.success(uploadResponse);
     }
