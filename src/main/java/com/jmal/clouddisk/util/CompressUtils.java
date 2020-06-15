@@ -85,7 +85,7 @@ public class CompressUtils {
      * @throws IOException
      */
     public static void unZip(File file, String outputDir, boolean isWrite) throws IOException {
-        ZipFile zipFile = new ZipFile(file,"gbk");
+        ZipFile zipFile = new ZipFile(file,"utf-8");
         //创建输出目录
         createDirectory(outputDir, null);
         Enumeration<?> enums = zipFile.getEntries();
