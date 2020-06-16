@@ -387,16 +387,26 @@ public class FileServiceImpl implements IFileService {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         FileDocument fileDocument = new FileDocument();
-        fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
+        if(file.length() > 1024 * 1024 * 5){
+            fileDocument.setContentText(MyFileUtils.readLines(file,1000));
+        }else{
+            fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
+        }
         return ResultUtil.success(fileDocument);
     }
-
 
     private void setContent(String username, FileDocument fileDocument) {
         if(StringUtils.isEmpty(fileDocument.getContentText())){
             String currentDirectory = getUserDirectory(fileDocument.getPath());
-            File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
-            fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
+            Path filepath = Paths.get(filePropertie.getRootDir(),username,currentDirectory,fileDocument.getName());
+            if(Files.exists(filepath)){
+                File file = filepath.toFile();
+                if(file.length() > 1024 * 1024 * 5){
+                    fileDocument.setContentText(MyFileUtils.readLines(file,1000));
+                }else{
+                    fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
+                }
+            }
         }
     }
 
