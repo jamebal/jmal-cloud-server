@@ -161,7 +161,7 @@ public class FileController {
      */
     @ApiOperation("读取simText文件")
     @GetMapping("/preview/text")
-    public ResponseResult<Object> previewText(@RequestParam String id,String username) throws CommonException {
+    public ResponseResult<Object> previewText(@RequestParam String id, @RequestParam String username) throws CommonException {
         ResultUtil.checkParamIsNull(id,username);
         return ResultUtil.success(fileService.getById(id, username));
     }
@@ -374,16 +374,31 @@ public class FileController {
 
     /***
      * 获取目录下的文件
-     * @param upload
+     * @param path
+     * @param username
+     * @param tempDir
      * @return
      * @throws CommonException
      */
     @ApiOperation("获取目录下的文件")
     @GetMapping("/listfiles")
-    public ResponseResult listfiles(@RequestParam String path, @RequestParam String username, Boolean tempDir) throws CommonException {
+    public ResponseResult listFiles(@RequestParam String path, @RequestParam String username, Boolean tempDir) throws CommonException {
         if(tempDir == null){
             tempDir = false;
         }
         return fileService.listfiles(path, username, tempDir);
+    }
+
+    /***
+     * 获取上级文件列表
+     * @param path
+     * @param username
+     * @return
+     * @throws CommonException
+     */
+    @ApiOperation("获取上级文件列表")
+    @GetMapping("/upper-level-list")
+    public ResponseResult upperLevelList(@RequestParam String path, @RequestParam String username) throws CommonException {
+        return fileService.upperLevelList(path, username);
     }
 }

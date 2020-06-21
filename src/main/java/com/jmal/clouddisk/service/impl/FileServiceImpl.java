@@ -1090,26 +1090,47 @@ public class FileServiceImpl implements IFileService {
     }
 
     /***
+     * 获取上一文件列表
+     * @param path
+     * @param username
+     * @return
+     */
+    @Override
+    public ResponseResult upperLevelList(String path, String username) {
+        String upperLevel = Paths.get(filePropertie.getRootDir(),username,path).getParent().toString();
+        if(Paths.get(filePropertie.getRootDir()).toString().equals(upperLevel)){
+            upperLevel = Paths.get(filePropertie.getRootDir(),username).toString();
+        }
+        return ResultUtil.success(listfile(username, upperLevel, false));
+    }
+
+    public static void main(String[] args) {
+
+        Path path = Paths.get("文件类型测试/asdfasdfa/asdfasdfas/asdfasdfa");
+        System.out.println(path.equals(Paths.get("/文件类型测试/asdfasdfa/asdfasdfas/asdfasdfa")));
+
+    }
+
+    /***
      * 获取目录下的文件
      * @param username
      * @param dir
      */
-    private List<Map> listfile(String username, String dirPath, boolean tempDir) {
+    private List<FileDocument> listfile(String username, String dirPath, boolean tempDir) {
         File dir = new File(dirPath);
         if(!dir.exists()){
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         File[] fileList = dir.listFiles();
-        return Arrays.asList(fileList).stream().map(file -> {
-            Map<String,Object> map = new HashMap<>(8);
+        List<FileDocument> list = Arrays.asList(fileList).stream().map(file -> {
+            FileDocument fileDocument = new FileDocument();
             String filename = file.getName();
             String suffix = FileUtil.extName(filename);
             boolean isFolder = file.isDirectory();
-            map.put("name", filename);
-            map.put("isFolder", file.isDirectory());
-            map.put("isLeaf", !isFolder);
-            map.put("suffix", suffix);
-            map.put("contentType", FileContentTypeUtils.getContentType(suffix));
+            fileDocument.setName(filename);
+            fileDocument.setIsFolder(isFolder);
+            fileDocument.setSuffix(suffix);
+            fileDocument.setContentType(FileContentTypeUtils.getContentType(suffix));
             String path;
             Path dirPaths = Paths.get(file.getPath());
             if(tempDir){
@@ -1117,9 +1138,11 @@ public class FileServiceImpl implements IFileService {
             }else{
                 path = dirPaths.subpath(Paths.get(filePropertie.getRootDir(),username).getNameCount(),dirPaths.getNameCount()).toString();
             }
-            map.put("path", path);
-            return map;
+            fileDocument.setPath(path);
+            return fileDocument;
         }).collect(toList());
+        list.sort(this::compareByFileName);
+        return list;
     }
 
     /***
@@ -1156,17 +1179,6 @@ public class FileServiceImpl implements IFileService {
                     return ResultUtil.warning("所选目录已存在该文件夹!");
                 }
                 mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
-//                String newParentPath = getRelativePathByFileId(copyFileDocument);
-//                // 复制其下的子文件或目录
-//                Query query = new Query();
-//                query.addCriteria(Criteria.where("path").regex("^" + fromPath));
-//                List<FileDocument> formList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
-//                formList = formList.stream().peek(fileDocument -> {
-//                    String oldPath = fileDocument.getPath();
-//                    String newPath = oldPath.replaceFirst("^"+fromPath, newParentPath);
-//                    copyFileDocument(fileDocument, newPath);
-//                }).collect(toList());
-//                mongoTemplate.insert(formList, COLLECTION_NAME);
             } else {
                 // 复制文件
                 // 复制其本身

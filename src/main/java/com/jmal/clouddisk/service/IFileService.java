@@ -284,4 +284,12 @@ public interface IFileService {
      * @throws CommonException
      */
     ResponseResult<Object> listfiles(String path, String username, boolean tempDir) throws CommonException;
+
+    /***
+     * 获取上级文件列表
+     * @param path
+     * @param username
+     * @return
+     */
+    ResponseResult upperLevelList(String path, String username);
 }
