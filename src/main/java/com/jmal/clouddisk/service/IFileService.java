@@ -235,6 +235,13 @@ public interface IFileService {
     ResponseResult<Object> editMarkdown(UploadApiParam upload);
 
     /***
+     * 编辑文档(根据path)
+     * @param upload
+     * @return
+     */
+    ResponseResult<Object> editMarkdownByPath(UploadApiParam upload);
+
+    /***
      * 上传文档里的图片
      * @param upload
      * @return
@@ -292,4 +299,5 @@ public interface IFileService {
      * @return
      */
     ResponseResult upperLevelList(String path, String username);
+
 }

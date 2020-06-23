@@ -60,17 +60,31 @@ public class MarkDownController {
     }
 
     /***
-     * 编辑文档
+     * 编辑文档(根据fileId)
      * @param upload
      * @return
      * @throws CommonException
      */
-    @ApiOperation("编辑文档")
+    @ApiOperation("编辑文档(根据fileId)")
     @PostMapping("/markdown/edit")
     @ResponseBody
     public ResponseResult<Object> editMarkdown(@RequestBody UploadApiParam upload) throws CommonException {
         ResultUtil.checkParamIsNull(upload.getFileId(),upload.getUserId(),upload.getUsername(),upload.getFilename(),upload.getContentText());
         return fileService.editMarkdown(upload);
+    }
+
+    /***
+     * 编辑文档(根据path)
+     * @param upload
+     * @return
+     * @throws CommonException
+     */
+    @ApiOperation("编辑文档(根据path)")
+    @PostMapping("/markdown/edit1")
+    @ResponseBody
+    public ResponseResult<Object> editMarkdownByPath(@RequestBody UploadApiParam upload) throws CommonException {
+        ResultUtil.checkParamIsNull(upload.getUsername(),upload.getRelativePath(),upload.getContentText());
+        return fileService.editMarkdownByPath(upload);
     }
 
     /***

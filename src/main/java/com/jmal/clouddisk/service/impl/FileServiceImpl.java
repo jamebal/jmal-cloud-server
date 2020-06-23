@@ -818,6 +818,16 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success();
     }
 
+    @Override
+    public ResponseResult<Object> editMarkdownByPath(UploadApiParam upload) {
+        File file = new File(Paths.get(filePropertie.getRootDir(),upload.getUsername(),upload.getRelativePath()).toString());
+        if(!file.exists()){
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
+        FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
+        return ResultUtil.success();
+    }
+
     /***
      * 上传文档里的图片
      * @param upload
