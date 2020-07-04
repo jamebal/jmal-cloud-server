@@ -22,7 +22,6 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Autowired
     FilePropertie filePropertie;
-    // /Users/jmal/temp/filetest/rootpath/jmal/文档/研发项目进度控制表.xlsx
 
     /**
      * 注册拦截器

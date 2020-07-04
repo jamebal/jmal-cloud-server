@@ -46,7 +46,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         return false;
     }
 
-    private boolean checkToken(String jmalToken) {
+    public boolean checkToken(String jmalToken) {
         if(!StringUtils.isEmpty(jmalToken)){
             String username = tokenCache.getIfPresent(jmalToken);
             if(!StringUtils.isEmpty(username)){

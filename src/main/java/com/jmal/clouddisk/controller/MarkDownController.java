@@ -83,7 +83,7 @@ public class MarkDownController {
     @PostMapping("/markdown/edit1")
     @ResponseBody
     public ResponseResult<Object> editMarkdownByPath(@RequestBody UploadApiParam upload) throws CommonException {
-        ResultUtil.checkParamIsNull(upload.getUsername(),upload.getRelativePath(),upload.getContentText());
+        ResultUtil.checkParamIsNull(upload.getUsername(),upload.getUserId(),upload.getRelativePath(),upload.getContentText());
         return fileService.editMarkdownByPath(upload);
     }
 

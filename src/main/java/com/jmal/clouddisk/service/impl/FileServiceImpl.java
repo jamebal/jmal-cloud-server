@@ -1014,6 +1014,33 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    public void updateFile(String username, File file) {
+        String fileAbsolutePath = file.getAbsolutePath();
+        String fileName = file.getName();
+        String relativePath = fileAbsolutePath.substring(filePropertie.getRootDir().length()+username.length()+1,fileAbsolutePath.length()-fileName.length());
+        String userId = userService.getUserIdByUserName(username);
+        if(StringUtils.isEmpty(userId)){
+            return;
+        }
+        Query query = new Query();
+        query.addCriteria(Criteria.where("userId").is(userId));
+        query.addCriteria(Criteria.where("path").is(relativePath));
+        query.addCriteria(Criteria.where("name").is(fileName));
+
+        String suffix = FileUtil.extName(fileName);
+        String contentType = FileContentTypeUtils.getContentType(suffix);
+
+        // 文件是否存在
+        boolean fileExists = mongoTemplate.exists(query,COLLECTION_NAME);
+        if(fileExists){
+            Update update = new Update();
+            update.set("size", file.length());
+            update.set("updateDate",LocalDateTime.now(TimeUntils.ZONE_ID));
+            mongoTemplate.upsert(query,update,COLLECTION_NAME);
+        }
+    }
+
+    @Override
     public void deleteFile(String username, File file) {
         String fileAbsolutePath = file.getAbsolutePath();
         String fileName = file.getName();
@@ -1116,8 +1143,9 @@ public class FileServiceImpl implements IFileService {
 
     public static void main(String[] args) {
 
-        Path path = Paths.get("文件类型测试/asdfasdfa/asdfasdfas/asdfasdfa");
-        System.out.println(path.equals(Paths.get("/文件类型测试/asdfasdfa/asdfasdfas/asdfasdfa")));
+        String rootPath = "/Users/jmal/temp/filetest/rootpath";
+        String username = "jmal";
+        String path = "/test123/";
 
     }
 

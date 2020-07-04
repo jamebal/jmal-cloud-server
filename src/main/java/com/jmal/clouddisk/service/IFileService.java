@@ -267,6 +267,13 @@ public interface IFileService {
     void createFile(String username, File file);
 
     /***
+     * 修改文件/文件夹
+     * @param username
+     * @param file
+     */
+    void updateFile(String username, File file);
+
+    /***
      * 删除文件/文件夹(mongodb)
      * @param username
      * @param file

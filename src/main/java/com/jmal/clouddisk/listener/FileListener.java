@@ -52,6 +52,10 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onFileChange(File file) {
         try{
             String username = ownerOfChangeFile(file.getAbsolutePath());
+            if(StringUtils.isEmpty(username)){
+                return;
+            }
+            fileService.updateFile(username,file);
             log.info("用户:{},修改文件:{}",username,file.getAbsolutePath());
         }catch (Exception e){
             log.error("修改文件后续操作失败");

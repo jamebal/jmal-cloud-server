@@ -132,6 +132,13 @@
             <artifactId>java-jwt</artifactId>
             <version>3.8.0</version>
         </dependency>
+
+        <!--websokcet-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
         <!-- springboot 缓存自动配置-->
         <dependency>
             <groupId>org.springframework.boot</groupId>

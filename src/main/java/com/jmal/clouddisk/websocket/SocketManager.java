@@ -1,0 +1,38 @@
+package com.jmal.clouddisk.websocket;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
+import org.springframework.web.socket.WebSocketSession;
+
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * socket管理器
+ *
+ * @blame jmal
+ */
+@Slf4j
+public class SocketManager {
+    private static ConcurrentHashMap<String, WebSocketSession> manager = new ConcurrentHashMap<>();
+
+    static void add(String key, WebSocketSession webSocketSession) {
+        manager.put(key, webSocketSession);
+    }
+
+    static void remove(String key) {
+        manager.remove(key);
+    }
+
+    public static WebSocketSession get(String key) {
+        if(StringUtils.isEmpty(key)){
+            return null;
+        }
+        return manager.get(key);
+    }
+
+    public static ConcurrentHashMap<String, WebSocketSession> getManager(){
+        return manager;
+    }
+
+
+}
