@@ -1050,7 +1050,6 @@ public class FileServiceImpl implements IFileService {
         WebSocketSession webSocketSession = SocketManager.get(username);
         if (webSocketSession != null) {
             template.convertAndSendToUser(username, "/queue/sendUser", message);
-            log.info("给{}发送消息:{}",username,message);
         }
     }
 
