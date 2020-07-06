@@ -36,11 +36,13 @@ import javax.servlet.http.HttpServletResponse;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
+import com.google.common.collect.Lists;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.*;
+import com.jmal.clouddisk.websocket.SocketManager;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -50,6 +52,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -64,6 +67,7 @@ import cn.hutool.core.io.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
+import org.springframework.web.socket.WebSocketSession;
 import sun.security.krb5.internal.Ticket;
 
 /**
@@ -87,6 +91,9 @@ public class FileServiceImpl implements IFileService {
 
     @Autowired
     IShareService shareService;
+
+    @Autowired
+    private SimpMessagingTemplate template;
 
     private static final String COLLECTION_NAME = "fileDocument";
     private static final String CONTENT_TYPE_IMAGE = "image";
@@ -374,7 +381,16 @@ public class FileServiceImpl implements IFileService {
     public Optional<Object> getById(String id, String username) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
-            setContent(username, fileDocument);
+            String currentDirectory = getUserDirectory(fileDocument.getPath());
+            Path filepath = Paths.get(filePropertie.getRootDir(),username,currentDirectory,fileDocument.getName());
+            if(Files.exists(filepath)){
+                File file = filepath.toFile();
+                if(file.length() > 1024 * 1024 * 5){
+                    fileDocument.setContentText(MyFileUtils.readLines(file,1000));
+                }else{
+                    fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
+                }
+            }
             return Optional.of(fileDocument);
         }
         return Optional.empty();
@@ -393,21 +409,6 @@ public class FileServiceImpl implements IFileService {
             fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
         }
         return ResultUtil.success(fileDocument);
-    }
-
-    private void setContent(String username, FileDocument fileDocument) {
-        if(StringUtils.isEmpty(fileDocument.getContentText())){
-            String currentDirectory = getUserDirectory(fileDocument.getPath());
-            Path filepath = Paths.get(filePropertie.getRootDir(),username,currentDirectory,fileDocument.getName());
-            if(Files.exists(filepath)){
-                File file = filepath.toFile();
-                if(file.length() > 1024 * 1024 * 5){
-                    fileDocument.setContentText(MyFileUtils.readLines(file,1000));
-                }else{
-                    fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
-                }
-            }
-        }
     }
 
     /***
@@ -742,7 +743,6 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setPath(currentDirectory);
         fileDocument.setSize(upload.getContentText().length());
         fileDocument.setContentType(CONTENT_TYPE_MARK_DOWN);
-        fileDocument.setContentText(upload.getContentText());
         fileDocument.setMd5(md5);
         fileDocument.setName(filename);
         fileDocument.setIsFolder(false);
@@ -776,17 +776,15 @@ public class FileServiceImpl implements IFileService {
         } else {
             FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, COLLECTION_NAME);
             if (fileDocument != null) {
-                if(fileDocument.getContentType().equals(CONTENT_TYPE_MARK_DOWN)){
-                    String content = fileDocument.getContentText();
-                    if(!StringUtils.isEmpty(content)){
-                        content = replaceAll(content, fileDocument.getPath(), fileDocument.getUserId());
-                        fileDocument.setContentText(content);
-                    }
+                String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
+                String currentDirectory = getUserDirectory(fileDocument.getPath());
+                File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
+                String content = FileUtil.readString(file,StandardCharsets.UTF_8);
+                if(fileDocument.getContentType().equals(CONTENT_TYPE_MARK_DOWN) && !StringUtils.isEmpty(content)){
+                    content = replaceAll(content, fileDocument.getPath(), fileDocument.getUserId());
+                    fileDocument.setContentText(content);
                 }else{
-                    String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
-                    String currentDirectory = getUserDirectory(fileDocument.getPath());
-                    File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
-                    fileDocument.setContentText(FileUtil.readString(file,StandardCharsets.UTF_8));
+                    fileDocument.setContentText(content);
                 }
             }
             return ResultUtil.success(fileDocument);
@@ -811,7 +809,6 @@ public class FileServiceImpl implements IFileService {
         Update update = new Update();
         update.set("size", FileUtil.size(file));
         update.set("name", upload.getFilename());
-        update.set("contentText", upload.getContentText());
         update.set("updateDate",date);
         Query query = new Query().addCriteria(Criteria.where("_id").is(upload.getFileId()));
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
@@ -1031,12 +1028,29 @@ public class FileServiceImpl implements IFileService {
         String contentType = FileContentTypeUtils.getContentType(suffix);
 
         // 文件是否存在
-        boolean fileExists = mongoTemplate.exists(query,COLLECTION_NAME);
-        if(fileExists){
+        FileDocument fileDocument = mongoTemplate.findOne(query,FileDocument.class, COLLECTION_NAME);
+        if(fileDocument != null){
             Update update = new Update();
             update.set("size", file.length());
-            update.set("updateDate",LocalDateTime.now(TimeUntils.ZONE_ID));
+            LocalDateTime updateDate =  LocalDateTime.now(TimeUntils.ZONE_ID);
+            update.set("updateDate", updateDate);
             mongoTemplate.upsert(query,update,COLLECTION_NAME);
+            fileDocument.setSize(file.length());
+            fileDocument.setUpdateDate(updateDate);
+            sendMessage(username, fileDocument);
+        }
+    }
+
+    /***
+     * 给用户发消息
+     * @param username
+     * @param message
+     */
+    private void sendMessage(String username, Object message) {
+        WebSocketSession webSocketSession = SocketManager.get(username);
+        if (webSocketSession != null) {
+            template.convertAndSendToUser(username, "/queue/sendUser", message);
+            log.info("给{}发送消息:{}",username,message);
         }
     }
 
@@ -1481,12 +1495,6 @@ public class FileServiceImpl implements IFileService {
             } catch (UnsupportedFormatException e) {
                 log.warn(e.getMessage());
             }
-        }
-        if (contentType.contains(CONTENT_TYPE_MARK_DOWN)) {
-            // 写入markdown内容
-            byte[] content = toByteArray(upload.getInputStream());
-            String markDownContent = new String(content,0,content.length,StandardCharsets.UTF_8);
-            fileDocument.setContentText(markDownContent);
         }
         return saveFileInfo(fileDocument);
     }

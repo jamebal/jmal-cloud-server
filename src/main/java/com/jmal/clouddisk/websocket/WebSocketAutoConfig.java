@@ -44,8 +44,8 @@ public class WebSocketAutoConfig extends AbstractWebSocketMessageBrokerConfigure
          * topic 广播
          * user 点对点前缀
          */
-        registry.enableSimpleBroker("queue", "/topic");
-        registry.setUserDestinationPrefix("/");
+        registry.enableSimpleBroker("/queue", "/topic");
+        registry.setUserDestinationPrefix("/user");
     }
 
     @Override
