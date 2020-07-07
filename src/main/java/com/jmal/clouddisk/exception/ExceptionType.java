@@ -88,7 +88,12 @@ public enum ExceptionType {
     /***
      * 合并文件失败
      */
-    FAIL_MERGA_FILE(16, "合并文件失败");
+    FAIL_MERGA_FILE(16, "合并文件失败"),
+
+    /***
+     * 删除文件失败
+     */
+    FAIL_DELETE_FILE(17, "删除文件失败");
 
 
     public int getCode() {

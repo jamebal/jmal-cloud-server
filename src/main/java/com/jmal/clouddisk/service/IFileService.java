@@ -307,4 +307,11 @@ public interface IFileService {
      */
     ResponseResult upperLevelList(String path, String username);
 
+    /***
+     * 根据path删除文件/文件夹
+     * @param path
+     * @param username
+     * @return
+     */
+    ResponseResult delFile(String path, String username) throws CommonException;
 }

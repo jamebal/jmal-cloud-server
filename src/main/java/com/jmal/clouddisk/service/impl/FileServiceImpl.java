@@ -1037,19 +1037,20 @@ public class FileServiceImpl implements IFileService {
             mongoTemplate.upsert(query,update,COLLECTION_NAME);
             fileDocument.setSize(file.length());
             fileDocument.setUpdateDate(updateDate);
-            sendMessage(username, fileDocument);
+            sendMessage(username,"/queue/updateFile", fileDocument);
         }
     }
 
     /***
      * 给用户发消息
      * @param username
+     * @param destination
      * @param message
      */
-    private void sendMessage(String username, Object message) {
+    private void sendMessage(String username,String destination, Object message) {
         WebSocketSession webSocketSession = SocketManager.get(username);
         if (webSocketSession != null) {
-            template.convertAndSendToUser(username, "/queue/sendUser", message);
+            template.convertAndSendToUser(username, destination, message);
         }
     }
 
@@ -1067,9 +1068,10 @@ public class FileServiceImpl implements IFileService {
         query.addCriteria(Criteria.where("path").is(relativePath));
         query.addCriteria(Criteria.where("name").is(fileName));
         // 文件是否存在
-        boolean fileExists = mongoTemplate.exists(query,COLLECTION_NAME);
-        if(fileExists){
+        FileDocument fileDocument = mongoTemplate.findOne(query,FileDocument.class,COLLECTION_NAME);
+        if(fileDocument != null){
             mongoTemplate.remove(query,COLLECTION_NAME);
+            sendMessage(username,"/queue/deleteFile", fileDocument);
         }
     }
 
@@ -1140,7 +1142,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     /***
-     * 获取上一文件列表
+     * 获取上一级文件列表
      * @param path
      * @param username
      * @return
@@ -1154,12 +1156,22 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success(listfile(username, upperLevel, false));
     }
 
-    public static void main(String[] args) {
 
-        String rootPath = "/Users/jmal/temp/filetest/rootpath";
-        String username = "jmal";
-        String path = "/test123/";
-
+    /***
+     * 根据path删除文件/文件夹
+     * @param path
+     * @param username
+     * @return
+     * @throws CommonException
+     */
+    @Override
+    public ResponseResult delFile(String path, String username) throws CommonException {
+        Path p = Paths.get(filePropertie.getRootDir(),username,path);
+        if(FileUtil.del(p)){
+            return ResultUtil.success();
+        }else{
+            return ResultUtil.error("删除文件失败");
+        }
     }
 
     /***
