@@ -21,10 +21,7 @@ import java.nio.file.Paths;
 import java.text.Collator;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
@@ -36,13 +33,13 @@ import javax.servlet.http.HttpServletResponse;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
-import com.google.common.collect.Lists;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.websocket.SocketManager;
+import org.apache.commons.compress.utils.Lists;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -68,7 +65,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
 import org.springframework.web.socket.WebSocketSession;
-import sun.security.krb5.internal.Ticket;
 
 /**
  * @Description 文件管理
@@ -1032,6 +1028,8 @@ public class FileServiceImpl implements IFileService {
         if(fileDocument != null){
             Update update = new Update();
             update.set("size", file.length());
+            update.set("suffix", suffix);
+            update.set("contentType",contentType);
             LocalDateTime updateDate =  LocalDateTime.now(TimeUntils.ZONE_ID);
             update.set("updateDate", updateDate);
             mongoTemplate.upsert(query,update,COLLECTION_NAME);
@@ -1177,7 +1175,9 @@ public class FileServiceImpl implements IFileService {
     /***
      * 获取目录下的文件
      * @param username
-     * @param dir
+     * @param dirPath
+     * @param tempDir
+     * @return
      */
     private List<FileDocument> listfile(String username, String dirPath, boolean tempDir) {
         File dir = new File(dirPath);
@@ -1185,7 +1185,10 @@ public class FileServiceImpl implements IFileService {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         File[] fileList = dir.listFiles();
-        List<FileDocument> list = Arrays.asList(fileList).stream().map(file -> {
+        if(fileList == null){
+            return Lists.newArrayList();
+        }
+        return Arrays.stream(fileList).map(file -> {
             FileDocument fileDocument = new FileDocument();
             String filename = file.getName();
             String suffix = FileUtil.extName(filename);
@@ -1196,16 +1199,14 @@ public class FileServiceImpl implements IFileService {
             fileDocument.setContentType(FileContentTypeUtils.getContentType(suffix));
             String path;
             Path dirPaths = Paths.get(file.getPath());
-            if(tempDir){
-                path = dirPaths.subpath(Paths.get(filePropertie.getRootDir(),filePropertie.getChunkFileDir(),username).getNameCount(),dirPaths.getNameCount()).toString();
-            }else{
-                path = dirPaths.subpath(Paths.get(filePropertie.getRootDir(),username).getNameCount(),dirPaths.getNameCount()).toString();
+            if (tempDir) {
+                path = dirPaths.subpath(Paths.get(filePropertie.getRootDir(), filePropertie.getChunkFileDir(), username).getNameCount(), dirPaths.getNameCount()).toString();
+            } else {
+                path = dirPaths.subpath(Paths.get(filePropertie.getRootDir(), username).getNameCount(), dirPaths.getNameCount()).toString();
             }
             fileDocument.setPath(path);
             return fileDocument;
-        }).collect(toList());
-        list.sort(this::compareByFileName);
-        return list;
+        }).sorted(this::compareByFileName).collect(toList());
     }
 
     /***
@@ -1293,6 +1294,7 @@ public class FileServiceImpl implements IFileService {
             query.addCriteria(Criteria.where("_id").is(id));
             Update update = new Update();
             update.set("name", newFileName);
+            update.set("suffix",FileUtil.extName(newFileName));
             mongoTemplate.upsert(query, update, COLLECTION_NAME);
         } else {
             return true;
@@ -1359,7 +1361,7 @@ public class FileServiceImpl implements IFileService {
         String md5 = upload.getIdentifier();
         // 未写入的分片
         CopyOnWriteArrayList<Integer> unWrittenChunks = unWrittenCache.get(md5, key ->  new CopyOnWriteArrayList<>());
-        if (!unWrittenChunks.contains(chunkNumber)) {
+        if (unWrittenChunks != null && !unWrittenChunks.contains(chunkNumber)) {
             unWrittenChunks.add(chunkNumber);
             unWrittenCache.put(md5, unWrittenChunks);
         }
