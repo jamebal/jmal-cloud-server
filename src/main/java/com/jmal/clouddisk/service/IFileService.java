@@ -314,4 +314,13 @@ public interface IFileService {
      * @return
      */
     ResponseResult delFile(String path, String username) throws CommonException;
+
+    /***
+     * 根据path重命名
+     * @param newFileName
+     * @param username
+     * @param path
+     * @return
+     */
+    ResponseResult<Object> renameByPath(String newFileName, String username, String path);
 }

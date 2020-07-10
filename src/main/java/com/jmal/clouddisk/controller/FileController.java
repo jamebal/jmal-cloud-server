@@ -253,4 +253,10 @@ public class FileController {
     public ResponseResult delFile(@RequestParam String path, @RequestParam String username) throws CommonException {
         return fileService.delFile(path, username);
     }
+
+    @ApiOperation("根据path重命名")
+    @GetMapping("/rename/path")
+    public ResponseResult<Object> renameByPath(@RequestParam String newFileName,@RequestParam String username,@RequestParam String path) throws CommonException {
+        return fileService.renameByPath(newFileName, username, path);
+    }
 }

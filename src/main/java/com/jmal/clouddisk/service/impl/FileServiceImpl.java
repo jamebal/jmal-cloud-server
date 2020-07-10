@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
+import com.google.common.collect.Maps;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IFileService;
@@ -1035,20 +1036,22 @@ public class FileServiceImpl implements IFileService {
             mongoTemplate.upsert(query,update,COLLECTION_NAME);
             fileDocument.setSize(file.length());
             fileDocument.setUpdateDate(updateDate);
-            sendMessage(username,"/queue/updateFile", fileDocument);
+            sendMessage(username, fileDocument, "updateFile");
         }
     }
 
     /***
      * 给用户发消息
      * @param username
-     * @param destination
      * @param message
+     * @param url
      */
-    private void sendMessage(String username,String destination, Object message) {
+    private void sendMessage(String username, Object message ,String url) {
         WebSocketSession webSocketSession = SocketManager.get(username);
         if (webSocketSession != null) {
-            template.convertAndSendToUser(username, destination, message);
+            Map<String, Object> headers = Maps.newHashMap();
+            headers.put("url",url);
+            template.convertAndSendToUser(username, "/queue/update", message, headers);
         }
     }
 
@@ -1069,7 +1072,7 @@ public class FileServiceImpl implements IFileService {
         FileDocument fileDocument = mongoTemplate.findOne(query,FileDocument.class,COLLECTION_NAME);
         if(fileDocument != null){
             mongoTemplate.remove(query,COLLECTION_NAME);
-            sendMessage(username,"/queue/deleteFile", fileDocument);
+            sendMessage(username,fileDocument, "deleteFile");
         }
     }
 
@@ -1170,6 +1173,38 @@ public class FileServiceImpl implements IFileService {
         }else{
             return ResultUtil.error("删除文件失败");
         }
+    }
+
+    /***
+     * 根据path重命名
+     * @param newFileName
+     * @param username
+     * @param path
+     * @return
+     */
+    @Override
+    public ResponseResult<Object> renameByPath(String newFileName, String username, String path) {
+        Path path1 = Paths.get(filePropertie.getRootDir(),username,path);
+        if(!Files.exists(path1)){
+            return ResultUtil.error("修改失败,path参数有误！");
+        }
+        String userId = userService.getUserIdByUserName(username);
+        if(StringUtils.isEmpty(userId)){
+            return ResultUtil.error("修改失败,userId参数有误！");
+        }
+        File file = path1.toFile();
+        String fileAbsolutePath = file.getAbsolutePath();
+        String fileName = file.getName();
+        String relativePath = fileAbsolutePath.substring(filePropertie.getRootDir().length()+username.length()+1,fileAbsolutePath.length()-fileName.length());
+        Query query = new Query();
+        query.addCriteria(Criteria.where("userId").is(userId));
+        query.addCriteria(Criteria.where("path").is(relativePath));
+        query.addCriteria(Criteria.where("name").is(fileName));
+        FileDocument fileDocument = mongoTemplate.findOne(query,FileDocument.class, COLLECTION_NAME);
+        if(fileDocument == null){
+            return ResultUtil.error("修改失败！");
+        }
+        return rename(newFileName,username,fileDocument.getId());
     }
 
     /***
