@@ -259,4 +259,10 @@ public class FileController {
     public ResponseResult<Object> renameByPath(@RequestParam String newFileName,@RequestParam String username,@RequestParam String path) throws CommonException {
         return fileService.renameByPath(newFileName, username, path);
     }
+
+    @ApiOperation("根据path添加文件/文件夹")
+    @PostMapping("/addfile")
+    public ResponseResult<Object> addFile(@RequestParam String fileName, @RequestParam Boolean isFolder, @RequestParam String username, @RequestParam String parentPath){
+        return fileService.addFile(fileName, isFolder, username, parentPath);
+    }
 }

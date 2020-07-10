@@ -323,4 +323,14 @@ public interface IFileService {
      * @return
      */
     ResponseResult<Object> renameByPath(String newFileName, String username, String path);
+
+    /***
+     * 根据path添加文件
+     * @param fileName
+     * @param isFolder
+     * @param username
+     * @param parentPath
+     * @return
+     */
+    ResponseResult<Object> addFile(String fileName, Boolean isFolder, String username, String parentPath);
 }
