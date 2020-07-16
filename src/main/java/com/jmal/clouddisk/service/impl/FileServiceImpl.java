@@ -218,7 +218,9 @@ public class FileServiceImpl implements IFileService {
         }
         if (!StringUtils.isEmpty(order) && "name".equals(upload.getSortableProp())) {
             list.sort(this::compareByFileName);
-            list.sort(this::desc);
+            if ("descending".equals(order)) {
+                list.sort(this::desc);
+            }
         }
         return list;
     }
@@ -387,8 +389,9 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> previewTextByPath(String path, String username) throws CommonException {
-        File file = new File(Paths.get(filePropertie.getRootDir(), username, path).toString());
+    public ResponseResult<Object> previewTextByPath(String filePath, String username) throws CommonException {
+        Path path = Paths.get(filePropertie.getRootDir(), username, filePath);
+        File file = path.toFile();
         if (!file.exists()) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
@@ -398,6 +401,11 @@ public class FileServiceImpl implements IFileService {
         } else {
             fileDocument.setContentText(FileUtil.readString(file, StandardCharsets.UTF_8));
         }
+        Path path1 = path.subpath(0,path.getNameCount()-1);
+        String resPath = path1.subpath(Paths.get(filePropertie.getRootDir(), username).getNameCount(), path1.getNameCount()).toString();
+        fileDocument.setPath(resPath);
+        fileDocument.setName(file.getName());
+        fileDocument.setIsFolder(file.isDirectory());
         return ResultUtil.success(fileDocument);
     }
 
