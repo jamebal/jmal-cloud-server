@@ -31,7 +31,7 @@ public class FilePropertie {
     /***
      * 文件监控扫描时间间隔(秒)
      */
-    private Long timeInterval = 2L;
+    private Long timeInterval = 10L;
 
     public String getRootDir(){
         return Paths.get(rootDir).toString();

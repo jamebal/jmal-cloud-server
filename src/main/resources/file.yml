@@ -4,7 +4,7 @@ file:
   #断点续传的临时文件目录名称 位于rootDir下,文件监控扫描忽略的目录
   chunkFileDir: ugyuvgbhnouvghjbnk
   #文件监控扫描时间间隔(秒)
-  timeInterval: 1
+  timeInterval: 10
   #文本类型
   simText: [txt,html,htm,asp,jsp,xml,json,properties,md,gitignore,java,py,c,cpp,sql,sh,bat,m,bas,prg,cmd]
   #文档类型
