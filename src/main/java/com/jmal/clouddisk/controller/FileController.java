@@ -141,6 +141,10 @@ public class FileController {
     public ResponseEntity<Object> thumbnail(HttpServletRequest request, String id) throws IOException {
         ResultUtil.checkParamIsNull(id);
         Optional<FileDocument> file = fileService.thumbnail(id, service.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN)));
+        return getObjectResponseEntity(file);
+    }
+
+    private ResponseEntity<Object> getObjectResponseEntity(Optional<FileDocument> file) {
         return file.<ResponseEntity<Object>>map(fileDocument ->
                 ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + fileDocument.getName())
@@ -156,14 +160,7 @@ public class FileController {
     public ResponseEntity<Object> coverOfMp3(HttpServletRequest request, String id) throws IOException {
         ResultUtil.checkParamIsNull(id);
         Optional<FileDocument> file = fileService.coverOfMp3(id, service.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN)));
-        return file.<ResponseEntity<Object>>map(fileDocument ->
-                ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + fileDocument.getName())
-                        .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
-                        .header(HttpHeaders.CONTENT_LENGTH, fileDocument.getContent().length + "")
-                        .header("Connection", "close")
-                        .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
-                        .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+        return getObjectResponseEntity(file);
     }
 
     @ApiOperation("收藏文件或文件夹")
