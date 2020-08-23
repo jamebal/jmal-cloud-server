@@ -401,7 +401,7 @@ public class FileServiceImpl implements IFileService {
         } else {
             fileDocument.setContentText(FileUtil.readString(file, StandardCharsets.UTF_8));
         }
-        Path path1 = path.subpath(0,path.getNameCount()-1);
+        Path path1 = path.subpath(0, path.getNameCount() - 1);
         String resPath = path1.subpath(Paths.get(filePropertie.getRootDir(), username).getNameCount(), path1.getNameCount()).toString();
         fileDocument.setPath(resPath);
         fileDocument.setName(file.getName());
@@ -871,6 +871,9 @@ public class FileServiceImpl implements IFileService {
             upload.setSuffix(FileUtil.extName(fileName));
             // 没有分片,直接存
             FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
+            if (!filePropertie.getMonitor()) {
+                createFile(username, newFile);
+            }
             return ResultUtil.success();
         } catch (IOException e) {
             e.printStackTrace();
@@ -937,13 +940,13 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public void createFile(String username, File file) {
-        String fileAbsolutePath = file.getAbsolutePath();
-        String fileName = file.getName();
-        String relativePath = fileAbsolutePath.substring(filePropertie.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
         String userId = userService.getUserIdByUserName(username);
         if (StringUtils.isEmpty(userId)) {
             return;
         }
+        String fileAbsolutePath = file.getAbsolutePath();
+        String fileName = file.getName();
+        String relativePath = fileAbsolutePath.substring(filePropertie.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
         Query query = new Query();
         query.addCriteria(Criteria.where("userId").is(userId));
         query.addCriteria(Criteria.where("path").is(relativePath));
@@ -1003,7 +1006,7 @@ public class FileServiceImpl implements IFileService {
             update.set("isFavorite", false);
         }
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
-        sendMessage(username,update.getUpdateObject(),"createFile");
+        sendMessage(username, update.getUpdateObject(), "createFile");
     }
 
     @Override
@@ -1223,11 +1226,11 @@ public class FileServiceImpl implements IFileService {
         try {
             if (isFolder) {
                 Files.createDirectories(path);
-            }else{
+            } else {
                 Files.createFile(path);
             }
         } catch (IOException e) {
-            log.error(e.getMessage(),e);
+            log.error(e.getMessage(), e);
             return ResultUtil.error("新建文件失败");
         }
         String resPath = path.subpath(Paths.get(filePropertie.getRootDir(), username).getNameCount(), path.getNameCount()).toString();
@@ -1391,6 +1394,9 @@ public class FileServiceImpl implements IFileService {
             upload.setContentType(file.getContentType());
             upload.setSuffix(FileUtil.extName(filename));
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
+            if (!filePropertie.getMonitor()) {
+                createFile(upload.getUsername(), chunkFile);
+            }
             uploadResponse.setUpload(true);
         } else {
             // 多个分片
@@ -1502,7 +1508,9 @@ public class FileServiceImpl implements IFileService {
             FileUtil.mkdir(dir);
         }
         // 保存文件夹信息
-//        saveFolderInfo(upload, date);
+        if (!filePropertie.getMonitor()) {
+            createFile(upload.getUsername(), dir);
+        }
         return ResultUtil.success();
     }
 
@@ -1531,6 +1539,9 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setUpdateDate(date);
         if (!dir.exists()) {
             FileUtil.mkdir(dir);
+        }
+        if (!filePropertie.getMonitor()) {
+            createFile(upload.getUsername(), dir);
         }
         return ResultUtil.success();
     }
@@ -1782,6 +1793,9 @@ public class FileServiceImpl implements IFileService {
         FileUtil.del(chunkDir);
         FileUtil.move(file, outputFile, true);
         uploadResponse.setUpload(true);
+        if (!filePropertie.getMonitor()) {
+            createFile(upload.getUsername(), outputFile);
+        }
         return ResultUtil.success(uploadResponse);
     }
 

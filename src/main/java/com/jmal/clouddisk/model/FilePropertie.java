@@ -28,6 +28,7 @@ public class FilePropertie {
     private String[] simText = {"txt","html","htm","asp","jsp","xml","json","properties","md","gitignore","java","py","c","cpp","sql","sh","bat","m","bas","prg","cmd"};
     private String[] doument = {"pdf","doc","docs","xls","xl"};
 
+    private Boolean monitor = false;
     /***
      * 文件监控扫描时间间隔(秒)
      */
