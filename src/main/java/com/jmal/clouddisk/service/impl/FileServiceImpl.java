@@ -97,10 +97,10 @@ public class FileServiceImpl implements IFileService {
 
     private static final AES aes = SecureUtil.aes();
 
-    private Cache<String, CopyOnWriteArrayList<Integer>> resumeCache = CaffeineUtil.getResumeCache();
-    private Cache<String, CopyOnWriteArrayList<Integer>> writtenCache = CaffeineUtil.getWrittenCache();
-    private Cache<String, CopyOnWriteArrayList<Integer>> unWrittenCache = CaffeineUtil.getUnWrittenCacheCache();
-    private Cache<String, Lock> chunkWriteLockCache = CaffeineUtil.getChunkWriteLockCache();
+    private final Cache<String, CopyOnWriteArrayList<Integer>> resumeCache = CaffeineUtil.getResumeCache();
+    private final Cache<String, CopyOnWriteArrayList<Integer>> writtenCache = CaffeineUtil.getWrittenCache();
+    private final Cache<String, CopyOnWriteArrayList<Integer>> unWrittenCache = CaffeineUtil.getUnWrittenCacheCache();
+    private final Cache<String, Lock> chunkWriteLockCache = CaffeineUtil.getChunkWriteLockCache();
 
     /***
      * 文件列表
@@ -744,7 +744,7 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setMd5(md5);
         fileDocument.setName(filename);
         fileDocument.setIsFolder(false);
-        createFile(upload.getUsername(),file);
+        createFile(upload.getUsername(), file);
         return ResultUtil.success();
     }
 
@@ -808,7 +808,7 @@ public class FileServiceImpl implements IFileService {
         update.set("name", upload.getFilename());
         update.set("updateDate", date);
         Query query = new Query().addCriteria(Criteria.where("_id").is(upload.getFileId()));
-        updateFile(upload.getUsername(),file);
+        updateFile(upload.getUsername(), file);
         return ResultUtil.success();
     }
 
@@ -819,7 +819,7 @@ public class FileServiceImpl implements IFileService {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
-        updateFile(upload.getUsername(),file);
+        updateFile(upload.getUsername(), file);
         return ResultUtil.success();
     }
 
@@ -874,7 +874,7 @@ public class FileServiceImpl implements IFileService {
             // 没有分片,直接存
             FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             String fileId = null;
-            if (!filePropertie.getMonitor()) {
+            if (!filePropertie.getMonitor() || filePropertie.getTimeInterval() >= 3L) {
                 fileId = createFile(username, newFile);
             }
             return ResultUtil.success(fileId);
@@ -1010,7 +1010,7 @@ public class FileServiceImpl implements IFileService {
         }
         UpdateResult updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
         sendMessage(username, update.getUpdateObject(), "createFile");
-        if(null != updateResult.getUpsertedId()){
+        if (null != updateResult.getUpsertedId()) {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return null;
@@ -1046,7 +1046,7 @@ public class FileServiceImpl implements IFileService {
             fileDocument.setSize(file.length());
             fileDocument.setUpdateDate(updateDate);
             sendMessage(username, fileDocument, "updateFile");
-            if(null != updateResult.getUpsertedId()){
+            if (null != updateResult.getUpsertedId()) {
                 return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
             }
         }
@@ -1248,7 +1248,7 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setPath(resPath);
         fileDocument.setIsFolder(isFolder);
         fileDocument.setSuffix(FileUtil.extName(fileName));
-        createFile(username,path.toFile());
+        createFile(username, path.toFile());
         return ResultUtil.success(fileDocument);
     }
 
@@ -1404,7 +1404,7 @@ public class FileServiceImpl implements IFileService {
             upload.setContentType(file.getContentType());
             upload.setSuffix(FileUtil.extName(filename));
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
-            if (!filePropertie.getMonitor()) {
+            if (!filePropertie.getMonitor() || filePropertie.getTimeInterval() >= 3L) {
                 createFile(upload.getUsername(), chunkFile);
             }
             uploadResponse.setUpload(true);
@@ -1518,7 +1518,7 @@ public class FileServiceImpl implements IFileService {
             FileUtil.mkdir(dir);
         }
         // 保存文件夹信息
-        if (!filePropertie.getMonitor()) {
+        if (!filePropertie.getMonitor() || filePropertie.getTimeInterval() >= 3L) {
             createFile(upload.getUsername(), dir);
         }
         return ResultUtil.success();
@@ -1550,7 +1550,7 @@ public class FileServiceImpl implements IFileService {
         if (!dir.exists()) {
             FileUtil.mkdir(dir);
         }
-        if (!filePropertie.getMonitor()) {
+        if (!filePropertie.getMonitor() || filePropertie.getTimeInterval() >= 3L) {
             createFile(upload.getUsername(), dir);
         }
         return ResultUtil.success();
@@ -1803,7 +1803,7 @@ public class FileServiceImpl implements IFileService {
         FileUtil.del(chunkDir);
         FileUtil.move(file, outputFile, true);
         uploadResponse.setUpload(true);
-        if (!filePropertie.getMonitor()) {
+        if (!filePropertie.getMonitor() || filePropertie.getTimeInterval() >= 3L) {
             createFile(upload.getUsername(), outputFile);
         }
         return ResultUtil.success(uploadResponse);
