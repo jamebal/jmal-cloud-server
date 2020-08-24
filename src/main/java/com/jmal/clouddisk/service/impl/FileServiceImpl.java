@@ -1181,11 +1181,9 @@ public class FileServiceImpl implements IFileService {
     @Override
     public ResponseResult delFile(String path, String username) throws CommonException {
         Path p = Paths.get(filePropertie.getRootDir(), username, path);
-        if (FileUtil.del(p)) {
-            return ResultUtil.success();
-        } else {
-            return ResultUtil.error("删除文件失败");
-        }
+        FileUtil.del(p);
+        deleteFile(username, p.toFile());
+        return ResultUtil.success();
     }
 
     /***
