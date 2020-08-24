@@ -808,7 +808,7 @@ public class FileServiceImpl implements IFileService {
         update.set("name", upload.getFilename());
         update.set("updateDate", date);
         Query query = new Query().addCriteria(Criteria.where("_id").is(upload.getFileId()));
-        updateFile(upload.getUsername(), file);
+        mongoTemplate.upsert(query, update, COLLECTION_NAME);
         return ResultUtil.success();
     }
 
