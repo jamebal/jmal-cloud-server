@@ -744,6 +744,7 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setMd5(md5);
         fileDocument.setName(filename);
         fileDocument.setIsFolder(false);
+        createFile(upload.getUsername(),file);
         return ResultUtil.success();
     }
 
@@ -807,7 +808,7 @@ public class FileServiceImpl implements IFileService {
         update.set("name", upload.getFilename());
         update.set("updateDate", date);
         Query query = new Query().addCriteria(Criteria.where("_id").is(upload.getFileId()));
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        updateFile(upload.getUsername(),file);
         return ResultUtil.success();
     }
 
@@ -818,6 +819,7 @@ public class FileServiceImpl implements IFileService {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
+        updateFile(upload.getUsername(),file);
         return ResultUtil.success();
     }
 
@@ -1239,6 +1241,7 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setPath(resPath);
         fileDocument.setIsFolder(isFolder);
         fileDocument.setSuffix(FileUtil.extName(fileName));
+        createFile(username,path.toFile());
         return ResultUtil.success(fileDocument);
     }
 
