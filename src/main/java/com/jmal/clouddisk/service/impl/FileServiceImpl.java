@@ -16,6 +16,7 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.websocket.SocketManager;
 import com.mongodb.client.AggregateIterable;
+import com.mongodb.client.result.UpdateResult;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
@@ -552,7 +553,6 @@ public class FileServiceImpl implements IFileService {
      */
     @Override
     public void publicNginx(HttpServletRequest request, HttpServletResponse response, String relativePath, String userId) throws CommonException {
-
         Consumer user = userService.userInfoById(userId);
         if (user == null) {
             return;
@@ -753,7 +753,7 @@ public class FileServiceImpl implements IFileService {
         if (StringUtils.isEmpty(mark)) {
             Query query = new Query();
             query.addCriteria(Criteria.where("isFavorite").is(true));
-            query.addCriteria(Criteria.where("contentType").is(CONTENT_TYPE_MARK_DOWN));
+            query.addCriteria(Criteria.where("suffix").is("md"));
             query.with(new Sort(Sort.Direction.DESC, "uploadDate"));
             List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
             fileDocumentList = fileDocumentList.parallelStream().peek(fileDocument -> {
@@ -777,7 +777,7 @@ public class FileServiceImpl implements IFileService {
                 String currentDirectory = getUserDirectory(fileDocument.getPath());
                 File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
                 String content = FileUtil.readString(file, StandardCharsets.UTF_8);
-                if (fileDocument.getContentType().equals(CONTENT_TYPE_MARK_DOWN) && !StringUtils.isEmpty(content)) {
+                if ("md".equals(fileDocument.getSuffix()) && !StringUtils.isEmpty(content)) {
                     content = replaceAll(content, fileDocument.getPath(), fileDocument.getUserId());
                     fileDocument.setContentText(content);
                 } else {
@@ -873,10 +873,11 @@ public class FileServiceImpl implements IFileService {
             upload.setSuffix(FileUtil.extName(fileName));
             // 没有分片,直接存
             FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
+            String fileId = null;
             if (!filePropertie.getMonitor()) {
-                createFile(username, newFile);
+                fileId = createFile(username, newFile);
             }
-            return ResultUtil.success();
+            return ResultUtil.success(fileId);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -941,10 +942,10 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public void createFile(String username, File file) {
+    public String createFile(String username, File file) {
         String userId = userService.getUserIdByUserName(username);
         if (StringUtils.isEmpty(userId)) {
-            return;
+            return null;
         }
         String fileAbsolutePath = file.getAbsolutePath();
         String fileName = file.getName();
@@ -966,7 +967,7 @@ public class FileServiceImpl implements IFileService {
                 update.set("music", music);
                 mongoTemplate.upsert(query, update, COLLECTION_NAME);
             }
-            return;
+            return null;
         }
         LocalDateTime nowDateTime = LocalDateTime.now(TimeUntils.ZONE_ID);
         Update update = new Update();
@@ -998,7 +999,7 @@ public class FileServiceImpl implements IFileService {
                     e.printStackTrace();
                 }
             }
-            if (contentType.contains(CONTENT_TYPE_MARK_DOWN)) {
+            if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
                 // 写入markdown内容
                 String markDownContent = FileUtil.readString(file, StandardCharsets.UTF_8);
                 update.set("contentText", markDownContent);
@@ -1007,18 +1008,22 @@ public class FileServiceImpl implements IFileService {
             update.set("suffix", suffix);
             update.set("isFavorite", false);
         }
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        UpdateResult updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
         sendMessage(username, update.getUpdateObject(), "createFile");
+        if(null != updateResult.getUpsertedId()){
+            return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
+        }
+        return null;
     }
 
     @Override
-    public void updateFile(String username, File file) {
+    public String updateFile(String username, File file) {
         String fileAbsolutePath = file.getAbsolutePath();
         String fileName = file.getName();
         String relativePath = fileAbsolutePath.substring(filePropertie.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
         String userId = userService.getUserIdByUserName(username);
         if (StringUtils.isEmpty(userId)) {
-            return;
+            return null;
         }
         Query query = new Query();
         query.addCriteria(Criteria.where("userId").is(userId));
@@ -1037,11 +1042,15 @@ public class FileServiceImpl implements IFileService {
             update.set("contentType", contentType);
             LocalDateTime updateDate = LocalDateTime.now(TimeUntils.ZONE_ID);
             update.set("updateDate", updateDate);
-            mongoTemplate.upsert(query, update, COLLECTION_NAME);
+            UpdateResult updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
             fileDocument.setSize(file.length());
             fileDocument.setUpdateDate(updateDate);
             sendMessage(username, fileDocument, "updateFile");
+            if(null != updateResult.getUpsertedId()){
+                return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
+            }
         }
+        return null;
     }
 
     /***

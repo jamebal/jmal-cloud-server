@@ -264,14 +264,14 @@ public interface IFileService {
      * @param username
      * @param file
      */
-    void createFile(String username, File file);
+    String createFile(String username, File file);
 
     /***
      * 修改文件/文件夹
      * @param username
      * @param file
      */
-    void updateFile(String username, File file);
+    String updateFile(String username, File file);
 
     /***
      * 删除文件/文件夹(mongodb)

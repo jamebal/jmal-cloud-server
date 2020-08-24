@@ -26,7 +26,7 @@ public class FilePropertie {
     private String documentImgDir = "/Image/Document/Image/";
     private String separator = "/";
     private String[] simText = {"txt","html","htm","asp","jsp","xml","json","properties","md","gitignore","java","py","c","cpp","sql","sh","bat","m","bas","prg","cmd"};
-    private String[] doument = {"pdf","doc","docs","xls","xl"};
+    private String[] doument = {"pdf","doc","docs","xls","xl","md"};
 
     private Boolean monitor = false;
     /***

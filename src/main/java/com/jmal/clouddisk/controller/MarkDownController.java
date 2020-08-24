@@ -97,7 +97,6 @@ public class MarkDownController {
     @PostMapping("/upload-markdown-image")
     @ResponseBody
     public ResponseResult<Object> uploadMarkdownImage(UploadApiParam upload) throws CommonException {
-        System.out.println("upload-markdown-image:" + upload.toString());
         return fileService.uploadMarkdownImage(upload);
     }
 
