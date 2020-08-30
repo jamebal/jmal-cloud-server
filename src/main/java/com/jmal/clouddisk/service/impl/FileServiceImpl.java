@@ -1315,6 +1315,7 @@ public class FileServiceImpl implements IFileService {
         String toPath = getRelativePathByFileId(toFileDocument);
         String toFilePath = getUserDir(upload.getUsername()) + toPath;
         if (formFileDocument != null) {
+            FileUtil.copy(fromFilePath, toFilePath, true);
             if (formFileDocument.getIsFolder()) {
                 // 复制文件夹
                 // 复制其本身
@@ -1322,6 +1323,17 @@ public class FileServiceImpl implements IFileService {
                 if (isExistsOfToCopy(copyFileDocument, toPath)) {
                     return ResultUtil.warning("所选目录已存在该文件夹!");
                 }
+                mongoTemplate.save(copyFileDocument,COLLECTION_NAME);
+                // 复制其下的子文件或目录
+                Query query = new Query();
+                query.addCriteria(Criteria.where("path").regex("^" + fromPath));
+                List<FileDocument> formList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+                formList = formList.stream().peek(fileDocument -> {
+                    String oldPath = fileDocument.getPath();
+                    String newPath = toPath + oldPath.substring(1);
+                    copyFileDocument(fileDocument,newPath);
+                }).collect(toList());
+                mongoTemplate.insert(formList,COLLECTION_NAME);
             } else {
                 // 复制文件
                 // 复制其本身
@@ -1329,8 +1341,8 @@ public class FileServiceImpl implements IFileService {
                 if (isExistsOfToCopy(copyFileDocument, toPath)) {
                     return ResultUtil.warning("所选目录已存在该文件!");
                 }
+                mongoTemplate.save(copyFileDocument,COLLECTION_NAME);
             }
-            FileUtil.copy(fromFilePath, toFilePath, true);
             return ResultUtil.success();
         }
         return ResultUtil.error("服务器开小差了, 请稍后再试...");
