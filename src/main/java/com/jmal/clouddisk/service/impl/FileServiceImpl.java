@@ -403,7 +403,12 @@ public class FileServiceImpl implements IFileService {
             fileDocument.setContentText(FileUtil.readString(file, StandardCharsets.UTF_8));
         }
         Path path1 = path.subpath(0, path.getNameCount() - 1);
-        String resPath = path1.subpath(Paths.get(filePropertie.getRootDir(), username).getNameCount(), path1.getNameCount()).toString();
+        int rootCount = Paths.get(filePropertie.getRootDir(), username).getNameCount();
+        int path1Count = path1.getNameCount();
+        String resPath = "/";
+        if(rootCount < path1Count){
+            resPath = path1.subpath(rootCount, path1Count).toString();
+        }
         fileDocument.setPath(resPath);
         fileDocument.setName(file.getName());
         fileDocument.setIsFolder(file.isDirectory());
@@ -1228,6 +1233,10 @@ public class FileServiceImpl implements IFileService {
      */
     @Override
     public ResponseResult<Object> addFile(String fileName, Boolean isFolder, String username, String parentPath) {
+        String userId = userService.getUserIdByUserName(username);
+        if(StringUtils.isEmpty(userId)){
+            ResultUtil.error("不存在的用户");
+        }
         Path path = Paths.get(filePropertie.getRootDir(), username, parentPath, fileName);
         if (Files.exists(path)) {
             ResultUtil.warning("该文件已存在");
@@ -1245,6 +1254,7 @@ public class FileServiceImpl implements IFileService {
         String resPath = path.subpath(Paths.get(filePropertie.getRootDir(), username).getNameCount(), path.getNameCount()).toString();
         FileDocument fileDocument = new FileDocument();
         fileDocument.setName(fileName);
+        fileDocument.setUserId(userId);
         fileDocument.setPath(resPath);
         fileDocument.setIsFolder(isFolder);
         fileDocument.setSuffix(FileUtil.extName(fileName));
