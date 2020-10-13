@@ -9,7 +9,7 @@ import java.util.List;
  * @Description UploadResponse
  * @Author jmal
  * @Date 2020-01-27 17:04
- * @blame jmal
+ * @author jmal
  */
 @Data
 public class UploadResponse {

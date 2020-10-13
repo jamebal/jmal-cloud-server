@@ -3,7 +3,7 @@ package com.jmal.clouddisk.exception;
 /**
  * @Description 异常枚举
  * @Date 2019-08-16 14:20
- * @blame jmal
+ * @author jmal
  */
 public enum ExceptionType {
 

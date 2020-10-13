@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 /**
  * @Description 用户模型
- * @blame jmal
+ * @author jmal
  */
 @Data
 @ApiModel

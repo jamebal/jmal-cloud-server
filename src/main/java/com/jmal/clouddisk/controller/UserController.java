@@ -12,7 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 /**
  * @Description ConsumerController
- * @blame jmal
+ * @author jmal
  */
 @Controller
 @RequestMapping("user")

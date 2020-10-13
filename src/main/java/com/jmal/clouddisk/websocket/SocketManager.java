@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * socket管理器
  *
- * @blame jmal
+ * @author jmal
  */
 @Slf4j
 public class SocketManager {

@@ -5,7 +5,7 @@ import lombok.Data;
  * @Description 合并上传文件接口参数
  * @Author jmal
  * @Date 2020-01-14 11:38
- * @blame jmal
+ * @author jmal
  */
 @Data
 public class UploadActionApiParam {

@@ -20,7 +20,7 @@ import java.text.ParseException;
 /**
  * CommonExceptionHandler
  *
- * @blame jmal
+ * @author jmal
  */
 @ControllerAdvice
 public class CommonExceptionHandler {

@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -62,10 +63,10 @@ import static com.mongodb.client.model.Filters.*;
 import static java.util.stream.Collectors.toList;
 
 /**
+ * @author jmal
  * @Description 文件管理
  * @Author jmal
  * @Date 2020-01-14 13:05
- * @blame jmal
  */
 @Service
 @Slf4j
@@ -97,18 +98,26 @@ public class FileServiceImpl implements IFileService {
 
     private static final AES aes = SecureUtil.aes();
 
+    /***
+     * 断点恢复上传缓存(以上传的缓存)
+     */
     private final Cache<String, CopyOnWriteArrayList<Integer>> resumeCache = CaffeineUtil.getResumeCache();
+    /***
+     * 上传大文件是需要分片上传，再合并
+     * 以写入(合并)的分片缓存
+     */
     private final Cache<String, CopyOnWriteArrayList<Integer>> writtenCache = CaffeineUtil.getWrittenCache();
+    /***
+     * 未写入(合并)的分片缓存
+     */
     private final Cache<String, CopyOnWriteArrayList<Integer>> unWrittenCache = CaffeineUtil.getUnWrittenCacheCache();
+    /***
+     * 合并文件是的写入锁缓存
+     */
     private final Cache<String, Lock> chunkWriteLockCache = CaffeineUtil.getChunkWriteLockCache();
 
-    /***
-     * 文件列表
-     * @param upload
-     * @return
-     */
     @Override
-    public ResponseResult<Object> listFiles(UploadApiParam upload) throws CommonException {
+    public ResponseResult<Object> listFiles(UploadApiParamDTO upload) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
         Criteria criteria;
@@ -151,12 +160,6 @@ public class FileServiceImpl implements IFileService {
         return result;
     }
 
-    /***
-     * 用户已使用空间
-     * @param userId
-     * @return
-     * @throws CommonException
-     */
     @Override
     public long takeUpSpace(String userId) throws CommonException {
 
@@ -171,7 +174,13 @@ public class FileServiceImpl implements IFileService {
         return 0;
     }
 
-    private long getFileDocumentsCount(UploadApiParam upload, Criteria... criteriaList) {
+    /***
+     * 通过查询条件获取文件数
+     * @param upload
+     * @param criteriaList
+     * @return
+     */
+    private long getFileDocumentsCount(UploadApiParamDTO upload, Criteria... criteriaList) {
         Query query = new Query();
         query.addCriteria(Criteria.where("userId").is(upload.getUserId()));
         for (Criteria criteria : criteriaList) {
@@ -180,15 +189,9 @@ public class FileServiceImpl implements IFileService {
         return mongoTemplate.count(query, COLLECTION_NAME);
     }
 
-    private List<FileDocument> getFileDocuments(UploadApiParam upload, Criteria... criteriaList) {
+    private List<FileDocument> getFileDocuments(UploadApiParamDTO upload, Criteria... criteriaList) {
         Query query = getQuery(upload, criteriaList);
-        Integer pageSize = upload.getPageSize(), pageIndex = upload.getPageIndex();
-        if (pageSize != null && pageIndex != null) {
-            long skip = (pageIndex - 1) * pageSize;
-            query.skip(skip);
-            query.limit(pageSize);
-        }
-        String order = upload.getOrder();
+        String order = ShareServiceImpl.listByPage(upload, query);
         if (!StringUtils.isEmpty(order)) {
             String sortableProp = upload.getSortableProp();
             Sort.Direction direction = Sort.Direction.ASC;
@@ -230,7 +233,7 @@ public class FileServiceImpl implements IFileService {
         return -1;
     }
 
-    private List<FileDocument> getDirDocuments(UploadApiParam upload, Criteria... criteriaList) {
+    private List<FileDocument> getDirDocuments(UploadApiParamDTO upload, Criteria... criteriaList) {
         Query query = getQuery(upload, criteriaList);
         query.addCriteria(Criteria.where("isFolder").is(true));
         List<FileDocument> list = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
@@ -239,7 +242,7 @@ public class FileServiceImpl implements IFileService {
         return list;
     }
 
-    private Query getQuery(UploadApiParam upload, Criteria[] criteriaList) {
+    private Query getQuery(UploadApiParamDTO upload, Criteria[] criteriaList) {
         String userId = upload.getUserId();
         if (StringUtils.isEmpty(userId)) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg() + "userId");
@@ -253,13 +256,13 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> searchFile(UploadApiParam upload, String keyword) throws CommonException {
+    public ResponseResult<Object> searchFile(UploadApiParamDTO upload, String keyword) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
         Criteria criteria1 = Criteria.where("name").regex(keyword);
         return getCountResponseResult(upload, result, criteria1);
     }
 
-    private ResponseResult<Object> getCountResponseResult(UploadApiParam upload, ResponseResult<Object> result, Criteria... criteriaList) {
+    private ResponseResult<Object> getCountResponseResult(UploadApiParamDTO upload, ResponseResult<Object> result, Criteria... criteriaList) {
         List<FileDocument> list = getFileDocuments(upload, criteriaList);
         result.setData(list);
         result.setCount(getFileDocumentsCount(upload, criteriaList));
@@ -267,7 +270,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> searchFileAndOpenDir(UploadApiParam upload, String id) throws CommonException {
+    public ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         assert fileDocument != null;
@@ -283,6 +286,11 @@ public class FileServiceImpl implements IFileService {
         return mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
     }
 
+    /***
+     * 通过文件Id获取文件的相对路径
+     * @param fileDocument
+     * @return
+     */
     private String getRelativePathByFileId(FileDocument fileDocument) {
         if (fileDocument == null) {
             return getUserDirectory(null);
@@ -294,19 +302,18 @@ public class FileServiceImpl implements IFileService {
         return currentDirectory.replaceAll(filePropertie.getSeparator(), File.separator);
     }
 
+    /***
+     * 获取用户的绝对目录
+     * @param userName
+     * @return
+     */
     private String getUserDir(String userName) {
         return filePropertie.getRootDir() + File.separator + userName;
     }
 
 
-    /***
-     * 查找下级目录
-     * @param upload
-     * @param fileId
-     * @return
-     */
     @Override
-    public ResponseResult<Object> queryFileTree(UploadApiParam upload, String fileId) {
+    public ResponseResult<Object> queryFileTree(UploadApiParamDTO upload, String fileId) {
         String currentDirectory = getUserDirectory(null);
         if (!StringUtils.isEmpty(fileId)) {
             FileDocument fileDocument = mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
@@ -362,14 +369,6 @@ public class FileServiceImpl implements IFileService {
         return totalSize;
     }
 
-    /**
-     * 查询附件
-     *
-     * @param id       文件id
-     * @param username
-     * @return
-     * @throws IOException
-     */
     @Override
     public Optional<Object> getById(String id, String username) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
@@ -406,7 +405,7 @@ public class FileServiceImpl implements IFileService {
         int rootCount = Paths.get(filePropertie.getRootDir(), username).getNameCount();
         int path1Count = path1.getNameCount();
         String resPath = "/";
-        if(rootCount < path1Count){
+        if (rootCount < path1Count) {
             resPath = path1.subpath(rootCount, path1Count).toString();
         }
         fileDocument.setPath(resPath);
@@ -415,12 +414,6 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success(fileDocument);
     }
 
-    /***
-     * 查看缩略图
-     * @param id
-     * @param username
-     * @return
-     */
     @Override
     public Optional<FileDocument> thumbnail(String id, String username) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
@@ -450,19 +443,65 @@ public class FileServiceImpl implements IFileService {
         return Optional.of(fileDocument);
     }
 
+    @Override
+    public void packageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList) {
+        String username = userService.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN));
+        FileDocument fileDocument = getFileInfoBeforeNginx(fileIdList, username);
+        //响应头的设置
+        response.reset();
+        response.setCharacterEncoding("utf-8");
+        response.setContentType("multipart/form-data");
+        //设置压缩包的名字
+        //解决不同浏览器压缩包名字含有中文时乱码的问题
+        String downloadName = fileDocument.getName() + ".zip";
+        String agent = request.getHeader("USER-AGENT");
+        try {
+            //获取浏览器名（IE/Chrome/firefox）目前主流的四大浏览器内核Trident(IE)、Gecko(Firefox内核)、WebKit(Safari内核,Chrome内核原型,开源)以及Presto(Opera前内核) (已废弃)
+            String gecko = "Gecko", webKit = "WebKit";
+            String userAgent = request.getHeader("User-Agent");
+            if (userAgent.contains(gecko) || userAgent.contains(webKit)) {
+                downloadName = new String(downloadName.getBytes(StandardCharsets.UTF_8), "ISO8859-1");
+            } else {
+                downloadName = URLEncoder.encode(downloadName, "UTF-8");
+            }
+            response.setHeader("Content-Disposition", "attachment;fileName=\"" + downloadName + "\"");
+
+            // sb.append(filePropertie.getRootDir()).append(File.separator).append(username).append(getUserDirectory(fileDocument.getPath())).append(fileDocument.getName());
+            //
+            Path srcDir = Paths.get(filePropertie.getRootDir(), username, getUserDirectory(fileDocument.getPath()));
+            Query query = new Query();
+            query.addCriteria(Criteria.where("_id").in(fileIdList));
+            List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+            // 选中的文件
+            List<String> selectNameList = new ArrayList<>();
+            selectNameList = fileDocuments.stream().map(doc -> {
+                return doc.getName();
+            }).collect(toList());
+            List<String> finalSelectNameList = selectNameList;
+            File[] excludeFiles = srcDir.toFile().listFiles(file -> !finalSelectNameList.contains(file.getName()));
+            List<Path> excludeFilePathList = new ArrayList<>();
+            for (File excludeFile : excludeFiles) {
+                excludeFilePathList.add(excludeFile.toPath());
+            }
+            // 压缩传输
+            CompressUtils.zip(srcDir, excludeFilePathList, response.getOutputStream());
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
     /***
-     * 获取文件信息
+     * 在nginx之前获取文件信息
      * @param fileIds
      * @param username
      * @return
      */
-    private FileDocument getFileInfo(List<String> fileIds, String username) throws CommonException {
+    private FileDocument getFileInfoBeforeNginx(List<String> fileIds, String username) throws CommonException {
         Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(fileIds));
-        List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
-        int size = fileDocuments.size();
+        query.addCriteria(Criteria.where("_id").in(fileIds.get(0)));
+        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+        int size = fileIds.size();
         if (size > 0) {
-            FileDocument fileDocument = fileDocuments.get(0);
             String currentDirectory = getUserDirectory(fileDocument.getPath());
             String startPath = File.separator + username + currentDirectory;
             String filename = fileDocument.getName();
@@ -474,72 +513,19 @@ public class FileServiceImpl implements IFileService {
                 // 单个文件
                 fileDocument.setPath(filePath);
             } else {
-                fileDocument.setIsFolder(true);
-                // 压缩文件夹
-                String zipFilePath = filePath + ".zip";
-                String zipFilename = filename + ".zip";
-
-                List<Bson> selectFolders = new ArrayList<>();
-                for (FileDocument document : fileDocuments) {
-                    selectFolders.add(regex("path", "^" + document.getPath() + document.getName()));
-                }
-
-                List<String> selectFiles = new ArrayList<>();
-                for (FileDocument document : fileDocuments) {
-                    selectFiles.add(document.getName());
-                }
-
-                String parentPath = fileDocument.getPath();
-
-                List<Bson> list = Arrays.asList(
-                        match(and(eq("userId", fileDocument.getUserId()),
-                                regex("path", "^" + parentPath))),
-                        match(or(Arrays.asList(
-                                or(selectFolders),
-                                in("name", selectFiles)))));
-                AggregateIterable<Document> aggregate = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
-
-                String temp = "/download/";
-                StringBuilder res = new StringBuilder();
-                for (Document doc : aggregate) {
-                    if (doc != null) {
-                        boolean isFolder = doc.getBoolean("isFolder");
-                        if (!isFolder) {
-                            String relativePath = doc.getString("path");
-                            String relativeFileName = doc.getString("name");
-                            long fileSize = doc.getLong("size");
-                            try {
-                                res.append(String.format("%s %d %s %s\n", "-", fileSize, URLEncoder.encode(File.separator + username + relativePath + relativeFileName, "UTF-8"), temp + relativePath.substring(parentPath.length()) + relativeFileName));
-                            } catch (UnsupportedEncodingException e) {
-                                throw new CommonException(-1, e.getMessage());
-                            }
-                        }
-                    }
-                }
-                fileDocument.setPath(zipFilePath);
-                fileDocument.setName(zipFilename);
-                fileDocument.setContent(res.toString().getBytes(StandardCharsets.UTF_8));
+                fileDocument.setName(filename);
             }
             return fileDocument;
-
         }
         return null;
     }
 
-    /***
-     * 交给nginx处理(共有的,任何人都和访问)
-     * @param request
-     * @param response
-     * @param fileIds
-     * @param isDownload
-     * @throws IOException
-     */
     @Override
     public void publicNginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws CommonException {
         FileDocument f = mongoTemplate.findById(fileIds.get(0), FileDocument.class, COLLECTION_NAME);
         if (f != null) {
             Consumer user = userService.userInfoById(f.getUserId());
-            FileDocument fileDocument = getFileInfo(fileIds, user.getUsername());
+            FileDocument fileDocument = getFileInfoBeforeNginx(fileIds, user.getUsername());
             try {
                 nginx(request, response, isDownload, fileDocument);
             } catch (IOException e) {
@@ -548,14 +534,6 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
-    /***
-     * 交给nginx处理(共有的,任何人都和访问)
-     * @param request
-     * @param response
-     * @param relativePath
-     * @param userId
-     * @throws IOException
-     */
     @Override
     public void publicNginx(HttpServletRequest request, HttpServletResponse response, String relativePath, String userId) throws CommonException {
         Consumer user = userService.userInfoById(userId);
@@ -586,18 +564,10 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
-    /***
-     * 交给nginx处理
-     * @param request
-     * @param response
-     * @param fileIds
-     * @param isDownload
-     * @throws IOException
-     */
     @Override
     public void nginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws CommonException {
         String username = userService.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN));
-        FileDocument fileDocument = getFileInfo(fileIds, username);
+        FileDocument fileDocument = getFileInfoBeforeNginx(fileIds, username);
         try {
             nginx(request, response, isDownload, fileDocument);
         } catch (IOException e) {
@@ -605,6 +575,14 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
+    /***
+     * 交给nginx处理
+     * @param request
+     * @param response
+     * @param isDownload
+     * @param fileDocument
+     * @throws IOException
+     */
     private void nginx(HttpServletRequest request, HttpServletResponse response, boolean isDownload, FileDocument fileDocument) throws IOException {
         if (fileDocument != null) {
             String filename = fileDocument.getName();
@@ -639,12 +617,6 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
-    /***
-     * 重命名
-     * @param username
-     * @param id
-     * @return
-     */
     @Override
     public ResponseResult<Object> rename(String newFileName, String username, String id) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
@@ -678,16 +650,8 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
-    /***
-     * 移动文件/文件夹
-     * @param upload
-     * @param froms 文件/文件夹id
-     * @param to 文件夹id
-     * @return
-     * @throws CommonException
-     */
     @Override
-    public ResponseResult move(UploadApiParam upload, List<String> froms, String to) {
+    public ResponseResult move(UploadApiParamDTO upload, List<String> froms, String to) {
         // 复制
         ResponseResult result = getCopyResult(upload, froms, to);
         if (result != null) {
@@ -697,7 +661,7 @@ public class FileServiceImpl implements IFileService {
         return delete(upload.getUsername(), froms);
     }
 
-    private ResponseResult getCopyResult(UploadApiParam upload, List<String> froms, String to) {
+    private ResponseResult getCopyResult(UploadApiParamDTO upload, List<String> froms, String to) {
         for (String from : froms) {
             ResponseResult result = copy(upload, from, to);
             if (result.getCode() != 0 && result.getCode() != -2) {
@@ -707,16 +671,8 @@ public class FileServiceImpl implements IFileService {
         return null;
     }
 
-    /***
-     * 复制文件/文件夹
-     * @param upload
-     * @param froms 文件/文件夹id
-     * @param to 文件夹id
-     * @return
-     * @throws CommonException
-     */
     @Override
-    public ResponseResult copy(UploadApiParam upload, List<String> froms, String to) {
+    public ResponseResult copy(UploadApiParamDTO upload, List<String> froms, String to) {
         // 复制
         ResponseResult result = getCopyResult(upload, froms, to);
         if (result != null) {
@@ -725,16 +681,11 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success();
     }
 
-    /***
-     * 新建文档
-     * @param upload
-     * @return
-     */
     @Override
-    public ResponseResult<Object> newMarkdown(UploadApiParam upload) {
+    public ResponseResult<Object> newMarkdown(UploadApiParamDTO upload) {
         upload.setIsFolder(false);
         String filename = upload.getFilename();
-        String md5 = CalcMD5.getMd5(upload.getContentText());
+        String md5 = CalcMd5.getMd5(upload.getContentText());
         //用户磁盘目录
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
@@ -793,13 +744,8 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
-    /***
-     * 编辑文档
-     * @param upload
-     * @return
-     */
     @Override
-    public ResponseResult<Object> editMarkdown(UploadApiParam upload) {
+    public ResponseResult<Object> editMarkdown(UploadApiParamDTO upload) {
         FileDocument fileDocument = mongoTemplate.findById(upload.getFileId(), FileDocument.class, COLLECTION_NAME);
         String filename = upload.getFilename();
         //用户磁盘目录
@@ -818,7 +764,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> editMarkdownByPath(UploadApiParam upload) {
+    public ResponseResult<Object> editMarkdownByPath(UploadApiParamDTO upload) {
         File file = new File(Paths.get(filePropertie.getRootDir(), upload.getUsername(), upload.getRelativePath()).toString());
         if (!file.exists()) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
@@ -828,14 +774,8 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success();
     }
 
-    /***
-     * 上传文档里的图片
-     * @param upload
-     * @return
-     * @throws CommonException
-     */
     @Override
-    public ResponseResult<Object> uploadMarkdownImage(UploadApiParam upload) throws CommonException {
+    public ResponseResult<Object> uploadMarkdownImage(UploadApiParamDTO upload) throws CommonException {
         MultipartFile multipartFile = upload.getFile();
         try {
             String markName = upload.getFilename();
@@ -859,15 +799,15 @@ public class FileServiceImpl implements IFileService {
             if (!dir.exists()) {
                 StringBuilder parentPath = new StringBuilder();
                 for (int i = 0; i < docPaths.length; i++) {
-                    UploadApiParam uploadApiParam = new UploadApiParam();
-                    uploadApiParam.setIsFolder(true);
-                    uploadApiParam.setFilename(docPaths[i]);
-                    uploadApiParam.setUsername(username);
-                    uploadApiParam.setUserId(userId);
+                    UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
+                    uploadApiParamDTO.setIsFolder(true);
+                    uploadApiParamDTO.setFilename(docPaths[i]);
+                    uploadApiParamDTO.setUsername(username);
+                    uploadApiParamDTO.setUserId(userId);
                     if (i > 0) {
-                        uploadApiParam.setCurrentDirectory(parentPath.toString());
+                        uploadApiParamDTO.setCurrentDirectory(parentPath.toString());
                     }
-                    uploadFolder(uploadApiParam);
+                    uploadFolder(uploadApiParamDTO);
                     parentPath.append("/").append(docPaths[i]);
                 }
             }
@@ -889,14 +829,8 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.error("添加图片失败");
     }
 
-    /***
-     * 上传用户图片
-     * @param upload
-     * @return
-     * @throws CommonException
-     */
     @Override
-    public String uploadConsumerImage(UploadApiParam upload) throws CommonException {
+    public String uploadConsumerImage(UploadApiParamDTO upload) throws CommonException {
         MultipartFile multipartFile = upload.getFile();
         try {
             upload.setTotalSize(multipartFile.getSize());
@@ -918,12 +852,12 @@ public class FileServiceImpl implements IFileService {
             File dir = new File(directoryPath);
             if (!dir.exists()) {
                 for (String path : docPaths) {
-                    UploadApiParam uploadApiParam = new UploadApiParam();
-                    uploadApiParam.setIsFolder(true);
-                    uploadApiParam.setFilename(path);
-                    uploadApiParam.setUsername(username);
-                    uploadApiParam.setUserId(userId);
-                    uploadFolder(uploadApiParam);
+                    UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
+                    uploadApiParamDTO.setIsFolder(true);
+                    uploadApiParamDTO.setFilename(path);
+                    uploadApiParamDTO.setUsername(username);
+                    uploadApiParamDTO.setUserId(userId);
+                    uploadFolder(uploadApiParamDTO);
                 }
             }
             // 没有分片,直接存
@@ -1014,7 +948,7 @@ public class FileServiceImpl implements IFileService {
             update.set("isFavorite", false);
         }
         UpdateResult updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
-        sendMessage(username, update.getUpdateObject(), "createFile");
+        pushMessage(username, update.getUpdateObject(), "createFile");
         if (null != updateResult.getUpsertedId()) {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
@@ -1050,7 +984,7 @@ public class FileServiceImpl implements IFileService {
             UpdateResult updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
             fileDocument.setSize(file.length());
             fileDocument.setUpdateDate(updateDate);
-            sendMessage(username, fileDocument, "updateFile");
+            pushMessage(username, fileDocument, "updateFile");
             if (null != updateResult.getUpsertedId()) {
                 return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
             }
@@ -1059,12 +993,12 @@ public class FileServiceImpl implements IFileService {
     }
 
     /***
-     * 给用户发消息
+     * 给用户推送消息
      * @param username
      * @param message
      * @param url
      */
-    private void sendMessage(String username, Object message, String url) {
+    private void pushMessage(String username, Object message, String url) {
         WebSocketSession webSocketSession = SocketManager.get(username);
         if (webSocketSession != null) {
             Map<String, Object> headers = Maps.newHashMap();
@@ -1090,17 +1024,10 @@ public class FileServiceImpl implements IFileService {
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
             mongoTemplate.remove(query, COLLECTION_NAME);
-            sendMessage(username, fileDocument, "deleteFile");
+            pushMessage(username, fileDocument, "deleteFile");
         }
     }
 
-    /***
-     * 解压zip文件
-     * @param fileId
-     * @param destFileId
-     * @return
-     * @throws CommonException
-     */
     @Override
     public ResponseResult<Object> unzip(String fileId, String destFileId) throws CommonException {
         try {
@@ -1142,15 +1069,8 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
-    /***
-     * 获取目录下的文件
-     * @param path
-     * @param username
-     * @param tempDir
-     * @return
-     */
     @Override
-    public ResponseResult<Object> listfiles(String path, String username, boolean tempDir) {
+    public ResponseResult<Object> listFiles(String path, String username, boolean tempDir) {
         String dirPath;
         if (tempDir) {
             dirPath = Paths.get(filePropertie.getRootDir(), filePropertie.getChunkFileDir(), username, path).toString();
@@ -1160,12 +1080,6 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success(listfile(username, dirPath, tempDir));
     }
 
-    /***
-     * 获取上一级文件列表
-     * @param path
-     * @param username
-     * @return
-     */
     @Override
     public ResponseResult upperLevelList(String path, String username) {
         String upperLevel = Paths.get(filePropertie.getRootDir(), username, path).getParent().toString();
@@ -1175,14 +1089,6 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success(listfile(username, upperLevel, false));
     }
 
-
-    /***
-     * 根据path删除文件/文件夹
-     * @param path
-     * @param username
-     * @return
-     * @throws CommonException
-     */
     @Override
     public ResponseResult delFile(String path, String username) throws CommonException {
         Path p = Paths.get(filePropertie.getRootDir(), username, path);
@@ -1191,13 +1097,6 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success();
     }
 
-    /***
-     * 根据path重命名
-     * @param newFileName
-     * @param username
-     * @param path
-     * @return
-     */
     @Override
     public ResponseResult<Object> renameByPath(String newFileName, String username, String path) {
         Path path1 = Paths.get(filePropertie.getRootDir(), username, path);
@@ -1223,18 +1122,10 @@ public class FileServiceImpl implements IFileService {
         return rename(newFileName, username, fileDocument.getId());
     }
 
-    /***
-     * 根据path添加文件
-     * @param fileName
-     * @param isFolder
-     * @param username
-     * @param parentPath
-     * @return
-     */
     @Override
     public ResponseResult<Object> addFile(String fileName, Boolean isFolder, String username, String parentPath) {
         String userId = userService.getUserIdByUserName(username);
-        if(StringUtils.isEmpty(userId)){
+        if (StringUtils.isEmpty(userId)) {
             ResultUtil.error("不存在的用户");
         }
         Path path = Paths.get(filePropertie.getRootDir(), username, parentPath, fileName);
@@ -1317,7 +1208,14 @@ public class FileServiceImpl implements IFileService {
         return sb.toString();
     }
 
-    private ResponseResult<Object> copy(UploadApiParam upload, String from, String to) {
+    /***
+     * 复制文件
+     * @param upload
+     * @param from
+     * @param to
+     * @return
+     */
+    private ResponseResult<Object> copy(UploadApiParamDTO upload, String from, String to) {
         FileDocument formFileDocument = getFileDocumentById(from);
         String fromPath = getRelativePathByFileId(formFileDocument);
         String fromFilePath = getUserDir(upload.getUsername()) + fromPath;
@@ -1333,7 +1231,7 @@ public class FileServiceImpl implements IFileService {
                 if (isExistsOfToCopy(copyFileDocument, toPath)) {
                     return ResultUtil.warning("所选目录已存在该文件夹!");
                 }
-                mongoTemplate.save(copyFileDocument,COLLECTION_NAME);
+                mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
                 // 复制其下的子文件或目录
                 Query query = new Query();
                 query.addCriteria(Criteria.where("path").regex("^" + fromPath));
@@ -1341,9 +1239,9 @@ public class FileServiceImpl implements IFileService {
                 formList = formList.stream().peek(fileDocument -> {
                     String oldPath = fileDocument.getPath();
                     String newPath = toPath + oldPath.substring(1);
-                    copyFileDocument(fileDocument,newPath);
+                    copyFileDocument(fileDocument, newPath);
                 }).collect(toList());
-                mongoTemplate.insert(formList,COLLECTION_NAME);
+                mongoTemplate.insert(formList, COLLECTION_NAME);
             } else {
                 // 复制文件
                 // 复制其本身
@@ -1351,7 +1249,7 @@ public class FileServiceImpl implements IFileService {
                 if (isExistsOfToCopy(copyFileDocument, toPath)) {
                     return ResultUtil.warning("所选目录已存在该文件!");
                 }
-                mongoTemplate.save(copyFileDocument,COLLECTION_NAME);
+                mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
             }
             return ResultUtil.success();
         }
@@ -1388,6 +1286,14 @@ public class FileServiceImpl implements IFileService {
         return replacement + str.substring(searchStr.length());
     }
 
+    /***
+     * 文件重命名
+     * @param newFileName
+     * @param id
+     * @param filePath
+     * @param file
+     * @return
+     */
     private boolean renameFile(String newFileName, String id, String filePath, File file) {
         if (file.renameTo(new File(filePath + newFileName))) {
             Query query = new Query();
@@ -1408,7 +1314,7 @@ public class FileServiceImpl implements IFileService {
      * @return
      */
     @Override
-    public ResponseResult<Object> upload(UploadApiParam upload) throws IOException {
+    public ResponseResult<Object> upload(UploadApiParamDTO upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
         int currentChunkSize = upload.getCurrentChunkSize();
         long totalSize = upload.getTotalSize();
@@ -1455,10 +1361,10 @@ public class FileServiceImpl implements IFileService {
     }
 
     /***
-     * 追加分片
+     * 合并文件追加分片
      * @param upload
      */
-    private void appendChunkFile(UploadApiParam upload) {
+    private void appendChunkFile(UploadApiParamDTO upload) {
         int chunkNumber = upload.getChunkNumber();
         String md5 = upload.getIdentifier();
         // 未写入的分片
@@ -1492,7 +1398,13 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
-    private void appenFile(UploadApiParam upload, CopyOnWriteArrayList<Integer> unWrittenChunks, CopyOnWriteArrayList<Integer> writtenChunks) {
+    /***
+     * 追加分片操作
+     * @param upload
+     * @param unWrittenChunks
+     * @param writtenChunks
+     */
+    private void appenFile(UploadApiParamDTO upload, CopyOnWriteArrayList<Integer> unWrittenChunks, CopyOnWriteArrayList<Integer> writtenChunks) {
         // 需要继续追加分片索引
         int chunk = 1;
         if (writtenChunks.size() > 0) {
@@ -1524,13 +1436,8 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
-    /***
-     * 上传文件夹
-     * @param upload
-     * @return
-     */
     @Override
-    public ResponseResult<Object> uploadFolder(UploadApiParam upload) throws CommonException {
+    public ResponseResult<Object> uploadFolder(UploadApiParamDTO upload) throws CommonException {
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
         // 新建文件夹
         String userDirectoryFilePath = getUserDirectoryFilePath(upload);
@@ -1546,14 +1453,8 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success();
     }
 
-    /***
-     * 新建文件夹
-     * @param upload
-     * @return
-     * @throws CommonException
-     */
     @Override
-    public ResponseResult<Object> newFolder(UploadApiParam upload) throws CommonException {
+    public ResponseResult<Object> newFolder(UploadApiParamDTO upload) throws CommonException {
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
         // 新建文件夹
         String userDirectoryFilePath = getUserDirectoryFilePath(upload);
@@ -1584,7 +1485,7 @@ public class FileServiceImpl implements IFileService {
      * @param md5
      * @param date
      */
-    private FileDocument saveFileInfo(UploadApiParam upload, String md5, LocalDateTime date) throws IOException {
+    private FileDocument saveFileInfo(UploadApiParamDTO upload, String md5, LocalDateTime date) throws IOException {
         String contentType = upload.getContentType();
         FileDocument fileDocument = new FileDocument();
         String filename = upload.getFilename();
@@ -1673,7 +1574,7 @@ public class FileServiceImpl implements IFileService {
      * @param date
      * @param fileDocument
      */
-    private void saveFileInfo(UploadApiParam upload, LocalDateTime date, FileDocument fileDocument) {
+    private void saveFileInfo(UploadApiParamDTO upload, LocalDateTime date, FileDocument fileDocument) {
         fileDocument.setIsFavorite(false);
         fileDocument.setUploadDate(date);
         fileDocument.setUpdateDate(date);
@@ -1696,7 +1597,7 @@ public class FileServiceImpl implements IFileService {
      * @param upload
      * @param date
      */
-    private void saveFolderInfo(UploadApiParam upload, LocalDateTime date) {
+    private void saveFolderInfo(UploadApiParamDTO upload, LocalDateTime date) {
         String userId = upload.getUserId();
         String folderPath = upload.getFolderPath();
         String path = getUserDirectory(upload.getCurrentDirectory());
@@ -1720,7 +1621,11 @@ public class FileServiceImpl implements IFileService {
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
     }
 
-    private void setResumeCache(UploadApiParam upload) {
+    /***
+     * 缓存以上传的分片
+     * @param upload
+     */
+    private void setResumeCache(UploadApiParamDTO upload) {
         int chunkNumber = upload.getChunkNumber();
         String md5 = upload.getIdentifier();
         CopyOnWriteArrayList<Integer> chunks = resumeCache.get(md5, key -> createResumeCache(upload));
@@ -1734,7 +1639,7 @@ public class FileServiceImpl implements IFileService {
     /***
      * 获取已经保存的分片索引
      */
-    private CopyOnWriteArrayList<Integer> getSavedChunk(UploadApiParam upload) {
+    private CopyOnWriteArrayList<Integer> getSavedChunk(UploadApiParamDTO upload) {
         String md5 = upload.getIdentifier();
         return resumeCache.get(md5, key -> createResumeCache(upload));
     }
@@ -1742,7 +1647,7 @@ public class FileServiceImpl implements IFileService {
     /***
      * 检测是否需要合并
      */
-    private boolean checkIsNeedMerge(UploadApiParam upload) {
+    private boolean checkIsNeedMerge(UploadApiParamDTO upload) {
         int totalChunks = upload.getTotalChunks();
         CopyOnWriteArrayList<Integer> chunkList = getSavedChunk(upload);
         return totalChunks == chunkList.size();
@@ -1752,7 +1657,7 @@ public class FileServiceImpl implements IFileService {
      * 读取分片文件是否存在
      * @return
      */
-    private CopyOnWriteArrayList<Integer> createResumeCache(UploadApiParam upload) {
+    private CopyOnWriteArrayList<Integer> createResumeCache(UploadApiParamDTO upload) {
         CopyOnWriteArrayList<Integer> resumeList = new CopyOnWriteArrayList<>();
         String md5 = upload.getIdentifier();
         // 读取tmp分片目录所有文件
@@ -1773,13 +1678,8 @@ public class FileServiceImpl implements IFileService {
         return resumeList;
     }
 
-    /***
-     * 检查文件/分片是否存在
-     * @param upload
-     * @return
-     */
     @Override
-    public ResponseResult<Object> checkChunkUploaded(UploadApiParam upload) throws IOException {
+    public ResponseResult<Object> checkChunkUploaded(UploadApiParamDTO upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
         String md5 = upload.getIdentifier();
         String path = getUserDirectory(upload.getCurrentDirectory());
@@ -1805,13 +1705,8 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success(uploadResponse);
     }
 
-    /***
-     * 合并文件
-     * @param upload
-     * @return
-     */
     @Override
-    public ResponseResult<Object> merge(UploadApiParam upload) throws IOException {
+    public ResponseResult<Object> merge(UploadApiParamDTO upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
         String md5 = upload.getIdentifier();
         File file = Paths.get(filePropertie.getRootDir(), filePropertie.getChunkFileDir(), upload.getUsername(), upload.getFilename()).toFile();
@@ -1831,19 +1726,12 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success(uploadResponse);
     }
 
-    private static int compare(File o1, File o2) {
-        if (Integer.parseInt(o1.getName()) < Integer.parseInt(o2.getName())) {
-            return -1;
-        }
-        return 1;
-    }
-
     /***
      * 用户磁盘目录
      * @param upload
      * @return String
      */
-    private String getUserDirectoryFilePath(UploadApiParam upload) {
+    private String getUserDirectoryFilePath(UploadApiParamDTO upload) {
         String currentDirectory = upload.getCurrentDirectory();
         if (StringUtils.isEmpty(currentDirectory)) {
             currentDirectory = filePropertie.getSeparator();
@@ -1861,6 +1749,11 @@ public class FileServiceImpl implements IFileService {
         return currentDirectory;
     }
 
+    /***
+     * 用户当前目录(跨平台)
+     * @param currentDirectory 当前目录
+     * @return
+     */
     private String getUserDirectory(String currentDirectory) {
         if (StringUtils.isEmpty(currentDirectory)) {
             currentDirectory = filePropertie.getSeparator();
@@ -1873,6 +1766,11 @@ public class FileServiceImpl implements IFileService {
         return currentDirectory;
     }
 
+    /***
+     * 用户文件路径(相对路径)
+     * @param relativePath
+     * @return
+     */
     private String getUserFilePath(String relativePath) {
         if (!StringUtils.isEmpty(relativePath)) {
             relativePath = relativePath.replaceAll(filePropertie.getSeparator(), File.separator);
@@ -1880,12 +1778,6 @@ public class FileServiceImpl implements IFileService {
         return relativePath;
     }
 
-    /***
-     * 收藏文件或文件夹
-     * @param fileIds
-     * @return
-     * @throws CommonException
-     */
     @Override
     public ResponseResult<Object> favorite(List<String> fileIds) throws CommonException {
         Query query = new Query();
@@ -1896,11 +1788,6 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success();
     }
 
-    /***
-     * 取消收藏
-     * @param fileIds
-     * @return
-     */
     @Override
     public ResponseResult<Object> unFavorite(List<String> fileIds) {
         Query query = new Query();
@@ -1911,11 +1798,6 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success();
     }
 
-    /***
-     * 删除文件
-     * @param fileIds
-     * @return
-     */
     @Override
     public ResponseResult<Object> delete(String username, List<String> fileIds) {
         Query query = new Query();

@@ -22,57 +22,68 @@ import java.io.IOException;
 
 /***
  * 读取音频文件信息工具
+ * @author jmal
  */
 public class AudioFileUtils {
-    public static Music readAudio(File file){
+
+    private static final String SONGNAME_TAG = "TIT2";
+    private static final String SINGER_TAG = "TPE1";
+    private static final String ALBUM_TAG = "TALB";
+    private static final String COVER_TAG = "APIC";
+
+    public static Music readAudio(File file) {
         Music music = new Music();
         try {
             AudioFile audioFile = AudioFileIO.read(file);
             Tag audioFileTag = audioFile.getTag();
-            if(audioFileTag instanceof FlacTag){
+            if (audioFileTag instanceof FlacTag) {
                 FlacTag tag = (FlacTag) audioFileTag;
                 System.out.println(tag.getFirst(FieldKey.TITLE));
                 Artwork artwork = tag.getFirstArtwork();
-                if(artwork != null){
-                    String Base64 = ImgUtil.toBase64(ImgUtil.toImage(artwork.getBinaryData()),artwork.getMimeType());
+                if (artwork != null) {
+                    String Base64 = ImgUtil.toBase64(ImgUtil.toImage(artwork.getBinaryData()), artwork.getMimeType());
                     music.setCoverBase64(Base64);
                 }
             }
-            if(audioFileTag instanceof ID3v23Tag){
+            if (audioFileTag instanceof ID3v23Tag) {
                 ID3v23Tag tag = (ID3v23Tag) audioFileTag;
                 String songName = "";
                 String singer = "";
                 String album = "";
-                if(tag.frameMap != null){
-                    if(tag.frameMap.get("TIT2") != null){
-                        AbstractID3v2Frame frame = (AbstractID3v2Frame)tag.frameMap.get("TIT2");//歌名
-                        FrameBodyTIT2 frameBodyTIT2 = (FrameBodyTIT2)frame.getBody();
-                        songName = frameBodyTIT2.getText();
-                        if(StrUtil.isEmpty(songName)){
+                if (tag.frameMap != null) {
+                    if (tag.frameMap.get(SONGNAME_TAG) != null) {
+                        // 歌名
+                        AbstractID3v2Frame frame = (AbstractID3v2Frame) tag.frameMap.get(SONGNAME_TAG);
+                        FrameBodyTIT2 framebodytit2 = (FrameBodyTIT2) frame.getBody();
+                        songName = framebodytit2.getText();
+                        if (StrUtil.isEmpty(songName)) {
                             songName = "未知歌曲";
                         }
                         music.setSongName(songName);
                     }
-                    if(tag.frameMap.get("TPE1") != null){
-                        AbstractID3v2Frame frame = (AbstractID3v2Frame)tag.frameMap.get("TPE1");//歌手
-                        FrameBodyTPE1 frameBodyTPE1 = (FrameBodyTPE1)frame.getBody();
-                        singer = frameBodyTPE1.getText();
-                        if(StrUtil.isEmpty(singer)){
+                    if (tag.frameMap.get(SINGER_TAG) != null) {
+                        // 歌手
+                        AbstractID3v2Frame frame = (AbstractID3v2Frame) tag.frameMap.get(SINGER_TAG);
+                        FrameBodyTPE1 framebodytpe1 = (FrameBodyTPE1) frame.getBody();
+                        singer = framebodytpe1.getText();
+                        if (StrUtil.isEmpty(singer)) {
                             singer = "未知歌手";
                         }
                         music.setSinger(singer);
                     }
-                    if(tag.frameMap.get("TALB") != null){
-                        AbstractID3v2Frame frame = (AbstractID3v2Frame)tag.frameMap.get("TALB");//专辑
-                        FrameBodyTALB frameBodyTALB = (FrameBodyTALB)frame.getBody();
+                    if (tag.frameMap.get(ALBUM_TAG) != null) {
+                        // 专辑
+                        AbstractID3v2Frame frame = (AbstractID3v2Frame) tag.frameMap.get(ALBUM_TAG);
+                        FrameBodyTALB frameBodyTALB = (FrameBodyTALB) frame.getBody();
                         album = frameBodyTALB.getText();
-                        if(StrUtil.isEmpty(album)){
+                        if (StrUtil.isEmpty(album)) {
                             album = "未知专辑";
                         }
                         music.setAlbum(album);
                     }
-                    if(tag.frameMap.get("APIC") != null){
-                        AbstractID3v2Frame frame = (AbstractID3v2Frame)tag.frameMap.get("APIC");//封面
+                    if (tag.frameMap.get(COVER_TAG) != null) {
+                        // 封面
+                        AbstractID3v2Frame frame = (AbstractID3v2Frame) tag.frameMap.get(COVER_TAG);
                         FrameBodyAPIC body4 = (FrameBodyAPIC) frame.getBody();
                         String Base64 = cn.hutool.core.codec.Base64.encode(body4.getImageData());
                         music.setCoverBase64(Base64);
@@ -85,8 +96,4 @@ public class AudioFileUtils {
         return music;
     }
 
-    public static void main(String[] args) {
-        Music music = readAudio(new File("/Users/jmal/Music/网易云音乐/庄典 - 千字文~第1章~.mp3"));
-        System.out.println(music.toString());
-    }
 }

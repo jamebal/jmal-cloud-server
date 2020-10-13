@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * yml 资源加载工厂类
  *
- * @blame jmal
+ * @author jmal
  */
 public class YamlPropertyLoaderFactory extends DefaultPropertySourceFactory {
 

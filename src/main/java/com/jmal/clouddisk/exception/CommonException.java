@@ -9,7 +9,7 @@ import java.util.function.Function;
  * @Description 通用异常处理类
  * @Author jmal
  * @Date 2019-08-15 10:54
- * @blame jmal
+ * @author jmal
  */
 public class CommonException extends RuntimeException {
 

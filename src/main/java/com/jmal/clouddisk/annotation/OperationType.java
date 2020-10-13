@@ -3,7 +3,7 @@ package com.jmal.clouddisk.annotation;
 /**
  * OperationType 数据操作类型枚举
  *
- * @blame jmal
+ * @author jmal
  */
 
 public enum OperationType {

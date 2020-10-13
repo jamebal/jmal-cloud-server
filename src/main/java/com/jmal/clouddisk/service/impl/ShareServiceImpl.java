@@ -2,7 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareBO;
-import com.jmal.clouddisk.model.UploadApiParam;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -58,10 +58,10 @@ public class ShareServiceImpl implements IShareService {
         if(!checkWhetherExpired(shareBO)){
             return ResultUtil.success("该链接已失效");
         }
-        UploadApiParam uploadApiParam = new UploadApiParam();
-        uploadApiParam.setPageIndex(pageIndex);
-        uploadApiParam.setPageSize(pageSize);
-        uploadApiParam.setUserId(shareBO.getUserId());
+        UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
+        uploadApiParamDTO.setPageIndex(pageIndex);
+        uploadApiParamDTO.setPageSize(pageSize);
+        uploadApiParamDTO.setUserId(shareBO.getUserId());
         if(!shareBO.getIsFolder()){
             List<FileDocument> list = new ArrayList<>();
             FileDocument fileDocument = fileService.getById(shareBO.getFileId());
@@ -70,7 +70,7 @@ public class ShareServiceImpl implements IShareService {
             }
             return ResultUtil.success(list);
         }
-        return fileService.searchFileAndOpenDir(uploadApiParam, shareBO.getFileId());
+        return fileService.searchFileAndOpenDir(uploadApiParamDTO, shareBO.getFileId());
     }
 
     @Override
@@ -98,35 +98,39 @@ public class ShareServiceImpl implements IShareService {
 
     @Override
     public ResponseResult<Object> accessShareOpenDir(ShareBO shareBO, String fileId, Integer pageIndex, Integer pageSize) {
-        UploadApiParam uploadApiParam = new UploadApiParam();
-        uploadApiParam.setUserId(shareBO.getUserId());
-        uploadApiParam.setPageIndex(pageIndex);
-        uploadApiParam.setPageSize(pageSize);
-        return fileService.searchFileAndOpenDir(uploadApiParam, fileId);
+        UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
+        uploadApiParamDTO.setUserId(shareBO.getUserId());
+        uploadApiParamDTO.setPageIndex(pageIndex);
+        uploadApiParamDTO.setPageSize(pageSize);
+        return fileService.searchFileAndOpenDir(uploadApiParamDTO, fileId);
     }
 
     @Override
-    public List<ShareBO> getShareList(UploadApiParam upload) {
+    public List<ShareBO> getShareList(UploadApiParamDTO upload) {
         Query query = new Query();
         query.addCriteria(Criteria.where("userId").is(upload.getUserId()));
+        String order = listByPage(upload, query);
+        if (StringUtils.isEmpty(order)) {
+            query.with(new Sort(Sort.Direction.DESC, "createDate"));
+        } else {
+            String sortableProp = upload.getSortableProp();
+            Sort.Direction direction = Sort.Direction.ASC;
+            if ("descending".equals(order)) {
+                direction = Sort.Direction.DESC;
+            }
+            query.with(new Sort(direction, sortableProp));
+        }
+        return mongoTemplate.find(query, ShareBO.class, COLLECTION_NAME);
+    }
+
+    static String listByPage(UploadApiParamDTO upload, Query query) {
         Integer pageSize = upload.getPageSize(), pageIndex = upload.getPageIndex();
         if (pageSize != null && pageIndex != null) {
             long skip = (pageIndex - 1) * pageSize;
             query.skip(skip);
             query.limit(pageSize);
         }
-        String order = upload.getOrder();
-        if(!StringUtils.isEmpty(order)){
-            String sortableProp = upload.getSortableProp();
-            Sort.Direction direction = Sort.Direction.ASC;
-            if("descending".equals(order)){
-                direction = Sort.Direction.DESC;
-            }
-            query.with(new Sort(direction, sortableProp));
-        }else{
-            query.with(new Sort(Sort.Direction.DESC, "createDate"));
-        }
-        return mongoTemplate.find(query, ShareBO.class, COLLECTION_NAME);
+        return upload.getOrder();
     }
 
     private ShareBO findByFileId(String fileId){
@@ -136,7 +140,7 @@ public class ShareServiceImpl implements IShareService {
     }
 
     @Override
-    public ResponseResult<Object> sharelist(UploadApiParam upload) {
+    public ResponseResult<Object> shareList(UploadApiParamDTO upload) {
         ResponseResult<Object> result = ResultUtil.genResult();
         List<ShareBO> shareBOList = getShareList(upload);
         result.setCount(getShareCount(upload.getUserId()));
@@ -151,7 +155,7 @@ public class ShareServiceImpl implements IShareService {
     }
 
     @Override
-    public ResponseResult<Object> cancelShare(String[] shareId, String userId) {
+    public ResponseResult<Object> cancelShare(List<String> shareId, String userId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("userId").is(userId));
         query.addCriteria(Criteria.where("_id").in(shareId));

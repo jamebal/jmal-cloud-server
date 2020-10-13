@@ -14,7 +14,7 @@ import java.io.File;
 /**
  * WebConfig
  *
- * @blame jmal
+ * @author jmal
  */
 @Configuration
 @Slf4j
@@ -23,12 +23,15 @@ public class WebConfig implements WebMvcConfigurer {
     @Autowired
     FilePropertie filePropertie;
 
+    @Autowired
+    AuthInterceptor authInterceptor;
+
     /**
      * 注册拦截器
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-		registry.addInterceptor(new AuthInterceptor()).addPathPatterns("/**").
+		registry.addInterceptor(authInterceptor).addPathPatterns("/**").
 				excludePathPatterns("/login/**","/public/**","/static/**");
     }
 

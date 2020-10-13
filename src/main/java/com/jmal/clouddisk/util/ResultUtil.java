@@ -6,7 +6,7 @@ import com.jmal.clouddisk.exception.ExceptionType;
 /**
  * ResultUtil
  *
- * @blame jmal
+ * @author jmal
  */
 public class ResultUtil {
 

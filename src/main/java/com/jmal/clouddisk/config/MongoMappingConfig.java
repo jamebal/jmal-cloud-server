@@ -9,7 +9,7 @@ import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 
 /**
  * @Description 让mongodb中的collection去掉属性_class
- * @blame jmal
+ * @author jmal
  */
 @Configuration
 public class MongoMappingConfig {

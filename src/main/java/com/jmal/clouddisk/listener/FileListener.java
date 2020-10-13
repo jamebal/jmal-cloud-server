@@ -4,7 +4,6 @@ import com.jmal.clouddisk.model.FilePropertie;
 import com.jmal.clouddisk.service.IFileService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
-import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -18,7 +17,7 @@ import java.io.File;
  * 由文件监控类FileAlterationMonitor中的线程不停的扫描文件观察器FileAlterationObserver，
  * 如果有文件的变化，则根据相关的文件比较器，判断文件时新增，还是删除，还是更改。（默认为1000毫秒执行一次扫描）
  *
- *
+ * @author jmal
  */
 @Slf4j
 @Service
@@ -33,6 +32,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     /**
      * 文件创建执行
      */
+    @Override
     public void onFileCreate(File file) {
         try{
             String username = ownerOfChangeFile(file.getAbsolutePath());
@@ -49,6 +49,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     /**
      * 文件创建修改
      */
+    @Override
     public void onFileChange(File file) {
         try{
             String username = ownerOfChangeFile(file.getAbsolutePath());
@@ -65,6 +66,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     /**
      * 文件删除
      */
+    @Override
     public void onFileDelete(File file) {
         try{
             String username = ownerOfChangeFile(file.getAbsolutePath());
@@ -81,6 +83,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     /**
      * 目录创建
      */
+    @Override
     public void onDirectoryCreate(File directory) {
         try{
             String username = ownerOfChangeFile(directory.getAbsolutePath());
@@ -97,6 +100,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     /**
      * 目录修改
      */
+    @Override
     public void onDirectoryChange(File directory) {
         try{
             String username = ownerOfChangeFile(directory.getAbsolutePath());
@@ -109,6 +113,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     /**
      * 目录删除
      */
+    @Override
     public void onDirectoryDelete(File directory) {
         try{
             String username = ownerOfChangeFile(directory.getAbsolutePath());
@@ -120,14 +125,6 @@ public class FileListener extends FileAlterationListenerAdaptor {
         }catch (Exception e){
             log.error("删除目录后续操作失败");
         }
-    }
-
-    public void onStart(FileAlterationObserver observer) {
-        super.onStart(observer);
-    }
-
-    public void onStop(FileAlterationObserver observer) {
-        super.onStop(observer);
     }
 
     /***

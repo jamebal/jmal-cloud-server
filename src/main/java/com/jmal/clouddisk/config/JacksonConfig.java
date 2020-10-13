@@ -10,7 +10,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 /**
  * @Description: 去掉返回值中为null的字段
- * @blame jmal
+ * @author jmal
  */
 
 @Configuration

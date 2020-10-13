@@ -7,10 +7,9 @@ import org.springframework.cache.annotation.EnableCaching;
 /**
  * ClouddiskApplication
  *
- * @blame jmal
+ * @author jmal
  */
 @SpringBootApplication
-//启用缓存
 @EnableCaching
 public class ClouddiskApplication {
 

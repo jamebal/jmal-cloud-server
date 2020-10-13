@@ -47,7 +47,7 @@ import java.util.*;
 /**
  * SwaggerConfig
  *
- * @blame jmal
+ * @author jmal
  */
 @Configuration
 @EnableSwagger2

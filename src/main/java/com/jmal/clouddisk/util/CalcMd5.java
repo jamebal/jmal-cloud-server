@@ -12,9 +12,9 @@ import java.security.NoSuchAlgorithmException;
 
 /***
  * 计算文件md5
- * @blame jmal
+ * @author jmal
  */
-public class CalcMD5 {
+public class CalcMd5 {
 
     private static MessageDigest md5;
 
@@ -26,7 +26,7 @@ public class CalcMD5 {
         }
     }
 
-    private static final char[] hexCode = "0123456789ABCDEF".toCharArray();
+    private static final char[] HEX_CODE = "0123456789ABCDEF".toCharArray();
 
     public static void main(String[] args) {
 
@@ -61,8 +61,8 @@ public class CalcMD5 {
     public static String toHexString(byte[] data) {
         StringBuilder r = new StringBuilder(data.length * 2);
         for (byte b : data) {
-            r.append(hexCode[(b >> 4) & 0xF]);
-            r.append(hexCode[(b & 0xF)]);
+            r.append(HEX_CODE[(b >> 4) & 0xF]);
+            r.append(HEX_CODE[(b & 0xF)]);
         }
         return r.toString();
     }

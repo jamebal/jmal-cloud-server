@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.service;
 
 import com.jmal.clouddisk.model.ShareBO;
-import com.jmal.clouddisk.model.UploadApiParam;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.util.ResponseResult;
 
 import java.util.List;
@@ -23,10 +23,17 @@ public interface IShareService {
     /***
      * 访问分享链接
      * @param shareId
+     * @param pageIndex
+     * @param pageSize
      * @return
      */
     ResponseResult<Object> accessShare(String shareId, Integer pageIndex, Integer pageSize);
 
+    /***
+     * 获取分享信息
+     * @param share
+     * @return
+     */
     ShareBO getShare(String share);
 
     /***
@@ -43,26 +50,35 @@ public interface IShareService {
      */
     boolean checkWhetherExpired(String share);
 
+    /***
+     * 打开目录
+     * @param share
+     * @param fileId
+     * @param pageIndex
+     * @param pageSize
+     * @return
+     */
     ResponseResult<Object> accessShareOpenDir(ShareBO share, String fileId, Integer pageIndex, Integer pageSize);
 
     /***
-     * sharelist
+     * 获取分享列表
      * @param upload
      * @return
      */
-    List<ShareBO> getShareList(UploadApiParam upload);
+    List<ShareBO> getShareList(UploadApiParamDTO upload);
 
     /***
      * 分享列表
      * @param upload
      * @return
      */
-    ResponseResult<Object> sharelist(UploadApiParam upload);
+    ResponseResult<Object> shareList(UploadApiParamDTO upload);
 
     /***
      * 取消分享
-     * @param share
+     * @param shareIdList
+     * @param userId
      * @return
      */
-    ResponseResult<Object> cancelShare(String[] shareId, String userId);
+    ResponseResult<Object> cancelShare(List<String> shareIdList, String userId);
 }

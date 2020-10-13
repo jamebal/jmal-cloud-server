@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @Description 启动时开启文件目录监控
  * @Date 2020-02-21 14:54
- * @blame jmal
+ * @author jmal
  */
 @Component
 @Slf4j

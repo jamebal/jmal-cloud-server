@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 /**
  * FileDocument 文件模型
  *
- * @blame jmal
+ * @author jmal
  */
 @Data
 public class FileDocument {

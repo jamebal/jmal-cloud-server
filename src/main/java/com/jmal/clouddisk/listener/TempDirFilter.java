@@ -5,7 +5,6 @@ import org.apache.commons.io.monitor.FileAlterationObserver;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
@@ -16,12 +15,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class TempDirFilter implements FileFilter {
 
-    private String rootPath;
-    private String[] filterDirPath;
+    private final String rootPath;
+    private final String[] filterDirPath;
 
     public TempDirFilter(String rootPath, String... filterDirPath){
         this.rootPath = rootPath;
-        this.filterDirPath = filterDirPath;
+        this.filterDirPath = filterDirPath.clone();
     }
 
     @Override

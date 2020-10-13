@@ -5,7 +5,7 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.Consumer;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareBO;
-import com.jmal.clouddisk.model.UploadApiParam;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
@@ -13,6 +13,7 @@ import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,7 @@ import java.util.Optional;
  */
 @Api(tags = "文件分享")
 @RestController
+@Slf4j
 public class ShareController {
 
     @Autowired
@@ -45,70 +47,41 @@ public class ShareController {
     @Autowired
     IUserService userService;
 
-    /***
-     * 生成分享链接
-     * @param share
-     * @return
-     * @throws CommonException
-     */
     @ApiOperation("生成分享链接")
     @PostMapping("/share/generate")
     @ResponseBody
-    public ResponseResult<Object> generateLink(@RequestBody ShareBO share) throws CommonException {
+    public ResponseResult<Object> generateLink(@RequestBody ShareBO share) {
         ResultUtil.checkParamIsNull(share.getFileId(), share.getUserId());
         return shareService.generateLink(share);
     }
 
-    /***
-     * 取消分享
-     * @param share
-     * @return
-     * @throws CommonException
-     */
     @ApiOperation("取消分享")
     @DeleteMapping("/share/cancel")
     @ResponseBody
-    public ResponseResult<Object> cancelShare(String[] shareId,String userId) throws CommonException {
+    public ResponseResult<Object> cancelShare(String[] shareId,String userId) {
         ResultUtil.checkParamIsNull(shareId, userId);
-        return shareService.cancelShare(shareId, userId);
+        List<String> shareIdList = Arrays.asList(shareId);
+        return shareService.cancelShare(shareIdList, userId);
     }
 
-    /***
-     * 分享列表
-     * @param upload
-     * @return
-     * @throws CommonException
-     */
     @ApiOperation("分享列表")
     @GetMapping("/share/list")
-    public ResponseResult<Object> sharelist(UploadApiParam upload) throws CommonException {
-        return shareService.sharelist(upload);
+    public ResponseResult<Object> shareList(UploadApiParamDTO upload) {
+        return shareService.shareList(upload);
     }
 
-    /***
-     * 访问分享链接
-     * @param upload
-     * @return
-     * @throws CommonException
-     */
     @ApiOperation("访问分享链接")
     @GetMapping("/public/access-share")
     @ResponseBody
-    public ResponseResult<Object> accessShare(@RequestParam String share, Integer pageIndex, Integer pageSize) throws CommonException {
+    public ResponseResult<Object> accessShare(@RequestParam String share, Integer pageIndex, Integer pageSize) {
         ResultUtil.checkParamIsNull(share);
         return shareService.accessShare(share, pageIndex, pageSize);
     }
 
-    /***
-     * 访问分享链接里的目录
-     * @param upload
-     * @return
-     * @throws CommonException
-     */
     @ApiOperation("访问分享链接里的目录")
     @GetMapping("public/access-share/open")
     @ResponseBody
-    public ResponseResult<Object> accessShareOpenDir(@RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize) throws CommonException {
+    public ResponseResult<Object> accessShareOpenDir(@RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize) {
         ShareBO shareBO = shareService.getShare(share);
         if(!shareService.checkWhetherExpired(shareBO)){
             return ResultUtil.warning("该分享以过期");
@@ -116,14 +89,9 @@ public class ShareController {
         return shareService.accessShareOpenDir(shareBO, fileId, pageIndex, pageSize );
     }
 
-    /**
-     * 下载文件 转到 Nginx 下载
-     * @param fileIds
-     * @return
-     */
     @ApiOperation("下载文件 转到 Nginx 下载")
     @GetMapping("/public/s/download")
-    public void downLoad(HttpServletRequest request, HttpServletResponse response,@RequestParam String share, String[] fileIds) throws CommonException, IOException {
+    public void downLoad(HttpServletRequest request, HttpServletResponse response,@RequestParam String share, String[] fileIds) {
         boolean whetherExpired = shareService.checkWhetherExpired(share);
         if(whetherExpired){
             if (fileIds != null && fileIds.length > 0) {
@@ -137,19 +105,14 @@ public class ShareController {
                 out.write("该分享以过期".getBytes());
                 out.flush();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
             }
         }
     }
 
-    /**
-     * 预览文件
-     * @param fileIds fileIds
-     * @return
-     */
     @ApiOperation("预览文件")
     @GetMapping("/public/s/preview/{filename}")
-    public void preview(HttpServletRequest request, HttpServletResponse response, String[] fileIds,@PathVariable String filename) throws CommonException {
+    public void preview(HttpServletRequest request, HttpServletResponse response, String[] fileIds,@PathVariable String filename) {
         if (fileIds != null && fileIds.length > 0) {
             List<String> list = Arrays.asList(fileIds);
             fileService.publicNginx(request, response, list, false);
@@ -158,37 +121,24 @@ public class ShareController {
         }
     }
 
-    /**
-     * 显示缩略图
-     *
-     * @param id 文件id
-     * @return
-     */
     @ApiOperation("显示缩略图")
     @GetMapping("/public/s/view/thumbnail")
-    public ResponseEntity<Object> thumbnail(HttpServletRequest request, String id) throws IOException {
+    public ResponseEntity<Object> thumbnail(String id) {
         ResultUtil.checkParamIsNull(id);
         Optional<FileDocument> file = fileService.thumbnail(id,null);
         return file.<ResponseEntity<Object>>map(fileDocument ->
                 ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + fileDocument.getName())
                         .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
-                        .header(HttpHeaders.CONTENT_LENGTH, fileDocument.getContent().length + "").header("Connection", "close")
-                        .header(HttpHeaders.CONTENT_LENGTH, fileDocument.getContent().length + "")
+                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent().length)).header("Connection", "close")
+                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent().length))
                         .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
                         .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
     }
 
-    /***
-     * 读取simText文件
-     * @param id 文件id
-     * @param username
-     * @return
-     * @throws CommonException
-     */
     @ApiOperation("读取simText文件")
     @GetMapping("/public/s/preview/text")
-    public ResponseResult<Object> preview(@RequestParam String shareId,@RequestParam String fileId) throws CommonException {
+    public ResponseResult<Object> preview(@RequestParam String shareId,@RequestParam String fileId) {
         ShareBO shareBO = shareService.getShare(shareId);
         if(!shareService.checkWhetherExpired(shareBO)){
             return ResultUtil.warning("该分享以过期");

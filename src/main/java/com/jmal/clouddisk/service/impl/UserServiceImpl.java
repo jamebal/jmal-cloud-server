@@ -1,11 +1,12 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.crypto.SecureUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.Consumer;
-import com.jmal.clouddisk.model.UploadApiParam;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
@@ -26,7 +27,7 @@ import java.util.List;
 
 /**
  * @Description UserServiceImpl
- * @blame jmal
+ * @author jmal
  */
 @Service
 public class UserServiceImpl implements IUserService {
@@ -101,7 +102,7 @@ public class UserServiceImpl implements IUserService {
         String fileId = "";
         if(blobAvatar != null){
             Consumer consumer = mongoTemplate.findById(userId,Consumer.class,COLLECTION_NAME);
-            UploadApiParam upload = new UploadApiParam();
+            UploadApiParamDTO upload = new UploadApiParamDTO();
             upload.setUserId(userId);
             upload.setUsername(consumer.getUsername());
             int size = (int) blobAvatar.getSize();
@@ -210,7 +211,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public ResponseResult<Object> hasUser() {
         Query query = new Query();
-        return ResultUtil.success(true).count(mongoTemplate.count(query,COLLECTION_NAME));
+        return ResultUtil.success(true).setCode(Convert.toInt(mongoTemplate.count(query,COLLECTION_NAME)));
     }
 
     @Override

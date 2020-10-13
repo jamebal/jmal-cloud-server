@@ -9,7 +9,7 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 /**
  * WebSocketAutoConfig
  *
- * @blame jmal
+ * @author jmal
  */
 @Configuration
 @EnableWebSocketMessageBroker

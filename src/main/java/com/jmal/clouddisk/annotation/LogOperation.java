@@ -6,8 +6,7 @@ import java.util.Map;
 
 /**
  * LogOperation
- *
- * @blame jmal
+ * @author jmal
  */
 @Data
 public class LogOperation {

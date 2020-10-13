@@ -14,7 +14,7 @@ import java.util.concurrent.LinkedBlockingDeque;
  * @Description 文件查找器
  * @Author jmal
  * @Date 2020-03-01 13:06
- * @blame jmal
+ * @author jmal
  */
 public class FileFinderUtil {
     /**

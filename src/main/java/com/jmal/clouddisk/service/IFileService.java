@@ -2,7 +2,7 @@ package com.jmal.clouddisk.service;
 
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.UploadApiParam;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.util.ResponseResult;
 
 import javax.servlet.http.HttpServletRequest;
@@ -15,7 +15,7 @@ import java.util.Optional;
 /**
  * IFileService
  *
- * @blame jmal
+ * @author jmal
  */
 public interface IFileService {
 
@@ -32,8 +32,9 @@ public interface IFileService {
      * @param path
      * @param username
      * @return
+     * @throws CommonException
      */
-    ResponseResult<Object> previewTextByPath(String path, String username) throws CommonException;
+    ResponseResult<Object> previewTextByPath(String path, String username);
 
     /***
      * 查找下级目录
@@ -41,7 +42,7 @@ public interface IFileService {
      * @param fileId
      * @return
      */
-    ResponseResult<Object> queryFileTree(UploadApiParam upload, String fileId);
+    ResponseResult<Object> queryFileTree(UploadApiParamDTO upload, String fileId);
 
     /***
      * 上传文件
@@ -49,7 +50,7 @@ public interface IFileService {
      * @return
      * @throws IOException
      */
-    ResponseResult<Object> upload(UploadApiParam upload) throws IOException;
+    ResponseResult<Object> upload(UploadApiParamDTO upload) throws IOException;
 
     /***
      * 上传文件夹
@@ -57,7 +58,7 @@ public interface IFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> uploadFolder(UploadApiParam upload) throws CommonException;
+    ResponseResult<Object> uploadFolder(UploadApiParamDTO upload);
 
     /***
      * 新建文件夹
@@ -65,7 +66,7 @@ public interface IFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> newFolder(UploadApiParam upload) throws CommonException;
+    ResponseResult<Object> newFolder(UploadApiParamDTO upload);
 
     /***
      * 检查文件/分片是否存在
@@ -73,7 +74,7 @@ public interface IFileService {
      * @return
      * @throws IOException
      */
-    ResponseResult<Object> checkChunkUploaded(UploadApiParam upload) throws IOException;
+    ResponseResult<Object> checkChunkUploaded(UploadApiParamDTO upload) throws IOException;
 
     /***
      * 合并文件
@@ -81,22 +82,21 @@ public interface IFileService {
      * @return
      * @throws IOException
      */
-    ResponseResult<Object> merge(UploadApiParam upload) throws IOException;
+    ResponseResult<Object> merge(UploadApiParamDTO upload) throws IOException;
 
     /***
      * 文件列表
      * @param upload
      * @return
-     * @throws CommonException
      */
-    ResponseResult<Object> listFiles(UploadApiParam upload) throws CommonException;
+    ResponseResult<Object> listFiles(UploadApiParamDTO upload);
 
     /***
      * 用户占用空间
+     * @param userId
      * @return
-     * @throws CommonException
      */
-    long takeUpSpace(String userId) throws CommonException;
+    long takeUpSpace(String userId);
 
     /***
      * 搜索文件
@@ -105,7 +105,7 @@ public interface IFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> searchFile(UploadApiParam upload, String keyword) throws CommonException;
+    ResponseResult<Object> searchFile(UploadApiParamDTO upload, String keyword);
 
     /***
      * 搜索文件并打开文件夹
@@ -114,7 +114,7 @@ public interface IFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> searchFileAndOpenDir(UploadApiParam upload, String id) throws CommonException;
+    ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id);
 
     /***
      * 收藏文件或文件夹
@@ -122,7 +122,7 @@ public interface IFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> favorite(List<String> fileIds) throws CommonException;
+    ResponseResult<Object> favorite(List<String> fileIds);
 
     /***
      * 取消收藏
@@ -146,7 +146,7 @@ public interface IFileService {
      * @return
      * @throws IOException
      */
-    Optional<FileDocument> thumbnail(String id, String userName) throws CommonException;
+    Optional<FileDocument> thumbnail(String id, String userName);
 
     /***
      * 显示缩略图(mp3封面)
@@ -154,27 +154,35 @@ public interface IFileService {
      * @param userName
      * @return
      */
-    Optional<FileDocument> coverOfMp3(String id, String userName) throws CommonException;
+    Optional<FileDocument> coverOfMp3(String id, String userName);
+
+    /***
+     * 打包下载
+     * @param request
+     * @param response
+     * @param fileIdList
+     */
+    void packageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList);
 
     /***
      * 转给Nginx处理
-     * @param request
-     * @param response
-     * @param fileIds
-     * @param isDownload
+     * @param request HttpServletRequest
+     * @param response HttpServletResponse
+     * @param fileIds 文件id列表
+     * @param isDownload 是否下载
      * @throws CommonException
      */
-    void nginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws CommonException;
+    void nginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload);
 
     /***
      * 转给Nginx处理(共有的,任何人都和访问)
-     * @param request
-     * @param response
-     * @param fileIds
-     * @param isDownload
+     * @param request HttpServletRequest
+     * @param response HttpServletResponse
+     * @param fileIds 文件id列表
+     * @param isDownload 是否下载
      * @throws CommonException
      */
-    void publicNginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws CommonException;
+    void publicNginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload);
 
     /***
      * 转给Nginx处理(共有的,任何人都和访问)
@@ -184,7 +192,7 @@ public interface IFileService {
      * @param userId
      * @throws CommonException
      */
-    void publicNginx(HttpServletRequest request, HttpServletResponse response, String relativePath, String userId) throws CommonException;
+    void publicNginx(HttpServletRequest request, HttpServletResponse response, String relativePath, String userId);
 
     /***
      * 重名名
@@ -202,7 +210,7 @@ public interface IFileService {
      * @param to
      * @return
      */
-    ResponseResult move(UploadApiParam upload, List<String> froms, String to);
+    ResponseResult move(UploadApiParamDTO upload, List<String> froms, String to);
 
     /***
      * 复制文件/文件夹
@@ -211,35 +219,35 @@ public interface IFileService {
      * @param to
      * @return
      */
-    ResponseResult copy(UploadApiParam upload, List<String> froms, String to);
+    ResponseResult copy(UploadApiParamDTO upload, List<String> froms, String to);
 
     /***
      * 获取markdown内容
      * @param mark
      * @return
      */
-    ResponseResult<Object> getMarkDownContent(String mark) throws CommonException;
+    ResponseResult<Object> getMarkDownContent(String mark);
 
     /***
      * 新建文档
      * @param upload
      * @return
      */
-    ResponseResult<Object> newMarkdown(UploadApiParam upload);
+    ResponseResult<Object> newMarkdown(UploadApiParamDTO upload);
 
     /***
      * 编辑文档
      * @param upload
      * @return
      */
-    ResponseResult<Object> editMarkdown(UploadApiParam upload);
+    ResponseResult<Object> editMarkdown(UploadApiParamDTO upload);
 
     /***
      * 编辑文档(根据path)
      * @param upload
      * @return
      */
-    ResponseResult<Object> editMarkdownByPath(UploadApiParam upload);
+    ResponseResult<Object> editMarkdownByPath(UploadApiParamDTO upload);
 
     /***
      * 上传文档里的图片
@@ -247,7 +255,7 @@ public interface IFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> uploadMarkdownImage(UploadApiParam upload) throws CommonException;
+    ResponseResult<Object> uploadMarkdownImage(UploadApiParamDTO upload);
 
     /***
      * 上传用户图片
@@ -255,14 +263,20 @@ public interface IFileService {
      * @return
      * @throws CommonException
      */
-    String uploadConsumerImage(UploadApiParam upload) throws CommonException;
+    String uploadConsumerImage(UploadApiParamDTO upload);
 
+    /***
+     * 根据文件Id获取文件信息
+     * @param fileId
+     * @return
+     */
     FileDocument getById(String fileId);
 
     /***
      * 创建文件/文件夹(mongodb)
      * @param username
      * @param file
+     * @return
      */
     String createFile(String username, File file);
 
@@ -270,6 +284,7 @@ public interface IFileService {
      * 修改文件/文件夹
      * @param username
      * @param file
+     * @return
      */
     String updateFile(String username, File file);
 
@@ -287,17 +302,17 @@ public interface IFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> unzip(String fileId, String destFileId) throws CommonException;
+    ResponseResult<Object> unzip(String fileId, String destFileId);
 
     /***
      * 获取目录下的文件
-     * @param path
-     * @param username
-     * @param tempDir
+     * @param path 文件目录路径
+     * @param username 用户名
+     * @param tempDir 是否为零时目录
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> listfiles(String path, String username, boolean tempDir) throws CommonException;
+    ResponseResult<Object> listFiles(String path, String username, boolean tempDir);
 
     /***
      * 获取上级文件列表
@@ -313,7 +328,7 @@ public interface IFileService {
      * @param username
      * @return
      */
-    ResponseResult delFile(String path, String username) throws CommonException;
+    ResponseResult delFile(String path, String username);
 
     /***
      * 根据path重命名
@@ -333,4 +348,5 @@ public interface IFileService {
      * @return
      */
     ResponseResult<Object> addFile(String fileName, Boolean isFolder, String username, String parentPath);
+
 }

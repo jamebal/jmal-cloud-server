@@ -18,7 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * 登录、登出、验证
  *
- * @blame jmal
+ * @author jmal
  */
 @RestController
 @Api(tags = "登录认证")
@@ -48,14 +48,14 @@ public class AuthController {
         return authService.logout(token);
     }
 
-    @ApiOperation(value = "是否有用户")
+    @ApiOperation("是否有用户")
     @GetMapping("/public/has_user")
     @ResponseBody
     public ResponseResult<Object> hasUser(){
         return userService.hasUser();
     }
 
-    @ApiOperation(value = "初始化创建管理员")
+    @ApiOperation("初始化创建管理员")
     @PostMapping("/public/initialization")
     @ResponseBody
     public ResponseResult<Object> initialization(Consumer consumer){

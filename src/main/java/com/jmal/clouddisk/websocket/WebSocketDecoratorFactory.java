@@ -13,7 +13,7 @@ import java.security.Principal;
 /**
  * 服务端和客户端在进行握手挥手时会被执行
  *
- * @blame jmal
+ * @author jmal
  */
 @Component
 @Slf4j

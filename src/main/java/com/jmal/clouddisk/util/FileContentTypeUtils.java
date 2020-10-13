@@ -6,7 +6,7 @@ import java.util.Map;
 /**
  * FileContentTypeUtils
  *
- * @blame jmal
+ * @author jmal
  */
 public class FileContentTypeUtils {
 
@@ -35,7 +35,7 @@ public class FileContentTypeUtils {
      */
     private static Map<String , String> contentType = new HashMap<String , String>(){
         /**
-		 * 
+		 *
 		 */
 		private static final long serialVersionUID = -5418984619984073478L;
 

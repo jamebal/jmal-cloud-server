@@ -7,15 +7,15 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * IConsumerService
  *
- * @blame jmal
+ * @author jmal
  */
 public interface IUserService {
     /***
      * 添加用户
-     * @param Consumer Consumer
+     * @param consumer
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> add(Consumer Consumer);
+    ResponseResult<Object> add(Consumer consumer);
 
     /***
      * 删除用户
@@ -26,25 +26,27 @@ public interface IUserService {
 
     /***
      * 修改用户
-     * @param Consumer Consumer
-     * @return ResponseResult<Object>
+     * @param consumer
+     * @param blobAvatar
+     * @return
      */
-    ResponseResult<Object> update(Consumer Consumer, MultipartFile blobAvatar);
+    ResponseResult<Object> update(Consumer consumer, MultipartFile blobAvatar);
 
     /***
      * 用户信息
      * @param token
      * @param takeUpSpace 是否显示占用空间
+     * @param returnPassWord
      * @return
      */
     ResponseResult<Object> userInfo(String token,Boolean takeUpSpace,Boolean returnPassWord);
 
     /***
      * 用户信息
-     * @param ConsumerId ConsumerId
+     * @param consumerId
      * @return ResponseResult<Object>
      */
-    Consumer userInfoById(String ConsumerId);
+    Consumer userInfoById(String consumerId);
 
     /***
      * 用户列表
@@ -99,38 +101,4 @@ public interface IUserService {
      * @return
      */
     String getUserNameById(String userId);
-
-//    /***
-//     * 添加用户组
-//     * @param Consumer Consumer
-//     * @return ResponseResult<Object>
-//     */
-//    ResponseResult<Object> addGroup(Consumer Consumer);
-//
-//    /***
-//     * 删除用户组
-//     * @param id id
-//     * @return ResponseResult<Object>
-//     */
-//    ResponseResult<Object> deleteGroup(String id);
-//
-//    /***
-//     * 修改用户组
-//     * @param Consumer Consumer
-//     * @return ResponseResult<Object>
-//     */
-//    ResponseResult<Object> updateGroup(Consumer Consumer);
-//
-//    /***
-//     * 用户组信息
-//     * @param id id
-//     * @return ResponseResult<Object>
-//     */
-//    ResponseResult<Object> groupInfo(String id);
-//
-//    /***
-//     * 用户列表
-//     * @return ResponseResult<Object>
-//     */
-//    ResponseResult<Object> groupList();
 }

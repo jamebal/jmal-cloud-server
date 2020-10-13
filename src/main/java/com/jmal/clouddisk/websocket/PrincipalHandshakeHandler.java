@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * 我们可以通过请求信息，比如token、或者session判用户是否可以连接，这样就能够防范非法用户
  *
- * @blame jmal
+ * @author jmal
  */
 @Slf4j
 @Component

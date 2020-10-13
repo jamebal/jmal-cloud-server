@@ -20,7 +20,7 @@ import com.jmal.clouddisk.exception.CommonException;
  * @Description 时间工具类
  * @Author jmal
  * @Date 2019-08-30 14:05
- * @blame jmal
+ * @author jmal
  */
 public class TimeUntils {
 
@@ -74,11 +74,9 @@ public class TimeUntils {
         int trendsCount;
         switch (timeType) {
             case TIME_TYPE_MINUTE:
-                // 分
-                trendsCount = 60;
-                break;
             case TIME_TYPE_HOUR:
                 // 时
+                // 分
                 trendsCount = 60;
                 break;
             case TIME_TYPE_DAY:
