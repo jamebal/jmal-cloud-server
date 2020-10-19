@@ -7,8 +7,11 @@ spring:
     multipart:
       max-file-size: 30MB
       max-request-size: 100MB
+  http:
+    encoding:
+      force: true
   application:
-    name: file
+    name: jmalcloud
   data:
     mongodb:
       uri: mongodb://localhost:27017/jmalcloud

@@ -517,7 +517,7 @@ public class FileServiceImpl implements IFileService {
             }
             return fileDocument;
         }
-        return null;
+        return fileDocument;
     }
 
     @Override
@@ -1151,6 +1151,14 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setSuffix(FileUtil.extName(fileName));
         createFile(username, path.toFile());
         return ResultUtil.success(fileDocument);
+    }
+
+    @Override
+    public String viewFile(String fileId) {
+        FileDocument fileDocument = getById(fileId);
+        String username = userService.getUserNameById(fileDocument.getUserId());
+        String relativepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(fileDocument.getPath() + fileDocument.getName(), StandardCharsets.UTF_8);
+        return "redirect:/file/"+ username + relativepath;
     }
 
     /***

@@ -349,4 +349,10 @@ public interface IFileService {
      */
     ResponseResult<Object> addFile(String fileName, Boolean isFolder, String username, String parentPath);
 
+    /***
+     * 下载单个文件
+     * @param fileId
+     * @return
+     */
+    String viewFile(String fileId);
 }

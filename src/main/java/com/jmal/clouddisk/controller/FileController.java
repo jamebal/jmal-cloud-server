@@ -7,7 +7,6 @@ import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.util.CompressUtils;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.annotations.Api;
@@ -22,10 +21,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -119,28 +114,6 @@ public class FileController {
     @GetMapping("/preview/path/text")
     public ResponseResult<Object> previewTextByPath(@RequestParam String path,@RequestParam String username) {
         return fileService.previewTextByPath(path, username);
-    }
-
-    @ApiOperation("预览文件")
-    @GetMapping("/preview/{filename}")
-    public void preview(HttpServletRequest request, HttpServletResponse response, String[] fileIds,@PathVariable String filename) {
-        if (fileIds != null && fileIds.length > 0) {
-            List<String> list = Arrays.asList(fileIds);
-            fileService.nginx(request, response, list, false);
-        } else {
-            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
-        }
-    }
-
-    @ApiOperation("下载文件 转到 Nginx 下载")
-    @GetMapping("/download")
-    public void downLoad(HttpServletRequest request, HttpServletResponse response, String[] fileIds) {
-        if (fileIds != null && fileIds.length > 0) {
-            List<String> list = Arrays.asList(fileIds);
-            fileService.nginx(request, response, list, true);
-        } else {
-            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
-        }
     }
 
     @ApiOperation("打包下载")
