@@ -32,10 +32,10 @@ public class FileInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        String uri = request.getRequestURI();
-        if(uri.contains(DOWNLOAD)){
-            Path path = Paths.get(uri);
-            response.setHeader("Content-Disposition", "attachment; filename"+path.getFileName());
+        String operation = request.getParameter("o");
+        if(DOWNLOAD.equals(operation)){
+            Path path = Paths.get(request.getRequestURI());
+            response.setHeader("Content-Disposition", "attachment; filename"+ path.getFileName());
         }
         return true;
     }

@@ -444,17 +444,59 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    public void publicPackageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList) {
+        packageDownload(request, response, fileIdList, null);
+    }
+
+    @Override
     public void packageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList) {
         String username = userService.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN));
-        FileDocument fileDocument = getFileInfoBeforeNginx(fileIdList, username);
+        packageDownload(request, response, fileIdList, username);
+    }
+
+    private void packageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList, String username) {
+        FileDocument fileDocument = getFileInfoBeforeDownload(fileIdList, username);
+        if(StringUtils.isEmpty(username)){
+            username = fileDocument.getUsername();
+        }
         //响应头的设置
         response.reset();
         response.setCharacterEncoding("utf-8");
         response.setContentType("multipart/form-data");
         //设置压缩包的名字
-        //解决不同浏览器压缩包名字含有中文时乱码的问题
-        String downloadName = fileDocument.getName() + ".zip";
-        String agent = request.getHeader("USER-AGENT");
+        setDownloadName(request, response, fileDocument.getName() + ".zip");
+
+        Path srcDir = Paths.get(filePropertie.getRootDir(), username, getUserDirectory(fileDocument.getPath()));
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIdList));
+        List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+        // 选中的文件
+        List<String> selectNameList = new ArrayList<>();
+        selectNameList = fileDocuments.stream().map(doc -> {
+            return doc.getName();
+        }).collect(toList());
+        List<String> finalSelectNameList = selectNameList;
+        File[] excludeFiles = srcDir.toFile().listFiles(file -> !finalSelectNameList.contains(file.getName()));
+        List<Path> excludeFilePathList = new ArrayList<>();
+        for (File excludeFile : excludeFiles) {
+            excludeFilePathList.add(excludeFile.toPath());
+        }
+        // 压缩传输
+        try {
+            CompressUtils.zip(srcDir, excludeFilePathList, response.getOutputStream());
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    /***
+     * 对下载的文件名转码 解决不同浏览器压缩包名字含有中文时乱码的问题
+     * @param request
+     * @param downloadName
+     * @return
+     * @throws UnsupportedEncodingException
+     */
+    private String setDownloadName(HttpServletRequest request, HttpServletResponse response, String downloadName){
         try {
             //获取浏览器名（IE/Chrome/firefox）目前主流的四大浏览器内核Trident(IE)、Gecko(Firefox内核)、WebKit(Safari内核,Chrome内核原型,开源)以及Presto(Opera前内核) (已废弃)
             String gecko = "Gecko", webKit = "WebKit";
@@ -465,29 +507,10 @@ public class FileServiceImpl implements IFileService {
                 downloadName = URLEncoder.encode(downloadName, "UTF-8");
             }
             response.setHeader("Content-Disposition", "attachment;fileName=\"" + downloadName + "\"");
-
-            // sb.append(filePropertie.getRootDir()).append(File.separator).append(username).append(getUserDirectory(fileDocument.getPath())).append(fileDocument.getName());
-            //
-            Path srcDir = Paths.get(filePropertie.getRootDir(), username, getUserDirectory(fileDocument.getPath()));
-            Query query = new Query();
-            query.addCriteria(Criteria.where("_id").in(fileIdList));
-            List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
-            // 选中的文件
-            List<String> selectNameList = new ArrayList<>();
-            selectNameList = fileDocuments.stream().map(doc -> {
-                return doc.getName();
-            }).collect(toList());
-            List<String> finalSelectNameList = selectNameList;
-            File[] excludeFiles = srcDir.toFile().listFiles(file -> !finalSelectNameList.contains(file.getName()));
-            List<Path> excludeFilePathList = new ArrayList<>();
-            for (File excludeFile : excludeFiles) {
-                excludeFilePathList.add(excludeFile.toPath());
-            }
-            // 压缩传输
-            CompressUtils.zip(srcDir, excludeFilePathList, response.getOutputStream());
-        } catch (Exception e) {
+        } catch (UnsupportedEncodingException e) {
             log.error(e.getMessage(), e);
         }
+        return downloadName;
     }
 
     /***
@@ -496,10 +519,13 @@ public class FileServiceImpl implements IFileService {
      * @param username
      * @return
      */
-    private FileDocument getFileInfoBeforeNginx(List<String> fileIds, String username) throws CommonException {
+    private FileDocument getFileInfoBeforeDownload(List<String> fileIds, String username) throws CommonException {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds.get(0)));
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+        if(StringUtils.isEmpty(username)){
+            fileDocument.setUsername(userService.getUserNameById(fileDocument.getUserId()));
+        }
         int size = fileIds.size();
         if (size > 0) {
             String currentDirectory = getUserDirectory(fileDocument.getPath());
@@ -518,103 +544,6 @@ public class FileServiceImpl implements IFileService {
             return fileDocument;
         }
         return fileDocument;
-    }
-
-    @Override
-    public void publicNginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws CommonException {
-        FileDocument f = mongoTemplate.findById(fileIds.get(0), FileDocument.class, COLLECTION_NAME);
-        if (f != null) {
-            Consumer user = userService.userInfoById(f.getUserId());
-            FileDocument fileDocument = getFileInfoBeforeNginx(fileIds, user.getUsername());
-            try {
-                nginx(request, response, isDownload, fileDocument);
-            } catch (IOException e) {
-                throw new CommonException(-1, e.getMessage());
-            }
-        }
-    }
-
-    @Override
-    public void publicNginx(HttpServletRequest request, HttpServletResponse response, String relativePath, String userId) throws CommonException {
-        Consumer user = userService.userInfoById(userId);
-        if (user == null) {
-            return;
-        }
-        String username = user.getUsername();
-        String userDirectory = getUserFilePath(aes.decryptStr(relativePath));
-        String absolutePath = File.separator + username + userDirectory;
-        File file = new File(filePropertie.getRootDir() + absolutePath);
-        String filename = FileUtil.getName(file);
-        try {
-            //获取浏览器名（IE/Chrome/firefox）目前主流的四大浏览器内核Trident(IE)、Gecko(Firefox内核)、WebKit(Safari内核,Chrome内核原型,开源)以及Presto(Opera前内核) (已废弃)
-            String gecko = "Gecko", webKit = "WebKit";
-            String userAgent = request.getHeader("User-Agent");
-            if (userAgent.contains(gecko) || userAgent.contains(webKit)) {
-                absolutePath = new String(absolutePath.getBytes(StandardCharsets.UTF_8), "ISO8859-1");
-                filename = new String(filename.getBytes(StandardCharsets.UTF_8), "ISO8859-1");
-            } else {
-                absolutePath = URLEncoder.encode(absolutePath, "UTF-8");
-                filename = URLEncoder.encode(filename, "UTF-8");
-            }
-            response.setHeader("Content-Type", FileContentTypeUtils.getContentType(FileUtil.extName(filename)));
-            response.setHeader("X-Accel-Charset", "utf-8");
-            response.setHeader("X-Accel-Redirect", absolutePath);
-        } catch (Exception e) {
-            throw new CommonException(-1, e.getMessage());
-        }
-    }
-
-    @Override
-    public void nginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload) throws CommonException {
-        String username = userService.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN));
-        FileDocument fileDocument = getFileInfoBeforeNginx(fileIds, username);
-        try {
-            nginx(request, response, isDownload, fileDocument);
-        } catch (IOException e) {
-            throw new CommonException(-1, e.getMessage());
-        }
-    }
-
-    /***
-     * 交给nginx处理
-     * @param request
-     * @param response
-     * @param isDownload
-     * @param fileDocument
-     * @throws IOException
-     */
-    private void nginx(HttpServletRequest request, HttpServletResponse response, boolean isDownload, FileDocument fileDocument) throws IOException {
-        if (fileDocument != null) {
-            String filename = fileDocument.getName();
-            String path = fileDocument.getPath();
-            //获取浏览器名（IE/Chrome/firefox）目前主流的四大浏览器内核Trident(IE)、Gecko(Firefox内核)、WebKit(Safari内核,Chrome内核原型,开源)以及Presto(Opera前内核) (已废弃)
-            String gecko = "Gecko", webKit = "WebKit";
-            String userAgent = request.getHeader("User-Agent");
-            if (userAgent.contains(gecko) || userAgent.contains(webKit)) {
-                path = new String(path.getBytes(StandardCharsets.UTF_8), "ISO8859-1");
-                filename = new String(filename.getBytes(StandardCharsets.UTF_8), "ISO8859-1");
-            } else {
-                path = URLEncoder.encode(path, "UTF-8");
-                filename = URLEncoder.encode(filename, "UTF-8");
-            }
-            response.setHeader("Content-Type", fileDocument.getContentType());
-            response.setHeader("X-Accel-Charset", "utf-8");
-            if (fileDocument.getIsFolder()) {
-                response.setHeader("Content-Disposition", "attachment; filename=rwlock.zip");
-                response.setHeader("X-Archive-Files", "zip");
-                response.setHeader("X-Archive-Charset", "utf-8");
-            } else {
-                response.setHeader("X-Accel-Redirect", path);
-            }
-            if (isDownload) {
-                response.setHeader("Content-Disposition", "attachment;filename=\"" + filename + "\"");
-                OutputStream out = response.getOutputStream();
-                if (fileDocument.getContent() != null) {
-                    out.write(fileDocument.getContent());
-                }
-                out.flush();
-            }
-        }
     }
 
     @Override
@@ -1154,11 +1083,18 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public String viewFile(String fileId) {
+    public String viewFile(String fileId, String operation) {
         FileDocument fileDocument = getById(fileId);
         String username = userService.getUserNameById(fileDocument.getUserId());
         String relativepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(fileDocument.getPath() + fileDocument.getName(), StandardCharsets.UTF_8);
-        return "redirect:/file/"+ username + relativepath;
+        return "redirect:/file/"+ username + relativepath + "?o=" + operation;
+    }
+
+    @Override
+    public String publicViewFile(String relativePath, String userId) {
+        String username = userService.getUserNameById(userId);
+        String userDirectory = getUserFilePath(aes.decryptStr(relativePath));
+        return "redirect:/file/"+ username + userDirectory;
     }
 
     /***
@@ -1556,7 +1492,7 @@ public class FileServiceImpl implements IFileService {
         if (result) {
             StringBuffer sb = new StringBuffer();
             do {
-                //"/file/public/view?relativePath="+path + oldSrc +"&userId="+userId;
+                //"/public/view?relativePath="+path + oldSrc +"&userId="+userId;
                 String value = matcher.group(0);
                 if (value.matches("(?!([hH][tT]{2}[pP]:/*|[hH][tT]{2}[pP][sS]:/*|[fF][tT][pP]:/*)).*?$+") && !value.startsWith("/file/public/image")) {
                     String relativepath = aes.encryptBase64(path + value);
@@ -1565,7 +1501,7 @@ public class FileServiceImpl implements IFileService {
                     } catch (UnsupportedEncodingException e) {
                         throw new CommonException(-1, e.getMessage());
                     }
-                    String replacement = "/file/public/view?relativePath=" + relativepath + "&userId=" + userId;
+                    String replacement = "/api/public/view?relativePath=" + relativepath + "&userId=" + userId;
                     matcher.appendReplacement(sb, replacement);
                 }
                 result = matcher.find();

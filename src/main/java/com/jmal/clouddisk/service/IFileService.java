@@ -157,42 +157,20 @@ public interface IFileService {
     Optional<FileDocument> coverOfMp3(String id, String userName);
 
     /***
+     * 分享里的打包下载
+     * @param request
+     * @param response
+     * @param fileIdList
+     */
+    void publicPackageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList);
+
+    /***
      * 打包下载
      * @param request
      * @param response
      * @param fileIdList
      */
     void packageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList);
-
-    /***
-     * 转给Nginx处理
-     * @param request HttpServletRequest
-     * @param response HttpServletResponse
-     * @param fileIds 文件id列表
-     * @param isDownload 是否下载
-     * @throws CommonException
-     */
-    void nginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload);
-
-    /***
-     * 转给Nginx处理(共有的,任何人都和访问)
-     * @param request HttpServletRequest
-     * @param response HttpServletResponse
-     * @param fileIds 文件id列表
-     * @param isDownload 是否下载
-     * @throws CommonException
-     */
-    void publicNginx(HttpServletRequest request, HttpServletResponse response, List<String> fileIds, boolean isDownload);
-
-    /***
-     * 转给Nginx处理(共有的,任何人都和访问)
-     * @param request
-     * @param response
-     * @param relativePath
-     * @param userId
-     * @throws CommonException
-     */
-    void publicNginx(HttpServletRequest request, HttpServletResponse response, String relativePath, String userId);
 
     /***
      * 重名名
@@ -352,7 +330,16 @@ public interface IFileService {
     /***
      * 下载单个文件
      * @param fileId
+     * @param operation 操作(下载、预览等操作)
      * @return
      */
-    String viewFile(String fileId);
+    String viewFile(String fileId, String operation);
+
+    /***
+     * 预览文档里的图片
+     * @param relativePath
+     * @param userId
+     * @return
+     */
+    String publicViewFile(String relativePath, String userId);
 }

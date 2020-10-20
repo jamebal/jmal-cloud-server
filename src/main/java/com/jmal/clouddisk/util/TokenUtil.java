@@ -55,14 +55,12 @@ public class TokenUtil {
     }
 
     private static Map<String, Claim> verifyToken(String token) {
-        DecodedJWT jwt = null;
+        DecodedJWT jwt;
         try {
             JWTVerifier verifier = JWT.require(Algorithm.HMAC256(SECRET)).build();
             jwt = verifier.verify(token);
-        } catch (TokenExpiredException e) {
-            return null;
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            return null;
         }
         if (jwt != null) {
             return jwt.getClaims();

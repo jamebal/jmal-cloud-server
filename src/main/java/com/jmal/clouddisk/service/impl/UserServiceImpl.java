@@ -211,7 +211,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public ResponseResult<Object> hasUser() {
         Query query = new Query();
-        return ResultUtil.success(true).setCode(Convert.toInt(mongoTemplate.count(query,COLLECTION_NAME)));
+        return ResultUtil.success(true).setCount(Convert.toInt(mongoTemplate.count(query,COLLECTION_NAME)));
     }
 
     @Override

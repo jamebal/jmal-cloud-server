@@ -24,6 +24,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -46,6 +48,13 @@ public class ShareController {
 
     @Autowired
     IUserService userService;
+
+    @ApiOperation("该分享已失效")
+    @GetMapping("/public/s/invalid")
+    @ResponseBody
+    public String invalid() {
+        return "该分享已失效";
+    }
 
     @ApiOperation("生成分享链接")
     @PostMapping("/share/generate")
@@ -89,35 +98,24 @@ public class ShareController {
         return shareService.accessShareOpenDir(shareBO, fileId, pageIndex, pageSize );
     }
 
-    @ApiOperation("下载文件 转到 Nginx 下载")
-    @GetMapping("/public/s/download")
-    public void downLoad(HttpServletRequest request, HttpServletResponse response,@RequestParam String share, String[] fileIds) {
-        boolean whetherExpired = shareService.checkWhetherExpired(share);
+    @ApiOperation("打包下载")
+    @GetMapping("/public/s/packageDownload")
+    public void publicPackageDownload(HttpServletRequest request, HttpServletResponse response, @RequestParam String shareId, String[] fileIds) {
+        boolean whetherExpired = shareService.checkWhetherExpired(shareId);
         if(whetherExpired){
             if (fileIds != null && fileIds.length > 0) {
-                List<String> list = Arrays.asList(fileIds);
-                fileService.publicNginx(request, response, list, true);
+                List<String> fileIdList = Arrays.asList(fileIds);
+                fileService.publicPackageDownload(request, response, fileIdList);
             } else {
                 throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
             }
-        }else{
+        } else {
             try (OutputStream out = response.getOutputStream()) {
-                out.write("该分享以过期".getBytes());
+                out.write(invalid().getBytes(StandardCharsets.UTF_8));
                 out.flush();
             } catch (IOException e) {
                 log.error(e.getMessage(), e);
             }
-        }
-    }
-
-    @ApiOperation("预览文件")
-    @GetMapping("/public/s/preview/{filename}")
-    public void preview(HttpServletRequest request, HttpServletResponse response, String[] fileIds,@PathVariable String filename) {
-        if (fileIds != null && fileIds.length > 0) {
-            List<String> list = Arrays.asList(fileIds);
-            fileService.publicNginx(request, response, list, false);
-        } else {
-            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }
     }
 

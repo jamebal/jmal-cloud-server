@@ -69,19 +69,4 @@ public class MarkDownController {
         return fileService.uploadMarkdownImage(upload);
     }
 
-    @ApiOperation("预览文档里的图片")
-    @GetMapping("/public/image/{fileId}")
-    public void imagePreview(HttpServletRequest request, HttpServletResponse response, @PathVariable String fileId) {
-        ResultUtil.checkParamIsNull(fileId);
-        List<String> list = new ArrayList<>();
-        list.add(fileId);
-        fileService.publicNginx(request, response, list, false);
-    }
-
-    @ApiOperation("预览文档里的图片")
-    @GetMapping("/public/view")
-    public void imageRelativePath(HttpServletRequest request, HttpServletResponse response, String relativePath,String userId) {
-        ResultUtil.checkParamIsNull(relativePath,userId);
-        fileService.publicNginx(request, response, relativePath, userId);
-    }
 }

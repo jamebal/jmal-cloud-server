@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.interceptor;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.alibaba.fastjson.JSON;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -56,6 +57,9 @@ public class AuthInterceptor implements HandlerInterceptor {
             String username = tokenCache.getIfPresent(jmalToken);
             if (StringUtils.isEmpty(username)) {
                 String userName = TokenUtil.getUserName(jmalToken);
+                if(StringUtils.isEmpty(userName)){
+                    return false;
+                }
                 UserToken userToken = authDAO.findOneUserToken(userName);
                 if (userToken == null) {
                     return false;
