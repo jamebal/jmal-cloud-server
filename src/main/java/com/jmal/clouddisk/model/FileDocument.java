@@ -112,4 +112,9 @@ public class FileDocument {
 
     private Music music;
 
+    /***
+     * 封面
+     */
+    private String cover;
+
 }

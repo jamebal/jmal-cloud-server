@@ -628,6 +628,7 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setContentType(CONTENT_TYPE_MARK_DOWN);
         fileDocument.setMd5(md5);
         fileDocument.setName(filename);
+        fileDocument.setCover(upload.getCover());
         fileDocument.setIsFolder(false);
         createFile(upload.getUsername(), file);
         return ResultUtil.success();
@@ -686,6 +687,7 @@ public class FileServiceImpl implements IFileService {
         Update update = new Update();
         update.set("size", FileUtil.size(file));
         update.set("name", upload.getFilename());
+        update.set("cover", upload.getCover());
         update.set("updateDate", date);
         Query query = new Query().addCriteria(Criteria.where("_id").is(upload.getFileId()));
         mongoTemplate.upsert(query, update, COLLECTION_NAME);

@@ -101,4 +101,6 @@ public class UploadApiParamDTO {
 
     Boolean isFavorite;
 
+    String cover;
+
 }
