@@ -1245,6 +1245,7 @@ public class FileServiceImpl implements IFileService {
             Update update = new Update();
             update.set("name", newFileName);
             update.set("suffix", FileUtil.extName(newFileName));
+            update.set("updateDate", LocalDateTime.now(TimeUntils.ZONE_ID));
             mongoTemplate.upsert(query, update, COLLECTION_NAME);
         } else {
             return true;
