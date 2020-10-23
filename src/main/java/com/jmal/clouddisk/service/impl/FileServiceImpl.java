@@ -660,6 +660,7 @@ public class FileServiceImpl implements IFileService {
             FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, COLLECTION_NAME);
             if (fileDocument != null) {
                 String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
+                fileDocument.setUsername(username);
                 String currentDirectory = getUserDirectory(fileDocument.getPath());
                 File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
                 String content = FileUtil.readString(file, StandardCharsets.UTF_8);
