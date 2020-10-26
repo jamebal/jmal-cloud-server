@@ -330,7 +330,7 @@ public class FileContentTypeUtils {
         contentType.put("mab" , "application/x-markaby");
         contentType.put("man" , "application/x-troff-man");
         contentType.put("mbox" , "application/mbox");
-        contentType.put("md" , "application/x-genesis-rom");
+        contentType.put("md" , "text/markdown");
         contentType.put("mdb" , "application/vnd.ms-access");
         contentType.put("mdi" , "image/vnd.ms-modi");
         contentType.put("me" , "text/x-troff-me");

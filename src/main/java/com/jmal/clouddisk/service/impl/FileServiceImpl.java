@@ -258,7 +258,8 @@ public class FileServiceImpl implements IFileService {
     @Override
     public ResponseResult<Object> searchFile(UploadApiParamDTO upload, String keyword) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
-        Criteria criteria1 = Criteria.where("name").regex(keyword);
+        Criteria criteria1 = Criteria.where("name").regex(keyword,"i");
+        Query query = new Query();
         return getCountResponseResult(upload, result, criteria1);
     }
 
@@ -625,6 +626,7 @@ public class FileServiceImpl implements IFileService {
         FileDocument fileDocument = new FileDocument();
         fileDocument.setPath(currentDirectory);
         fileDocument.setSize(upload.getContentText().length());
+        fileDocument.setContentText(upload.getContentText());
         fileDocument.setContentType(CONTENT_TYPE_MARK_DOWN);
         fileDocument.setMd5(md5);
         fileDocument.setName(filename);
@@ -661,14 +663,16 @@ public class FileServiceImpl implements IFileService {
             if (fileDocument != null) {
                 String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
                 fileDocument.setUsername(username);
-                String currentDirectory = getUserDirectory(fileDocument.getPath());
-                File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
-                String content = FileUtil.readString(file, StandardCharsets.UTF_8);
-                if ("md".equals(fileDocument.getSuffix()) && !StringUtils.isEmpty(content)) {
-                    content = replaceAll(content, fileDocument.getPath(), fileDocument.getUserId());
-                    fileDocument.setContentText(content);
-                } else {
-                    fileDocument.setContentText(content);
+                if(StringUtils.isEmpty(fileDocument.getContentText())){
+                    String currentDirectory = getUserDirectory(fileDocument.getPath());
+                    File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
+                    String content = FileUtil.readString(file, StandardCharsets.UTF_8);
+                    if ("md".equals(fileDocument.getSuffix()) && !StringUtils.isEmpty(content)) {
+                        content = replaceAll(content, fileDocument.getPath(), fileDocument.getUserId());
+                        fileDocument.setContentText(content);
+                    } else {
+                        fileDocument.setContentText(content);
+                    }
                 }
             }
             return ResultUtil.success(fileDocument);
@@ -690,6 +694,7 @@ public class FileServiceImpl implements IFileService {
         update.set("name", upload.getFilename());
         update.set("cover", upload.getCover());
         update.set("updateDate", date);
+        update.set("contentText", upload.getContentText());
         Query query = new Query().addCriteria(Criteria.where("_id").is(upload.getFileId()));
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
         return ResultUtil.success();
@@ -916,6 +921,11 @@ public class FileServiceImpl implements IFileService {
             UpdateResult updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
             fileDocument.setSize(file.length());
             fileDocument.setUpdateDate(updateDate);
+            if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
+                // 写入markdown内容
+                String markDownContent = FileUtil.readString(file, StandardCharsets.UTF_8);
+                update.set("contentText", markDownContent);
+            }
             pushMessage(username, fileDocument, "updateFile");
             if (null != updateResult.getUpsertedId()) {
                 return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
