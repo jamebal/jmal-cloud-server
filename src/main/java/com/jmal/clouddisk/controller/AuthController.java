@@ -7,10 +7,7 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -51,7 +48,7 @@ public class AuthController {
     @ApiOperation("是否有用户")
     @GetMapping("/public/has_user")
     @ResponseBody
-    public ResponseResult<Object> hasUser(){
+    public ResponseResult<Boolean> hasUser(){
         return userService.hasUser();
     }
 

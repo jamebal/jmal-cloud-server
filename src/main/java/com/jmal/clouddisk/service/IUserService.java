@@ -86,7 +86,7 @@ public interface IUserService {
      * 是否有用户
      * @return
      */
-    ResponseResult<Object> hasUser();
+    ResponseResult<Boolean> hasUser();
 
     /***
      * 初始化创建管理员

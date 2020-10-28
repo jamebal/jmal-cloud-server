@@ -4,9 +4,12 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.util.StringUtils;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import java.text.Collator;
+import java.util.Comparator;
 
 /**
  * @Description 文件类别DTO
@@ -16,13 +19,14 @@ import javax.validation.constraints.NotNull;
 @Data
 @ApiModel
 @Valid
-public class CategoryDTO {
+public class CategoryDTO implements Comparable<CategoryDTO> {
+
     @Id
     @ApiModelProperty(hidden = true)
     private String id;
 
     @NotNull(message = "用户id不能为空")
-    @ApiModelProperty(name = "userId", value = "用户id", required = true , example = "jmal")
+    @ApiModelProperty(name = "userId", value = "用户id", required = true , example = "5e2d6675aab5fa4b7fecb59b")
     private String userId;
 
     @NotNull(message = "分类名称不能为空")
@@ -50,4 +54,20 @@ public class CategoryDTO {
     @ApiModelProperty(name = "desc", value = "分类描述")
     private String desc;
 
+    public void setParentCategoryName(String parentCategoryName) {
+        if(!StringUtils.isEmpty(parentCategoryName)) {
+            this.parentCategoryName = parentCategoryName;
+        }
+    }
+
+    /***
+     * 按照分类名称来排序
+     * @param categoryDTO
+     * @return
+     */
+    @Override
+    public int compareTo(CategoryDTO categoryDTO) {
+        Comparator<Object> cmp = Collator.getInstance(java.util.Locale.CHINA);
+        return cmp.compare(getName(), categoryDTO.getName());
+    }
 }

@@ -14,8 +14,7 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class ResponseResult<T> {
 	private int code;
-	private T message;
+	private Object message;
 	private T data;
-	private T count;
-
+	private long count;
 }
