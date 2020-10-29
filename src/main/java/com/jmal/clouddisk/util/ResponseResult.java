@@ -16,5 +16,5 @@ public class ResponseResult<T> {
 	private int code;
 	private Object message;
 	private T data;
-	private long count;
+	private Object count;
 }

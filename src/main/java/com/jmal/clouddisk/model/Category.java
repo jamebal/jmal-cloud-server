@@ -26,7 +26,7 @@ public class Category implements Comparable<Category> {
     /***
      * 父级分类名称
      */
-    private String parentCategoryName;
+    private String parentCategoryId;
     /***
      * 分类描述
      */
@@ -34,8 +34,8 @@ public class Category implements Comparable<Category> {
 
     /***
      * 按分类名称排序
-     * @param category
-     * @return
+     * @param category Category
+     * @return int
      */
     @Override
     public int compareTo(Category category) {

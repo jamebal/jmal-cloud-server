@@ -32,8 +32,8 @@ public class CategoryController {
     @ApiOperation("分类列表")
     @GetMapping("/category/list")
     @ResponseBody
-    public ResponseResult<List<CategoryDTO>> list(@RequestParam String userId) {
-        return ResultUtil.success(categoryService.list(userId));
+    public ResponseResult<List<CategoryDTO>> list(@RequestParam String userId, String parentCategoryId) {
+        return ResultUtil.success(categoryService.list(userId, parentCategoryId));
     }
 
     @ApiOperation("分类树")
@@ -46,9 +46,9 @@ public class CategoryController {
     @ApiOperation("分类信息")
     @GetMapping("/category/info")
     @ResponseBody
-    public ResponseResult<CategoryDTO> categoryInfo(@RequestParam String userId, @RequestParam String categoryName) {
+    public ResponseResult<CategoryDTO> categoryInfo(@RequestParam String categoryId) {
         CategoryDTO categoryDTO = new CategoryDTO();
-        Category category = categoryService.getCategoryInfo(userId, categoryName);
+        Category category = categoryService.getCategoryInfo(categoryId);
         if(category != null){
             CglibUtil.copy(category, categoryDTO);
         }
@@ -65,17 +65,16 @@ public class CategoryController {
     @ApiOperation("更新分类")
     @PutMapping("/category/update")
     @ResponseBody
-    public ResponseResult<Object> update(@ModelAttribute CategoryDTO categoryDTO, @RequestParam String categoryId) {
-        categoryDTO.setId(categoryId);
+    public ResponseResult<Object> update(@ModelAttribute CategoryDTO categoryDTO) {
         return categoryService.update(categoryDTO);
     }
 
     @ApiOperation("删除分类")
     @DeleteMapping("/category/delete")
     @ResponseBody
-    public ResponseResult<Object> delete(@RequestParam String userId, @RequestParam String[] categoryIds) {
-        List<String> list = Arrays.asList(categoryIds);
-        categoryService.delete(userId, list);
+    public ResponseResult<Object> delete(@RequestParam String[] categoryIds) {
+        List<String> categoryList = Arrays.asList(categoryIds);
+        categoryService.delete(categoryList);
         return ResultUtil.success();
     }
 }

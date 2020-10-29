@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.model.Category;
 import com.jmal.clouddisk.model.CategoryDTO;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /**
@@ -40,16 +42,20 @@ public class CategoryService {
      * @param userId 用户id
      * @return 一级分类列表
      */
-    public List<CategoryDTO> list(String userId) {
+    public List<CategoryDTO> list(String userId, String parentId) {
         Query query = new Query();
         query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
-        query.addCriteria(Criteria.where("parentCategoryName").exists(false));
+        if (StringUtils.isEmpty(parentId)) {
+            query.addCriteria(Criteria.where("parentCategoryId").exists(false));
+        } else {
+            query.addCriteria(Criteria.where("parentCategoryId").is(parentId));
+        }
         List<Category> categoryList = mongoTemplate.find(query, Category.class, COLLECTION_NAME);
         return categoryList.parallelStream().map(category -> {
             CategoryDTO categoryDTO = new CategoryDTO();
             CglibUtil.copy(category, categoryDTO);
-            String categoryName = categoryDTO.getName();
-            List<Category> subCategoryList = getSubCategoryList(userId, categoryName);
+            String parentCategoryId = category.getId();
+            List<Category> subCategoryList = getSubCategoryList(userId, parentCategoryId);
             categoryDTO.setSubCategorySize(subCategoryList.size());
             return categoryDTO;
         }).sorted().collect(Collectors.toList());
@@ -69,23 +75,23 @@ public class CategoryService {
 
     /***
      * 查找分类的子集
-     * @param categoryName 分类名称
+     * @param parentCategoryId 父分类id
      * @param categoryList 分类列表
      * @return 分类列表
      */
-    private List<Map<String, Object>> getSubCategory(String categoryName, List<Category> categoryList) {
+    private List<Map<String, Object>> getSubCategory(String parentCategoryId, List<Category> categoryList) {
         List<Map<String, Object>> categoryTreeMapList = new ArrayList<>();
         List<Category> categoryList1;
-        if(StringUtils.isEmpty(categoryName)) {
-            categoryList1 = categoryList.stream().filter(category -> StringUtils.isEmpty(category.getParentCategoryName())).sorted().collect(Collectors.toList());
+        if (StringUtils.isEmpty(parentCategoryId)) {
+            categoryList1 = categoryList.stream().filter(category -> StringUtils.isEmpty(category.getParentCategoryId())).sorted().collect(Collectors.toList());
         } else {
-            categoryList1 = categoryList.stream().filter(category -> categoryName.equals(category.getParentCategoryName())).sorted().collect(Collectors.toList());
+            categoryList1 = categoryList.stream().filter(category -> parentCategoryId.equals(category.getParentCategoryId())).collect(Collectors.toList());
         }
         categoryList1.forEach(category -> {
             Map<String, Object> subCategoryTreeMap = new HashMap<>(16);
             subCategoryTreeMap.put("label", category.getName());
             subCategoryTreeMap.put("value", category.getId());
-            subCategoryTreeMap.put("children", getSubCategory(category.getName(), categoryList));
+            subCategoryTreeMap.put("children", getSubCategory(category.getId(), categoryList));
             categoryTreeMapList.add(subCategoryTreeMap);
         });
         return categoryTreeMapList;
@@ -95,13 +101,13 @@ public class CategoryService {
     /***
      * 查询某个分类的子分类
      * @param userId 用户id
-     * @param categoryName 分类名称
+     * @param parentCategoryId 父分类id
      * @return 分类列表
      */
-    private List<Category> getSubCategoryList(String userId, String categoryName){
+    private List<Category> getSubCategoryList(String userId, String parentCategoryId) {
         Query query = new Query();
         query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
-        query.addCriteria(Criteria.where("parentCategoryName").is(categoryName));
+        query.addCriteria(Criteria.where("parentCategoryId").is(parentCategoryId));
         return mongoTemplate.find(query, Category.class, COLLECTION_NAME);
     }
 
@@ -123,7 +129,7 @@ public class CategoryService {
      * @param categoryId 分类id
      * @return 一个分类信息
      */
-    private Category getCategoryInfo(String categoryId) {
+    public Category getCategoryInfo(String categoryId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(categoryId));
         return mongoTemplate.findOne(query, Category.class, COLLECTION_NAME);
@@ -136,16 +142,16 @@ public class CategoryService {
      */
     public ResponseResult<Object> add(CategoryDTO categoryDTO) {
         Category category1 = getCategoryInfo(categoryDTO.getUserId(), categoryDTO.getName());
-        if(category1 != null){
-           return ResultUtil.warning("该分类名称已存在");
+        if (category1 != null) {
+            return ResultUtil.warning("该分类名称已存在");
         }
-        if(!StringUtils.isEmpty(categoryDTO.getParentCategoryName())) {
-            Category parentCategory = getCategoryInfo(categoryDTO.getUserId(), categoryDTO.getParentCategoryName());
-            if(parentCategory == null){
+        if (!StringUtils.isEmpty(categoryDTO.getParentCategoryId())) {
+            Category parentCategory = getCategoryInfo(categoryDTO.getParentCategoryId());
+            if (parentCategory == null) {
                 return ResultUtil.warning("该父分类不存在");
             }
         }
-        if(StringUtils.isEmpty(categoryDTO.getThumbnailName())){
+        if (StringUtils.isEmpty(categoryDTO.getThumbnailName())) {
             categoryDTO.setThumbnailName(categoryDTO.getName());
         }
         Category category = new Category();
@@ -161,10 +167,10 @@ public class CategoryService {
      */
     public ResponseResult<Object> update(CategoryDTO categoryDTO) {
         Category category1 = getCategoryInfo(categoryDTO.getId());
-        if(category1 == null){
+        if (category1 == null) {
             return ResultUtil.warning("该分类不存在");
         }
-        if(StringUtils.isEmpty(categoryDTO.getThumbnailName())){
+        if (StringUtils.isEmpty(categoryDTO.getThumbnailName())) {
             categoryDTO.setThumbnailName(categoryDTO.getName());
         }
         Category category = new Category();
@@ -177,14 +183,34 @@ public class CategoryService {
     }
 
     /***
-     * 删除分类
-     * @param userId 用户id
+     * 删除分类及其子分类下的所有分类
      * @param categoryIdList 分类id列表
      */
-    public void delete(String userId, List<String> categoryIdList) {
+    public void delete(List<String> categoryIdList) {
+        List<String> categoryIds = deleteLoopCategory(true, categoryIdList);
         Query query = new Query();
-        query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
-        query.addCriteria(Criteria.where("_id").in(categoryIdList));
+        query.addCriteria(Criteria.where("_id").in(categoryIds));
         mongoTemplate.remove(query, COLLECTION_NAME);
+    }
+
+    /***
+     * 递归删除分类及其子分类
+     * @param firstCategory 是否是第一次查找
+     * @param categoryIdList 分类id列表
+     */
+    private List<String> deleteLoopCategory(boolean firstCategory, List<String> categoryIdList){
+        final List<String> categoryIds = new ArrayList<>();
+        Query query = new Query();
+        if(firstCategory){
+            query.addCriteria(Criteria.where("_id").in(categoryIdList));
+        } else {
+            query.addCriteria(Criteria.where("parentCategoryId").in(categoryIdList));
+            categoryIds.addAll(categoryIdList);
+        }
+        List<String> categoryIdList1 = mongoTemplate.find(query, Category.class, COLLECTION_NAME).stream().map(Category::getId).collect(Collectors.toList());
+        if(categoryIdList1.size() > 0){
+            categoryIds.addAll(deleteLoopCategory(false, categoryIdList1));
+        }
+        return categoryIds;
     }
 }

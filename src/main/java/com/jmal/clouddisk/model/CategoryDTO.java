@@ -39,10 +39,10 @@ public class CategoryDTO implements Comparable<CategoryDTO> {
     @ApiModelProperty(name = "thumbnailName", value = "分类缩略名")
     private String thumbnailName;
     /***
-     * 父级分类名称
+     * 父级分类Id
      */
-    @ApiModelProperty(name = "parentCategoryName", value = "父级分类名称")
-    private String parentCategoryName;
+    @ApiModelProperty(name = "parentCategoryId", value = "父级分类Id")
+    private String parentCategoryId;
     /***
      * 子分类数
      */
@@ -53,12 +53,6 @@ public class CategoryDTO implements Comparable<CategoryDTO> {
      */
     @ApiModelProperty(name = "desc", value = "分类描述")
     private String desc;
-
-    public void setParentCategoryName(String parentCategoryName) {
-        if(!StringUtils.isEmpty(parentCategoryName)) {
-            this.parentCategoryName = parentCategoryName;
-        }
-    }
 
     /***
      * 按照分类名称来排序

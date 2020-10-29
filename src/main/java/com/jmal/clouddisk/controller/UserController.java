@@ -39,35 +39,35 @@ public class UserController {
     @ApiOperation(value = "修改用户")
     @PutMapping("/update")
     @ResponseBody
-    public ResponseResult<Object> update(Consumer Consumer, MultipartFile blobAvatar){
-        return service.update(Consumer,blobAvatar);
+    public ResponseResult<Object> update(Consumer consumer, MultipartFile blobAvatar){
+        return service.update(consumer,blobAvatar);
     }
 
     @ApiOperation(value = "修改用户密码")
     @PutMapping("/update-pass")
     @ResponseBody
-    public ResponseResult<Object> updatePass(Consumer Consumer){
-        return service.updatePass(Consumer);
+    public ResponseResult<Object> updatePass(Consumer consumer){
+        return service.updatePass(consumer);
     }
 
     @ApiOperation(value = "重置密码")
     @PutMapping("/reset-pass")
     @ResponseBody
-    public ResponseResult<Object> resetPass(Consumer Consumer){
-        return service.resetPass(Consumer);
+    public ResponseResult<Object> resetPass(Consumer consumer){
+        return service.resetPass(consumer);
     }
 
     @ApiOperation(value = "用户信息")
     @GetMapping("/userInfo")
     @ResponseBody
-    public ResponseResult<Object> ConsumerInfo(@RequestParam String id,Boolean takeUpSpace,Boolean returnPassWord){
+    public ResponseResult<Object> consumerInfo(@RequestParam String id,Boolean takeUpSpace,Boolean returnPassWord){
         return service.userInfo(id, takeUpSpace, returnPassWord);
     }
 
     @ApiOperation(value = "用户信息列表")
     @GetMapping("/userList")
     @ResponseBody
-    public ResponseResult<Object> ConsumerList(){
+    public ResponseResult<Object> consumerList(){
         return service.userList();
     }
 
