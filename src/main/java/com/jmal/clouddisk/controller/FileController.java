@@ -17,6 +17,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -40,6 +41,9 @@ public class FileController {
 
     @Autowired
     private IFileService fileService;
+
+    @Autowired
+    AuthInterceptor authInterceptor;
 
     @Autowired
     IUserService service;
@@ -66,6 +70,14 @@ public class FileController {
     @GetMapping("/search-file-open")
     public ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id) {
         return fileService.searchFileAndOpenDir(upload, id);
+    }
+
+    @ApiOperation("图片上传")
+    @PostMapping("/public/img-upload")
+    @ResponseBody
+    public ResponseResult<Object> imgUpload(HttpServletRequest request, MultipartFile file) {
+        String username = authInterceptor.getUserNameByHeader(request);
+        return fileService.imgUpload(username, file);
     }
 
     @ApiOperation("文件上传")

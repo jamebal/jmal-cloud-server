@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 /**
@@ -25,13 +26,9 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse, WebSocketHandler webSocketHandler, Map<String, Object> map) throws Exception {
-        ServletServerHttpRequest req = (ServletServerHttpRequest) serverHttpRequest;
-        //获取token认证
-        String jmalToken = req.getServletRequest().getParameter("jmal-token");
-        if (authInterceptor.checkToken(jmalToken)) {
-            return true;
-        }
-        return false;
+        ServletServerHttpRequest request = (ServletServerHttpRequest) serverHttpRequest;
+        String jmalToken = request.getServletRequest().getParameter("jmal-token");
+        return !StringUtils.isEmpty(authInterceptor.getUserNameByToken(jmalToken));
     }
 
     @Override

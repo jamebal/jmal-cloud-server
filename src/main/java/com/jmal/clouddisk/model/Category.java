@@ -27,6 +27,12 @@ public class Category implements Comparable<Category> {
      * 父级分类名称
      */
     private String parentCategoryId;
+
+    /***
+     * 是否为默认分类
+     */
+    private Boolean isDefault;
+
     /***
      * 分类描述
      */

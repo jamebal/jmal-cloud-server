@@ -326,6 +326,11 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success(list);
     }
 
+    @Override
+    public ResponseResult<Object> imgUpload(String username, MultipartFile file) {
+        return null;
+    }
+
     /***
      * 根据文件名排序
      * @param f1

@@ -59,6 +59,7 @@ public class CategoryController {
     @PostMapping("/category/add")
     @ResponseBody
     public ResponseResult<Object> add(@ModelAttribute @Validated CategoryDTO categoryDTO) {
+        categoryDTO.setId(null);
         return categoryService.add(categoryDTO);
     }
 
@@ -67,6 +68,13 @@ public class CategoryController {
     @ResponseBody
     public ResponseResult<Object> update(@ModelAttribute CategoryDTO categoryDTO) {
         return categoryService.update(categoryDTO);
+    }
+
+    @ApiOperation("设置默认分类")
+    @PutMapping("/category/setDefault")
+    @ResponseBody
+    public ResponseResult<Object> setDefault(@RequestParam String categoryId) {
+        return categoryService.setDefault(categoryId);
     }
 
     @ApiOperation("删除分类")

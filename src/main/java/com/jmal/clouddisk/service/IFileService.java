@@ -4,6 +4,7 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.util.ResponseResult;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -43,6 +44,14 @@ public interface IFileService {
      * @return
      */
     ResponseResult<Object> queryFileTree(UploadApiParamDTO upload, String fileId);
+
+    /**
+     * 上传图片
+     * @param username 用户名
+     * @param file 文件
+     * @return ResponseResult
+     */
+    ResponseResult<Object> imgUpload(String username, MultipartFile file);
 
     /***
      * 上传文件
@@ -342,4 +351,5 @@ public interface IFileService {
      * @return
      */
     String publicViewFile(String relativePath, String userId);
+
 }

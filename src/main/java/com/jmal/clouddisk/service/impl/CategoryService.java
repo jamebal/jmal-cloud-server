@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.model.Category;
 import com.jmal.clouddisk.model.CategoryDTO;
@@ -19,7 +18,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /**
@@ -46,7 +44,7 @@ public class CategoryService {
         Query query = new Query();
         query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
         if (StringUtils.isEmpty(parentId)) {
-            query.addCriteria(Criteria.where("parentCategoryId").exists(false));
+            query.addCriteria(Criteria.where("parentCategoryId").in("", null));
         } else {
             query.addCriteria(Criteria.where("parentCategoryId").is(parentId));
         }
@@ -91,7 +89,10 @@ public class CategoryService {
             Map<String, Object> subCategoryTreeMap = new HashMap<>(16);
             subCategoryTreeMap.put("label", category.getName());
             subCategoryTreeMap.put("value", category.getId());
-            subCategoryTreeMap.put("children", getSubCategory(category.getId(), categoryList));
+            List<Map<String, Object>> subList = getSubCategory(category.getId(), categoryList);
+            if (subList.size() > 0) {
+                subCategoryTreeMap.put("children", subList);
+            }
             categoryTreeMapList.add(subCategoryTreeMap);
         });
         return categoryTreeMapList;
@@ -183,34 +184,54 @@ public class CategoryService {
     }
 
     /***
+     * 设置默认分类
+     * @param categoryId categoryId
+     * @return ResponseResult
+     */
+    public ResponseResult<Object> setDefault(String categoryId) {
+        Query query2 = new Query();
+        query2.addCriteria(Criteria.where("isDefault").is(true));
+        Update update2 = new Update();
+        update2.set("isDefault", false);
+        mongoTemplate.updateMulti(query2, update2, COLLECTION_NAME);
+        Query query1 = new Query();
+        query1.addCriteria(Criteria.where("_id").is(categoryId));
+        Update update1 = new Update();
+        update1.set("isDefault", true);
+        mongoTemplate.upsert(query1, update1, COLLECTION_NAME);
+        return ResultUtil.success();
+    }
+
+    /***
      * 删除分类及其子分类下的所有分类
      * @param categoryIdList 分类id列表
      */
     public void delete(List<String> categoryIdList) {
-        List<String> categoryIds = deleteLoopCategory(true, categoryIdList);
+        List<String> categoryIds = findLoopCategory(true, categoryIdList);
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(categoryIds));
         mongoTemplate.remove(query, COLLECTION_NAME);
     }
 
     /***
-     * 递归删除分类及其子分类
+     * 递归查找分类id及其子分类id列表
      * @param firstCategory 是否是第一次查找
      * @param categoryIdList 分类id列表
      */
-    private List<String> deleteLoopCategory(boolean firstCategory, List<String> categoryIdList){
+    private List<String> findLoopCategory(boolean firstCategory, List<String> categoryIdList) {
         final List<String> categoryIds = new ArrayList<>();
         Query query = new Query();
-        if(firstCategory){
+        if (firstCategory) {
             query.addCriteria(Criteria.where("_id").in(categoryIdList));
         } else {
             query.addCriteria(Criteria.where("parentCategoryId").in(categoryIdList));
             categoryIds.addAll(categoryIdList);
         }
         List<String> categoryIdList1 = mongoTemplate.find(query, Category.class, COLLECTION_NAME).stream().map(Category::getId).collect(Collectors.toList());
-        if(categoryIdList1.size() > 0){
-            categoryIds.addAll(deleteLoopCategory(false, categoryIdList1));
+        if (categoryIdList1.size() > 0) {
+            categoryIds.addAll(findLoopCategory(false, categoryIdList1));
         }
         return categoryIds;
     }
+
 }

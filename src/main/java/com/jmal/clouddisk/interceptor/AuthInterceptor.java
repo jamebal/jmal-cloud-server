@@ -41,41 +41,47 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        String jmalToken = request.getHeader(JMAL_TOKEN);
-        if (StringUtils.isEmpty(jmalToken)) {
-            jmalToken = request.getParameter(JMAL_TOKEN);
-        }
-        if (checkToken(jmalToken)) {
+        if (!StringUtils.isEmpty(getUserNameByHeader(request))) {
             return true;
         }
         returnJson(response);
         return false;
     }
 
-    public boolean checkToken(String jmalToken) {
+    public String getUserNameByHeader(HttpServletRequest request){
+        String jmalToken = request.getHeader(JMAL_TOKEN);
+        if (StringUtils.isEmpty(jmalToken)) {
+            jmalToken = request.getParameter(JMAL_TOKEN);
+        }
+        return getUserNameByToken(jmalToken);
+    }
+
+    public String getUserNameByToken(String jmalToken) {
         if (!StringUtils.isEmpty(jmalToken)) {
             String username = tokenCache.getIfPresent(jmalToken);
             if (StringUtils.isEmpty(username)) {
                 String userName = TokenUtil.getUserName(jmalToken);
                 if(StringUtils.isEmpty(userName)){
-                    return false;
+                    return null;
                 }
                 UserToken userToken = authDAO.findOneUserToken(userName);
                 if (userToken == null) {
-                    return false;
+                    return null;
                 }
                 if ((System.currentTimeMillis() - userToken.getTimestamp()) < ONE_WEEK) {
                     ThreadUtil.execute(() -> updateToken(jmalToken, userName));
-                    return true;
+                    return username;
                 }
-                return false;
+                return null;
             } else {
                 ThreadUtil.execute(() -> updateToken(jmalToken, username));
-                return true;
+                return username;
             }
         }
-        return false;
+        return null;
     }
+
+
 
     /**
      * 刷新token

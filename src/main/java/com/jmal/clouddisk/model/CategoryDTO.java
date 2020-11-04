@@ -4,7 +4,6 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
-import org.springframework.util.StringUtils;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -26,7 +25,7 @@ public class CategoryDTO implements Comparable<CategoryDTO> {
     private String id;
 
     @NotNull(message = "用户id不能为空")
-    @ApiModelProperty(name = "userId", value = "用户id", required = true , example = "5e2d6675aab5fa4b7fecb59b")
+    @ApiModelProperty(name = "userId", value = "用户id", required = true)
     private String userId;
 
     @NotNull(message = "分类名称不能为空")
@@ -49,6 +48,11 @@ public class CategoryDTO implements Comparable<CategoryDTO> {
     @ApiModelProperty(hidden = true)
     private Integer subCategorySize;
     /***
+     * 是否为默认分类
+     */
+    @ApiModelProperty(hidden = true)
+    private Boolean isDefault;
+    /***
      * 分类描述
      */
     @ApiModelProperty(name = "desc", value = "分类描述")
@@ -56,8 +60,8 @@ public class CategoryDTO implements Comparable<CategoryDTO> {
 
     /***
      * 按照分类名称来排序
-     * @param categoryDTO
-     * @return
+     * @param categoryDTO CategoryDTO
+     * @return int
      */
     @Override
     public int compareTo(CategoryDTO categoryDTO) {
