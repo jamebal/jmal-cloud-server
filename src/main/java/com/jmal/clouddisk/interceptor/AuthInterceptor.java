@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.interceptor;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.alibaba.fastjson.JSON;
 import com.github.benmanes.caffeine.cache.Cache;

@@ -211,9 +211,11 @@ public interface IFileService {
     /***
      * 获取markdown内容
      * @param mark
+     * @param skip
+     * @param limit
      * @return
      */
-    ResponseResult<Object> getMarkDownContent(String mark);
+    ResponseResult<Object> getMarkDownContent(String mark, int skip, int limit);
 
     /***
      * 新建文档

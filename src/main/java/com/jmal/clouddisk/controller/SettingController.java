@@ -1,7 +1,5 @@
 package com.jmal.clouddisk.controller;
 
-import com.jmal.clouddisk.model.CategoryDTO;
-import com.jmal.clouddisk.service.impl.CategoryService;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;

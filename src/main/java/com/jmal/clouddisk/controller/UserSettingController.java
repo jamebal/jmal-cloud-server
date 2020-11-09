@@ -1,8 +1,6 @@
 package com.jmal.clouddisk.controller;
 
-import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.model.CategoryDTO;
 import com.jmal.clouddisk.model.UserSetting;
 import com.jmal.clouddisk.model.UserSettingDTO;
 import com.jmal.clouddisk.service.impl.UserSettingService;

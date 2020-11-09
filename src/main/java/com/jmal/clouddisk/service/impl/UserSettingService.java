@@ -1,9 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.extra.cglib.CglibUtil;
-import com.jmal.clouddisk.model.Category;
-import com.jmal.clouddisk.model.CategoryDTO;
 import com.jmal.clouddisk.model.UserSetting;
 import com.jmal.clouddisk.model.UserSettingDTO;
 import com.jmal.clouddisk.util.MongoUtil;

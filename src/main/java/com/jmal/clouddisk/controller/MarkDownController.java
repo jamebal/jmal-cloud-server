@@ -11,11 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * @Description markdown
  * @author jmal
@@ -34,8 +29,13 @@ public class MarkDownController {
     @ApiOperation("获取markdown内容")
     @GetMapping("/public/p")
     @ResponseBody
-    public ResponseResult<Object> getMarkDownContent(String mark) {
-        return fileService.getMarkDownContent(mark);
+    public ResponseResult<Object> getMarkDownContent(String mark, Integer pageIndex, Integer pageSize) {
+        int skip = 0, limit = 5;
+        if(pageIndex != null && pageSize != null){
+            skip = (pageIndex - 1) * pageSize;
+            limit = pageSize;
+        }
+        return fileService.getMarkDownContent(mark, skip, limit);
     }
 
     @ApiOperation("新建文档")

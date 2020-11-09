@@ -2,7 +2,6 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -642,27 +641,28 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> getMarkDownContent(String mark) throws CommonException {
+    public ResponseResult<Object> getMarkDownContent(String mark, int skip, int limit) throws CommonException {
         if (StringUtils.isEmpty(mark)) {
             Query query = new Query();
             query.addCriteria(Criteria.where("isFavorite").is(true));
             query.addCriteria(Criteria.where("suffix").is("md"));
             query.with(new Sort(Sort.Direction.DESC, "uploadDate"));
+            long count = mongoTemplate.count(query,COLLECTION_NAME);
+            query.skip(skip);
+            query.limit(limit);
             List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
             fileDocumentList = fileDocumentList.parallelStream().peek(fileDocument -> {
                 Consumer user = userService.userInfoById(fileDocument.getUserId());
                 String avatar = user.getAvatar();
                 fileDocument.setUsername(user.getUsername());
+                fileDocument.setContentText(null);
                 String filename = fileDocument.getName();
                 fileDocument.setName(filename.substring(0, filename.length() - fileDocument.getSuffix().length() - 1));
-                LocalDateTime date = fileDocument.getUploadDate();
-                String sb = date.getYear() + "年" +
-                        date.getMonthValue() + "月" +
-                        date.getDayOfMonth() + "日";
-                fileDocument.setUploadTime(sb);
                 fileDocument.setAvatar(avatar);
             }).collect(toList());
-            return ResultUtil.success(fileDocumentList);
+            ResponseResult<Object> result = ResultUtil.success(fileDocumentList);
+            result.setCount(count);
+            return result;
         } else {
             FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, COLLECTION_NAME);
             if (fileDocument != null) {
@@ -672,12 +672,7 @@ public class FileServiceImpl implements IFileService {
                     String currentDirectory = getUserDirectory(fileDocument.getPath());
                     File file = new File(filePropertie.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
                     String content = FileUtil.readString(file, StandardCharsets.UTF_8);
-                    if ("md".equals(fileDocument.getSuffix()) && !StringUtils.isEmpty(content)) {
-                        content = replaceAll(content, fileDocument.getPath(), fileDocument.getUserId());
-                        fileDocument.setContentText(content);
-                    } else {
-                        fileDocument.setContentText(content);
-                    }
+                    fileDocument.setContentText(content);
                 }
             }
             return ResultUtil.success(fileDocument);
