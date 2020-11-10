@@ -19,6 +19,7 @@ import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.result.UpdateResult;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
+import net.coobird.thumbnailator.tasks.SourceSinkThumbnailTask;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
 import org.apache.commons.compress.utils.Lists;
 import org.bson.BsonNull;
@@ -35,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.socket.WebSocketSession;
+import sun.tools.attach.HotSpotVirtualMachine;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -326,8 +328,30 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> imgUpload(String username, MultipartFile file) {
-        return null;
+    public String imgUpload(String username, String baseUrl, String filepath, MultipartFile file) {
+        String fileName = file.getOriginalFilename();
+        Path path = Paths.get(filePropertie.getRootDir(), username, filepath, fileName);
+        try {
+            File newFile = path.toFile();
+            Path parentPath = path.getParent();
+            FileUtil.writeFromStream(file.getInputStream(), newFile);
+            loopCreateDir(username, Paths.get(filePropertie.getRootDir(), username).getNameCount(), path);
+            return baseUrl + Paths.get("/file", username, filepath, fileName).toString();
+        } catch (IOException e) {
+            throw new CommonException(ExceptionType.FAIL_UPLOAD_FILE.getCode(), ExceptionType.FAIL_UPLOAD_FILE.getMsg());
+        }
+    }
+
+    /***
+     * 递归创建父级目录(数据库层面)
+     * @param username
+     * @param path
+     */
+    private void loopCreateDir(String username, int rootPathCount, Path path){
+        createFile(username, path.toFile());
+        if(path.getNameCount() > rootPathCount + 1){
+            loopCreateDir(username, rootPathCount, path.getParent());
+        }
     }
 
     /***

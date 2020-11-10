@@ -49,9 +49,11 @@ public interface IFileService {
      * 上传图片
      * @param username 用户名
      * @param file 文件
-     * @return ResponseResult
+     * @param baseUrl baseUrl
+     * @param filepath 文件要存放的相对路径
+     * @return String
      */
-    ResponseResult<Object> imgUpload(String username, MultipartFile file);
+    String imgUpload(String username, String baseUrl, String filepath, MultipartFile file);
 
     /***
      * 上传文件

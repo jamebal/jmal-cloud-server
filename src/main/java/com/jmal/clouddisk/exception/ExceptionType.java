@@ -93,7 +93,17 @@ public enum ExceptionType {
     /***
      * 删除文件失败
      */
-    FAIL_DELETE_FILE(17, "删除文件失败");
+    FAIL_DELETE_FILE(17, "删除文件失败"),
+
+    /***
+     * 上传文件失败
+     */
+    FAIL_UPLOAD_FILE(18, "上传文件失败"),
+
+    /***
+     * 禁止访问
+     */
+    ACCESS_FORBIDDEN(19, "禁止访问");
 
 
     public int getCode() {

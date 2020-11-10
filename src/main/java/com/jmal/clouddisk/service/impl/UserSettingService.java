@@ -1,8 +1,14 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.CharsetUtil;
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.symmetric.AES;
+import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.model.UserSetting;
 import com.jmal.clouddisk.model.UserSettingDTO;
+import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -12,6 +18,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * @author jmal
@@ -27,6 +34,9 @@ public class UserSettingService {
     private static final String USERID_PARAM = "userId";
 
     private static final String COLLECTION_NAME = "userSetting";
+
+    @Autowired
+    private IAuthDAO authDAO;
 
 
     /***
@@ -58,4 +68,18 @@ public class UserSettingService {
         return ResultUtil.success(userSettingDTO);
     }
 
+    /***
+     * 生成accessToken
+     * @param username 用户名
+     * @return ResponseResult
+     */
+    public ResponseResult<String> generateAccessToken(String username) {
+        byte[] key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue()).getEncoded();
+        // 构建
+        AES aes = SecureUtil.aes(key);
+        // 加密为16进制表示
+        String accessToken = aes.encryptHex(username);
+        authDAO.upsertAccessToken(username, accessToken);
+        return ResultUtil.success(accessToken);
+    }
 }

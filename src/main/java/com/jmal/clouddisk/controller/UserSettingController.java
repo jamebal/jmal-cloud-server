@@ -42,4 +42,11 @@ public class UserSettingController {
         return userSettingService.update(userSetting);
     }
 
+    @ApiOperation("生成accessToken")
+    @PutMapping("/user/setting/generateAccessToken")
+    @ResponseBody
+    ResponseResult<String> generateAccessToken(@RequestParam String username) {
+        return userSettingService.generateAccessToken(username);
+    }
+
 }

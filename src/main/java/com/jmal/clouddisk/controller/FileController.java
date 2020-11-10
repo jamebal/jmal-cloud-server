@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller;
 
+import cn.hutool.core.lang.Console;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.exception.CommonException;
@@ -72,12 +73,14 @@ public class FileController {
         return fileService.searchFileAndOpenDir(upload, id);
     }
 
-    @ApiOperation("图片上传")
+    @ApiOperation("图片上传(Typora自定义命令上传图片接口)")
     @PostMapping("/public/img-upload")
     @ResponseBody
-    public ResponseResult<Object> imgUpload(HttpServletRequest request, MultipartFile file) {
-        String username = authInterceptor.getUserNameByHeader(request);
-        return fileService.imgUpload(username, file);
+    public String imgUpload(HttpServletRequest request, MultipartFile file) {
+        String username = authInterceptor.getUserNameByAccessToken(request);
+        String filepath = request.getHeader("filepath");
+        String baseUrl = request.getHeader("baseurl");
+        return fileService.imgUpload(username, baseUrl, filepath, file);
     }
 
     @ApiOperation("文件上传")

@@ -1,8 +1,15 @@
 package com.jmal.clouddisk.interceptor;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.CharsetUtil;
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.symmetric.AES;
+import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
+import cn.hutool.crypto.symmetric.SymmetricCrypto;
 import com.alibaba.fastjson.JSON;
 import com.github.benmanes.caffeine.cache.Cache;
+import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserToken;
 import com.jmal.clouddisk.repository.IAuthDAO;
@@ -19,6 +26,8 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author jmal
@@ -31,9 +40,24 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     public static final String JMAL_TOKEN = "jmal-token";
 
+    public static final String ACCESS_TOKEN = "access-token";
+
     private static final long ONE_WEEK = 7 * 1000L * 60 * 60 * 24;
 
     private final Cache<String, String> tokenCache = CaffeineUtil.getTokenCache();
+
+    public static void main(String[] args) {
+        String content = "jmalsdfascasdf";
+        byte[] key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue()).getEncoded();
+        // 构建
+        AES aes = SecureUtil.aes(key);
+        // 加密为16进制表示
+        String encryptHex = aes.encryptHex(content);
+        Console.log(encryptHex);
+        // 解密为字符串
+        String decryptStr = aes.decryptStr(encryptHex, CharsetUtil.CHARSET_UTF_8);
+        Console.log(decryptStr);
+    }
 
     @Autowired
     IAuthDAO authDAO;
@@ -47,6 +71,11 @@ public class AuthInterceptor implements HandlerInterceptor {
         return false;
     }
 
+    /***
+     * 根据jmal-token获取用户名
+     * @param request request
+     * @return 用户名
+     */
     public String getUserNameByHeader(HttpServletRequest request){
         String jmalToken = request.getHeader(JMAL_TOKEN);
         if (StringUtils.isEmpty(jmalToken)) {
@@ -55,6 +84,28 @@ public class AuthInterceptor implements HandlerInterceptor {
         return getUserNameByToken(jmalToken);
     }
 
+    /***
+     * 根据access-token获取用户名
+     * @param request request
+     * @return 用户名
+     */
+    public String getUserNameByAccessToken(HttpServletRequest request){
+        String token = request.getHeader(ACCESS_TOKEN);
+        if (StringUtils.isEmpty(token)) {
+            token = request.getParameter(ACCESS_TOKEN);
+        }
+        String username = authDAO.getUserNameByAccessToken(token);
+        if(username == null){
+            throw new CommonException(ExceptionType.ACCESS_FORBIDDEN.getCode(), ExceptionType.ACCESS_FORBIDDEN.getMsg());
+        }
+        return username;
+    }
+
+    /***
+     * 根据jmal-token获取用户名
+     * @param jmalToken jmalToken
+     * @return 用户名
+     */
     public String getUserNameByToken(String jmalToken) {
         if (!StringUtils.isEmpty(jmalToken)) {
             String username = tokenCache.getIfPresent(jmalToken);
