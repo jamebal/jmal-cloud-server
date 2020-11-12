@@ -4,6 +4,7 @@ import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
+import cn.hutool.extra.cglib.CglibUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.google.common.collect.Maps;
 import com.jmal.clouddisk.exception.CommonException;
@@ -155,7 +156,7 @@ public class FileServiceImpl implements IFileService {
                 criteria = Criteria.where("isFavorite").is(isFavorite);
             }
         }
-        List<FileDocument> list = getFileDocuments(upload, criteria);
+        List<FileIntroVO> list = getFileDocuments(upload, criteria);
         result.setData(list);
         result.setCount(getFileDocumentsCount(upload, criteria));
         return result;
@@ -190,7 +191,8 @@ public class FileServiceImpl implements IFileService {
         return mongoTemplate.count(query, COLLECTION_NAME);
     }
 
-    private List<FileDocument> getFileDocuments(UploadApiParamDTO upload, Criteria... criteriaList) {
+    private List<FileIntroVO> getFileDocuments(UploadApiParamDTO upload, Criteria... criteriaList) {
+        List<FileIntroVO> fileIntroVOList = new ArrayList<>();
         Query query = getQuery(upload, criteriaList);
         String order = ShareServiceImpl.listByPage(upload, query);
         if (!StringUtils.isEmpty(order)) {
@@ -206,8 +208,7 @@ public class FileServiceImpl implements IFileService {
         query.fields().exclude("content").exclude("music.coverBase64");
         List<FileDocument> list = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
         long now = System.currentTimeMillis();
-
-        list = list.parallelStream().peek(fileDocument -> {
+        fileIntroVOList = list.parallelStream().map(fileDocument -> {
             LocalDateTime updateDate = fileDocument.getUpdateDate();
             long update = TimeUntils.getMilli(updateDate);
             fileDocument.setAgoTime(now - update);
@@ -216,21 +217,24 @@ public class FileServiceImpl implements IFileService {
                 long size = getFolderSize(fileDocument.getUserId(), path);
                 fileDocument.setSize(size);
             }
+            FileIntroVO fileIntroVO = new FileIntroVO();
+            CglibUtil.copy(fileDocument, fileIntroVO);
+            return fileIntroVO;
         }).collect(toList());
         // 按文件名排序
         if (StringUtils.isEmpty(order)) {
-            list.sort(this::compareByFileName);
+            fileIntroVOList.sort(this::compareByFileName);
         }
         if (!StringUtils.isEmpty(order) && "name".equals(upload.getSortableProp())) {
-            list.sort(this::compareByFileName);
+            fileIntroVOList.sort(this::compareByFileName);
             if ("descending".equals(order)) {
-                list.sort(this::desc);
+                fileIntroVOList.sort(this::desc);
             }
         }
-        return list;
+        return fileIntroVOList;
     }
 
-    private int desc(FileDocument f1, FileDocument f2) {
+    private int desc(FileBase f1, FileBase f2) {
         return -1;
     }
 
@@ -265,7 +269,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     private ResponseResult<Object> getCountResponseResult(UploadApiParamDTO upload, ResponseResult<Object> result, Criteria... criteriaList) {
-        List<FileDocument> list = getFileDocuments(upload, criteriaList);
+        List<FileIntroVO> list = getFileDocuments(upload, criteriaList);
         result.setData(list);
         result.setCount(getFileDocumentsCount(upload, criteriaList));
         return result;
@@ -360,7 +364,7 @@ public class FileServiceImpl implements IFileService {
      * @param f2
      * @return
      */
-    private int compareByFileName(FileDocument f1, FileDocument f2) {
+    private int compareByFileName(FileBase f1, FileBase f2) {
         if (f1.getIsFolder() && !f2.getIsFolder()) {
             return -1;
         } else if (f1.getIsFolder() && f2.getIsFolder()) {
@@ -372,7 +376,7 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
-    private int compareByName(FileDocument f1, FileDocument f2) {
+    private int compareByName(FileBase f1, FileBase f2) {
         Comparator<Object> cmp = Collator.getInstance(java.util.Locale.CHINA);
         return cmp.compare(f1.getName(), f2.getName());
     }
