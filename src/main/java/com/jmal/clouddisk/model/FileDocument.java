@@ -71,4 +71,9 @@ public class FileDocument extends FileBase{
      */
     private String cover;
 
+    /***
+     * 分类名称
+     */
+    private String categoryName;
+
 }

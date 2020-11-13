@@ -100,7 +100,7 @@ public class UploadApiParamDTO {
     String order;
 
     Boolean isFavorite;
-
     String cover;
+    String categoryName;
 
 }

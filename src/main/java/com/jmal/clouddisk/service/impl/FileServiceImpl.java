@@ -661,8 +661,10 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setContentText(upload.getContentText());
         fileDocument.setContentType(CONTENT_TYPE_MARK_DOWN);
         fileDocument.setMd5(md5);
+        fileDocument.setIsFavorite(true);
         fileDocument.setName(filename);
         fileDocument.setCover(upload.getCover());
+        fileDocument.setCategoryName(upload.getCategoryName());
         fileDocument.setIsFolder(false);
         createFile(upload.getUsername(), file);
         return ResultUtil.success();
@@ -721,6 +723,7 @@ public class FileServiceImpl implements IFileService {
         update.set("size", FileUtil.size(file));
         update.set("name", upload.getFilename());
         update.set("cover", upload.getCover());
+        update.set("categoryName", upload.getCategoryName());
         update.set("updateDate", date);
         update.set("contentText", upload.getContentText());
         Query query = new Query().addCriteria(Criteria.where("_id").is(upload.getFileId()));
