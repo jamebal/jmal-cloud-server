@@ -7,6 +7,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * FileDocument 文件模型
@@ -63,17 +64,23 @@ public class FileDocument extends FileBase{
      * 分享有效期
      */
     private Long shareExpirationDate;
-
     private Music music;
-
+    /***
+     * 是否发布，适用于文档类型
+     */
+    private Boolean release;
+    /***
+     * 是否有草稿
+     */
+    private Boolean draft;
     /***
      * 封面
      */
     private String cover;
 
     /***
-     * 分类名称
+     * 分类Id集合
      */
-    private String categoryName;
+    private String[] categoryIds;
 
 }

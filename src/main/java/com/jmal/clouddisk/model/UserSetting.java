@@ -11,7 +11,6 @@ import lombok.experimental.Accessors;
 @Data
 public class UserSetting {
 
-    String userId;
     /***
      * 站点背景大图
      */

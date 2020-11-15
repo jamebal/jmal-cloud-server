@@ -220,13 +220,6 @@ public interface IFileService {
     ResponseResult<Object> getMarkDownContent(String mark, int skip, int limit);
 
     /***
-     * 新建文档
-     * @param upload
-     * @return
-     */
-    ResponseResult<Object> newMarkdown(UploadApiParamDTO upload);
-
-    /***
      * 编辑文档
      * @param upload
      * @return

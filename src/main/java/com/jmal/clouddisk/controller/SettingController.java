@@ -1,5 +1,8 @@
 package com.jmal.clouddisk.controller;
 
+import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.model.UserSetting;
+import com.jmal.clouddisk.model.UserSettingDTO;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -7,9 +10,8 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author jmal
@@ -29,5 +31,26 @@ public class SettingController {
     public ResponseResult<Object> list(@RequestParam String username) {
         settingService.sync(username);
         return ResultUtil.success();
+    }
+
+    @ApiOperation("获取网站设置")
+    @GetMapping("/public/website/setting")
+    @ResponseBody
+    public ResponseResult<UserSettingDTO> getWebsiteSetting() {
+        return settingService.getWebsiteSetting();
+    }
+
+    @ApiOperation("更新用户设置")
+    @PutMapping("/setting/update")
+    @ResponseBody
+    public ResponseResult<Object> update(@RequestBody UserSetting userSetting) {
+        return settingService.update(userSetting);
+    }
+
+    @ApiOperation("生成accessToken")
+    @PutMapping("/user/setting/generateAccessToken")
+    @ResponseBody
+    ResponseResult<String> generateAccessToken(@RequestParam String username) {
+        return settingService.generateAccessToken(username);
     }
 }

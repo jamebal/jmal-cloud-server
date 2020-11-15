@@ -113,6 +113,17 @@ public class CategoryService {
     }
 
     /***
+     * 更具id查询分类列表
+     * @param categoryIds 分类id集合
+     * @return 分类列表
+     */
+    public List<Category> getCategoryListByIds(String[] categoryIds) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(categoryIds));
+        return mongoTemplate.find(query, Category.class, COLLECTION_NAME);
+    }
+
+    /***
      * 获取分类信息
      * @param userId 用户id
      * @param categoryName 分类名称

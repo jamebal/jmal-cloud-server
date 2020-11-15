@@ -18,6 +18,7 @@ import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.websocket.SocketManager;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.result.UpdateResult;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.SourceSinkThumbnailTask;
@@ -26,6 +27,7 @@ import org.apache.commons.compress.utils.Lists;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -85,6 +87,9 @@ public class FileServiceImpl implements IFileService {
 
     @Autowired
     IShareService shareService;
+
+    @Autowired
+    private CategoryService categoryService;
 
     @Autowired
     private SimpMessagingTemplate template;
@@ -644,55 +649,9 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> newMarkdown(UploadApiParamDTO upload) {
-        upload.setIsFolder(false);
-        String filename = upload.getFilename();
-        String md5 = CalcMd5.getMd5(upload.getContentText());
-        //用户磁盘目录
-        String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
-        LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
-        File file = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + currentDirectory + filename);
-        FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
-        // 保存文件信息
-        upload.setSuffix(FileUtil.extName(filename));
-        FileDocument fileDocument = new FileDocument();
-        fileDocument.setPath(currentDirectory);
-        fileDocument.setSize(upload.getContentText().length());
-        fileDocument.setContentText(upload.getContentText());
-        fileDocument.setContentType(CONTENT_TYPE_MARK_DOWN);
-        fileDocument.setMd5(md5);
-        fileDocument.setIsFavorite(true);
-        fileDocument.setName(filename);
-        fileDocument.setCover(upload.getCover());
-        fileDocument.setCategoryName(upload.getCategoryName());
-        fileDocument.setIsFolder(false);
-        createFile(upload.getUsername(), file);
-        return ResultUtil.success();
-    }
-
-    @Override
     public ResponseResult<Object> getMarkDownContent(String mark, int skip, int limit) throws CommonException {
         if (StringUtils.isEmpty(mark)) {
-            Query query = new Query();
-            query.addCriteria(Criteria.where("isFavorite").is(true));
-            query.addCriteria(Criteria.where("suffix").is("md"));
-            query.with(new Sort(Sort.Direction.DESC, "uploadDate"));
-            long count = mongoTemplate.count(query,COLLECTION_NAME);
-            query.skip(skip);
-            query.limit(limit);
-            List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
-            fileDocumentList = fileDocumentList.parallelStream().peek(fileDocument -> {
-                Consumer user = userService.userInfoById(fileDocument.getUserId());
-                String avatar = user.getAvatar();
-                fileDocument.setUsername(user.getUsername());
-                fileDocument.setContentText(null);
-                String filename = fileDocument.getName();
-                fileDocument.setName(filename.substring(0, filename.length() - fileDocument.getSuffix().length() - 1));
-                fileDocument.setAvatar(avatar);
-            }).collect(toList());
-            ResponseResult<Object> result = ResultUtil.success(fileDocumentList);
-            result.setCount(count);
-            return result;
+            return getMarkdownList(skip, limit);
         } else {
             FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, COLLECTION_NAME);
             if (fileDocument != null) {
@@ -709,24 +668,76 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
+    /***
+     * 文档列表
+     * @param skip
+     * @param limit
+     * @return
+     */
+    private ResponseResult<Object> getMarkdownList(int skip, int limit) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("release").is(true));
+        query.addCriteria(Criteria.where("suffix").is("md"));
+        query.with(new Sort(Sort.Direction.DESC, "uploadDate"));
+        long count = mongoTemplate.count(query,COLLECTION_NAME);
+        query.skip(skip);
+        query.limit(limit);
+        List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+        List<MarkdownVO> markdownVOList = new ArrayList<>();
+        markdownVOList = fileDocumentList.parallelStream().map(fileDocument -> {
+            Consumer user = userService.userInfoById(fileDocument.getUserId());
+            String avatar = user.getAvatar();
+            fileDocument.setUsername(user.getUsername());
+            fileDocument.setContentText(null);
+            String filename = fileDocument.getName();
+            fileDocument.setName(filename.substring(0, filename.length() - fileDocument.getSuffix().length() - 1));
+            fileDocument.setAvatar(avatar);
+            MarkdownVO markdownVO = new MarkdownVO();
+            CglibUtil.copy(fileDocument, markdownVO);
+            List<Category> categories = categoryService.getCategoryListByIds(fileDocument.getCategoryIds());
+            markdownVO.setCategories(categories);
+            return markdownVO;
+        }).collect(toList());
+        ResponseResult<Object> result = ResultUtil.success(markdownVOList);
+        result.setCount(count);
+        return result;
+    }
+
     @Override
     public ResponseResult<Object> editMarkdown(UploadApiParamDTO upload) {
-        FileDocument fileDocument = mongoTemplate.findById(upload.getFileId(), FileDocument.class, COLLECTION_NAME);
+        FileDocument fileDocument = new FileDocument();
+        LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
+        Query query = new Query();
+        if(upload.getFileId() != null){
+            // 修改
+            query.addCriteria(Criteria.where("_id").is(upload.getFileId()));
+            fileDocument = mongoTemplate.findById(upload.getFileId(), FileDocument.class, COLLECTION_NAME);
+            fileDocument.setId(null);
+        } else {
+            // 新增
+            query.addCriteria(Criteria.where("_id").is(new ObjectId().toHexString()));
+            fileDocument.setId(new ObjectId().toHexString());
+            fileDocument.setUploadDate(date);
+        }
         String filename = upload.getFilename();
         //用户磁盘目录
-        String currentDirectory = getUserDirectory(Objects.requireNonNull(fileDocument).getPath());
-        LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
-        File file = new File(filePropertie.getRootDir() + File.separator + upload.getUsername() + currentDirectory + filename);
-        FileUtil.del(filePropertie.getRootDir() + File.separator + upload.getUsername() + currentDirectory + fileDocument.getName());
+        String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
+        File file = Paths.get(filePropertie.getRootDir(), upload.getUsername(), currentDirectory , filename).toFile();
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
-        Update update = new Update();
-        update.set("size", FileUtil.size(file));
-        update.set("name", upload.getFilename());
-        update.set("cover", upload.getCover());
-        update.set("categoryName", upload.getCategoryName());
-        update.set("updateDate", date);
-        update.set("contentText", upload.getContentText());
-        Query query = new Query().addCriteria(Criteria.where("_id").is(upload.getFileId()));
+        fileDocument.setSuffix(FileUtil.extName(filename));
+        fileDocument.setUserId(upload.getUserId());
+        fileDocument.setUpdateDate(date);
+        fileDocument.setPath(currentDirectory);
+        fileDocument.setSize(upload.getContentText().length());
+        fileDocument.setContentText(upload.getContentText());
+        fileDocument.setContentType(CONTENT_TYPE_MARK_DOWN);
+        fileDocument.setMd5(CalcMd5.getMd5(filename + upload.getContentText()));
+        fileDocument.setRelease(true);
+        fileDocument.setName(filename);
+        fileDocument.setCover(upload.getCover());
+        fileDocument.setCategoryIds(upload.getCategoryIds());
+        fileDocument.setIsFolder(false);
+        Update update = MongoUtil.getUpsert(fileDocument);
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
         return ResultUtil.success();
     }

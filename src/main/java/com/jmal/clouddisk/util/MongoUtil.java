@@ -29,6 +29,15 @@ public class MongoUtil {
     }
 
     /**
+     * 获取mongodb更新或新增对象
+     * @param source
+     * @return
+     */
+    public static Update getUpsert(Object source) {
+        return getUpdate(source, null);
+    }
+
+    /**
      * 获取mongodb更新对象
      * @param source 源对象
      * @param excludeList 要排除的字段列表
@@ -38,7 +47,7 @@ public class MongoUtil {
         Update update = new Update();
         Map<String, Object> categoryDTOMap = BeanUtil.beanToMap(source);
         for (Map.Entry<String, Object> objectEntry : categoryDTOMap.entrySet()) {
-            if(excludeList.contains(objectEntry.getKey())){
+            if(excludeList != null && excludeList.contains(objectEntry.getKey())){
                 continue;
             }
             if(objectEntry.getValue() != null){

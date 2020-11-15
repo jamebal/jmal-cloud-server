@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * @Description markdown
  * @author jmal
@@ -38,19 +40,10 @@ public class MarkDownController {
         return fileService.getMarkDownContent(mark, skip, limit);
     }
 
-    @ApiOperation("新建文档")
-    @PostMapping("/markdown/add")
-    @ResponseBody
-    public ResponseResult<Object> newMarkdown(@RequestBody UploadApiParamDTO upload) {
-        ResultUtil.checkParamIsNull(upload.getUserId(),upload.getUsername(),upload.getFilename(),upload.getContentText());
-        return fileService.newMarkdown(upload);
-    }
-
     @ApiOperation("编辑文档(根据fileId)")
     @PostMapping("/markdown/edit")
     @ResponseBody
     public ResponseResult<Object> editMarkdown(@RequestBody UploadApiParamDTO upload) {
-        ResultUtil.checkParamIsNull(upload.getFileId(),upload.getUserId(),upload.getUsername(),upload.getFilename(),upload.getContentText());
         return fileService.editMarkdown(upload);
     }
 
