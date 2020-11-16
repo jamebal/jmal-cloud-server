@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.controller.rest;
+package com.jmal.clouddisk.controller;
 
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * @author jmal
- * @Description TODO
+ * @Description 文件资源管理
  * @Date 2020/10/19 3:55 下午
  */
 @Api(tags = "文件资源管理")

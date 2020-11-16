@@ -33,7 +33,7 @@ public class SettingController {
     @ApiOperation("获取网站设置")
     @GetMapping("/public/website/setting")
     public ResponseResult<UserSettingDTO> getWebsiteSetting() {
-        return settingService.getWebsiteSetting();
+        return ResultUtil.success(settingService.getWebsiteSetting());
     }
 
     @ApiOperation("更新用户设置")

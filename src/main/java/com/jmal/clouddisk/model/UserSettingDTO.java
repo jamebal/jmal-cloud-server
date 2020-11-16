@@ -1,7 +1,8 @@
 package com.jmal.clouddisk.model;
 
 import lombok.Data;
-import lombok.experimental.Accessors;
+
+import java.util.List;
 
 /**
  * @author jmal
@@ -28,7 +29,28 @@ public class UserSettingDTO {
      */
     String siteName;
     /***
-     * 操作按钮
+     * 操作按钮(原始字符串)
      */
     String operatingButtons;
+
+    /***
+     * 操作按钮对象集合
+     */
+    List<OperatingButton> operatingButtonList;
+
+    @Data
+    public static class OperatingButton {
+        /***
+         * 按钮名称
+         */
+        String title;
+        /***
+         * 按钮图标
+         */
+        String fontHtml;
+        /***
+         * 点击按钮后跳转的地址
+         */
+        String url;
+    }
 }

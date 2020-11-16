@@ -96,14 +96,14 @@ public class SettingService {
      * 获取网站设置
      * @return ResponseResult
      */
-    public ResponseResult<UserSettingDTO> getWebsiteSetting() {
+    public UserSettingDTO getWebsiteSetting() {
         UserSettingDTO userSettingDTO = new UserSettingDTO();
         Query query = new Query();
         UserSetting userSetting = mongoTemplate.findOne(query, UserSetting.class, COLLECTION_NAME_WEBSITE_SETTING);
         if(userSetting != null){
             CglibUtil.copy(userSetting, userSettingDTO);
         }
-        return ResultUtil.success(userSettingDTO);
+        return userSettingDTO;
     }
 
     /***

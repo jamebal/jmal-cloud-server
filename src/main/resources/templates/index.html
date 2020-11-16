@@ -1,6 +1,5 @@
-
 <!DOCTYPE HTML>
-<html class="no-js" >
+<html class="no-js" xmlns:th="http://www.thymeleaf.org">
 <head>
     <link rel="shortcut icon" href="/usr/themes/Mirages/favicon.ico" type="image/x-icon" />
     <meta charset="UTF-8">
@@ -25,17 +24,101 @@
     <link rel="alternate" type="application/rss+xml" title="jmal's blog &raquo; RSS 2.0" href="https://www.jmal.top/feed/" />
     <link rel="alternate" type="application/rdf+xml" title="jmal's blog &raquo; RSS 1.0" href="https://www.jmal.top/feed/rss/" />
     <link rel="alternate" type="application/atom+xml" title="jmal's blog &raquo; ATOM 1.0" href="https://www.jmal.top/feed/atom/" />
+    <link rel="stylesheet" type="text/css" href="/articles/css/index.css">
+    <link rel="stylesheet" type="text/css" href="/articles/css/article.css">
+    <link rel="stylesheet" type="text/css" href="/articles/css/article-top.css">
+    <link rel="stylesheet" type="text/css" href="/articles/css/markdown.css">
 </head>
 <body class="theme-white color-default card  desktop macOS macOS-ge-10-11 macOS-ge-10-12 chrome not-safari open use-navbar">
 <!--[if lt IE 9]>
 <div class="browse-happy" role="dialog">当前网页 <strong>不支持</strong> 你正在使用的浏览器. 为了正常的访问, 请 <a href="http://browsehappy.com/">升级你的浏览器</a>.</div>
 <![endif]-->
 
+<div id="body">
+    <div id="top" class="animateIn">
+        <div th:include="component/article-top.html"></div>
+    </div>
+    <div class="cover-wrapper">
+        <div class="cover half" style="position: relative; z-index: 0; background-image: none;">
+            <div class="cover-body">
+                <div class="a">
+                    <p class="title"><span id="article-title" th:text="${setting.siteName}"></span><span class="typed-cursor">_</span></p >
+                    <p class="subtitle" th:text="${setting.backgroundDescSite}"></p>
+                </div>
+            </div>
+            <div class="backstretch">
+                <img class="blog-background" :src="userSetting.backgroundSite"
+                     onerror="this.src='https://images.unsplash.com/photo-1603910062519-69a9616d34c7?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=2250&q=80'">
+            </div>
+        </div>
+    </div>
+    <div class="l_body">
+        <div class="body-wrapper articles_l_main">
+            <el-main class="l_main">
+                <section class="post-list">
+                    <div v-for="article in articleList" class="post-wrapper">
+                        <article  class="post white-box shadow reveal">
+                            <section class="meta">
+                                <div class="meta" id="header-meta">
+                                    <h2 class="title">
+                                        <router-link :to="$route.path+'/article?mark='+article.id">{{article.name}}</router-link>
+                                    </h2>
+                                    <div class="new-meta-box">
+                                        <div class="new-meta-item author">
+                                            <a href="http://www.jmal.top" rel="nofollow">
+                                                <img :src="imageUrl+article.avatar" :data-original="imageUrl+article.avatar">
+                                                <p>{{article.username}}</p>
+                                            </a>
+                                        </div>
+                                        <div class="new-meta-item date">
+                                            <a class="notlink">
+                                                <svg-icon icon-class="release"></svg-icon>
+                                                <p>发布于 {{article.uploadDate}}</p>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                </div>
+                            </section>
+                            <section class="article typo">
+                                <router-link :to="$route.path+'/article?mark='+article.id">
+                                    <div class="article-entry" itemprop="articleBody">
+                                        <p><img v-if="article.cover" class="blog-background articles-list" :src="article.cover" onerror="this.src='https://images.unsplash.com/photo-1582230587856-7fec01506148?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=60'"/></p>
+                                    </div>
+                                </router-link>
+                            </section>
+                        </article>
+                    </div>
+                </section>
+                <el-pagination
+                        style="text-align: center"
+                        :hide-on-single-page="true"
+                        :current-page.sync="pagination.pageIndex"
+                        :page-sizes="pagination.pageSizes"
+                        :page-size="pagination.pageSize"
+                        :total="pagination.total"
+                        @current-change="currentChange"
+                        layout="prev, pager, next">
+                </el-pagination>
+            </el-main>
+        </div>
+    </div>
+    <footer class="clearfix">
+        <br><br><br>
+        <div class="copyright"><p><a href="http://blog.jmal.top">Copyright © 2020 journey magical AL</a></p></div>
+    </footer>
+</div>
+
 <footer id="footer" role="contentinfo">
     <div class="container"  data-index="174">
         <p>Copyright &copy; 2020 <a href="https://www.jmal.top/">Journey Magical AL</a> • Powered by <a href="http://typecho.org" target="_blank">Typecho</a> • Theme <a href="https://get233.com/archives/mirages-intro.html" target="_blank">Mirages</a></p>    </div>
 </footer>
-
+<script type="text/javascript" src="/articles/js/jquery-3.5.1.min.js"></script>
+<script>
+$(function(){
+    console.log($.fn.jquery)
+});
+</script>
 </body>
 </html>
 
