@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.controller;
+package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -50,14 +50,12 @@ public class ShareController {
 
     @ApiOperation("该分享已失效")
     @GetMapping("/public/s/invalid")
-    @ResponseBody
     public String invalid() {
         return "该分享已失效";
     }
 
     @ApiOperation("生成分享链接")
     @PostMapping("/share/generate")
-    @ResponseBody
     public ResponseResult<Object> generateLink(@RequestBody ShareBO share) {
         ResultUtil.checkParamIsNull(share.getFileId(), share.getUserId());
         return shareService.generateLink(share);
@@ -65,7 +63,6 @@ public class ShareController {
 
     @ApiOperation("取消分享")
     @DeleteMapping("/share/cancel")
-    @ResponseBody
     public ResponseResult<Object> cancelShare(String[] shareId,String userId) {
         ResultUtil.checkParamIsNull(shareId, userId);
         List<String> shareIdList = Arrays.asList(shareId);
@@ -80,7 +77,6 @@ public class ShareController {
 
     @ApiOperation("访问分享链接")
     @GetMapping("/public/access-share")
-    @ResponseBody
     public ResponseResult<Object> accessShare(@RequestParam String share, Integer pageIndex, Integer pageSize) {
         ResultUtil.checkParamIsNull(share);
         return shareService.accessShare(share, pageIndex, pageSize);
@@ -88,7 +84,6 @@ public class ShareController {
 
     @ApiOperation("访问分享链接里的目录")
     @GetMapping("public/access-share/open")
-    @ResponseBody
     public ResponseResult<Object> accessShareOpenDir(@RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize) {
         ShareBO shareBO = shareService.getShare(share);
         if(!shareService.checkWhetherExpired(shareBO)){

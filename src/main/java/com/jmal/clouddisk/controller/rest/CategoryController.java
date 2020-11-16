@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.controller;
+package com.jmal.clouddisk.controller.rest;
 
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.model.Category;
@@ -9,7 +9,6 @@ import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +21,7 @@ import java.util.Map;
  * @Description 分类管理
  * @Date 2020/10/26 5:47 下午
  */
-@Controller
+@RestController
 @Api(tags = "分类管理")
 public class CategoryController {
 
@@ -31,14 +30,12 @@ public class CategoryController {
 
     @ApiOperation("分类列表")
     @GetMapping("/category/list")
-    @ResponseBody
     public ResponseResult<List<CategoryDTO>> list(@RequestParam String userId, String parentCategoryId) {
         return ResultUtil.success(categoryService.list(userId, parentCategoryId));
     }
 
     @ApiOperation("分类树")
     @GetMapping("/category/tree")
-    @ResponseBody
     public ResponseResult<List<Map<String, Object>>> tree(@RequestParam String userId) {
         return ResultUtil.success(categoryService.tree(userId));
     }
@@ -57,7 +54,6 @@ public class CategoryController {
 
     @ApiOperation("添加分类")
     @PostMapping("/category/add")
-    @ResponseBody
     public ResponseResult<Object> add(@ModelAttribute @Validated CategoryDTO categoryDTO) {
         categoryDTO.setId(null);
         return categoryService.add(categoryDTO);
@@ -72,14 +68,12 @@ public class CategoryController {
 
     @ApiOperation("设置默认分类")
     @PutMapping("/category/setDefault")
-    @ResponseBody
     public ResponseResult<Object> setDefault(@RequestParam String categoryId) {
         return categoryService.setDefault(categoryId);
     }
 
     @ApiOperation("删除分类")
     @DeleteMapping("/category/delete")
-    @ResponseBody
     public ResponseResult<Object> delete(@RequestParam String[] categoryIds) {
         List<String> categoryList = Arrays.asList(categoryIds);
         categoryService.delete(categoryList);

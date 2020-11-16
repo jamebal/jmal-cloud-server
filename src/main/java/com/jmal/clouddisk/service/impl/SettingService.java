@@ -5,7 +5,7 @@ import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.extra.cglib.CglibUtil;
-import com.jmal.clouddisk.model.FilePropertie;
+import com.jmal.clouddisk.model.FileProperties;
 import com.jmal.clouddisk.model.UserSetting;
 import com.jmal.clouddisk.model.UserSettingDTO;
 import com.jmal.clouddisk.repository.IAuthDAO;
@@ -35,7 +35,7 @@ import java.util.List;
 public class SettingService {
 
     @Autowired
-    FilePropertie filePropertie;
+    FileProperties fileProperties;
 
     @Autowired
     FileServiceImpl fileService;
@@ -53,7 +53,7 @@ public class SettingService {
      * @param username 用户名
      */
     public void sync(String username) {
-        Path path = Paths.get(filePropertie.getRootDir(),username);
+        Path path = Paths.get(fileProperties.getRootDir(),username);
         List<File> list = loopFiles(path.toFile());
         list.parallelStream().forEach(file -> fileService.createFile(username, file));
     }

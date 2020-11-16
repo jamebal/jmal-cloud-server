@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.controller;
+package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.Consumer;
@@ -47,14 +47,12 @@ public class AuthController {
 
     @ApiOperation("是否有用户")
     @GetMapping("/public/has_user")
-    @ResponseBody
     public ResponseResult<Boolean> hasUser(){
         return userService.hasUser();
     }
 
     @ApiOperation("初始化创建管理员")
     @PostMapping("/public/initialization")
-    @ResponseBody
     public ResponseResult<Object> initialization(Consumer consumer){
         return userService.initialization(consumer);
     }

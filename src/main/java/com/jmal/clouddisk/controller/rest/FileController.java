@@ -1,6 +1,5 @@
-package com.jmal.clouddisk.controller;
+package com.jmal.clouddisk.controller.rest;
 
-import cn.hutool.core.lang.Console;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.exception.CommonException;
@@ -75,7 +74,6 @@ public class FileController {
 
     @ApiOperation("图片上传(Typora自定义命令上传图片接口)")
     @PostMapping("/public/img-upload")
-    @ResponseBody
     public String imgUpload(HttpServletRequest request, MultipartFile file) {
         String username = authInterceptor.getUserNameByAccessToken(request);
         String filepath = request.getHeader("filepath");
@@ -85,35 +83,30 @@ public class FileController {
 
     @ApiOperation("文件上传")
     @PostMapping("upload")
-    @ResponseBody
     public ResponseResult<Object> uploadPost(UploadApiParamDTO upload) throws IOException {
         return fileService.upload(upload);
     }
 
     @ApiOperation("文件夹上传")
     @PostMapping("upload-folder")
-    @ResponseBody
     public ResponseResult<Object> uploadFolder(UploadApiParamDTO upload) {
         return fileService.uploadFolder(upload);
     }
 
     @ApiOperation("新建文件夹")
     @PostMapping("new_folder")
-    @ResponseBody
     public ResponseResult<Object> newFolder(UploadApiParamDTO upload) {
         return fileService.newFolder(upload);
     }
 
     @ApiOperation("检查文件/分片是否存在")
     @GetMapping("upload")
-    @ResponseBody
     public ResponseResult<Object> checkUpload(UploadApiParamDTO upload) throws IOException {
         return fileService.checkChunkUploaded(upload);
     }
 
     @ApiOperation("合并文件")
     @PostMapping("merge")
-    @ResponseBody
     public ResponseResult<Object> merge(UploadApiParamDTO upload) throws IOException {
         return fileService.merge(upload);
     }

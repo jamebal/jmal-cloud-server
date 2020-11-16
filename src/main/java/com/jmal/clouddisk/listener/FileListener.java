@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.listener;
 
-import com.jmal.clouddisk.model.FilePropertie;
+import com.jmal.clouddisk.model.FileProperties;
 import com.jmal.clouddisk.service.IFileService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
@@ -24,7 +24,7 @@ import java.io.File;
 public class FileListener extends FileAlterationListenerAdaptor {
 
     @Autowired
-    FilePropertie filePropertie;
+    FileProperties fileProperties;
 
     @Autowired
     IFileService fileService;
@@ -133,7 +133,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
      */
     private String ownerOfChangeFile(String fileAbsolutePath){
         try {
-            String relativePath = fileAbsolutePath.replace(filePropertie.getRootDir() + File.separator,"");
+            String relativePath = fileAbsolutePath.replace(fileProperties.getRootDir() + File.separator,"");
             String[] relativePaths = relativePath.split(File.separator);
             if(relativePaths.length <= 1){
                 return null;

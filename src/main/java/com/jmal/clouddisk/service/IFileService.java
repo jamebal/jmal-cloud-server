@@ -3,6 +3,7 @@ package com.jmal.clouddisk.service;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.UploadImageDTO;
 import com.jmal.clouddisk.util.ResponseResult;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -239,7 +240,7 @@ public interface IFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> uploadMarkdownImage(UploadApiParamDTO upload);
+    ResponseResult<Object> uploadMarkdownImage(UploadImageDTO upload);
 
     /***
      * 上传用户图片

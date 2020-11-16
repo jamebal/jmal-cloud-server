@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.controller;
+package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;

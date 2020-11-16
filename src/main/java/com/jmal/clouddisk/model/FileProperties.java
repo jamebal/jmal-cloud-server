@@ -19,14 +19,14 @@ import java.util.Arrays;
 @Component
 @PropertySource(value = "classpath:file.yml", factory = YamlPropertyLoaderFactory.class)
 @ConfigurationProperties(prefix = "file")
-public class FilePropertie {
+public class FileProperties {
     private String rootDir = System.getProperty("user.dir");
     private String chunkFileDir = "chunkFileTemp";
     private String userImgDir = "/Image/";
     private String documentImgDir = "/Image/Document/Image/";
     private String separator = "/";
     private String[] simText = {"txt","html","htm","asp","jsp","xml","json","properties","md","gitignore","java","py","c","cpp","sql","sh","bat","m","bas","prg","cmd"};
-    private String[] doument = {"pdf","doc","docs","xls","xl","md"};
+    private String[] document = {"pdf","doc","docs","xls","xl","md"};
 
     private Boolean monitor = false;
     /***
@@ -43,11 +43,11 @@ public class FilePropertie {
     }
 
     public String getUserImgDir(){
-        return userImgDir.replaceAll("/", File.separator);
+        return Paths.get(userImgDir).toString();
     }
 
     public String getDocumentImgDir(){
-        return documentImgDir.replaceAll("/", File.separator);
+        return Paths.get(documentImgDir).toString();
     }
 
 //    public String[] getSimText(){

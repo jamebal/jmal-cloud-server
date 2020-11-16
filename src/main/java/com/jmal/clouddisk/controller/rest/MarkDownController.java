@@ -1,6 +1,7 @@
-package com.jmal.clouddisk.controller;
+package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.UploadImageDTO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -10,8 +11,6 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 /**
  * @Description markdown
@@ -30,7 +29,6 @@ public class MarkDownController {
 
     @ApiOperation("获取markdown内容")
     @GetMapping("/public/p")
-    @ResponseBody
     public ResponseResult<Object> getMarkDownContent(String mark, Integer pageIndex, Integer pageSize) {
         int skip = 0, limit = 5;
         if(pageIndex != null && pageSize != null){
@@ -42,14 +40,12 @@ public class MarkDownController {
 
     @ApiOperation("编辑文档(根据fileId)")
     @PostMapping("/markdown/edit")
-    @ResponseBody
     public ResponseResult<Object> editMarkdown(@RequestBody UploadApiParamDTO upload) {
         return fileService.editMarkdown(upload);
     }
 
     @ApiOperation("编辑文档(根据path)")
     @PostMapping("/markdown/edit1")
-    @ResponseBody
     public ResponseResult<Object> editMarkdownByPath(@RequestBody UploadApiParamDTO upload) {
         ResultUtil.checkParamIsNull(upload.getUsername(),upload.getUserId(),upload.getRelativePath(),upload.getContentText());
         return fileService.editMarkdownByPath(upload);
@@ -57,9 +53,8 @@ public class MarkDownController {
 
     @ApiOperation("上传文档里的图片")
     @PostMapping("/upload-markdown-image")
-    @ResponseBody
-    public ResponseResult<Object> uploadMarkdownImage(UploadApiParamDTO upload) {
-        return fileService.uploadMarkdownImage(upload);
+    public ResponseResult<Object> uploadMarkdownImage(UploadImageDTO uploadImageDTO) {
+        return fileService.uploadMarkdownImage(uploadImageDTO);
     }
 
 }
