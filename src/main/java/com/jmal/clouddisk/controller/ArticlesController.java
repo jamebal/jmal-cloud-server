@@ -51,6 +51,9 @@ public class ArticlesController {
 
     @GetMapping("/articles/{slug}")
     public String index(HttpServletRequest request, @PathVariable String slug, ModelMap map){
+        UserSettingDTO userSettingDTO = settingService.getWebsiteSetting();
+        setOperatingButtonList(userSettingDTO);
+        map.addAttribute("setting", userSettingDTO);
         map.addAttribute("markdown", fileService.getMarkDownContentBySlug(slug));
         return "article";
     }
