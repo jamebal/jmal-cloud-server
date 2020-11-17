@@ -647,7 +647,12 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> getMarkDownContent(String mark, int skip, int limit) throws CommonException {
+    public ResponseResult<Object> getMarkDownContent(String mark, Integer pageIndex, Integer pageSize) throws CommonException {
+        int skip = 0, limit = 5;
+        if(pageIndex != null && pageSize != null){
+            skip = (pageIndex - 1) * pageSize;
+            limit = pageSize;
+        }
         if (StringUtils.isEmpty(mark)) {
             return getMarkdownList(skip, limit);
         } else {

@@ -30,12 +30,7 @@ public class MarkDownController {
     @ApiOperation("获取markdown内容")
     @GetMapping("/public/p")
     public ResponseResult<Object> getMarkDownContent(String mark, Integer pageIndex, Integer pageSize) {
-        int skip = 0, limit = 5;
-        if(pageIndex != null && pageSize != null){
-            skip = (pageIndex - 1) * pageSize;
-            limit = pageSize;
-        }
-        return fileService.getMarkDownContent(mark, skip, limit);
+        return fileService.getMarkDownContent(mark, pageIndex, pageSize);
     }
 
     @ApiOperation("编辑文档(根据fileId)")

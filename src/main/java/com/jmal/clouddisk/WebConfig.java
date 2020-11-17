@@ -40,10 +40,10 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(fileInterceptor).addPathPatterns("/file/**");
     }
 
-    // @Override
-    // public void addResourceHandlers(ResourceHandlerRegistry registry) {
-    //     registry.addResourceHandler("/file/**").addResourceLocations(
-    //             "file:" + fileProperties.getRootDir() + File.separator);
-    //     log.info("静态资源目录:{}", fileProperties.getRootDir() + File.separator);
-    // }
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/file/**").addResourceLocations(
+                "file:" + fileProperties.getRootDir() + File.separator);
+        log.info("静态资源目录:{}", fileProperties.getRootDir() + File.separator);
+    }
 }

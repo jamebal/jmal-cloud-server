@@ -214,11 +214,11 @@ public interface IFileService {
     /***
      * 获取markdown内容
      * @param mark
-     * @param skip
-     * @param limit
+     * @param pageIndex
+     * @param pageSize
      * @return
      */
-    ResponseResult<Object> getMarkDownContent(String mark, int skip, int limit);
+    ResponseResult<Object> getMarkDownContent(String mark, Integer pageIndex, Integer pageSize);
 
     /***
      * 编辑文档

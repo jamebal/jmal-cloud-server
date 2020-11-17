@@ -24,9 +24,14 @@
     <link rel="alternate" type="application/rss+xml" title="jmal's blog &raquo; RSS 2.0" href="https://www.jmal.top/feed/" />
     <link rel="alternate" type="application/rdf+xml" title="jmal's blog &raquo; RSS 1.0" href="https://www.jmal.top/feed/rss/" />
     <link rel="alternate" type="application/atom+xml" title="jmal's blog &raquo; ATOM 1.0" href="https://www.jmal.top/feed/atom/" />
+    <link rel="stylesheet" type="text/css" href="/articles/fontawesome-free-5.11.2-web/css/all.css">
+    <link rel="stylesheet" type="text/css" href="/articles/layui/css/layui.css">
     <link rel="stylesheet" type="text/css" href="/articles/css/index.css">
     <link rel="stylesheet" type="text/css" href="/articles/css/article.css">
     <link rel="stylesheet" type="text/css" href="/articles/css/article-top.css">
+    <link rel="stylesheet" type="text/css" href="/articles/css/article-header.css">
+    <link rel="stylesheet" type="text/css" href="/articles/css/article-body.css">
+    <link rel="stylesheet" type="text/css" href="/articles/css/article-footer.css">
     <link rel="stylesheet" type="text/css" href="/articles/css/markdown.css">
 </head>
 <body class="theme-white color-default card  desktop macOS macOS-ge-10-11 macOS-ge-10-12 chrome not-safari open use-navbar">
@@ -38,17 +43,12 @@
     <div id="top" class="animateIn">
         <div th:include="component/article-top.html"></div>
     </div>
-    <div class="cover-wrapper">
-        <div class="cover half" style="position: relative; z-index: 0; background-image: none;">
-            <div class="cover-body">
-                <div class="a">
-                    <p class="title"><span id="article-title" th:text="${setting.siteName}"></span><span class="typed-cursor">_</span></p >
-                    <p class="subtitle" th:text="${setting.backgroundDescSite}"></p>
-                </div>
-            </div>
-            <div class="backstretch">
-                <img class="blog-background" :src="userSetting.backgroundSite"
-                     onerror="this.src='https://images.unsplash.com/photo-1603910062519-69a9616d34c7?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=2250&q=80'">
+    <div class="article-header">
+        <div class="article-background" th:style="'background-image: url('+${setting.backgroundSite}+')'"></div>
+        <div class="inner">
+            <div class="blog-title"><span id="article-title" th:text="${setting.backgroundTextSite}"></span><span class="typed-cursor">_</span></div>
+            <div class="blog-description font-mono">
+                <span th:text="${setting.backgroundDescSite}"></span>
             </div>
         </div>
     </div>
@@ -56,24 +56,26 @@
         <div class="body-wrapper articles_l_main">
             <el-main class="l_main">
                 <section class="post-list">
-                    <div v-for="article in articleList" class="post-wrapper">
+                    <div th:each="article : ${articlesData.data}" class="post-wrapper">
                         <article  class="post white-box shadow reveal">
                             <section class="meta">
                                 <div class="meta" id="header-meta">
                                     <h2 class="title">
-                                        <router-link :to="$route.path+'/article?mark='+article.id">{{article.name}}</router-link>
+                                        <a th:href="'/articles/'+${article.id}" th:text="${article.name}"></a>
                                     </h2>
                                     <div class="new-meta-box">
                                         <div class="new-meta-item author">
                                             <a href="http://www.jmal.top" rel="nofollow">
-                                                <img :src="imageUrl+article.avatar" :data-original="imageUrl+article.avatar">
-                                                <p>{{article.username}}</p>
+                                                <img th:src="'/public/s/view/thumbnail?id='+${article.avatar}">
+                                                <p th:text="${article.username}"></p>
                                             </a>
                                         </div>
                                         <div class="new-meta-item date">
                                             <a class="notlink">
-                                                <svg-icon icon-class="release"></svg-icon>
-                                                <p>发布于 {{article.uploadDate}}</p>
+                                                <svg class="icon" aria-hidden="true">
+                                                    <use xlink:href="#icon-fabu"></use>
+                                                </svg>
+                                                <p th:text="'发布于 '+${article.uploadDate}"></p>
                                             </a>
                                         </div>
                                     </div>
@@ -81,43 +83,74 @@
                                 </div>
                             </section>
                             <section class="article typo">
-                                <router-link :to="$route.path+'/article?mark='+article.id">
+                                <a th:href="'/articles/'+${article.id}">
                                     <div class="article-entry" itemprop="articleBody">
-                                        <p><img v-if="article.cover" class="blog-background articles-list" :src="article.cover" onerror="this.src='https://images.unsplash.com/photo-1582230587856-7fec01506148?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=60'"/></p>
+                                        <p><img th:if="${article.cover != null}" class="blog-background articles-list" th:src="${article.cover}" onerror="this.src='https://images.unsplash.com/photo-1582230587856-7fec01506148?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=60'"/></p>
                                     </div>
-                                </router-link>
+                                </a>
                             </section>
                         </article>
                     </div>
                 </section>
-                <el-pagination
-                        style="text-align: center"
-                        :hide-on-single-page="true"
-                        :current-page.sync="pagination.pageIndex"
-                        :page-sizes="pagination.pageSizes"
-                        :page-size="pagination.pageSize"
-                        :total="pagination.total"
-                        @current-change="currentChange"
-                        layout="prev, pager, next">
-                </el-pagination>
+                <div id="laypage"></div>
             </el-main>
         </div>
+    </div>
+    <div class="back-top" style="display: none">
+        <svg class="icon" aria-hidden="true">
+            <use xlink:href="#icon-Up"></use>
+        </svg>
     </div>
     <footer class="clearfix">
         <br><br><br>
         <div class="copyright"><p><a href="http://blog.jmal.top">Copyright © 2020 journey magical AL</a></p></div>
     </footer>
 </div>
+<script src="/articles/js/jquery-3.5.1.min.js"></script>
+<script src="/articles/layui/layui.js"></script>
+<script src="//at.alicdn.com/t/font_2024484_afbeg29hegb.js"></script>
+<script th:inline="javascript">
+    $(function(){
+        $(".back-top").click(function(){
+            $('html, body').animate({
+                scrollTop: 0
+            }, 400)
+        });
 
-<footer id="footer" role="contentinfo">
-    <div class="container"  data-index="174">
-        <p>Copyright &copy; 2020 <a href="https://www.jmal.top/">Journey Magical AL</a> • Powered by <a href="http://typecho.org" target="_blank">Typecho</a> • Theme <a href="https://get233.com/archives/mirages-intro.html" target="_blank">Mirages</a></p>    </div>
-</footer>
-<script type="text/javascript" src="/articles/js/jquery-3.5.1.min.js"></script>
-<script>
-$(function(){
-    console.log($.fn.jquery)
-});
+        let showBackTop = function () {
+            if(document.documentElement.scrollTop > 300){
+                $('.back-top').fadeIn(500)
+            } else {
+                $('.back-top').fadeOut(500)
+            }
+        }
+        showBackTop()
+
+        $(window).on("scroll",function (event) {
+            showBackTop()
+        })
+
+        layui.use('laypage', function(){
+            let laypage = layui.laypage;
+            //执行一个laypage实例
+            laypage.render({
+                elem: 'laypage',
+                count: [[${articlesData.count}]],
+                limit: 10,
+                curr: location.hash.replace('#!page=', ''),
+                hash: 'page',
+                jump: function(obj, first) {
+                    //obj包含了当前分页的所有参数，比如：
+                    console.log(obj.curr); //得到当前页，以便向服务端请求对应页的数据。
+                    console.log(obj.limit); //得到每页显示的条数
+                    //首次不执行
+                    if (!first) {
+                        //do something
+                    }
+                }
+            });
+        });
+    });
 </script>
 </body>
 </html>

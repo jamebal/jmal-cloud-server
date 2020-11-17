@@ -1,0 +1,60 @@
+.article-header {
+    height: 70vh;
+    min-height: 12.5px;
+    position: relative;
+    display: table;
+    text-align: center;
+    overflow: hidden;
+    color: #fff;
+    background-color: #2e2e2e;
+    width: calc(100% - -0.0625rem);
+    -webkit-transition: 1s ease background-color;
+    transition: 1s ease background-color;
+}
+.article-header .article-background {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    left: 0;
+    top: 0;
+    overflow: hidden;
+    opacity: 1;
+    -webkit-transition: 1s ease opacity;
+    transition: 1s ease opacity;
+}
+.inner {
+    display: table-cell;
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    left: -1px;
+    vertical-align: middle;
+    max-width: 710px;
+    margin: 0 auto;
+}
+.blog-title {
+    font-size: 2.5rem;
+    line-height: 1.5;
+    margin-bottom: .75rem;
+}
+.typed-cursor {
+    animation: typed 0.7s infinite;
+    -webkit-animation: typed 0.7s infinite;
+}
+
+@media not all, screen and (-webkit-min-device-pixel-ratio: 1.5), not all, not all {
+    .blog-description.font-mono {
+        font-family: Consolas,Menlo,Monaco,"lucida console","Liberation Mono","Courier New","andale mono",monospaceX,monospace,sans-serif;
+        font-size: 1rem;
+    }
+}
+
+@keyframes typed {
+    50% {
+        opacity: 0.0;
+    }
+}

@@ -45,9 +45,9 @@ public class UserSettingDTO {
          */
         String title;
         /***
-         * 按钮图标
+         * 按钮图标class
          */
-        String fontHtml;
+        String style;
         /***
          * 点击按钮后跳转的地址
          */
