@@ -102,5 +102,6 @@ public class UploadApiParamDTO {
 
     Boolean isFavorite;
     String cover;
+    String slug;
     String[] categoryIds;
 }

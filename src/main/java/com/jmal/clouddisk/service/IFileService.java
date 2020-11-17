@@ -221,6 +221,13 @@ public interface IFileService {
     ResponseResult<Object> getMarkDownContent(String mark, Integer pageIndex, Integer pageSize);
 
     /***
+     * 根据缩略名获取markdown内容
+     * @param slug
+     * @return
+     */
+    FileDocument getMarkDownContentBySlug(String slug);
+
+    /***
      * 编辑文档
      * @param upload
      * @return

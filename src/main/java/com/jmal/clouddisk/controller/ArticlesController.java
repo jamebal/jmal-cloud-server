@@ -10,6 +10,7 @@ import org.springframework.ui.ModelMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
@@ -46,6 +47,12 @@ public class ArticlesController {
         map.addAttribute("setting", userSettingDTO);
         map.addAttribute("articlesData", fileService.getMarkDownContent(null, pageIndex, pageSize));
         return "index";
+    }
+
+    @GetMapping("/articles/{slug}")
+    public String index(HttpServletRequest request, @PathVariable String slug, ModelMap map){
+        map.addAttribute("markdown", fileService.getMarkDownContentBySlug(slug));
+        return "article";
     }
 
     private void setOperatingButtonList(UserSettingDTO userSettingDTO) {

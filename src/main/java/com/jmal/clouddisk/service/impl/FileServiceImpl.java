@@ -671,6 +671,21 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
+    @Override
+    public FileDocument getMarkDownContentBySlug(String slug) {
+        FileDocument fileDocument = null;
+        if(StringUtils.isEmpty(slug)){
+            return fileDocument;
+        }
+        Query query = new Query();
+        query.addCriteria(Criteria.where("slug").is(slug));
+        fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+        if(fileDocument == null){
+            fileDocument = mongoTemplate.findById(slug, FileDocument.class, COLLECTION_NAME);
+        }
+        return fileDocument;
+    }
+
     /***
      * 文档列表
      * @param skip
@@ -744,11 +759,21 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setRelease(true);
         fileDocument.setName(filename);
         fileDocument.setCover(upload.getCover());
+        fileDocument.setSlug(getSlug(upload.getSlug()));
         fileDocument.setCategoryIds(upload.getCategoryIds());
         fileDocument.setIsFolder(false);
         Update update = MongoUtil.getUpsert(fileDocument);
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
         return ResultUtil.success();
+    }
+
+    private String getSlug(String slug){
+        Query query = new Query();
+        query.addCriteria(Criteria.where("slug").is(slug));
+        if(mongoTemplate.exists(query, COLLECTION_NAME)){
+            return slug+"-1";
+        }
+        return slug;
     }
 
     @Override
