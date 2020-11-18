@@ -32,6 +32,7 @@ public class MarkdownVO extends FileBase {
      * 封面
      */
     private String cover;
+    private String slug;
     /***
      * 用户头像
      */

@@ -1,7 +1,9 @@
 package com.jmal.clouddisk.service;
 
+import cn.hutool.db.PageResult;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.Page;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.UploadImageDTO;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -219,6 +221,14 @@ public interface IFileService {
      * @return
      */
     ResponseResult<Object> getMarkDownContent(String mark, Integer pageIndex, Integer pageSize);
+
+    /***
+     * 获取文章列表
+     * @param page
+     * @param pageSize
+     * @return Page
+     */
+    Page<Object> getArticles(Integer page, Integer pageSize);
 
     /***
      * 根据缩略名获取markdown内容

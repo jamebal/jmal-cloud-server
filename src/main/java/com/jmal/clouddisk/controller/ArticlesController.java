@@ -1,6 +1,9 @@
 package com.jmal.clouddisk.controller;
 
+import cn.hutool.core.util.PageUtil;
 import cn.hutool.core.util.ReUtil;
+import cn.hutool.db.Page;
+import cn.hutool.db.PageResult;
 import com.jmal.clouddisk.model.UserSettingDTO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.impl.SettingService;
@@ -33,19 +36,15 @@ public class ArticlesController {
 
     @GetMapping("/articles")
     public String index(HttpServletRequest request, ModelMap map){
-        int pageIndex = 1, pageSize = 10;
-        String pIndex = request.getParameter("pageIndex");
-        String pSize = request.getParameter("pageSize");
+        int page = 1, pageSize = 10;
+        String pIndex = request.getParameter("page");
         if(!StringUtils.isEmpty(pIndex)){
-            pageIndex = Integer.parseInt(pIndex);
-        }
-        if(!StringUtils.isEmpty(pSize)){
-            pageSize = Integer.parseInt(pSize);
+            page = Integer.parseInt(pIndex);
         }
         UserSettingDTO userSettingDTO = settingService.getWebsiteSetting();
         setOperatingButtonList(userSettingDTO);
         map.addAttribute("setting", userSettingDTO);
-        map.addAttribute("articlesData", fileService.getMarkDownContent(null, pageIndex, pageSize));
+        map.addAttribute("articlesData", fileService.getArticles(page, pageSize));
         return "index";
     }
 

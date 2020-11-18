@@ -132,6 +132,24 @@
     transform: translateY(-100%);
 }
 
+.gradient-bg-rev {
+    background: #b2fefa !important;
+    background: -webkit-gradient(linear, left top, right top, from(#0052d4), color-stop(#0ed2f7), to(#b2fefa)) !important;
+    background: linear-gradient(to right, #0052d4, #0ed2f7, #b2fefa) !important;
+}
+
+.scrollbar {
+    margin-top: .75rem;
+    margin-left: -1rem;
+    position: fixed;
+    height: 3px;
+    width: 10px;
+    background-color: #50bcb6;
+    -webkit-transition: width 0.5s ease;
+    transition: width 0.5s ease;
+    z-index: 11;
+}
+
 @media (min-width: 576px) {
 
 }

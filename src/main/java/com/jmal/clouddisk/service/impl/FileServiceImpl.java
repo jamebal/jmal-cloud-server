@@ -1,9 +1,13 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.codec.Base64;
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.PageUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
+import cn.hutool.db.PageResult;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.google.common.collect.Maps;
@@ -648,13 +652,8 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public ResponseResult<Object> getMarkDownContent(String mark, Integer pageIndex, Integer pageSize) throws CommonException {
-        int skip = 0, limit = 5;
-        if(pageIndex != null && pageSize != null){
-            skip = (pageIndex - 1) * pageSize;
-            limit = pageSize;
-        }
         if (StringUtils.isEmpty(mark)) {
-            return getMarkdownList(skip, limit);
+            return getMarkdownList(pageIndex, pageSize);
         } else {
             FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, COLLECTION_NAME);
             if (fileDocument != null) {
@@ -669,6 +668,18 @@ public class FileServiceImpl implements IFileService {
             }
             return ResultUtil.success(fileDocument);
         }
+    }
+
+    @Override
+    public Page<Object> getArticles(Integer page, Integer pageSize) {
+        ResponseResult<Object> responseResult = getMarkdownList(page, pageSize);
+        Page<Object> pageResult = new Page<Object>(page - 1, pageSize, Convert.toInt(responseResult.getCount()));
+        pageResult.setData(responseResult.getData());
+        return pageResult;
+    }
+
+    public static void main(String[] args) {
+        Console.log(PageUtil.rainbow(4,200,5));
     }
 
     @Override
@@ -696,7 +707,12 @@ public class FileServiceImpl implements IFileService {
      * @param limit
      * @return
      */
-    private ResponseResult<Object> getMarkdownList(int skip, int limit) {
+    private ResponseResult<Object> getMarkdownList(Integer pageIndex, Integer pageSize) {
+        int skip = 0, limit = 5;
+        if(pageIndex != null && pageSize != null){
+            skip = (pageIndex - 1) * pageSize;
+            limit = pageSize;
+        }
         Query query = new Query();
         query.addCriteria(Criteria.where("release").is(true));
         query.addCriteria(Criteria.where("suffix").is("md"));

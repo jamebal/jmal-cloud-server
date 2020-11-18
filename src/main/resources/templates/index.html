@@ -56,12 +56,12 @@
         <div class="body-wrapper articles_l_main">
             <el-main class="l_main">
                 <section class="post-list">
-                    <div th:each="article : ${articlesData.data}" class="post-wrapper">
+                    <div th:each="article : ${articlesData.getData()}" class="post-wrapper">
                         <article  class="post white-box shadow reveal">
                             <section class="meta">
                                 <div class="meta" id="header-meta">
                                     <h2 class="title">
-                                        <a th:href="'/articles/'+${article.id}" th:text="${article.name}"></a>
+                                        <a th:href="'/articles/'+${article.slug == null ? article.id:article.slug}" th:text="${article.name}"></a>
                                     </h2>
                                     <div class="new-meta-box">
                                         <div class="new-meta-item author">
@@ -92,7 +92,26 @@
                         </article>
                     </div>
                 </section>
-                <div id="laypage"></div>
+                <div id="laypage">
+                    <div class="layui-box layui-laypage layui-laypage-default" id="layui-laypage-1">
+                        <a th:href="'/articles?page=' + ${articlesData.getCurrentPage()-1}" th:class="'layui-laypage-prev'+ ${articlesData.isFirst()?' layui-disabled':''}" >上一页</a>
+                        <i th:if="${articlesData.getCurrentPage() >= 5}">
+                            <a href="/articles" class="layui-laypage-first" title="首页">1</a>
+                            <span class="layui-laypage-spr">…</span>
+                        </i>
+                        <i th:each="page : ${articlesData.rainbow()}">
+                            <span th:if="${articlesData.getCurrentPage() == page}" class="layui-laypage-curr">
+                                <em class="layui-laypage-em" style="background-color:#409EFF;"></em><em th:text="${page}"></em>
+                            </span>
+                            <a th:if="${articlesData.getCurrentPage() != page}" th:href="'/articles?page=' + ${page}" class="layui-laypage-prev" th:text="${page}"></a>
+                        </i>
+                        <i th:if="${articlesData.getTotalPage()-articlesData.getCurrentPage() >= 4}">
+                            <span class="layui-laypage-spr">…</span>
+                            <a th:href="'/articles?page=' + ${articlesData.getTotalPage()}" class="layui-laypage-last" title="尾页" th:text="${articlesData.getTotalPage()}"></a>
+                        </i>
+                        <a th:href="'/articles?page=' + ${articlesData.getCurrentPage()+1}" th:class="'layui-laypage-next'+ ${articlesData.isLast()?' layui-disabled':''}">下一页</a>
+                    </div>
+                </div>
             </el-main>
         </div>
     </div>
@@ -126,30 +145,55 @@
         }
         showBackTop()
 
+        function fn (direction) {
+            // 判断是上滑显示,下滑隐藏
+            const top = $('#top')
+            const toogleNav = $('#toggle-nav')
+
+            const body = document.getElementById("body")
+
+            if(direction === 'down'){
+                top.removeClass('animateIn')
+                top.addClass('animateOut')
+                toogleNav.removeClass('animateRight')
+                toogleNav.addClass('animateLeft')
+                if(body.style.transform.length > 0) {
+                    document.getElementById("sidebar-nav").style.transform = ''
+                    body.style.transform = ''
+                    document.getElementById("toggle-nav").style.transform = ''
+                }
+            }
+            if(direction === 'up'){
+                top.removeClass('animateOut')
+                top.addClass('animateIn')
+                toogleNav.removeClass('animateLeft')
+                toogleNav.addClass('animateRight')
+            }
+        }
+
+        let beforeScrollTop = document.documentElement.scrollTop;
         $(window).on("scroll",function (event) {
             showBackTop()
-        })
-
-        layui.use('laypage', function(){
-            let laypage = layui.laypage;
-            //执行一个laypage实例
-            laypage.render({
-                elem: 'laypage',
-                count: [[${articlesData.count}]],
-                limit: 10,
-                curr: location.hash.replace('#!page=', ''),
-                hash: 'page',
-                jump: function(obj, first) {
-                    //obj包含了当前分页的所有参数，比如：
-                    console.log(obj.curr); //得到当前页，以便向服务端请求对应页的数据。
-                    console.log(obj.limit); //得到每页显示的条数
-                    //首次不执行
-                    if (!first) {
-                        //do something
-                    }
+            // 判断是上滑还是下滑
+            let afterScrollTop = document.documentElement.scrollTop
+            let delta = afterScrollTop - beforeScrollTop
+            beforeScrollTop = afterScrollTop
+            let scrollTop = $(this).scrollTop()
+            let scrollHeight = $(document).height()
+            let windowHeight = $(this).height()
+            if (scrollTop + windowHeight > scrollHeight - 10) {  //滚动到底部执行事件
+                fn('bottom')
+                return
+            }
+            if (afterScrollTop < 10 || afterScrollTop > $(document.body).height - 10) {
+                fn('up')
+            } else {
+                if (Math.abs(delta) < 10) {
+                    return false
                 }
-            });
-        });
+                fn(delta > 0 ? "down" : "up")
+            }
+        })
     });
 </script>
 </body>
