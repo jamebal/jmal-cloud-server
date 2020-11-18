@@ -83,7 +83,7 @@
                                 </div>
                             </section>
                             <section class="article typo">
-                                <a th:href="'/articles/'+${article.id}">
+                                <a th:href="'/articles/'+${article.slug == null ? article.id:article.slug}">
                                     <div class="article-entry" itemprop="articleBody">
                                         <p><img th:if="${article.cover != null}" class="blog-background articles-list" th:src="${article.cover}" onerror="this.src='https://images.unsplash.com/photo-1582230587856-7fec01506148?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=60'"/></p>
                                     </div>
