@@ -4,6 +4,9 @@
     margin-top: -80px;
     z-index: 10;
     overflow: auto;
+    min-width: 768px;
+    margin-left: auto;
+    margin-right: auto;
 }
 .body-wrapper {
     position: relative;
@@ -11,7 +14,7 @@
     display: -ms-flexbox;
     display: flex;
     width: 100%;
-    max-width: 1080px;
+    max-width: 1320px;
     margin: 0 auto;
     -ms-flex-wrap: wrap;
     flex-wrap: wrap;
@@ -312,9 +315,10 @@
 }
 .slimScrollDiv>.right-menu>div {
     display: block;
+    border-top: 1px dashed #cccccc;
     border-bottom: 1px dashed #cccccc;
 }
-.slimScrollDiv>.right-menu>.toc-content {
+.toc-content {
     position: -webkit-sticky;
     position: sticky;
     top: 0;
@@ -325,12 +329,12 @@
     backdrop-filter: saturate(360%) blur(8px);
     background-color: rgba(255,255,255,0.72);
 }
-.slimScrollDiv>.right-menu>.toc-content>.toc-header {
+.toc-content>.toc-header {
     padding: calc(11px - 2px);
     color: #2196f3;
     font-size: 1rem;
 }
-.slimScrollDiv>.right-menu>.toc-content>.toc-header span {
+.toc-content>.toc-header span {
     margin-left: 10px;
 }
 .slimScrollDiv>.right-menu.right-menu>div.titleList {
@@ -345,33 +349,32 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
-    padding-left: 20px;
     position: relative;
     -webkit-transition: all 0.2s;
     transition: all 0.2s;
 }
 .h-1 {
-    padding-left: 10px;
+    padding-left: 15px;
     font-size: 1.125rem;
 }
 .h-2 {
-    padding-left: 20px;
+    padding-left: 30px;
     font-size: 1.1rem;
 }
 .h-3 {
-    padding-left: 30px;
+    padding-left: 45px;
     font-size: 1rem;
 }
 .h-4 {
-    padding-left: 40px;
+    padding-left: 65px;
     font-size: 0.925rem;
 }
 .h-5 {
-    padding-left: 50px;
+    padding-left: 80px;
     font-size: 0.875rem;
 }
 .h-6 {
-    padding-left: 60px;
+    padding-left: 95px;
     font-size: .85em;
     color: #6a737d;
 }
@@ -386,6 +389,8 @@
     color: #333;
 }
 .right-menu>div.titleList .j-bj {
+    border-left: 0.15rem solid;
+    border-color: #0052d4;
     background: -webkit-gradient(linear, left top, right top, from(#5d9eea), to(#afcafd));
     background: linear-gradient(to right, #5d9eea, #afcafd);
     position: absolute;
@@ -499,10 +504,11 @@
     .right-bj {
         width: 240px;
     }
-
     .slimScrollDiv {
         width: 240px;
-
+    }
+    .body-wrapper {
+        max-width: 1080px;
     }
 }
 @media only screen and (min-width: 1440px){
@@ -519,5 +525,9 @@
     }
 }
 
-
+@media only screen and (max-width: 1680px){
+    .body-wrapper {
+        max-width: 1200px;
+    }
+}
 

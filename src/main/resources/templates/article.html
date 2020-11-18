@@ -59,20 +59,22 @@
     </div>
     <div class="body-wrapper">
         <el-main id="main_body" class="l_main article_l_main">
-            <div id="preview" class="article-body"></div>
+            <div class="source" style="display:none;" th:utext="${markdown.contentText}"></div>
+            <div id="preview" class="article-body">
+            </div>
         </el-main>
         <div class="right-bj" style="display: none">
             <div id="toc-affix">
                 <div class="slimScrollDiv">
+                    <div class="toc-content">
+                        <header class="toc-header">
+                            <svg class="icon" aria-hidden="true">
+                                <use xlink:href="#icon-service-directory"></use>
+                            </svg>
+                            <span>目录</span>
+                        </header>
+                    </div>
                     <div class="right-menu">
-                        <div class="toc-content">
-                            <header class="toc-header">
-                                <svg class="icon" aria-hidden="true">
-                                    <use xlink:href="#icon-service-directory"></use>
-                                </svg>
-                                <span>目录</span>
-                            </header>
-                        </div>
                         <div class="j-titleList titleList">
                             <div class="j-bj" style="height: 30px; top: 0;"></div>
                         </div>
@@ -99,11 +101,9 @@
     $(function(){
         // 目录
         let contents = []
-
-        const markdown = [[${markdown}]]
-        const filename = markdown.name
+        const filename = [[${markdown.name}]]
         let divTyping = document.getElementById('article-title')
-        let i = 0,timer = 0,str = filename.substring(0,filename.length - markdown.suffix.length-1)
+        let i = 0,timer = 0,str = filename.substring(0,filename.length - [[${markdown.suffix}]].length-1)
         function typing () {
             if (i <= str.length) {
                 divTyping.innerHTML = str.slice(0, i++)
@@ -115,7 +115,7 @@
         }
         typing()
         Vditor.preview(document.getElementById('preview'),
-            markdown.contentText, {
+            [[${markdown.contentText}]], {
                 speech: {
                     enable: true,
                 },
@@ -236,14 +236,15 @@
             }
         }
         showBackTop()
-
+        let tocMaxHeight = 0
         // 设置目录的最大高度
-        function setOctMaxHeight(){
-            document.body.querySelector('.right-bj .slimScrollDiv>.right-menu').style.maxHeight = document.documentElement.clientHeight - 70 + 'px'
+        function setTocMaxHeight(){
+            tocMaxHeight = document.documentElement.clientHeight - 120
+            document.body.querySelector('.right-bj .slimScrollDiv>.right-menu').style.maxHeight = tocMaxHeight + 'px'
         }
-        setOctMaxHeight()
+        setTocMaxHeight()
         $(window).on("resize", function (){
-            setOctMaxHeight()
+            setTocMaxHeight()
         })
 
         let beforeScrollTop = document.documentElement.scrollTop;
@@ -286,7 +287,14 @@
                 for (let i = 0; i < contents.length; i++) {
                     if ($(window).scrollTop() > $('#' + contents[i]).offset().top - 100 || $(this).scrollTop() + $(this).height() == $(document).height()) {
                         $('.j-titleList').find('li').eq(i).addClass('active').siblings('li').removeClass('active');
-                        $('.j-bj').css('top', i * 34)
+                        const tocAction = $('.j-bj')
+                        tocAction.css('top', i * 34)
+                        console.log(tocAction.offset().top - $(window).scrollTop())
+                        if(tocAction.offset().top - $(window).scrollTop() > (tocMaxHeight/2)){
+                            $('.slimScrollDiv').animate({
+                                scrollTop: tocAction.offset().top - $(window).scrollTop() - 350
+                            }, 0)
+                        }
                     }
                 }
                 if(scrollAfterTimer != null){

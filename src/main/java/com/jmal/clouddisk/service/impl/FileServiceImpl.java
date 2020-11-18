@@ -7,7 +7,6 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.PageUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
-import cn.hutool.db.PageResult;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.google.common.collect.Maps;
@@ -270,7 +269,7 @@ public class FileServiceImpl implements IFileService {
     @Override
     public ResponseResult<Object> searchFile(UploadApiParamDTO upload, String keyword) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
-        Criteria criteria1 = Criteria.where("name").regex(keyword,"i");
+        Criteria criteria1 = Criteria.where("name").regex(keyword, "i");
         Query query = new Query();
         return getCountResponseResult(upload, result, criteria1);
     }
@@ -358,9 +357,9 @@ public class FileServiceImpl implements IFileService {
      * @param username
      * @param path
      */
-    private void loopCreateDir(String username, int rootPathCount, Path path){
+    private void loopCreateDir(String username, int rootPathCount, Path path) {
         createFile(username, path.toFile());
-        if(path.getNameCount() > rootPathCount + 1){
+        if (path.getNameCount() > rootPathCount + 1) {
             loopCreateDir(username, rootPathCount, path.getParent());
         }
     }
@@ -496,7 +495,7 @@ public class FileServiceImpl implements IFileService {
 
     private void packageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList, String username) {
         FileDocument fileDocument = getFileInfoBeforeDownload(fileIdList, username);
-        if(StringUtils.isEmpty(username)){
+        if (StringUtils.isEmpty(username)) {
             username = fileDocument.getUsername();
         }
         //响应头的设置
@@ -536,7 +535,7 @@ public class FileServiceImpl implements IFileService {
      * @return
      * @throws UnsupportedEncodingException
      */
-    private String setDownloadName(HttpServletRequest request, HttpServletResponse response, String downloadName){
+    private String setDownloadName(HttpServletRequest request, HttpServletResponse response, String downloadName) {
         try {
             //获取浏览器名（IE/Chrome/firefox）目前主流的四大浏览器内核Trident(IE)、Gecko(Firefox内核)、WebKit(Safari内核,Chrome内核原型,开源)以及Presto(Opera前内核) (已废弃)
             String gecko = "Gecko", webKit = "WebKit";
@@ -563,7 +562,7 @@ public class FileServiceImpl implements IFileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds.get(0)));
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
-        if(StringUtils.isEmpty(username)){
+        if (StringUtils.isEmpty(username)) {
             fileDocument.setUsername(userService.getUserNameById(fileDocument.getUserId()));
         }
         int size = fileIds.size();
@@ -659,12 +658,10 @@ public class FileServiceImpl implements IFileService {
             if (fileDocument != null) {
                 String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
                 fileDocument.setUsername(username);
-                if(StringUtils.isEmpty(fileDocument.getContentText())){
-                    String currentDirectory = getUserDirectory(fileDocument.getPath());
-                    File file = new File(fileProperties.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
-                    String content = FileUtil.readString(file, StandardCharsets.UTF_8);
-                    fileDocument.setContentText(content);
-                }
+                String currentDirectory = getUserDirectory(fileDocument.getPath());
+                File file = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName()).toFile();
+                String content = FileUtil.readString(file, StandardCharsets.UTF_8);
+                fileDocument.setContentText(content);
             }
             return ResultUtil.success(fileDocument);
         }
@@ -679,22 +676,22 @@ public class FileServiceImpl implements IFileService {
     }
 
     public static void main(String[] args) {
-        Console.log(PageUtil.rainbow(4,200,5));
+        Console.log(PageUtil.rainbow(4, 200, 5));
     }
 
     @Override
     public FileDocument getMarkDownContentBySlug(String slug) {
         FileDocument fileDocument = null;
-        if(StringUtils.isEmpty(slug)){
+        if (StringUtils.isEmpty(slug)) {
             return fileDocument;
         }
         Query query = new Query();
         query.addCriteria(Criteria.where("slug").is(slug));
         fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
-        if(fileDocument == null){
+        if (fileDocument == null) {
             fileDocument = mongoTemplate.findById(slug, FileDocument.class, COLLECTION_NAME);
         }
-        if(fileDocument != null){
+        if (fileDocument != null) {
             String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
             fileDocument.setUsername(username);
         }
@@ -709,7 +706,7 @@ public class FileServiceImpl implements IFileService {
      */
     private ResponseResult<Object> getMarkdownList(Integer pageIndex, Integer pageSize) {
         int skip = 0, limit = 5;
-        if(pageIndex != null && pageSize != null){
+        if (pageIndex != null && pageSize != null) {
             skip = (pageIndex - 1) * pageSize;
             limit = pageSize;
         }
@@ -717,7 +714,7 @@ public class FileServiceImpl implements IFileService {
         query.addCriteria(Criteria.where("release").is(true));
         query.addCriteria(Criteria.where("suffix").is("md"));
         query.with(new Sort(Sort.Direction.DESC, "uploadDate"));
-        long count = mongoTemplate.count(query,COLLECTION_NAME);
+        long count = mongoTemplate.count(query, COLLECTION_NAME);
         query.skip(skip);
         query.limit(limit);
         List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
@@ -740,7 +737,7 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setAvatar(avatar);
         MarkdownVO markdownVO = new MarkdownVO();
         CglibUtil.copy(fileDocument, markdownVO);
-        if(fileDocument.getCategoryIds() != null){
+        if (fileDocument.getCategoryIds() != null) {
             List<Category> categories = categoryService.getCategoryListByIds(fileDocument.getCategoryIds());
             markdownVO.setCategories(categories);
         }
@@ -752,7 +749,7 @@ public class FileServiceImpl implements IFileService {
         FileDocument fileDocument = new FileDocument();
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
         Query query = new Query();
-        if(upload.getFileId() != null){
+        if (upload.getFileId() != null) {
             // 修改
             query.addCriteria(Criteria.where("_id").is(upload.getFileId()));
             fileDocument = mongoTemplate.findById(upload.getFileId(), FileDocument.class, COLLECTION_NAME);
@@ -766,7 +763,7 @@ public class FileServiceImpl implements IFileService {
         String filename = upload.getFilename();
         //用户磁盘目录
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
-        File file = Paths.get(fileProperties.getRootDir(), upload.getUsername(), currentDirectory , filename).toFile();
+        File file = Paths.get(fileProperties.getRootDir(), upload.getUsername(), currentDirectory, filename).toFile();
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
         fileDocument.setSuffix(FileUtil.extName(filename));
         fileDocument.setUserId(upload.getUserId());
@@ -779,7 +776,7 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setRelease(true);
         fileDocument.setName(filename);
         fileDocument.setCover(upload.getCover());
-        fileDocument.setSlug(getSlug(upload.getSlug()));
+        fileDocument.setSlug(getSlug(upload));
         fileDocument.setCategoryIds(upload.getCategoryIds());
         fileDocument.setIsFolder(false);
         Update update = MongoUtil.getUpsert(fileDocument);
@@ -787,11 +784,16 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success();
     }
 
-    private String getSlug(String slug){
+    private String getSlug(UploadApiParamDTO upload) {
         Query query = new Query();
+        String slug = upload.getSlug();
+        String fileId = upload.getFileId();
+        if (fileId != null) {
+            query.addCriteria(Criteria.where("_id").nin(fileId));
+        }
         query.addCriteria(Criteria.where("slug").is(slug));
-        if(mongoTemplate.exists(query, COLLECTION_NAME)){
-            return slug+"-1";
+        if (mongoTemplate.exists(query, COLLECTION_NAME)) {
+            return slug + "-1";
         }
         return slug;
     }
@@ -811,7 +813,7 @@ public class FileServiceImpl implements IFileService {
     public ResponseResult<Object> uploadMarkdownImage(UploadImageDTO upload) throws CommonException {
         List<Map<String, String>> list = new ArrayList<>();
         MultipartFile[] multipartFiles = upload.getFiles();
-        if(multipartFiles != null){
+        if (multipartFiles != null) {
             for (MultipartFile multipartFile : multipartFiles) {
                 list.add(uploadImage(upload, multipartFile));
             }
@@ -1200,14 +1202,14 @@ public class FileServiceImpl implements IFileService {
         FileDocument fileDocument = getById(fileId);
         String username = userService.getUserNameById(fileDocument.getUserId());
         String relativepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(fileDocument.getPath() + fileDocument.getName(), StandardCharsets.UTF_8);
-        return "redirect:/file/"+ username + relativepath + "?o=" + operation;
+        return "redirect:/file/" + username + relativepath + "?o=" + operation;
     }
 
     @Override
     public String publicViewFile(String relativePath, String userId) {
         String username = userService.getUserNameById(userId);
         String userDirectory = getUserFilePath(aes.decryptStr(relativePath));
-        return "redirect:/file/"+ username + userDirectory;
+        return "redirect:/file/" + username + userDirectory;
     }
 
     /***
