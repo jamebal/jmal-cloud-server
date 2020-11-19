@@ -1,10 +1,13 @@
-
+#body {
+    overflow: hidden;
+    -webkit-transition: 0.5s ease all;
+    transition: 0.5s ease all;
+}
 .article_l_main {
     padding: 0 16px 16px;
     margin-top: -80px;
     z-index: 10;
     overflow: auto;
-    min-width: 768px;
     margin-left: auto;
     margin-right: auto;
 }
@@ -30,27 +33,30 @@
     margin-top: -8rem;
     width: fit-content;
     z-index: 10;
+    margin-left: auto;
+    margin-right: auto;
 }
 .l_body {
     position: relative;
     margin: 16px 16px 0 16px;
     min-height: calc(100vh - 70vh);
+    z-index: 11;
 }
-.l_main .post-list {
+.post-list {
     position: relative;
     margin: 16px auto;
     -webkit-column-gap: 16px;
     -moz-column-gap: 16px;
     column-gap: 16px;
 }
-.l_main .post-wrapper {
+.post-wrapper {
     margin-bottom: 16px;
 }
-.l_main .post-wrapper {
+.post-wrapper {
     -webkit-column-break-inside: avoid;
     break-inside: avoid-column;
 }
-.l_main .post {
+.post {
     position: relative;
     margin: 16px auto;
     padding: 24px;
@@ -71,40 +77,39 @@
     -webkit-box-shadow: 1px 1px 7px 7px rgba(0,0,0,0.1);
     box-shadow: 1px 1px 7px 7px rgba(0,0,0,0.1);
 }
-.l_main .post-wrapper .post .meta {
+.post-wrapper .post .meta {
     margin-bottom: 16px;
 }
-.l_main .post .meta {
+.post .meta {
     color: rgba(68,68,68,0.65);
 }
-.l_main .post .meta#header-meta {
+.post .meta#header-meta {
     margin-top: 0;
     margin-bottom: 16px;
 }
-.l_main .post-wrapper .post .meta .title {
+.post-wrapper .post .meta .title {
     font-size: 1.375rem;
 }
-.l_main .post .meta .title {
+.post .meta .title {
     transition: all .1s ease;
     -moz-transition: all .1s ease;
     -webkit-transition: all .1s ease;
     -o-transition: all .1s ease;
     margin: 0;
 }
-.l_main .post-wrapper .post .meta .title a {
+.post-wrapper .post .meta .title a {
     font-size: 1.375rem;
 }
-.l_main .post .meta .title a {
+.post .meta .title a {
     display: inline;
     font-weight: 400;
     color: #444;
     text-decoration: none;
 }
-.l_main .post .meta .new-meta-box, .l_main .post .meta .new-meta-box i, .l_main .post .meta .new-meta-box p {
+.post .meta .new-meta-box, .post .meta .new-meta-box i, .post .meta .new-meta-box p {
     font-size: .875rem;
 }
-.l_main .post .meta .new-meta-box {
-    width: 700px;
+.post .meta .new-meta-box {
     transition: all .1s ease;
     -moz-transition: all .1s ease;
     -webkit-transition: all .1s ease;
@@ -120,7 +125,7 @@
     -ms-flex-wrap: wrap;
     flex-wrap: wrap;
 }
-.l_main .post .meta .new-meta-box .new-meta-item {
+.post .meta .new-meta-box .new-meta-item {
     color: rgba(68,68,68,0.65);
     line-height: 1.2;
     display: -webkit-box;
@@ -136,7 +141,7 @@
     margin: 0 8px 0 0;
     border-radius: 4px;
 }
-.l_main .post .meta .new-meta-box .new-meta-item a {
+.post .meta .new-meta-box .new-meta-item a {
     display: -webkit-box;
     display: -ms-flexbox;
     display: flex;
@@ -147,22 +152,22 @@
     -ms-flex-align: center;
     align-items: center;
 }
-.l_main .post .meta .new-meta-box .new-meta-item a, .l_main .post .meta .new-meta-box .new-meta-item p {
+.post .meta .new-meta-box .new-meta-item a, .post .meta .new-meta-box .new-meta-item p {
     color: rgba(68,68,68,0.65);
     padding-left: 0;
     padding-right: 4px;
 }
-.l_main .post .meta .new-meta-box .new-meta-item a img {
+.post .meta .new-meta-box .new-meta-item a img {
     height: 1.2em;
     width: 1.2em;
     margin-right: 5px;
     -webkit-transform: translateY(-1px);
     transform: translateY(-1px);
 }
-.l_main .post .meta .new-meta-box .author i, .l_main .post .meta .new-meta-box .author img {
+.post .meta .new-meta-box .author i, .post .meta .new-meta-box .author img {
     border-radius: 100%;
 }
-.l_main .post .meta .new-meta-box .new-meta-item a p {
+.post .meta .new-meta-box .new-meta-item a p {
     margin: 0;
     padding-top: 2px;
     font-weight: 400;
@@ -171,12 +176,12 @@
     -webkit-transition: all .28s ease;
     -o-transition: all .28s ease;
 }
-.l_main .post .meta .new-meta-box .new-meta-item a, .l_main .post .meta .new-meta-box .new-meta-item p {
+.post .meta .new-meta-box .new-meta-item a, .post .meta .new-meta-box .new-meta-item p {
     color: rgba(68,68,68,0.65);
     padding-left: 0;
     padding-right: 4px;
 }
-.l_main .post .meta .new-meta-box .new-meta-item .notlink {
+.post .meta .new-meta-box .new-meta-item .notlink {
     cursor: default;
 }
 .article p {
@@ -186,7 +191,7 @@
     max-width: 100%;
     overflow: auto;
 }
-.l_main .post a img {
+.post a img {
     display: inline;
 }
 .article div>img, .article p>img {
@@ -219,10 +224,9 @@
 }
 
 .back-top {
-    right: 40px;
-    bottom: 40px;
+    right: 1rem;
+    bottom: 1rem;
     position: fixed;
-    background-color: #FFF;
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -244,6 +248,11 @@
     -o-transition: all .5s ease;
     cursor: pointer;
     z-index: 105;
+    backdrop-filter: saturate(180%) blur(0px);
+    background-color: #ffffff5c;
+}
+.back-top:hover {
+    transform: scale(1.3);
 }
 
 .article-body {
@@ -402,40 +411,54 @@
     -webkit-transition: all 0.2s;
     transition: all 0.2s;
 }
-@media screen and (max-width: 425px){
-    .article_l_main {
-        padding: 70px 0 16px 0;
-    }
-}
 
 @media screen and (max-width:768px) {
-    .article_l_main {
+    .article_l_main,.articles_l_main {
         width: 100%;
         padding-left: 0;
         padding-right: 0;
     }
-    .articles-list {
-        max-height: 15rem;
+    .l_body {
+        margin: 0;
+        padding: 0 16px;
     }
-    .l_main .post .meta {
+    .articles-list {
+        max-height: 10rem;
+    }
+    .shadow {
+        -webkit-box-shadow: 0 0 3px 1px rgba(0,0,0,0.1);
+        box-shadow: 0 0 3px 1px rgba(0,0,0,0.1);
+    }
+    .post .meta {
         margin-bottom: 16px
     }
 
-    .l_main .post .meta .title {
+    .post .meta .title {
         font-size: 1.25rem
+    }
+    .toc-content {
+        backdrop-filter: unset;
+        background-color: unset;
     }
     .slimScrollDiv {
         position: fixed;
-        max-height: 1000px;
-        width: calc(100% - 2 * 16px);
-        top: 64px;
-        -webkit-box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1), 0 4px 8px 0 rgba(0, 0, 0, 0.1), 0 8px 16px 0 rgba(0, 0, 0, 0.1);
-        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1), 0 4px 8px 0 rgba(0, 0, 0, 0.1), 0 8px 16px 0 rgba(0, 0, 0, 0.1);
-        visibility: hidden;
-        -webkit-transform: scale(0, 0);
-        transform: scale(0, 0);
-        -webkit-transform-origin: right top;
-        transform-origin: right top;
+        z-index: 30;
+        top: -60px;
+        right: 0;
+        transform: translateX(20px);
+        backdrop-filter: saturate(180%) blur(10px);
+        background: #ffffff69;
+        /*position: fixed;*/
+        /*max-height: 1000px;*/
+        /*width: calc(100% - 2 * 16px);*/
+        /*top: 64px;*/
+        /*-webkit-box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1), 0 4px 8px 0 rgba(0, 0, 0, 0.1), 0 8px 16px 0 rgba(0, 0, 0, 0.1);*/
+        /*box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1), 0 4px 8px 0 rgba(0, 0, 0, 0.1), 0 8px 16px 0 rgba(0, 0, 0, 0.1);*/
+        /*visibility: hidden;*/
+        /*-webkit-transform: scale(0, 0);*/
+        /*transform: scale(0, 0);*/
+        /*-webkit-transform-origin: right top;*/
+        /*transform-origin: right top;*/
     }
     .right-bj. {
         width: 240px;
@@ -443,23 +466,33 @@
 }
 
 @media screen and (max-width:768px) and (max-width:500px) {
-    .article_l_main {
-        width: 100%
-    }
-}
-
-@media screen and (max-width:768px) and (max-width:500px) {
-    .l_main .post {
+    .post {
         padding: 24px 16px
     }
 }
 
-@media screen and (min-width: 768px){
+@media (min-width: 768px){
     .slimScrollDiv {
         width: 240px;
     }
     .article_l_main[content=show] {
         width: calc(100% - 1 * 240px);
+        min-width: 500px;
+    }
+    .body-wrapper {
+        max-width: 1080px;
+    }
+}
+
+@media screen and (max-width:768px){
+    .article_l_main {
+        width: 100% !important;
+    }
+    .article-body {
+        padding: 20px 16px;
+    }
+    .article-body .note-update-date {
+        font-size: 0.9rem;
     }
 }
 
@@ -507,10 +540,14 @@
     .slimScrollDiv {
         width: 240px;
     }
+}
+
+@media only screen and (max-width: 1680px) and (min-width: 1440px){
     .body-wrapper {
-        max-width: 1080px;
+        max-width: 1200px;
     }
 }
+
 @media only screen and (min-width: 1440px){
     .right-bj {
         width: 240px;
@@ -525,9 +562,6 @@
     }
 }
 
-@media only screen and (max-width: 1680px){
-    .body-wrapper {
-        max-width: 1200px;
-    }
-}
+
+
 

@@ -1,11 +1,13 @@
 package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.util.TimeUntils;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * @author jmal
@@ -14,6 +16,7 @@ import java.time.LocalDateTime;
  */
 @Data
 public class FileBase {
+
     @Id
     private String id;
     /***
@@ -45,7 +48,15 @@ public class FileBase {
     /***
      * 修改时间
      */
-    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy 年 MM 月 dd 日  HH:mm:ss")
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy 年 MM 月 dd 日 HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateDate;
+
+    public String updateTime(){
+       return updateDate.format(TimeUntils.UPDATE_FORMAT_TIME);
+    }
+
+    public String uploadTime(){
+        return updateDate.format(TimeUntils.UPLOAD_FORMAT_TIME);
+    }
 }

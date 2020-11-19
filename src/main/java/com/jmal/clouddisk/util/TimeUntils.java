@@ -31,6 +31,9 @@ public class TimeUntils {
     public final static String TIME_TYPE_MONTH = "month";
     public final static String TIME_TYPE_YEAR = "year";
 
+    public static final DateTimeFormatter UPDATE_FORMAT_TIME = DateTimeFormatter.ofPattern("yyyy 年 MM 月 dd 日 HH:mm:ss");
+    public static final DateTimeFormatter UPLOAD_FORMAT_TIME = DateTimeFormatter.ofPattern("yyyy 年 MM 月 dd 日");
+
     private static final DateTimeFormatter FORMAT_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter FORMAT_DAY = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter FORMAT_MONTH = DateTimeFormatter.ofPattern("yyyy-MM");

@@ -35,13 +35,16 @@
     <link rel="stylesheet" type="text/css" href="/articles/css/article-body.css">
     <link rel="stylesheet" type="text/css" href="/articles/css/article-footer.css">
     <link rel="stylesheet" type="text/css" href="/articles/css/markdown.css">
+    <link rel="stylesheet" type="text/css" href="/articles/css/mask.css">
 </head>
 <body class="theme-white color-default card  desktop macOS macOS-ge-10-11 macOS-ge-10-12 chrome not-safari open use-navbar">
 <!--[if lt IE 9]>
 <div class="browse-happy" role="dialog">当前网页 <strong>不支持</strong> 你正在使用的浏览器. 为了正常的访问, 请 <a href="http://browsehappy.com/">升级你的浏览器</a>.</div>
 <![endif]-->
 
+<div th:include="component/sidebar.html"></div>
 <div id="body">
+    <div id="wrap-mask"><div class="boxLoading"></div></div>
     <div id="top" class="animateIn">
         <div th:include="component/article-top.html"></div>
         <div class="scrollbar gradient-bg-rev" style="width: 0;"></div>
@@ -53,7 +56,7 @@
             <div class="blog-title"><span id="article-title"></span><span class="typed-cursor">_</span></div>
             <div class="blog-description font-mono">
                 <a itemprop="name" href="https://www.jmal.top/author/1/" rel="author" th:text="${markdown.username}"></a>
-                <span th:text="'· '+${markdown.uploadDate}"></span>
+                <span th:text="'· '+${markdown.uploadTime()}"></span>
             </div>
         </div>
     </div>
@@ -120,10 +123,11 @@
                     enable: true,
                 },
                 hljs: {
-                    lineNumber: true
+                    lineNumber: window.innerWidth > 768
                 },
                 after() {
                     renderContents()
+                    $('#wrap-mask').hide()
                 }
             })
 
@@ -140,7 +144,7 @@
             let main = document.getElementById('preview')
             let p = document.createElement("p")
             p.className = "note-update-date"
-            p.innerText = `本文最后更新于：${[[${markdown.updateDate}]]}`
+            p.innerText = `本文最后更新于：${[[${markdown.updateTime()}]]}`
             main.insertBefore(p , main.childNodes[0])
         }
         // 渲染目录

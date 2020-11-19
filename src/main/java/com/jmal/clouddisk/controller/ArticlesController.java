@@ -1,9 +1,11 @@
 package com.jmal.clouddisk.controller;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.PageUtil;
 import cn.hutool.core.util.ReUtil;
-import cn.hutool.db.Page;
 import cn.hutool.db.PageResult;
+import com.jmal.clouddisk.model.MarkdownVO;
+import com.jmal.clouddisk.model.Page;
 import com.jmal.clouddisk.model.UserSettingDTO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.impl.SettingService;
@@ -35,7 +37,7 @@ public class ArticlesController {
     private IFileService fileService;
 
     @GetMapping("/articles")
-    public String index(HttpServletRequest request, ModelMap map){
+    public String articles(HttpServletRequest request, ModelMap map){
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
         if(!StringUtils.isEmpty(pIndex)){

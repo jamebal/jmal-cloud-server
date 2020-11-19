@@ -38,8 +38,9 @@
 <!--[if lt IE 9]>
 <div class="browse-happy" role="dialog">当前网页 <strong>不支持</strong> 你正在使用的浏览器. 为了正常的访问, 请 <a href="http://browsehappy.com/">升级你的浏览器</a>.</div>
 <![endif]-->
-
+<div th:include="component/sidebar.html"></div>
 <div id="body">
+    <div id="wrap-mask"></div>
     <div id="top" class="animateIn">
         <div th:include="component/article-top.html"></div>
     </div>
@@ -53,48 +54,48 @@
         </div>
     </div>
     <div class="l_body">
-        <div class="body-wrapper articles_l_main">
-            <el-main class="l_main">
-                <section class="post-list">
-                    <div th:each="article : ${articlesData.getData()}" class="post-wrapper">
-                        <article  class="post white-box shadow reveal">
-                            <section class="meta">
-                                <div class="meta" id="header-meta">
-                                    <h2 class="title">
-                                        <a th:href="'/articles/'+${article.slug == null ? article.id:article.slug}" th:text="${article.name}"></a>
-                                    </h2>
-                                    <div class="new-meta-box">
-                                        <div class="new-meta-item author">
-                                            <a href="http://www.jmal.top" rel="nofollow">
-                                                <img th:src="'/public/s/view/thumbnail?id='+${article.avatar}">
-                                                <p th:text="${article.username}"></p>
-                                            </a>
-                                        </div>
-                                        <div class="new-meta-item date">
-                                            <a class="notlink">
-                                                <svg class="icon" aria-hidden="true">
-                                                    <use xlink:href="#icon-fabu"></use>
-                                                </svg>
-                                                <p th:text="'发布于 '+${article.uploadDate}"></p>
-                                            </a>
-                                        </div>
+        <div class="articles_l_main">
+            <section class="post-list">
+                <div th:each="article : ${articlesData.getData()}" class="post-wrapper">
+                    <article  class="post white-box shadow reveal">
+                        <section class="meta">
+                            <div class="meta" id="header-meta">
+                                <h2 class="title">
+                                    <a th:href="'/articles/'+${article.slug == null ? article.id:article.slug}" th:text="${article.name}"></a>
+                                </h2>
+                                <div class="new-meta-box">
+                                    <div class="new-meta-item author">
+                                        <a href="http://www.jmal.top" rel="nofollow">
+                                            <img th:src="'/public/s/view/thumbnail?id='+${article.avatar}">
+                                            <p th:text="${article.username}"></p>
+                                        </a>
                                     </div>
-                                    <hr>
+                                    <div class="new-meta-item date">
+                                        <a class="notlink">
+                                            <svg class="icon" aria-hidden="true">
+                                                <use xlink:href="#icon-fabu"></use>
+                                            </svg>
+                                            <p th:text="'发布于 '+${article.uploadTime()}"></p>
+                                        </a>
+                                    </div>
                                 </div>
-                            </section>
-                            <section class="article typo">
-                                <a th:href="'/articles/'+${article.slug == null ? article.id:article.slug}">
-                                    <div class="article-entry" itemprop="articleBody">
-                                        <p><img th:if="${article.cover != null}" class="blog-background articles-list" th:src="${article.cover}" onerror="this.src='https://images.unsplash.com/photo-1582230587856-7fec01506148?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=60'"/></p>
-                                    </div>
-                                </a>
-                            </section>
-                        </article>
-                    </div>
-                </section>
-                <div id="laypage">
-                    <div class="layui-box layui-laypage layui-laypage-default" id="layui-laypage-1">
-                        <a th:href="'/articles?page=' + ${articlesData.getCurrentPage()-1}" th:class="'layui-laypage-prev'+ ${articlesData.isFirst()?' layui-disabled':''}" >上一页</a>
+                                <hr>
+                            </div>
+                        </section>
+                        <section class="article typo">
+                            <a th:href="'/articles/'+${article.slug == null ? article.id:article.slug}">
+                                <div class="article-entry" itemprop="articleBody">
+                                    <p><img th:if="${article.cover != null}" class="blog-background articles-list" th:src="${article.cover}" onerror="this.src='https://images.unsplash.com/photo-1582230587856-7fec01506148?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=60'"/></p>
+                                </div>
+                            </a>
+                        </section>
+                    </article>
+                </div>
+            </section>
+            <div id="laypage">
+                <div class="layui-box layui-laypage layui-laypage-default" id="layui-laypage-1">
+                    <a th:if="${articlesData.getTotalPage() > 1}" th:href="'/articles?page=' + ${articlesData.getCurrentPage()-1}" th:class="'layui-laypage-prev'+ ${articlesData.isFirst()?' layui-disabled':''}" >上一页</a>
+                    <i class="rainbow-page">
                         <i th:if="${articlesData.getCurrentPage() >= 5}">
                             <a href="/articles" class="layui-laypage-first" title="首页">1</a>
                             <span class="layui-laypage-spr">…</span>
@@ -109,10 +110,10 @@
                             <span class="layui-laypage-spr">…</span>
                             <a th:href="'/articles?page=' + ${articlesData.getTotalPage()}" class="layui-laypage-last" title="尾页" th:text="${articlesData.getTotalPage()}"></a>
                         </i>
-                        <a th:href="'/articles?page=' + ${articlesData.getCurrentPage()+1}" th:class="'layui-laypage-next'+ ${articlesData.isLast()?' layui-disabled':''}">下一页</a>
-                    </div>
+                    </i>
+                    <a th:if="${articlesData.getTotalPage() > 1}" th:href="'/articles?page=' + ${articlesData.getCurrentPage()+1}" th:class="'layui-laypage-next'+ ${articlesData.isLast()?' layui-disabled':''}">下一页</a>
                 </div>
-            </el-main>
+            </div>
         </div>
     </div>
     <div class="back-top" style="display: none">
@@ -130,6 +131,10 @@
 <script src="//at.alicdn.com/t/font_2024484_afbeg29hegb.js"></script>
 <script th:inline="javascript">
     $(function(){
+        if(window.innerWidth <= 768){
+            $(".rainbow-page").hide()
+        }
+
         $(".back-top").click(function(){
             $('html, body').animate({
                 scrollTop: 0
