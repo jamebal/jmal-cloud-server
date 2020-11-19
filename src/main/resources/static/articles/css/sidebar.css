@@ -16,6 +16,8 @@
     left: -17.5rem;
     top: 0;
     bottom: 0;
+    background: #fafafa;
+    border-right: 1px solid #efefef;
     overflow-y: auto;
     overflow-x: hidden;
     padding-bottom: 6.25rem;
