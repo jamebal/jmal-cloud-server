@@ -385,9 +385,18 @@
     -webkit-transition: all 0.2s;
     transition: all 0.2s;
 }
+.right-menu>div.titleList li a {
+    display: block;
+    -webkit-transition: all 0.2s;
+    transition: all 0.2s;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 1rem;
+    color: #333;
+}
 .h-1 {
     padding-left: 15px;
-    font-size: 1.125rem;
 }
 .h-2 {
     padding-left: 30px;
@@ -399,7 +408,6 @@
 }
 .h-4 {
     padding-left: 65px;
-    font-size: 0.925rem;
 }
 .h-5 {
     padding-left: 80px;
@@ -407,28 +415,15 @@
 }
 .h-6 {
     padding-left: 95px;
-    font-size: .85em;
-    color: #6a737d;
-}
-.right-menu>div.titleList li a {
-    display: block;
-    -webkit-transition: all 0.2s;
-    transition: all 0.2s;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
-    font-size: 14px;
-    color: #333;
 }
 .right-menu>div.titleList .j-bj {
-    border-left: 0.15rem solid;
-    border-color: #0052d4;
-    background: -webkit-gradient(linear, left top, right top, from(#5d9eea), to(#afcafd));
-    background: linear-gradient(to right, #5d9eea, #afcafd);
+    background: -webkit-linear-gradient(to right, #5d9eea45, #afcafd17);
+    background: linear-gradient(to right, #5d9eea45, #afcafd17);
     position: absolute;
     left: 0;
     height: 30px;
-    top: 0px;
+    top: 0;
+    line-height: 30px;
     width: 100%;
     z-index: -1;
     -webkit-transition: all 0.2s;

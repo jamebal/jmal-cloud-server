@@ -79,7 +79,7 @@
                     </div>
                     <div class="right-menu">
                         <div class="j-titleList titleList">
-                            <div class="j-bj" style="height: 30px; top: 0;"></div>
+                            <div class="j-bj"></div>
                         </div>
                     </div>
                 </div>
@@ -107,8 +107,43 @@
 <script src="https://cdn.jsdelivr.net/npm/vditor/dist/index.min.js" defer></script>
 <script th:inline="javascript">
     $(function(){
+        /***
+         * 初始化markdown解析器
+         */
+        Vditor.preview(document.getElementById('preview'),
+            [[${markdown.contentText}]], {
+                speech: {
+                    enable: true,
+                },
+                hljs: {
+                    // 是否显示行号
+                    lineNumber: window.innerWidth > 768
+                },
+                after() {
+                    // 添加更新时间
+                    addUpdateTime()
+                    // 渲染目录
+                    renderContents()
+                    setTimeout(function (){
+                        // 隐藏加载动画
+                        $('#wrap-mask').hide()
+                    }, 0)
+                }
+            })
+
+
+        // 目录最大高度
+        let tocMaxHeight = 0
+        // 页面滚动位置
+        let beforeScrollTop = document.documentElement.scrollTop;
+        let scrollAfterTimer = null
+        let rightBj = $('.right-bj')
         // 目录
         let contents = []
+
+        /***
+         * 动态打字效果
+         */
         const filename = [[${markdown.name}]]
         let divTyping = document.getElementById('article-title')
         let i = 0,timer = 0,str = filename.substring(0,filename.length - [[${markdown.suffix}]].length-1)
@@ -117,51 +152,53 @@
                 divTyping.innerHTML = str.slice(0, i++)
                 timer = setTimeout(typing, 100)
             } else {
-                // 结束打字
                 clearTimeout(timer)
             }
         }
         typing()
-        Vditor.preview(document.getElementById('preview'),
-            [[${markdown.contentText}]], {
-                speech: {
-                    enable: true,
-                },
-                hljs: {
-                    lineNumber: window.innerWidth > 768
-                },
-                after() {
-                    renderContents()
-                    $('#wrap-mask').hide()
-                }
-            })
 
-        function titleOneItem(index, jqel, tagName){
-            const h = tagName.substring(1,2)
+        /***
+         * 创建目录项
+         * 根据最大号标题整体向前移, 例如: 最大号标题为h3,则h3为变为h1,h4变为h2
+         */
+        function titleOneItem(index, $this, tagName, maxTitleNumber){
+            const h = tagName.substring(1,2) - maxTitleNumber
             if(index === 0){
-                return '<li first class="pl h-'+h+'"><a href="#'+jqel.attr('id')+'">'+jqel.text()+'</a></li>'
+                return '<li first class="pl h-'+h+'"><a href="#'+$this.attr('id')+'">'+$this.text()+'</a></li>'
             }
-            return '<li class="pl h-'+h+'"><a href="#'+jqel.attr('id')+'">'+jqel.text()+'</a></li>'
+            return '<li class="pl h-'+h+'"><a href="#'+$this.attr('id')+'">'+$this.text()+'</a></li>'
         }
+
+        /***
+         * 在文章最前面添加更新时间
+         */
         function addUpdateTime(){
-            // DOM更新之后获取子元素
-            // 在文章最前面添加更新时间
-            let main = document.getElementById('preview')
+            let preview = document.getElementById('preview')
             let p = document.createElement("p")
             p.className = "note-update-date"
             p.innerText = `本文最后更新于：${[[${markdown.updateTime()}]]}`
-            main.insertBefore(p , main.childNodes[0])
+            preview.insertBefore(p , preview.childNodes[0])
         }
-        // 渲染目录
+
+        /***
+         * 渲染目录
+         */
         function renderContents(){
-            // 添加更新时间
-            addUpdateTime()
             let headers = $('.article-body').find(":header")
             if(!headers || headers.length < 1){
                 return
             }
+            // 找出最大号的标题, 默认最小为6号标题(h6)
+            let maxTitleNumber = 6
+            headers.each(function () {
+                const h = $(this).prop("tagName").substring(1,2)
+                if(maxTitleNumber > h){
+                    maxTitleNumber = h
+                }
+            })
+            maxTitleNumber--
             headers.each(function (index) {
-                contents.push(titleOneItem(index, $(this), $(this).prop("tagName")))
+                contents.push(titleOneItem(index, $(this), $(this).prop("tagName"), maxTitleNumber))
             })
             $('.j-titleList').prepend(contents)
             // 获取id数组
@@ -171,7 +208,7 @@
             // 去掉id为空的条目
             contents = contents.filter(content => content && content.length > 0)
             if(contents.length > 0){
-                $('.right-bj').show()
+                rightBj.show()
                 $("#main_body").attr("content","show")
                 renderContentsAfter(contents)
             } else {
@@ -179,18 +216,44 @@
             }
         }
 
-        function fn (direction) {
+        /***
+         * 判断上滑还是下滑
+         */
+        function checkDirection($this){
+            let afterScrollTop = document.documentElement.scrollTop
+            let delta = afterScrollTop
+            let scrollTop = $this.scrollTop()
+            let windowHeight = $this.height()
+            // //滚动到底部
+            if (scrollTop + windowHeight > $(document).height() - 10) {
+                afterDirection('bottom')
+                return
+            }
+            if (afterScrollTop < 10 || afterScrollTop > $(document.body).height - 10) {
+                afterDirection('up')
+            } else {
+                if (Math.abs(delta) < 10) {
+                    return false
+                }
+                afterDirection(delta > 0 ? "down" : "up")
+            }
+        }
+
+        /***
+         * 上滑或下滑后执行的操作
+         */
+        function afterDirection (direction) {
             // 判断是上滑显示,下滑隐藏
             const top = $('#top')
-            const toogleNav = $('#toggle-nav')
+            const toggleNav = $('#toggle-nav')
 
             const body = document.getElementById("body")
 
             if(direction === 'down'){
                 top.removeClass('animateIn')
                 top.addClass('animateOut')
-                toogleNav.removeClass('animateRight')
-                toogleNav.addClass('animateLeft')
+                toggleNav.removeClass('animateRight')
+                toggleNav.addClass('animateLeft')
                 if(body.style.transform.length > 0) {
                     document.getElementById("sidebar-nav").style.transform = ''
                     body.style.transform = ''
@@ -200,14 +263,15 @@
             if(direction === 'up'){
                 top.removeClass('animateOut')
                 top.addClass('animateIn')
-                toogleNav.removeClass('animateLeft')
-                toogleNav.addClass('animateRight')
+                toggleNav.removeClass('animateLeft')
+                toggleNav.addClass('animateRight')
             }
         }
 
-        // 渲染目录后的操作
-        function renderContentsAfter(contents){
-            let beforeScrollTop = document.documentElement.scrollTop;
+        /***
+         * 渲染目录后的操作
+         */
+        function renderContentsAfter(){
             let $root = $('html, body')
             $('.j-titleList li').on("click", function () {
                 let top = 75
@@ -215,9 +279,9 @@
                     // 点击第一个目录
                     top = 168
                 }
-                let herf = $.attr(this.querySelector("a"), 'href')
+                let href = $.attr(this.querySelector("a"), 'href')
                 $root.animate({
-                    scrollTop: $(herf).offset().top - top
+                    scrollTop: $(href).offset().top - top
                 }, 400)
                 return false
             })
@@ -231,12 +295,9 @@
             },100)
         }
 
-        // 回到顶部
-        $(".back-top").click(function(){
-            $('html, body').animate({
-                scrollTop: 0
-            }, 400)
-        });
+        /***
+         * 显示顶部按钮
+         */
         function showBackTop() {
             if(document.documentElement.scrollTop > 300){
                 $('.back-top').fadeIn(500)
@@ -245,48 +306,20 @@
             }
         }
         showBackTop()
-        let tocMaxHeight = 0
-        // 设置目录的最大高度
+
+        /***
+         * 设置目录的最大高度
+         */
         function setTocMaxHeight(){
             tocMaxHeight = document.documentElement.clientHeight - 120
             document.body.querySelector('.right-bj .slimScrollDiv>.right-menu').style.maxHeight = tocMaxHeight + 'px'
         }
         setTocMaxHeight()
-        $(window).on("resize", function (){
-            setTocMaxHeight()
-        })
 
-        let beforeScrollTop = document.documentElement.scrollTop;
-        let scrollAfterTimer = null
-        let rightBj = $('.right-bj')
-        $(window).on('scroll', function (){
-            // 判断是上滑还是下滑
-            let afterScrollTop = document.documentElement.scrollTop
-            let delta = afterScrollTop - beforeScrollTop
-            beforeScrollTop = afterScrollTop
-            let scrollTop = $(this).scrollTop()
-            let scrollHeight = $(document).height()
-            let windowHeight = $(this).height()
-            let progress = ((afterScrollTop + document.documentElement.clientHeight)/scrollHeight) * 100
-            // 改变top bar 进度条
-            document.querySelector(".scrollbar").style.width = progress +'%'
-
-            if (scrollTop + windowHeight > scrollHeight - 10) {  //滚动到底部执行事件
-                fn('bottom')
-                return
-            }
-            if (afterScrollTop < 10 || afterScrollTop > $(document.body).height - 10) {
-                fn('up')
-            } else {
-                if (Math.abs(delta) < 10) {
-                    return false
-                }
-                fn(delta > 0 ? "down" : "up")
-            }
-            // 显示回到顶部按钮
-            showBackTop()
-
-            // 展示目录
+        /***
+         * 目录跟随滚动
+         */
+        function followScrollToc(){
             if(contents.length > 0){
                 if(rightBj.offset().top - $(window).scrollTop() <=0 ){
                     $('#toc-affix').addClass('affix')
@@ -294,16 +327,16 @@
                     $('#toc-affix').removeClass('affix')
                 }
                 for (let i = 0; i < contents.length; i++) {
-                    if ($(window).scrollTop() > $('#' + contents[i]).offset().top - 100 || $(this).scrollTop() + $(this).height() == $(document).height()) {
+                    if ($(window).scrollTop() > $('#' + contents[i]).offset().top - 100 || $(this).scrollTop() + $(this).height() === $(document).height()) {
                         $('.j-titleList').find('li').eq(i).addClass('active').siblings('li').removeClass('active');
                         const tocAction = $('.j-bj')
                         tocAction.css('top', i * 34)
-                        console.log(tocAction.offset().top - $(window).scrollTop())
-                        if(tocAction.offset().top - $(window).scrollTop() > (tocMaxHeight/2)){
-                            $('.slimScrollDiv').animate({
-                                scrollTop: tocAction.offset().top - $(window).scrollTop() - 350
-                            }, 0)
-                        }
+                        // console.log(tocAction.offset().top - $(window).scrollTop())
+                        // if(tocAction.offset().top - $(window).scrollTop() > (tocMaxHeight/2)){
+                        //     $('.slimScrollDiv').animate({
+                        //         scrollTop: tocAction.offset().top - $(window).scrollTop() - 350
+                        //     }, 0)
+                        // }
                     }
                 }
                 if(scrollAfterTimer != null){
@@ -316,7 +349,39 @@
                     }
                 }, 50)
             }
+        }
+
+        /***
+         * 改变top bar 进度条
+         */
+        function changeTopBar(){
+            let afterScrollTop = document.documentElement.scrollTop
+            beforeScrollTop = afterScrollTop
+            let scrollHeight = $(document).height() - window.innerHeight
+            let progress = ((afterScrollTop)/scrollHeight) * 100
+            document.querySelector(".scrollbar").style.width = progress +'%'
+        }
+
+        $(window).on('scroll', function (){
+            changeTopBar()
+            // 判断是上滑还是下滑
+            checkDirection($(this))
+            // 显示回到顶部按钮
+            showBackTop()
+            // 目录跟随滚动
+            followScrollToc()
         })
+
+        $(window).on("resize", function (){
+            setTocMaxHeight()
+        })
+
+        // 点击回到顶部
+        $(".back-top").click(function(){
+            $('html, body').animate({
+                scrollTop: 0
+            }, 400)
+        });
     });
 </script>
 </body>
