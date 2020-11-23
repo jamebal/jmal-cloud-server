@@ -112,12 +112,10 @@
          */
         Vditor.preview(document.getElementById('preview'),
             [[${markdown.contentText}]], {
-                speech: {
-                    enable: true,
-                },
                 hljs: {
                     // 是否显示行号
-                    lineNumber: window.innerWidth > 768
+                    lineNumber: window.innerWidth > 768,
+                    style: 'github'
                 },
                 after() {
                     // 添加更新时间
@@ -128,10 +126,16 @@
                         // 隐藏加载动画
                         $('#wrap-mask').hide()
                     }, 0)
+                    justLoading = true
+                    setTimeout(function (){
+                        justLoading = false
+                        keepTocVisible()
+                    }, 450)
                 }
             })
 
-
+        // 是否在点击目录
+        let clickingToc = false, justLoading = false
         // 目录最大高度
         let tocMaxHeight = 0
         // 页面滚动位置
@@ -274,6 +278,7 @@
         function renderContentsAfter(){
             let $root = $('html, body')
             $('.j-titleList li').on("click", function () {
+                clickingToc = true
                 let top = 75
                 if (typeof($(this).attr("first"))!=="undefined") {
                     // 点击第一个目录
@@ -293,6 +298,9 @@
                     }, 0)
                 }
             },100)
+            setTimeout(function (){
+                clickingToc = false
+            }, 450)
         }
 
         /***
@@ -320,34 +328,58 @@
          * 目录跟随滚动
          */
         function followScrollToc(){
-            if(contents.length > 0){
-                if(rightBj.offset().top - $(window).scrollTop() <=0 ){
-                    $('#toc-affix').addClass('affix')
+            if(contents.length < 1){
+                return
+            }
+            if(rightBj.offset().top - $(window).scrollTop() <=0 ){
+                $('#toc-affix').addClass('affix')
+            } else {
+                $('#toc-affix').removeClass('affix')
+            }
+            const tocAction = $('.j-bj')
+            for (let i = 0; i < contents.length; i++) {
+                if ($(window).scrollTop() > $('#' + contents[i]).offset().top - 100 || $(this).scrollTop() + $(this).height() === $(document).height()) {
+                    $('.j-titleList').find('li').eq(i).addClass('active').siblings('li').removeClass('active');
+                    tocAction.css('top', i * 34)
+                    console.log("sdfsd")
+                }
+            }
+            if(scrollAfterTimer != null){
+                clearTimeout(scrollAfterTimer)
+            }
+            scrollAfterTimer = setTimeout(function (){
+                const hash = $('.j-titleList').find('li.active').find('a').attr('href')
+                if (hash) {
+                    window.history.replaceState(null, null, document.location.pathname + hash);
+                }
+                keepTocVisible()
+            }, 0)
+        }
+
+        // 保持目录当前相在可见范围内
+        function keepTocVisible() {
+            if(clickingToc){
+                return
+            }
+            const tocAction = $('.j-bj')
+            const tocScrollTop = $('.slimScrollDiv').scrollTop()
+            const tocActionTop = tocAction.offset().top - $(window).scrollTop()
+            console.log(tocActionTop, tocScrollTop, tocMaxHeight / 2)
+            if (tocActionTop > (tocMaxHeight - 30)) {
+                $('.slimScrollDiv').animate({
+                    scrollTop: tocScrollTop + (tocActionTop - tocMaxHeight)
+                }, 300)
+            }
+            if (tocActionTop < 107) {
+                let top = tocActionTop
+                if (tocActionTop < 0) {
+                    top = Math.abs(tocActionTop) + 164
                 } else {
-                    $('#toc-affix').removeClass('affix')
+                    top = Math.abs(tocActionTop) + 64
                 }
-                for (let i = 0; i < contents.length; i++) {
-                    if ($(window).scrollTop() > $('#' + contents[i]).offset().top - 100 || $(this).scrollTop() + $(this).height() === $(document).height()) {
-                        $('.j-titleList').find('li').eq(i).addClass('active').siblings('li').removeClass('active');
-                        const tocAction = $('.j-bj')
-                        tocAction.css('top', i * 34)
-                        // console.log(tocAction.offset().top - $(window).scrollTop())
-                        // if(tocAction.offset().top - $(window).scrollTop() > (tocMaxHeight/2)){
-                        //     $('.slimScrollDiv').animate({
-                        //         scrollTop: tocAction.offset().top - $(window).scrollTop() - 350
-                        //     }, 0)
-                        // }
-                    }
-                }
-                if(scrollAfterTimer != null){
-                    clearTimeout(scrollAfterTimer)
-                }
-                scrollAfterTimer = setTimeout(function (){
-                    const hash = $('.j-titleList').find('li.active').find('a').attr('href')
-                    if(hash){
-                        window.history.replaceState(null, null, document.location.pathname + hash);
-                    }
-                }, 50)
+                $('.slimScrollDiv').animate({
+                    scrollTop: tocScrollTop - top
+                }, 300)
             }
         }
 
