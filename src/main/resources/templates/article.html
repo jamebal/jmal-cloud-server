@@ -245,7 +245,6 @@
                 afterDirection(delta > 0 ? "down" : "up")
             }
         }
-
         /***
          * 上滑或下滑后执行的操作
          */
@@ -348,15 +347,25 @@
                 clearTimeout(scrollAfterTimer)
             }
             scrollAfterTimer = setTimeout(function (){
-                const hash = $('.j-titleList').find('li.active').find('a').attr('href')
-                if (hash) {
-                    window.history.replaceState(null, null, document.location.pathname + hash);
-                }
+                psuhHistory()
                 keepTocVisible()
             }, 150)
         }
-
-        // 保持目录当前相在可见范围内
+        /***
+         * 重设window.history
+         */
+        function psuhHistory() {
+            const hash = $('.j-titleList').find('li.active').find('a').attr('href')
+            const clientHeight = document.documentElement.clientHeight
+            if (hash && $(window).scrollTop() > clientHeight - clientHeight*0.7) {
+                window.history.replaceState(null, null, document.location.pathname + hash)
+            } else {
+                window.history.replaceState(null, null, document.location.pathname)
+            }
+        }
+        /***
+         * 保持目录当前相在可见范围内
+         */
         function keepTocVisible() {
             if(clickingToc || justLoading){
                 return
@@ -405,21 +414,30 @@
 
             const slimScrollDiv = $('.slimScrollDiv')
             let beforeTocScrollTop = slimScrollDiv.scrollTop()
+            let startY;
+            slimScrollDiv.on('touchstart',function(event){
+                //滑动起点的坐标
+                startY = event.targetTouches[0].pageY
+            });
+
             // 当目录滚动到达顶部/底部时，防止父元素滚动
             slimScrollDiv.on('DOMMouseScroll mousewheel touchmove', function(ev) {
-                let afterScrollTop = slimScrollDiv.scrollTop()
-                let delta1 = afterScrollTop - beforeScrollTop
-                console.log(-delta1 * 3 , ev.originalEvent.wheelDelta)
-                beforeScrollTop = afterScrollTop
                 let scrollTop = this.scrollTop,
                     scrollHeight = this.scrollHeight,
                     height = $(this).innerHeight(),
-                    delta = ev.originalEvent.wheelDelta,
-                    up = delta > 0;
+                    delta = ev.originalEvent.wheelDelta;
+
+                if(ev.type === 'touchmove'){
+                    delta = ev.targetTouches[0].pageY - startY
+                }
+                let up = delta > 0
+
                 let prevent = function() {
                     ev.stopPropagation();
                     ev.preventDefault();
-                    ev.returnValue = false;
+                    if(ev.type !== 'touchmove'){
+                        ev.returnValue = false;
+                    }
                     return false;
                 }
                 if (!up && -delta > scrollHeight - height - scrollTop) {
@@ -427,7 +445,7 @@
                     $(this).scrollTop(scrollHeight);
                     return prevent();
                 } else if (up && delta > scrollTop) {
-                    // 向上滚动.
+                    // 向上滚动
                     $(this).scrollTop(0);
                     return prevent();
                 }
@@ -446,20 +464,20 @@
 
             // 点击显示目录
             $(".show-content").click(function (){
-                if(slimScrollDiv.is(':hidden')){
-                    slimScrollDiv.show()
-                } else {
-                    slimScrollDiv.hide()
+                // if(slimScrollDiv.is(':hidden')){
+                //     slimScrollDiv.show()
+                // } else {
+                //     slimScrollDiv.hide()
+                // }
+                let translateX = slimScrollDiv.css("transform")
+                const reg = '\\((.+?)\\)'
+                translateX = parseFloat(translateX.match(reg)[1].split(',')[4])
+                if(translateX > 150){
+                    slimScrollDiv.css("transform", "translateX(0px)")
                 }
-                // let translateX = slimScrollDiv.css("transform")
-                // const reg = '\\((.+?)\\)'
-                // translateX = parseFloat(translateX.match(reg)[1].split(',')[4])
-                // if(translateX > 150){
-                //     slimScrollDiv.css("transform", "translateX(0px)")
-                // }
-                // if(translateX < 150){
-                //     slimScrollDiv.css("transform", "translateX(250px)")
-                // }
+                if(translateX < 150){
+                    slimScrollDiv.css("transform", "translateX(250px)")
+                }
             })
         }
     });

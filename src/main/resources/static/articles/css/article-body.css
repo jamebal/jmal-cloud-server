@@ -458,9 +458,11 @@
     .slimScrollDiv {
         position: fixed;
         z-index: 30;
-        top: -60px;
+        top: unset;
+        bottom: 8rem;
         right: 0;
-        display: none;
+        /*display: none;*/
+        transform: translateX(250px);
         border-left: 1px solid rgba(204, 204, 204, 0.32);
         -webkit-box-shadow: rgba(0,0,0,0.1) 0 1px 0 0;
         box-shadow: rgba(0,0,0,0.1) 0 1px 0 0;
