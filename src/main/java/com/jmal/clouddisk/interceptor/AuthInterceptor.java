@@ -46,19 +46,6 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     private final Cache<String, String> tokenCache = CaffeineUtil.getTokenCache();
 
-    public static void main(String[] args) {
-        String content = "jmalsdfascasdf";
-        byte[] key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue()).getEncoded();
-        // 构建
-        AES aes = SecureUtil.aes(key);
-        // 加密为16进制表示
-        String encryptHex = aes.encryptHex(content);
-        Console.log(encryptHex);
-        // 解密为字符串
-        String decryptStr = aes.decryptStr(encryptHex, CharsetUtil.CHARSET_UTF_8);
-        Console.log(decryptStr);
-    }
-
     @Autowired
     IAuthDAO authDAO;
 
@@ -120,7 +107,7 @@ public class AuthInterceptor implements HandlerInterceptor {
                 }
                 if ((System.currentTimeMillis() - userToken.getTimestamp()) < ONE_WEEK) {
                     ThreadUtil.execute(() -> updateToken(jmalToken, userName));
-                    return username;
+                    return userToken.getUsername();
                 }
                 return null;
             } else {

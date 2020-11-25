@@ -36,8 +36,8 @@ public class CategoryController {
 
     @ApiOperation("分类树")
     @GetMapping("/category/tree")
-    public ResponseResult<List<Map<String, Object>>> tree(@RequestParam String userId) {
-        return ResultUtil.success(categoryService.tree(userId));
+    public ResponseResult<List<CategoryDTO>> tree(@RequestParam String userId) {
+        return ResultUtil.success(categoryService.tree(userId, false));
     }
 
     @ApiOperation("分类信息")

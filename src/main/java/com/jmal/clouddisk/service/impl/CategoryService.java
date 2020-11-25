@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.model.Category;
 import com.jmal.clouddisk.model.CategoryDTO;
@@ -41,22 +42,63 @@ public class CategoryService {
      * @return 一级分类列表
      */
     public List<CategoryDTO> list(String userId, String parentId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
-        if (StringUtils.isEmpty(parentId)) {
-            query.addCriteria(Criteria.where("parentCategoryId").in("", null));
-        } else {
-            query.addCriteria(Criteria.where("parentCategoryId").is(parentId));
+        // Query query = new Query();
+        // query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
+        // if (StringUtils.isEmpty(parentId)) {
+        //     query.addCriteria(Criteria.where("parentCategoryId").in("", null));
+        // } else {
+        //     query.addCriteria(Criteria.where("parentCategoryId").is(parentId));
+        // }
+        // List<Category> categoryList = mongoTemplate.find(query, Category.class, COLLECTION_NAME);
+        // return categoryList.stream().map(category -> {
+        //     CategoryDTO categoryDTO = new CategoryDTO();
+        //     CglibUtil.copy(category, categoryDTO);
+        //     String parentCategoryId = category.getId();
+        //     List<Category> subCategoryList = getSubCategoryList(userId, parentCategoryId);
+        //     categoryDTO.setSubCategorySize(subCategoryList.size());
+        //     getCategoryArticlesNum(categoryDTO);
+        //     return categoryDTO;
+        // }).sorted().collect(Collectors.toList());
+        List<CategoryDTO> categoryTreeList = tree(userId, true);
+        categoryTreeList = getSubCategoryList(parentId, categoryTreeList);
+        return categoryTreeList.stream().peek(categoryDTO -> {
+            categoryDTO.setSubCategorySize(categoryDTO.getChildren().size());
+            categoryDTO.setChildren(null);
+        }).collect(Collectors.toList());
+    }
+
+    /***
+     * 根据分类树查询某个分类的子分类
+     * @param parentCategoryId 父分类id
+     * @param categoryTreeList 分类数
+     * @return 分类列表
+     */
+    private List<CategoryDTO> getSubCategoryList(String parentCategoryId, List<CategoryDTO> categoryTreeList) {
+        List<CategoryDTO> categoryDTOList = new ArrayList<>();
+        if(StringUtils.isEmpty(parentCategoryId)){
+            return categoryTreeList;
         }
-        List<Category> categoryList = mongoTemplate.find(query, Category.class, COLLECTION_NAME);
-        return categoryList.parallelStream().map(category -> {
-            CategoryDTO categoryDTO = new CategoryDTO();
-            CglibUtil.copy(category, categoryDTO);
-            String parentCategoryId = category.getId();
-            List<Category> subCategoryList = getSubCategoryList(userId, parentCategoryId);
-            categoryDTO.setSubCategorySize(subCategoryList.size());
-            return categoryDTO;
-        }).sorted().collect(Collectors.toList());
+        for (CategoryDTO categoryDTO : categoryTreeList) {
+            if(categoryDTO.getChildren() == null){
+                continue;
+            }
+            if(parentCategoryId.equals(categoryDTO.getId())){
+                return categoryDTO.getChildren();
+            }
+            return getSubCategoryList(parentCategoryId, categoryDTO.getChildren());
+        }
+        return categoryDTOList;
+    }
+
+    /***
+     * 获取分类的文章数
+     * @param categoryDTO categoryDTO
+     */
+    private void getCategoryArticlesNum(CategoryDTO categoryDTO) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("categoryIds").is(categoryDTO.getId()));
+        long count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
+        categoryDTO.setArticleNum(Convert.toInt(count));
     }
 
     /***
@@ -64,52 +106,81 @@ public class CategoryService {
      * @param userId 用户id
      * @return 分类树结构
      */
-    public List<Map<String, Object>> tree(String userId) {
+    public List<CategoryDTO> tree(String userId, boolean statArticleNum) {
         Query query = new Query();
         query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
         List<Category> categoryList = mongoTemplate.find(query, Category.class, COLLECTION_NAME);
-        return getSubCategory(null, categoryList);
+        List<CategoryDTO> categoryDTOList = categoryList.parallelStream().map(category -> {
+            CategoryDTO categoryDTO = new CategoryDTO();
+            CglibUtil.copy(category, categoryDTO);
+            if (statArticleNum) {
+                getCategoryArticlesNum(categoryDTO);
+            }
+            return categoryDTO;
+        }).collect(Collectors.toList());
+        Map<String, Integer> articleNumMap = null;
+        if (statArticleNum) {
+            articleNumMap = new HashMap<>(16);
+        }
+        List<CategoryDTO> categoryTreeList = getSubCategory(null, categoryDTOList, articleNumMap);
+        return getArticleNum(articleNumMap, categoryTreeList);
     }
 
     /***
      * 查找分类的子集
      * @param parentCategoryId 父分类id
-     * @param categoryList 分类列表
+     * @param categoryDTOList 分类列表
      * @return 分类列表
      */
-    private List<Map<String, Object>> getSubCategory(String parentCategoryId, List<Category> categoryList) {
-        List<Map<String, Object>> categoryTreeMapList = new ArrayList<>();
-        List<Category> categoryList1;
+    private List<CategoryDTO> getSubCategory(String parentCategoryId, List<CategoryDTO> categoryDTOList, Map<String, Integer> articleNumMap) {
+        List<CategoryDTO> categoryTreeList = new ArrayList<>();
+        List<CategoryDTO> categoryList;
         if (StringUtils.isEmpty(parentCategoryId)) {
-            categoryList1 = categoryList.stream().filter(category -> StringUtils.isEmpty(category.getParentCategoryId())).sorted().collect(Collectors.toList());
+            categoryList = categoryDTOList.stream().filter(category -> StringUtils.isEmpty(category.getParentCategoryId())).sorted().collect(Collectors.toList());
         } else {
-            categoryList1 = categoryList.stream().filter(category -> parentCategoryId.equals(category.getParentCategoryId())).collect(Collectors.toList());
+            categoryList = categoryDTOList.stream().filter(category -> parentCategoryId.equals(category.getParentCategoryId())).collect(Collectors.toList());
         }
-        categoryList1.forEach(category -> {
-            Map<String, Object> subCategoryTreeMap = new HashMap<>(16);
-            subCategoryTreeMap.put("label", category.getName());
-            subCategoryTreeMap.put("value", category.getId());
-            List<Map<String, Object>> subList = getSubCategory(category.getId(), categoryList);
-            if (subList.size() > 0) {
-                subCategoryTreeMap.put("children", subList);
+        categoryList.forEach(subCategory -> {
+            String parentId = subCategory.getParentCategoryId();
+            if (articleNumMap != null && parentId != null) {
+                // 统计文章数
+                int num = subCategory.getArticleNum();
+                if (articleNumMap.containsKey(parentId)) {
+                    num += articleNumMap.get(parentId);
+                } else {
+                    articleNumMap.put(parentId, num);
+                }
+                articleNumMap.put(parentId, num);
             }
-            categoryTreeMapList.add(subCategoryTreeMap);
+            List<CategoryDTO> subList = getSubCategory(subCategory.getId(), categoryDTOList, articleNumMap);
+            if (!subList.isEmpty()) {
+                subCategory.setChildren(subList);
+            }
+            categoryTreeList.add(subCategory);
         });
-        return categoryTreeMapList;
+        return categoryTreeList;
     }
 
-
     /***
-     * 查询某个分类的子分类
-     * @param userId 用户id
-     * @param parentCategoryId 父分类id
-     * @return 分类列表
+     * 获取文章数
+     * @param articleNumMap 每个分类的文章数
+     * @param categoryTreeList 分类树
+     * @return 分类树
      */
-    private List<Category> getSubCategoryList(String userId, String parentCategoryId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
-        query.addCriteria(Criteria.where("parentCategoryId").is(parentCategoryId));
-        return mongoTemplate.find(query, Category.class, COLLECTION_NAME);
+    private List<CategoryDTO> getArticleNum(Map<String,Integer> articleNumMap, List<CategoryDTO> categoryTreeList) {
+        if(articleNumMap == null || categoryTreeList == null){
+            return categoryTreeList;
+        }
+        categoryTreeList = categoryTreeList.stream().peek(category -> {
+            if(articleNumMap.containsKey(category.getId())){
+                category.setArticleNum(articleNumMap.get(category.getId()));
+            }
+            List<CategoryDTO> subList = category.getChildren();
+            if(subList != null && !subList.isEmpty()){
+                category.setChildren(getArticleNum(articleNumMap, subList));
+            }
+        }).collect(Collectors.toList());
+        return categoryTreeList;
     }
 
     /***

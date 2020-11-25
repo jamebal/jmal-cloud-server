@@ -95,7 +95,7 @@ public class FileServiceImpl implements IFileService {
     @Autowired
     private SimpMessagingTemplate template;
 
-    private static final String COLLECTION_NAME = "fileDocument";
+    public static final String COLLECTION_NAME = "fileDocument";
     private static final String CONTENT_TYPE_IMAGE = "image";
     private static final String CONTENT_TYPE_MARK_DOWN = "text/markdown";
 
@@ -695,6 +695,8 @@ public class FileServiceImpl implements IFileService {
             String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
             fileDocument.setUsername(username);
         }
+        String filename = fileDocument.getName();
+        fileDocument.setName(filename.substring(0, filename.length() - fileDocument.getSuffix().length() - 1));
         return fileDocument;
     }
 

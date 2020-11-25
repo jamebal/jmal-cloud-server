@@ -26,8 +26,7 @@
     <link rel="alternate" type="application/atom+xml" title="jmal's blog &raquo; ATOM 1.0" href="https://www.jmal.top/feed/atom/" />
     <link rel="stylesheet" type="text/css" href="/articles/fontawesome-free-5.11.2-web/css/all.css">
     <link rel="stylesheet" type="text/css" href="/articles/layui/css/layui.css">
-    <!-- ⚠️生产环境请指定版本号，如 https://cdn.jsdelivr.net/npm/vditor@x.x.x/dist... -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vditor/dist/index.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vditor@3.6.3/dist/index.css" />
     <link rel="stylesheet" type="text/css" href="/articles/css/index.css">
     <link rel="stylesheet" type="text/css" href="/articles/css/article.css">
     <link rel="stylesheet" type="text/css" href="/articles/css/article-top.css">
@@ -53,7 +52,7 @@
     <div class="article-header">
         <div class="article-background" th:style="${markdown.cover !=null ? 'background-image: url('+markdown.cover+')':''}"></div>
         <div class="inner">
-            <div class="blog-title"><span id="article-title"></span><span class="typed-cursor">_</span></div>
+            <div class="blog-title"><span id="article-title" th:text="${markdown.name}"></span><span class="typed-cursor">_</span></div>
             <div class="blog-description font-mono">
                 <a itemprop="name" href="https://www.jmal.top/author/1/" rel="author" th:text="${markdown.username}"></a>
                 <span th:text="'· '+${markdown.uploadTime()}"></span>
@@ -64,6 +63,11 @@
         <el-main id="main_body" class="l_main article_l_main">
             <div class="source" style="display:none;" th:utext="${markdown.contentText}"></div>
             <div id="preview" class="article-body">
+            </div>
+            <div class="back-top" style="display: none">
+                <svg class="icon">
+                    <use xlink:href="#icon-Up"></use>
+                </svg>
             </div>
         </el-main>
         <div class="right-bj" style="display: none">
@@ -84,11 +88,6 @@
                     </div>
                 </div>
             </div>
-            <div class="back-top" style="display: none">
-                <svg class="icon">
-                    <use xlink:href="#icon-Up"></use>
-                </svg>
-            </div>
         </div>
     </div>
     <div class="show-content">
@@ -105,6 +104,7 @@
 <script src="/articles/layui/layui.js"></script>
 <script src="//at.alicdn.com/t/font_2024484_t0l48d7lnj.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vditor@3.6.3/dist/index.min.js" defer></script>
+<script src="/articles/js/common.js"></script>
 <script th:inline="javascript">
     $(function(){
         /***
@@ -148,31 +148,15 @@
         let contents = []
 
         /***
-         * 动态打字效果
-         */
-        const filename = [[${markdown.name}]]
-        let divTyping = document.getElementById('article-title')
-        let i = 0,timer = 0,str = filename.substring(0,filename.length - [[${markdown.suffix}]].length-1)
-        function typing () {
-            if (i <= str.length) {
-                divTyping.innerHTML = str.slice(0, i++)
-                timer = setTimeout(typing, 100)
-            } else {
-                clearTimeout(timer)
-            }
-        }
-        typing()
-
-        /***
          * 创建目录项
          * 根据最大号标题整体向前移, 例如: 最大号标题为h3,则h3为变为h1,h4变为h2
          */
         function titleOneItem(index, $this, tagName, maxTitleNumber){
             const h = tagName.substring(1,2) - maxTitleNumber
             if(index === 0){
-                return '<li first class="pl h-'+h+'"><a href="#'+$this.attr('id')+'">'+$this.text()+'</a></li>'
+                return '<li first class="pl h-'+h+'" title="'+$this.text()+'"><a href="#'+$this.attr('id')+'">'+$this.text()+'</a></li>'
             }
-            return '<li class="pl h-'+h+'"><a href="#'+$this.attr('id')+'">'+$this.text()+'</a></li>'
+            return '<li class="pl h-'+h+'" title="'+$this.text()+'"><a href="#'+$this.attr('id')+'">'+$this.text()+'</a></li>'
         }
 
         /***
@@ -193,6 +177,10 @@
             let headers = $('.article-body').find(":header")
             if(!headers || headers.length < 1){
                 return
+            }
+            // 显示目录按钮
+            if(window.innerWidth <= 768){
+                $('.show-content').css('display','flex')
             }
             // 找出最大号的标题, 默认最小为6号标题(h6)
             let maxTitleNumber = 6
@@ -347,14 +335,14 @@
                 clearTimeout(scrollAfterTimer)
             }
             scrollAfterTimer = setTimeout(function (){
-                psuhHistory()
+                pushHistory()
                 keepTocVisible()
             }, 150)
         }
         /***
          * 重设window.history
          */
-        function psuhHistory() {
+        function pushHistory() {
             const hash = $('.j-titleList').find('li.active').find('a').attr('href')
             const clientHeight = document.documentElement.clientHeight
             if (hash && $(window).scrollTop() > clientHeight - clientHeight*0.7) {
@@ -374,7 +362,7 @@
             const tocScroll = $('.slimScrollDiv')
             const tocScrollTop = tocScroll.scrollTop()
             const tocHeaderTop = $('.toc-header').offset().top - $(window).scrollTop()
-            if (tocHeaderTop > 70) {
+            if (tocHeaderTop > 70 && window.innerWidth > 768) {
                 // 隐藏返回顶部按钮
                 $('.back-top').fadeOut(500)
             }
@@ -453,7 +441,21 @@
 
             $(window).on("resize", function (){
                 setTocMaxHeight()
+                setBackTopPosition()
             })
+
+            let main = $('#main_body')
+            /***
+             * 改变返回顶部按钮位置
+             */
+            function setBackTopPosition(){
+                if(window.innerWidth > 768){
+                    $('.back-top').css('left', main.width() + main.offset().left + 30)
+                } else {
+                    $('.back-top').css('left', '')
+                }
+            }
+            setBackTopPosition()
 
             // 点击回到顶部
             $(".back-top").click(function(){

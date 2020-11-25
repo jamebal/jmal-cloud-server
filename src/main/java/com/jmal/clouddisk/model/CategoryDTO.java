@@ -9,6 +9,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.text.Collator;
 import java.util.Comparator;
+import java.util.List;
 
 /**
  * @Description 文件类别DTO
@@ -57,7 +58,16 @@ public class CategoryDTO implements Comparable<CategoryDTO> {
      */
     @ApiModelProperty(name = "desc", value = "分类描述")
     private String desc;
-
+    /***
+     * 文章数
+     */
+    @ApiModelProperty(hidden = true)
+    private Integer articleNum;
+    /***
+     * 子分类
+     */
+    @ApiModelProperty(hidden = true)
+    private List<CategoryDTO> children;
     /***
      * 按照分类名称来排序
      * @param categoryDTO CategoryDTO

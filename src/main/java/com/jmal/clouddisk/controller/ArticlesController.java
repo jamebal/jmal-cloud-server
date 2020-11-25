@@ -4,6 +4,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.PageUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.db.PageResult;
+import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.MarkdownVO;
 import com.jmal.clouddisk.model.Page;
 import com.jmal.clouddisk.model.UserSettingDTO;
@@ -43,22 +44,35 @@ public class ArticlesController {
         if(!StringUtils.isEmpty(pIndex)){
             page = Integer.parseInt(pIndex);
         }
-        UserSettingDTO userSettingDTO = settingService.getWebsiteSetting();
-        setOperatingButtonList(userSettingDTO);
-        map.addAttribute("setting", userSettingDTO);
+        getSetting(map);
         map.addAttribute("articlesData", fileService.getArticles(page, pageSize));
         return "index";
     }
 
     @GetMapping("/articles/{slug}")
     public String index(HttpServletRequest request, @PathVariable String slug, ModelMap map){
-        UserSettingDTO userSettingDTO = settingService.getWebsiteSetting();
-        setOperatingButtonList(userSettingDTO);
-        map.addAttribute("setting", userSettingDTO);
+        getSetting(map);
         map.addAttribute("markdown", fileService.getMarkDownContentBySlug(slug));
         return "article";
     }
 
+    @GetMapping("/articles/categories")
+    public String categories(HttpServletRequest request, ModelMap map){
+        getSetting(map);
+        map.addAttribute("categories", new FileDocument());
+        return "categories";
+    }
+
+    private void getSetting(ModelMap map) {
+        UserSettingDTO userSettingDTO = settingService.getWebsiteSetting();
+        setOperatingButtonList(userSettingDTO);
+        map.addAttribute("setting", userSettingDTO);
+    }
+
+    /***
+     * 解析设置里的文本为操作按钮列表
+     * @param userSettingDTO userSettingDTO
+     */
     private void setOperatingButtonList(UserSettingDTO userSettingDTO) {
         if(userSettingDTO != null && !StringUtils.isEmpty(userSettingDTO.getOperatingButtons())){
             String operatingButtons = userSettingDTO.getOperatingButtons();
