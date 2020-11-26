@@ -100,6 +100,8 @@ public class UploadApiParamDTO {
     String sortableProp;
     String order;
 
+    Boolean isDraft;
+
     Boolean isFavorite;
     String cover;
     String slug;

@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.model.ArticleDTO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.UploadImageDTO;
 import com.jmal.clouddisk.service.IFileService;
@@ -13,8 +14,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * @Description markdown
  * @author jmal
+ * @Description markdown
  */
 @Controller
 @Api(tags = "markdown管理")
@@ -29,8 +30,10 @@ public class MarkDownController {
 
     @ApiOperation("获取markdown内容")
     @GetMapping("/public/p")
-    public ResponseResult<Object> getMarkDownContent(String mark, Integer pageIndex, Integer pageSize) {
-        return fileService.getMarkDownContent(mark, pageIndex, pageSize);
+    public ResponseResult<Object> getMarkDownContent(ArticleDTO articleDTO, Integer pageIndex, Integer pageSize) {
+        articleDTO.setPageIndex(pageIndex);
+        articleDTO.setPageSize(pageSize);
+        return fileService.getMarkDownContent(articleDTO);
     }
 
     @ApiOperation("编辑文档(根据fileId)")
@@ -42,7 +45,7 @@ public class MarkDownController {
     @ApiOperation("编辑文档(根据path)")
     @PostMapping("/markdown/edit1")
     public ResponseResult<Object> editMarkdownByPath(@RequestBody UploadApiParamDTO upload) {
-        ResultUtil.checkParamIsNull(upload.getUsername(),upload.getUserId(),upload.getRelativePath(),upload.getContentText());
+        ResultUtil.checkParamIsNull(upload.getUsername(), upload.getUserId(), upload.getRelativePath(), upload.getContentText());
         return fileService.editMarkdownByPath(upload);
     }
 

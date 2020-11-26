@@ -650,9 +650,10 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> getMarkDownContent(String mark, Integer pageIndex, Integer pageSize) throws CommonException {
+    public ResponseResult<Object> getMarkDownContent(ArticleDTO articleDTO) throws CommonException {
+        String mark = articleDTO.getMark();
         if (StringUtils.isEmpty(mark)) {
-            return getMarkdownList(pageIndex, pageSize);
+            return getMarkdownList(articleDTO);
         } else {
             FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, COLLECTION_NAME);
             if (fileDocument != null) {
@@ -669,7 +670,11 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public Page<Object> getArticles(Integer page, Integer pageSize) {
-        ResponseResult<Object> responseResult = getMarkdownList(page, pageSize);
+        ArticleDTO articleDTO = new ArticleDTO();
+        articleDTO.setPageIndex(page);
+        articleDTO.setPageSize(pageSize);
+        articleDTO.setIsRelease(true);
+        ResponseResult<Object> responseResult = getMarkdownList(articleDTO);
         Page<Object> pageResult = new Page<Object>(page - 1, pageSize, Convert.toInt(responseResult.getCount()));
         pageResult.setData(responseResult.getData());
         return pageResult;
@@ -706,17 +711,43 @@ public class FileServiceImpl implements IFileService {
      * @param limit
      * @return
      */
-    private ResponseResult<Object> getMarkdownList(Integer pageIndex, Integer pageSize) {
+    private ResponseResult<Object> getMarkdownList(ArticleDTO articleDTO) {
         int skip = 0, limit = 5;
+        Integer pageIndex = articleDTO.getPageIndex();
+        Integer pageSize = articleDTO.getPageSize();
         if (pageIndex != null && pageSize != null) {
             skip = (pageIndex - 1) * pageSize;
             limit = pageSize;
         }
         Query query = new Query();
-        query.addCriteria(Criteria.where("release").is(true));
+        // 查询条件
         query.addCriteria(Criteria.where("suffix").is("md"));
-        query.with(new Sort(Sort.Direction.DESC, "uploadDate"));
+        if (!StringUtils.isEmpty(articleDTO.getUserId())) {
+            query.addCriteria(Criteria.where("userId").is(articleDTO.getUserId()));
+        }
+        if (articleDTO.getIsRelease() != null && articleDTO.getIsRelease()) {
+            query.addCriteria(Criteria.where("release").is(true));
+        }
+        if (articleDTO.getIsDraft() != null && articleDTO.getIsDraft()) {
+            query.addCriteria(Criteria.where("draft").is(true));
+        }
+        if (articleDTO.getCategoryIds() != null && articleDTO.getCategoryIds().length > 0) {
+            query.addCriteria(Criteria.where("categoryIds").in(articleDTO.getCategoryIds()));
+        }
+        if (!StringUtils.isEmpty(articleDTO.getKeyword())) {
+            query.addCriteria(Criteria.where("name").regex(articleDTO.getKeyword(), "i"));
+        }
         long count = mongoTemplate.count(query, COLLECTION_NAME);
+        // 排序
+        if (!StringUtils.isEmpty(articleDTO.getSortableProp()) && !StringUtils.isEmpty(articleDTO.getOrder())) {
+            if ("descending".equals(articleDTO.getOrder())) {
+                query.with(new Sort(Sort.Direction.DESC, articleDTO.getSortableProp()));
+            } else {
+                query.with(new Sort(Sort.Direction.ASC, articleDTO.getSortableProp()));
+            }
+        } else {
+            query.with(new Sort(Sort.Direction.DESC, "uploadDate"));
+        }
         query.skip(skip);
         query.limit(limit);
         List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
@@ -772,10 +803,15 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setUpdateDate(date);
         fileDocument.setPath(currentDirectory);
         fileDocument.setSize(upload.getContentText().length());
-        fileDocument.setContentText(upload.getContentText());
         fileDocument.setContentType(CONTENT_TYPE_MARK_DOWN);
         fileDocument.setMd5(CalcMd5.getMd5(filename + upload.getContentText()));
-        fileDocument.setRelease(true);
+        if(!StringUtils.isEmpty(upload.getIsDraft()) && upload.getIsDraft()){
+            fileDocument.setDraft(true);
+        } else {
+            fileDocument.setDraft(false);
+            fileDocument.setRelease(true);
+            fileDocument.setContentText(upload.getContentText());
+        }
         fileDocument.setName(filename);
         fileDocument.setCover(upload.getCover());
         fileDocument.setSlug(getSlug(upload));
@@ -789,6 +825,9 @@ public class FileServiceImpl implements IFileService {
     private String getSlug(UploadApiParamDTO upload) {
         Query query = new Query();
         String slug = upload.getSlug();
+        if(StringUtils.isEmpty(slug)){
+            return upload.getFilename();
+        }
         String fileId = upload.getFileId();
         if (fileId != null) {
             query.addCriteria(Criteria.where("_id").nin(fileId));

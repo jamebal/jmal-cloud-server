@@ -2,10 +2,7 @@ package com.jmal.clouddisk.service;
 
 import cn.hutool.db.PageResult;
 import com.jmal.clouddisk.exception.CommonException;
-import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.Page;
-import com.jmal.clouddisk.model.UploadApiParamDTO;
-import com.jmal.clouddisk.model.UploadImageDTO;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.util.ResponseResult;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -215,12 +212,10 @@ public interface IFileService {
 
     /***
      * 获取markdown内容
-     * @param mark
-     * @param pageIndex
-     * @param pageSize
+     * @param articleDTO
      * @return
      */
-    ResponseResult<Object> getMarkDownContent(String mark, Integer pageIndex, Integer pageSize);
+    ResponseResult<Object> getMarkDownContent(ArticleDTO articleDTO);
 
     /***
      * 获取文章列表

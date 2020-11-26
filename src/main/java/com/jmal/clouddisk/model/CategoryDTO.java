@@ -68,6 +68,9 @@ public class CategoryDTO implements Comparable<CategoryDTO> {
      */
     @ApiModelProperty(hidden = true)
     private List<CategoryDTO> children;
+
+    @ApiModelProperty(hidden = true)
+    private List<List<String>> categoryIdsList;
     /***
      * 按照分类名称来排序
      * @param categoryDTO CategoryDTO
