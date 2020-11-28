@@ -64,6 +64,11 @@ public class CategoryDTO implements Comparable<CategoryDTO> {
     @ApiModelProperty(hidden = true)
     private Integer articleNum;
     /***
+     * 文章总数
+     */
+    @ApiModelProperty(hidden = true)
+    private Integer value;
+    /***
      * 子分类
      */
     @ApiModelProperty(hidden = true)

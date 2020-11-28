@@ -79,6 +79,7 @@ public class CategoryService {
         query.addCriteria(Criteria.where("categoryIds").is(categoryDTO.getId()));
         long count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
         categoryDTO.setArticleNum(Convert.toInt(count));
+        categoryDTO.setValue(Convert.toInt(count));
     }
 
     /***
@@ -99,7 +100,13 @@ public class CategoryService {
             }
             return categoryDTO;
         }).collect(Collectors.toList());
+        Map<String, Integer> articleNumMap = null;
+        if (statArticleNum) {
+            articleNumMap = new HashMap<>(16);
+        }
         List<CategoryDTO> categoryTreeList = getSubCategory(null, categoryDTOList);
+        getArticleNum(articleNumMap, categoryTreeList, null);
+        setArticleNum(articleNumMap, categoryTreeList);
         return categoryTreeList;
     }
 
@@ -125,6 +132,58 @@ public class CategoryService {
             }
             categoryTreeList.add(subCategory);
         });
+        return categoryTreeList;
+    }
+
+    /**
+     * <p>获取文章数</p>
+     * <br>把每个分类的文章数存到articleNumMap里
+     * <br>articleNumMap => key:分类id , value:文章数
+     * @param articleNumMap 每个分类的文章数
+     * @param categoryTreeList 分类树
+     * @param categoryId 分类id
+     * @return 分类树
+     */
+    private int getArticleNum(Map<String, Integer> articleNumMap, List<CategoryDTO> categoryTreeList, String categoryId) {
+        int count = 0;
+        if (articleNumMap == null || categoryTreeList == null) {
+            return count;
+        }
+        for (CategoryDTO category : categoryTreeList) {
+            count += category.getArticleNum();
+            int curCnt = getArticleNum(articleNumMap, category.getChildren(), category.getId());
+            articleNumMap.put(category.getId(), curCnt);
+            count += curCnt;
+        }
+        if(!StringUtils.isEmpty(categoryId)){
+            articleNumMap.put(categoryId, count);
+        }
+        return count;
+    }
+
+    /**
+     * <p>设置文章数</p>
+     * <br>把articleNumMap里的文章数取出来放到categoryTreeList里
+     * @param articleNumMap 每个分类的文章数
+     * @param categoryTreeList 分类树
+     * @return 分类树
+     */
+    private List<CategoryDTO> setArticleNum(Map<String, Integer> articleNumMap, List<CategoryDTO> categoryTreeList){
+        if(articleNumMap == null || categoryTreeList == null){
+            return categoryTreeList;
+        }
+        categoryTreeList = categoryTreeList.stream().peek(category -> {
+            if (articleNumMap.containsKey(category.getId())){
+                if(category.getChildren() == null || category.getChildren().isEmpty()){
+                    category.setValue(category.getValue());
+                }
+                category.setValue(articleNumMap.get(category.getId()) + category.getValue());
+            }
+            List<CategoryDTO> subList = category.getChildren();
+            if(subList != null && !subList.isEmpty()){
+                category.setChildren(setArticleNum(articleNumMap, subList));
+            }
+        }).collect(Collectors.toList());
         return categoryTreeList;
     }
 

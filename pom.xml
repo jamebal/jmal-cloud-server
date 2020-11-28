@@ -175,16 +175,14 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <excludes>
-                    <exclude>static/articles/fontawesome-free-5.11.2-web/webfonts/**</exclude>
-                    <exclude>static/articles/layui/font/**</exclude>
+                    <exclude>static/**</exclude>
                 </excludes>
             </resource>
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>false</filtering>
                 <includes>
-                    <include>static/articles/fontawesome-free-5.11.2-web/webfonts/**</include>
-                    <include>static/articles/layui/font/**</include>
+                    <include>static/**</include>
                 </includes>
             </resource>
         </resources>
@@ -196,11 +194,6 @@
                 <!--加了这个配置，打包的时候，可执行的jar包的名字和普通jar包的名字不一样，可执行jar包就不会覆盖普通jar包了-->
                 <configuration>
                     <classifier>exec</classifier>
-                    <nonFilteredFileExtensions>
-                        <nonFilteredFileExtension>ttf</nonFilteredFileExtension>
-                        <nonFilteredFileExtension>woff</nonFilteredFileExtension>
-                        <nonFilteredFileExtension>woff2</nonFilteredFileExtension>
-                    </nonFilteredFileExtensions>
                 </configuration>
             </plugin>
         </plugins>
