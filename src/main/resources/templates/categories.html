@@ -27,12 +27,7 @@
     <link rel="stylesheet" type="text/css" href="/articles/fontawesome-free-5.11.2-web/css/all.css">
     <link rel="stylesheet" type="text/css" href="/articles/layui/css/layui.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vditor@3.6.3/dist/index.css" />
-    <link rel="stylesheet" type="text/css" href="/articles/css/index.css">
-    <link rel="stylesheet" type="text/css" href="/articles/css/article.css">
-    <link rel="stylesheet" type="text/css" href="/articles/css/article-top.css">
-    <link rel="stylesheet" type="text/css" href="/articles/css/article-header.css">
-    <link rel="stylesheet" type="text/css" href="/articles/css/article-body.css">
-    <link rel="stylesheet" type="text/css" href="/articles/css/article-footer.css">
+    <link rel="stylesheet" type="text/css" href="/articles/css/light/index.css">
     <link rel="stylesheet" type="text/css" href="/articles/css/categories.css">
 </head>
 <body class="theme-white color-default card  desktop macOS macOS-ge-10-11 macOS-ge-10-12 chrome not-safari open use-navbar">
@@ -49,7 +44,7 @@
     </div>
 
     <div class="article-header">
-        <div class="article-background" th:style="${categories.cover !=null ? 'background-image: url('+categories.cover+')':''}"></div>
+        <div class="article-background" th:style="${setting.categoryBackground !=null ? 'background-image: url('+setting.categoryBackground+')':''}"></div>
         <div class="inner">
             <div class="blog-title"><span id="article-title">分类</span><span class="typed-cursor">_</span></div>
         </div>

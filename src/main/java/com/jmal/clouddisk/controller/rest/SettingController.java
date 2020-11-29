@@ -1,14 +1,13 @@
 package com.jmal.clouddisk.controller.rest;
 
-import com.jmal.clouddisk.model.UserSetting;
-import com.jmal.clouddisk.model.UserSettingDTO;
+import com.jmal.clouddisk.model.WebsiteSettingDTO;
+import com.jmal.clouddisk.model.WebsiteSetting;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -32,14 +31,14 @@ public class SettingController {
 
     @ApiOperation("获取网站设置")
     @GetMapping("/public/website/setting")
-    public ResponseResult<UserSettingDTO> getWebsiteSetting() {
+    public ResponseResult<WebsiteSettingDTO> getWebsiteSetting() {
         return ResultUtil.success(settingService.getWebsiteSetting());
     }
 
     @ApiOperation("更新用户设置")
     @PutMapping("/setting/update")
-    public ResponseResult<Object> update(@RequestBody UserSetting userSetting) {
-        return settingService.update(userSetting);
+    public ResponseResult<Object> update(@RequestBody WebsiteSetting websiteSetting) {
+        return settingService.update(websiteSetting);
     }
 
     @ApiOperation("生成accessToken")

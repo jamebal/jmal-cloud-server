@@ -9,7 +9,7 @@ import lombok.experimental.Accessors;
  * @Date 2020/11/5 2:45 下午
  */
 @Data
-public class UserSetting {
+public class WebsiteSetting {
 
     /***
      * 站点背景大图
@@ -31,4 +31,8 @@ public class UserSetting {
      * 操作按钮
      */
     String operatingButtons;
+    /***
+     * 分类页面背景
+     */
+    String categoryBackground;
 }

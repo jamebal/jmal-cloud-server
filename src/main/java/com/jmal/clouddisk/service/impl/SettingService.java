@@ -6,8 +6,8 @@ import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.model.FileProperties;
-import com.jmal.clouddisk.model.UserSetting;
-import com.jmal.clouddisk.model.UserSettingDTO;
+import com.jmal.clouddisk.model.WebsiteSettingDTO;
+import com.jmal.clouddisk.model.WebsiteSetting;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -82,12 +82,12 @@ public class SettingService {
 
     /***
      * 更新用户设置
-     * @param userSetting UserSetting
+     * @param websiteSetting WebsiteSetting
      * @return ResponseResult
      */
-    public ResponseResult<Object> update(UserSetting userSetting) {
+    public ResponseResult<Object> update(WebsiteSetting websiteSetting) {
         Query query = new Query();
-        Update update = MongoUtil.getUpdate(userSetting);
+        Update update = MongoUtil.getUpdate(websiteSetting);
         mongoTemplate.upsert(query, update, COLLECTION_NAME_WEBSITE_SETTING);
         return ResultUtil.success();
     }
@@ -96,14 +96,14 @@ public class SettingService {
      * 获取网站设置
      * @return ResponseResult
      */
-    public UserSettingDTO getWebsiteSetting() {
-        UserSettingDTO userSettingDTO = new UserSettingDTO();
+    public WebsiteSettingDTO getWebsiteSetting() {
+        WebsiteSettingDTO websiteSettingDTO = new WebsiteSettingDTO();
         Query query = new Query();
-        UserSetting userSetting = mongoTemplate.findOne(query, UserSetting.class, COLLECTION_NAME_WEBSITE_SETTING);
-        if(userSetting != null){
-            CglibUtil.copy(userSetting, userSettingDTO);
+        WebsiteSetting websiteSetting = mongoTemplate.findOne(query, WebsiteSetting.class, COLLECTION_NAME_WEBSITE_SETTING);
+        if(websiteSetting != null){
+            CglibUtil.copy(websiteSetting, websiteSettingDTO);
         }
-        return userSettingDTO;
+        return websiteSettingDTO;
     }
 
     /***

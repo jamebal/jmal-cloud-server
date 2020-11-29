@@ -10,7 +10,7 @@ import java.util.List;
  * @Date 2020/11/5 3:58 下午
  */
 @Data
-public class UserSettingDTO {
+public class WebsiteSettingDTO {
     String userId;
     /***
      * 站点背景大图
@@ -32,6 +32,10 @@ public class UserSettingDTO {
      * 操作按钮(原始字符串)
      */
     String operatingButtons;
+    /***
+     * 分类页面背景
+     */
+    String categoryBackground;
 
     /***
      * 操作按钮对象集合

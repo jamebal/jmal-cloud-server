@@ -1,13 +1,8 @@
 package com.jmal.clouddisk.controller;
 
-import cn.hutool.core.convert.Convert;
-import cn.hutool.core.util.PageUtil;
 import cn.hutool.core.util.ReUtil;
-import cn.hutool.db.PageResult;
 import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.MarkdownVO;
-import com.jmal.clouddisk.model.Page;
-import com.jmal.clouddisk.model.UserSettingDTO;
+import com.jmal.clouddisk.model.WebsiteSettingDTO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.impl.SettingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,21 +59,21 @@ public class ArticlesController {
     }
 
     private void getSetting(ModelMap map) {
-        UserSettingDTO userSettingDTO = settingService.getWebsiteSetting();
-        setOperatingButtonList(userSettingDTO);
-        map.addAttribute("setting", userSettingDTO);
+        WebsiteSettingDTO websiteSettingDTO = settingService.getWebsiteSetting();
+        setOperatingButtonList(websiteSettingDTO);
+        map.addAttribute("setting", websiteSettingDTO);
     }
 
     /***
      * 解析设置里的文本为操作按钮列表
-     * @param userSettingDTO userSettingDTO
+     * @param websiteSettingDTO userSettingDTO
      */
-    private void setOperatingButtonList(UserSettingDTO userSettingDTO) {
-        if(userSettingDTO != null && !StringUtils.isEmpty(userSettingDTO.getOperatingButtons())){
-            String operatingButtons = userSettingDTO.getOperatingButtons();
-            List<UserSettingDTO.OperatingButton> operatingButtonList = new ArrayList<>();
+    private void setOperatingButtonList(WebsiteSettingDTO websiteSettingDTO) {
+        if(websiteSettingDTO != null && !StringUtils.isEmpty(websiteSettingDTO.getOperatingButtons())){
+            String operatingButtons = websiteSettingDTO.getOperatingButtons();
+            List<WebsiteSettingDTO.OperatingButton> operatingButtonList = new ArrayList<>();
             for (String button : operatingButtons.split("[\\n]")) {
-                UserSettingDTO.OperatingButton operatingButton = new UserSettingDTO.OperatingButton();
+                WebsiteSettingDTO.OperatingButton operatingButton = new WebsiteSettingDTO.OperatingButton();
                 int splitIndex = button.indexOf(":");
                 String label = button.substring(0, splitIndex);
                 String title = ReUtil.getGroup0("[^><]+(?=<\\/i>)", label);
@@ -90,7 +85,7 @@ public class ArticlesController {
                 operatingButton.setUrl(button.substring(splitIndex + 1));
                 operatingButtonList.add(operatingButton);
             }
-            userSettingDTO.setOperatingButtonList(operatingButtonList);
+            websiteSettingDTO.setOperatingButtonList(operatingButtonList);
         }
     }
 

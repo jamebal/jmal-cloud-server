@@ -42,10 +42,15 @@
                     <span th:text="${{operatingButton.title}}"></span>
                 </a>
             </li>
+            <li>
+                <a class="changeTheme">
+                    <i class="fas fa-moon"></i>
+                    <span>夜间</span>
+                </a>
+            </li>
         </ul>
     </div>
 </div>
-<link rel="stylesheet" type="text/css" href="/articles/css/sidebar.css">
 <script>
     function toggle() {
         let body = document.getElementById("body")
