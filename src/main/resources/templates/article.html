@@ -25,7 +25,6 @@
     <link rel="alternate" type="application/rdf+xml" title="jmal's blog &raquo; RSS 1.0" href="https://www.jmal.top/feed/rss/" />
     <link rel="alternate" type="application/atom+xml" title="jmal's blog &raquo; ATOM 1.0" href="https://www.jmal.top/feed/atom/" />
     <link rel="stylesheet" type="text/css" href="/articles/fontawesome-free-5.11.2-web/css/all.css">
-    <link rel="stylesheet" type="text/css" href="/articles/layui/css/layui.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vditor@3.6.3/dist/index.css" />
     <link rel="stylesheet" type="text/css" href="/articles/css/light/index.css">
 </head>
@@ -55,7 +54,7 @@
     <div class="body-wrapper">
         <el-main id="main_body" class="l_main article_l_main">
             <div class="source" style="display:none;" th:utext="${markdown.contentText}"></div>
-            <div id="preview" class="article-body">
+            <div id="preview" class="vditor-reset article-body">
             </div>
             <div class="back-top" style="display: none">
                 <svg class="icon">
@@ -94,7 +93,6 @@
     </footer>
 </div>
 <script src="/articles/js/jquery-3.5.1.min.js"></script>
-<script src="/articles/layui/layui.js"></script>
 <script src="//at.alicdn.com/t/font_2024484_t0l48d7lnj.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vditor@3.6.3/dist/index.min.js" defer></script>
 <script src="/articles/js/common.js"></script>
@@ -103,15 +101,18 @@
         /***
          * 初始化markdown解析器
          */
-        Vditor.preview(document.getElementById('preview'),
+        const vditorcc = Vditor.preview(document.getElementById('preview'),
             [[${markdown.contentText}]], {
                 hljs: {
                     // 是否显示行号
                     lineNumber: window.innerWidth > 768,
+                    style: 'native'
                 },
                 theme: {
+                    current: 'light'
                 },
                 after() {
+                    setContentTheme()
                     // 添加更新时间
                     addUpdateTime()
                     // 渲染目录
@@ -168,7 +169,8 @@
          */
         function renderContents(){
             let headers = $('.article-body').find(":header")
-            if(!headers || headers.length < 1){
+            if(!headers || headers.length < 2){
+                $('#main_body').width('100%')
                 return
             }
             // 显示目录按钮
@@ -475,6 +477,31 @@
                 }
             })
         }
+        function getCookie(cname) {
+            var name = cname + "=";
+            var decodedCookie = decodeURIComponent(document.cookie);
+            var ca = decodedCookie.split(';');
+            for(var i = 0; i <ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return "";
+        }
+        function getThemeCSSName() {
+            return getCookie('jmal-theme') || "light";
+        }
+        function setContentTheme(){
+            const isDark = getThemeCSSName() == 'dark'
+            Vditor.setContentTheme(isDark ? 'dark': 'light', 'https://cdn.jsdelivr.net/npm/vditor@3.6.3/dist/css/content-theme')
+        }
+        $('.changeTheme').click(function (){
+            setContentTheme()
+        })
     });
 </script>
 </body>
