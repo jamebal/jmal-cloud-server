@@ -44,8 +44,10 @@
             </li>
             <li>
                 <a class="changeTheme">
-                    <i class="fas fa-moon"></i>
-                    <span>夜间</span>
+                    <i th:if="${darkTheme}" class="fas fa-sun"></i>
+                    <span th:if="${darkTheme}">亮色</span>
+                    <i th:if="${!darkTheme}" class="fas fa-moon"></i>
+                    <span th:if="${!darkTheme}">暗色</span>
                 </a>
             </li>
         </ul>

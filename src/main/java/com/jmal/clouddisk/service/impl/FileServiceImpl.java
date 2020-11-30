@@ -696,10 +696,11 @@ public class FileServiceImpl implements IFileService {
         if (fileDocument == null) {
             fileDocument = mongoTemplate.findById(slug, FileDocument.class, COLLECTION_NAME);
         }
-        if (fileDocument != null) {
-            String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
-            fileDocument.setUsername(username);
+        if (fileDocument == null) {
+            return fileDocument;
         }
+        String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
+        fileDocument.setUsername(username);
         String filename = fileDocument.getName();
         fileDocument.setName(filename.substring(0, filename.length() - fileDocument.getSuffix().length() - 1));
         return fileDocument;

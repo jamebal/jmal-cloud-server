@@ -1,9 +1,11 @@
 package com.jmal.clouddisk.controller;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.WebsiteSettingDTO;
 import com.jmal.clouddisk.service.IFileService;
+import com.jmal.clouddisk.service.impl.CategoryService;
 import com.jmal.clouddisk.service.impl.SettingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +33,9 @@ public class ArticlesController {
     private SettingService settingService;
 
     @Autowired
+    private CategoryService categoryService;
+
+    @Autowired
     private IFileService fileService;
 
     @GetMapping("/articles")
@@ -41,13 +47,33 @@ public class ArticlesController {
         }
         getSetting(map);
         map.addAttribute("articlesData", fileService.getArticles(page, pageSize));
+        map.addAttribute("darkTheme", darkTheme(request));
         return "index";
+    }
+
+    private boolean darkTheme(HttpServletRequest request) {
+        Cookie[] cookies =  request.getCookies();
+        if(cookies != null){
+            for(Cookie cookie : cookies){
+                if("jmal-theme".equals(cookie.getName())){
+                    if("dark".equals(cookie.getValue())){
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     @GetMapping("/articles/{slug}")
     public String index(HttpServletRequest request, @PathVariable String slug, ModelMap map){
         getSetting(map);
-        map.addAttribute("markdown", fileService.getMarkDownContentBySlug(slug));
+        FileDocument fileDocument = fileService.getMarkDownContentBySlug(slug);
+        if(fileDocument == null){
+            return "error";
+        }
+        map.addAttribute("markdown", fileDocument);
+        map.addAttribute("darkTheme", darkTheme(request));
         return "article";
     }
 
@@ -55,6 +81,7 @@ public class ArticlesController {
     public String categories(HttpServletRequest request, ModelMap map){
         getSetting(map);
         map.addAttribute("categories", new FileDocument());
+        map.addAttribute("darkTheme", darkTheme(request));
         return "categories";
     }
 

@@ -37,7 +37,8 @@
                 </li>
                 <li>
                     <a class="changeTheme">
-                        <i class="fas fa-moon"></i>
+                        <i th:if="${darkTheme}" class="fas fa-sun"></i>
+                        <i th:if="${!darkTheme}" class="fas fa-moon"></i>
                     </a>
                 </li>
             </ul>
