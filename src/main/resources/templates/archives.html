@@ -1,58 +1,42 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title th:text="${setting.siteName}"></title>
-    <div th:replace="component/head.html"></div>
+    <title>归档</title>
+    <iframe th:replace="component/head.html"></iframe>
     <link rel="stylesheet" type="text/css" href="/articles/fontawesome-free-5.11.2-web/css/all.css">
     <link rel="stylesheet" type="text/css" href="/articles/layui/css/layui.css">
     <link rel="stylesheet" type="text/css" href="/articles/css/light/index.css">
     <link id="theme-css-dark" th:if="${darkTheme}" rel="stylesheet" type="text/css" href="/articles/css/dark/index.css">
+    <link rel="stylesheet" type="text/css" href="/articles/css/independent.css">
     <style>
-        .article-header {
-            height: 100vh;
+        .archives .layui-timeline {
+            max-width: 680px;
+            margin: 0 auto;
         }
-        .articles_l_main {
-            margin-top: 0;
+        .archives .brick {
+            margin-bottom: .625rem;
         }
-        .scroll-down-bar {
-            height: 6rem;
-            margin-top: -6rem;
-            text-align: center;
+        .archives a {
+            color: #333 !important;
             position: relative;
-            z-index: 11;
+            display: block;
+            padding: .625rem;
+            font-style: normal;
+            line-height: 1.125rem;
+            font-size: 1rem;
+            border-radius: 0.25rem;
+            outline: none !important;
+            text-decoration: none !important;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .scroll-down-bar:hover {
-            cursor: pointer;
+        .archives a:hover {
+            background: #eee;
         }
-        .scroll-down-bar i {
-            font-size: 2rem;
-            font-weight: bold;
-            display: inline-block;
-            position: relative;
-            padding-top: 2rem;
-            color: #fff;
-            -webkit-transform: translateZ(0);
-            -moz-transform: translateZ(0);
-            -ms-transform: translateZ(0);
-            -o-transform: translateZ(0);
-            transform: translateZ(0);
-            -webkit-animation: scroll-down 1.5s infinite;
-            animation: scroll-down 1.5s infinite;
-        }
-        @keyframes scroll-down {
-            0% {
-                opacity: 0.8;
-                top: 0;
-            }
-
-            50% {
-                opacity: 0.4;
-                top: -1em;
-            }
-            100% {
-                opacity: 0.8;
-                top: 0;
-            }
+        .archives .time {
+            color: #555;
+            padding-right: .625rem;
         }
     </style>
 </head>
@@ -68,54 +52,30 @@
     <div class="article-header">
         <div class="article-background" th:style="'background-image: url('+${setting.backgroundSite}+')'"></div>
         <div class="inner">
-            <div class="blog-title"><span id="article-title" th:text="${setting.backgroundTextSite}"></span><span class="typed-cursor">_</span></div>
+            <div class="blog-title"><span id="article-title">归档</span><span class="typed-cursor">_</span></div>
             <div class="blog-description font-mono">
-                <span th:text="${setting.backgroundDescSite}"></span>
+                <span></span>
             </div>
         </div>
     </div>
-    <div class="scroll-down-bar">
-        <i class="fas fa-chevron-down"></i>
-    </div>
-    <div class="l_body">
-        <div class="articles_l_main">
-            <section class="post-list">
-                <div th:each="article : ${articlesData.getData()}" class="post-wrapper">
-                    <article  class="post white-box shadow reveal">
-                        <section class="meta">
-                            <div class="meta" id="header-meta">
-                                <h2 class="title">
-                                    <a th:href="'/articles/'+${article.slug == null ? article.id:article.slug}" th:text="${article.name}"></a>
-                                </h2>
-                                <div class="new-meta-box">
-                                    <div class="new-meta-item author">
-                                        <a href="http://www.jmal.top" rel="nofollow">
-                                            <img th:src="'/public/s/view/thumbnail?id='+${article.avatar}">
-                                            <p th:text="${article.username}"></p>
-                                        </a>
-                                    </div>
-                                    <div class="new-meta-item date">
-                                        <a class="notlink">
-                                            <svg class="icon" aria-hidden="true">
-                                                <use xlink:href="#icon-fabu"></use>
-                                            </svg>
-                                            <p th:text="'发布于 '+${article.uploadTime()}"></p>
-                                        </a>
-                                    </div>
-                                </div>
-                                <hr>
+    <div class="body-wrapper">
+        <el-main id="main_body" class="l_main article_l_main">
+            <div class="archives article-body">
+                <ul class="layui-timeline">
+                    <li class="layui-timeline-item" th:each="articles : ${articlesData.getData()}">
+                        <i class="layui-icon layui-timeline-axis">&#xe63f;</i>
+                        <div class="layui-timeline-content layui-text">
+                            <h3 class="layui-timeline-title" th:text="${articles.get(0).date()}"></h3>
+                            <div class="brick" th:each="article : ${articles}">
+                                <a th:href="'/articles/'+${article.slug == null ? article.id:article.slug}">
+                                    <span class="time" th:text="${article.dateTime()}"></span>
+                                    <span th:text="${article.name}"> </span>
+                                </a>
                             </div>
-                        </section>
-                        <section class="article typo">
-                            <a th:href="'/articles/'+${article.slug == null ? article.id:article.slug}">
-                                <div class="article-entry" itemprop="articleBody">
-                                    <p><img th:if="${article.cover != null}" class="blog-background articles-list" th:src="${article.cover}" onerror="this.src='https://images.unsplash.com/photo-1582230587856-7fec01506148?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=60'"/></p>
-                                </div>
-                            </a>
-                        </section>
-                    </article>
-                </div>
-            </section>
+                        </div>
+                    </li>
+                </ul>
+            </div>
             <div id="laypage">
                 <div class="layui-box layui-laypage layui-laypage-default" id="layui-laypage-1">
                     <i th:if="${articlesData.getTotalPage() > 1}">
@@ -145,7 +105,7 @@
                     <use xlink:href="#icon-Up"></use>
                 </svg>
             </div>
-        </div>
+        </el-main>
     </div>
     <footer class="clearfix">
         <br><br><br>
@@ -203,16 +163,13 @@
         }
 
         let beforeScrollTop = document.documentElement.scrollTop;
-        $(window).on("scroll",function () {
+        $(window).on("scroll",function (event) {
             showBackTop()
             // 判断是上滑还是下滑
             let afterScrollTop = document.documentElement.scrollTop
             let delta = afterScrollTop - beforeScrollTop
             beforeScrollTop = afterScrollTop
             let scrollTop = $(this).scrollTop()
-            if(scrollTop < 400){
-                main.css('margin-top','-'+scrollTop/50+"rem");
-            }
             let scrollHeight = $(document).height()
             let windowHeight = $(this).height()
             if (scrollTop + windowHeight > scrollHeight - 10) {  //滚动到底部执行事件
@@ -228,14 +185,13 @@
                 fn(delta > 0 ? "down" : "up")
             }
         })
-        let main = $('.articles_l_main')
-        main.css('margin-top','-'+$(window).scrollTop()/50+"rem");
+        let main = $('#main_body')
         /***
          * 改变返回顶部按钮位置
          */
         function setBackTopPosition(){
             if(window.innerWidth > 1000){
-                $('.back-top').css('left', main.width() + main.offset().left + 15)
+                $('.back-top').css('left', main.width() + main.offset().left + 25)
             } else if (window.innerWidth > 768 && window.innerWidth < 1000){
                 $('.back-top').css('left', main.width() + main.offset().left - 30)
             } else {

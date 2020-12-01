@@ -25,8 +25,7 @@ public class CategoryDTO implements Comparable<CategoryDTO> {
     @ApiModelProperty(hidden = true)
     private String id;
 
-    @NotNull(message = "用户id不能为空")
-    @ApiModelProperty(name = "userId", value = "用户id", required = true)
+    @ApiModelProperty(name = "userId", value = "用户id")
     private String userId;
 
     @NotNull(message = "分类名称不能为空")
@@ -73,6 +72,9 @@ public class CategoryDTO implements Comparable<CategoryDTO> {
      */
     @ApiModelProperty(hidden = true)
     private List<CategoryDTO> children;
+
+    @ApiModelProperty(name = "categoryBackground", value = "分类背景")
+    String categoryBackground;
 
     @ApiModelProperty(hidden = true)
     private List<List<String>> categoryIdsList;

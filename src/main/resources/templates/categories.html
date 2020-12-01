@@ -1,34 +1,14 @@
 <!DOCTYPE HTML>
-<html class="no-js" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <link rel="shortcut icon" href="/usr/themes/Mirages/favicon.ico" type="image/x-icon" />
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-    <meta name="renderer" content="webkit">
-    <meta name="HandheldFriendly" content="true">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no">
-    <meta http-equiv="x-dns-prefetch-control" content="on">
-    <title>jmal's blog</title>
-    <meta property="og:title" content="分类" />
-    <meta property="og:site_name" content="jmal's blog" />
-    <meta property="og:type" content="website" />
-    <meta property="og:description" content="阿伦的奇幻之旅" />
-    <meta property="og:url" content="https://www.jmal.top" />
-    <meta property="og:image" content="https://images.unsplash.com/photo-1587387119725-9d6bac0f22fb?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=3300&q=80?imageView2/2/w/640/q/75" />
-    <meta name="description" content="阿伦的奇幻之旅" />
-    <meta name="keywords" content="typecho,php,blog" />
-    <meta name="template" content="Mirages" />
-    <link rel="pingback" href="https://www.jmal.top/action/xmlrpc" />
-    <link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://www.jmal.top/action/xmlrpc?rsd" />
-    <link rel="wlwmanifest" type="application/wlwmanifest+xml" href="https://www.jmal.top/action/xmlrpc?wlw" />
-    <link rel="alternate" type="application/rss+xml" title="jmal's blog &raquo; RSS 2.0" href="https://www.jmal.top/feed/" />
-    <link rel="alternate" type="application/rdf+xml" title="jmal's blog &raquo; RSS 1.0" href="https://www.jmal.top/feed/rss/" />
-    <link rel="alternate" type="application/atom+xml" title="jmal's blog &raquo; ATOM 1.0" href="https://www.jmal.top/feed/atom/" />
+    <title>分类</title>
+    <div th:replace="component/head.html"></div>
     <link rel="stylesheet" type="text/css" href="/articles/fontawesome-free-5.11.2-web/css/all.css">
     <link rel="stylesheet" type="text/css" href="/articles/layui/css/layui.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vditor@3.6.3/dist/index.css" />
+    <link rel="stylesheet" type="text/css" href="/articles/css/light/index.css">
     <link id="theme-css-dark" th:if="${darkTheme}" rel="stylesheet" type="text/css" href="/articles/css/dark/index.css">
-    <link rel="stylesheet" type="text/css" href="/articles/css/categories.css">
+    <link rel="stylesheet" type="text/css" href="/articles/css/independent.css">
 </head>
 <body class="theme-white color-default card  desktop macOS macOS-ge-10-11 macOS-ge-10-12 chrome not-safari open use-navbar">
 <!--[if lt IE 9]>
@@ -53,7 +33,6 @@
         <el-main id="main_body" class="l_main article_l_main">
             <div class="content article-body">
                 <body>
-                <!-- 为 ECharts 准备一个具备大小（宽高）的 DOM -->
                 <div id="main" style="width: 600px;height:400px;"></div>
                 </body>
             </div>
@@ -71,59 +50,7 @@
 <script src="/articles/js/common.js"></script>
 <script th:inline="javascript">
     $(function() {
-        var data = [
-            {
-                "id": "5fa28e355109e74b06c1a36a",
-                "userId": "5e2d6675aab5fa4b7fecb59b",
-                "name": "code",
-                "thumbnailName": "code",
-                "isDefault": true,
-                "articleNum": 5,
-                "value": 9,
-                "children": [
-                    {
-                        "id": "5fa28e505109e74b06c1a36c",
-                        "userId": "5e2d6675aab5fa4b7fecb59b",
-                        "name": "java",
-                        "thumbnailName": "java",
-                        "parentCategoryId": "5fa28e355109e74b06c1a36a",
-                        "articleNum": 1,
-                        "value": 4,
-                        "children": [
-                            {
-                                "id": "5fae9f539b9840278cb4a47f",
-                                "userId": "5e2d6675aab5fa4b7fecb59b",
-                                "name": "1",
-                                "thumbnailName": "1",
-                                "parentCategoryId": "5fa28e505109e74b06c1a36c",
-                                "articleNum": 2,
-                                "value": 3,
-                                "children": [
-                                    {
-                                        "id": "5fae9f5d9b9840278cb4a480",
-                                        "userId": "5e2d6675aab5fa4b7fecb59b",
-                                        "name": "2",
-                                        "thumbnailName": "2",
-                                        "parentCategoryId": "5fae9f539b9840278cb4a47f",
-                                        "articleNum": 1,
-                                        "value": 1
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "id": "5fa28e405109e74b06c1a36b",
-                "userId": "5e2d6675aab5fa4b7fecb59b",
-                "name": "日常",
-                "thumbnailName": "日常",
-                "isDefault": false,
-                "articleNum": 4,
-                "value": 4
-            }
-        ];
+        let data = [[${categories}]];
 
         let body = document.querySelector(".article-body")
         let chart = document.getElementById("main")
@@ -135,7 +62,7 @@
         myChartContainer()
         // 基于准备好的dom，初始化echarts实例
         let myChart = echarts.init(chart)
-        option = {
+        let option = {
             tooltip: {
                 formatter(params){
                     const html = params.marker
@@ -168,6 +95,59 @@
             myChartContainer()
             myChart.resize()
         }
+
+        function fn (direction) {
+            // 判断是上滑显示,下滑隐藏
+            const top = $('#top')
+            const toogleNav = $('#toggle-nav')
+
+            const body = document.getElementById("body")
+
+            if(direction === 'down'){
+                if(top.hasClass('animateIn')){
+                    top.removeClass('animateIn')
+                    top.addClass('animateOut')
+                    toogleNav.removeClass('animateRight')
+                    toogleNav.addClass('animateLeft')
+                    if(body.style.transform.length > 0) {
+                        document.getElementById("sidebar-nav").style.transform = ''
+                        body.style.transform = ''
+                        document.getElementById("toggle-nav").style.transform = ''
+                    }
+                }
+            }
+            if(direction === 'up'){
+                if(top.hasClass('animateOut')){
+                    top.removeClass('animateOut')
+                    top.addClass('animateIn')
+                    toogleNav.removeClass('animateLeft')
+                    toogleNav.addClass('animateRight')
+                }
+            }
+        }
+
+        let beforeScrollTop = document.documentElement.scrollTop;
+        $(window).on("scroll",function () {
+            // 判断是上滑还是下滑
+            let afterScrollTop = document.documentElement.scrollTop
+            let delta = afterScrollTop - beforeScrollTop
+            beforeScrollTop = afterScrollTop
+            let scrollTop = $(this).scrollTop()
+            let scrollHeight = $(document).height()
+            let windowHeight = $(this).height()
+            if (scrollTop + windowHeight > scrollHeight - 10) {  //滚动到底部执行事件
+                fn('bottom')
+                return
+            }
+            if (afterScrollTop < 10 || afterScrollTop > $(document.body).height - 10) {
+                fn('up')
+            } else {
+                if (Math.abs(delta) < 10) {
+                    return false
+                }
+                fn(delta > 0 ? "down" : "up")
+            }
+        })
     })
 </script>
 </body>

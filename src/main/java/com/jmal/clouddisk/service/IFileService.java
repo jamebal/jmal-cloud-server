@@ -219,11 +219,20 @@ public interface IFileService {
 
     /***
      * 获取文章列表
-     * @param page
-     * @param pageSize
+     * @param page page
+     * @param pageSize pageSize
+     * @param categoryId categoryId
      * @return Page
      */
-    Page<Object> getArticles(Integer page, Integer pageSize);
+    Page<Object> getArticles(Integer page, Integer pageSize, String categoryId);
+
+    /***
+     * 归档
+     * @param page page
+     * @param pageSize pageSize
+     * @return Page
+     */
+    Page<Object> getArchives(Integer page, Integer pageSize);
 
     /***
      * 根据缩略名获取markdown内容

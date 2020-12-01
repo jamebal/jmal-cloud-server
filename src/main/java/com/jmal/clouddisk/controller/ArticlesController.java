@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.controller;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ReUtil;
+import com.jmal.clouddisk.model.Category;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.WebsiteSettingDTO;
 import com.jmal.clouddisk.service.IFileService;
@@ -40,29 +40,15 @@ public class ArticlesController {
 
     @GetMapping("/articles")
     public String articles(HttpServletRequest request, ModelMap map){
+        getSetting(map);
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
         if(!StringUtils.isEmpty(pIndex)){
             page = Integer.parseInt(pIndex);
         }
-        getSetting(map);
-        map.addAttribute("articlesData", fileService.getArticles(page, pageSize));
+        map.addAttribute("articlesData", fileService.getArticles(page, pageSize, null));
         map.addAttribute("darkTheme", darkTheme(request));
         return "index";
-    }
-
-    private boolean darkTheme(HttpServletRequest request) {
-        Cookie[] cookies =  request.getCookies();
-        if(cookies != null){
-            for(Cookie cookie : cookies){
-                if("jmal-theme".equals(cookie.getName())){
-                    if("dark".equals(cookie.getValue())){
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     @GetMapping("/articles/{slug}")
@@ -80,9 +66,47 @@ public class ArticlesController {
     @GetMapping("/articles/categories")
     public String categories(HttpServletRequest request, ModelMap map){
         getSetting(map);
-        map.addAttribute("categories", new FileDocument());
+        map.addAttribute("categories", categoryService.list(null, null));
         map.addAttribute("darkTheme", darkTheme(request));
         return "categories";
+    }
+
+    @GetMapping("/articles/archives")
+    public String archives(HttpServletRequest request, ModelMap map){
+        getSetting(map);
+        int page = 1, pageSize = 100;
+        String pIndex = request.getParameter("page");
+        if(!StringUtils.isEmpty(pIndex)){
+            page = Integer.parseInt(pIndex);
+        }
+        map.addAttribute("articlesData", fileService.getArchives(page, pageSize));
+        map.addAttribute("darkTheme", darkTheme(request));
+        return "archives";
+    }
+
+    @GetMapping("/articles/categories/{categoryName}")
+    public String getCategoryByName(HttpServletRequest request, ModelMap map, @PathVariable String categoryName){
+        getSetting(map);
+        if (StringUtils.isEmpty(categoryName)){
+            return "error";
+        }
+        String categoryId = null;
+        if (!StringUtils.isEmpty(categoryName)) {
+            Category category = categoryService.getCategoryInfo(null, categoryName);
+            if (category == null) {
+                return "error";
+            }
+            map.addAttribute("category", category);
+            categoryId = category.getId();
+        }
+        int page = 1, pageSize = 10;
+        String pIndex = request.getParameter("page");
+        if(!StringUtils.isEmpty(pIndex)){
+            page = Integer.parseInt(pIndex);
+        }
+        map.addAttribute("articlesData", fileService.getArticles(page, pageSize, categoryId));
+        map.addAttribute("darkTheme", darkTheme(request));
+        return "category";
     }
 
     private void getSetting(ModelMap map) {
@@ -114,6 +138,20 @@ public class ArticlesController {
             }
             websiteSettingDTO.setOperatingButtonList(operatingButtonList);
         }
+    }
+
+    private boolean darkTheme(HttpServletRequest request) {
+        Cookie[] cookies =  request.getCookies();
+        if(cookies != null){
+            for(Cookie cookie : cookies){
+                if("jmal-theme".equals(cookie.getName())){
+                    if("dark".equals(cookie.getValue())){
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
 }

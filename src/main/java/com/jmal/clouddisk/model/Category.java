@@ -39,6 +39,11 @@ public class Category implements Comparable<Category> {
     private String desc;
 
     /***
+     * 分类背景
+     */
+    String categoryBackground;
+
+    /***
      * 按分类名称排序
      * @param category Category
      * @return int

@@ -18,11 +18,11 @@ import java.util.Map;
 
 /**
  * @author jmal
- * @Description 分类管理
+ * @Description 分类管理(文章)
  * @Date 2020/10/26 5:47 下午
  */
 @RestController
-@Api(tags = "分类管理")
+@Api(tags = "分类管理(文章)")
 public class CategoryController {
 
     @Autowired
@@ -30,13 +30,13 @@ public class CategoryController {
 
     @ApiOperation("分类列表")
     @GetMapping("/category/list")
-    public ResponseResult<List<CategoryDTO>> list(@RequestParam String userId, String parentCategoryId) {
+    public ResponseResult<List<CategoryDTO>> list(String userId, String parentCategoryId) {
         return ResultUtil.success(categoryService.list(userId, parentCategoryId));
     }
 
     @ApiOperation("分类树")
     @GetMapping("/category/tree")
-    public ResponseResult<List<CategoryDTO>> tree(@RequestParam String userId) {
+    public ResponseResult<List<CategoryDTO>> tree(String userId) {
         return ResultUtil.success(categoryService.tree(userId, false));
     }
 

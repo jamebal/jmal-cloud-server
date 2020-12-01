@@ -90,7 +90,11 @@ public class CategoryService {
      */
     public List<CategoryDTO> tree(String userId, boolean statArticleNum) {
         Query query = new Query();
-        query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
+        if(!StringUtils.isEmpty(userId)){
+            query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
+        } else {
+            query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
+        }
         List<Category> categoryList = mongoTemplate.find(query, Category.class, COLLECTION_NAME);
         List<CategoryDTO> categoryDTOList = categoryList.parallelStream().map(category -> {
             CategoryDTO categoryDTO = new CategoryDTO();
@@ -206,7 +210,11 @@ public class CategoryService {
      */
     public Category getCategoryInfo(String userId, String categoryName) {
         Query query = new Query();
-        query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
+        if (!StringUtils.isEmpty(userId)) {
+            query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
+        } else {
+            query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
+        }
         query.addCriteria(Criteria.where("name").is(categoryName));
         return mongoTemplate.findOne(query, Category.class, COLLECTION_NAME);
     }

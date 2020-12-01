@@ -21,6 +21,7 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.websocket.SocketManager;
 import com.mongodb.client.AggregateIterable;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.result.UpdateResult;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
@@ -62,10 +63,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.mongodb.client.model.Accumulators.sum;
-import static com.mongodb.client.model.Aggregates.group;
-import static com.mongodb.client.model.Aggregates.match;
+import static com.mongodb.client.model.Aggregates.*;
 import static com.mongodb.client.model.Filters.*;
 import static java.util.stream.Collectors.toList;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Projections.computed;
+import static com.mongodb.client.model.Projections.excludeId;
+import static com.mongodb.client.model.Projections.fields;
+import static com.mongodb.client.model.Projections.include;
+import static com.mongodb.client.model.Sorts.descending;
+
 
 /**
  * @author jmal
@@ -669,19 +677,65 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public Page<Object> getArticles(Integer page, Integer pageSize) {
+    public Page<Object> getArticles(Integer page, Integer pageSize, String categoryId) {
         ArticleDTO articleDTO = new ArticleDTO();
         articleDTO.setPageIndex(page);
         articleDTO.setPageSize(pageSize);
         articleDTO.setIsRelease(true);
+        if (!StringUtils.isEmpty(categoryId)) {
+            articleDTO.setCategoryIds(new String[]{categoryId});
+        }
         ResponseResult<Object> responseResult = getMarkdownList(articleDTO);
         Page<Object> pageResult = new Page<Object>(page - 1, pageSize, Convert.toInt(responseResult.getCount()));
         pageResult.setData(responseResult.getData());
         return pageResult;
     }
 
-    public static void main(String[] args) {
-        Console.log(PageUtil.rainbow(4, 200, 5));
+    @Override
+    public Page<Object> getArchives(Integer page, Integer pageSize) {
+        int skip = 0, limit = 5;
+        if (page != null && pageSize != null) {
+            skip = (page - 1) * pageSize;
+            limit = pageSize;
+        }
+        Query query = new Query();
+        query.addCriteria(Criteria.where("release").is(true));
+        long count = mongoTemplate.count(query, COLLECTION_NAME);
+
+        List list = Arrays.asList(
+                match(eq("release", true)),
+                sort(descending("updateDate")),
+                project(fields(computed("date", "$updateDate"),
+                                computed("day", eq("$dateToString", and(eq("format", "%Y-%m"), eq("date", "$updateDate")))),
+                                include("name"),
+                                include("slug"))),
+                skip(skip),
+                limit(limit));
+        Map<String, List<ArchivesVO>> resutMap = new LinkedHashMap<>();
+        AggregateIterable aggregateIterable = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
+        MongoCursor<Document> cursor = aggregateIterable.iterator();
+        while (cursor.hasNext()){
+            Document doc = cursor.next();
+            String day = doc.getString("day");
+            List<ArchivesVO> aList;
+            if(resutMap.containsKey(day)){
+                aList = resutMap.get(day);
+            } else {
+                aList = new ArrayList<>();
+            }
+            ArchivesVO archivesVO = new ArchivesVO();
+            String name = doc.getString("name");
+            archivesVO.setName(name.substring(0, name.length() - 3));
+            Date time = doc.get("date", Date.class);
+            archivesVO.setDate(time);
+            archivesVO.setId(doc.getObjectId("_id").toHexString());
+            archivesVO.setSlug(doc.getString("slug"));
+            aList.add(archivesVO);
+            resutMap.put(day, aList);
+        }
+        Page<Object> pageResult = new Page<Object>(page - 1, pageSize, Convert.toInt(count));
+        pageResult.setData(resutMap.values());
+        return pageResult;
     }
 
     @Override

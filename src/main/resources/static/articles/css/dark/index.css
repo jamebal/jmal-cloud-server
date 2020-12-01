@@ -1144,7 +1144,9 @@ code::-webkit-scrollbar-corner {
     width: 100%;
     height: 100%;
     z-index: 999;
-    background: #181c27;
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    background-color: #262e3885;
 }
 
 #wrap-mask > .boxLoading {
