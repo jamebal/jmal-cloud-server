@@ -1046,6 +1046,20 @@ html {
         width: 240px;
     }
 }
+.layui-timeline-title {
+    color: #d1d2da !important;
+}
+.archives a {
+    color: #d1d2da !important;
+}
+.archives a:hover {
+    color: #d1d2da;
+    background: #364151;
+}
+.archives .time {
+    color: #d1d2da;
+    padding-right: .625rem;
+}
 /*article-footer*/
 footer, footer p {
     font-size: .8125rem;

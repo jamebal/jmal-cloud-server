@@ -210,8 +210,8 @@
             let delta = afterScrollTop - beforeScrollTop
             beforeScrollTop = afterScrollTop
             let scrollTop = $(this).scrollTop()
-            if(scrollTop < 400){
-                main.css('margin-top','-'+scrollTop/50+"rem");
+            if(scrollTop < 480){
+                main.css('margin-top','-'+scrollTop/60+"rem");
             }
             let scrollHeight = $(document).height()
             let windowHeight = $(this).height()
@@ -229,7 +229,12 @@
             }
         })
         let main = $('.articles_l_main')
-        main.css('margin-top','-'+$(window).scrollTop()/50+"rem");
+        let scrollTop = $(window).scrollTop()
+        if(scrollTop < 480){
+            main.css('margin-top','-'+$(window).scrollTop()/60+"rem");
+        } else {
+            main.css('margin-top','-8rem');
+        }
         /***
          * 改变返回顶部按钮位置
          */
