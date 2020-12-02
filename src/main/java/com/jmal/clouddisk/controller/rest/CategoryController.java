@@ -18,11 +18,11 @@ import java.util.Map;
 
 /**
  * @author jmal
- * @Description 分类管理(文章)
+ * @Description 分类管理
  * @Date 2020/10/26 5:47 下午
  */
 @RestController
-@Api(tags = "分类管理(文章)")
+@Api(tags = "分类管理")
 public class CategoryController {
 
     @Autowired
@@ -55,7 +55,6 @@ public class CategoryController {
     @ApiOperation("添加分类")
     @PostMapping("/category/add")
     public ResponseResult<Object> add(@ModelAttribute @Validated CategoryDTO categoryDTO) {
-        categoryDTO.setId(null);
         return categoryService.add(categoryDTO);
     }
 

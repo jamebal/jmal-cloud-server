@@ -106,4 +106,5 @@ public class UploadApiParamDTO {
     String cover;
     String slug;
     String[] categoryIds;
+    String[] tagNames;
 }

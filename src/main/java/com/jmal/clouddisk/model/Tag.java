@@ -19,5 +19,7 @@ public class Tag {
     /***
      * 缩略名，默认为name
      */
-    private String thumbnailName;
+    private String slug;
+
+    String tagBackground;
 }

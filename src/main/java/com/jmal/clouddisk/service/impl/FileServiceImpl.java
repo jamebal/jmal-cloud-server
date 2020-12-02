@@ -101,6 +101,9 @@ public class FileServiceImpl implements IFileService {
     private CategoryService categoryService;
 
     @Autowired
+    private TagService tagService;
+
+    @Autowired
     private SimpMessagingTemplate template;
 
     public static final String COLLECTION_NAME = "fileDocument";
@@ -871,6 +874,7 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setCover(upload.getCover());
         fileDocument.setSlug(getSlug(upload));
         fileDocument.setCategoryIds(upload.getCategoryIds());
+        fileDocument.setTagIds(tagService.getTagIdsByNames(upload.getTagNames()));
         fileDocument.setIsFolder(false);
         Update update = MongoUtil.getUpsert(fileDocument);
         mongoTemplate.upsert(query, update, COLLECTION_NAME);

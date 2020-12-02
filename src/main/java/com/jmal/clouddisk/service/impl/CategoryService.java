@@ -4,6 +4,8 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.model.Category;
 import com.jmal.clouddisk.model.CategoryDTO;
+import com.jmal.clouddisk.model.Tag;
+import com.jmal.clouddisk.model.TagDTO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -236,8 +238,7 @@ public class CategoryService {
      * @return ResponseResult
      */
     public ResponseResult<Object> add(CategoryDTO categoryDTO) {
-        Category category1 = getCategoryInfo(categoryDTO.getUserId(), categoryDTO.getName());
-        if (category1 != null) {
+        if (categoryExists(categoryDTO)) {
             return ResultUtil.warning("该分类名称已存在");
         }
         if (!StringUtils.isEmpty(categoryDTO.getParentCategoryId())) {
@@ -255,6 +256,11 @@ public class CategoryService {
         return ResultUtil.success();
     }
 
+    private boolean categoryExists(CategoryDTO categoryDTO) {
+        Category category = getCategoryInfo(categoryDTO.getUserId(), categoryDTO.getName());
+        return category != null;
+    }
+
     /***
      * 更新分类
      * @param categoryDTO 参数对象
@@ -264,6 +270,9 @@ public class CategoryService {
         Category category1 = getCategoryInfo(categoryDTO.getId());
         if (category1 == null) {
             return ResultUtil.warning("该分类不存在");
+        }
+        if (categoryExists(categoryDTO)) {
+            return ResultUtil.warning("该分类名称已存在");
         }
         if (StringUtils.isEmpty(categoryDTO.getThumbnailName())) {
             categoryDTO.setThumbnailName(categoryDTO.getName());

@@ -79,5 +79,8 @@ public class FileDocument extends FileBase{
      * 分类Id集合
      */
     private String[] categoryIds;
-
+    /***
+     * 标签Id集合
+     */
+    private String[] tagIds;
 }
