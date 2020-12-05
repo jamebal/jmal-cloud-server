@@ -3,13 +3,10 @@
 <head>
     <title th:text="${setting.siteName}"></title>
     <div th:replace="component/head.html"></div>
-    <link rel="stylesheet" type="text/css" href="/articles/fontawesome-free-5.11.2-web/css/all.css">
     <link rel="stylesheet" type="text/css" href="/articles/layui/css/layui.css">
-    <link rel="stylesheet" type="text/css" href="/articles/css/light/index.css">
-    <link id="theme-css-dark" th:if="${darkTheme}" rel="stylesheet" type="text/css" href="/articles/css/dark/index.css">
     <style>
         .article-header {
-            height: 100vh;
+            height: 100vh!important;
         }
         .articles_l_main {
             margin-top: 0;
@@ -153,16 +150,16 @@
     </footer>
 </div>
 <script src="/articles/js/jquery-3.5.1.min.js"></script>
-<script src="//at.alicdn.com/t/font_2024484_afbeg29hegb.js"></script>
 <script src="/articles/js/common.js"></script>
 <script th:inline="javascript">
     $(function(){
+        const body = $('html, body')
         if(window.innerWidth <= 768){
             $(".rainbow-page").hide()
         }
 
         $(".back-top").click(function(){
-            $('html, body').animate({
+            body.animate({
                 scrollTop: 0
             }, 400)
         });
@@ -250,6 +247,12 @@
         setBackTopPosition()
         $(window).on("resize", function (){
             setBackTopPosition()
+        })
+        const scrollDownBar = $('.scroll-down-bar')
+        scrollDownBar.click(function (){
+            body.animate({
+                scrollTop: window.innerHeight * 0.8
+            }, 800)
         })
     });
 </script>

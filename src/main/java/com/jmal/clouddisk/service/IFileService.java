@@ -221,10 +221,27 @@ public interface IFileService {
      * 获取文章列表
      * @param page page
      * @param pageSize pageSize
+     * @return Page
+     */
+    Page<Object> getArticles(Integer page, Integer pageSize);
+
+    /***
+     * 获取文章列表
+     * @param page page
+     * @param pageSize pageSize
      * @param categoryId categoryId
      * @return Page
      */
-    Page<Object> getArticles(Integer page, Integer pageSize, String categoryId);
+    Page<Object> getArticlesByCategoryId(Integer page, Integer pageSize, String categoryId);
+
+    /***
+     * 获取文章列表
+     * @param page page
+     * @param pageSize pageSize
+     * @param categoryId tagId
+     * @return Page
+     */
+    Page<Object> getArticlesByTagId(int page, int pageSize, String tagId);
 
     /***
      * 归档

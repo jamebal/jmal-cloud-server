@@ -1,6 +1,8 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.extra.cglib.CglibUtil;
+import com.jmal.clouddisk.model.CategoryDTO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.TagDTO;
 import com.jmal.clouddisk.util.MongoUtil;
@@ -43,11 +45,37 @@ public class TagService {
     public List<TagDTO> list(String userId) {
         Query query = getQueryUserId(userId);
         List<Tag> tagList = mongoTemplate.find(query,Tag.class, COLLECTION_NAME);
-        return tagList.stream().map(tag -> {
+        return tagList.parallelStream().map(tag -> {
             TagDTO tagDTO = new TagDTO();
             CglibUtil.copy(tag, tagDTO);
             return tagDTO;
         }).sorted().collect(Collectors.toList());
+    }
+
+    /***
+     * 标签和文章数类表
+     * @return List<TagDTO>
+     */
+    public List<TagDTO> listTagsOfArticle() {
+        Query query = getQueryUserId(null);
+        List<Tag> tagList = mongoTemplate.find(query,Tag.class, COLLECTION_NAME);
+        return tagList.parallelStream().map(tag -> {
+            TagDTO tagDTO = new TagDTO();
+            CglibUtil.copy(tag, tagDTO);
+            getTagArticlesNum(tagDTO);
+            return tagDTO;
+        }).sorted().collect(Collectors.toList());
+    }
+
+    /***
+     * 获取标签的文章数
+     * @param tagDTO tagDTO
+     */
+    private void getTagArticlesNum(TagDTO tagDTO) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("tagIds").is(tagDTO.getId()));
+        query.addCriteria(Criteria.where("release").is(true));
+        tagDTO.setArticleNum(mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME));
     }
 
     /***

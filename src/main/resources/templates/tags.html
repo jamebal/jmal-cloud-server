@@ -1,9 +1,8 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>分类</title>
+    <title>标签</title>
     <div th:replace="component/head.html"></div>
-    <link rel="stylesheet" type="text/css" href="/articles/layui/css/layui.css">
     <link rel="stylesheet" type="text/css" href="/articles/css/independent.css">
 </head>
 <body class="theme-white color-default card  desktop macOS macOS-ge-10-11 macOS-ge-10-12 chrome not-safari open use-navbar">
@@ -22,7 +21,7 @@
     <div class="article-header">
         <div class="article-background" th:style="${setting.categoryBackground !=null ? 'background-image: url('+setting.categoryBackground+')':''}"></div>
         <div class="inner">
-            <div class="blog-title"><span id="article-title">分类</span><span class="typed-cursor">_</span></div>
+            <div class="blog-title"><span id="article-title">标签</span><span class="typed-cursor">_</span></div>
         </div>
     </div>
     <div class="body-wrapper">
@@ -40,51 +39,117 @@
     </footer>
 </div>
 <script src="/articles/js/jquery-3.5.1.min.js"></script>
-<script src="/articles/layui/layui.js"></script>
-<script src="/articles/js/echarts.js"></script>
+<script src="/articles/js/echarts.min.js"></script>
+<script src="/articles/js/echarts-wordcloud.min.js"></script>
 <script src="/articles/js/common.js"></script>
 <script th:inline="javascript">
     $(function() {
-        let data = [[${categories}]];
-
+        const tags = [[${tags}]];
+        const colorList = [
+            '#3a96f5',
+            '#739b06',
+            '#f52443',
+            '#1563f2',
+            '#2c80c5',
+            '#e24bf4',
+            '#1acaff',
+            '#f08300',
+            '#2db54f'
+        ]
+        let data = []
+        let maxValue = 0, minValue = 0
+        for (var i = 0; i < tags.length; ++i) {
+            const value = tags[i].articleNum
+            if(value > maxValue) {
+                maxValue = value
+            }
+            if(value < maxValue) {
+                minValue = value
+            }
+            data.push({name: tags[i].name,value: value})
+        }
+        let diff = 50 - maxValue
+        maxValue += diff
+        minValue += diff
+        let option = {
+            // backgroundColor: '#252d38',
+            tooltip: {
+                formatter(params){
+                    const html = params.marker
+                    return html + params.name + ' - ' + '文章数:' + params.data.value
+                }
+            },
+            grid: {
+                left: 0,
+                bottom: 0,
+                top: 0,
+                right: 0,
+            },
+            xAxis: {
+                type: "category",
+                show: false
+            },
+            yAxis: {
+                max: 100,
+                show: false
+            },
+            series: [{
+                zlevel: -1,
+                type: 'pictorialBar',
+                name: 'pictorial',
+                silent: true,
+                barWidth: '100%',
+                barMaxWidth: '100%',
+                itemStyle: {
+                    normal: {
+                        opacity: .0 //自己项目中这里可以设置0全透明，然后可以写一个div背景加载一个美化过的云图片，重合放在这个图表下面。
+                    }
+                },
+                data: [{
+                    value: 100
+                }]
+            },
+                {
+                    type: 'wordCloud',
+                    sizeRange: [20, 100],
+                    rotationRange: [0, 0],
+                    //   maskImage: maskImage,
+                    textPadding: 0,
+                    gridSize: 30, //用于标记画布可用性的网格大小（以像素为单位）//字距越大，字距越大。
+                    width: '100%',
+                    height: '100%',
+                    left: 'center',
+                    top: 'center',
+                    drawOutOfBound: false,
+                    textStyle: {
+                        normal: {
+                            fontFamily: "sans-serif",
+                            color: function() {
+                                let index = Math.floor(Math.random() * colorList.length);
+                                return colorList[index];
+                            }
+                        }
+                    },
+                    data: data
+                },
+            ]
+        }
         let body = document.querySelector(".article-body")
         let chart = document.getElementById("main")
         // 自适应高度
         let myChartContainer = function (){
             const width = body.clientWidth - 70
             chart.style.width = width + 'px'
-            chart.style.height = width + 'px'
+            chart.style.height = width * 0.618 + 'px'
         }
         myChartContainer()
         // 基于准备好的dom，初始化echarts实例
         let myChart = echarts.init(chart)
-        let option = {
-            tooltip: {
-                formatter(params){
-                    const html = params.marker
-                    return html + params.name + ' - ' + '文章数:' + params.data.articleNum
-                }
-            },
-            visualMap: {
-                type: 'continuous',
-                min: 0,
-                max: 10,
-                inRange: {
-                    color: ['#2D5F73', '#538EA6', '#F2D1B3', '#F2B8A2', '#F28C8C']
-                }
-            },
-            series: {
-                type: 'sunburst',
-                data: data,
-                radius: [0, '90%'],
-                label: {
-                    rotate: 'radial'
-                }
-            }
-        };
+
         myChart.setOption(option)
         myChart.on('click', function (params) {
-            window.location.href = `categories/${params.name}`
+            console.log(params)
+            window.location.href = `tags/${params.name}`
         });
         window.onresize=function(){
             myChartContainer()

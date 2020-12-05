@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title th:text="${category.name}"></title>
+    <title th:text="${tag.name}"></title>
     <iframe th:replace="component/head.html"></iframe>
 </head>
 <body class="theme-white color-default card  desktop macOS macOS-ge-10-11 macOS-ge-10-12 chrome not-safari open use-navbar">
@@ -14,9 +14,9 @@
         <div th:include="component/article-top.html"></div>
     </div>
     <div class="article-header">
-        <div class="article-background" th:style="${category.categoryBackground !=null ? 'background-image: url('+ category.categoryBackground +')':''}"></div>
+        <div class="article-background" th:style="${tag.tagBackground !=null ? 'background-image: url('+ tag.tagBackground +')':''}"></div>
         <div class="inner">
-            <div class="blog-title"><span id="article-title" th:text="${category.name}"></span><span class="typed-cursor">_</span></div>
+            <div class="blog-title"><span id="article-title" th:text="${tag.name}"></span><span class="typed-cursor">_</span></div>
             <div class="blog-description font-mono">
                 <span th:text="'共计'+${articlesData.getTotal()}+'篇文章'"></span>
             </div>

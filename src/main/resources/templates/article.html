@@ -3,10 +3,7 @@
 <head>
     <title th:text="${markdown.name}"></title>
     <iframe th:replace="component/head.html"></iframe>
-    <link rel="stylesheet" type="text/css" href="/articles/fontawesome-free-5.11.2-web/css/all.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vditor@3.6.3/dist/index.css" />
-    <link rel="stylesheet" type="text/css" href="/articles/css/light/index.css">
-    <link id="theme-css-dark" th:if="${darkTheme}" rel="stylesheet" type="text/css" href="/articles/css/dark/index.css">
 </head>
 <body class="theme-white color-default card  desktop macOS macOS-ge-10-11 macOS-ge-10-12 chrome not-safari open use-navbar">
 <!--[if lt IE 9]>
@@ -73,7 +70,6 @@
     </footer>
 </div>
 <script src="/articles/js/jquery-3.5.1.min.js"></script>
-<script src="//at.alicdn.com/t/font_2024484_t0l48d7lnj.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vditor@3.6.3/dist/index.min.js" defer></script>
 <script th:inline="javascript">
     $(function(){

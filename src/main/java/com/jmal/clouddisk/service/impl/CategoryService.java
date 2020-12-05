@@ -79,6 +79,7 @@ public class CategoryService {
     private void getCategoryArticlesNum(CategoryDTO categoryDTO) {
         Query query = new Query();
         query.addCriteria(Criteria.where("categoryIds").is(categoryDTO.getId()));
+        query.addCriteria(Criteria.where("release").is(true));
         long count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
         categoryDTO.setArticleNum(Convert.toInt(count));
         categoryDTO.setValue(Convert.toInt(count));

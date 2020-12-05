@@ -34,6 +34,9 @@ public class ArticleDTO {
     @ApiModelProperty(name = "categoryIds", value = "分类id集合")
     String[] categoryIds;
 
+    @ApiModelProperty(name = "tagIds", value = "标签id集合")
+    String[] tagIds;
+
     @ApiModelProperty(name = "sortableProp", value = "排序字段")
     String sortableProp;
 

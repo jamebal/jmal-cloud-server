@@ -3,8 +3,6 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.lang.Console;
-import cn.hutool.core.util.PageUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.extra.cglib.CglibUtil;
@@ -65,14 +63,9 @@ import java.util.regex.Pattern;
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Aggregates.*;
 import static com.mongodb.client.model.Filters.*;
-import static java.util.stream.Collectors.toList;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
-import static com.mongodb.client.model.Projections.computed;
-import static com.mongodb.client.model.Projections.excludeId;
-import static com.mongodb.client.model.Projections.fields;
-import static com.mongodb.client.model.Projections.include;
+import static com.mongodb.client.model.Projections.*;
 import static com.mongodb.client.model.Sorts.descending;
+import static java.util.stream.Collectors.toList;
 
 
 /**
@@ -680,7 +673,11 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public Page<Object> getArticles(Integer page, Integer pageSize, String categoryId) {
+    public Page<Object> getArticles(Integer page, Integer pageSize) {
+        return getArticles(page, pageSize, null, null);
+    }
+
+    private Page<Object> getArticles(Integer page, Integer pageSize, String categoryId, String tagId) {
         ArticleDTO articleDTO = new ArticleDTO();
         articleDTO.setPageIndex(page);
         articleDTO.setPageSize(pageSize);
@@ -688,10 +685,23 @@ public class FileServiceImpl implements IFileService {
         if (!StringUtils.isEmpty(categoryId)) {
             articleDTO.setCategoryIds(new String[]{categoryId});
         }
+        if (!StringUtils.isEmpty(tagId)) {
+            articleDTO.setTagIds(new String[]{tagId});
+        }
         ResponseResult<Object> responseResult = getMarkdownList(articleDTO);
         Page<Object> pageResult = new Page<Object>(page - 1, pageSize, Convert.toInt(responseResult.getCount()));
         pageResult.setData(responseResult.getData());
         return pageResult;
+    }
+
+    @Override
+    public Page<Object> getArticlesByCategoryId(Integer page, Integer pageSize, String categoryId) {
+        return getArticles(page, pageSize, categoryId, null);
+    }
+
+    @Override
+    public Page<Object> getArticlesByTagId(int page, int pageSize, String tagId) {
+        return getArticles(page, pageSize, null, tagId);
     }
 
     @Override
@@ -709,19 +719,19 @@ public class FileServiceImpl implements IFileService {
                 match(eq("release", true)),
                 sort(descending("updateDate")),
                 project(fields(computed("date", "$updateDate"),
-                                computed("day", eq("$dateToString", and(eq("format", "%Y-%m"), eq("date", "$updateDate")))),
-                                include("name"),
-                                include("slug"))),
+                        computed("day", eq("$dateToString", and(eq("format", "%Y-%m"), eq("date", "$updateDate")))),
+                        include("name"),
+                        include("slug"))),
                 skip(skip),
                 limit(limit));
         Map<String, List<ArchivesVO>> resutMap = new LinkedHashMap<>();
         AggregateIterable aggregateIterable = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
         MongoCursor<Document> cursor = aggregateIterable.iterator();
-        while (cursor.hasNext()){
+        while (cursor.hasNext()) {
             Document doc = cursor.next();
             String day = doc.getString("day");
             List<ArchivesVO> aList;
-            if(resutMap.containsKey(day)){
+            if (resutMap.containsKey(day)) {
                 aList = resutMap.get(day);
             } else {
                 aList = new ArrayList<>();
@@ -791,6 +801,9 @@ public class FileServiceImpl implements IFileService {
         }
         if (articleDTO.getCategoryIds() != null && articleDTO.getCategoryIds().length > 0) {
             query.addCriteria(Criteria.where("categoryIds").in(articleDTO.getCategoryIds()));
+        }
+        if (articleDTO.getTagIds() != null && articleDTO.getTagIds().length > 0) {
+            query.addCriteria(Criteria.where("tagIds").in(articleDTO.getTagIds()));
         }
         if (!StringUtils.isEmpty(articleDTO.getKeyword())) {
             query.addCriteria(Criteria.where("name").regex(articleDTO.getKeyword(), "i"));
@@ -863,7 +876,7 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setSize(upload.getContentText().length());
         fileDocument.setContentType(CONTENT_TYPE_MARK_DOWN);
         fileDocument.setMd5(CalcMd5.getMd5(filename + upload.getContentText()));
-        if(!StringUtils.isEmpty(upload.getIsDraft()) && upload.getIsDraft()){
+        if (!StringUtils.isEmpty(upload.getIsDraft()) && upload.getIsDraft()) {
             fileDocument.setDraft(true);
         } else {
             fileDocument.setDraft(false);
@@ -884,7 +897,7 @@ public class FileServiceImpl implements IFileService {
     private String getSlug(UploadApiParamDTO upload) {
         Query query = new Query();
         String slug = upload.getSlug();
-        if(StringUtils.isEmpty(slug)){
+        if (StringUtils.isEmpty(slug)) {
             return upload.getFilename();
         }
         String fileId = upload.getFileId();

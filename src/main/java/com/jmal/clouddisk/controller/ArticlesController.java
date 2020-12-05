@@ -3,10 +3,12 @@ package com.jmal.clouddisk.controller;
 import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.model.Category;
 import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.WebsiteSettingDTO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.impl.CategoryService;
 import com.jmal.clouddisk.service.impl.SettingService;
+import com.jmal.clouddisk.service.impl.TagService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -36,6 +38,9 @@ public class ArticlesController {
     private CategoryService categoryService;
 
     @Autowired
+    private TagService tagService;
+
+    @Autowired
     private IFileService fileService;
 
     @GetMapping("/articles")
@@ -46,7 +51,7 @@ public class ArticlesController {
         if(!StringUtils.isEmpty(pIndex)){
             page = Integer.parseInt(pIndex);
         }
-        map.addAttribute("articlesData", fileService.getArticles(page, pageSize, null));
+        map.addAttribute("articlesData", fileService.getArticles(page, pageSize));
         map.addAttribute("darkTheme", darkTheme(request));
         return "index";
     }
@@ -104,9 +109,42 @@ public class ArticlesController {
         if(!StringUtils.isEmpty(pIndex)){
             page = Integer.parseInt(pIndex);
         }
-        map.addAttribute("articlesData", fileService.getArticles(page, pageSize, categoryId));
+        map.addAttribute("articlesData", fileService.getArticlesByCategoryId(page, pageSize, categoryId));
         map.addAttribute("darkTheme", darkTheme(request));
         return "category";
+    }
+
+    @GetMapping("/articles/tags")
+    public String tags(HttpServletRequest request, ModelMap map){
+        getSetting(map);
+        map.addAttribute("tags", tagService.listTagsOfArticle());
+        map.addAttribute("darkTheme", darkTheme(request));
+        return "tags";
+    }
+
+    @GetMapping("/articles/tags/{tagName}")
+    public String getTagByName(HttpServletRequest request, ModelMap map, @PathVariable String tagName){
+        getSetting(map);
+        if (StringUtils.isEmpty(tagName)){
+            return "error";
+        }
+        String tagId = null;
+        if (!StringUtils.isEmpty(tagName)) {
+            Tag tag = tagService.getTagInfo(null, tagName);
+            if (tag == null) {
+                return "error";
+            }
+            map.addAttribute("tag", tag);
+            tagId = tag.getId();
+        }
+        int page = 1, pageSize = 10;
+        String pIndex = request.getParameter("page");
+        if(!StringUtils.isEmpty(pIndex)){
+            page = Integer.parseInt(pIndex);
+        }
+        map.addAttribute("articlesData", fileService.getArticlesByTagId(page, pageSize, tagId));
+        map.addAttribute("darkTheme", darkTheme(request));
+        return "tag";
     }
 
     private void getSetting(ModelMap map) {
