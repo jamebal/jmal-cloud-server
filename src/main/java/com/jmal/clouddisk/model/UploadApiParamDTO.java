@@ -1,9 +1,12 @@
 package com.jmal.clouddisk.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -101,10 +104,15 @@ public class UploadApiParamDTO {
     String order;
 
     Boolean isDraft;
+    Boolean isRelease;
 
     Boolean isFavorite;
     String cover;
     String slug;
     String[] categoryIds;
     String[] tagNames;
+
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime uploadDate;
 }

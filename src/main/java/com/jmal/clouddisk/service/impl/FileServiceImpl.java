@@ -850,6 +850,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public ResponseResult<Object> editMarkdown(UploadApiParamDTO upload) {
+        boolean isDraft = false;
         FileDocument fileDocument = new FileDocument();
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
         Query query = new Query();
@@ -857,18 +858,12 @@ public class FileServiceImpl implements IFileService {
             // 修改
             query.addCriteria(Criteria.where("_id").is(upload.getFileId()));
             fileDocument = mongoTemplate.findById(upload.getFileId(), FileDocument.class, COLLECTION_NAME);
-            fileDocument.setId(null);
         } else {
             // 新增
-            query.addCriteria(Criteria.where("_id").is(new ObjectId().toHexString()));
-            fileDocument.setId(new ObjectId().toHexString());
             fileDocument.setUploadDate(date);
         }
         String filename = upload.getFilename();
-        //用户磁盘目录
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
-        File file = Paths.get(fileProperties.getRootDir(), upload.getUsername(), currentDirectory, filename).toFile();
-        FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
         fileDocument.setSuffix(FileUtil.extName(filename));
         fileDocument.setUserId(upload.getUserId());
         fileDocument.setUpdateDate(date);
@@ -876,12 +871,8 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setSize(upload.getContentText().length());
         fileDocument.setContentType(CONTENT_TYPE_MARK_DOWN);
         fileDocument.setMd5(CalcMd5.getMd5(filename + upload.getContentText()));
-        if (!StringUtils.isEmpty(upload.getIsDraft()) && upload.getIsDraft()) {
-            fileDocument.setDraft(true);
-        } else {
-            fileDocument.setDraft(false);
-            fileDocument.setRelease(true);
-            fileDocument.setContentText(upload.getContentText());
+        if(upload.getUploadDate() != null){
+            fileDocument.setUploadDate(upload.getUploadDate());
         }
         fileDocument.setName(filename);
         fileDocument.setCover(upload.getCover());
@@ -889,9 +880,50 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setCategoryIds(upload.getCategoryIds());
         fileDocument.setTagIds(tagService.getTagIdsByNames(upload.getTagNames()));
         fileDocument.setIsFolder(false);
-        Update update = MongoUtil.getUpsert(fileDocument);
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        if (!StringUtils.isEmpty(upload.getIsDraft()) && upload.getIsDraft()) {
+            fileDocument.setDraft(true);
+            isDraft = true;
+        } else {
+            fileDocument.setDraft(false);
+            fileDocument.setRelease(true);
+            fileDocument.setContentText(upload.getContentText());
+        }
+        Update update = MongoUtil.getUpdate(fileDocument);
+        if (isDraft) {
+            // 保存草稿
+            FileDocument result;
+            String fileId = upload.getFileId();
+            if(fileId == null){
+                // 第一次创建文章并保存草稿
+                result = mongoTemplate.save(fileDocument, COLLECTION_NAME);
+                saveMarkdownFile(upload, filename, currentDirectory);
+                fileId = result.getId();
+            }
+            if (fileId != null && StringUtils.isEmpty(upload.getIsRelease())) {
+                // 编辑文章但是从未发布过
+                saveMarkdown(upload, query, filename, currentDirectory, update);
+            }
+            update.set("fileId", fileId);
+            update.set("contentText", upload.getContentText());
+            Query queryDraft = new Query();
+            queryDraft.addCriteria(Criteria.where("fileId").is(fileId));
+            mongoTemplate.upsert(queryDraft, update, DraftService.COLLECTION_NAME);
+        } else {
+            saveMarkdown(upload, query, filename, currentDirectory, update);
+        }
         return ResultUtil.success();
+    }
+
+    private void saveMarkdown(UploadApiParamDTO upload, Query query, String filename, String currentDirectory, Update update) {
+        // 保存到数据库
+        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        // 保存原始文件
+        saveMarkdownFile(upload, filename, currentDirectory);
+    }
+
+    private void saveMarkdownFile(UploadApiParamDTO upload, String filename, String currentDirectory) {
+        File file = Paths.get(fileProperties.getRootDir(), upload.getUsername(), currentDirectory, filename).toFile();
+        FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
     }
 
     private String getSlug(UploadApiParamDTO upload) {
