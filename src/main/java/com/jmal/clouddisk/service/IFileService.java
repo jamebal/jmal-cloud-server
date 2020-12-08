@@ -266,6 +266,14 @@ public interface IFileService {
     ResponseResult<Object> editMarkdown(UploadApiParamDTO upload);
 
     /***
+     * 删除草稿
+     * @param fileId fileId
+     * @param username username
+     * @return ResponseResult
+     */
+    ResponseResult<Object> deleteDraft(String fileId, String username);
+
+    /***
      * 编辑文档(根据path)
      * @param upload
      * @return

@@ -66,7 +66,7 @@ public class FileDocument extends FileBase{
     /***
      * 是否有草稿
      */
-    private Boolean draft;
+    private FileDocument draft;
     /***
      * 封面
      */

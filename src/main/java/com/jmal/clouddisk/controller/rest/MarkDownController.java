@@ -42,6 +42,12 @@ public class MarkDownController {
         return fileService.editMarkdown(upload);
     }
 
+    @ApiOperation("删除草稿")
+    @DeleteMapping("/markdown/deleteDraft")
+    public ResponseResult<Object> deleteDraft(@RequestParam String fileId, @RequestParam String username) {
+        return fileService.deleteDraft(fileId, username);
+    }
+
     @ApiOperation("编辑文档(根据path)")
     @PostMapping("/markdown/edit1")
     public ResponseResult<Object> editMarkdownByPath(@RequestBody UploadApiParamDTO upload) {
