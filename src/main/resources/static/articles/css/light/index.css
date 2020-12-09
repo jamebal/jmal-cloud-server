@@ -257,7 +257,7 @@ html {
 .animateOut {
     /*-webkit-transform: translateY(-100%);*/
     /*transform: translateY(-100%);*/
-    top: -100px!important;
+    top: -70px!important;
 }
 
 .gradient-bg-rev {

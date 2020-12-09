@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.model.ArticleDTO;
+import com.jmal.clouddisk.model.ArticleParamDTO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.UploadImageDTO;
 import com.jmal.clouddisk.service.IFileService;
@@ -11,6 +12,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -38,7 +40,7 @@ public class MarkDownController {
 
     @ApiOperation("编辑文档(根据fileId)")
     @PostMapping("/markdown/edit")
-    public ResponseResult<Object> editMarkdown(@RequestBody UploadApiParamDTO upload) {
+    public ResponseResult<Object> editMarkdown(@RequestBody @Validated ArticleParamDTO upload) {
         return fileService.editMarkdown(upload);
     }
 

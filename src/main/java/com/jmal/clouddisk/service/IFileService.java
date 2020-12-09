@@ -263,7 +263,7 @@ public interface IFileService {
      * @param upload
      * @return
      */
-    ResponseResult<Object> editMarkdown(UploadApiParamDTO upload);
+    ResponseResult<Object> editMarkdown(ArticleParamDTO upload);
 
     /***
      * 删除草稿

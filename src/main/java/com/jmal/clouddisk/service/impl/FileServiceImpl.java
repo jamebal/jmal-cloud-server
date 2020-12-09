@@ -871,24 +871,36 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> editMarkdown(UploadApiParamDTO upload) {
+    public ResponseResult<Object> editMarkdown(ArticleParamDTO upload) {
+        // 参数判断
+        Query query1 = new Query();
+        query1.addCriteria(Criteria.where("_id").nin(upload.getFileId()));
+        query1.addCriteria(Criteria.where("name").is(upload.getFilename()));
+        if(mongoTemplate.exists(query1, COLLECTION_NAME)){
+            return ResultUtil.warning("该标题已存在");
+        }
         boolean isDraft = false;
+        boolean isUpdate = false;
         FileDocument fileDocument = new FileDocument();
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
         Query query = new Query();
         if (upload.getFileId() != null) {
             // 修改
+            isUpdate = true;
             query.addCriteria(Criteria.where("_id").is(upload.getFileId()));
             fileDocument = mongoTemplate.findById(upload.getFileId(), FileDocument.class, COLLECTION_NAME);
         } else {
             // 新增
-            query.addCriteria(Criteria.where("_id").is(new ObjectId().toHexString()));
             fileDocument.setUploadDate(date);
         }
         String filename = upload.getFilename();
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
         File file = Paths.get(fileProperties.getRootDir(), upload.getUsername(), currentDirectory, filename).toFile();
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
+        if(!filename.equals(fileDocument.getName())){
+            File oldFile = Paths.get(fileProperties.getRootDir(), upload.getUsername(), fileDocument.getPath(), fileDocument.getName()).toFile();
+            FileUtil.del(oldFile);
+        }
         fileDocument.setSuffix(FileUtil.extName(filename));
         fileDocument.setUserId(upload.getUserId());
         fileDocument.setUpdateDate(date);
@@ -919,7 +931,7 @@ public class FileServiceImpl implements IFileService {
             // 保存草稿
             FileDocument result;
             String fileId = upload.getFileId();
-            if (fileId != null && !StringUtils.isEmpty(upload.getIsRelease())) {
+            if (isUpdate && !StringUtils.isEmpty(upload.getIsRelease())) {
                 update = new Update();
             }
             fileDocument.setContentText(upload.getContentText());
@@ -929,8 +941,13 @@ public class FileServiceImpl implements IFileService {
                 update.unset("draft");
             }
         }
+        if(!isUpdate){
+            FileDocument saved = mongoTemplate.save(fileDocument, COLLECTION_NAME);
+            upload.setFileId(saved.getId());
+            query.addCriteria(Criteria.where("_id").is(saved.getId()));
+        }
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
-        return ResultUtil.success();
+        return ResultUtil.success(upload.getFileId());
     }
 
     @Override
@@ -953,7 +970,7 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success();
     }
 
-    private String getSlug(UploadApiParamDTO upload) {
+    private String getSlug(ArticleParamDTO upload) {
         Query query = new Query();
         String slug = upload.getSlug();
         if (StringUtils.isEmpty(slug)) {

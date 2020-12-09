@@ -3,6 +3,7 @@
 <head>
     <title th:text="${tag.name}"></title>
     <iframe th:replace="component/head.html"></iframe>
+    <link rel="stylesheet" type="text/css" href="/articles/layui/css/layui.css">
 </head>
 <body class="theme-white color-default card  desktop macOS macOS-ge-10-11 macOS-ge-10-12 chrome not-safari open use-navbar">
 <!--[if lt IE 9]>
@@ -64,7 +65,7 @@
             <div id="laypage">
                 <div class="layui-box layui-laypage layui-laypage-default" id="layui-laypage-1">
                     <i th:if="${articlesData.getTotalPage() > 1}">
-                        <a th:href="'/articles?page=' + ${articlesData.getCurrentPage()-1}" th:class="'layui-laypage-prev'+ ${articlesData.isFirst()?' layui-disabled':''}" >上一页</a>
+                        <a th:href="'?page=' + ${articlesData.getCurrentPage()-1}" th:class="'layui-laypage-prev'+ ${articlesData.isFirst()?' layui-disabled':''}" >上一页</a>
                         <i class="rainbow-page">
                             <i th:if="${articlesData.getCurrentPage() >= 5}">
                                 <a href="/articles" class="layui-laypage-first" title="首页">1</a>
@@ -74,14 +75,14 @@
                             <span th:if="${articlesData.getCurrentPage() == page}" class="layui-laypage-curr">
                                 <em class="layui-laypage-em" style="background-color:#409EFF;"></em><em th:text="${page}"></em>
                             </span>
-                                <a th:if="${articlesData.getCurrentPage() != page}" th:href="'/articles?page=' + ${page}" class="layui-laypage-prev" th:text="${page}"></a>
+                                <a th:if="${articlesData.getCurrentPage() != page}" th:href="'?page=' + ${page}" class="layui-laypage-prev" th:text="${page}"></a>
                             </i>
                             <i th:if="${articlesData.getTotalPage()-articlesData.getCurrentPage() >= 4}">
                                 <span class="layui-laypage-spr">…</span>
-                                <a th:href="'/articles?page=' + ${articlesData.getTotalPage()}" class="layui-laypage-last" title="尾页" th:text="${articlesData.getTotalPage()}"></a>
+                                <a th:href="'?page=' + ${articlesData.getTotalPage()}" class="layui-laypage-last" title="尾页" th:text="${articlesData.getTotalPage()}"></a>
                             </i>
                         </i>
-                        <a th:href="'/articles?page=' + ${articlesData.getCurrentPage()+1}" th:class="'layui-laypage-next'+ ${articlesData.isLast()?' layui-disabled':''}">下一页</a>
+                        <a th:href="'?page=' + ${articlesData.getCurrentPage()+1}" th:class="'layui-laypage-next'+ ${articlesData.isLast()?' layui-disabled':''}">下一页</a>
                     </i>
                 </div>
             </div>
