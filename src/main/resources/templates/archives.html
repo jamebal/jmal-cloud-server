@@ -32,7 +32,11 @@
             <div class="archives article-body">
                 <ul class="layui-timeline">
                     <li class="layui-timeline-item" th:each="articles : ${articlesData.getData()}">
-                        <i class="layui-icon layui-timeline-axis">&#xe63f;</i>
+                        <i class="layui-icon layui-timeline-axis">
+                            <svg class="icon" aria-hidden="true">
+                                <use xlink:href="#icon-yuandian"></use>
+                            </svg>
+                        </i>
                         <div class="layui-timeline-content layui-text">
                             <h3 class="layui-timeline-title" th:text="${articles.get(0).date()}"></h3>
                             <div class="brick" th:each="article : ${articles}">
