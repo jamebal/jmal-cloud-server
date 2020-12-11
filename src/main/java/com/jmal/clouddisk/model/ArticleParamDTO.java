@@ -34,6 +34,10 @@ public class ArticleParamDTO {
     String currentDirectory;
     @ApiModelProperty(name = "updateDate", value = "更新时间")
     LocalDateTime updateDate;
+    @ApiModelProperty(name = "isAlonePage", value = "是否为独立页面")
+    Boolean isAlonePage;
+    @ApiModelProperty(name = "pageSort", value = "页面顺序")
+    Integer pageSort;
     @ApiModelProperty(name = "isDraft", value = "是否为草稿")
     Boolean isDraft;
     @ApiModelProperty(name = "isRelease", value = "是否发布")

@@ -25,6 +25,9 @@ public class ArticleDTO {
     @ApiModelProperty(name = "isRelease", value = "是否发布")
     Boolean isRelease;
 
+    @ApiModelProperty(name = "isAlonePage", value = "是否为独立页面")
+    Boolean isAlonePage;
+
     @ApiModelProperty(name = "isDraft", value = "是否为草稿")
     Boolean isDraft;
 

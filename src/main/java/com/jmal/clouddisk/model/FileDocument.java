@@ -64,6 +64,11 @@ public class FileDocument extends FileBase{
      */
     private Boolean release;
     /***
+     * 是否为独立页，适用于文档类型
+     */
+    private Boolean alonePage;
+    private Integer pageSort;
+    /***
      * 是否有草稿
      */
     private FileDocument draft;

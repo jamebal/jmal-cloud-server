@@ -5,6 +5,7 @@ import com.jmal.clouddisk.model.ArticleParamDTO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.UploadImageDTO;
 import com.jmal.clouddisk.service.IFileService;
+import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -14,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * @author jmal
@@ -25,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
 public class MarkDownController {
 
     @Autowired
-    private IFileService fileService;
+    private IMarkdownService fileService;
 
     @Autowired
     IUserService service;
@@ -42,6 +45,12 @@ public class MarkDownController {
     @PostMapping("/markdown/edit")
     public ResponseResult<Object> editMarkdown(@RequestBody @Validated ArticleParamDTO upload) {
         return fileService.editMarkdown(upload);
+    }
+
+    @ApiOperation("修改文档排序")
+    @PostMapping("/markdown/sort")
+    public ResponseResult<Object> sortMarkdown(@RequestBody List<String> fileIdList) {
+        return fileService.sortMarkdown(fileIdList);
     }
 
     @ApiOperation("删除草稿")
