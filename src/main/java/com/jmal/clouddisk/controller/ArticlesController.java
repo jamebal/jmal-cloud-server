@@ -6,6 +6,7 @@ import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.WebsiteSettingDTO;
 import com.jmal.clouddisk.service.IFileService;
+import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.impl.CategoryService;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.service.impl.TagService;
@@ -41,7 +42,7 @@ public class ArticlesController {
     private TagService tagService;
 
     @Autowired
-    private IFileService fileService;
+    private IMarkdownService fileService;
 
     @GetMapping("/articles")
     public String articles(HttpServletRequest request, ModelMap map){
@@ -150,6 +151,7 @@ public class ArticlesController {
     private void getSetting(ModelMap map) {
         WebsiteSettingDTO websiteSettingDTO = settingService.getWebsiteSetting();
         setOperatingButtonList(websiteSettingDTO);
+        map.addAttribute("alonePage", fileService.getAlonePages());
         map.addAttribute("setting", websiteSettingDTO);
     }
 

@@ -21,6 +21,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -41,15 +42,15 @@ import static com.mongodb.client.model.Aggregates.*;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Projections.*;
-import static com.mongodb.client.model.Projections.include;
 import static com.mongodb.client.model.Sorts.descending;
 import static java.util.stream.Collectors.toList;
 
 /**
  * @author jmal
- * @Description TODO
+ * @Description 文档管理
  * @Date 2020/12/11 4:35 下午
  */
+@Service
 public class MarkdownService implements IMarkdownService {
 
     @Autowired
@@ -73,27 +74,35 @@ public class MarkdownService implements IMarkdownService {
     private static final AES aes = SecureUtil.aes();
 
     @Override
-    public ResponseResult<Object> getMarkDownContent(ArticleDTO articleDTO) throws CommonException {
+    public ResponseResult<MarkdownVO> getMarkDownOne(ArticleDTO articleDTO) {
+        MarkdownVO markdownVO = new MarkdownVO();
         String mark = articleDTO.getMark();
-        if (StringUtils.isEmpty(mark)) {
-            return getMarkdownList(articleDTO);
-        } else {
-            FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
-            if (fileDocument != null) {
-                String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
-                fileDocument.setUsername(username);
-                String currentDirectory = fileService.getUserDirectory(fileDocument.getPath());
-                File file = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName()).toFile();
-                String content = FileUtil.readString(file, StandardCharsets.UTF_8);
-                fileDocument.setContentText(content);
-            }
-            return ResultUtil.success(fileDocument);
+        if(StringUtils.isEmpty(mark)){
+            return ResultUtil.success(markdownVO);
         }
+        FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
+        if (fileDocument != null) {
+            String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
+            fileDocument.setUsername(username);
+            String currentDirectory = fileService.getUserDirectory(fileDocument.getPath());
+            File file = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName()).toFile();
+            String content = FileUtil.readString(file, StandardCharsets.UTF_8);
+            fileDocument.setContentText(content);
+            CglibUtil.copy(fileDocument, markdownVO);
+        }
+        return ResultUtil.success(markdownVO);
     }
 
     @Override
     public Page<Object> getArticles(Integer page, Integer pageSize) {
         return getArticles(page, pageSize, null, null);
+    }
+
+    @Override
+    public List<MarkdownVO> getAlonePages() {
+        ArticleDTO articleDTO = new ArticleDTO();
+        articleDTO.setIsAlonePage(true);
+        return getMarkdownList(articleDTO).getData();
     }
 
     private Page<Object> getArticles(Integer page, Integer pageSize, String categoryId, String tagId) {
@@ -107,7 +116,7 @@ public class MarkdownService implements IMarkdownService {
         if (!StringUtils.isEmpty(tagId)) {
             articleDTO.setTagIds(new String[]{tagId});
         }
-        ResponseResult<Object> responseResult = getMarkdownList(articleDTO);
+        ResponseResult<List<MarkdownVO>> responseResult = getMarkdownList(articleDTO);
         Page<Object> pageResult = new Page<Object>(page - 1, pageSize, Convert.toInt(responseResult.getCount()));
         pageResult.setData(responseResult.getData());
         return pageResult;
@@ -199,6 +208,7 @@ public class MarkdownService implements IMarkdownService {
             FileDocument fileDocument = new FileDocument();
             fileDocument.setPageSort(i);
             fileDocument.setId(fileIdList.get(i));
+            list.add(fileDocument);
         }
         list.parallelStream().forEach(doc -> {
             Query query = new Query();
@@ -216,8 +226,10 @@ public class MarkdownService implements IMarkdownService {
      * @param limit
      * @return
      */
-    private ResponseResult<Object> getMarkdownList(ArticleDTO articleDTO) {
-        int skip = 0, limit = 5;
+    @Override
+    public ResponseResult<List<MarkdownVO>> getMarkdownList(ArticleDTO articleDTO) {
+        int skip = 0, limit = 0;
+        long count = 0;
         Integer pageIndex = articleDTO.getPageIndex();
         Integer pageSize = articleDTO.getPageSize();
         if (pageIndex != null && pageSize != null) {
@@ -236,7 +248,7 @@ public class MarkdownService implements IMarkdownService {
         }
         if (articleDTO.getIsAlonePage() != null && articleDTO.getIsAlonePage()) {
             query.addCriteria(Criteria.where("alonePage").exists(true));
-            query.with(new Sort(Sort.Direction.ASC, "alonePage"));
+            query.with(new Sort(Sort.Direction.ASC, "pageSort"));
         } else {
             query.addCriteria(Criteria.where("alonePage").exists(false));
         }
@@ -253,7 +265,9 @@ public class MarkdownService implements IMarkdownService {
         if (!StringUtils.isEmpty(articleDTO.getKeyword())) {
             query.addCriteria(Criteria.where("name").regex(articleDTO.getKeyword(), "i"));
         }
-        long count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
+        if(limit > 0){
+            count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
+        }
         // 排序
         if (!StringUtils.isEmpty(articleDTO.getSortableProp()) && !StringUtils.isEmpty(articleDTO.getOrder())) {
             if ("descending".equals(articleDTO.getOrder())) {
@@ -265,14 +279,16 @@ public class MarkdownService implements IMarkdownService {
             query.with(new Sort(Sort.Direction.DESC, "uploadDate"));
         }
         query.skip(skip);
-        query.limit(limit);
+        if(limit > 0){
+            query.limit(limit);
+        }
         List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
         List<MarkdownVO> markdownVOList = new ArrayList<>();
         boolean finalIsDraft = isDraft;
         markdownVOList = fileDocumentList.parallelStream().map(Either.wrap(fileDocument -> {
             return getMarkdownVO(fileDocument, finalIsDraft);
         })).collect(toList());
-        ResponseResult<Object> result = ResultUtil.success(markdownVOList);
+        ResponseResult<List<MarkdownVO>> result = ResultUtil.success(markdownVOList);
         result.setCount(count);
         return result;
     }

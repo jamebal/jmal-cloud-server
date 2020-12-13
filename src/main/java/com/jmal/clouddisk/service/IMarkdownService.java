@@ -12,11 +12,18 @@ import java.util.List;
  */
 public interface IMarkdownService {
     /***
-     * 获取markdown内容
+     * 获取markdown
      * @param articleDTO
      * @return
      */
-    ResponseResult<Object> getMarkDownContent(ArticleDTO articleDTO);
+    ResponseResult<MarkdownVO> getMarkDownOne(ArticleDTO articleDTO);
+
+    /***
+     * 获取markdown列表
+     * @param articleDTO
+     * @return
+     */
+    ResponseResult<List<MarkdownVO>> getMarkdownList(ArticleDTO articleDTO);
 
     /***
      * 获取文章列表
@@ -25,6 +32,12 @@ public interface IMarkdownService {
      * @return Page
      */
     Page<Object> getArticles(Integer page, Integer pageSize);
+
+    /***
+     * 获取独立页面列表
+     * @return
+     */
+    List<MarkdownVO> getAlonePages();
 
     /***
      * 获取文章列表
@@ -95,4 +108,5 @@ public interface IMarkdownService {
      * @throws CommonException
      */
     ResponseResult<Object> uploadMarkdownImage(UploadImageDTO upload);
+
 }

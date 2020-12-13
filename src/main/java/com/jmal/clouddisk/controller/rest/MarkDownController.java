@@ -1,22 +1,24 @@
 package com.jmal.clouddisk.controller.rest;
 
-import com.jmal.clouddisk.model.ArticleDTO;
-import com.jmal.clouddisk.model.ArticleParamDTO;
-import com.jmal.clouddisk.model.UploadApiParamDTO;
-import com.jmal.clouddisk.model.UploadImageDTO;
-import com.jmal.clouddisk.service.IFileService;
+import cn.hutool.core.io.FileUtil;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.FileServiceImpl;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.util.Arrays;
 
 /**
  * @author jmal
@@ -35,10 +37,14 @@ public class MarkDownController {
 
     @ApiOperation("获取markdown内容")
     @GetMapping("/public/p")
-    public ResponseResult<Object> getMarkDownContent(ArticleDTO articleDTO, Integer pageIndex, Integer pageSize) {
+    public ResponseResult<? extends Object> getMarkDownContent(ArticleDTO articleDTO, Integer pageIndex, Integer pageSize) {
         articleDTO.setPageIndex(pageIndex);
         articleDTO.setPageSize(pageSize);
-        return fileService.getMarkDownContent(articleDTO);
+        if (StringUtils.isEmpty(articleDTO.getMark())) {
+            return fileService.getMarkdownList(articleDTO);
+        } else {
+            return fileService.getMarkDownOne(articleDTO);
+        }
     }
 
     @ApiOperation("编辑文档(根据fileId)")
@@ -49,8 +55,8 @@ public class MarkDownController {
 
     @ApiOperation("修改文档排序")
     @PostMapping("/markdown/sort")
-    public ResponseResult<Object> sortMarkdown(@RequestBody List<String> fileIdList) {
-        return fileService.sortMarkdown(fileIdList);
+    public ResponseResult<Object> sortMarkdown(@RequestBody String[] fileIdList) {
+        return fileService.sortMarkdown(Arrays.asList(fileIdList));
     }
 
     @ApiOperation("删除草稿")
