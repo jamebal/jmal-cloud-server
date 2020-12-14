@@ -253,9 +253,18 @@ html {
     color: #333;
 }
 
+.dropdown-menu {
+    background-color: #262e38;
+    -webkit-box-shadow: 0 0.0625rem 0.3125rem 0.0625rem rgba(0,0,0,0.117);
+    -moz-box-shadow: 0 0.0625rem 0.3125rem 0.0625rem rgba(0,0,0,0.117);
+    box-shadow: 0 0.0625rem 0.3125rem 0.0625rem rgba(0,0,0,0.117);
+}
+.dropdown-item>a:hover {
+    background-color: #374250;
+}
+
 .animateOut {
-    -webkit-transform: translateY(-100%);
-    transform: translateY(-100%);
+    top: -68px!important;
 }
 
 .gradient-bg-rev {
@@ -833,7 +842,7 @@ html {
     position: -webkit-sticky;
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: 99;
     -webkit-box-shadow: -2px 0px 5px 1px #00000021;
     box-shadow: -2px 0px 5px 1px #00000021;
     -webkit-backdrop-filter: saturate(360%) blur(8px);

@@ -82,7 +82,7 @@
                         <section class="meta">
                             <div class="meta" id="header-meta">
                                 <h2 class="title">
-                                    <a th:href="'/articles/'+${article.slug == null ? article.id:article.slug}" th:text="${article.name}"></a>
+                                    <a th:href="'/articles/s/'+${article.slug == null ? article.id:article.slug}" th:text="${article.name}"></a>
                                 </h2>
                                 <div class="new-meta-box">
                                     <div class="new-meta-item author">
@@ -104,7 +104,7 @@
                             </div>
                         </section>
                         <section class="article typo">
-                            <a th:href="'/articles/'+${article.slug == null ? article.id:article.slug}">
+                            <a th:href="'/articles/s/'+${article.slug == null ? article.id:article.slug}">
                                 <div class="article-entry" itemprop="articleBody">
                                     <p><img class="blog-background articles-list" th:src="${article.cover != null ? article.cover : setting.backgroundSite}" onerror="this.src='https://images.unsplash.com/photo-1582230587856-7fec01506148?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=60'"/></p>
                                 </div>

@@ -27,49 +27,23 @@
                         <span class="nav-link-label">标签</span>
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/articles/about" title="关于">
-                        <svg class="icon" aria-hidden="true">
-                            <use xlink:href="#icon-myself"></use>
-                        </svg>
-                        <span class="nav-link-label">关于</span>
+                <li class="nav-item" th:if="${alonePages.size() > 0}">
+                    <a class="nav-link" th:href="'/articles/o/'+${alonePages.get(0).slug}" th:title="${alonePages.get(0).name}">
+                        <span class="nav-link-label" th:text="${alonePages.get(0).name}"></span>
                     </a>
                 </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="/articles/about" title="关于">
-                        <svg class="icon" aria-hidden="true">
-                            <use xlink:href="#icon-myself"></use>
+                <li th:if="${alonePages.size() > 1}" class="nav-item nav-item-more" onmouseover="mouseover()" onmouseleave="mouseleave()">
+                    <a class="nav-link">
+                        <span class="nav-link-label">更多</span>
+                        <svg class="icon icon-more" aria-hidden="true">
+                            <use xlink:href="#icon-drop_down"></use>
                         </svg>
-                        <span class="nav-link-label">关于</span>
                     </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="/articles/about" title="关于">
-                        <svg class="icon" aria-hidden="true">
-                            <use xlink:href="#icon-myself"></use>
-                        </svg>
-                        <span class="nav-link-label">关于</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="/articles/about" title="关于">
-                        <svg class="icon" aria-hidden="true">
-                            <use xlink:href="#icon-myself"></use>
-                        </svg>
-                        <span class="nav-link-label">关于</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="/articles/about" title="关于">
-                        <svg class="icon" aria-hidden="true">
-                            <use xlink:href="#icon-myself"></use>
-                        </svg>
-                        <span class="nav-link-label">关于</span>
-                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="dropdown-item alone-page" th:each="page,pageStat : ${alonePages}" th:if="${pageStat.index > 0}">
+                            <a th:href="@{'/articles/o/'+${page.slug}}" th:text="${page.name}"></a>
+                        </li>
+                    </ul>
                 </li>
             </ul>
 
@@ -89,3 +63,15 @@
         </div>
     </div>
 </div>
+<script>
+    let menu = document.body.querySelector('.dropdown-menu')
+    let icon = document.documentElement.querySelector('.icon-more')
+    function mouseover(){
+        menu.classList.add("show")
+        icon.style.transform = 'rotate(0deg)'
+    }
+    function mouseleave(){
+        menu.classList.remove("show")
+        icon.style.transform = 'rotate(90deg)'
+    }
+</script>

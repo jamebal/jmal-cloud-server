@@ -16,7 +16,7 @@ public interface IMarkdownService {
      * @param articleDTO
      * @return
      */
-    ResponseResult<MarkdownVO> getMarkDownOne(ArticleDTO articleDTO);
+    ResponseResult<FileDocument> getMarkDownOne(ArticleDTO articleDTO);
 
     /***
      * 获取markdown列表

@@ -57,8 +57,17 @@ public class ArticlesController {
         return "index";
     }
 
-    @GetMapping("/articles/{slug}")
-    public String index(HttpServletRequest request, @PathVariable String slug, ModelMap map){
+    @GetMapping("/articles/o/{slug}")
+    public String alonePage(HttpServletRequest request, @PathVariable String slug, ModelMap map){
+        return articlePage(request, slug, map);
+    }
+
+    @GetMapping("/articles/s/{slug}")
+    public String article(HttpServletRequest request, @PathVariable String slug, ModelMap map){
+        return articlePage(request, slug, map);
+    }
+
+    private String articlePage(HttpServletRequest request, String slug, ModelMap map) {
         getSetting(map);
         FileDocument fileDocument = fileService.getMarkDownContentBySlug(slug);
         if(fileDocument == null){
@@ -151,7 +160,7 @@ public class ArticlesController {
     private void getSetting(ModelMap map) {
         WebsiteSettingDTO websiteSettingDTO = settingService.getWebsiteSetting();
         setOperatingButtonList(websiteSettingDTO);
-        map.addAttribute("alonePage", fileService.getAlonePages());
+        map.addAttribute("alonePages", fileService.getAlonePages());
         map.addAttribute("setting", websiteSettingDTO);
     }
 

@@ -73,6 +73,9 @@
 <script src="https://cdn.jsdelivr.net/npm/vditor@3.6.3/dist/index.min.js" defer></script>
 <script th:inline="javascript">
     $(function(){
+
+        // 是否为独立页面
+        let isAlonePage = [[${markdown.alonePage}]]
         /***
          * 初始化markdown解析器
          */
@@ -89,7 +92,9 @@
                 after() {
                     setContentTheme()
                     // 添加更新时间
-                    addUpdateTime()
+                    if(!isAlonePage){
+                        addUpdateTime()
+                    }
                     // 渲染目录
                     renderContents()
                     setTimeout(function (){

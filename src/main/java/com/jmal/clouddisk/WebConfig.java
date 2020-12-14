@@ -36,7 +36,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
 		registry.addInterceptor(authInterceptor).addPathPatterns("/**").
-				excludePathPatterns("/login/**", "/public/**", "/articles/**", "/error/**", "/file/**");
+				excludePathPatterns("/","/login/**", "/public/**", "/articles/**", "/error/**", "/file/**");
         registry.addInterceptor(fileInterceptor).addPathPatterns("/file/**");
     }
 

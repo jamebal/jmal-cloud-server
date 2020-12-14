@@ -15,6 +15,7 @@ import com.jmal.clouddisk.util.*;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCursor;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -39,8 +40,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.mongodb.client.model.Aggregates.*;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Projections.*;
 import static com.mongodb.client.model.Sorts.descending;
 import static java.util.stream.Collectors.toList;
@@ -74,11 +74,10 @@ public class MarkdownService implements IMarkdownService {
     private static final AES aes = SecureUtil.aes();
 
     @Override
-    public ResponseResult<MarkdownVO> getMarkDownOne(ArticleDTO articleDTO) {
-        MarkdownVO markdownVO = new MarkdownVO();
+    public ResponseResult<FileDocument> getMarkDownOne(ArticleDTO articleDTO) {
         String mark = articleDTO.getMark();
         if(StringUtils.isEmpty(mark)){
-            return ResultUtil.success(markdownVO);
+            return ResultUtil.success(new FileDocument());
         }
         FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
         if (fileDocument != null) {
@@ -88,9 +87,8 @@ public class MarkdownService implements IMarkdownService {
             File file = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName()).toFile();
             String content = FileUtil.readString(file, StandardCharsets.UTF_8);
             fileDocument.setContentText(content);
-            CglibUtil.copy(fileDocument, markdownVO);
         }
-        return ResultUtil.success(markdownVO);
+        return ResultUtil.success(fileDocument);
     }
 
     @Override
@@ -144,10 +142,10 @@ public class MarkdownService implements IMarkdownService {
         long count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
 
         List list = Arrays.asList(
-                match(eq("release", true)),
-                sort(descending("updateDate")),
-                project(fields(computed("date", "$updateDate"),
-                        computed("day", eq("$dateToString", and(eq("format", "%Y-%m"), eq("date", "$updateDate")))),
+                match(and(eq("release", true), exists("alonePage", false))),
+                sort(descending("uploadDate")),
+                project(fields(computed("date", "$uploadDate"),
+                        computed("day", eq("$dateToString", and(eq("format", "%Y-%m"), eq("date", "$uploadDate")))),
                         include("name"),
                         include("slug"))),
                 skip(skip),
