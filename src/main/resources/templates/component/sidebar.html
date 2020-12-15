@@ -12,7 +12,7 @@
             <li class="menu-item">
                 <a href="/articles">首页</a>
             </li>
-            <li class="menu-item">
+            <li class="menu-item" th:if="${setting.isShowAlonePage('archives')}">
                 <a class="nav-link" href="/articles/archives" title="归档">
                     <svg class="icon" aria-hidden="true">
                         <use xlink:href="#icon-guidang"></use>
@@ -20,7 +20,7 @@
                     <span class="nav-link-label">归档</span>
                 </a>
             </li>
-            <li class="menu-item">
+            <li class="menu-item" th:if="${setting.isShowAlonePage('archives')}">
                 <a class="nav-link" href="/articles/tags" title="分类">
                     <svg class="icon" aria-hidden="true">
                         <use xlink:href="#icon-fenlei"></use>
@@ -28,7 +28,7 @@
                     <span class="nav-link-label">分类</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item" th:if="${setting.isShowAlonePage('archives')}">
                 <a class="nav-link" href="/articles/categories" title="标签">
                     <svg class="icon" aria-hidden="true">
                         <use xlink:href="#icon-tag"></use>
@@ -36,12 +36,9 @@
                     <span class="nav-link-label">标签</span>
                 </a>
             </li>
-            <li class="menu-item">
-                <a class="nav-link" href="/articles/about" title="关于">
-                    <svg class="icon" aria-hidden="true">
-                        <use xlink:href="#icon-myself"></use>
-                    </svg>
-                    <span class="nav-link-label">关于</span>
+            <li class="menu-item" th:each="page : ${alonePages}">
+                <a class="nav-link" th:href="@{'/articles/o/'+${page.slug}}" th:title="${page.name}">
+                    <span class="nav-link-label" th:text="${page.name}"></span>
                 </a>
             </li>
             <li class="menu-item" th:each="operatingButton : ${setting.operatingButtonList}">

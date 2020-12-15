@@ -15,7 +15,7 @@
         <div th:include="component/article-top.html"></div>
     </div>
     <div class="article-header">
-        <div class="article-background" th:style="${category.categoryBackground !=null ? 'background-image: url('+ category.categoryBackground +')':''}"></div>
+        <div class="article-background" th:style="${category.categoryBackground !=null ? 'background-image: url('+ category.categoryBackground +')':'background-image: url('+ setting.backgroundSite +')'}"></div>
         <div class="inner">
             <div class="blog-title"><span id="article-title" th:text="${category.name}"></span><span class="typed-cursor">_</span></div>
             <div class="blog-description font-mono">

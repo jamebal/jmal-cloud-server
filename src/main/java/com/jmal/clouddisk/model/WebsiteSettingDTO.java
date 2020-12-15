@@ -2,6 +2,7 @@ package com.jmal.clouddisk.model;
 
 import lombok.Data;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -29,6 +30,10 @@ public class WebsiteSettingDTO {
      */
     String siteName;
     /***
+     * 需要显示的独立页面
+     */
+    List<String> alonePages;
+    /***
      * 操作按钮(原始字符串)
      */
     String operatingButtons;
@@ -36,7 +41,14 @@ public class WebsiteSettingDTO {
      * 分类页面背景
      */
     String categoryBackground;
-
+    /***
+     * 归档页面背景
+     */
+    String archiveBackground;
+    /***
+     * 标签页面背景
+     */
+    String tagBackground;
     /***
      * 操作按钮对象集合
      */
@@ -56,5 +68,9 @@ public class WebsiteSettingDTO {
          * 点击按钮后跳转的地址
          */
         String url;
+    }
+
+    public boolean isShowAlonePage(String page){
+        return alonePages.contains(page);
     }
 }

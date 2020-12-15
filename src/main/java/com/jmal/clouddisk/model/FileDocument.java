@@ -39,6 +39,10 @@ public class FileDocument extends FileBase{
      */
     private String contentText;
     /***
+     * html内容
+     */
+    private String html;
+    /***
      * 文件后缀名
      */
     private String suffix;

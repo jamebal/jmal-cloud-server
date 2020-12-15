@@ -19,7 +19,7 @@
     </div>
 
     <div class="article-header">
-        <div class="article-background" th:style="${markdown.cover !=null ? 'background-image: url('+markdown.cover+')':''}"></div>
+        <div class="article-background" th:style="${markdown.cover !=null ? 'background-image: url('+markdown.cover+')': 'background-image: url('+ setting.backgroundSite +')'}"></div>
         <div class="inner">
             <div class="blog-title"><span id="article-title" th:text="${markdown.name}"></span><span class="typed-cursor">_</span></div>
             <div class="blog-description font-mono">
@@ -30,7 +30,7 @@
     </div>
     <div class="body-wrapper">
         <el-main id="main_body" class="l_main article_l_main">
-            <div class="source" style="display:none;" th:utext="${markdown.contentText}"></div>
+<!--            <div class="source" style="display:none;" th:utext="${markdown.contentText}"></div>-->
             <div id="preview" class="vditor-reset article-body">
             </div>
             <div class="back-top" style="display: none">

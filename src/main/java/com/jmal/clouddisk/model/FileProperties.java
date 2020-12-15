@@ -7,6 +7,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
@@ -23,7 +24,8 @@ public class FileProperties {
     private String rootDir = System.getProperty("user.dir");
     private String chunkFileDir = "chunkFileTemp";
     private String userImgDir = "/Image/";
-    private String documentImgDir = "/Image/Document/Image/";
+    private String documentDir = "/Document/";
+    private String documentImgDir = "/Image/Document/";
     private String separator = "/";
     private String[] simText = {"txt","html","htm","asp","jsp","xml","json","properties","md","gitignore","java","py","c","cpp","sql","sh","bat","m","bas","prg","cmd"};
     private String[] document = {"pdf","doc","docs","xls","xl","md"};
@@ -50,11 +52,7 @@ public class FileProperties {
         return Paths.get(documentImgDir).toString();
     }
 
-//    public String[] getSimText(){
-//        return this.simTextType.split("\\,");
-//    }
-//
-//    public void setSimTextType(String simText){
-//        System.out.println("setSimTextType");
-//    }
+    public String getDocumentDir(){
+        return Paths.get(documentDir).toString();
+    }
 }

@@ -874,14 +874,7 @@ html {
     transition: all 0.2s;
     z-index: 3;
 }
-.right-menu>div.titleList li a {
-    display: block;
-    -webkit-transition: all 0.2s;
-    transition: all 0.2s;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
-    font-size: 1rem;
+.right-menu>div.titleList li a, .right-menu>div.titleList li a>xmp {
     color: #d1d5d9;
 }
 .right-menu>div.titleList .avtive{

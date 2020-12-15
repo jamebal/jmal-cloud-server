@@ -118,11 +118,17 @@ public class UserServiceImpl implements IUserService {
     @Override
     public ResponseResult<Object> userInfo(String id, Boolean takeUpSpace, Boolean returnPassword) {
         Consumer consumer = mongoTemplate.findById(id,Consumer.class,COLLECTION_NAME);
+        if(consumer == null){
+            return ResultUtil.success(new Consumer());
+        }
         if(takeUpSpace != null && takeUpSpace) {
             consumer.setTakeUpSpace(fileService.takeUpSpace(consumer.getId()));
         }
         if(returnPassword == null || !returnPassword ){
             consumer.setPassword(null);
+        }
+        if(consumer.getAvatar() == null){
+            consumer.setAvatar("");
         }
         return ResultUtil.success(consumer);
     }

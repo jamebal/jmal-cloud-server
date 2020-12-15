@@ -30,6 +30,8 @@ public class ArticleParamDTO {
     @NotNull(message = "contentText不能为空")
     @ApiModelProperty(name = "contentText", value = "markdown内容", required = true)
     String contentText;
+    @ApiModelProperty(name = "html", value = "html内容")
+    String html;
     @ApiModelProperty(name = "currentDirectory", value = "当前目录,用户的网盘目录,如果为空则为'/'")
     String currentDirectory;
     @ApiModelProperty(name = "updateDate", value = "更新时间")

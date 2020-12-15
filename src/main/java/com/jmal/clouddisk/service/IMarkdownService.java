@@ -3,6 +3,7 @@ package com.jmal.clouddisk.service;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.util.ResponseResult;
 
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 /**
@@ -105,8 +106,13 @@ public interface IMarkdownService {
      * 上传文档里的图片
      * @param upload
      * @return
-     * @throws CommonException
      */
     ResponseResult<Object> uploadMarkdownImage(UploadImageDTO upload);
 
+    /***
+     * 上传文档里链接图片
+     * @param uploadImageDTO UploadImageDTO
+     * @return
+     */
+    ResponseResult<Object> uploadMarkdownLinkImage(UploadImageDTO uploadImageDTO);
 }

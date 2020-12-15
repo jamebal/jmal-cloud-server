@@ -10,8 +10,8 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @Data
 public class UploadImageDTO {
-    String filename;
     String username;
     String userId;
+    String url;
     MultipartFile[] files;
 }

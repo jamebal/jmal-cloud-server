@@ -489,6 +489,7 @@ html {
     vertical-align: middle;
     max-width: 710px;
     margin: 0 auto;
+    background-color: #00000040;
 }
 .blog-title {
     font-size: 2.5rem;

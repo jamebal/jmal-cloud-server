@@ -12,6 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 import com.jmal.clouddisk.exception.ExceptionType;
+import net.sf.cglib.core.Local;
 import org.springframework.util.StringUtils;
 
 import com.jmal.clouddisk.exception.CommonException;
@@ -37,6 +38,8 @@ public class TimeUntils {
     public static final DateTimeFormatter DATE_MONTH = DateTimeFormatter.ofPattern("yyyy 年 MM 月");
     public static final DateTimeFormatter DATE_DAY = DateTimeFormatter.ofPattern("MM-dd");
 
+    private static final DateTimeFormatter FORMAT_FILE_DAY = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final DateTimeFormatter FORMAT_FILE_MONTH = DateTimeFormatter.ofPattern("yyyy-MM");
     private static final DateTimeFormatter FORMAT_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter FORMAT_DAY = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter FORMAT_MONTH = DateTimeFormatter.ofPattern("yyyy-MM");
@@ -155,6 +158,31 @@ public class TimeUntils {
     public static String getStringTime(long timestamp) {
         LocalDateTime date = getLocalDateTime(timestamp);
         return date.format(FORMAT_TIME);
+    }
+
+    /***
+     * yyyyMMdd
+     * @return
+     */
+    public static String getFileTimeStrOfDay() {
+        return LocalDateTime.now(TimeUntils.ZONE_ID).format(FORMAT_FILE_DAY);
+    }
+
+    /***
+     * yyyy-MM
+     * @return
+     */
+    public static String getFileTimeStrOfMonth() {
+        return LocalDateTime.now(TimeUntils.ZONE_ID).format(FORMAT_FILE_MONTH);
+    }
+
+    /***
+     * yyyy-MM
+     * @param dateTime
+     * @return
+     */
+    public static String getFileTimeStrOfMonth(LocalDateTime dateTime) {
+        return dateTime.format(FORMAT_FILE_MONTH);
     }
 
     /***

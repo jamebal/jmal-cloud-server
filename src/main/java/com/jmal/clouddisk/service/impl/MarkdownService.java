@@ -5,6 +5,8 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.extra.cglib.CglibUtil;
+import cn.hutool.http.HttpException;
+import cn.hutool.http.HttpUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.Either;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -13,7 +15,6 @@ import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import com.mongodb.client.AggregateIterable;
-import com.mongodb.client.MongoCursor;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -115,7 +117,7 @@ public class MarkdownService implements IMarkdownService {
             articleDTO.setTagIds(new String[]{tagId});
         }
         ResponseResult<List<MarkdownVO>> responseResult = getMarkdownList(articleDTO);
-        Page<Object> pageResult = new Page<Object>(page - 1, pageSize, Convert.toInt(responseResult.getCount()));
+        Page<Object> pageResult = new Page<>(page - 1, pageSize, Convert.toInt(responseResult.getCount()));
         pageResult.setData(responseResult.getData());
         return pageResult;
     }
@@ -132,33 +134,34 @@ public class MarkdownService implements IMarkdownService {
 
     @Override
     public Page<Object> getArchives(Integer page, Integer pageSize) {
-        int skip = 0, limit = 5;
-        if (page != null && pageSize != null) {
+        boolean pagination = false;
+        int skip = 0, limit = 10;
+        if(page != null && pageSize != null){
             skip = (page - 1) * pageSize;
             limit = pageSize;
+            pagination = true;
         }
         Query query = new Query();
         query.addCriteria(Criteria.where("release").is(true));
         long count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
-
-        List list = Arrays.asList(
+        List<Bson> list = new ArrayList<>(Arrays.asList(
                 match(and(eq("release", true), exists("alonePage", false))),
                 sort(descending("uploadDate")),
                 project(fields(computed("date", "$uploadDate"),
                         computed("day", eq("$dateToString", and(eq("format", "%Y-%m"), eq("date", "$uploadDate")))),
                         include("name"),
-                        include("slug"))),
-                skip(skip),
-                limit(limit));
-        Map<String, List<ArchivesVO>> resutMap = new LinkedHashMap<>();
-        AggregateIterable aggregateIterable = mongoTemplate.getCollection(FileServiceImpl.COLLECTION_NAME).aggregate(list);
-        MongoCursor<Document> cursor = aggregateIterable.iterator();
-        while (cursor.hasNext()) {
-            Document doc = cursor.next();
+                        include("slug")))));
+        if(pagination){
+            list.add(skip(skip));
+            list.add(limit(limit));
+        }
+        Map<String, List<ArchivesVO>> resultMap = new LinkedHashMap<>();
+        AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(FileServiceImpl.COLLECTION_NAME).aggregate(list);
+        for (Document doc : aggregateIterable) {
             String day = doc.getString("day");
             List<ArchivesVO> aList;
-            if (resutMap.containsKey(day)) {
-                aList = resutMap.get(day);
+            if (resultMap.containsKey(day)) {
+                aList = resultMap.get(day);
             } else {
                 aList = new ArrayList<>();
             }
@@ -170,18 +173,23 @@ public class MarkdownService implements IMarkdownService {
             archivesVO.setId(doc.getObjectId("_id").toHexString());
             archivesVO.setSlug(doc.getString("slug"));
             aList.add(archivesVO);
-            resutMap.put(day, aList);
+            resultMap.put(day, aList);
         }
-        Page<Object> pageResult = new Page<Object>(page - 1, pageSize, Convert.toInt(count));
-        pageResult.setData(resutMap.values());
+        Page<Object> pageResult;
+        if(pagination){
+            pageResult = new Page<>(page - 1, pageSize, Convert.toInt(count));
+        } else {
+            pageResult = new Page<>(Convert.toInt(count));
+        }
+        pageResult.setData(resultMap.values());
         return pageResult;
     }
 
     @Override
     public FileDocument getMarkDownContentBySlug(String slug) {
-        FileDocument fileDocument = null;
+        FileDocument fileDocument;
         if (StringUtils.isEmpty(slug)) {
-            return fileDocument;
+            return null;
         }
         Query query = new Query();
         query.addCriteria(Criteria.where("slug").is(slug));
@@ -190,7 +198,7 @@ public class MarkdownService implements IMarkdownService {
             fileDocument = mongoTemplate.findById(slug, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
         }
         if (fileDocument == null) {
-            return fileDocument;
+            return null;
         }
         String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
         fileDocument.setUsername(username);
@@ -220,9 +228,7 @@ public class MarkdownService implements IMarkdownService {
 
     /***
      * 文档列表
-     * @param skip
-     * @param limit
-     * @return
+     * @return List<MarkdownVO>
      */
     @Override
     public ResponseResult<List<MarkdownVO>> getMarkdownList(ArticleDTO articleDTO) {
@@ -281,11 +287,9 @@ public class MarkdownService implements IMarkdownService {
             query.limit(limit);
         }
         List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
-        List<MarkdownVO> markdownVOList = new ArrayList<>();
+        List<MarkdownVO> markdownVOList;
         boolean finalIsDraft = isDraft;
-        markdownVOList = fileDocumentList.parallelStream().map(Either.wrap(fileDocument -> {
-            return getMarkdownVO(fileDocument, finalIsDraft);
-        })).collect(toList());
+        markdownVOList = fileDocumentList.parallelStream().map(Either.wrap(fileDocument -> getMarkdownVO(fileDocument, finalIsDraft))).collect(toList());
         ResponseResult<List<MarkdownVO>> result = ResultUtil.success(markdownVOList);
         result.setCount(count);
         return result;
@@ -313,7 +317,7 @@ public class MarkdownService implements IMarkdownService {
      * 修改fileDocument
      * 去掉文件名后缀
      * 添加用户头像
-     * @param fileDocument
+     * @param fileDocument FileDocument
      */
     private FileDocument getFileDocument(FileDocument fileDocument) {
         Consumer user = userService.userInfoById(fileDocument.getUserId());
@@ -337,56 +341,51 @@ public class MarkdownService implements IMarkdownService {
         }
         boolean isDraft = false;
         boolean isUpdate = false;
+        LocalDateTime nowDate = LocalDateTime.now(TimeUntils.ZONE_ID);
+        LocalDateTime uploadDate = nowDate;
+        if(upload.getUploadDate() != null){
+            uploadDate = upload.getUploadDate();
+        }
         FileDocument fileDocument = new FileDocument();
-        LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
         Query query = new Query();
         if (upload.getFileId() != null) {
             // 修改
             isUpdate = true;
             query.addCriteria(Criteria.where("_id").is(upload.getFileId()));
             fileDocument = mongoTemplate.findById(upload.getFileId(), FileDocument.class, FileServiceImpl.COLLECTION_NAME);
-        } else {
-            // 新增
-            fileDocument.setUploadDate(date);
-        }
-        String filename = upload.getFilename();
-        String currentDirectory = fileService.getUserDirectory(upload.getCurrentDirectory());
-        File file = Paths.get(fileProperties.getRootDir(), upload.getUsername(), currentDirectory, filename).toFile();
-        FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
-        if(!StringUtils.isEmpty(fileDocument.getName()) && !filename.equals(fileDocument.getName())){
-            // 如果是修改的话则把历史文件删掉
-            Path oldPath = Paths.get(fileProperties.getRootDir(), upload.getUsername(), fileDocument.getPath(), fileDocument.getName());
-            if(Files.exists(oldPath)){
-                FileUtil.del(oldPath);
+            if(fileDocument == null){
+                return ResultUtil.warning("该文档不存在");
             }
         }
+        String filename = upload.getFilename();
+        // 同步文档文件
+        String currentDirectory = syncDocFile(upload, uploadDate, fileDocument, filename);
         fileDocument.setSuffix(FileUtil.extName(filename));
         fileDocument.setUserId(upload.getUserId());
-        fileDocument.setUpdateDate(date);
+        fileDocument.setUpdateDate(nowDate);
         fileDocument.setPath(currentDirectory);
         fileDocument.setSize(upload.getContentText().length());
         fileDocument.setContentType(FileServiceImpl.CONTENT_TYPE_MARK_DOWN);
         fileDocument.setMd5(CalcMd5.getMd5(filename + upload.getContentText()));
-        if(upload.getUploadDate() != null){
-            fileDocument.setUploadDate(upload.getUploadDate());
-        }
-        if(upload.getIsAlonePage() != null && upload.getIsAlonePage()){
-            fileDocument.setAlonePage(upload.getIsAlonePage());
-        }
-        if(upload.getPageSort() != null){
-            fileDocument.setPageSort(upload.getPageSort());
-        }
+        fileDocument.setUploadDate(uploadDate);
         fileDocument.setName(filename);
         fileDocument.setCover(upload.getCover());
         fileDocument.setSlug(getSlug(upload));
         fileDocument.setCategoryIds(upload.getCategoryIds());
         fileDocument.setTagIds(tagService.getTagIdsByNames(upload.getTagNames()));
         fileDocument.setIsFolder(false);
+        if(upload.getIsAlonePage() != null && upload.getIsAlonePage()){
+            fileDocument.setAlonePage(upload.getIsAlonePage());
+        }
+        if(upload.getPageSort() != null){
+            fileDocument.setPageSort(upload.getPageSort());
+        }
         if (!StringUtils.isEmpty(upload.getIsDraft()) && upload.getIsDraft()) {
             isDraft = true;
         } else {
             fileDocument.setRelease(true);
             fileDocument.setContentText(upload.getContentText());
+            fileDocument.setHtml(upload.getHtml());
         }
         if(!isDraft){
             fileDocument.setDraft(null);
@@ -394,8 +393,6 @@ public class MarkdownService implements IMarkdownService {
         Update update = MongoUtil.getUpdate(fileDocument);
         if (isDraft) {
             // 保存草稿
-            FileDocument result;
-            String fileId = upload.getFileId();
             if (isUpdate && !StringUtils.isEmpty(upload.getIsRelease())) {
                 update = new Update();
             }
@@ -415,12 +412,42 @@ public class MarkdownService implements IMarkdownService {
         return ResultUtil.success(upload.getFileId());
     }
 
+    /***
+     * 同步文档文件
+     * @param upload ArticleParamDTO
+     * @param uploadDate 发布日期
+     * @param fileDocument FileDocument
+     * @param filename filename
+     * @return currentDirectory
+     */
+    private String syncDocFile(ArticleParamDTO upload, LocalDateTime uploadDate, FileDocument fileDocument, String filename) {
+        String currentDirectory;
+        if (!StringUtils.isEmpty(upload.getCurrentDirectory())) {
+            currentDirectory = fileService.getUserDirectory(upload.getCurrentDirectory());
+        } else {
+            Path docPaths = Paths.get(fileProperties.getDocumentDir(), TimeUntils.getFileTimeStrOfMonth(uploadDate));
+            // docImagePaths 不存在则新建
+            upsertFolder(docPaths, upload.getUsername(), upload.getUserId());
+            currentDirectory = fileService.getUserDirectory(docPaths.toString());
+        }
+        File file = Paths.get(fileProperties.getRootDir(), upload.getUsername(), currentDirectory, filename).toFile();
+        FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
+        // 当有文件名和发布日期改变当话则把历史文件删掉
+        if((!StringUtils.isEmpty(fileDocument.getName()) && !filename.equals(fileDocument.getName())) || (!StringUtils.isEmpty(fileDocument.getPath()) && !currentDirectory.equals(fileDocument.getPath()))){
+            Path oldPath = Paths.get(fileProperties.getRootDir(), upload.getUsername(), fileDocument.getPath(), fileDocument.getName());
+            if(Files.exists(oldPath)){
+                FileUtil.del(oldPath);
+            }
+        }
+        return currentDirectory;
+    }
+
     @Override
     public ResponseResult<Object> deleteDraft(String fileId, String username) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
-        if(fileDocument.getDraft() == null){
+        if(fileDocument == null || fileDocument.getDraft() == null){
             return ResultUtil.success();
         }
         File draftFile = Paths.get(fileProperties.getRootDir(), username, fileDocument.getDraft().getPath(), fileDocument.getDraft().getName()).toFile();
@@ -475,20 +502,72 @@ public class MarkdownService implements IMarkdownService {
         return ResultUtil.success(list);
     }
 
+    @Override
+    public ResponseResult<Object> uploadMarkdownLinkImage(UploadImageDTO upload) {
+        if(StringUtils.isEmpty(upload.getUrl())){
+            return ResultUtil.warning("url不能为空");
+        }
+        Map<String, String> map = new HashMap<>(2);
+        String username = upload.getUsername();
+        String userId = upload.getUserId();
+        Path docImagePaths = Paths.get(fileProperties.getDocumentImgDir(), TimeUntils.getFileTimeStrOfMonth());
+        // docImagePaths 不存在则新建
+        upsertFolder(docImagePaths, username, userId);
+        File newFile;
+        try {
+            newFile = HttpUtil.downloadFileFromUrl(upload.getUrl(), Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString()).toString());
+        } catch (HttpException e) {
+            return ResultUtil.error("上传失败");
+        }
+        if (!fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L) {
+            fileService.createFile(username, newFile);
+        }
+        String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), newFile.getName()), StandardCharsets.UTF_8);
+        map.put("url", filepath);
+        map.put("originalURL", upload.getUrl());
+        return ResultUtil.success(map);
+    }
+
     /***
      * 上传成功后返回文件名和路径
-     * @param upload
-     * @param multipartFile
+     * @param upload UploadImageDTO
+     * @param multipartFile MultipartFile
      * @return
+     * {
+     *    "filename1": "filepath1",
+     *    "filename2": "filepath2"
+     *    }
      */
     private Map<String, String> uploadImage(UploadImageDTO upload, MultipartFile multipartFile) {
         Map<String, String> map = new HashMap<>(2);
-        String markName = upload.getFilename();
-        String fileName = System.currentTimeMillis() + multipartFile.getOriginalFilename();
-        Path docPaths = Paths.get(fileProperties.getDocumentImgDir(), markName);
-        LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
+        String fileName = TimeUntils.getFileTimeStrOfDay() + multipartFile.getOriginalFilename();
+        Path docImagePaths = Paths.get(fileProperties.getDocumentImgDir(), TimeUntils.getFileTimeStrOfMonth());
         String username = upload.getUsername();
         String userId = upload.getUserId();
+        // docImagePaths 不存在则新建
+        upsertFolder(docImagePaths, username, userId);
+        File newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
+        try {
+            FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
+        } catch (IOException e) {
+            new CommonException(2, "上传失败");
+        }
+        if (!fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L) {
+            fileService.createFile(username, newFile);
+        }
+        map.put("filename", fileName);
+        String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), fileName), StandardCharsets.UTF_8);
+        map.put("filepath", filepath);
+        return map;
+    }
+
+    /***
+     * 如果文件夹不存在，则创建
+     * @param docPaths  文件夹path
+     * @param username username
+     * @param userId userId
+     */
+    private void upsertFolder(@NotNull Path docPaths, @NotNull String username, @NotNull String userId) {
         File dir = Paths.get(fileProperties.getRootDir(), username, docPaths.toString()).toFile();
         if (!dir.exists()) {
             StringBuilder parentPath = new StringBuilder();
@@ -506,26 +585,12 @@ public class MarkdownService implements IMarkdownService {
                 parentPath.append("/").append(name);
             }
         }
-        File newFile = Paths.get(fileProperties.getRootDir(), username, docPaths.toString(), fileName).toFile();
-        try {
-            FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
-        } catch (IOException e) {
-            new CommonException(2, "上传失败");
-        }
-        String fileId = null;
-        if (!fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L) {
-            fileId = fileService.createFile(username, newFile);
-        }
-        map.put("filename", fileName);
-        String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docPaths.toString(), fileName), StandardCharsets.UTF_8);
-        map.put("filepath", filepath);
-        return map;
     }
 
     /***
      * 替换markdown中的图片url
-     * @param input
-     * @return
+     * @param input input
+     * @return String
      */
     public static String replaceAll(CharSequence input, String path, String userId) throws CommonException {
         Pattern pattern = Pattern.compile("!\\[(.*)]\\((.*)\\)");

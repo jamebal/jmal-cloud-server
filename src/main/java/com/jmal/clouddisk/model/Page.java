@@ -71,6 +71,18 @@ public class Page<T> extends ArrayList<T> {
         this.total = total;
         this.totalPage = PageUtil.totalPage(total, pageSize);
     }
+
+    /**
+     * 构造
+     *
+     * @param total    结果总数
+     */
+    public Page(int total) {
+        this(0, total);
+
+        this.total = total;
+        this.totalPage = PageUtil.totalPage(total, pageSize);
+    }
     //---------------------------------------------------------- Constructor end
 
     /**

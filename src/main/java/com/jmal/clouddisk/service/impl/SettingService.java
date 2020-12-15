@@ -103,6 +103,9 @@ public class SettingService {
         if(websiteSetting != null){
             CglibUtil.copy(websiteSetting, websiteSettingDTO);
         }
+        if(websiteSettingDTO.getAlonePages() == null){
+            websiteSettingDTO.setAlonePages(new ArrayList<>());
+        }
         return websiteSettingDTO;
     }
 

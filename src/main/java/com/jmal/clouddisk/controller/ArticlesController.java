@@ -1,10 +1,7 @@
 package com.jmal.clouddisk.controller;
 
 import cn.hutool.core.util.ReUtil;
-import com.jmal.clouddisk.model.Category;
-import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.Tag;
-import com.jmal.clouddisk.model.WebsiteSettingDTO;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.impl.CategoryService;
@@ -160,8 +157,11 @@ public class ArticlesController {
     private void getSetting(ModelMap map) {
         WebsiteSettingDTO websiteSettingDTO = settingService.getWebsiteSetting();
         setOperatingButtonList(websiteSettingDTO);
-        map.addAttribute("alonePages", fileService.getAlonePages());
+        List<MarkdownVO> markdownVOList = fileService.getAlonePages();
+        map.addAttribute("alonePages", markdownVOList);
         map.addAttribute("setting", websiteSettingDTO);
+        int alonePageShowIndex = 4 - websiteSettingDTO.getAlonePages().size();
+        map.addAttribute("showAlonePages", markdownVOList.subList(0, alonePageShowIndex));
     }
 
     /***

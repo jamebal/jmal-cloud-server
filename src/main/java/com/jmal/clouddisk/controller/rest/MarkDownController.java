@@ -8,6 +8,8 @@ import com.jmal.clouddisk.service.impl.FileServiceImpl;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -15,6 +17,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
@@ -74,8 +77,24 @@ public class MarkDownController {
 
     @ApiOperation("上传文档里的图片")
     @PostMapping("/upload-markdown-image")
-    public ResponseResult<Object> uploadMarkdownImage(UploadImageDTO uploadImageDTO) {
-        return fileService.uploadMarkdownImage(uploadImageDTO);
+    public ResponseResult<Object> uploadMarkdownImage(UploadImageDTO upload) {
+        if(StringUtils.isEmpty(upload.getUserId()) || StringUtils.isEmpty(upload.getUsername())) {
+            ResultUtil.warning("参数里缺少 userId 或 username");
+        }
+        return fileService.uploadMarkdownImage(upload);
+    }
+
+    @ApiOperation("上传文档里链接图片")
+    @PostMapping("/upload-markdown-link-image")
+    public ResponseResult<Object> uploadMarkdownLinkImage(HttpServletRequest request, @RequestBody UploadImageDTO uploadImageDTO) {
+        String userId = request.getHeader("userId");
+        String username = request.getHeader("username");
+        if(StringUtils.isEmpty(userId) || StringUtils.isEmpty(username)) {
+            ResultUtil.warning("header里缺少 userId 或 username");
+        }
+        uploadImageDTO.setUserId(userId);
+        uploadImageDTO.setUsername(username);
+        return fileService.uploadMarkdownLinkImage(uploadImageDTO);
     }
 
 }

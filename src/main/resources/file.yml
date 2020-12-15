@@ -1,9 +1,11 @@
 file:
-  #文件存储根目录 文件监控目录
+  # 文件存储根目录 文件监控目录
   rootDir: /Users/jmal/temp/filetest/rootpath
-  #makrdown里图片上传的位置
-  documentImgDir: /Image/Document/Image/
-  #断点续传的临时文件目录名称 位于rootDir下,文件监控扫描忽略的目录
+  # markdown默认存储的位置
+  documentDir: /Document/
+  # markdown里图片存储的位置
+  documentImgDir: /Image/Document/
+  # 断点续传的临时文件目录名称 位于rootDir下,文件监控扫描忽略的目录
   chunkFileDir: ugyuvgbhnouvghjbnk
   # 是否开启文件监控, 默认不开启(开启会损耗性能)
   monitor: false

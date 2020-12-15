@@ -3,7 +3,7 @@
         <a class="navbar-brand text-brand" href="/articles" th:text="${setting.siteName}"></a>
         <div class="collapse navbar-collapse">
             <ul class="navbar-nav mr-auto">
-                <li class="nav-item">
+                <li class="nav-item" th:if="${setting.isShowAlonePage('archives')}">
                     <a class="nav-link" href="/articles/archives" title="归档">
                         <svg class="icon" aria-hidden="true">
                             <use xlink:href="#icon-guidang"></use>
@@ -11,7 +11,7 @@
                         <span class="nav-link-label">归档</span>
                     </a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" th:if="${setting.isShowAlonePage('categories')}">
                     <a class="nav-link" href="/articles/categories" title="分类">
                         <svg class="icon" aria-hidden="true">
                             <use xlink:href="#icon-fenlei"></use>
@@ -19,7 +19,7 @@
                         <span class="nav-link-label">分类</span>
                     </a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" th:if="${setting.isShowAlonePage('tags')}">
                     <a class="nav-link" href="/articles/tags" title="标签">
                         <svg class="icon" aria-hidden="true">
                             <use xlink:href="#icon-tag"></use>
@@ -27,12 +27,12 @@
                         <span class="nav-link-label">标签</span>
                     </a>
                 </li>
-                <li class="nav-item" th:if="${alonePages.size() > 0}">
-                    <a class="nav-link" th:href="'/articles/o/'+${alonePages.get(0).slug}" th:title="${alonePages.get(0).name}">
-                        <span class="nav-link-label" th:text="${alonePages.get(0).name}"></span>
+                <li class="nav-item" th:each="page: ${showAlonePages}">
+                    <a class="nav-link" th:href="'/articles/o/'+${page.slug}" th:title="${page.name}">
+                        <span class="nav-link-label" th:text="${page.name}"></span>
                     </a>
                 </li>
-                <li th:if="${alonePages.size() > 1}" class="nav-item nav-item-more" onmouseover="mouseover()" onmouseleave="mouseleave()">
+                <li th:if="${alonePages.size() > showAlonePages.size()}" class="nav-item nav-item-more" onmouseover="mouseover()" onmouseleave="mouseleave()">
                     <a class="nav-link">
                         <span class="nav-link-label">更多</span>
                         <svg class="icon icon-more" aria-hidden="true">
@@ -40,7 +40,7 @@
                         </svg>
                     </a>
                     <ul class="dropdown-menu">
-                        <li class="dropdown-item alone-page" th:each="page,pageStat : ${alonePages}" th:if="${pageStat.index > 0}">
+                        <li class="dropdown-item alone-page" th:each="page,pageStat : ${alonePages}" th:if="${pageStat.index > (showAlonePages.size() - 1)}">
                             <a th:href="@{'/articles/o/'+${page.slug}}" th:text="${page.name}"></a>
                         </li>
                     </ul>
