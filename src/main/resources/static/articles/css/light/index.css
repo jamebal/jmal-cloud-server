@@ -243,16 +243,52 @@ html {
     border-radius: 100%;
     font-size: 1rem;
     background: #f0f0f0;
-    color: #333;
+    color: #262e38;
     vertical-align: middle;
     -webkit-transition: 0.3s ease all;
     transition: 0.3s ease all;
 }
 
 #top .navbar .container-fluid .side-toolbar-list li a:hover {
-    background: #333;
-    color: #fff;
+    background: #262e38;
+    color: #f0f0f0;
 }
+.navbar-search-container {
+    display: inline-block;
+    height: 2.75rem;
+    width: 2.75rem;
+    border-radius: 2.75rem;
+    line-height: 2.55rem;
+    background: #f0f0f0;
+    color: #262e38;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    -webkit-transition: 0.3s ease all;
+    transition: 0.3s ease all;
+    text-align: left;
+}
+
+.navbar-nav.side-toolbar-list .navbar-search-container>a {
+    text-align: center;
+    vertical-align: top;
+}
+
+.navbar-search-container .search-form {
+    display: inline-block;
+}
+
+.navbar-search-container .search-form input.search {
+    height: 2.375rem;
+    width: 6.5rem;
+    border: 0;
+    background-color: transparent;
+    font-size: 1rem;
+    overflow: hidden;
+    line-height: 1.5;
+    vertical-align: bottom;
+}
+
 .icon-more {
     -webkit-transition: all 150ms ease-in-out;
     transition: all 150ms ease-in-out;

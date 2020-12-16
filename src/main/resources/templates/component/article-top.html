@@ -48,6 +48,18 @@
             </ul>
 
             <ul class="navbar-nav side-toolbar-list">
+
+                <li class="navbar-search-container">
+                    <a id="navbar-search" class="search-form-input" href="javascript:showSearch();"
+                       title="搜索...">
+                        <i class="fa fa-search">
+                        </i>
+                    </a>
+                    <form class="search-form" action="/articles/search" role="search">
+                        <input type="text" name="keyword" required="" placeholder="搜索..." class="search">
+                    </form>
+                </li>
+
                 <li th:each="operatingButton : ${setting.operatingButtonList}">
                     <a th:href="${operatingButton.url}" th:title="${operatingButton.title}" target="_blank">
                         <i th:class="${operatingButton.style}"></i>
@@ -73,5 +85,13 @@
     function mouseleave(){
         menu.classList.remove("show")
         icon.style.transform = 'rotate(90deg)'
+    }
+    let searchLi = document.documentElement.querySelector('.navbar-search-container')
+    function showSearch() {
+        if(searchLi.style.width === '11rem'){
+            searchLi.style.width = '2.75rem'
+        } else {
+            searchLi.style.width = '11rem'
+        }
     }
 </script>

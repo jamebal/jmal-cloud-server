@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import lombok.Data;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.data.annotation.Id;
 
 import java.text.Collator;
@@ -52,5 +53,12 @@ public class Category implements Comparable<Category> {
     public int compareTo(Category category) {
         Comparator<Object> cmp = Collator.getInstance(java.util.Locale.CHINA);
         return cmp.compare(getName(), category.getName());
+    }
+
+    public ArticlesQuery toArticlesQuery(){
+        ArticlesQuery articlesQuery = new ArticlesQuery();
+        articlesQuery.setBackground(categoryBackground);
+        articlesQuery.setName(name);
+        return articlesQuery;
     }
 }

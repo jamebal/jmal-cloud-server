@@ -12,7 +12,7 @@
 
 <div th:include="component/sidebar.html"></div>
 <div id="body">
-    <div id="wrap-mask"><div class="boxLoading"></div></div>
+    <div th:if="${markdown.size > 15000}" id="wrap-mask"><div class="boxLoading"></div></div>
     <div id="top" class="animateIn">
         <div th:include="component/article-top.html"></div>
         <div class="scrollbar gradient-bg-rev" style="width: 0;"></div>
@@ -30,8 +30,7 @@
     </div>
     <div class="body-wrapper">
         <el-main id="main_body" class="l_main article_l_main">
-<!--            <div class="source" style="display:none;" th:utext="${markdown.contentText}"></div>-->
-            <div id="preview" class="vditor-reset article-body">
+            <div id="preview" class="vditor-reset article-body" th:utext="${markdown.html}">
             </div>
             <div class="back-top" style="display: none">
                 <svg class="icon">

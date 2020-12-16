@@ -32,7 +32,7 @@ public interface IMarkdownService {
      * @param pageSize pageSize
      * @return Page
      */
-    Page<Object> getArticles(Integer page, Integer pageSize);
+    Page<List<MarkdownVO>> getArticles(Integer page, Integer pageSize);
 
     /***
      * 获取独立页面列表
@@ -41,22 +41,31 @@ public interface IMarkdownService {
     List<MarkdownVO> getAlonePages();
 
     /***
-     * 获取文章列表
+     * 获取文章列表(根据分类)
      * @param page page
      * @param pageSize pageSize
      * @param categoryId categoryId
      * @return Page
      */
-    Page<Object> getArticlesByCategoryId(Integer page, Integer pageSize, String categoryId);
+    Page<List<MarkdownVO>> getArticlesByCategoryId(Integer page, Integer pageSize, String categoryId);
 
     /***
-     * 获取文章列表
+     * 获取文章列表(根据标签)
      * @param page page
      * @param pageSize pageSize
-     * @param categoryId tagId
+     * @param tagId tagId
      * @return Page
      */
-    Page<Object> getArticlesByTagId(int page, int pageSize, String tagId);
+    Page<List<MarkdownVO>> getArticlesByTagId(int page, int pageSize, String tagId);
+
+    /***
+     * 获取文章列表(根据关键字)
+     * @param page page
+     * @param pageSize pageSize
+     * @param keyword keyword
+     * @return Page
+     */
+    Page<List<MarkdownVO>> getArticlesByKeyword(int page, int pageSize, String keyword);
 
     /***
      * 归档
@@ -115,4 +124,5 @@ public interface IMarkdownService {
      * @return
      */
     ResponseResult<Object> uploadMarkdownLinkImage(UploadImageDTO uploadImageDTO);
+
 }

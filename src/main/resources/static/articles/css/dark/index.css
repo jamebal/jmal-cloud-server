@@ -241,7 +241,7 @@ html {
     line-height: 2.75rem;
     border-radius: 100%;
     font-size: 1rem;
-    background: #333;
+    background: #262e38;
     color: #f0f0f0;
     vertical-align: middle;
     -webkit-transition: 0.3s ease all;
@@ -250,7 +250,15 @@ html {
 
 #top .navbar .container-fluid .side-toolbar-list li a:hover {
     background: #f0f0f0;
-    color: #333;
+    color: #262e38;
+}
+
+.navbar-search-container {
+    background: #262e38;
+    color: #f0f0f0;
+}
+.navbar-search-container .search-form input.search {
+    color: #f0f0f0;
 }
 
 .dropdown-menu {

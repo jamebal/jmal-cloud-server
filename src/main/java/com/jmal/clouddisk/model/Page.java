@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * @author jmal
@@ -126,4 +127,5 @@ public class Page<T> extends ArrayList<T> {
     public int[] rainbow(int displayCount) {
         return PageUtil.rainbow(this.page + 1, this.totalPage, displayCount);
     }
+
 }

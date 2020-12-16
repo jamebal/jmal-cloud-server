@@ -22,4 +22,11 @@ public class Tag {
     private String slug;
 
     String tagBackground;
+
+    public ArticlesQuery toArticlesQuery(){
+        ArticlesQuery articlesQuery = new ArticlesQuery();
+        articlesQuery.setBackground(tagBackground);
+        articlesQuery.setName(name);
+        return articlesQuery;
+    }
 }

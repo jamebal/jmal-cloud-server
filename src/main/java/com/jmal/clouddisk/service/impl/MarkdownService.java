@@ -94,8 +94,11 @@ public class MarkdownService implements IMarkdownService {
     }
 
     @Override
-    public Page<Object> getArticles(Integer page, Integer pageSize) {
-        return getArticles(page, pageSize, null, null);
+    public Page<List<MarkdownVO>> getArticles(Integer page, Integer pageSize) {
+        ArticleDTO articleDTO = new ArticleDTO();
+        articleDTO.setPageIndex(page);
+        articleDTO.setPageSize(pageSize);
+        return getArticles(articleDTO);
     }
 
     @Override
@@ -105,31 +108,43 @@ public class MarkdownService implements IMarkdownService {
         return getMarkdownList(articleDTO).getData();
     }
 
-    private Page<Object> getArticles(Integer page, Integer pageSize, String categoryId, String tagId) {
-        ArticleDTO articleDTO = new ArticleDTO();
-        articleDTO.setPageIndex(page);
-        articleDTO.setPageSize(pageSize);
+    private Page<List<MarkdownVO>> getArticles(ArticleDTO articleDTO) {
         articleDTO.setIsRelease(true);
-        if (!StringUtils.isEmpty(categoryId)) {
-            articleDTO.setCategoryIds(new String[]{categoryId});
-        }
-        if (!StringUtils.isEmpty(tagId)) {
-            articleDTO.setTagIds(new String[]{tagId});
-        }
         ResponseResult<List<MarkdownVO>> responseResult = getMarkdownList(articleDTO);
-        Page<Object> pageResult = new Page<>(page - 1, pageSize, Convert.toInt(responseResult.getCount()));
+        Page<List<MarkdownVO>> pageResult = new Page<>(articleDTO.getPageIndex() - 1, articleDTO.getPageSize(), Convert.toInt(responseResult.getCount()));
         pageResult.setData(responseResult.getData());
         return pageResult;
     }
 
     @Override
-    public Page<Object> getArticlesByCategoryId(Integer page, Integer pageSize, String categoryId) {
-        return getArticles(page, pageSize, categoryId, null);
+    public Page<List<MarkdownVO>> getArticlesByCategoryId(Integer page, Integer pageSize, String categoryId) {
+        ArticleDTO articleDTO = new ArticleDTO();
+        articleDTO.setPageIndex(page);
+        articleDTO.setPageSize(pageSize);
+        if (!StringUtils.isEmpty(categoryId)) {
+            articleDTO.setCategoryIds(new String[]{categoryId});
+        }
+        return getArticles(articleDTO);
     }
 
     @Override
-    public Page<Object> getArticlesByTagId(int page, int pageSize, String tagId) {
-        return getArticles(page, pageSize, null, tagId);
+    public Page<List<MarkdownVO>> getArticlesByTagId(int page, int pageSize, String tagId) {
+        ArticleDTO articleDTO = new ArticleDTO();
+        articleDTO.setPageIndex(page);
+        articleDTO.setPageSize(pageSize);
+        if (!StringUtils.isEmpty(tagId)) {
+            articleDTO.setTagIds(new String[]{tagId});
+        }
+        return getArticles(articleDTO);
+    }
+
+    @Override
+    public Page<List<MarkdownVO>> getArticlesByKeyword(int page, int pageSize, String keyword) {
+        ArticleDTO articleDTO = new ArticleDTO();
+        articleDTO.setPageIndex(page);
+        articleDTO.setPageSize(pageSize);
+        articleDTO.setKeyword(keyword);
+        return getArticles(articleDTO);
     }
 
     @Override
@@ -267,7 +282,7 @@ public class MarkdownService implements IMarkdownService {
             query.addCriteria(Criteria.where("tagIds").in(articleDTO.getTagIds()));
         }
         if (!StringUtils.isEmpty(articleDTO.getKeyword())) {
-            query.addCriteria(Criteria.where("name").regex(articleDTO.getKeyword(), "i"));
+            query.addCriteria(Criteria.where("contentText").regex(articleDTO.getKeyword(), "i"));
         }
         if(limit > 0){
             count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
