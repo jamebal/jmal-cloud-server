@@ -2,11 +2,6 @@ package com.jmal.clouddisk.interceptor;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.CharsetUtil;
-import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.symmetric.AES;
-import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
-import cn.hutool.crypto.symmetric.SymmetricCrypto;
 import com.alibaba.fastjson.JSON;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.exception.CommonException;
@@ -26,8 +21,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+import java.util.Enumeration;
 
 /**
  * @author jmal
@@ -77,6 +71,11 @@ public class AuthInterceptor implements HandlerInterceptor {
      * @return 用户名
      */
     public String getUserNameByAccessToken(HttpServletRequest request){
+        Enumeration<String> enumeration = request.getHeaderNames();
+        while (enumeration.hasMoreElements()){
+            String header = enumeration.nextElement();
+            Console.log(header, request.getHeader(header));
+        }
         String token = request.getHeader(ACCESS_TOKEN);
         if (StringUtils.isEmpty(token)) {
             token = request.getParameter(ACCESS_TOKEN);
@@ -137,7 +136,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         ServletOutputStream out = null;
         try {
             out = response.getOutputStream();
-            ResponseResult result = ResultUtil.error(ExceptionType.LOGIN_EXCEPRION.getCode(), ExceptionType.LOGIN_EXCEPRION.getMsg());
+            ResponseResult<Object> result = ResultUtil.error(ExceptionType.LOGIN_EXCEPRION.getCode(), ExceptionType.LOGIN_EXCEPRION.getMsg());
             out.write(JSON.toJSONString(result).getBytes());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
