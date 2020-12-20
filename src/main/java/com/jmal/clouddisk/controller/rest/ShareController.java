@@ -114,10 +114,20 @@ public class ShareController {
     }
 
     @ApiOperation("显示缩略图")
+    @GetMapping("/articles/s/view/thumbnail")
+    public ResponseEntity<Object> articlesThumbnail(String id) {
+        return thumbnail(id);
+    }
+
+    @ApiOperation("显示缩略图")
     @GetMapping("/public/s/view/thumbnail")
-    public ResponseEntity<Object> thumbnail(String id) {
+    public ResponseEntity<Object> publicThumbnail(String id) {
+        return thumbnail(id);
+    }
+
+    private ResponseEntity<Object> thumbnail(String id) {
         ResultUtil.checkParamIsNull(id);
-        Optional<FileDocument> file = fileService.thumbnail(id,null);
+        Optional<FileDocument> file = fileService.thumbnail(id, null);
         return file.<ResponseEntity<Object>>map(fileDocument ->
                 ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + fileDocument.getName())

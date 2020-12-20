@@ -58,7 +58,7 @@ public class Category implements Comparable<Category> {
     public ArticlesQuery toArticlesQuery(){
         ArticlesQuery articlesQuery = new ArticlesQuery();
         articlesQuery.setBackground(categoryBackground);
-        articlesQuery.setName(name);
+        articlesQuery.setName("分类 - "+name);
         return articlesQuery;
     }
 }

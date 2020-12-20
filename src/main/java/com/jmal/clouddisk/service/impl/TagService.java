@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.extra.cglib.CglibUtil;
+import com.jmal.clouddisk.model.Category;
 import com.jmal.clouddisk.model.CategoryDTO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.TagDTO;
@@ -200,5 +201,16 @@ public class TagService {
             mongoTemplate.save(tag, COLLECTION_NAME);
         }
         return tag.getId();
+    }
+
+    /***
+     * 根据id查询标签列表
+     * @param categoryIds 标签id集合
+     * @return 标签列表
+     */
+    public List<Tag> getTagListByIds(String[] tagIds) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(tagIds));
+        return mongoTemplate.find(query, Tag.class, COLLECTION_NAME);
     }
 }

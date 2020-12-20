@@ -68,6 +68,15 @@ public interface IMarkdownService {
     Page<List<MarkdownVO>> getArticlesByKeyword(int page, int pageSize, String keyword);
 
     /***
+     * 获取文章列表(根据作者)
+     * @param page page
+     * @param pageSize pageSize
+     * @param author userId
+     * @return Page
+     */
+    Page<List<MarkdownVO>> getArticlesByAuthor(int page, int pageSize, String userId);
+
+    /***
      * 归档
      * @param page page
      * @param pageSize pageSize
@@ -80,7 +89,7 @@ public interface IMarkdownService {
      * @param slug
      * @return
      */
-    FileDocument getMarkDownContentBySlug(String slug);
+    ArticleVO getMarkDownContentBySlug(String slug);
 
     /***
      * 修改文档排序

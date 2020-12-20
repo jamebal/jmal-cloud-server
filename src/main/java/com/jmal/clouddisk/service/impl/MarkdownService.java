@@ -148,6 +148,15 @@ public class MarkdownService implements IMarkdownService {
     }
 
     @Override
+    public Page<List<MarkdownVO>> getArticlesByAuthor(int page, int pageSize, String userId) {
+        ArticleDTO articleDTO = new ArticleDTO();
+        articleDTO.setPageIndex(page);
+        articleDTO.setPageSize(pageSize);
+        articleDTO.setUserId(userId);
+        return getArticles(articleDTO);
+    }
+
+    @Override
     public Page<Object> getArchives(Integer page, Integer pageSize) {
         boolean pagination = false;
         int skip = 0, limit = 10;
@@ -201,7 +210,7 @@ public class MarkdownService implements IMarkdownService {
     }
 
     @Override
-    public FileDocument getMarkDownContentBySlug(String slug) {
+    public ArticleVO getMarkDownContentBySlug(String slug) {
         FileDocument fileDocument;
         if (StringUtils.isEmpty(slug)) {
             return null;
@@ -219,7 +228,18 @@ public class MarkdownService implements IMarkdownService {
         fileDocument.setUsername(username);
         String filename = fileDocument.getName();
         fileDocument.setName(filename.substring(0, filename.length() - fileDocument.getSuffix().length() - 1));
-        return fileDocument;
+        ArticleVO articleVO = new ArticleVO();
+        CglibUtil.copy(fileDocument, articleVO);
+
+        if (articleVO.getCategoryIds() != null) {
+            List<Category> categories = categoryService.getCategoryListByIds(articleVO.getCategoryIds());
+            articleVO.setCategories(categories);
+        }
+        if (articleVO.getTagIds() != null) {
+            List<Tag> tags = tagService.getTagListByIds(articleVO.getTagIds());
+            articleVO.setTags(tags);
+        }
+        return articleVO;
     }
 
     @Override
@@ -324,6 +344,10 @@ public class MarkdownService implements IMarkdownService {
         if (markdownVO.getCategoryIds() != null) {
             List<Category> categories = categoryService.getCategoryListByIds(markdownVO.getCategoryIds());
             markdownVO.setCategories(categories);
+        }
+        if (markdownVO.getTagIds() != null) {
+            List<Tag> tags = tagService.getTagListByIds(markdownVO.getTagIds());
+            markdownVO.setTags(tags);
         }
         return markdownVO;
     }

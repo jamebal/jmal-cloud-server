@@ -23,8 +23,26 @@
         <div class="inner">
             <div class="blog-title"><span id="article-title" th:text="${markdown.name}"></span><span class="typed-cursor">_</span></div>
             <div class="blog-description font-mono">
-                <a itemprop="name" href="https://www.jmal.top/author/1/" rel="author" th:text="${markdown.username}"></a>
+                <a itemprop="name" th:href="'/articles/author/'+${markdown.username}" rel="author" th:text="${markdown.username}"></a>
                 <span th:text="'· '+${markdown.uploadTime()}"></span>
+                <span class="link"  th:if="${markdown.categories != null && markdown.categories.size() > 0}">
+                    ·
+                    <a th:each="category,categoryStat : ${markdown.categories}">
+                        <span th:text="${categoryStat.index > 0?' · ':''}"></span><a th:href="'/articles/categories/'+${category.name}" th:text="${category.name}"></a>
+                    </a>
+                </span>
+                <span class="edit"  th:if="${markdown.editable != null && markdown.editable}">
+                    ·
+                    <a th:href="'/setting/website/manager-articles?operation=editor&id='+${markdown.id}" target="_blank">编辑</a>
+                </span>
+                <div th:if="${markdown.tags != null && markdown.tags.size() > 0}">
+                    <svg class="icon" aria-hidden="true">
+                        <use xlink:href="#icon-tag"></use>
+                    </svg>
+                    <span th:each="tag,tagStat : ${markdown.tags}">
+                        <span th:text="${tagStat.index > 0?' · ':''}"></span><a th:href="'/articles/tags/'+${tag.slug}" th:text="${tag.name}"></a>
+                    </span>
+                </div>
             </div>
         </div>
     </div>
@@ -63,10 +81,7 @@
             <use xlink:href="#icon-service-directory"></use>
         </svg>
     </div>
-    <footer class="clearfix">
-        <br><br><br>
-        <div class="copyright"><p><a href="http://blog.jmal.top">Copyright © 2020 journey magical AL</a></p></div>
-    </footer>
+    <iframe th:replace="component/footer.html"></iframe>
 </div>
 <script src="/articles/js/jquery-3.5.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vditor@3.6.3/dist/index.min.js" defer></script>
