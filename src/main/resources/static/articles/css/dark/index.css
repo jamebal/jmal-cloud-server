@@ -175,12 +175,16 @@ body {
 .right-menu>div.titleList li a, .right-menu>div.titleList li a>xmp {
     color: #d1d5d9;
 }
+.right-menu>div.titleList li{
+    z-index: 3;
+}
 .right-menu>div.titleList .avtive{
     background: #ffffff !important;
 }
 .right-menu>div.titleList .j-bj {
     background: -webkit-gradient(linear, left top, right top, from(#484848), to(#8c8c8c));
     background: linear-gradient(to right, #484848, #8c8c8c);
+    z-index: 2;
 }
 .shadow {
     -webkit-box-shadow: 0 0 3px 1px rgba(0,0,0,0.1);
@@ -188,12 +192,6 @@ body {
 }
 .toc-content {
     background-color: #343232b3;
-}
-.slimScrollDiv {
-    border-left: 1px solid rgba(204, 204, 204, 0.32);
-    -webkit-box-shadow: rgba(0,0,0,0.1) 0 1px 0 0;
-    box-shadow: rgba(0,0,0,0.1) 0 1px 0 0;
-    background: #ffffff69;
 }
 .layui-timeline-title {
     color: #d1d2da !important;
