@@ -110,15 +110,15 @@ public class ArticlesController {
         return "archives";
     }
 
-    @GetMapping("/articles/categories/{categoryName}")
-    public String getCategoryByName(HttpServletRequest request, ModelMap map, @PathVariable String categoryName){
+    @GetMapping("/articles/categories/{categorySlugName}")
+    public String getCategoryByName(HttpServletRequest request, ModelMap map, @PathVariable String categorySlugName){
         getSetting(request, map);
-        if (StringUtils.isEmpty(categoryName)){
+        if (StringUtils.isEmpty(categorySlugName)){
             return "404";
         }
         String categoryId = null;
-        if (!StringUtils.isEmpty(categoryName)) {
-            Category category = categoryService.getCategoryInfo(null, categoryName);
+        if (!StringUtils.isEmpty(categorySlugName)) {
+            Category category = categoryService.getCategoryInfoBySlug(null, categorySlugName);
             if (category == null) {
                 return "404";
             }
@@ -141,15 +141,15 @@ public class ArticlesController {
         return "tags";
     }
 
-    @GetMapping("/articles/tags/{tagName}")
-    public String getTagByName(HttpServletRequest request, ModelMap map, @PathVariable String tagName){
+    @GetMapping("/articles/tags/{tagSlugName}")
+    public String getTagByName(HttpServletRequest request, ModelMap map, @PathVariable String tagSlugName){
         getSetting(request, map);
-        if (StringUtils.isEmpty(tagName)){
+        if (StringUtils.isEmpty(tagSlugName)){
             return "404";
         }
         String tagId = null;
-        if (!StringUtils.isEmpty(tagName)) {
-            Tag tag = tagService.getTagInfo(null, tagName);
+        if (!StringUtils.isEmpty(tagSlugName)) {
+            Tag tag = tagService.getTagInfoBySlug(null, tagSlugName);
             if (tag == null) {
                 return "404";
             }

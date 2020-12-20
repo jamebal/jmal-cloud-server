@@ -35,8 +35,8 @@ public class CategoryDTO implements Comparable<CategoryDTO> {
     /***
      * 缩略名，默认为name
      */
-    @ApiModelProperty(name = "thumbnailName", value = "分类缩略名")
-    private String thumbnailName;
+    @ApiModelProperty(name = "slug", value = "分类缩略名")
+    private String slug;
     /***
      * 父级分类Id
      */

@@ -23,7 +23,7 @@ public class Category implements Comparable<Category> {
     /***
      * 缩略名，默认为name
      */
-    private String thumbnailName;
+    private String slug;
     /***
      * 父级分类名称
      */

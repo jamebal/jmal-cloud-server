@@ -32,7 +32,7 @@
                                     <div class="flex-text">
                                            <span class="flex-text" th:each="category,categoryStat : ${article.categories}">
                                             <span th:text="${categoryStat.index > 0?' , ':''}"></span>
-                                               <a th:href="'/articles/categories/'+${category.name}" th:text="${category.name}"></a>
+                                               <a th:href="'/articles/categories/'+${category.slug}" th:text="${category.name}"></a>
                                             </span>
                                     </div>
                                 </div>
@@ -45,7 +45,7 @@
                                     <div class="flex-text">
                                            <span class="flex-text" th:each="tag,tagStat : ${article.tags}">
                                             <span th:text="${tagStat.index > 0?' , ':''}"></span>
-                                               <a th:href="'/articles/tags/'+${tag.name}" th:text="${tag.name}"></a>
+                                               <a th:href="'/articles/tags/'+${tag.slug}" th:text="${tag.name}"></a>
                                             </span>
                                     </div>
                                 </div>
