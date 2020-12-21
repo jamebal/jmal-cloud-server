@@ -54,6 +54,15 @@ public class WebsiteSettingDTO {
      */
     List<OperatingButton> operatingButtonList;
 
+    /***
+     * 版权信息
+     */
+    String copyright;
+    /***
+     * 备案许可号
+     */
+    String recordPermissionNum;
+
     @Data
     public static class OperatingButton {
         /***

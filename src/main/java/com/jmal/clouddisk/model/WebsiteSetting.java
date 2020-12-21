@@ -49,4 +49,12 @@ public class WebsiteSetting {
      * 标签页面背景
      */
     String tagBackground;
+    /***
+     * 版权信息
+     */
+    String copyright;
+    /***
+     * 备案许可号
+     */
+    String recordPermissionNum;
 }
