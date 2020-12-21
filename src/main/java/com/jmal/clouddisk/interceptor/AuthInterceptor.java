@@ -71,11 +71,6 @@ public class AuthInterceptor implements HandlerInterceptor {
      * @return 用户名
      */
     public String getUserNameByAccessToken(HttpServletRequest request){
-        Enumeration<String> enumeration = request.getHeaderNames();
-        while (enumeration.hasMoreElements()){
-            String header = enumeration.nextElement();
-            Console.log(header, request.getHeader(header));
-        }
         String token = request.getHeader(ACCESS_TOKEN);
         if (StringUtils.isEmpty(token)) {
             token = request.getParameter(ACCESS_TOKEN);

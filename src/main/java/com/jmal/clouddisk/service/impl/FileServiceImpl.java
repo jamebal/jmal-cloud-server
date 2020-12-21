@@ -284,7 +284,9 @@ public class FileServiceImpl implements IFileService {
     public ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
-        assert fileDocument != null;
+        if(fileDocument == null){
+            return ResultUtil.success("文件不存在了");
+        }
         String currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
         Criteria criteria = Criteria.where("path").is(currentDirectory);
         return getCountResponseResult(upload, result, criteria);
