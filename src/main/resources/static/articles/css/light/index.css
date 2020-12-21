@@ -1194,12 +1194,39 @@ footer a {
     background: linear-gradient(to right, #5d9eea, #afcafd);
 }
 .article-body blockquote {
-    padding: 0.5em 1em;
+    padding: 0.5em 1em !important;
     color: #656565;
     background-color: rgba(119,119,119,0.05);
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
     border-left: .2em solid #0052d4 !important;
+}
+.article-body a {
+    color: #1890ff;
+    position: relative;
+    white-space: normal;
+}
+.article-body a:hover:after {
+    left: 0;
+    width: 100%;
+    -webkit-transition: width 350ms;
+    -moz-transition: width 350ms;
+    -ms-transition: width 350ms;
+    -o-transition: width 350ms;
+    transition: width 350ms;
+}
+.article-body a:after {
+    position: absolute;
+    bottom: -0.0625rem;
+    left: 100%;
+    width: 0;
+    border-bottom: 0.0625rem solid #1890ff;
+    content: "";
+    -webkit-transition: width 350ms,left 350ms;
+    -moz-transition: width 350ms,left 350ms;
+    -ms-transition: width 350ms,left 350ms;
+    -o-transition: width 350ms,left 350ms;
+    transition: width 350ms,left 350ms;
 }
 .vditor-reset iframe.iframe__video {
     width: 100%;

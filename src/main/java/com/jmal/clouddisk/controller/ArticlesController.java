@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -52,15 +53,28 @@ public class ArticlesController {
     }
 
     @GetMapping("/articles")
-    public String articles(HttpServletRequest request, ModelMap map){
+    public String index(HttpServletRequest request, ModelMap map){
         getSetting(request, map);
+        map.addAttribute("titleName", "标齐名");
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
         if(!StringUtils.isEmpty(pIndex)){
             page = Integer.parseInt(pIndex);
         }
         map.addAttribute("articlesData", fileService.getArticles(page, pageSize));
-        return "index";
+        return "common";
+    }
+
+    public ModelAndView articles(HttpServletRequest request){
+        ModelAndView model = new ModelAndView();
+        int page = 1, pageSize = 10;
+        String pIndex = request.getParameter("page");
+        if(!StringUtils.isEmpty(pIndex)){
+            page = Integer.parseInt(pIndex);
+        }
+        model.addObject("articlesData", fileService.getArticles(page, pageSize));
+        model.setViewName("index");
+        return model;
     }
 
     @GetMapping("/articles/o/{slug}")
