@@ -57,6 +57,6 @@ public class FileBase {
     }
 
     public String uploadTime(){
-        return updateDate.format(TimeUntils.UPLOAD_FORMAT_TIME);
+        return uploadDate.format(TimeUntils.UPLOAD_FORMAT_TIME);
     }
 }

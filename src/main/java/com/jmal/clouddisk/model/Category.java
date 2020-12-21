@@ -23,7 +23,7 @@ public class Category implements Comparable<Category> {
     /***
      * 缩略名，默认为name
      */
-    private String thumbnailName;
+    private String slug;
     /***
      * 父级分类名称
      */
@@ -58,7 +58,7 @@ public class Category implements Comparable<Category> {
     public ArticlesQuery toArticlesQuery(){
         ArticlesQuery articlesQuery = new ArticlesQuery();
         articlesQuery.setBackground(categoryBackground);
-        articlesQuery.setName(name);
+        articlesQuery.setName("分类 - "+name);
         return articlesQuery;
     }
 }

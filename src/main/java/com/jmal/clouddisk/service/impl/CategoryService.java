@@ -9,6 +9,7 @@ import com.jmal.clouddisk.model.TagDTO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import org.apache.commons.collections4.functors.IfClosure;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -223,6 +224,27 @@ public class CategoryService {
     }
 
     /***
+     * 获取分类信息
+     * @param userId 用户id
+     * @param categorySlugName 分类缩略名
+     * @return 一个分类信息
+     */
+    public Category getCategoryInfoBySlug(String userId, String categorySlugName) {
+        Query query = new Query();
+        if (!StringUtils.isEmpty(userId)) {
+            query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
+        } else {
+            query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
+        }
+        query.addCriteria(Criteria.where("slug").is(categorySlugName));
+        Category category = mongoTemplate.findOne(query, Category.class, COLLECTION_NAME);
+        if(category == null){
+            category = getCategoryInfo(userId, categorySlugName);
+        }
+        return category;
+    }
+
+    /***
      * 通过Id获取分类信息
      * @param categoryId 分类id
      * @return 一个分类信息
@@ -239,7 +261,7 @@ public class CategoryService {
      * @return ResponseResult
      */
     public ResponseResult<Object> add(CategoryDTO categoryDTO) {
-        if (categoryExists(categoryDTO)) {
+        if (getCategoryInfo(categoryDTO.getUserId(), categoryDTO.getName()) != null) {
             return ResultUtil.warning("该分类名称已存在");
         }
         if (!StringUtils.isEmpty(categoryDTO.getParentCategoryId())) {
@@ -248,18 +270,11 @@ public class CategoryService {
                 return ResultUtil.warning("该父分类不存在");
             }
         }
-        if (StringUtils.isEmpty(categoryDTO.getThumbnailName())) {
-            categoryDTO.setThumbnailName(categoryDTO.getName());
-        }
+        categoryDTO.setSlug(getSlug(categoryDTO));
         Category category = new Category();
         CglibUtil.copy(categoryDTO, category);
         mongoTemplate.save(category);
         return ResultUtil.success();
-    }
-
-    private boolean categoryExists(CategoryDTO categoryDTO) {
-        Category category = getCategoryInfo(categoryDTO.getUserId(), categoryDTO.getName());
-        return category != null;
     }
 
     /***
@@ -272,12 +287,13 @@ public class CategoryService {
         if (category1 == null) {
             return ResultUtil.warning("该分类不存在");
         }
-        if (categoryExists(categoryDTO)) {
+        Query query1 = new Query();
+        query1.addCriteria(Criteria.where("_id").nin(categoryDTO.getId()));
+        query1.addCriteria(Criteria.where("name").is(categoryDTO.getName()));
+        if(mongoTemplate.exists(query1, COLLECTION_NAME)){
             return ResultUtil.warning("该分类名称已存在");
         }
-        if (StringUtils.isEmpty(categoryDTO.getThumbnailName())) {
-            categoryDTO.setThumbnailName(categoryDTO.getName());
-        }
+        categoryDTO.setSlug(getSlug(categoryDTO));
         Category category = new Category();
         CglibUtil.copy(categoryDTO, category);
         Query query = new Query();
@@ -285,6 +301,23 @@ public class CategoryService {
         Update update = MongoUtil.getUpdate(category);
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
         return ResultUtil.success();
+    }
+
+    private String getSlug(CategoryDTO categoryDTO) {
+        Query query = new Query();
+        String slug = categoryDTO.getSlug();
+        if (StringUtils.isEmpty(slug)) {
+            return categoryDTO.getName();
+        }
+        String id = categoryDTO.getId();
+        if (id != null) {
+            query.addCriteria(Criteria.where("_id").nin(id));
+        }
+        query.addCriteria(Criteria.where("slug").is(slug));
+        if (mongoTemplate.exists(query, COLLECTION_NAME)) {
+            return slug + "-1";
+        }
+        return slug;
     }
 
     /***

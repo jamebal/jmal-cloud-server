@@ -26,7 +26,7 @@ public class Tag {
     public ArticlesQuery toArticlesQuery(){
         ArticlesQuery articlesQuery = new ArticlesQuery();
         articlesQuery.setBackground(tagBackground);
-        articlesQuery.setName(name);
+        articlesQuery.setName("标签 - "+name);
         return articlesQuery;
     }
 }

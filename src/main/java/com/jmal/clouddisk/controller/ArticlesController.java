@@ -3,10 +3,10 @@ package com.jmal.clouddisk.controller;
 import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IMarkdownService;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CategoryService;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.service.impl.TagService;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -42,6 +42,9 @@ public class ArticlesController {
     @Autowired
     private IMarkdownService fileService;
 
+    @Autowired
+    IUserService userService;
+
     @GetMapping("/public/404")
     public String notFind(HttpServletRequest request, ModelMap map){
         getSetting(request, map);
@@ -72,11 +75,19 @@ public class ArticlesController {
 
     private String articlePage(HttpServletRequest request, String slug, ModelMap map) {
         getSetting(request, map);
-        FileDocument fileDocument = fileService.getMarkDownContentBySlug(slug);
-        if(fileDocument == null){
+        ArticleVO articleVO = fileService.getMarkDownContentBySlug(slug);
+        if(articleVO == null){
             return "404";
         }
-        map.addAttribute("markdown", fileDocument);
+        Cookie[] cookies =  request.getCookies();
+        if(cookies != null){
+            for(Cookie cookie : cookies){
+                if("consumerId".equals(cookie.getName())){
+                    articleVO.setEditable(true);
+                }
+            }
+        }
+        map.addAttribute("markdown", articleVO);
         return "article";
     }
 
@@ -99,15 +110,15 @@ public class ArticlesController {
         return "archives";
     }
 
-    @GetMapping("/articles/categories/{categoryName}")
-    public String getCategoryByName(HttpServletRequest request, ModelMap map, @PathVariable String categoryName){
+    @GetMapping("/articles/categories/{categorySlugName}")
+    public String getCategoryByName(HttpServletRequest request, ModelMap map, @PathVariable String categorySlugName){
         getSetting(request, map);
-        if (StringUtils.isEmpty(categoryName)){
+        if (StringUtils.isEmpty(categorySlugName)){
             return "404";
         }
         String categoryId = null;
-        if (!StringUtils.isEmpty(categoryName)) {
-            Category category = categoryService.getCategoryInfo(null, categoryName);
+        if (!StringUtils.isEmpty(categorySlugName)) {
+            Category category = categoryService.getCategoryInfoBySlug(null, categorySlugName);
             if (category == null) {
                 return "404";
             }
@@ -130,15 +141,15 @@ public class ArticlesController {
         return "tags";
     }
 
-    @GetMapping("/articles/tags/{tagName}")
-    public String getTagByName(HttpServletRequest request, ModelMap map, @PathVariable String tagName){
+    @GetMapping("/articles/tags/{tagSlugName}")
+    public String getTagByName(HttpServletRequest request, ModelMap map, @PathVariable String tagSlugName){
         getSetting(request, map);
-        if (StringUtils.isEmpty(tagName)){
+        if (StringUtils.isEmpty(tagSlugName)){
             return "404";
         }
         String tagId = null;
-        if (!StringUtils.isEmpty(tagName)) {
-            Tag tag = tagService.getTagInfo(null, tagName);
+        if (!StringUtils.isEmpty(tagSlugName)) {
+            Tag tag = tagService.getTagInfoBySlug(null, tagSlugName);
             if (tag == null) {
                 return "404";
             }
@@ -155,7 +166,7 @@ public class ArticlesController {
     }
 
     @GetMapping("/articles/search")
-    public String tags(HttpServletRequest request, ModelMap map, @RequestParam String keyword){
+    public String search(HttpServletRequest request, ModelMap map, @RequestParam String keyword){
         getSetting(request, map);
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
@@ -170,7 +181,31 @@ public class ArticlesController {
         }
         query.setName("包含关键字 "+keyword+" 的文章");
         map.addAttribute("query", query);
-        map.addAttribute("articlesData", fileService.getArticlesByKeyword(page, pageSize, keyword));
+        map.addAttribute("articlesData", articles);
+        return "articles-query";
+    }
+
+    @GetMapping("/articles/author/{username}")
+    public String author(HttpServletRequest request, ModelMap map, @PathVariable String username){
+        getSetting(request, map);
+        String userId = userService.getUserIdByUserName(username);
+        if(StringUtils.isEmpty(userId)){
+            return "404";
+        }
+        int page = 1, pageSize = 10;
+        String pIndex = request.getParameter("page");
+        if(!StringUtils.isEmpty(pIndex)){
+            page = Integer.parseInt(pIndex);
+        }
+        ArticlesQuery query = new ArticlesQuery();
+        Page<List<MarkdownVO>> articles = fileService.getArticlesByAuthor(page, pageSize, userId);
+        if(!articles.isEmpty()){
+            MarkdownVO markdownVO = articles.getData().get(0);
+            query.setBackground(markdownVO.getCover());
+        }
+        query.setName(username + " 发布的文章");
+        map.addAttribute("query", query);
+        map.addAttribute("articlesData", articles);
         return "articles-query";
     }
 
@@ -181,7 +216,10 @@ public class ArticlesController {
         map.addAttribute("alonePages", markdownVOList);
         map.addAttribute("setting", websiteSettingDTO);
         int alonePageShowIndex = 4 - websiteSettingDTO.getAlonePages().size();
-        map.addAttribute("showAlonePages", markdownVOList.subList(0, alonePageShowIndex));
+        if(!markdownVOList.isEmpty()){
+            markdownVOList = markdownVOList.subList(0, alonePageShowIndex);
+        }
+        map.addAttribute("showAlonePages", markdownVOList);
         map.addAttribute("darkTheme", darkTheme(request));
     }
 

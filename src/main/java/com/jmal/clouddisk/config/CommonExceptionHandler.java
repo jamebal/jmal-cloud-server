@@ -25,6 +25,7 @@ public class CommonExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseBody
     public ResponseResult<Object> exceptionHandler(Exception e) {
+        log.error(e.getMessage(), e);
         return ResultUtil.error(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
     }
 

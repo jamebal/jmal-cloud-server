@@ -1,14 +1,12 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.convert.Convert;
 import cn.hutool.extra.cglib.CglibUtil;
-import com.jmal.clouddisk.model.CategoryDTO;
+import com.jmal.clouddisk.model.ArticleParamDTO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.TagDTO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import org.apache.poi.ss.formula.functions.T;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -106,6 +104,22 @@ public class TagService {
     }
 
     /***
+     * 获取分类信息
+     * @param userId 用户id
+     * @param tagSlugName 标签缩略名
+     * @return 一个分类信息
+     */
+    public Tag getTagInfoBySlug(String userId, String tagSlugName) {
+        Query query = getQueryUserId(userId);
+        query.addCriteria(Criteria.where("slug").is(tagSlugName));
+        Tag tag = mongoTemplate.findOne(query, Tag.class, COLLECTION_NAME);
+        if(tag == null){
+            tag = getTagInfo(userId, tagSlugName);
+        }
+        return tag;
+    }
+
+    /***
      * 标签信息
      * @param tagId tagId
      * @return Tag
@@ -125,9 +139,7 @@ public class TagService {
         if (tagExists(tagDTO)) {
             return ResultUtil.warning("该标签名称以存在");
         }
-        if (StringUtils.isEmpty(tagDTO.getSlug())) {
-            tagDTO.setSlug(tagDTO.getName());
-        }
+        tagDTO.setSlug(getSlug(tagDTO));
         Tag tag = new Tag();
         CglibUtil.copy(tagDTO, tag);
         mongoTemplate.save(tag, COLLECTION_NAME);
@@ -149,12 +161,13 @@ public class TagService {
         if (tag1 == null) {
             return ResultUtil.warning("该标签不存在");
         }
-        if (tagExists(tagDTO)) {
+        Query query1 = new Query();
+        query1.addCriteria(Criteria.where("_id").nin(tagDTO.getId()));
+        query1.addCriteria(Criteria.where("name").is(tagDTO.getName()));
+        if(mongoTemplate.exists(query1, COLLECTION_NAME)){
             return ResultUtil.warning("该标签名称已存在");
         }
-        if (StringUtils.isEmpty(tagDTO.getSlug())) {
-            tagDTO.setSlug(tagDTO.getName());
-        }
+        tagDTO.setSlug(getSlug(tagDTO));
         Tag tag = new Tag();
         CglibUtil.copy(tagDTO, tag);
         Query query = new Query();
@@ -162,6 +175,23 @@ public class TagService {
         Update update = MongoUtil.getUpdate(tag);
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
         return ResultUtil.success();
+    }
+
+    private String getSlug(TagDTO tagDTO) {
+        Query query = new Query();
+        String slug = tagDTO.getSlug();
+        if (StringUtils.isEmpty(slug)) {
+            return tagDTO.getName();
+        }
+        String id = tagDTO.getId();
+        if (id != null) {
+            query.addCriteria(Criteria.where("_id").nin(id));
+        }
+        query.addCriteria(Criteria.where("slug").is(slug));
+        if (mongoTemplate.exists(query, COLLECTION_NAME)) {
+            return slug + "-1";
+        }
+        return slug;
     }
 
     /***
@@ -200,5 +230,16 @@ public class TagService {
             mongoTemplate.save(tag, COLLECTION_NAME);
         }
         return tag.getId();
+    }
+
+    /***
+     * 根据id查询标签列表
+     * @param categoryIds 标签id集合
+     * @return 标签列表
+     */
+    public List<Tag> getTagListByIds(String[] tagIds) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(tagIds));
+        return mongoTemplate.find(query, Tag.class, COLLECTION_NAME);
     }
 }

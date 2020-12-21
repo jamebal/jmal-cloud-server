@@ -10,18 +10,44 @@
                             </h2>
                             <div class="new-meta-box">
                                 <div class="new-meta-item author">
-                                    <a href="http://www.jmal.top" rel="nofollow">
-                                        <img th:src="'/public/s/view/thumbnail?id='+${article.avatar}">
+                                    <a th:href="'/articles/author/'+${article.username}" rel="nofollow">
+                                        <img th:src="'/articles/s/view/thumbnail?id='+${article.avatar}">
                                         <p th:text="${article.username}"></p>
                                     </a>
                                 </div>
                                 <div class="new-meta-item date">
-                                    <a class="notlink">
+                                    <a class="link">
                                         <svg class="icon" aria-hidden="true">
                                             <use xlink:href="#icon-fabu"></use>
                                         </svg>
                                         <p th:text="'发布于 '+${article.uploadTime()}"></p>
                                     </a>
+                                </div>
+                                <div class="new-meta-item category" th:if="${article.categories != null && article.categories.size() > 0}">
+                                    <a class="link">
+                                        <svg class="icon" aria-hidden="true">
+                                            <use xlink:href="#icon-fenlei"></use>
+                                        </svg>
+                                    </a>
+                                    <div class="flex-text">
+                                           <span class="flex-text" th:each="category,categoryStat : ${article.categories}">
+                                            <span th:text="${categoryStat.index > 0?' , ':''}"></span>
+                                               <a th:href="'/articles/categories/'+${category.slug}" th:text="${category.name}"></a>
+                                            </span>
+                                    </div>
+                                </div>
+                                <div class="new-meta-item tag" th:if="${article.tags != null && article.tags.size() > 0}">
+                                    <a class="link">
+                                        <svg class="icon" aria-hidden="true">
+                                            <use xlink:href="#icon-tag"></use>
+                                        </svg>
+                                    </a>
+                                    <div class="flex-text">
+                                           <span class="flex-text" th:each="tag,tagStat : ${article.tags}">
+                                            <span th:text="${tagStat.index > 0?' , ':''}"></span>
+                                               <a th:href="'/articles/tags/'+${tag.slug}" th:text="${tag.name}"></a>
+                                            </span>
+                                    </div>
                                 </div>
                             </div>
                             <hr>
