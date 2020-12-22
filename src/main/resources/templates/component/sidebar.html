@@ -5,7 +5,7 @@
     <div id="sidebar-nav">
         <div class="author navbar-header">
             <a href="/articles">
-                <img src="http://localhost:9528/api/file/jmal/%E6%96%87%E6%A1%A3/%E8%89%BE%E7%BC%96%E7%A8%8B/Docker%EF%BC%88%E4%B8%80%EF%BC%89/UNADJUSTEDNONRAW_thumb_6ee.jpg" alt="Avatar" width="100" height="100">
+                <img src="https://www.jmal.top/articles/s/view/thumbnail?id=5f81629316b3c2761607a2dd" alt="Avatar" width="100" height="100">
             </a>
         </div>
         <ul id="menu-menu-1" class="menu navbar-nav">
@@ -20,16 +20,16 @@
                     <span class="nav-link-label">归档</span>
                 </a>
             </li>
-            <li class="menu-item" th:if="${setting.isShowAlonePage('archives')}">
-                <a class="nav-link" href="/articles/tags" title="分类">
+            <li class="menu-item" th:if="${setting.isShowAlonePage('categories')}">
+                <a class="nav-link" href="/articles/categories" title="分类">
                     <svg class="icon" aria-hidden="true">
                         <use xlink:href="#icon-fenlei"></use>
                     </svg>
                     <span class="nav-link-label">分类</span>
                 </a>
             </li>
-            <li class="nav-item" th:if="${setting.isShowAlonePage('archives')}">
-                <a class="nav-link" href="/articles/categories" title="标签">
+            <li class="nav-item" th:if="${setting.isShowAlonePage('tags')}">
+                <a class="nav-link" href="/articles/tags" title="标签">
                     <svg class="icon" aria-hidden="true">
                         <use xlink:href="#icon-tag"></use>
                     </svg>

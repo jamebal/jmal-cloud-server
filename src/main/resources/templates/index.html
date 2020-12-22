@@ -21,6 +21,10 @@
 <div id="content-body" th:switch="${mark}">
     <div th:case="articles" th:include="articles.html"></div>
     <div th:case="article" th:include="article.html"></div>
+    <div th:case="archives" th:include="archives.html"></div>
+    <div th:case="articles-query" th:include="articles-query.html"></div>
+    <div th:case="categories" th:include="categories.html"></div>
+    <div th:case="tags" th:include="tags.html"></div>
 </div>
 <iframe th:replace="component/footer.html"></iframe>
 <script th:inline="javascript">
@@ -31,7 +35,8 @@
             }
         ).on('pjax:click', function() {
         }).on('pjax:send', function() {
-            $(window).unbind()
+            $(window).unbind('scroll')
+            $(window).unbind('resize')
         }).on('pjax:complete', function() {
         }).on('pjax:end', function() {
             // 还原导航栏位置
