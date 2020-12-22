@@ -61,14 +61,17 @@
 <script>
     function toggle() {
         let body = document.getElementById("body")
+        let footer = document.getElementById("footer")
         let toggleNav = document.getElementById("toggle-nav")
         let sidebarNav = document.getElementById("sidebar-nav")
         if(body.style.transform.length > 0){
             body.style.transform = ''
             toggleNav.style.transform = ''
             sidebarNav.style.transform = ''
+            footer.style.transform = ''
         } else {
             body.style.transform = 'translateX(17.5rem)'
+            footer.style.transform = 'translateX(17.5rem)'
             toggleNav.style.transform = 'translateX(14.5rem)'
             sidebarNav.style.transform = 'translateX(17.5rem)'
         }

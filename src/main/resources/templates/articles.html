@@ -1,25 +1,80 @@
 <div xmlns:th="http://www.thymeleaf.org">
+<style>
+    .article-header {
+        height: 100vh!important;
+    }
+    .articles_l_main {
+        margin-top: 0;
+    }
+    .scroll-down-bar {
+        height: 6rem;
+        margin-top: -6rem;
+        text-align: center;
+        position: relative;
+        z-index: 11;
+    }
+    .scroll-down-bar:hover {
+        cursor: pointer;
+    }
+    .scroll-down-bar i {
+        font-size: 2rem;
+        font-weight: bold;
+        display: inline-block;
+        position: relative;
+        padding-top: 2rem;
+        color: #fff;
+        -webkit-transform: translateZ(0);
+        -moz-transform: translateZ(0);
+        -ms-transform: translateZ(0);
+        -o-transform: translateZ(0);
+        transform: translateZ(0);
+        -webkit-animation: scroll-down 1.5s infinite;
+        animation: scroll-down 1.5s infinite;
+    }
+    @keyframes scroll-down {
+        0% {
+            opacity: 0.8;
+            top: 0;
+        }
+
+        50% {
+            opacity: 0.4;
+            top: -1em;
+        }
+        100% {
+            opacity: 0.8;
+            top: 0;
+        }
+    }
+</style>
 <div id="body">
     <div class="article-header">
-        <div class="article-background" th:style="${query.background !=null ? 'background-image: url('+ query.background +')':'background-image: url('+ setting.backgroundSite +')'}"></div>
+        <div class="article-background" th:style="'background-image: url('+${setting.backgroundSite}+')'"></div>
         <div class="inner">
-            <div class="blog-title"><span id="article-title" th:text="${query.name}"></span><span class="typed-cursor">_</span></div>
+            <div class="blog-title"><span id="article-title" th:text="${setting.backgroundTextSite}"></span><span class="typed-cursor">_</span></div>
             <div class="blog-description font-mono">
-                <span th:text="'共计'+${articlesData.getTotal()}+'篇文章'"></span>
+                <span th:text="${setting.backgroundDescSite}"></span>
             </div>
         </div>
     </div>
+    <div class="scroll-down-bar">
+        <i class="fas fa-chevron-down"></i>
+    </div>
+    <div class="back-top" style="display: none">
+        <svg class="icon" aria-hidden="true"><use xlink:href="#icon-Up"></use></svg>
+    </div>
     <div th:include="component/articles-list.html"></div>
 </div>
-    <div th:replace="component/common-js.html"></div>
+<div th:replace="component/common-js.html"></div>
 <script th:inline="javascript">
     $(function(){
+        const body = $('html, body')
         if(window.innerWidth <= 768){
             $(".rainbow-page").hide()
         }
 
         $(".back-top").click(function(){
-            $('html, body').animate({
+            body.animate({
                 scrollTop: 0
             }, 400)
         });
@@ -60,13 +115,16 @@
         }
 
         let beforeScrollTop = document.documentElement.scrollTop;
-        $(window).on("scroll",function (event) {
+        $(window).on("scroll",function () {
             showBackTop()
             // 判断是上滑还是下滑
             let afterScrollTop = document.documentElement.scrollTop
             let delta = afterScrollTop - beforeScrollTop
             beforeScrollTop = afterScrollTop
             let scrollTop = $(this).scrollTop()
+            if(scrollTop < 480){
+                main.css('margin-top','-'+scrollTop/60+"rem");
+            }
             let scrollHeight = $(document).height()
             let windowHeight = $(this).height()
             if (scrollTop + windowHeight > scrollHeight - 10) {  //滚动到底部执行事件
@@ -83,6 +141,12 @@
             }
         })
         let main = $('.articles_l_main')
+        let scrollTop = $(window).scrollTop()
+        if(scrollTop < 480){
+            main.css('margin-top','-'+$(window).scrollTop()/60+"rem")
+        } else {
+            main.css('margin-top','-8rem')
+        }
         /***
          * 改变返回顶部按钮位置
          */
@@ -98,6 +162,12 @@
         setBackTopPosition()
         $(window).on("resize", function (){
             setBackTopPosition()
+        })
+        const scrollDownBar = $('.scroll-down-bar')
+        scrollDownBar.click(function (){
+            body.animate({
+                scrollTop: window.innerHeight * 0.8
+            }, 800)
         })
     });
 </script>

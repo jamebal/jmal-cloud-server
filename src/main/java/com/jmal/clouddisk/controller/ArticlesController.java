@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -46,88 +45,91 @@ public class ArticlesController {
     @Autowired
     IUserService userService;
 
+    private static final String X_PJAX = "X-PJAX";
+    private static final String X_PJAX_TRUE = "true";
+
     @GetMapping("/public/404")
-    public String notFind(HttpServletRequest request, ModelMap map){
-        getSetting(request, map);
-        return "404";
+    public String notFind(HttpServletRequest request, ModelMap map) {
+        boolean isPjax = pjaxMap(request, map, "404");
+        map.addAttribute("titleName", "页面没有找到");
+        return isPjax ? "404" : "index";
     }
 
     @GetMapping("/articles")
-    public String index(HttpServletRequest request, ModelMap map){
-        getSetting(request, map);
-        map.addAttribute("titleName", "标齐名");
+    public String index(HttpServletRequest request, ModelMap map) {
+        map.addAttribute("mark", "articles");
+        boolean isPjax = isPjax(request);
+        WebsiteSettingDTO websiteSettingDTO;
+        if(!isPjax){
+            websiteSettingDTO = getSetting(request, map);
+        } else {
+            websiteSettingDTO = settingService.getWebsiteSetting();
+            map.addAttribute("setting", settingService.getWebsiteSetting());
+        }
+        map.addAttribute("titleName", websiteSettingDTO.getSiteName());
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
-        if(!StringUtils.isEmpty(pIndex)){
+        if (!StringUtils.isEmpty(pIndex)) {
             page = Integer.parseInt(pIndex);
         }
         map.addAttribute("articlesData", fileService.getArticles(page, pageSize));
-        return "common";
-    }
-
-    public ModelAndView articles(HttpServletRequest request){
-        ModelAndView model = new ModelAndView();
-        int page = 1, pageSize = 10;
-        String pIndex = request.getParameter("page");
-        if(!StringUtils.isEmpty(pIndex)){
-            page = Integer.parseInt(pIndex);
-        }
-        model.addObject("articlesData", fileService.getArticles(page, pageSize));
-        model.setViewName("index");
-        return model;
+        return isPjax ? "articles" : "index";
     }
 
     @GetMapping("/articles/o/{slug}")
-    public String alonePage(HttpServletRequest request, @PathVariable String slug, ModelMap map){
+    public String alonePage(HttpServletRequest request, @PathVariable String slug, ModelMap map) {
         return articlePage(request, slug, map);
     }
 
     @GetMapping("/articles/s/{slug}")
-    public String article(HttpServletRequest request, @PathVariable String slug, ModelMap map){
+    public String article(HttpServletRequest request, @PathVariable String slug, ModelMap map) {
         return articlePage(request, slug, map);
     }
 
     private String articlePage(HttpServletRequest request, String slug, ModelMap map) {
-        getSetting(request, map);
+        boolean isPjax = pjaxMap(request, map, "article");
         ArticleVO articleVO = fileService.getMarkDownContentBySlug(slug);
-        if(articleVO == null){
+        if (articleVO == null) {
             return "404";
         }
-        Cookie[] cookies =  request.getCookies();
-        if(cookies != null){
-            for(Cookie cookie : cookies){
-                if("consumerId".equals(cookie.getName())){
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("consumerId".equals(cookie.getName())) {
                     articleVO.setEditable(true);
                 }
             }
         }
         map.addAttribute("markdown", articleVO);
-        return "article";
+        map.addAttribute("titleName", articleVO.getName());
+        return isPjax ? "article" : "index";
     }
 
     @GetMapping("/articles/categories")
-    public String categories(HttpServletRequest request, ModelMap map){
-        getSetting(request, map);
+    public String categories(HttpServletRequest request, ModelMap map) {
+        boolean isPjax = pjaxMap(request, map, "categories");
+        map.addAttribute("titleName", "分类");
         map.addAttribute("categories", categoryService.list(null, null));
-        return "categories";
+        return isPjax ? "categories" : "index";
     }
 
     @GetMapping("/articles/archives")
-    public String archives(HttpServletRequest request, ModelMap map){
-        getSetting(request, map);
+    public String archives(HttpServletRequest request, ModelMap map) {
+        boolean isPjax = pjaxMap(request, map, "archives");
+        map.addAttribute("titleName", "归档");
         int page = 1, pageSize = 100;
         String pIndex = request.getParameter("page");
-        if(!StringUtils.isEmpty(pIndex)){
+        if (!StringUtils.isEmpty(pIndex)) {
             page = Integer.parseInt(pIndex);
         }
         map.addAttribute("articlesData", fileService.getArchives(page, pageSize));
-        return "archives";
+        return isPjax ? "archives" : "index";
     }
 
     @GetMapping("/articles/categories/{categorySlugName}")
-    public String getCategoryByName(HttpServletRequest request, ModelMap map, @PathVariable String categorySlugName){
-        getSetting(request, map);
-        if (StringUtils.isEmpty(categorySlugName)){
+    public String getCategoryByName(HttpServletRequest request, ModelMap map, @PathVariable String categorySlugName) {
+        boolean isPjax = pjaxMap(request, map, "articles-query");
+        if (StringUtils.isEmpty(categorySlugName)) {
             return "404";
         }
         String categoryId = null;
@@ -136,29 +138,32 @@ public class ArticlesController {
             if (category == null) {
                 return "404";
             }
-            map.addAttribute("query", category.toArticlesQuery());
+            ArticlesQuery query = category.toArticlesQuery();
+            map.addAttribute("titleName", query.getName());
+            map.addAttribute("query", query);
             categoryId = category.getId();
         }
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
-        if(!StringUtils.isEmpty(pIndex)){
+        if (!StringUtils.isEmpty(pIndex)) {
             page = Integer.parseInt(pIndex);
         }
         map.addAttribute("articlesData", fileService.getArticlesByCategoryId(page, pageSize, categoryId));
-        return "articles-query";
+        return isPjax ? "articles-query" : "index";
     }
 
     @GetMapping("/articles/tags")
-    public String tags(HttpServletRequest request, ModelMap map){
-        getSetting(request, map);
+    public String tags(HttpServletRequest request, ModelMap map) {
+        boolean isPjax = pjaxMap(request, map, "tags");
+        map.addAttribute("titleName", "标签");
         map.addAttribute("tags", tagService.listTagsOfArticle());
-        return "tags";
+        return isPjax ? "tags" : "index";
     }
 
     @GetMapping("/articles/tags/{tagSlugName}")
-    public String getTagByName(HttpServletRequest request, ModelMap map, @PathVariable String tagSlugName){
-        getSetting(request, map);
-        if (StringUtils.isEmpty(tagSlugName)){
+    public String getTagByName(HttpServletRequest request, ModelMap map, @PathVariable String tagSlugName) {
+        boolean isPjax = pjaxMap(request, map, "articles-query");
+        if (StringUtils.isEmpty(tagSlugName)) {
             return "404";
         }
         String tagId = null;
@@ -167,74 +172,79 @@ public class ArticlesController {
             if (tag == null) {
                 return "404";
             }
-            map.addAttribute("query", tag.toArticlesQuery());
+            ArticlesQuery query = tag.toArticlesQuery();
+            map.addAttribute("titleName", query.getName());
+            map.addAttribute("query", query);
             tagId = tag.getId();
         }
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
-        if(!StringUtils.isEmpty(pIndex)){
+        if (!StringUtils.isEmpty(pIndex)) {
             page = Integer.parseInt(pIndex);
         }
         map.addAttribute("articlesData", fileService.getArticlesByTagId(page, pageSize, tagId));
-        return "articles-query";
+        return isPjax ? "articles-query" : "index";
     }
 
     @GetMapping("/articles/search")
-    public String search(HttpServletRequest request, ModelMap map, @RequestParam String keyword){
-        getSetting(request, map);
+    public String search(HttpServletRequest request, ModelMap map, @RequestParam String keyword) {
+        boolean isPjax = pjaxMap(request, map, "articles-query");
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
-        if(!StringUtils.isEmpty(pIndex)){
+        if (!StringUtils.isEmpty(pIndex)) {
             page = Integer.parseInt(pIndex);
         }
         ArticlesQuery query = new ArticlesQuery();
         Page<List<MarkdownVO>> articles = fileService.getArticlesByKeyword(page, pageSize, keyword);
-        if(!articles.isEmpty()){
+        if (!articles.isEmpty()) {
             MarkdownVO markdownVO = articles.getData().get(0);
             query.setBackground(markdownVO.getCover());
         }
-        query.setName("包含关键字 "+keyword+" 的文章");
+        query.setName("包含关键字 " + keyword + " 的文章");
+        map.addAttribute("titleName", query.getName());
         map.addAttribute("query", query);
         map.addAttribute("articlesData", articles);
-        return "articles-query";
+        return isPjax ? "articles-query" : "index";
     }
 
     @GetMapping("/articles/author/{username}")
-    public String author(HttpServletRequest request, ModelMap map, @PathVariable String username){
-        getSetting(request, map);
+    public String author(HttpServletRequest request, ModelMap map, @PathVariable String username) {
+        boolean isPjax = pjaxMap(request, map, "articles-query");
         String userId = userService.getUserIdByUserName(username);
-        if(StringUtils.isEmpty(userId)){
+        if (StringUtils.isEmpty(userId)) {
             return "404";
         }
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
-        if(!StringUtils.isEmpty(pIndex)){
+        if (!StringUtils.isEmpty(pIndex)) {
             page = Integer.parseInt(pIndex);
         }
         ArticlesQuery query = new ArticlesQuery();
         Page<List<MarkdownVO>> articles = fileService.getArticlesByAuthor(page, pageSize, userId);
-        if(!articles.isEmpty()){
+        if (!articles.isEmpty()) {
             MarkdownVO markdownVO = articles.getData().get(0);
             query.setBackground(markdownVO.getCover());
         }
         query.setName(username + " 发布的文章");
+        map.addAttribute("titleName", query.getName());
         map.addAttribute("query", query);
         map.addAttribute("articlesData", articles);
-        return "articles-query";
+        return isPjax ? "articles-query" : "index";
     }
 
-    private void getSetting(HttpServletRequest request, ModelMap map) {
+    private WebsiteSettingDTO getSetting(HttpServletRequest request, ModelMap map) {
         WebsiteSettingDTO websiteSettingDTO = settingService.getWebsiteSetting();
         setOperatingButtonList(websiteSettingDTO);
         List<MarkdownVO> markdownVOList = fileService.getAlonePages();
         map.addAttribute("alonePages", markdownVOList);
         map.addAttribute("setting", websiteSettingDTO);
         int alonePageShowIndex = 4 - websiteSettingDTO.getAlonePages().size();
-        if(!markdownVOList.isEmpty()){
+        if (!markdownVOList.isEmpty()) {
             markdownVOList = markdownVOList.subList(0, alonePageShowIndex);
         }
         map.addAttribute("showAlonePages", markdownVOList);
         map.addAttribute("darkTheme", darkTheme(request));
+        return websiteSettingDTO;
     }
 
     /***
@@ -242,7 +252,7 @@ public class ArticlesController {
      * @param websiteSettingDTO userSettingDTO
      */
     private void setOperatingButtonList(WebsiteSettingDTO websiteSettingDTO) {
-        if(websiteSettingDTO != null && !StringUtils.isEmpty(websiteSettingDTO.getOperatingButtons())){
+        if (websiteSettingDTO != null && !StringUtils.isEmpty(websiteSettingDTO.getOperatingButtons())) {
             String operatingButtons = websiteSettingDTO.getOperatingButtons();
             List<WebsiteSettingDTO.OperatingButton> operatingButtonList = new ArrayList<>();
             for (String button : operatingButtons.split("[\\n]")) {
@@ -250,7 +260,7 @@ public class ArticlesController {
                 int splitIndex = button.indexOf(":");
                 String label = button.substring(0, splitIndex);
                 String title = ReUtil.getGroup0("[^><]+(?=<\\/i>)", label);
-                if(StringUtils.isEmpty(title)){
+                if (StringUtils.isEmpty(title)) {
                     title = "";
                 }
                 operatingButton.setTitle(title);
@@ -263,17 +273,41 @@ public class ArticlesController {
     }
 
     private boolean darkTheme(HttpServletRequest request) {
-        Cookie[] cookies =  request.getCookies();
-        if(cookies != null){
-            for(Cookie cookie : cookies){
-                if("jmal-theme".equals(cookie.getName())){
-                    if("dark".equals(cookie.getValue())){
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("jmal-theme".equals(cookie.getName())) {
+                    if ("dark".equals(cookie.getValue())) {
                         return true;
                     }
                 }
             }
         }
         return false;
+    }
+
+    /***
+     * 判断请求是否为pjax
+     * @param request HttpServletRequest
+     * @return boolean
+     */
+    private boolean isPjax(HttpServletRequest request) {
+        boolean pjax = false;
+        if (X_PJAX_TRUE.equals(request.getHeader(X_PJAX))) {
+            pjax = true;
+        }
+        return pjax;
+    }
+
+    private boolean pjaxMap(HttpServletRequest request, ModelMap map, String viewName) {
+        boolean isPjax = isPjax(request);
+        if(!isPjax) {
+            getSetting(request, map);
+        } else {
+            map.addAttribute("setting", settingService.getWebsiteSetting());
+        }
+        map.addAttribute("mark", viewName);
+        return isPjax;
     }
 
 }

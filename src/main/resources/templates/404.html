@@ -1,13 +1,4 @@
-<!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>页面没有找到</title>
-    <iframe th:replace="component/head.html"></iframe>
-</head>
-<body class="theme-white color-default card  desktop macOS macOS-ge-10-11 macOS-ge-10-12 chrome not-safari open use-navbar">
-<!--[if lt IE 9]>
-<div class="browse-happy" role="dialog">当前网页 <strong>不支持</strong> 你正在使用的浏览器. 为了正常的访问, 请 <a href="http://browsehappy.com/">升级你的浏览器</a>.</div>
-<![endif]-->
+<div xmlns:th="http://www.thymeleaf.org">
 <style>
     .container {
         width: 100vw;
@@ -20,11 +11,7 @@
         margin: 0 auto;
     }
 </style>
-<div th:include="component/sidebar.html"></div>
 <div id="body">
-    <div id="top" class="animateIn">
-        <div th:include="component/article-top.html"></div>
-    </div>
     <div class="container">
         <div class="row">
             <div class="content404-wrapper">
@@ -145,10 +132,7 @@
             </div>
         </div>
     </div>
-    <iframe th:replace="component/footer.html"></iframe>
 </div>
-<script src="/articles/js/jquery-3.5.1.min.js"></script>
-<script src="/articles/js/common.js"></script>
-</body>
-</html>
+    <div th:replace="component/common-js.html"></div>
+</div>
 
