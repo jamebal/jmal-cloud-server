@@ -1,190 +1,209 @@
 <div xmlns:th="http://www.thymeleaf.org">
     <link rel="stylesheet" type="text/css" href="/articles/css/independent.css">
-<div id="body">
-    <div class="article-header">
-        <div class="article-background" th:style="${setting.tagBackground !=null ? 'background-image: url('+setting.tagBackground+')':'background-image: url('+ setting.backgroundSite +')'}"></div>
-        <div class="inner">
-            <div class="blog-title"><span id="article-title">标签</span><span class="typed-cursor">_</span></div>
+    <div id="body">
+        <div class="article-header">
+            <div class="article-background" th:style="${setting.tagBackground !=null ? 'background-image: url('+setting.tagBackground+')':'background-image: url('+ setting.backgroundSite +')'}"></div>
+            <div class="inner">
+                <div class="blog-title"><span id="article-title">标签</span><span class="typed-cursor">_</span></div>
+            </div>
+        </div>
+        <div class="body-wrapper">
+            <el-main id="main_body" class="l_main article_l_main">
+                <div class="content article-body" style="padding: 0;">
+                    <body>
+                    <div id="main" style="width: 90vw;height: 60vh"></div>
+                    </body>
+                </div>
+            </el-main>
         </div>
     </div>
-    <div class="body-wrapper">
-        <el-main id="main_body" class="l_main article_l_main">
-            <div class="content article-body">
-                <body>
-                <div id="main" style="width: 600px;height:400px;"></div>
-                </body>
-            </div>
-        </el-main>
-    </div>
-</div>
+    <script src="/articles/js/echarts-wordcloud.min.js"></script>
     <div th:replace="component/common-js.html"></div>
-<script th:inline="javascript">
-    $(function() {
-        const tags = [[${tags}]];
-        const colorList = [
-            '#3a96f5',
-            '#739b06',
-            '#f52443',
-            '#1563f2',
-            '#2c80c5',
-            '#e24bf4',
-            '#1acaff',
-            '#f08300',
-            '#2db54f'
-        ]
-        let data = []
-        let maxValue = 0, minValue = 0
-        for (var i = 0; i < tags.length; ++i) {
-            const value = tags[i].articleNum
-            if(value > maxValue) {
-                maxValue = value
+    <script th:inline="javascript">
+        $(function() {
+            if (typeof echarts !== 'undefined') {
+                initEcharts()
+            } else {
+                loadScript('/articles/js/echarts.min.js',function(){
+                    initEcharts()
+                })
             }
-            if(value < maxValue) {
-                minValue = value
-            }
-            data.push({name: tags[i].name,value: value})
-        }
-        let diff = 50 - maxValue
-        maxValue += diff
-        minValue += diff
-        let option = {
-            // backgroundColor: '#252d38',
-            tooltip: {
-                formatter(params){
-                    const html = params.marker
-                    return html + params.name + ' - ' + '文章数:' + params.data.value
-                }
-            },
-            grid: {
-                left: 0,
-                bottom: 0,
-                top: 0,
-                right: 0,
-            },
-            xAxis: {
-                type: "category",
-                show: false
-            },
-            yAxis: {
-                max: 100,
-                show: false
-            },
-            series: [{
-                zlevel: -1,
-                type: 'pictorialBar',
-                name: 'pictorial',
-                silent: true,
-                barWidth: '100%',
-                barMaxWidth: '100%',
-                itemStyle: {
-                    normal: {
-                        opacity: .0 //自己项目中这里可以设置0全透明，然后可以写一个div背景加载一个美化过的云图片，重合放在这个图表下面。
+            function initEcharts() {
+                const tags = [[${tags}]];
+                const colorList = [
+                    '#3a96f5',
+                    '#739b06',
+                    '#f52443',
+                    '#1563f2',
+                    '#2c80c5',
+                    '#e24bf4',
+                    '#1acaff',
+                    '#f08300',
+                    '#2db54f'
+                ]
+                let data = []
+                let maxValue = 0, minValue = 0
+                for (let i = 0; i < tags.length; ++i) {
+                    const value = tags[i].articleNum
+                    if(value > maxValue) {
+                        maxValue = value
                     }
-                },
-                data: [{
-                    value: 100
-                }]
-            },
-                {
-                    type: 'wordCloud',
-                    sizeRange: [20, 100],
-                    rotationRange: [0, 0],
-                    //   maskImage: maskImage,
-                    textPadding: 0,
-                    gridSize: 30, //用于标记画布可用性的网格大小（以像素为单位）//字距越大，字距越大。
-                    width: '100%',
-                    height: '100%',
-                    left: 'center',
-                    top: 'center',
-                    drawOutOfBound: false,
-                    textStyle: {
-                        normal: {
-                            fontFamily: "sans-serif",
-                            color: function() {
-                                let index = Math.floor(Math.random() * colorList.length);
-                                return colorList[index];
-                            }
+                    if(value < maxValue) {
+                        minValue = value
+                    }
+                    data.push({name: tags[i].name,value: value})
+                }
+                // let diff = 50 - maxValue
+                // maxValue += diff
+                // minValue += diff
+                let option = {
+                    // backgroundColor: '#252d38',
+                    tooltip: {
+                        formatter(params){
+                            const html = params.marker
+                            return html + params.name + ' - ' + '文章数:' + params.data.value
                         }
                     },
-                    data: data
-                },
-            ]
-        }
-        let body = document.querySelector(".article-body")
-        let chart = document.getElementById("main")
-        // 自适应高度
-        let myChartContainer = function (){
-            const width = body.clientWidth - 70
-            chart.style.width = width + 'px'
-            chart.style.height = width * 0.618 + 'px'
-        }
-        myChartContainer()
-        // 基于准备好的dom，初始化echarts实例
-        let myChart = echarts.init(chart)
+                    grid: {
+                        left: 0,
+                        bottom: 0,
+                        top: 0,
+                        right: 0,
+                    },
+                    xAxis: {
+                        type: "category",
+                        show: false
+                    },
+                    yAxis: {
+                        max: 100,
+                        show: false
+                    },
+                    series: [{
+                        zlevel: -1,
+                        type: 'pictorialBar',
+                        name: 'pictorial',
+                        silent: true,
+                        barWidth: '100%',
+                        barMaxWidth: '100%',
+                        itemStyle: {
+                            normal: {
+                                opacity: .0 //自己项目中这里可以设置0全透明，然后可以写一个div背景加载一个美化过的云图片，重合放在这个图表下面。
+                            }
+                        },
+                        data: [{
+                            value: 100
+                        }]
+                    },
+                        {
+                            type: 'wordCloud',
+                            sizeRange: [10, 50],
+                            rotationRange: [0, 0],
+                            textPadding: 0,
+                            gridSize: 15, //用于标记画布可用性的网格大小（以像素为单位）网格大小越大，单词之间的间隙越大。
+                            width: '100%',
+                            height: '100%',
+                            left: 'center',
+                            top: 'center',
+                            drawOutOfBound: false,
+                            textStyle: {
+                                normal: {
+                                    fontSize: '12',
+                                    fontFamily: "sans-serif",
+                                    color: function() {
+                                        let index = Math.floor(Math.random() * colorList.length);
+                                        return colorList[index];
+                                    }
+                                }
+                            },
+                            data: data
+                        },
+                    ]
+                }
+                let body = document.querySelector(".article-body")
+                let chart = document.getElementById("main")
+                // 基于准备好的dom，初始化echarts实例
+                let myChart = echarts.init(chart)
 
-        myChart.setOption(option)
-        myChart.on('click', function (params) {
-            console.log(params)
-            window.location.href = `tags/${params.name}`
-        });
-        window.onresize=function(){
-            myChartContainer()
-            myChart.resize()
-        }
+                myChart.setOption(option)
+                myChart.on('click', function (params) {
+                    console.log(params)
+                    window.location.href = `tags/${params.name}`
+                });
 
-        function fn (direction) {
-            // 判断是上滑显示,下滑隐藏
-            const top = $('#top')
-            const toogleNav = $('#toggle-nav')
+                // 自适应高度
+                let myChartContainer = function (){
+                    const width = body.clientWidth
+                    console.log('width', width)
+                    chart.style.width = width + 'px'
+                    chart.style.height = width * 0.618 + 'px'
+                    if(window.innerWidth <= 768){
+                        option.series[1].sizeRange = [10, 50]
+                    } else {
+                        option.series[1].sizeRange = [20, 100]
+                    }
+                    myChart.setOption(option)
+                    myChart.resize()
+                }
+                myChartContainer()
 
-            const body = document.getElementById("body")
+                $(window).on('resize', function(){
+                    myChartContainer()
+                })
+            }
 
-            if(direction === 'down'){
-                if(top.hasClass('animateIn')){
-                    top.removeClass('animateIn')
-                    top.addClass('animateOut')
-                    toogleNav.removeClass('animateRight')
-                    toogleNav.addClass('animateLeft')
-                    if(body.style.transform.length > 0) {
-                        document.getElementById("sidebar-nav").style.transform = ''
-                        body.style.transform = ''
-                        document.getElementById("toggle-nav").style.transform = ''
+            function fn (direction) {
+                // 判断是上滑显示,下滑隐藏
+                const top = $('#top')
+                const toogleNav = $('#toggle-nav')
+
+                const body = document.getElementById("body")
+
+                if(direction === 'down'){
+                    if(top.hasClass('animateIn')){
+                        top.removeClass('animateIn')
+                        top.addClass('animateOut')
+                        toogleNav.removeClass('animateRight')
+                        toogleNav.addClass('animateLeft')
+                        if(body.style.transform.length > 0) {
+                            document.getElementById("sidebar-nav").style.transform = ''
+                            body.style.transform = ''
+                            document.getElementById("toggle-nav").style.transform = ''
+                        }
+                    }
+                }
+                if(direction === 'up'){
+                    if(top.hasClass('animateOut')){
+                        top.removeClass('animateOut')
+                        top.addClass('animateIn')
+                        toogleNav.removeClass('animateLeft')
+                        toogleNav.addClass('animateRight')
                     }
                 }
             }
-            if(direction === 'up'){
-                if(top.hasClass('animateOut')){
-                    top.removeClass('animateOut')
-                    top.addClass('animateIn')
-                    toogleNav.removeClass('animateLeft')
-                    toogleNav.addClass('animateRight')
-                }
-            }
-        }
 
-        let beforeScrollTop = document.documentElement.scrollTop;
-        $(window).on("scroll",function () {
-            // 判断是上滑还是下滑
-            let afterScrollTop = document.documentElement.scrollTop
-            let delta = afterScrollTop - beforeScrollTop
-            beforeScrollTop = afterScrollTop
-            let scrollTop = $(this).scrollTop()
-            let scrollHeight = $(document).height()
-            let windowHeight = $(this).height()
-            if (scrollTop + windowHeight > scrollHeight - 10) {  //滚动到底部执行事件
-                fn('bottom')
-                return
-            }
-            if (afterScrollTop < 10 || afterScrollTop > $(document.body).height - 10) {
-                fn('up')
-            } else {
-                if (Math.abs(delta) < 10) {
-                    return false
+            let beforeScrollTop = document.documentElement.scrollTop;
+            $(window).on("scroll",function () {
+                // 判断是上滑还是下滑
+                let afterScrollTop = document.documentElement.scrollTop
+                let delta = afterScrollTop - beforeScrollTop
+                beforeScrollTop = afterScrollTop
+                let scrollTop = $(this).scrollTop()
+                let scrollHeight = $(document).height()
+                let windowHeight = $(this).height()
+                if (scrollTop + windowHeight > scrollHeight - 10) {  //滚动到底部执行事件
+                    fn('bottom')
+                    return
                 }
-                fn(delta > 0 ? "down" : "up")
-            }
+                if (afterScrollTop < 10 || afterScrollTop > $(document.body).height - 10) {
+                    fn('up')
+                } else {
+                    if (Math.abs(delta) < 10) {
+                        return false
+                    }
+                    fn(delta > 0 ? "down" : "up")
+                }
+            })
         })
-    })
-</script>
+    </script>
 </div>
 

@@ -1,124 +1,137 @@
 <div xmlns:th="http://www.thymeleaf.org">
     <link rel="stylesheet" type="text/css" href="/articles/css/independent.css">
-<div id="body">
-    <div class="article-header">
-        <div class="article-background" th:style="${setting.categoryBackground !=null ? 'background-image: url('+setting.categoryBackground+')':'background-image: url('+ setting.backgroundSite +')'}"></div>
-        <div class="inner">
-            <div class="blog-title"><span id="article-title">分类</span><span class="typed-cursor">_</span></div>
+    <div id="body">
+        <div class="article-header">
+            <div class="article-background" th:style="${setting.categoryBackground !=null ? 'background-image: url('+setting.categoryBackground+')':'background-image: url('+ setting.backgroundSite +')'}"></div>
+            <div class="inner">
+                <div class="blog-title"><span id="article-title">分类</span><span class="typed-cursor">_</span></div>
+            </div>
+        </div>
+        <div class="body-wrapper">
+            <el-main id="main_body" class="l_main article_l_main">
+                <div class="content article-body" style="padding: 0;">
+                    <body>
+                    <div id="main" style="width: 90vw;height: 60vh"></div>
+                    </body>
+                </div>
+            </el-main>
         </div>
     </div>
-    <div class="body-wrapper">
-        <el-main id="main_body" class="l_main article_l_main">
-            <div class="content article-body">
-                <body>
-                <div id="main" style="width: 600px;height:400px;"></div>
-                </body>
-            </div>
-        </el-main>
-    </div>
-</div>
+    <script src="/articles/js/echarts-wordcloud.min.js"></script>
     <div th:replace="component/common-js.html"></div>
-<script th:inline="javascript">
-    $(function() {
-        let data = [[${categories}]];
-
-        let body = document.querySelector(".article-body")
-        let chart = document.getElementById("main")
-        // 自适应高度
-        let myChartContainer = function (){
-            const width = body.clientWidth - 70
-            chart.style.width = width + 'px'
-            chart.style.height = width + 'px'
-        }
-        myChartContainer()
-        // 基于准备好的dom，初始化echarts实例
-        let myChart = echarts.init(chart)
-        let option = {
-            tooltip: {
-                formatter(params){
-                    const html = params.marker
-                    return html + params.name + ' - ' + '文章数:' + params.data.articleNum
-                }
-            },
-            visualMap: {
-                type: 'continuous',
-                min: 0,
-                max: 10,
-                inRange: {
-                    color: ['#2D5F73', '#538EA6', '#F2D1B3', '#F2B8A2', '#F28C8C']
-                }
-            },
-            series: {
-                type: 'sunburst',
-                data: data,
-                radius: [0, '90%'],
-                label: {
-                    rotate: 'radial'
-                }
+    <script th:inline="javascript">
+        $(function() {
+            if (typeof echarts !== 'undefined') {
+                initEcharts()
+            } else {
+                loadScript('/articles/js/echarts.min.js',function(){
+                    initEcharts()
+                })
             }
-        };
-        myChart.setOption(option)
-        myChart.on('click', function (params) {
-            window.location.href = `categories/${params.name}`
-        });
-        window.onresize=function(){
-            myChartContainer()
-            myChart.resize()
-        }
+            function initEcharts(){
+                let data = [[${categories}]];
+                let body = document.querySelector(".article-body")
+                let chart = document.getElementById("main")
+                // 基于准备好的dom，初始化echarts实例
+                let myChart = echarts.init(chart)
+                let option = {
+                    tooltip: {
+                        formatter(params){
+                            const html = params.marker
+                            return html + params.name + ' - ' + '文章数:' + params.data.articleNum
+                        }
+                    },
+                    visualMap: {
+                        show: false,
+                        type: 'continuous',
+                        min: 0,
+                        max: 10,
+                        inRange: {
+                            color: ['#2D5F73', '#538EA6', '#F2D1B3', '#F2B8A2', '#F28C8C']
+                        }
+                    },
+                    series: {
+                        type: 'sunburst',
+                        data: data,
+                        radius: [0, '90%'],
+                        label: {
+                            rotate: 'radial'
+                        }
+                    }
+                };
+                myChart.setOption(option)
+                myChart.on('click', function (params) {
+                    window.location.href = `categories/${params.name}`
+                });
 
-        function fn (direction) {
-            // 判断是上滑显示,下滑隐藏
-            const top = $('#top')
-            const toogleNav = $('#toggle-nav')
+                // 自适应高度
+                let myChartContainer = function (){
+                    const width = body.clientWidth
+                    console.log('width', width)
+                    chart.style.width = width + 'px'
+                    chart.style.height = width + 'px'
+                    myChart.resize()
+                }
+                myChartContainer()
 
-            const body = document.getElementById("body")
+                $(window).on('resize', function(){
+                    myChartContainer()
+                })
+            }
 
-            if(direction === 'down'){
-                if(top.hasClass('animateIn')){
-                    top.removeClass('animateIn')
-                    top.addClass('animateOut')
-                    toogleNav.removeClass('animateRight')
-                    toogleNav.addClass('animateLeft')
-                    if(body.style.transform.length > 0) {
-                        document.getElementById("sidebar-nav").style.transform = ''
-                        body.style.transform = ''
-                        document.getElementById("toggle-nav").style.transform = ''
+            function fn (direction) {
+                // 判断是上滑显示,下滑隐藏
+                const top = $('#top')
+                const toogleNav = $('#toggle-nav')
+
+                const body = document.getElementById("body")
+
+                if(direction === 'down'){
+                    if(top.hasClass('animateIn')){
+                        top.removeClass('animateIn')
+                        top.addClass('animateOut')
+                        toogleNav.removeClass('animateRight')
+                        toogleNav.addClass('animateLeft')
+                        if(body.style.transform.length > 0) {
+                            document.getElementById("sidebar-nav").style.transform = ''
+                            body.style.transform = ''
+                            document.getElementById("toggle-nav").style.transform = ''
+                        }
+                    }
+                }
+                if(direction === 'up'){
+                    if(top.hasClass('animateOut')){
+                        top.removeClass('animateOut')
+                        top.addClass('animateIn')
+                        toogleNav.removeClass('animateLeft')
+                        toogleNav.addClass('animateRight')
                     }
                 }
             }
-            if(direction === 'up'){
-                if(top.hasClass('animateOut')){
-                    top.removeClass('animateOut')
-                    top.addClass('animateIn')
-                    toogleNav.removeClass('animateLeft')
-                    toogleNav.addClass('animateRight')
-                }
-            }
-        }
 
-        let beforeScrollTop = document.documentElement.scrollTop;
-        $(window).on("scroll",function () {
-            // 判断是上滑还是下滑
-            let afterScrollTop = document.documentElement.scrollTop
-            let delta = afterScrollTop - beforeScrollTop
-            beforeScrollTop = afterScrollTop
-            let scrollTop = $(this).scrollTop()
-            let scrollHeight = $(document).height()
-            let windowHeight = $(this).height()
-            if (scrollTop + windowHeight > scrollHeight - 10) {  //滚动到底部执行事件
-                fn('bottom')
-                return
-            }
-            if (afterScrollTop < 10 || afterScrollTop > $(document.body).height - 10) {
-                fn('up')
-            } else {
-                if (Math.abs(delta) < 10) {
-                    return false
+            let beforeScrollTop = document.documentElement.scrollTop;
+            $(window).on("scroll",function () {
+                // 判断是上滑还是下滑
+                let afterScrollTop = document.documentElement.scrollTop
+                let delta = afterScrollTop - beforeScrollTop
+                beforeScrollTop = afterScrollTop
+                let scrollTop = $(this).scrollTop()
+                let scrollHeight = $(document).height()
+                let windowHeight = $(this).height()
+                if (scrollTop + windowHeight > scrollHeight - 10) {  //滚动到底部执行事件
+                    fn('bottom')
+                    return
                 }
-                fn(delta > 0 ? "down" : "up")
-            }
+                if (afterScrollTop < 10 || afterScrollTop > $(document.body).height - 10) {
+                    fn('up')
+                } else {
+                    if (Math.abs(delta) < 10) {
+                        return false
+                    }
+                    fn(delta > 0 ? "down" : "up")
+                }
+            })
         })
-    })
-</script>
+    </script>
 </div>
 
