@@ -330,10 +330,14 @@
             if(clickingToc || justLoading || contents.length < 1){
                 return
             }
+            const tocHeader = $('.toc-header')
+            if(tocHeader.length < 1){
+                return
+            }
             const tocAction = $('.j-bj')
             const tocScroll = $('.slimScrollDiv')
             const tocScrollTop = tocScroll.scrollTop()
-            const tocHeaderTop = $('.toc-header').offset().top - $(window).scrollTop()
+            const tocHeaderTop = tocHeader.offset().top - $(window).scrollTop()
             if (tocHeaderTop > 70 && window.innerWidth > 768) {
                 // 隐藏返回顶部按钮
                 $('.back-top').fadeOut(500)
