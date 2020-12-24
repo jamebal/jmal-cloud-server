@@ -79,7 +79,7 @@
             function getThemeCSSName() {
                 return getCookie('jmal-theme') || "light";
             }
-            $('.changeTheme').click(function (){
+            $('.changeTheme').on('click', function (){
                 useDarkTheme(getThemeCSSName() === 'light')
             })
 

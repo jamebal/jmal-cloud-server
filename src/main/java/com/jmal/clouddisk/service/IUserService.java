@@ -101,4 +101,18 @@ public interface IUserService {
      * @return
      */
     String getUserNameById(String userId);
+
+    /***
+     * 是否禁用webp(默认开启)
+     * @param userId userId
+     * @param disabled disabled
+     */
+    void disabledWebp(String userId, Boolean disabled);
+
+    /***
+     * 获取是否禁用webp状态
+     * @param userId userId
+     * @return disabled
+     */
+    boolean getDisabledWebp(String userId);
 }

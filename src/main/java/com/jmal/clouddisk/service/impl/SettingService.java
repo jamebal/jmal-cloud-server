@@ -53,7 +53,7 @@ public class SettingService {
      * @param username 用户名
      */
     public void sync(String username) {
-        Path path = Paths.get(fileProperties.getRootDir(),username);
+        Path path = Paths.get(fileProperties.getRootDir(), username);
         List<File> list = loopFiles(path.toFile());
         list.parallelStream().forEach(file -> fileService.createFile(username, file));
     }
@@ -81,11 +81,11 @@ public class SettingService {
     }
 
     /***
-     * 更新用户设置
+     * 更新网站设置
      * @param websiteSetting WebsiteSetting
      * @return ResponseResult
      */
-    public ResponseResult<Object> update(WebsiteSetting websiteSetting) {
+    public ResponseResult<Object> websiteUpdate(WebsiteSetting websiteSetting) {
         Query query = new Query();
         Update update = MongoUtil.getUpdate(websiteSetting);
         mongoTemplate.upsert(query, update, COLLECTION_NAME_WEBSITE_SETTING);

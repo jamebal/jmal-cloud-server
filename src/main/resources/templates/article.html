@@ -18,7 +18,7 @@
                     ·
                     <a th:href="'/setting/website/manager-articles?operation=editor&id='+${markdown.id}" target="_blank">编辑</a>
                 </span>
-                <div th:if="${markdown.tags != null && markdown.tags.size() > 0}">
+                <div class="meta-item-tag" th:if="${markdown.tags != null && markdown.tags.size() > 0}">
                     <svg class="icon" aria-hidden="true">
                         <use xlink:href="#icon-tag"></use>
                     </svg>
@@ -59,11 +59,15 @@
             </div>
         </div>
     </div>
+    <div class="show-content">
+        <svg class="icon">
+            <use xlink:href="#icon-service-directory"></use>
+        </svg>
+    </div>
     <div class="back-top" style="display: none">
         <svg class="icon" aria-hidden="true"><use xlink:href="#icon-Up"></use></svg>
     </div>
 </div>
-<!--<div th:replace="common-js.html"></div>-->
 <script th:inline="javascript">
     $(function(){
 
@@ -323,7 +327,7 @@
          * 保持目录当前相在可见范围内
          */
         function keepTocVisible() {
-            if(clickingToc || justLoading){
+            if(clickingToc || justLoading || contents.length < 1){
                 return
             }
             const tocAction = $('.j-bj')

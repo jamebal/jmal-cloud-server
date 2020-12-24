@@ -14,7 +14,7 @@ spring:
     chain:
       cache: true
   thymeleaf: # thymeleaf配置，开发环境不启用缓存，正式环境下请启用缓存，提高性能
-    cache: true
+    cache: false
     mode: HTML # thymeleaf对html元素格式要求严格，设置它的mode为HTML，忘记结束标签后不会报错
     http:
       encoding:

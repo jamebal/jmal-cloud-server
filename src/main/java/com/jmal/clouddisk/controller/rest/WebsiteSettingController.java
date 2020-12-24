@@ -12,22 +12,15 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * @author jmal
- * @Description 设置
+ * @Description 网站设置
  * @Date 2020/10/28 5:29 下午
  */
 @RestController
-@Api(tags = "设置")
-public class SettingController {
+@Api(tags = "网站设置")
+public class WebsiteSettingController {
 
     @Autowired
     private SettingService settingService;
-
-    @ApiOperation("把文件同步到数据库")
-    @GetMapping("/setting/sync")
-    public ResponseResult<Object> list(@RequestParam String username) {
-        settingService.sync(username);
-        return ResultUtil.success();
-    }
 
     @ApiOperation("获取网站设置")
     @GetMapping("/public/website/setting")
@@ -35,15 +28,10 @@ public class SettingController {
         return ResultUtil.success(settingService.getWebsiteSetting());
     }
 
-    @ApiOperation("更新用户设置")
-    @PutMapping("/setting/update")
+    @ApiOperation("更新网站设置")
+    @PutMapping("/website/setting/update")
     public ResponseResult<Object> update(@RequestBody WebsiteSetting websiteSetting) {
-        return settingService.update(websiteSetting);
-    }
-
-    @ApiOperation("生成accessToken")
-    @PutMapping("/user/setting/generateAccessToken")
-    ResponseResult<String> generateAccessToken(@RequestParam String username) {
-        return settingService.generateAccessToken(username);
+        return settingService.websiteUpdate(websiteSetting);
     }
 }
+

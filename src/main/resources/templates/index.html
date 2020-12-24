@@ -25,8 +25,10 @@
     <div th:case="articles-query" th:include="articles-query.html"></div>
     <div th:case="categories" th:include="categories.html"></div>
     <div th:case="tags" th:include="tags.html"></div>
+    <div th:case="404" th:include="404.html"></div>
 </div>
 <iframe th:replace="component/footer.html"></iframe>
+<script src="/articles/js/echarts.min.js"></script>
 <script th:inline="javascript">
     $(function(){
         $('body').pjax('a[href^="/articles"]:not(a[target="_blank"], a[not-pjax]), a[data-pjax]', {
@@ -35,6 +37,7 @@
             }
         ).on('pjax:click', function() {
         }).on('pjax:send', function() {
+            $('.changeTheme').unbind('click')
             $(window).unbind('scroll')
             $(window).unbind('resize')
         }).on('pjax:complete', function() {

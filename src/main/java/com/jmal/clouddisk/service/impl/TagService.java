@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.extra.cglib.CglibUtil;
-import com.jmal.clouddisk.model.ArticleParamDTO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.TagDTO;
 import com.jmal.clouddisk.util.MongoUtil;
@@ -15,7 +14,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,18 +49,20 @@ public class TagService {
     }
 
     /***
-     * 标签和文章数类表
+     * 带有文章数的标签列表
      * @return List<TagDTO>
      */
     public List<TagDTO> listTagsOfArticle() {
         Query query = getQueryUserId(null);
-        List<Tag> tagList = mongoTemplate.find(query,Tag.class, COLLECTION_NAME);
+        List<Tag> tagList = mongoTemplate.find(query, Tag.class, COLLECTION_NAME);
         return tagList.parallelStream().map(tag -> {
             TagDTO tagDTO = new TagDTO();
             CglibUtil.copy(tag, tagDTO);
             getTagArticlesNum(tagDTO);
+            tagDTO.setFontSize(Math.round(Math.log(tagDTO.getArticleNum()  * 5) *  10));
+            tagDTO.setColor("rgb("+Math.round(Math.random() * 100 + 80)+","+Math.round(Math.random() * 100 + 80)+","+Math.round(Math.random() * 100 + 80)+")");
             return tagDTO;
-        }).sorted().collect(Collectors.toList());
+        }).filter(tag -> tag.getArticleNum() > 0).sorted().collect(Collectors.toList());
     }
 
     /***
@@ -234,7 +234,7 @@ public class TagService {
 
     /***
      * 根据id查询标签列表
-     * @param categoryIds 标签id集合
+     * @param tagIds 标签id集合
      * @return 标签列表
      */
     public List<Tag> getTagListByIds(String[] tagIds) {

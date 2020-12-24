@@ -18,6 +18,7 @@ import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.websocket.SocketManager;
+import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.result.UpdateResult;
@@ -42,8 +43,14 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.socket.WebSocketSession;
 
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.FileImageOutputStream;
+import javax.naming.Name;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -97,6 +104,7 @@ public class FileServiceImpl implements IFileService {
     public static final String COLLECTION_NAME = "fileDocument";
     private static final String CONTENT_TYPE_IMAGE = "image";
     public static final String CONTENT_TYPE_MARK_DOWN = "text/markdown";
+    public static final String CONTENT_TYPE_WEBP = "image/webp";
 
     /***
      * 前端文件夹树的第一级的文件Id
@@ -741,22 +749,21 @@ public class FileServiceImpl implements IFileService {
             long size = file.length();
             update.set("size", size);
             update.set("md5", size + relativePath + fileName);
+            update.set("contentType", contentType);
+            update.set("suffix", suffix);
+            update.set("isFavorite", false);
             if (contentType.contains("audio")) {
                 Music music = AudioFileUtils.readAudio(file);
                 update.set("music", music);
             }
             if (contentType.startsWith(CONTENT_TYPE_IMAGE)) {
+                // 换成webp格式的图片
+                File webpFile = replaceWebp(userId, file, update);
                 // 生成缩略图
-                Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(file);
-                thumbnail.size(256, 256);
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                try {
-                    thumbnail.toOutputStream(out);
-                    update.set("content", out.toByteArray());
-                } catch (UnsupportedFormatException e) {
-                    log.warn(e.getMessage());
-                } catch (IOException e) {
-                    e.printStackTrace();
+                if(webpFile != null){
+                    generateThumbnail(webpFile, update);
+                } else {
+                    generateThumbnail(file, update);
                 }
             }
             if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
@@ -764,9 +771,6 @@ public class FileServiceImpl implements IFileService {
                 String markDownContent = FileUtil.readString(file, StandardCharsets.UTF_8);
                 update.set("contentText", markDownContent);
             }
-            update.set("contentType", contentType);
-            update.set("suffix", suffix);
-            update.set("isFavorite", false);
         }
         UpdateResult updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
         pushMessage(username, update.getUpdateObject(), "createFile");
@@ -774,6 +778,59 @@ public class FileServiceImpl implements IFileService {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return null;
+    }
+
+    private File replaceWebp(String userId, File file, Update update) {
+        if(userService.getDisabledWebp(userId)){
+            return null;
+        }
+        File outputFile = new File(file.getPath() + ".webp");
+        // 从某处获取图像进行编码
+        BufferedImage image = null;
+        try {
+            image = ImageIO.read(file);
+            if(image == null){
+                return null;
+            }
+            // 获取一个WebP ImageWriter实例
+            ImageWriter writer = ImageIO.getImageWritersByMIMEType(CONTENT_TYPE_WEBP).next();
+            // 配置编码参数
+            WebPWriteParam writeParam = new WebPWriteParam(writer.getLocale());
+            writeParam.setCompressionMode(WebPWriteParam.MODE_DEFAULT);
+            // 在ImageWriter上配置输出
+            writer.setOutput(new FileImageOutputStream(outputFile));
+            // 编码
+            writer.write(null, new IIOImage(image, null, null), writeParam);
+            FileUtil.del(file);
+            String fileName = outputFile.getName();
+            update.set("contentType", CONTENT_TYPE_WEBP);
+            update.set("name", fileName);
+            update.set("size", outputFile.length());
+            update.set("suffix", FileUtil.extName(fileName));
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            return null;
+        }
+        return outputFile;
+    }
+
+    /***
+     * 生成缩略图
+     * @param file
+     * @param update
+     */
+    private void generateThumbnail(File file, Update update) {
+        Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(file);
+        thumbnail.size(256, 256);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try {
+            thumbnail.toOutputStream(out);
+            update.set("content", out.toByteArray());
+        } catch (UnsupportedFormatException e) {
+            log.warn(e.getMessage(), e);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
     @Override

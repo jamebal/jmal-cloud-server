@@ -43,6 +43,11 @@ public class Consumer {
     String introduction;
 
     /***
+     * 是否禁用webp
+     */
+    Boolean webpDisabled;
+
+    /***
      * 角色
      */
     String[] roles;

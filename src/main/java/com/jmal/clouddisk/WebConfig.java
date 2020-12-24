@@ -46,8 +46,10 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/file/**").addResourceLocations(
-                "file:" + fileProperties.getRootDir() + File.separator).setCacheControl(CacheControl.maxAge(3600, TimeUnit.SECONDS));
+        registry.addResourceHandler("/file/**")
+                .addResourceLocations("file:" + fileProperties.getRootDir() + File.separator)
+                .setCacheControl(CacheControl.maxAge(3600, TimeUnit.SECONDS))
+        .resourceChain(true);
         log.info("静态资源目录:{}", fileProperties.getRootDir() + File.separator);
     }
 }

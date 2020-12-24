@@ -17,7 +17,6 @@
             </el-main>
         </div>
     </div>
-    <script src="/articles/js/echarts-wordcloud.min.js"></script>
     <div th:replace="component/common-js.html"></div>
     <script th:inline="javascript">
         $(function() {
@@ -67,7 +66,6 @@
                 // 自适应高度
                 let myChartContainer = function (){
                     const width = body.clientWidth
-                    console.log('width', width)
                     chart.style.width = width + 'px'
                     chart.style.height = width + 'px'
                     myChart.resize()

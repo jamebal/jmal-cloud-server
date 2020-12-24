@@ -132,9 +132,10 @@ public class ShareController {
                 ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + fileDocument.getName())
                         .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
-                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent().length)).header("Connection", "close")
+                        .header(HttpHeaders.CONNECTION, "close")
                         .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent().length))
                         .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
+                        .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
                         .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
     }
 

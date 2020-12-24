@@ -40,6 +40,12 @@ public class TagDTO  implements Comparable<TagDTO>{
     @ApiModelProperty(hidden = true, name = "articleNum", value = "文章数")
     Long articleNum;
 
+    @ApiModelProperty(hidden = true, name = "color", value = "标签字体颜色")
+    String color;
+
+    @ApiModelProperty(hidden = true, name = "fontSize", value = "标签字体大小")
+    Long fontSize;
+
     @Override
     public int compareTo(TagDTO tagDTO) {
         Comparator<Object> cmp = Collator.getInstance(java.util.Locale.CHINA);

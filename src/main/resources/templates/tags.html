@@ -1,5 +1,27 @@
 <div xmlns:th="http://www.thymeleaf.org">
     <link rel="stylesheet" type="text/css" href="/articles/css/independent.css">
+    <style>
+        .tag-cloud {
+            padding: 1rem 5%;
+        }
+        .text-center {
+            text-align: center!important;
+        }
+        .tag-cloud a {
+            display: inline-block;
+            padding: 0.5rem;
+        }
+        .tag-cloud a:hover {
+            color: #1890ff;
+        }
+        .article-body a:hover:after {
+            width: 0;
+        }
+        .article-body a:after {
+            width: 0;
+            content: "";
+        }
+    </style>
     <div id="body">
         <div class="article-header">
             <div class="article-background" th:style="${setting.tagBackground !=null ? 'background-image: url('+setting.tagBackground+')':'background-image: url('+ setting.backgroundSite +')'}"></div>
@@ -10,147 +32,16 @@
         <div class="body-wrapper">
             <el-main id="main_body" class="l_main article_l_main">
                 <div class="content article-body" style="padding: 0;">
-                    <body>
-                    <div id="main" style="width: 90vw;height: 60vh"></div>
-                    </body>
+                    <div class="text-center tag-cloud">
+                        <a th:title="${tag.name} + ' - 文章数: ' + ${tag.articleNum}" th:href="'/articles/tags/' + ${tag.slug}" th:style="'font-size: ' + ${tag.fontSize} + 'px; color: ' + ${tag.color}" th:each="tag : ${tags}" th:text="${tag.name}"></a>
+                    </div>
                 </div>
             </el-main>
         </div>
     </div>
-    <script src="/articles/js/echarts-wordcloud.min.js"></script>
     <div th:replace="component/common-js.html"></div>
     <script th:inline="javascript">
         $(function() {
-            if (typeof echarts !== 'undefined') {
-                initEcharts()
-            } else {
-                loadScript('/articles/js/echarts.min.js',function(){
-                    initEcharts()
-                })
-            }
-            function initEcharts() {
-                const tags = [[${tags}]];
-                const colorList = [
-                    '#3a96f5',
-                    '#739b06',
-                    '#f52443',
-                    '#1563f2',
-                    '#2c80c5',
-                    '#e24bf4',
-                    '#1acaff',
-                    '#f08300',
-                    '#2db54f'
-                ]
-                let data = []
-                let maxValue = 0, minValue = 0
-                for (let i = 0; i < tags.length; ++i) {
-                    const value = tags[i].articleNum
-                    if(value > maxValue) {
-                        maxValue = value
-                    }
-                    if(value < maxValue) {
-                        minValue = value
-                    }
-                    data.push({name: tags[i].name,value: value})
-                }
-                // let diff = 50 - maxValue
-                // maxValue += diff
-                // minValue += diff
-                let option = {
-                    // backgroundColor: '#252d38',
-                    tooltip: {
-                        formatter(params){
-                            const html = params.marker
-                            return html + params.name + ' - ' + '文章数:' + params.data.value
-                        }
-                    },
-                    grid: {
-                        left: 0,
-                        bottom: 0,
-                        top: 0,
-                        right: 0,
-                    },
-                    xAxis: {
-                        type: "category",
-                        show: false
-                    },
-                    yAxis: {
-                        max: 100,
-                        show: false
-                    },
-                    series: [{
-                        zlevel: -1,
-                        type: 'pictorialBar',
-                        name: 'pictorial',
-                        silent: true,
-                        barWidth: '100%',
-                        barMaxWidth: '100%',
-                        itemStyle: {
-                            normal: {
-                                opacity: .0 //自己项目中这里可以设置0全透明，然后可以写一个div背景加载一个美化过的云图片，重合放在这个图表下面。
-                            }
-                        },
-                        data: [{
-                            value: 100
-                        }]
-                    },
-                        {
-                            type: 'wordCloud',
-                            sizeRange: [10, 50],
-                            rotationRange: [0, 0],
-                            textPadding: 0,
-                            gridSize: 15, //用于标记画布可用性的网格大小（以像素为单位）网格大小越大，单词之间的间隙越大。
-                            width: '100%',
-                            height: '100%',
-                            left: 'center',
-                            top: 'center',
-                            drawOutOfBound: false,
-                            textStyle: {
-                                normal: {
-                                    fontSize: '12',
-                                    fontFamily: "sans-serif",
-                                    color: function() {
-                                        let index = Math.floor(Math.random() * colorList.length);
-                                        return colorList[index];
-                                    }
-                                }
-                            },
-                            data: data
-                        },
-                    ]
-                }
-                let body = document.querySelector(".article-body")
-                let chart = document.getElementById("main")
-                // 基于准备好的dom，初始化echarts实例
-                let myChart = echarts.init(chart)
-
-                myChart.setOption(option)
-                myChart.on('click', function (params) {
-                    console.log(params)
-                    window.location.href = `tags/${params.name}`
-                });
-
-                // 自适应高度
-                let myChartContainer = function (){
-                    const width = body.clientWidth
-                    console.log('width', width)
-                    chart.style.width = width + 'px'
-                    chart.style.height = width * 0.618 + 'px'
-                    if(window.innerWidth <= 768){
-                        option.series[1].sizeRange = [10, 50]
-                    } else {
-                        option.series[1].sizeRange = [20, 100]
-                    }
-                    myChart.setOption(option)
-                    myChart.resize()
-                }
-                myChartContainer()
-
-                $(window).on('resize', function(){
-                    myChartContainer()
-                })
-            }
-
             function fn (direction) {
                 // 判断是上滑显示,下滑隐藏
                 const top = $('#top')
