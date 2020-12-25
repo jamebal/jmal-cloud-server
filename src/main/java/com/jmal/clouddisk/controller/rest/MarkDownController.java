@@ -79,7 +79,7 @@ public class MarkDownController {
     @PostMapping("/upload-markdown-image")
     public ResponseResult<Object> uploadMarkdownImage(UploadImageDTO upload) {
         if(StringUtils.isEmpty(upload.getUserId()) || StringUtils.isEmpty(upload.getUsername())) {
-            ResultUtil.warning("参数里缺少 userId 或 username");
+            return ResultUtil.warning("参数里缺少 userId 或 username");
         }
         return fileService.uploadMarkdownImage(upload);
     }
@@ -87,13 +87,19 @@ public class MarkDownController {
     @ApiOperation("上传文档里链接图片")
     @PostMapping("/upload-markdown-link-image")
     public ResponseResult<Object> uploadMarkdownLinkImage(HttpServletRequest request, @RequestBody UploadImageDTO uploadImageDTO) {
-        String userId = request.getHeader("userId");
-        String username = request.getHeader("username");
-        if(StringUtils.isEmpty(userId) || StringUtils.isEmpty(username)) {
-            ResultUtil.warning("header里缺少 userId 或 username");
+        String userId = uploadImageDTO.getUserId();
+        String username = uploadImageDTO.getUsername();
+        if(StringUtils.isEmpty(userId)){
+            userId = request.getHeader("userId");
+            uploadImageDTO.setUserId(userId);
         }
-        uploadImageDTO.setUserId(userId);
-        uploadImageDTO.setUsername(username);
+        if(StringUtils.isEmpty(userId)){
+            username = request.getHeader("username");
+            uploadImageDTO.setUsername(username);
+        }
+        if(StringUtils.isEmpty(userId) || StringUtils.isEmpty(username)) {
+            return ResultUtil.warning("请求头里或参数里必须含有userId和username");
+        }
         return fileService.uploadMarkdownLinkImage(uploadImageDTO);
     }
 

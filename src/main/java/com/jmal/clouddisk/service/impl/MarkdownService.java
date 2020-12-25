@@ -2,6 +2,8 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.extra.cglib.CglibUtil;
@@ -15,6 +17,8 @@ import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import com.mongodb.client.AggregateIterable;
+import jdk.nashorn.internal.ir.annotations.Ignore;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,10 +31,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
 import javax.validation.constraints.NotNull;
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -53,6 +60,7 @@ import static java.util.stream.Collectors.toList;
  * @Date 2020/12/11 4:35 下午
  */
 @Service
+@Slf4j
 public class MarkdownService implements IMarkdownService {
 
     @Autowired
@@ -553,18 +561,44 @@ public class MarkdownService implements IMarkdownService {
         // docImagePaths 不存在则新建
         upsertFolder(docImagePaths, username, userId);
         File newFile;
+        ByteArrayInputStream inputStream = null;
         try {
-            newFile = HttpUtil.downloadFileFromUrl(upload.getUrl(), Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString()).toString());
-        } catch (HttpException e) {
-            return ResultUtil.error("上传失败");
+            inputStream = new ByteArrayInputStream(HttpUtil.downloadBytes(upload.getUrl()));
+            if(userService.getDisabledWebp(userId)){
+                newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), docImagePaths.toString()).toFile();
+                FileUtil.writeFromStream(inputStream, newFile);
+            } else {
+                newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), docImagePaths.toString() + ".webp").toFile();
+                BufferedImage image = ImageIO.read(inputStream);
+                fileService.imageFileToWebp(newFile, image);
+            }
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new CommonException(2, "上传失败");
+        } finally {
+            try {
+                if(inputStream != null){
+                    inputStream.close();
+                }
+            } catch (IOException ignored) {
+            }
         }
+
         if (!fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L) {
-            fileService.createFile(username, newFile);
+            String fileId = fileService.createFile(username, newFile);
+            map.put("fileId", fileId);
         }
         String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), newFile.getName()), StandardCharsets.UTF_8);
         map.put("url", filepath);
         map.put("originalURL", upload.getUrl());
+        map.put("filename", newFile.getName());
+        map.put("filepath", filepath);
         return ResultUtil.success(map);
+    }
+
+    public ByteArrayInputStream parse(final OutputStream out) {
+        ByteArrayOutputStream bos = (ByteArrayOutputStream) out;
+        return new ByteArrayInputStream(bos.toByteArray());
     }
 
     /***
@@ -585,17 +619,26 @@ public class MarkdownService implements IMarkdownService {
         String userId = upload.getUserId();
         // docImagePaths 不存在则新建
         upsertFolder(docImagePaths, username, userId);
-        File newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
+        File newFile;
         try {
-            FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
+            if(userService.getDisabledWebp(userId)){
+                newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
+                FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
+            } else {
+                fileName = fileName + ".webp";
+                newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
+                BufferedImage image = ImageIO.read(multipartFile.getInputStream());
+                fileService.imageFileToWebp(newFile, image);
+            }
         } catch (IOException e) {
-            new CommonException(2, "上传失败");
+            throw new CommonException(2, "上传失败");
         }
         if (!fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L) {
-            fileService.createFile(username, newFile);
+            String fileId = fileService.createFile(username, newFile);
+            map.put("fileId", fileId);
         }
-        map.put("filename", fileName);
         String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), fileName), StandardCharsets.UTF_8);
+        map.put("filename", fileName);
         map.put("filepath", filepath);
         return map;
     }

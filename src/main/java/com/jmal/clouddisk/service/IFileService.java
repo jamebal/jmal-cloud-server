@@ -28,6 +28,8 @@ public interface IFileService {
      */
     Optional<Object> getById(String id, String username);
 
+    FileDocument getFileDocumentByPathAndName(String path, String name, String username);
+
     /***
      * 根据path读取simText文件
      * @param path

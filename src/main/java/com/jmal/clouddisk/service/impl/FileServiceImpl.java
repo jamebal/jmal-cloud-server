@@ -437,6 +437,19 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    public FileDocument getFileDocumentByPathAndName(String path, String name, String username) {
+        String userId = userService.getUserIdByUserName(username);
+        if(userId == null){
+            return null;
+        }
+        Query query = new Query();
+        query.addCriteria(Criteria.where("userId").is(userId));
+        query.addCriteria(Criteria.where("name").is(name));
+        query.addCriteria(Criteria.where("path").is(path));
+        return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+    }
+
+    @Override
     public ResponseResult<Object> previewTextByPath(String filePath, String username) throws CommonException {
         Path path = Paths.get(fileProperties.getRootDir(), username, filePath);
         File file = path.toFile();
@@ -715,27 +728,33 @@ public class FileServiceImpl implements IFileService {
         if (StringUtils.isEmpty(userId)) {
             return null;
         }
-        String fileAbsolutePath = file.getAbsolutePath();
         String fileName = file.getName();
+        String suffix = FileUtil.extName(fileName);
+        String contentType = FileContentTypeUtils.getContentType(suffix);
+        if (contentType.startsWith(CONTENT_TYPE_IMAGE)) {
+            // 换成webp格式的图片
+            file = replaceWebp(userId, file);
+        }
+        fileName = file.getName();
+        suffix = FileUtil.extName(fileName);
+        contentType = FileContentTypeUtils.getContentType(suffix);
+
+        String fileAbsolutePath = file.getAbsolutePath();
         String relativePath = fileAbsolutePath.substring(fileProperties.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
         Query query = new Query();
         query.addCriteria(Criteria.where("userId").is(userId));
         query.addCriteria(Criteria.where("path").is(relativePath));
         query.addCriteria(Criteria.where("name").is(fileName));
-
-        String suffix = FileUtil.extName(fileName);
-        String contentType = FileContentTypeUtils.getContentType(suffix);
-
         // 文件是否存在
-        boolean fileExists = mongoTemplate.exists(query, COLLECTION_NAME);
-        if (fileExists) {
+        FileDocument fileExists = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+        if (fileExists != null) {
             if (contentType.contains("audio")) {
                 Update update = new Update();
                 Music music = AudioFileUtils.readAudio(file);
                 update.set("music", music);
                 mongoTemplate.upsert(query, update, COLLECTION_NAME);
             }
-            return null;
+            return fileExists.getId();
         }
         LocalDateTime nowDateTime = LocalDateTime.now(TimeUntils.ZONE_ID);
         Update update = new Update();
@@ -757,14 +776,8 @@ public class FileServiceImpl implements IFileService {
                 update.set("music", music);
             }
             if (contentType.startsWith(CONTENT_TYPE_IMAGE)) {
-                // 换成webp格式的图片
-                File webpFile = replaceWebp(userId, file, update);
                 // 生成缩略图
-                if(webpFile != null){
-                    generateThumbnail(webpFile, update);
-                } else {
-                    generateThumbnail(file, update);
-                }
+                generateThumbnail(file, update);
             }
             if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
                 // 写入markdown内容
@@ -780,9 +793,12 @@ public class FileServiceImpl implements IFileService {
         return null;
     }
 
-    private File replaceWebp(String userId, File file, Update update) {
+    private File replaceWebp(String userId, File file) {
         if(userService.getDisabledWebp(userId)){
-            return null;
+            return file;
+        }
+        if("webp".equals(FileUtil.getSuffix(file))){
+            return file;
         }
         File outputFile = new File(file.getPath() + ".webp");
         // 从某处获取图像进行编码
@@ -790,28 +806,27 @@ public class FileServiceImpl implements IFileService {
         try {
             image = ImageIO.read(file);
             if(image == null){
-                return null;
+                return file;
             }
-            // 获取一个WebP ImageWriter实例
-            ImageWriter writer = ImageIO.getImageWritersByMIMEType(CONTENT_TYPE_WEBP).next();
-            // 配置编码参数
-            WebPWriteParam writeParam = new WebPWriteParam(writer.getLocale());
-            writeParam.setCompressionMode(WebPWriteParam.MODE_DEFAULT);
-            // 在ImageWriter上配置输出
-            writer.setOutput(new FileImageOutputStream(outputFile));
-            // 编码
-            writer.write(null, new IIOImage(image, null, null), writeParam);
+            imageFileToWebp(outputFile, image);
             FileUtil.del(file);
-            String fileName = outputFile.getName();
-            update.set("contentType", CONTENT_TYPE_WEBP);
-            update.set("name", fileName);
-            update.set("size", outputFile.length());
-            update.set("suffix", FileUtil.extName(fileName));
         } catch (IOException e) {
             log.error(e.getMessage(), e);
-            return null;
+            return file;
         }
         return outputFile;
+    }
+
+    public void imageFileToWebp(File outputFile, BufferedImage image) throws IOException {
+        // 获取一个WebP ImageWriter实例
+        ImageWriter writer = ImageIO.getImageWritersByMIMEType(CONTENT_TYPE_WEBP).next();
+        // 配置编码参数
+        WebPWriteParam writeParam = new WebPWriteParam(writer.getLocale());
+        writeParam.setCompressionMode(WebPWriteParam.MODE_DEFAULT);
+        // 在ImageWriter上配置输出
+        writer.setOutput(new FileImageOutputStream(outputFile));
+        // 编码
+        writer.write(null, new IIOImage(image, null, null), writeParam);
     }
 
     /***
@@ -1039,6 +1054,9 @@ public class FileServiceImpl implements IFileService {
     @Override
     public String viewFile(String fileId, String operation) {
         FileDocument fileDocument = getById(fileId);
+        if(fileDocument == null){
+            throw new CommonException(ExceptionType.FILE_NOT_FIND.getCode(), ExceptionType.FILE_NOT_FIND.getMsg());
+        }
         String username = userService.getUserNameById(fileDocument.getUserId());
         String relativepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(fileDocument.getPath() + fileDocument.getName(), StandardCharsets.UTF_8);
         return "redirect:/file/" + username + relativepath + "?o=" + operation;
