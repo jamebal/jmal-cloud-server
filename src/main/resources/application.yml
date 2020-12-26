@@ -10,7 +10,7 @@ spring:
   resources:
     cache:
       cachecontrol:
-        max-age: 31536000
+        max-age: 604800
     chain:
       cache: true
   thymeleaf: # thymeleaf配置，开发环境不启用缓存，正式环境下请启用缓存，提高性能

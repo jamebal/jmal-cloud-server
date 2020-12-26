@@ -2,12 +2,16 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.CharsetUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.URLUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.extra.cglib.CglibUtil;
 import cn.hutool.http.HttpException;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.Either;
@@ -16,8 +20,8 @@ import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
+import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -31,13 +35,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.FileImageOutputStream;
 import javax.validation.constraints.NotNull;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -561,29 +565,20 @@ public class MarkdownService implements IMarkdownService {
         // docImagePaths 不存在则新建
         upsertFolder(docImagePaths, username, userId);
         File newFile;
-        ByteArrayInputStream inputStream = null;
         try {
-            inputStream = new ByteArrayInputStream(HttpUtil.downloadBytes(upload.getUrl()));
-            if(userService.getDisabledWebp(userId)){
-                newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), docImagePaths.toString()).toFile();
-                FileUtil.writeFromStream(inputStream, newFile);
-            } else {
-                newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), docImagePaths.toString() + ".webp").toFile();
-                BufferedImage image = ImageIO.read(inputStream);
-                fileService.imageFileToWebp(newFile, image);
+            HttpResponse response = HttpRequest.get(upload.getUrl()).setFollowRedirects(true).executeAsync();
+            if (!response.isOk()) {
+                throw new HttpException("Server response error with status code: [{}]", response.getStatus());
             }
+            File destFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString()).toFile();
+            final File outFile = response.completeFileNameFromHeader(destFile);
+            newFile = new File(outFile.getPath() + ".webp");
+            BufferedImage image = ImageIO.read(response.bodyStream());
+            fileService.imageFileToWebp(newFile, image);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new CommonException(2, "上传失败");
-        } finally {
-            try {
-                if(inputStream != null){
-                    inputStream.close();
-                }
-            } catch (IOException ignored) {
-            }
         }
-
         if (!fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L) {
             String fileId = fileService.createFile(username, newFile);
             map.put("fileId", fileId);
@@ -594,11 +589,6 @@ public class MarkdownService implements IMarkdownService {
         map.put("filename", newFile.getName());
         map.put("filepath", filepath);
         return ResultUtil.success(map);
-    }
-
-    public ByteArrayInputStream parse(final OutputStream out) {
-        ByteArrayOutputStream bos = (ByteArrayOutputStream) out;
-        return new ByteArrayInputStream(bos.toByteArray());
     }
 
     /***
