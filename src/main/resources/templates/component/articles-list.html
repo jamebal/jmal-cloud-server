@@ -56,7 +56,7 @@
                     <section class="article typo">
                         <a th:href="'/articles/s/'+${article.slug == null ? article.id:article.slug}">
                             <div class="article-entry" itemprop="articleBody">
-                                <p><img class="blog-background articles-list" th:src="${article.cover != null ? article.cover : setting.backgroundSite}" /></p>
+                                <p><img class="blog-background articles-list loading" th:src="${article.cover != null ? article.cover : setting.backgroundSite}" /></p>
                             </div>
                         </a>
                     </section>

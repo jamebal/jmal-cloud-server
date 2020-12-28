@@ -783,13 +783,45 @@ html {
     overflow-x:hidden; overflow-y:hidden;
 }
 .articles-list {
-    max-height: 20rem;
+    max-height: 22rem;
+    min-height: 20rem;
 }
 .blog-background {
     -o-object-fit: cover;
     object-fit: cover;
     width: 100%;
     height: 100%;
+}
+.lazyload-container.loaded{
+    opacity: 1;
+}
+.lazyload-container.loading{
+    opacity: 0;
+}
+.lazyload-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: block;
+    background: #333;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    background-blend-mode: normal;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    overflow: hidden;
+    -webkit-filter: blur(35px);
+    -moz-filter: blur(35px);
+    -o-filter: blur(35px);
+    filter: blur(35px);
+    -ms-filter: progid:DXImageTransform.Microsoft.Blur(PixelRadius=35, MakeShadow=false);
+    -webkit-transition: 1s ease opacity;
+    -moz-transition: 1s ease opacity;
+    -ms-transition: 1s ease opacity;
+    -o-transition: 1s ease opacity;
+    transition: 1s ease opacity;
 }
 
 .back-top {

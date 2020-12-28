@@ -2,7 +2,15 @@
     <link rel="stylesheet" type="text/css" href="/articles/css/independent.css">
     <div id="body">
         <div class="article-header">
-            <div class="article-background" th:style="${setting.categoryBackground !=null ? 'background-image: url('+setting.categoryBackground+')':'background-image: url('+ setting.backgroundSite +')'}"></div>
+            <div class="article-background"></div>
+            <div class="lazyload-container" th:style="${setting.categoryBackground !=null ? 'background-image: url('+setting.categoryBackground+'?o=thumbnail)': 'background-image: url('+ setting.backgroundSite+'?o=thumbnail)'}">
+                <img style="display: none"
+                     th:src="${setting.categoryBackground !=null ? setting.categoryBackground+'?o=thumbnail' : setting.archiveBackground+'?o=thumbnail'}"
+                     th:data-src="${setting.categoryBackground !=null ? setting.categoryBackground : setting.archiveBackground}"
+                     onload="javascript:loadBanner(this,document.querySelector('.article-header'))"
+                />
+            </div>
+
             <div class="inner">
                 <div class="blog-title"><span id="article-title">分类</span><span class="typed-cursor">_</span></div>
             </div>

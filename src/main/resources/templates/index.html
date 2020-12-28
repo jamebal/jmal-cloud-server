@@ -8,6 +8,45 @@
     <script src="/articles/js/jquery-3.5.1.min.js"></script>
     <script src="/articles/js/jquery.pjax.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vditor@3.6.3/dist/index.min.js" defer></script>
+    <script>
+        // 加载图片，由模糊到清晰
+        let remove = function (element) {
+            if (element) {
+                if (typeof element['remove'] === 'function') {
+                    element.remove();
+                } else if (element.parentNode) {
+                    element.parentNode.removeChild(element);
+                }
+            }
+        }
+        let loadBanner = function(img, wrap){
+            let background = wrap.querySelector('.article-background')
+            let container = wrap.querySelector('.lazyload-container')
+            if (!background) {
+                console.warn("background is null", background);
+                return;
+            }
+            if (!container) {
+                console.warn("container is null", container);
+                return;
+            }
+            background.classList.add("loading");
+            remove(img);
+            container.style.backgroundImage = 'url("' + img.src + '")';
+            container.classList.add('loaded');
+            let largeImage = new Image();
+            largeImage.src = img.getAttribute('data-src');
+            largeImage.onload = function (){
+                remove(this);
+                background.style.backgroundImage = 'url("' + img.getAttribute('data-src') + '")';
+                background.classList.remove('loading');
+                container.classList.remove('loaded');
+                setTimeout(function (){
+                    remove(container);
+                }, 1001);
+            }
+        }
+    </script>
 </head>
 <body>
 <!--[if lt IE 9]>
@@ -28,7 +67,7 @@
     <div th:case="404" th:include="404.html"></div>
 </div>
 <iframe th:replace="component/footer.html"></iframe>
-<script src="/articles/js/echarts.min.js"></script>
+<!--<script src="/articles/js/echarts.min.js"></script>-->
 <script th:inline="javascript">
     $(function(){
         $('body').pjax('a[href^="/articles"]:not(a[target="_blank"], a[not-pjax]), a[data-pjax]', {
@@ -37,7 +76,7 @@
             }
         ).on('pjax:click', function() {
         }).on('pjax:send', function() {
-             unbindEvent()
+            unbindEvent()
         }).on('pjax:complete', function() {
         }).on('pjax:end', function() {
             // 还原导航栏位置
