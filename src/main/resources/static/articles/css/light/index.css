@@ -786,6 +786,9 @@ html {
     max-height: 22rem;
     min-height: 20rem;
 }
+.articles-list.loading {
+    filter: blur(15px);
+}
 .blog-background {
     -o-object-fit: cover;
     object-fit: cover;
