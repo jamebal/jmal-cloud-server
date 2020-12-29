@@ -105,7 +105,6 @@ public class UserServiceImpl implements IUserService {
             UploadApiParamDTO upload = new UploadApiParamDTO();
             upload.setUserId(userId);
             upload.setUsername(consumer.getUsername());
-            int size = (int) blobAvatar.getSize();
             upload.setFilename("avatar-" + TimeUntils.getStringTime(System.currentTimeMillis()) + ".jpeg");
             upload.setFile(blobAvatar);
             fileId = fileService.uploadConsumerImage(upload);

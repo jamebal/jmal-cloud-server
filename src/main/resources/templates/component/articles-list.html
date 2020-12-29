@@ -1,14 +1,8 @@
 <div class="l_body" xmlns:th="http://www.thymeleaf.org">
     <script>
-        let loadArticlesImage = function (img, wrap){
-            console.log(img, wrap)
-            let largeImage = new Image();
-            largeImage.src = img.getAttribute('data-src');
-            largeImage.onload = function (){
-                console.log('this',this)
-                // img.src = img.getAttribute('data-src');
-                // img.classList.remove('loading');
-            }
+        let loadArticlesImage = function (img, thumbnailImg){
+            img.style.display = 'block'
+            remove(thumbnailImg)
         }
     </script>
     <div class="articles_l_main">
@@ -71,7 +65,7 @@
                                 <p>
                                     <img class="blog-background articles-list" style="display: none"
                                          th:src="${article.cover != null ? article.cover : setting.backgroundSite}"
-                                         th:onload="'loadArticlesImage('+this+','+${article.id}+')'"/>
+                                         th:onload='loadArticlesImage(this,document.getElementById([[${article.id}]]))'/>
                                     <img th:id="${article.id}" class="blog-background articles-list loading"
                                          th:src="${article.cover != null ? article.cover+'?o=thumbnail' : setting.backgroundSite+'?o=thumbnail'}"/>
                                 </p>
