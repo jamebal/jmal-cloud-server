@@ -1,10 +1,4 @@
 <div class="l_body" xmlns:th="http://www.thymeleaf.org">
-    <script>
-        let loadArticlesImage = function (img, thumbnailImg){
-            img.style.display = 'block'
-            remove(thumbnailImg)
-        }
-    </script>
     <div class="articles_l_main">
         <section class="post-list">
             <div th:each="article : ${articlesData.getData()}" class="post-wrapper">
