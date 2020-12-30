@@ -478,7 +478,7 @@ public class MarkdownService implements IMarkdownService {
         } else {
             Path docPaths = Paths.get(fileProperties.getDocumentDir(), TimeUntils.getFileTimeStrOfMonth(uploadDate));
             // docImagePaths 不存在则新建
-            upsertFolder(docPaths, upload.getUsername(), upload.getUserId());
+            fileService.upsertFolder(docPaths, upload.getUsername(), upload.getUserId());
             currentDirectory = fileService.getUserDirectory(docPaths.toString());
         }
         File file = Paths.get(fileProperties.getRootDir(), upload.getUsername(), currentDirectory, filename).toFile();
@@ -563,7 +563,7 @@ public class MarkdownService implements IMarkdownService {
         String userId = upload.getUserId();
         Path docImagePaths = Paths.get(fileProperties.getDocumentImgDir(), TimeUntils.getFileTimeStrOfMonth());
         // docImagePaths 不存在则新建
-        upsertFolder(docImagePaths, username, userId);
+        fileService.upsertFolder(docImagePaths, username, userId);
         File newFile;
         try {
             HttpResponse response = HttpRequest.get(upload.getUrl()).setFollowRedirects(true).executeAsync();
@@ -580,7 +580,7 @@ public class MarkdownService implements IMarkdownService {
             throw new CommonException(2, "上传失败");
         }
         if (!fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L) {
-            String fileId = fileService.createFile(username, newFile);
+            String fileId = fileService.createFile(username, newFile, userId);
             map.put("fileId", fileId);
         }
         String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), newFile.getName()), StandardCharsets.UTF_8);
@@ -608,7 +608,7 @@ public class MarkdownService implements IMarkdownService {
         String username = upload.getUsername();
         String userId = upload.getUserId();
         // docImagePaths 不存在则新建
-        upsertFolder(docImagePaths, username, userId);
+        fileService.upsertFolder(docImagePaths, username, userId);
         File newFile;
         try {
             if(userService.getDisabledWebp(userId)){
@@ -624,39 +624,13 @@ public class MarkdownService implements IMarkdownService {
             throw new CommonException(2, "上传失败");
         }
         if (!fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L) {
-            String fileId = fileService.createFile(username, newFile);
+            String fileId = fileService.createFile(username, newFile, userId);
             map.put("fileId", fileId);
         }
         String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), fileName), StandardCharsets.UTF_8);
         map.put("filename", fileName);
         map.put("filepath", filepath);
         return map;
-    }
-
-    /***
-     * 如果文件夹不存在，则创建
-     * @param docPaths  文件夹path
-     * @param username username
-     * @param userId userId
-     */
-    private void upsertFolder(@NotNull Path docPaths, @NotNull String username, @NotNull String userId) {
-        File dir = Paths.get(fileProperties.getRootDir(), username, docPaths.toString()).toFile();
-        if (!dir.exists()) {
-            StringBuilder parentPath = new StringBuilder();
-            for (int i = 0; i < docPaths.getNameCount(); i++) {
-                String name = docPaths.getName(i).toString();
-                UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
-                uploadApiParamDTO.setIsFolder(true);
-                uploadApiParamDTO.setFilename(name);
-                uploadApiParamDTO.setUsername(username);
-                uploadApiParamDTO.setUserId(userId);
-                if (i > 0) {
-                    uploadApiParamDTO.setCurrentDirectory(parentPath.toString());
-                }
-                fileService.uploadFolder(uploadApiParamDTO);
-                parentPath.append("/").append(name);
-            }
-        }
     }
 
     /***

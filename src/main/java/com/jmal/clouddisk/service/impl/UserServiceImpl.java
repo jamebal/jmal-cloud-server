@@ -23,6 +23,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.validation.constraints.NotNull;
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -100,6 +104,10 @@ public class UserServiceImpl implements IUserService {
             update.set("introduction", "");
         }
         String fileId = "";
+        if (!StringUtils.isEmpty(user.getAvatar())) {
+            fileId = user.getAvatar();
+            update.set("avatar", fileId);
+        }
         if (blobAvatar != null) {
             Consumer consumer = mongoTemplate.findById(userId, Consumer.class, COLLECTION_NAME);
             UploadApiParamDTO upload = new UploadApiParamDTO();

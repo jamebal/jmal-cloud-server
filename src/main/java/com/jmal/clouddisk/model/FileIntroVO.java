@@ -48,6 +48,15 @@ public class FileIntroVO extends FileBase{
     private Music music;
 
     /***
+     * 图片的宽度
+     */
+    private String w;
+    /***
+     * 图片的高度
+     */
+    private String h;
+
+    /***
      * 封面
      */
     private String cover;

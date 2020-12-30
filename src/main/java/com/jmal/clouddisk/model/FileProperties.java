@@ -23,7 +23,7 @@ import java.util.Arrays;
 public class FileProperties {
     private String rootDir = System.getProperty("user.dir");
     private String chunkFileDir = "chunkFileTemp";
-    private String userImgDir = "/Image/";
+    private String userImgDir = "/Image/usr/";
     private String documentDir = "/Document/";
     private String documentImgDir = "/Image/Document/";
     private String separator = "/";

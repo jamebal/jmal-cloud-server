@@ -50,6 +50,7 @@ import javax.imageio.stream.FileImageOutputStream;
 import javax.naming.Name;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.constraints.NotNull;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URLEncoder;
@@ -674,47 +675,27 @@ public class FileServiceImpl implements IFileService {
     @Override
     public String uploadConsumerImage(UploadApiParamDTO upload) throws CommonException {
         MultipartFile multipartFile = upload.getFile();
+        String username = upload.getUsername();
+        String userId = upload.getUserId();
+        String fileName = upload.getFilename();
+        Path userImagePaths = Paths.get(fileProperties.getUserImgDir());
+        // userImagePaths 不存在则新建
+        upsertFolder(userImagePaths, username, userId);
+        File newFile;
         try {
-            upload.setTotalSize(multipartFile.getSize());
-            upload.setIsFolder(false);
-            String fileName = upload.getFilename();
-            upload.setFilename(fileName);
-            upload.setRelativePath(fileName);
-
-            String[] docPaths = new String[]{"Image"};
-            String docPath = "/Image";
-            upload.setCurrentDirectory(docPath);
-            //用户磁盘目录
-            String userDirectoryFilePath = getUserDirectoryFilePath(upload);
-            LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
-
-            String username = upload.getUsername();
-            String userId = upload.getUserId();
-            String directoryPath = fileProperties.getRootDir() + File.separator + upload.getUsername() + getUserDirectory(docPath);
-            File dir = new File(directoryPath);
-            if (!dir.exists()) {
-                for (String path : docPaths) {
-                    UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
-                    uploadApiParamDTO.setIsFolder(true);
-                    uploadApiParamDTO.setFilename(path);
-                    uploadApiParamDTO.setUsername(username);
-                    uploadApiParamDTO.setUserId(userId);
-                    uploadFolder(uploadApiParamDTO);
-                }
+            if(userService.getDisabledWebp(userId)){
+                newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
+                FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
+            } else {
+                fileName = fileName + ".webp";
+                newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
+                BufferedImage image = ImageIO.read(multipartFile.getInputStream());
+                imageFileToWebp(newFile, image);
             }
-            // 没有分片,直接存
-            File newFile = new File(fileProperties.getRootDir() + File.separator + upload.getUsername() + userDirectoryFilePath);
-            // 保存文件信息
-            upload.setInputStream(multipartFile.getInputStream());
-            upload.setContentType(multipartFile.getContentType());
-            upload.setSuffix(FileUtil.extName(fileName));
-            FileDocument fileDocument = saveFileInfo(upload, upload.getTotalSize() + fileName, date);
-            FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
-            return fileDocument.getId();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new CommonException(2, "上传失败");
         }
-        return "";
+        return createFile(username, newFile, userId);
     }
 
     @Override
@@ -722,11 +703,15 @@ public class FileServiceImpl implements IFileService {
         return getFileDocumentById(fileId);
     }
 
-    @Override
-    public String createFile(String username, File file) {
-        String userId = userService.getUserIdByUserName(username);
-        if (StringUtils.isEmpty(userId)) {
+    public String createFile(String username, File file, String userId){
+        if(StringUtils.isEmpty(username)){
             return null;
+        }
+        if(StringUtils.isEmpty(userId)){
+            userId = userService.getUserIdByUserName(username);
+            if (StringUtils.isEmpty(userId)) {
+                return null;
+            }
         }
         String fileName = file.getName();
         String suffix = FileUtil.extName(fileName);
@@ -793,6 +778,11 @@ public class FileServiceImpl implements IFileService {
         return null;
     }
 
+    @Override
+    public String createFile(String username, File file) {
+        return createFile(username,file, null);
+    }
+
     private File replaceWebp(String userId, File file) {
         if(userService.getDisabledWebp(userId)){
             return file;
@@ -840,6 +830,9 @@ public class FileServiceImpl implements IFileService {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
             thumbnail.toOutputStream(out);
+            FastImageInfo imageInfo = new FastImageInfo(file);
+            update.set("w", imageInfo.getWidth());
+            update.set("h", imageInfo.getHeight());
             update.set("content", out.toByteArray());
         } catch (UnsupportedFormatException e) {
             log.warn(e.getMessage(), e);
@@ -1720,5 +1713,31 @@ public class FileServiceImpl implements IFileService {
         query.addCriteria(Criteria.where("md5").is(md5));
         query.addCriteria(Criteria.where("path").is(path));
         return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+    }
+
+    /***
+     * 如果文件夹不存在，则创建
+     * @param docPaths  文件夹path
+     * @param username username
+     * @param userId userId
+     */
+    public void upsertFolder(@NotNull Path docPaths, @NotNull String username, @NotNull String userId) {
+        File dir = Paths.get(fileProperties.getRootDir(), username, docPaths.toString()).toFile();
+        if (!dir.exists()) {
+            StringBuilder parentPath = new StringBuilder();
+            for (int i = 0; i < docPaths.getNameCount(); i++) {
+                String name = docPaths.getName(i).toString();
+                UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
+                uploadApiParamDTO.setIsFolder(true);
+                uploadApiParamDTO.setFilename(name);
+                uploadApiParamDTO.setUsername(username);
+                uploadApiParamDTO.setUserId(userId);
+                if (i > 0) {
+                    uploadApiParamDTO.setCurrentDirectory(parentPath.toString());
+                }
+                uploadFolder(uploadApiParamDTO);
+                parentPath.append("/").append(name);
+            }
+        }
     }
 }

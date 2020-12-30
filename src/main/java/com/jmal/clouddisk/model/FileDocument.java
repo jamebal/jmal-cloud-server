@@ -28,7 +28,14 @@ public class FileDocument extends FileBase{
      * 显示大小
      */
     private String showSize;
-
+    /***
+     * 图片的宽度
+     */
+    private String w;
+    /***
+     * 图片的高度
+     */
+    private String h;
     /***
      * 文件内容
      */
