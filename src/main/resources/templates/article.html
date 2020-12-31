@@ -77,9 +77,28 @@
     </div>
     <script th:inline="javascript">
         $(function(){
-
+            document.title = [[${titleName}]]
             // 是否为独立页面
             const isAlonePage = [[${markdown.alonePage}]]
+            // 是否在点击目录
+            let clickingToc = false, justLoading = false
+            // 目录最大高度
+            let tocMaxHeight = 0
+            // 页面滚动位置
+            let beforeScrollTop = document.documentElement.scrollTop;
+            let scrollAfterTimer = null
+            let rightBj = $('.right-bj')
+            let main = $('#main_body')
+            // 目录
+            let contents = []
+
+            // 渲染目录
+            renderContents()
+            // 添加更新时间
+            if(!isAlonePage){
+                addUpdateTime()
+            }
+
             /***
              * 初始化markdown解析器
              */
@@ -95,6 +114,7 @@
                     },
                     after() {
                         setContentTheme()
+                        new Viewer(document.getElementById('preview'));
                         // 添加更新时间
                         if(!isAlonePage){
                             addUpdateTime()
@@ -111,19 +131,6 @@
                         contentAfter()
                     }
                 })
-            // 渲染目录
-            renderContents()
-            // 是否在点击目录
-            let clickingToc = false, justLoading = false
-            // 目录最大高度
-            let tocMaxHeight = 0
-            // 页面滚动位置
-            let beforeScrollTop = document.documentElement.scrollTop;
-            let scrollAfterTimer = null
-            let rightBj = $('.right-bj')
-            let main = $('#main_body')
-            // 目录
-            let contents = []
 
             /***
              * 创建目录项

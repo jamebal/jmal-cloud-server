@@ -93,7 +93,7 @@ public class MarkDownController {
             userId = request.getHeader("userId");
             uploadImageDTO.setUserId(userId);
         }
-        if(StringUtils.isEmpty(userId)){
+        if(StringUtils.isEmpty(username)){
             username = request.getHeader("username");
             uploadImageDTO.setUsername(username);
         }

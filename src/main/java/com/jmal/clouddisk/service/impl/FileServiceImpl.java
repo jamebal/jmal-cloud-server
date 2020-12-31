@@ -106,6 +106,8 @@ public class FileServiceImpl implements IFileService {
     private static final String CONTENT_TYPE_IMAGE = "image";
     public static final String CONTENT_TYPE_MARK_DOWN = "text/markdown";
     public static final String CONTENT_TYPE_WEBP = "image/webp";
+    public static final String SUFFIX_WEBP = "webp";
+    public static final String _SUFFIX_WEBP = ".webp";
 
     /***
      * 前端文件夹树的第一级的文件Id
@@ -131,6 +133,14 @@ public class FileServiceImpl implements IFileService {
      * 合并文件是的写入锁缓存
      */
     private final Cache<String, Lock> chunkWriteLockCache = CaffeineUtil.getChunkWriteLockCache();
+
+    /**
+     * 是否关闭了文件监听或者文件监听的时间间隔大于3秒
+     * @return
+     */
+    public boolean isNotMonitor() {
+        return !fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L;
+    }
 
     @Override
     public ResponseResult<Object> listFiles(UploadApiParamDTO upload) throws CommonException {
@@ -687,7 +697,7 @@ public class FileServiceImpl implements IFileService {
                 newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
                 FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             } else {
-                fileName = fileName + ".webp";
+                fileName = fileName + _SUFFIX_WEBP;
                 newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
                 BufferedImage image = ImageIO.read(multipartFile.getInputStream());
                 imageFileToWebp(newFile, image);
@@ -790,7 +800,7 @@ public class FileServiceImpl implements IFileService {
         if("webp".equals(FileUtil.getSuffix(file))){
             return file;
         }
-        File outputFile = new File(file.getPath() + ".webp");
+        File outputFile = new File(file.getPath() + _SUFFIX_WEBP);
         // 从某处获取图像进行编码
         BufferedImage image = null;
         try {
@@ -1242,7 +1252,7 @@ public class FileServiceImpl implements IFileService {
             upload.setContentType(file.getContentType());
             upload.setSuffix(FileUtil.extName(filename));
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
-            if (!fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L) {
+            if (isNotMonitor()) {
                 createFile(upload.getUsername(), chunkFile);
             }
             uploadResponse.setUpload(true);
@@ -1357,7 +1367,7 @@ public class FileServiceImpl implements IFileService {
             FileUtil.mkdir(dir);
         }
         // 保存文件夹信息
-        if (!fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L) {
+        if (isNotMonitor()) {
             createFile(upload.getUsername(), dir);
         }
         return ResultUtil.success();
@@ -1383,7 +1393,7 @@ public class FileServiceImpl implements IFileService {
         if (!dir.exists()) {
             FileUtil.mkdir(dir);
         }
-        if (!fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L) {
+        if (isNotMonitor()) {
             createFile(upload.getUsername(), dir);
         }
         return ResultUtil.success();
@@ -1596,7 +1606,7 @@ public class FileServiceImpl implements IFileService {
         FileUtil.del(chunkDir);
         FileUtil.move(file, outputFile, true);
         uploadResponse.setUpload(true);
-        if (!fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L) {
+        if (isNotMonitor()) {
             createFile(upload.getUsername(), outputFile);
         }
         return ResultUtil.success(uploadResponse);

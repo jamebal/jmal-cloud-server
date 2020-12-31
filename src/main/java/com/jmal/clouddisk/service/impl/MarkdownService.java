@@ -572,14 +572,18 @@ public class MarkdownService implements IMarkdownService {
             }
             File destFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString()).toFile();
             final File outFile = response.completeFileNameFromHeader(destFile);
-            newFile = new File(outFile.getPath() + ".webp");
+            if (!outFile.getName().endsWith(FileServiceImpl._SUFFIX_WEBP)) {
+                newFile = new File(outFile.getPath() + FileServiceImpl._SUFFIX_WEBP);
+            } else {
+                newFile = new File(outFile.getPath());
+            }
             BufferedImage image = ImageIO.read(response.bodyStream());
             fileService.imageFileToWebp(newFile, image);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new CommonException(2, "上传失败");
         }
-        if (!fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L) {
+        if (fileService.isNotMonitor()) {
             String fileId = fileService.createFile(username, newFile, userId);
             map.put("fileId", fileId);
         }
@@ -615,7 +619,9 @@ public class MarkdownService implements IMarkdownService {
                 newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
                 FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             } else {
-                fileName = fileName + ".webp";
+                if(!fileName.endsWith(FileServiceImpl._SUFFIX_WEBP)){
+                    fileName = fileName + FileServiceImpl._SUFFIX_WEBP;
+                }
                 newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
                 BufferedImage image = ImageIO.read(multipartFile.getInputStream());
                 fileService.imageFileToWebp(newFile, image);
@@ -623,7 +629,7 @@ public class MarkdownService implements IMarkdownService {
         } catch (IOException e) {
             throw new CommonException(2, "上传失败");
         }
-        if (!fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L) {
+        if (fileService.isNotMonitor()) {
             String fileId = fileService.createFile(username, newFile, userId);
             map.put("fileId", fileId);
         }
