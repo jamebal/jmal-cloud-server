@@ -22,7 +22,6 @@ import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.result.UpdateResult;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;

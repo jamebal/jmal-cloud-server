@@ -1,39 +1,18 @@
 server:
   port: 8088
 spring:
+  application:
+    name: jmalcloud
   profiles:
     active: dev
   servlet:
     multipart:
       max-file-size: 50MB
       max-request-size: 100MB
-  resources:
-    cache:
-      cachecontrol:
-        max-age: 604800
-    chain:
-      cache: true
-  thymeleaf: # thymeleaf配置，开发环境不启用缓存，正式环境下请启用缓存，提高性能
-    cache: false
-    mode: HTML # thymeleaf对html元素格式要求严格，设置它的mode为HTML，忘记结束标签后不会报错
-    http:
-      encoding:
-        charset: UTF-8
-        enabled: true
   http:
     encoding:
       force: true
-  application:
-    name: jmalcloud
-  data:
-    mongodb:
-      uri: mongodb://localhost:27017/jmalcloud
   cache:
     type: caffeine
     caffeine:
       spec: initialCapacity=100,maximumSize=500,expireAfterWrite=30s
-
-# 日志级别,生产环境改为warn
-logging:
-  level:
-    root: info
