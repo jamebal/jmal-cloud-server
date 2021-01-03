@@ -9,10 +9,10 @@
             </a>
         </div>
         <ul id="menu-menu-1" class="menu navbar-nav">
-            <li class="menu-item">
+            <li class="menu-item" onclick="toggle()">
                 <a href="/articles">首页</a>
             </li>
-            <li class="menu-item" th:if="${setting.isShowAlonePage('archives')}">
+            <li class="menu-item" th:if="${setting.isShowAlonePage('archives')}" onclick="toggle()">
                 <a class="nav-link" href="/articles/archives" title="归档">
                     <svg class="icon" aria-hidden="true">
                         <use xlink:href="#icon-guidang"></use>
@@ -20,7 +20,7 @@
                     <span class="nav-link-label">归档</span>
                 </a>
             </li>
-            <li class="menu-item" th:if="${setting.isShowAlonePage('categories')}">
+            <li class="menu-item" th:if="${setting.isShowAlonePage('categories')}" onclick="toggle()">
                 <a class="nav-link" href="/articles/categories" title="分类">
                     <svg class="icon" aria-hidden="true">
                         <use xlink:href="#icon-fenlei"></use>
@@ -28,7 +28,7 @@
                     <span class="nav-link-label">分类</span>
                 </a>
             </li>
-            <li class="nav-item" th:if="${setting.isShowAlonePage('tags')}">
+            <li class="nav-item" th:if="${setting.isShowAlonePage('tags')}" onclick="toggle()">
                 <a class="nav-link" href="/articles/tags" title="标签">
                     <svg class="icon" aria-hidden="true">
                         <use xlink:href="#icon-tag"></use>
@@ -36,18 +36,18 @@
                     <span class="nav-link-label">标签</span>
                 </a>
             </li>
-            <li class="menu-item" th:each="page : ${alonePages}">
+            <li class="menu-item" th:each="page : ${alonePages}" onclick="toggle()">
                 <a class="nav-link" th:href="@{'/articles/o/'+${page.slug}}" th:title="${page.name}">
                     <span class="nav-link-label" th:text="${page.name}"></span>
                 </a>
             </li>
-            <li class="menu-item" th:each="operatingButton : ${setting.operatingButtonList}">
+            <li class="menu-item" th:each="operatingButton : ${setting.operatingButtonList}" onclick="toggle()">
                 <a th:href="${operatingButton.url}" target="_blank">
                     <i th:class="${operatingButton.style}"></i>
                     <span th:text="${{operatingButton.title}}"></span>
                 </a>
             </li>
-            <li>
+            <li onclick="toggle()">
                 <a class="changeTheme">
                     <i th:if="${darkTheme}" class="fas fa-sun"></i>
                     <span th:if="${darkTheme}">亮色</span>
