@@ -16,12 +16,12 @@
                                     </a>
                                 </div>
                                 <div class="new-meta-item date">
-                                    <a class="link">
+                                    <div class="not-link">
                                         <svg class="icon" aria-hidden="true">
                                             <use xlink:href="#icon-fabu"></use>
                                         </svg>
                                         <p th:text="'发布于 '+${article.uploadTime()}"></p>
-                                    </a>
+                                    </div>
                                 </div>
                                 <div class="new-meta-item category" th:if="${article.categories != null && article.categories.size() > 0}">
                                     <a class="link">

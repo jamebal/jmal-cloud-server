@@ -1,0 +1,25 @@
+<div class="article-tail" xmlns:th="http://www.thymeleaf.org">
+    <hr>
+    <div class="meta-item">
+        <div class="meta-item category" th:if="${markdown.categories != null && markdown.categories.size() > 0}">
+            <div>
+                <svg class="icon" aria-hidden="true">
+                    <use xlink:href="#icon-fenlei"></use>
+                </svg>
+            </div>
+            <div class="flex-text" th:each="category,categoryStat : ${markdown.categories}">
+                <a th:href="'/articles/categories/'+${category.slug}" th:text="${category.name}"></a>
+            </div>
+        </div>
+        <div class="meta-item tag" th:if="${markdown.tags != null && markdown.tags.size() > 0}">
+            <div>
+                <svg class="icon" aria-hidden="true">
+                    <use xlink:href="#icon-tag"></use>
+                </svg>
+            </div>
+            <div class="flex-text" th:each="tag,tagStat : ${markdown.tags}">
+               <a th:href="'/articles/tags/'+${tag.slug}" th:text="${tag.name}"></a>
+            </div>
+        </div>
+    </div>
+</div>

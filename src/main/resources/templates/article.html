@@ -46,6 +46,7 @@
                     </svg>
                 </div>
             </el-main>
+            <div th:if="!${markdown.alonePage}" id="article_tail" th:include="component/article-tail.html"></div>
             <div class="right-bj" style="display: none">
                 <div id="toc-affix">
                     <div class="slimScrollDiv">
@@ -114,10 +115,11 @@
                     },
                     after() {
                         setContentTheme()
-                        new Viewer(document.getElementById('preview'));
                         // 添加更新时间
                         if(!isAlonePage){
                             addUpdateTime()
+                            // 添加文章尾部信息
+                            document.getElementById('preview').append(document.getElementById('article_tail'))
                         }
                         setTimeout(function (){
                             // 隐藏加载动画
@@ -164,6 +166,7 @@
                     return
                 }
                 main.css("width", '')
+                $('.body-wrapper').addClass('body-wrapper-offset')
                 // 显示目录按钮
                 if(window.innerWidth <= 768){
                     $('.show-content').css('display','flex')

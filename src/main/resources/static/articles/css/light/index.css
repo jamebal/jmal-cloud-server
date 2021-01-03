@@ -55,7 +55,6 @@ a, a:focus, a:hover {
 }
 hr {
     height: 1px;
-    margin: 10px 0;
     border: 0;
     clear: both;
 }
@@ -622,7 +621,7 @@ html {
 .post {
     position: relative;
     margin: 16px auto;
-    padding: 24px;
+    padding: 20px;
     border-radius: 12px;
 }
 .white-box {
@@ -633,8 +632,8 @@ html {
     -moz-transition: all .5s ease;
     -webkit-transition: all .5s ease;
     -o-transition: all .5s ease;
-    -webkit-box-shadow: 0 1px 2px 0 rgba(0,0,0,0.1);
-    box-shadow: 0 1px 2px 0 rgba(0,0,0,0.1);
+    -webkit-box-shadow: 0px 1px 6px 1px rgba(0,0,0,0.1);
+    box-shadow: 0px 1px 6px 1px rgba(0,0,0,0.1);
 }
 .shadow:hover {
     -webkit-box-shadow: 1px 1px 7px 7px rgba(0,0,0,0.1);
@@ -681,7 +680,6 @@ html {
     -webkit-transition: all .1s ease;
     -o-transition: all .1s ease;
     padding-top: 4px;
-    padding-bottom: 8px;
     display: -webkit-box;
     display: -ms-flexbox;
     display: flex;
@@ -690,6 +688,9 @@ html {
     align-items: center;
     -ms-flex-wrap: wrap;
     flex-wrap: wrap;
+}
+.not-link {
+    display: flex;
 }
 .post .meta .new-meta-box .new-meta-item {
     color: rgba(68,68,68,0.65);
@@ -754,8 +755,6 @@ html {
     cursor: default;
 }
 .article p {
-    margin-top: 1rem;
-    margin-bottom: 1rem;
     text-align: justify;
     max-width: 100%;
     overflow: auto;
@@ -1045,6 +1044,7 @@ html {
     }
     .articles-list {
         max-height: 10rem;
+        min-height: 10rem;
     }
     .shadow {
         -webkit-box-shadow: 0 0 3px 1px rgba(0,0,0,0.1);
@@ -1166,6 +1166,9 @@ html {
     .right-bj {
         width: 240px;
     }
+    .body-wrapper-offset {
+        left: 120px;
+    }
 }
 .archives .layui-timeline {
     max-width: 680px;
@@ -1225,7 +1228,34 @@ footer a {
     -webkit-transition: all .28s ease;
     -o-transition: all .28s ease;
 }
+/*article-tail*/
+.article-tail hr {
+    height: 1px;
+}
+.article-tail .meta-item {
+    display: flex;
+    margin-right: 10px;
+}
+.article-tail .meta-item .icon {
+    height: 1.5rem !important;
+    width: 1.5rem !important;
+    margin-right: 5px;
+    padding-top: 4px;
+}
+.article-tail  .meta-item .flex-text a {
+    padding: 2px 6px;
+    position: unset;
+    color: unset;
+}
+.article-tail .meta-item .flex-text a:hover {
+    background-color: #eee;
+    border-radius: 5px;
+    color: #4285f4;
+}
 /*markdown*/
+#article-title{
+    white-space: pre-line;
+}
 .article-body .note-update-date {
     padding: 0.75rem;
     border-left: 0.35rem solid;

@@ -223,6 +223,10 @@ footer a {
     background-color: #252d38;
     color: #d1d2da;
 }
+/*article-tail*/
+.article-tail .meta-item .flex-text a:hover {
+    background-color: #191d27;
+}
 /*markdown*/
 .article-body .note-update-date {
     border-color: #757575;
