@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
-import com.jmal.clouddisk.model.Consumer;
+import com.jmal.clouddisk.model.ConsumerDO;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -28,13 +28,13 @@ public class AuthController {
 
     @ApiOperation("登录")
     @PostMapping("/login")
-    public ResponseResult<Object> login(@RequestBody Consumer user){
+    public ResponseResult<Object> login(@RequestBody ConsumerDO user){
         return authService.login(user.getUsername(), user.getPassword());
     }
 
     @ApiOperation("校验旧密码")
     @PostMapping("/valid-old-pass")
-    public ResponseResult<Object> validOldPass(@RequestBody Consumer user){
+    public ResponseResult<Object> validOldPass(@RequestBody ConsumerDO user){
         return authService.validOldPass(user.getId(), user.getPassword());
     }
 
@@ -53,7 +53,7 @@ public class AuthController {
 
     @ApiOperation("初始化创建管理员")
     @PostMapping("/public/initialization")
-    public ResponseResult<Object> initialization(Consumer consumer){
+    public ResponseResult<Object> initialization(ConsumerDO consumer){
         return userService.initialization(consumer);
     }
 }

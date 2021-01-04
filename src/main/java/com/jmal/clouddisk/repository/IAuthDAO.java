@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.repository;
 
-import com.jmal.clouddisk.model.UserToken;
+import com.jmal.clouddisk.model.UserTokenDO;
 
 /**
  * IAuthDAO
@@ -19,7 +19,7 @@ public interface IAuthDAO {
      * @param username 用户名
      * @return UserToken
      */
-    UserToken findOneUserToken(String username);
+    UserTokenDO findOneUserToken(String username);
 
     /***
      * 更新用户token的时间戳

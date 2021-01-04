@@ -2,7 +2,6 @@ package com.jmal.clouddisk.model;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.apache.tomcat.jni.File;
 
 import java.util.List;
 
@@ -48,7 +47,7 @@ public class MarkdownVO extends FileBase {
     /***
      * 分类集合
      */
-    private List<Category> categories;
+    private List<CategoryDO> categories;
     /***
      * 标签Id集合
      */
@@ -56,6 +55,6 @@ public class MarkdownVO extends FileBase {
     /***
      * 标签集合
      */
-    private List<Tag> tags;
+    private List<TagDO> tags;
 
 }

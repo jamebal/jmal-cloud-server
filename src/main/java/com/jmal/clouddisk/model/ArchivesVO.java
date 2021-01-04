@@ -14,11 +14,21 @@ import java.util.Date;
 @Data
 public class ArchivesVO {
 
+    /***
+     * 归档id
+     */
     private String id;
+    /***
+     * 归档名称
+     */
     private String name;
-
+    /***
+     * 显示时间
+     */
     private Date date;
-
+    /***
+     * 归档缩略名
+     */
     private String slug;
 
     public String date(){

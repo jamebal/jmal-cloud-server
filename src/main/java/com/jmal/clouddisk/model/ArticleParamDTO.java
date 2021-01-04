@@ -48,8 +48,11 @@ public class ArticleParamDTO {
     String cover;
     @ApiModelProperty(name = "cover", value = "文章缩略名")
     String slug;
+    @ApiModelProperty(name = "categoryIds", value = "分类Id集合")
     String[] categoryIds;
+    @ApiModelProperty(name = "tagNames", value = "标签名称集合")
     String[] tagNames;
+    @ApiModelProperty(name = "uploadDate", value = "更新时间")
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime uploadDate;

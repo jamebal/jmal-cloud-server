@@ -17,13 +17,10 @@ public class FileIntroVO extends FileBase{
      * 文件路径(根路径为"/")
      */
     private String path;
-
-    private String rootPath;
     /***
      * updateDate 距离现在的时间
      */
     private Long agoTime;
-
     /***
      * 显示大小
      */
@@ -44,9 +41,7 @@ public class FileIntroVO extends FileBase{
      * 分享有效期
      */
     private Long shareExpirationDate;
-
     private Music music;
-
     /***
      * 图片的宽度
      */
@@ -55,7 +50,6 @@ public class FileIntroVO extends FileBase{
      * 图片的高度
      */
     private String h;
-
     /***
      * 封面
      */

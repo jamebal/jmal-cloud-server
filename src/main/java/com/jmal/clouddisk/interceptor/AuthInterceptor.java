@@ -1,12 +1,11 @@
 package com.jmal.clouddisk.interceptor;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.alibaba.fastjson.JSON;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.model.UserToken;
+import com.jmal.clouddisk.model.UserTokenDO;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -21,7 +20,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Enumeration;
 
 /**
  * @author jmal
@@ -95,13 +93,13 @@ public class AuthInterceptor implements HandlerInterceptor {
                 if(StringUtils.isEmpty(userName)){
                     return null;
                 }
-                UserToken userToken = authDAO.findOneUserToken(userName);
-                if (userToken == null) {
+                UserTokenDO userTokenDO = authDAO.findOneUserToken(userName);
+                if (userTokenDO == null) {
                     return null;
                 }
-                if ((System.currentTimeMillis() - userToken.getTimestamp()) < ONE_WEEK) {
+                if ((System.currentTimeMillis() - userTokenDO.getTimestamp()) < ONE_WEEK) {
                     ThreadUtil.execute(() -> updateToken(jmalToken, userName));
-                    return userToken.getUsername();
+                    return userTokenDO.getUsername();
                 }
                 return null;
             } else {

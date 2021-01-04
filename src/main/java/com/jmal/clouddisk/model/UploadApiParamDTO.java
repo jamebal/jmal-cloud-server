@@ -34,7 +34,7 @@ public class UploadApiParamDTO {
      */
     Long totalSize;
     /***
-     * 文件唯一表示MD5
+     * 文件唯一标识MD5
      */
     String identifier;
     /***
@@ -90,26 +90,65 @@ public class UploadApiParamDTO {
      * 当isFolder=true时 生效,folderPath为文件夹路径
      */
     String folderPath;
+    /***
+     * 文件名后缀
+     */
     String suffix;
+    /***
+     * 文件类型
+     */
     String contentType;
-
+    /***
+     * 要查询的文件类型
+     */
     String queryFileType;
-
+    /***
+     * 文件文本
+     */
     String contentText;
-
+    /***
+     * 要查询的页数
+     */
     Integer pageIndex;
+    /***
+     * 要查询的每页条数
+     */
     Integer pageSize;
-
+    /***
+     * 要查询的排序参数
+     */
     String sortableProp;
+    /***
+     * 要查询的排序顺序
+     */
     String order;
-
+    /***
+     * 是否为草稿
+     */
     Boolean isDraft;
+    /***
+     * 是否已发布
+     */
     Boolean isRelease;
-
+    /***
+     * 是否收藏
+     */
     Boolean isFavorite;
+    /***
+     * 封面
+     */
     String cover;
+    /***
+     * 缩略名
+     */
     String slug;
+    /***
+     * 分类Id集合
+     */
     String[] categoryIds;
+    /***
+     * 标签名称集合
+     */
     String[] tagNames;
 
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")

@@ -22,7 +22,13 @@ public class UploadResponse {
      * 代表这些分片是已经上传过的了
      */
     List<Integer> resume;
+    /***
+     * 是否上传完成
+     */
     boolean upload;
+    /***
+     * 上传后是合并完成
+     */
     boolean merge;
 
     public UploadResponse() {

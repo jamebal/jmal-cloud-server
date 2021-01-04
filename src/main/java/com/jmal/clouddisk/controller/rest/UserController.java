@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
-import com.jmal.clouddisk.model.Consumer;
+import com.jmal.clouddisk.model.ConsumerDO;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import io.swagger.annotations.Api;
@@ -23,7 +23,7 @@ public class UserController {
 
     @ApiOperation(value = "添加用户")
     @PostMapping("/add")
-    public ResponseResult<Object> add(Consumer consumer){
+    public ResponseResult<Object> add(ConsumerDO consumer){
         return service.add(consumer);
     }
 
@@ -35,19 +35,19 @@ public class UserController {
 
     @ApiOperation(value = "修改用户")
     @PutMapping("/update")
-    public ResponseResult<Object> update(Consumer consumer, MultipartFile blobAvatar){
+    public ResponseResult<Object> update(ConsumerDO consumer, MultipartFile blobAvatar){
         return service.update(consumer,blobAvatar);
     }
 
     @ApiOperation(value = "修改用户密码")
     @PutMapping("/update-pass")
-    public ResponseResult<Object> updatePass(Consumer consumer){
+    public ResponseResult<Object> updatePass(ConsumerDO consumer){
         return service.updatePass(consumer);
     }
 
     @ApiOperation(value = "重置密码")
     @PutMapping("/reset-pass")
-    public ResponseResult<Object> resetPass(Consumer consumer){
+    public ResponseResult<Object> resetPass(ConsumerDO consumer){
         return service.resetPass(consumer);
     }
 

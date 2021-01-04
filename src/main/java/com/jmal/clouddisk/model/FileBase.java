@@ -11,7 +11,7 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * @author jmal
- * @Description 文件基类
+ * @Description 文件模型基类
  * @Date 2020/11/12 2:05 下午
  */
 @Data
@@ -52,10 +52,18 @@ public class FileBase {
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateDate;
 
+    /***
+     * 格式化文件更新时间
+     * @return yyyy 年 MM 月 dd 日 HH:mm:ss
+     */
     public String updateTime(){
        return updateDate.format(TimeUntils.UPDATE_FORMAT_TIME);
     }
 
+    /***
+     * 格式化文件上传时间
+     * @return yyyy 年 MM 月 dd 日
+     */
     public String uploadTime(){
         return uploadDate.format(TimeUntils.UPLOAD_FORMAT_TIME);
     }

@@ -8,13 +8,13 @@ import lombok.Data;
  * @author jmal
  */
 @Data
-public class UploadActionApiParam {
+public class UploadActionApiDTO {
     /***
      * 根据前台的action参数决定要做的动作
      */
     String action;
     /***
-     * 文件唯一表示
+     * 文件唯一标识
      */
     String fileMd5;
     String fileName;

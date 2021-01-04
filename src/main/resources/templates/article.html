@@ -17,8 +17,8 @@
                     <span th:text="'· '+${markdown.uploadTime()}"></span>
                     <span class="link"  th:if="${markdown.categories != null && markdown.categories.size() > 0}">
                     ·
-                    <a th:each="category,categoryStat : ${markdown.categories}">
-                        <span th:text="${categoryStat.index > 0?' · ':''}"></span><a th:href="'/articles/categories/'+${category.name}" th:text="${category.name}"></a>
+                    <a th:each="categoryDO,categoryStat : ${markdown.categories}">
+                        <span th:text="${categoryStat.index > 0?' · ':''}"></span><a th:href="'/articles/categories/'+${categoryDO.name}" th:text="${categoryDO.name}"></a>
                     </a>
                 </span>
                     <span class="edit"  th:if="${markdown.editable != null && markdown.editable}">

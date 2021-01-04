@@ -23,16 +23,16 @@
                                         <p th:text="'发布于 '+${article.uploadTime()}"></p>
                                     </div>
                                 </div>
-                                <div class="new-meta-item category" th:if="${article.categories != null && article.categories.size() > 0}">
+                                <div class="new-meta-item categoryDO" th:if="${article.categories != null && article.categories.size() > 0}">
                                     <a class="link">
                                         <svg class="icon" aria-hidden="true">
                                             <use xlink:href="#icon-fenlei"></use>
                                         </svg>
                                     </a>
                                     <div class="flex-text">
-                                           <span class="flex-text" th:each="category,categoryStat : ${article.categories}">
+                                           <span class="flex-text" th:each="categoryDO,categoryStat : ${article.categories}">
                                             <span th:text="${categoryStat.index > 0?' , ':''}"></span>
-                                               <a th:href="'/articles/categories/'+${category.slug}" th:text="${category.name}"></a>
+                                               <a th:href="'/articles/categories/'+${categoryDO.slug}" th:text="${categoryDO.name}"></a>
                                             </span>
                                     </div>
                                 </div>

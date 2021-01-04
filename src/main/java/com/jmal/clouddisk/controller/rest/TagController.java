@@ -1,11 +1,8 @@
 package com.jmal.clouddisk.controller.rest;
 
 import cn.hutool.extra.cglib.CglibUtil;
-import com.jmal.clouddisk.model.Category;
-import com.jmal.clouddisk.model.CategoryDTO;
-import com.jmal.clouddisk.model.Tag;
+import com.jmal.clouddisk.model.TagDO;
 import com.jmal.clouddisk.model.TagDTO;
-import com.jmal.clouddisk.service.impl.CategoryService;
 import com.jmal.clouddisk.service.impl.TagService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -41,7 +38,7 @@ public class TagController {
     @ResponseBody
     public ResponseResult<TagDTO> tagInfo(@RequestParam String tagId) {
         TagDTO tagDTO = new TagDTO();
-        Tag tag = tagService.getTagInfo(tagId);
+        TagDO tag = tagService.getTagInfo(tagId);
         if(tag != null){
             CglibUtil.copy(tag, tagDTO);
         }

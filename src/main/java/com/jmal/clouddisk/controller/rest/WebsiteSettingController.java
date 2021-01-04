@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.model.WebsiteSettingDTO;
-import com.jmal.clouddisk.model.WebsiteSetting;
+import com.jmal.clouddisk.model.WebsiteSettingDO;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -30,8 +30,8 @@ public class WebsiteSettingController {
 
     @ApiOperation("更新网站设置")
     @PutMapping("/website/setting/update")
-    public ResponseResult<Object> update(@RequestBody WebsiteSetting websiteSetting) {
-        return settingService.websiteUpdate(websiteSetting);
+    public ResponseResult<Object> update(@RequestBody WebsiteSettingDO websiteSettingDO) {
+        return settingService.websiteUpdate(websiteSettingDO);
     }
 }
 

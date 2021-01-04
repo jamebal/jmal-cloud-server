@@ -2,14 +2,11 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.extra.cglib.CglibUtil;
-import com.jmal.clouddisk.model.Category;
+import com.jmal.clouddisk.model.CategoryDO;
 import com.jmal.clouddisk.model.CategoryDTO;
-import com.jmal.clouddisk.model.Tag;
-import com.jmal.clouddisk.model.TagDTO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import org.apache.commons.collections4.functors.IfClosure;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -99,8 +96,8 @@ public class CategoryService {
         } else {
             query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
         }
-        List<Category> categoryList = mongoTemplate.find(query, Category.class, COLLECTION_NAME);
-        List<CategoryDTO> categoryDTOList = categoryList.parallelStream().map(category -> {
+        List<CategoryDO> categoryDOList = mongoTemplate.find(query, CategoryDO.class, COLLECTION_NAME);
+        List<CategoryDTO> categoryDTOList = categoryDOList.parallelStream().map(category -> {
             CategoryDTO categoryDTO = new CategoryDTO();
             CglibUtil.copy(category, categoryDTO);
             if (statArticleNum) {
@@ -200,10 +197,10 @@ public class CategoryService {
      * @param categoryIds 分类id集合
      * @return 分类列表
      */
-    public List<Category> getCategoryListByIds(String[] categoryIds) {
+    public List<CategoryDO> getCategoryListByIds(String[] categoryIds) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(categoryIds));
-        return mongoTemplate.find(query, Category.class, COLLECTION_NAME);
+        return mongoTemplate.find(query, CategoryDO.class, COLLECTION_NAME);
     }
 
     /***
@@ -212,7 +209,7 @@ public class CategoryService {
      * @param categoryName 分类名称
      * @return 一个分类信息
      */
-    public Category getCategoryInfo(String userId, String categoryName) {
+    public CategoryDO getCategoryInfo(String userId, String categoryName) {
         Query query = new Query();
         if (!StringUtils.isEmpty(userId)) {
             query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
@@ -220,7 +217,7 @@ public class CategoryService {
             query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
         }
         query.addCriteria(Criteria.where("name").is(categoryName));
-        return mongoTemplate.findOne(query, Category.class, COLLECTION_NAME);
+        return mongoTemplate.findOne(query, CategoryDO.class, COLLECTION_NAME);
     }
 
     /***
@@ -229,7 +226,7 @@ public class CategoryService {
      * @param categorySlugName 分类缩略名
      * @return 一个分类信息
      */
-    public Category getCategoryInfoBySlug(String userId, String categorySlugName) {
+    public CategoryDO getCategoryInfoBySlug(String userId, String categorySlugName) {
         Query query = new Query();
         if (!StringUtils.isEmpty(userId)) {
             query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
@@ -237,11 +234,11 @@ public class CategoryService {
             query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
         }
         query.addCriteria(Criteria.where("slug").is(categorySlugName));
-        Category category = mongoTemplate.findOne(query, Category.class, COLLECTION_NAME);
-        if(category == null){
-            category = getCategoryInfo(userId, categorySlugName);
+        CategoryDO categoryDO = mongoTemplate.findOne(query, CategoryDO.class, COLLECTION_NAME);
+        if(categoryDO == null){
+            categoryDO = getCategoryInfo(userId, categorySlugName);
         }
-        return category;
+        return categoryDO;
     }
 
     /***
@@ -249,10 +246,10 @@ public class CategoryService {
      * @param categoryId 分类id
      * @return 一个分类信息
      */
-    public Category getCategoryInfo(String categoryId) {
+    public CategoryDO getCategoryInfo(String categoryId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(categoryId));
-        return mongoTemplate.findOne(query, Category.class, COLLECTION_NAME);
+        return mongoTemplate.findOne(query, CategoryDO.class, COLLECTION_NAME);
     }
 
     /***
@@ -265,15 +262,15 @@ public class CategoryService {
             return ResultUtil.warning("该分类名称已存在");
         }
         if (!StringUtils.isEmpty(categoryDTO.getParentCategoryId())) {
-            Category parentCategory = getCategoryInfo(categoryDTO.getParentCategoryId());
-            if (parentCategory == null) {
+            CategoryDO parentCategoryDO = getCategoryInfo(categoryDTO.getParentCategoryId());
+            if (parentCategoryDO == null) {
                 return ResultUtil.warning("该父分类不存在");
             }
         }
         categoryDTO.setSlug(getSlug(categoryDTO));
-        Category category = new Category();
-        CglibUtil.copy(categoryDTO, category);
-        mongoTemplate.save(category);
+        CategoryDO categoryDO = new CategoryDO();
+        CglibUtil.copy(categoryDTO, categoryDO);
+        mongoTemplate.save(categoryDO);
         return ResultUtil.success();
     }
 
@@ -283,8 +280,8 @@ public class CategoryService {
      * @return ResponseResult
      */
     public ResponseResult<Object> update(CategoryDTO categoryDTO) {
-        Category category1 = getCategoryInfo(categoryDTO.getId());
-        if (category1 == null) {
+        CategoryDO categoryDO1 = getCategoryInfo(categoryDTO.getId());
+        if (categoryDO1 == null) {
             return ResultUtil.warning("该分类不存在");
         }
         Query query1 = new Query();
@@ -294,11 +291,11 @@ public class CategoryService {
             return ResultUtil.warning("该分类名称已存在");
         }
         categoryDTO.setSlug(getSlug(categoryDTO));
-        Category category = new Category();
-        CglibUtil.copy(categoryDTO, category);
+        CategoryDO categoryDO = new CategoryDO();
+        CglibUtil.copy(categoryDTO, categoryDO);
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(categoryDTO.getId()));
-        Update update = MongoUtil.getUpdate(category);
+        Update update = MongoUtil.getUpdate(categoryDO);
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
         return ResultUtil.success();
     }
@@ -370,7 +367,7 @@ public class CategoryService {
             query.addCriteria(Criteria.where("parentCategoryId").in(categoryIdList));
             categoryIds.addAll(categoryIdList);
         }
-        List<String> categoryIdList1 = mongoTemplate.find(query, Category.class, COLLECTION_NAME).stream().map(Category::getId).collect(Collectors.toList());
+        List<String> categoryIdList1 = mongoTemplate.find(query, CategoryDO.class, COLLECTION_NAME).stream().map(CategoryDO::getId).collect(Collectors.toList());
         if (categoryIdList1.size() > 0) {
             categoryIds.addAll(findLoopCategory(false, categoryIdList1));
         }

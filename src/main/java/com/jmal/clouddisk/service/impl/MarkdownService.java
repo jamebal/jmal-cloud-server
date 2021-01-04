@@ -2,17 +2,13 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.lang.Console;
-import cn.hutool.core.util.CharsetUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.core.util.URLUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.extra.cglib.CglibUtil;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpUtil;
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.Either;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -20,7 +16,6 @@ import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
-import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
@@ -35,11 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.FileImageOutputStream;
-import javax.validation.constraints.NotNull;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URLEncoder;
@@ -244,11 +235,11 @@ public class MarkdownService implements IMarkdownService {
         CglibUtil.copy(fileDocument, articleVO);
 
         if (articleVO.getCategoryIds() != null) {
-            List<Category> categories = categoryService.getCategoryListByIds(articleVO.getCategoryIds());
+            List<CategoryDO> categories = categoryService.getCategoryListByIds(articleVO.getCategoryIds());
             articleVO.setCategories(categories);
         }
         if (articleVO.getTagIds() != null) {
-            List<Tag> tags = tagService.getTagListByIds(articleVO.getTagIds());
+            List<TagDO> tags = tagService.getTagListByIds(articleVO.getTagIds());
             articleVO.setTags(tags);
         }
         return articleVO;
@@ -354,11 +345,11 @@ public class MarkdownService implements IMarkdownService {
             markdownVO.setDraft(true);
         }
         if (markdownVO.getCategoryIds() != null) {
-            List<Category> categories = categoryService.getCategoryListByIds(markdownVO.getCategoryIds());
+            List<CategoryDO> categories = categoryService.getCategoryListByIds(markdownVO.getCategoryIds());
             markdownVO.setCategories(categories);
         }
         if (markdownVO.getTagIds() != null) {
-            List<Tag> tags = tagService.getTagListByIds(markdownVO.getTagIds());
+            List<TagDO> tags = tagService.getTagListByIds(markdownVO.getTagIds());
             markdownVO.setTags(tags);
         }
         return markdownVO;
@@ -371,7 +362,7 @@ public class MarkdownService implements IMarkdownService {
      * @param fileDocument FileDocument
      */
     private FileDocument getFileDocument(FileDocument fileDocument) {
-        Consumer user = userService.userInfoById(fileDocument.getUserId());
+        ConsumerDO user = userService.userInfoById(fileDocument.getUserId());
         String avatar = user.getAvatar();
         fileDocument.setUsername(user.getUsername());
         fileDocument.setContentText(null);

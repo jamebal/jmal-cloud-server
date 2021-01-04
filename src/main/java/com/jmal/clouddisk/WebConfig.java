@@ -2,11 +2,9 @@ package com.jmal.clouddisk;
 
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.interceptor.FileInterceptor;
-import com.jmal.clouddisk.model.FileProperties;
-import com.jmal.clouddisk.util.TimeUntils;
+import com.jmal.clouddisk.config.FileProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.web.ResourceProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;

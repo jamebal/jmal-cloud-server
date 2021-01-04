@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.ShareBO;
+import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
@@ -37,51 +37,51 @@ public class ShareServiceImpl implements IShareService {
     MongoTemplate mongoTemplate;
 
     @Override
-    public ResponseResult<Object> generateLink(ShareBO share) {
-        ShareBO shareBO = findByFileId(share.getFileId());
-        if(shareBO == null){
+    public ResponseResult<Object> generateLink(ShareDO share) {
+        ShareDO shareDO = findByFileId(share.getFileId());
+        if(shareDO == null){
             share.setCreateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
             FileDocument file = fileService.getById(share.getFileId());
             share.setFileName(file.getName());
             share.setContentType(file.getContentType());
-            shareBO = mongoTemplate.save(share,COLLECTION_NAME);
+            shareDO = mongoTemplate.save(share,COLLECTION_NAME);
         }
-        return ResultUtil.success(shareBO.getId());
+        return ResultUtil.success(shareDO.getId());
     }
 
     @Override
     public ResponseResult<Object> accessShare(String shareId, Integer pageIndex, Integer pageSize) {
-        ShareBO shareBO = mongoTemplate.findById(shareId, ShareBO.class, COLLECTION_NAME);
-        if(shareBO == null){
+        ShareDO shareDO = mongoTemplate.findById(shareId, ShareDO.class, COLLECTION_NAME);
+        if(shareDO == null){
             return ResultUtil.success("该链接已失效");
         }
-        if(!checkWhetherExpired(shareBO)){
+        if(!checkWhetherExpired(shareDO)){
             return ResultUtil.success("该链接已失效");
         }
         UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
         uploadApiParamDTO.setPageIndex(pageIndex);
         uploadApiParamDTO.setPageSize(pageSize);
-        uploadApiParamDTO.setUserId(shareBO.getUserId());
-        if(!shareBO.getIsFolder()){
+        uploadApiParamDTO.setUserId(shareDO.getUserId());
+        if(!shareDO.getIsFolder()){
             List<FileDocument> list = new ArrayList<>();
-            FileDocument fileDocument = fileService.getById(shareBO.getFileId());
+            FileDocument fileDocument = fileService.getById(shareDO.getFileId());
             if(fileDocument != null){
                 list.add(fileDocument);
             }
             return ResultUtil.success(list);
         }
-        return fileService.searchFileAndOpenDir(uploadApiParamDTO, shareBO.getFileId());
+        return fileService.searchFileAndOpenDir(uploadApiParamDTO, shareDO.getFileId());
     }
 
     @Override
-    public ShareBO getShare(String share) {
-        return mongoTemplate.findById(share, ShareBO.class, COLLECTION_NAME);
+    public ShareDO getShare(String share) {
+        return mongoTemplate.findById(share, ShareDO.class, COLLECTION_NAME);
     }
 
     @Override
-    public boolean checkWhetherExpired(ShareBO shareBO) {
-        if(shareBO != null){
-            LocalDateTime expireDate = shareBO.getExpireDate();
+    public boolean checkWhetherExpired(ShareDO shareDO) {
+        if(shareDO != null){
+            LocalDateTime expireDate = shareDO.getExpireDate();
             if(expireDate == null){
                 return true;
             }
@@ -97,16 +97,16 @@ public class ShareServiceImpl implements IShareService {
     }
 
     @Override
-    public ResponseResult<Object> accessShareOpenDir(ShareBO shareBO, String fileId, Integer pageIndex, Integer pageSize) {
+    public ResponseResult<Object> accessShareOpenDir(ShareDO shareDO, String fileId, Integer pageIndex, Integer pageSize) {
         UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
-        uploadApiParamDTO.setUserId(shareBO.getUserId());
+        uploadApiParamDTO.setUserId(shareDO.getUserId());
         uploadApiParamDTO.setPageIndex(pageIndex);
         uploadApiParamDTO.setPageSize(pageSize);
         return fileService.searchFileAndOpenDir(uploadApiParamDTO, fileId);
     }
 
     @Override
-    public List<ShareBO> getShareList(UploadApiParamDTO upload) {
+    public List<ShareDO> getShareList(UploadApiParamDTO upload) {
         Query query = new Query();
         query.addCriteria(Criteria.where("userId").is(upload.getUserId()));
         String order = listByPage(upload, query);
@@ -120,7 +120,7 @@ public class ShareServiceImpl implements IShareService {
             }
             query.with(new Sort(direction, sortableProp));
         }
-        return mongoTemplate.find(query, ShareBO.class, COLLECTION_NAME);
+        return mongoTemplate.find(query, ShareDO.class, COLLECTION_NAME);
     }
 
     static String listByPage(UploadApiParamDTO upload, Query query) {
@@ -133,18 +133,18 @@ public class ShareServiceImpl implements IShareService {
         return upload.getOrder();
     }
 
-    private ShareBO findByFileId(String fileId){
+    private ShareDO findByFileId(String fileId){
         Query query = new Query();
         query.addCriteria(Criteria.where("fileId").is(fileId));
-        return mongoTemplate.findOne(query,ShareBO.class,COLLECTION_NAME);
+        return mongoTemplate.findOne(query, ShareDO.class,COLLECTION_NAME);
     }
 
     @Override
     public ResponseResult<Object> shareList(UploadApiParamDTO upload) {
         ResponseResult<Object> result = ResultUtil.genResult();
-        List<ShareBO> shareBOList = getShareList(upload);
+        List<ShareDO> shareDOList = getShareList(upload);
         result.setCount(getShareCount(upload.getUserId()));
-        result.setData(shareBOList);
+        result.setData(shareDOList);
         return result;
     }
 

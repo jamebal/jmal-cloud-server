@@ -2,7 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.crypto.SecureUtil;
 import com.github.benmanes.caffeine.cache.Cache;
-import com.jmal.clouddisk.model.Consumer;
+import com.jmal.clouddisk.model.ConsumerDO;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -36,7 +36,7 @@ public class AuthServiceImpl implements IAuthService {
     public ResponseResult<Object> login(String userName, String password) {
         Query query = new Query();
         query.addCriteria(Criteria.where("username").is(userName));
-        Consumer user = mongoTemplate.findOne(query, Consumer.class, UserServiceImpl.COLLECTION_NAME);
+        ConsumerDO user = mongoTemplate.findOne(query, ConsumerDO.class, UserServiceImpl.COLLECTION_NAME);
         if (user == null) {
             return ResultUtil.error("该用户不存在");
         } else {
@@ -64,7 +64,7 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public ResponseResult<Object> validOldPass(String id, String password) {
-        Consumer user = mongoTemplate.findById(id, Consumer.class, UserServiceImpl.COLLECTION_NAME);
+        ConsumerDO user = mongoTemplate.findById(id, ConsumerDO.class, UserServiceImpl.COLLECTION_NAME);
         if (user == null) {
             return ResultUtil.warning("该用户不存在");
         } else {

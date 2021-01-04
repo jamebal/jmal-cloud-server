@@ -14,6 +14,9 @@ import java.util.List;
 @Data
 public class ArticleVO extends FileBase{
 
+    /***
+     * 用户名
+     */
     private String username;
     private String avatar;
     /***
@@ -51,7 +54,7 @@ public class ArticleVO extends FileBase{
     /***
      * 分类集合
      */
-    private List<Category> categories;
+    private List<CategoryDO> categories;
     /***
      * 标签Id集合
      */
@@ -59,5 +62,5 @@ public class ArticleVO extends FileBase{
     /***
      * 标签集合
      */
-    private List<Tag> tags;
+    private List<TagDO> tags;
 }
