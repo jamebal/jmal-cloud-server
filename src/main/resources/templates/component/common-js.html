@@ -33,12 +33,12 @@
             function typing () {
                 if (i <= str.length) {
                     divTyping.text(str.slice(0, i++))
-                    timer = setTimeout(typing, 100)
+                    timer = setTimeout(typing, 80)
                 } else {
                     clearTimeout(timer)
                 }
             }
-            typing()
+            setTimeout(typing, 100)
             let labelIcon = $('.changeTheme i')
             let labelTitle = $('.changeTheme span')
             // 添加暗色主题
@@ -51,7 +51,7 @@
                 link.type = 'text/css';
                 link.id = "theme-css-dark";  // 加上id方便后面好查找到进行删除
                 link.rel = 'stylesheet';
-                link.href = '/articles/css/dark/index.css';
+                link.href = '/articles/css/dark/index-2.0.css';
                 document.getElementsByTagName("head")[0].appendChild(link);
                 labelIcon.removeClass('fa-moon')
                 labelIcon.addClass('fa-sun')
@@ -82,9 +82,22 @@
             }
             $('.changeTheme').on('click', function (){
                 useDarkTheme(getThemeCSSName() === 'light')
+                // 记录切换主题的时间戳
+                setCookie('changeTheme', new Date().getTime())
             })
 
             let media = window.matchMedia('(prefers-color-scheme: dark)');
+            // 判断系统是否为深色模式
+            if (media && media.matches) {
+                if(getCookie('changeTheme')){
+                    // 上次切换主题的时间距离现在超过8小时就是使用系统默认主题
+                    if(new Date().getTime() - getCookie('changeTheme') > 3600 * 1000 * 8){
+                        useDarkTheme(true)
+                    }
+                } else {
+                    useDarkTheme(true)
+                }
+            }
             let callback = (e) => {
                 if (e.matches) {
                     useDarkTheme(true)
@@ -92,6 +105,7 @@
                     useDarkTheme(false)
                 }
             };
+            // 监听系统主题变化
             if (typeof media.addEventListener === 'function') {
                 media.addEventListener('change', callback);
             } else if (typeof media.addListener === 'function') {

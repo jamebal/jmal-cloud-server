@@ -2,7 +2,6 @@ package com.jmal.clouddisk.config;
 
 import com.jmal.clouddisk.listener.FileListener;
 import com.jmal.clouddisk.listener.TempDirFilter;
-import com.jmal.clouddisk.model.FileProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;

@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * @author jmal
- * @Description 用户设置参数
+ * @Description 网站设置DTO
  * @Date 2020/11/5 3:58 下午
  */
 @Data

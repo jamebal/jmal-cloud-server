@@ -13,6 +13,9 @@ import lombok.EqualsAndHashCode;
 public class FileDocument extends FileBase{
     private String userId;
     private String username;
+    /***
+     * 文件头像/缩略图
+     */
     private String avatar;
     /***
      * 文件路径(根路径为"/")
@@ -23,7 +26,6 @@ public class FileDocument extends FileBase{
      * updateDate 距离现在的时间
      */
     private Long agoTime;
-
     /***
      * 显示大小
      */
@@ -69,6 +71,9 @@ public class FileDocument extends FileBase{
      * 分享有效期
      */
     private Long shareExpirationDate;
+    /***
+     * 音乐
+     */
     private Music music;
     /***
      * 是否发布，适用于文档类型
@@ -78,6 +83,9 @@ public class FileDocument extends FileBase{
      * 是否为独立页，适用于文档类型
      */
     private Boolean alonePage;
+    /***
+     * 独立页排序
+     */
     private Integer pageSort;
     /***
      * 是否有草稿

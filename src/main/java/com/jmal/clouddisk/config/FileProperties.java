@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.model;
+package com.jmal.clouddisk.config;
 
 import com.jmal.clouddisk.config.YamlPropertyLoaderFactory;
 import lombok.Data;
@@ -21,15 +21,42 @@ import java.util.Arrays;
 @PropertySource(value = "classpath:file.yml", factory = YamlPropertyLoaderFactory.class)
 @ConfigurationProperties(prefix = "file")
 public class FileProperties {
+    /***
+     * 文件存储根目录 文件监控目录
+     */
     private String rootDir = System.getProperty("user.dir");
+    /***
+     * 断点续传的临时文件目录名称 位于rootDir下,文件监控扫描忽略的目录
+     */
     private String chunkFileDir = "chunkFileTemp";
+    /***
+     * 用户头像默认存储路径
+     */
     private String userImgDir = "/Image/usr/";
+    /***
+     * markdown类型文件(文章)默认存储的位置
+     */
     private String documentDir = "/Document/";
+    /***
+     * markdown类型文件(文章)里图片默认存储的位置
+     */
     private String documentImgDir = "/Image/Document/";
+    /***
+     * 默认分隔符
+     */
     private String separator = "/";
+    /***
+     * 文本编辑器支持的文本类型
+     */
     private String[] simText = {"txt","html","htm","asp","jsp","xml","json","properties","md","gitignore","java","py","c","cpp","sql","sh","bat","m","bas","prg","cmd"};
+    /***
+     * 文档类型
+     */
     private String[] document = {"pdf","doc","docs","xls","xl","md"};
-
+    /***
+     * 是否开启文件监控(默认不开启)
+     * 开启文件监控会监控 ${rootDir} 目录下文件的变化
+     */
     private Boolean monitor = false;
     /***
      * 文件监控扫描时间间隔(秒)

@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.service;
 
-import com.jmal.clouddisk.model.ShareBO;
+import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.util.ResponseResult;
 
@@ -18,7 +18,7 @@ public interface IShareService {
      * @param share
      * @return
      */
-    ResponseResult<Object> generateLink(ShareBO share);
+    ResponseResult<Object> generateLink(ShareDO share);
 
     /***
      * 访问分享链接
@@ -34,14 +34,14 @@ public interface IShareService {
      * @param share
      * @return
      */
-    ShareBO getShare(String share);
+    ShareDO getShare(String share);
 
     /***
      * 检查是否过期
-     * @param shareBO
+     * @param shareDO
      * @return
      */
-    boolean checkWhetherExpired(ShareBO shareBO);
+    boolean checkWhetherExpired(ShareDO shareDO);
 
     /***
      * 检查是否过期
@@ -58,14 +58,14 @@ public interface IShareService {
      * @param pageSize
      * @return
      */
-    ResponseResult<Object> accessShareOpenDir(ShareBO share, String fileId, Integer pageIndex, Integer pageSize);
+    ResponseResult<Object> accessShareOpenDir(ShareDO share, String fileId, Integer pageIndex, Integer pageSize);
 
     /***
      * 获取分享列表
      * @param upload
      * @return
      */
-    List<ShareBO> getShareList(UploadApiParamDTO upload);
+    List<ShareDO> getShareList(UploadApiParamDTO upload);
 
     /***
      * 分享列表

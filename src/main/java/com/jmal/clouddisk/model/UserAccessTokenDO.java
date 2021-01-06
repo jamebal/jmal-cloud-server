@@ -4,13 +4,16 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 
 /**
- * @Description UserAccessToken
+ * @Description 用户授权码
  * @Author jmal
  * @Date 2020/9/30 10:34 上午
  */
 @Data
 @Accessors(chain = true)
-public class UserAccessToken {
+public class UserAccessTokenDO {
     private String username;
+    /***
+     * 用户授权码
+     */
     private String accessToken;
 }

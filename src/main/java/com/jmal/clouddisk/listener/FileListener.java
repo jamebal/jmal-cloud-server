@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.listener;
 
-import com.jmal.clouddisk.model.FileProperties;
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.IFileService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;

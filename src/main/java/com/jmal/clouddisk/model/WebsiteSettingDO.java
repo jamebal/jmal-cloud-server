@@ -7,11 +7,11 @@ import java.util.List;
 
 /**
  * @author jmal
- * @Description 用户设置参数
+ * @Description 网站设置
  * @Date 2020/11/5 2:45 下午
  */
 @Data
-public class WebsiteSetting {
+public class WebsiteSettingDO {
 
     /***
      * 站点背景大图

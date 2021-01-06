@@ -5,9 +5,9 @@ import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.extra.cglib.CglibUtil;
-import com.jmal.clouddisk.model.FileProperties;
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.WebsiteSettingDTO;
-import com.jmal.clouddisk.model.WebsiteSetting;
+import com.jmal.clouddisk.model.WebsiteSettingDO;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -82,12 +82,12 @@ public class SettingService {
 
     /***
      * 更新网站设置
-     * @param websiteSetting WebsiteSetting
+     * @param websiteSettingDO WebsiteSetting
      * @return ResponseResult
      */
-    public ResponseResult<Object> websiteUpdate(WebsiteSetting websiteSetting) {
+    public ResponseResult<Object> websiteUpdate(WebsiteSettingDO websiteSettingDO) {
         Query query = new Query();
-        Update update = MongoUtil.getUpdate(websiteSetting);
+        Update update = MongoUtil.getUpdate(websiteSettingDO);
         mongoTemplate.upsert(query, update, COLLECTION_NAME_WEBSITE_SETTING);
         return ResultUtil.success();
     }
@@ -99,9 +99,9 @@ public class SettingService {
     public WebsiteSettingDTO getWebsiteSetting() {
         WebsiteSettingDTO websiteSettingDTO = new WebsiteSettingDTO();
         Query query = new Query();
-        WebsiteSetting websiteSetting = mongoTemplate.findOne(query, WebsiteSetting.class, COLLECTION_NAME_WEBSITE_SETTING);
-        if(websiteSetting != null){
-            CglibUtil.copy(websiteSetting, websiteSettingDTO);
+        WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(query, WebsiteSettingDO.class, COLLECTION_NAME_WEBSITE_SETTING);
+        if(websiteSettingDO != null){
+            CglibUtil.copy(websiteSettingDO, websiteSettingDTO);
         }
         if(websiteSettingDTO.getAlonePages() == null){
             websiteSettingDTO.setAlonePages(new ArrayList<>());

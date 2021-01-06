@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.service;
 
-import com.jmal.clouddisk.model.Consumer;
+import com.jmal.clouddisk.model.ConsumerDO;
 import com.jmal.clouddisk.util.ResponseResult;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,7 +15,7 @@ public interface IUserService {
      * @param consumer
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> add(Consumer consumer);
+    ResponseResult<Object> add(ConsumerDO consumer);
 
     /***
      * 删除用户
@@ -30,7 +30,7 @@ public interface IUserService {
      * @param blobAvatar
      * @return
      */
-    ResponseResult<Object> update(Consumer consumer, MultipartFile blobAvatar);
+    ResponseResult<Object> update(ConsumerDO consumer, MultipartFile blobAvatar);
 
     /***
      * 用户信息
@@ -46,7 +46,7 @@ public interface IUserService {
      * @param consumerId
      * @return ResponseResult<Object>
      */
-    Consumer userInfoById(String consumerId);
+    ConsumerDO userInfoById(String consumerId);
 
     /***
      * 用户列表
@@ -66,14 +66,14 @@ public interface IUserService {
      * @param consumer
      * @return
      */
-    ResponseResult<Object> updatePass(Consumer consumer);
+    ResponseResult<Object> updatePass(ConsumerDO consumer);
 
     /***
      * 重置密码
      * @param consumer
      * @return
      */
-    ResponseResult<Object> resetPass(Consumer consumer);
+    ResponseResult<Object> resetPass(ConsumerDO consumer);
 
     /***
      * 获取用户userId
@@ -93,7 +93,7 @@ public interface IUserService {
      * @param consumer
      * @return
      */
-    ResponseResult<Object> initialization(Consumer consumer);
+    ResponseResult<Object> initialization(ConsumerDO consumer);
 
     /***
      * 获取用户名

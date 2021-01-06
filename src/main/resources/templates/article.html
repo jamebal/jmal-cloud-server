@@ -17,8 +17,8 @@
                     <span th:text="'· '+${markdown.uploadTime()}"></span>
                     <span class="link"  th:if="${markdown.categories != null && markdown.categories.size() > 0}">
                     ·
-                    <a th:each="category,categoryStat : ${markdown.categories}">
-                        <span th:text="${categoryStat.index > 0?' · ':''}"></span><a th:href="'/articles/categories/'+${category.name}" th:text="${category.name}"></a>
+                    <a th:each="categoryDO,categoryStat : ${markdown.categories}">
+                        <span th:text="${categoryStat.index > 0?' · ':''}"></span><a th:href="'/articles/categories/'+${categoryDO.name}" th:text="${categoryDO.name}"></a>
                     </a>
                 </span>
                     <span class="edit"  th:if="${markdown.editable != null && markdown.editable}">
@@ -46,6 +46,7 @@
                     </svg>
                 </div>
             </el-main>
+            <div th:if="!${markdown.alonePage}" id="article_tail" th:include="component/article-tail.html"></div>
             <div class="right-bj" style="display: none">
                 <div id="toc-affix">
                     <div class="slimScrollDiv">
@@ -114,10 +115,11 @@
                     },
                     after() {
                         setContentTheme()
-                        new Viewer(document.getElementById('preview'));
                         // 添加更新时间
                         if(!isAlonePage){
                             addUpdateTime()
+                            // 添加文章尾部信息
+                            document.getElementById('preview').append(document.getElementById('article_tail'))
                         }
                         setTimeout(function (){
                             // 隐藏加载动画
@@ -164,6 +166,7 @@
                     return
                 }
                 main.css("width", '')
+                $('.body-wrapper').addClass('body-wrapper-offset')
                 // 显示目录按钮
                 if(window.innerWidth <= 768){
                     $('.show-content').css('display','flex')
@@ -483,12 +486,12 @@
             function typing () {
                 if (i <= str.length) {
                     divTyping.text(str.slice(0, i++))
-                    timer = setTimeout(typing, 100)
+                    timer = setTimeout(typing, 80)
                 } else {
                     clearTimeout(timer)
                 }
             }
-            typing()
+            setTimeout(typing, 100)
             let labelIcon = $('.changeTheme i')
             let labelTitle = $('.changeTheme span')
             // 添加暗色主题
@@ -501,7 +504,7 @@
                 link.type = 'text/css';
                 link.id = "theme-css-dark";  // 加上id方便后面好查找到进行删除
                 link.rel = 'stylesheet';
-                link.href = '/articles/css/dark/index.css';
+                link.href = '/articles/css/dark/index-2.0.css';
                 document.getElementsByTagName("head")[0].appendChild(link);
                 labelIcon.removeClass('fa-moon')
                 labelIcon.addClass('fa-sun')
@@ -533,9 +536,21 @@
             }
             $('.changeTheme').click(function (){
                 useDarkTheme(getThemeCSSName() === 'light')
+                // 记录切换主题的时间戳
+                setCookie('changeTheme', new Date().getTime())
             })
-
             let media = window.matchMedia('(prefers-color-scheme: dark)');
+            // 判断系统是否为深色模式
+            if (media && media.matches) {
+                if(getCookie('changeTheme')){
+                    // 上次切换主题的时间距离现在超过8小时就是使用系统默认主题
+                    if(new Date().getTime() - getCookie('changeTheme') > 3600 * 1000 * 8){
+                        useDarkTheme(true)
+                    }
+                } else {
+                    useDarkTheme(true)
+                }
+            }
             let callback = (e) => {
                 if (e.matches) {
                     useDarkTheme(true)

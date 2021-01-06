@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.repository.impl;
 
-import com.jmal.clouddisk.model.UserAccessToken;
-import com.jmal.clouddisk.model.UserToken;
+import com.jmal.clouddisk.model.UserAccessTokenDO;
+import com.jmal.clouddisk.model.UserTokenDO;
 import com.jmal.clouddisk.repository.DataSource;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -37,10 +37,10 @@ public class AuthDAOImpl implements IAuthDAO {
     }
 
     @Override
-    public UserToken findOneUserToken(String username) {
+    public UserTokenDO findOneUserToken(String username) {
         Query query = new Query();
         query.addCriteria(Criteria.where(USERNAME).is(username));
-        return mongoTemplate.findOne(query, UserToken.class, USER_TOKEN_COLLECTION_NAME);
+        return mongoTemplate.findOne(query, UserTokenDO.class, USER_TOKEN_COLLECTION_NAME);
     }
 
     @Override
@@ -57,9 +57,9 @@ public class AuthDAOImpl implements IAuthDAO {
     public String getUserNameByAccessToken(String accessToken) {
         Query query = new Query();
         query.addCriteria(Criteria.where(ACCESS_TOKEN).is(accessToken));
-        UserAccessToken userAccessToken = mongoTemplate.findOne(query, UserAccessToken.class, ACCESS_TOKEN_COLLECTION_NAME);
-        if(userAccessToken != null){
-            return userAccessToken.getUsername();
+        UserAccessTokenDO userAccessTokenDO = mongoTemplate.findOne(query, UserAccessTokenDO.class, ACCESS_TOKEN_COLLECTION_NAME);
+        if(userAccessTokenDO != null){
+            return userAccessTokenDO.getUsername();
         }
         return null;
     }

@@ -76,7 +76,7 @@ public class CategoryDTO implements Comparable<CategoryDTO> {
     @ApiModelProperty(name = "categoryBackground", value = "分类背景")
     String categoryBackground;
 
-    @ApiModelProperty(hidden = true)
+    @ApiModelProperty(hidden = true, name = "categoryIdsList", value = "分类Id列表")
     private List<List<String>> categoryIdsList;
     /***
      * 按照分类名称来排序

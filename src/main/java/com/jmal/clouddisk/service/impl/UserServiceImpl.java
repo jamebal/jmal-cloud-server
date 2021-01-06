@@ -5,7 +5,7 @@ import cn.hutool.crypto.SecureUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.model.Consumer;
+import com.jmal.clouddisk.model.ConsumerDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
@@ -23,10 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.validation.constraints.NotNull;
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -47,8 +43,8 @@ public class UserServiceImpl implements IUserService {
     IFileService fileService;
 
     @Override
-    public ResponseResult<Object> add(Consumer user) {
-        Consumer user1 = getUserInfoByName(user.getUsername());
+    public ResponseResult<Object> add(ConsumerDO user) {
+        ConsumerDO user1 = getUserInfoByName(user.getUsername());
         if (user1 == null) {
             if (user.getQuota() == null) {
                 user.setQuota(10);
@@ -71,7 +67,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public ResponseResult<Object> update(Consumer user, MultipartFile blobAvatar) {
+    public ResponseResult<Object> update(ConsumerDO user, MultipartFile blobAvatar) {
         Query query = new Query();
         String userId = user.getId();
         if (!StringUtils.isEmpty(userId)) {
@@ -109,7 +105,7 @@ public class UserServiceImpl implements IUserService {
             update.set("avatar", fileId);
         }
         if (blobAvatar != null) {
-            Consumer consumer = mongoTemplate.findById(userId, Consumer.class, COLLECTION_NAME);
+            ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
             UploadApiParamDTO upload = new UploadApiParamDTO();
             upload.setUserId(userId);
             upload.setUsername(consumer.getUsername());
@@ -124,9 +120,9 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public ResponseResult<Object> userInfo(String id, Boolean takeUpSpace, Boolean returnPassword) {
-        Consumer consumer = mongoTemplate.findById(id, Consumer.class, COLLECTION_NAME);
+        ConsumerDO consumer = mongoTemplate.findById(id, ConsumerDO.class, COLLECTION_NAME);
         if (consumer == null) {
-            return ResultUtil.success(new Consumer());
+            return ResultUtil.success(new ConsumerDO());
         }
         if (takeUpSpace != null && takeUpSpace) {
             consumer.setTakeUpSpace(fileService.takeUpSpace(consumer.getId()));
@@ -141,17 +137,17 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public Consumer userInfoById(String userId) {
+    public ConsumerDO userInfoById(String userId) {
         if (StringUtils.isEmpty(userId)) {
             return null;
         }
-        return mongoTemplate.findById(userId, Consumer.class, COLLECTION_NAME);
+        return mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
     }
 
     @Override
     public ResponseResult<Object> userList() {
         Query query = new Query();
-        List<Consumer> userList = mongoTemplate.find(query, Consumer.class, COLLECTION_NAME);
+        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
         return ResultUtil.success(userList);
     }
 
@@ -173,11 +169,11 @@ public class UserServiceImpl implements IUserService {
      * @return
      */
     @Override
-    public ResponseResult<Object> updatePass(Consumer consumer) {
+    public ResponseResult<Object> updatePass(ConsumerDO consumer) {
         String userId = consumer.getId();
         String newPassword = consumer.getPassword();
         if (!StringUtils.isEmpty(userId) && !StringUtils.isEmpty(newPassword)) {
-            Consumer consumer1 = mongoTemplate.findById(userId, Consumer.class, COLLECTION_NAME);
+            ConsumerDO consumer1 = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
             String oldPassword = consumer1.getPassword();
             if (newPassword.equals(oldPassword)) {
                 return ResultUtil.warning("新密码不能于旧密码相同!");
@@ -198,7 +194,7 @@ public class UserServiceImpl implements IUserService {
      * @return
      */
     @Override
-    public ResponseResult<Object> resetPass(Consumer consumer) {
+    public ResponseResult<Object> resetPass(ConsumerDO consumer) {
         String userId = consumer.getId();
         if (!StringUtils.isEmpty(userId)) {
             Query query = new Query();
@@ -214,7 +210,7 @@ public class UserServiceImpl implements IUserService {
     @Cacheable(value = "getUserIdByUserName", key = "#username")
     @Override
     public String getUserIdByUserName(String username) {
-        Consumer consumer = getUserInfoByName(username);
+        ConsumerDO consumer = getUserInfoByName(username);
         if (consumer != null) {
             return consumer.getId();
         }
@@ -228,7 +224,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public ResponseResult<Object> initialization(Consumer user) {
+    public ResponseResult<Object> initialization(ConsumerDO user) {
         Query query = new Query();
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         if (count < 1) {
@@ -245,7 +241,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public String getUserNameById(String userId) {
         if (!StringUtils.isEmpty(userId)) {
-            Consumer consumer = mongoTemplate.findById(userId, Consumer.class, COLLECTION_NAME);
+            ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
             if (consumer != null) {
                 return consumer.getUsername();
             }
@@ -266,16 +262,16 @@ public class UserServiceImpl implements IUserService {
     public boolean getDisabledWebp(String userId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(userId));
-        Consumer consumer = mongoTemplate.findOne(query, Consumer.class, COLLECTION_NAME);
+        ConsumerDO consumer = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
         if(consumer != null && consumer.getWebpDisabled() != null){
             return consumer.getWebpDisabled();
         }
         return false;
     }
 
-    private Consumer getUserInfoByName(String name) {
+    private ConsumerDO getUserInfoByName(String name) {
         Query query = new Query();
         query.addCriteria(Criteria.where("username").is(name));
-        return mongoTemplate.findOne(query, Consumer.class, COLLECTION_NAME);
+        return mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
     }
 }

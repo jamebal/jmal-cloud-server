@@ -134,14 +134,14 @@ public class ArticlesController {
         }
         String categoryId = null;
         if (!StringUtils.isEmpty(categorySlugName)) {
-            Category category = categoryService.getCategoryInfoBySlug(null, categorySlugName);
-            if (category == null) {
+            CategoryDO categoryDO = categoryService.getCategoryInfoBySlug(null, categorySlugName);
+            if (categoryDO == null) {
                 return "404";
             }
-            ArticlesQuery query = category.toArticlesQuery();
+            ArticlesQueryVO query = categoryDO.toArticlesQuery();
             map.addAttribute("titleName", query.getName());
             map.addAttribute("query", query);
-            categoryId = category.getId();
+            categoryId = categoryDO.getId();
         }
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
@@ -168,11 +168,11 @@ public class ArticlesController {
         }
         String tagId = null;
         if (!StringUtils.isEmpty(tagSlugName)) {
-            Tag tag = tagService.getTagInfoBySlug(null, tagSlugName);
+            TagDO tag = tagService.getTagInfoBySlug(null, tagSlugName);
             if (tag == null) {
                 return "404";
             }
-            ArticlesQuery query = tag.toArticlesQuery();
+            ArticlesQueryVO query = tag.toArticlesQuery();
             map.addAttribute("titleName", query.getName());
             map.addAttribute("query", query);
             tagId = tag.getId();
@@ -194,7 +194,7 @@ public class ArticlesController {
         if (!StringUtils.isEmpty(pIndex)) {
             page = Integer.parseInt(pIndex);
         }
-        ArticlesQuery query = new ArticlesQuery();
+        ArticlesQueryVO query = new ArticlesQueryVO();
         Page<List<MarkdownVO>> articles = fileService.getArticlesByKeyword(page, pageSize, keyword);
         if (!articles.isEmpty()) {
             MarkdownVO markdownVO = articles.getData().get(0);
@@ -219,7 +219,7 @@ public class ArticlesController {
         if (!StringUtils.isEmpty(pIndex)) {
             page = Integer.parseInt(pIndex);
         }
-        ArticlesQuery query = new ArticlesQuery();
+        ArticlesQueryVO query = new ArticlesQueryVO();
         Page<List<MarkdownVO>> articles = fileService.getArticlesByAuthor(page, pageSize, userId);
         if (!articles.isEmpty()) {
             MarkdownVO markdownVO = articles.getData().get(0);

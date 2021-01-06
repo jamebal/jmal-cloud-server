@@ -46,8 +46,8 @@ public class ArticleDTO {
     @ApiModelProperty(name = "order", value = "排序的顺序")
     String order;
 
-    @ApiModelProperty(hidden = true)
+    @ApiModelProperty(hidden = true, name = "pageIndex", value = "当前页数")
     Integer pageIndex;
-    @ApiModelProperty(hidden = true)
+    @ApiModelProperty(hidden = true, name = "pageSize", value = "每页条数")
     Integer pageSize;
 }

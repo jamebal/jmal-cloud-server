@@ -2,9 +2,9 @@ package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.model.Consumer;
+import com.jmal.clouddisk.model.ConsumerDO;
 import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.ShareBO;
+import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IFileService;
@@ -56,7 +56,7 @@ public class ShareController {
 
     @ApiOperation("生成分享链接")
     @PostMapping("/share/generate")
-    public ResponseResult<Object> generateLink(@RequestBody ShareBO share) {
+    public ResponseResult<Object> generateLink(@RequestBody ShareDO share) {
         ResultUtil.checkParamIsNull(share.getFileId(), share.getUserId());
         return shareService.generateLink(share);
     }
@@ -85,11 +85,11 @@ public class ShareController {
     @ApiOperation("访问分享链接里的目录")
     @GetMapping("public/access-share/open")
     public ResponseResult<Object> accessShareOpenDir(@RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize) {
-        ShareBO shareBO = shareService.getShare(share);
-        if(!shareService.checkWhetherExpired(shareBO)){
+        ShareDO shareDO = shareService.getShare(share);
+        if(!shareService.checkWhetherExpired(shareDO)){
             return ResultUtil.warning("该分享以过期");
         }
-        return shareService.accessShareOpenDir(shareBO, fileId, pageIndex, pageSize );
+        return shareService.accessShareOpenDir(shareDO, fileId, pageIndex, pageSize );
     }
 
     @ApiOperation("打包下载")
@@ -142,11 +142,11 @@ public class ShareController {
     @ApiOperation("读取simText文件")
     @GetMapping("/public/s/preview/text")
     public ResponseResult<Object> preview(@RequestParam String shareId,@RequestParam String fileId) {
-        ShareBO shareBO = shareService.getShare(shareId);
-        if(!shareService.checkWhetherExpired(shareBO)){
+        ShareDO shareDO = shareService.getShare(shareId);
+        if(!shareService.checkWhetherExpired(shareDO)){
             return ResultUtil.warning("该分享以过期");
         }
-        Consumer consumer = userService.userInfoById(shareBO.getUserId());
+        ConsumerDO consumer = userService.userInfoById(shareDO.getUserId());
         if(consumer == null){
             return ResultUtil.warning("该分享以过期");
         }

@@ -85,19 +85,6 @@
             unbindEvent()
         }).on('pjax:complete', function() {
         }).on('pjax:end', function() {
-            // 还原导航栏位置
-            const top = $('#top')
-            const toggleNav = $('#toggle-nav')
-            const sidebarNav = document.getElementById("sidebar-nav")
-            top.removeClass('animateOut')
-            top.addClass('animateIn')
-            toggleNav.removeClass('animateRight')
-            toggleNav.addClass('animateLeft')
-            if(sidebarNav.style.transform.length > 0) {
-                document.getElementById("toggle-nav").style.transform = ''
-                document.getElementById("footer").style.transform = ''
-                sidebarNav.style.transform = ''
-            }
         });
 
         if (window.history && window.history.pushState) {
@@ -110,6 +97,7 @@
             $('.changeTheme').unbind('click')
             $(window).unbind('scroll')
             $(window).unbind('resize')
+            document.querySelector(".scrollbar").style.width = 0 +'%'
         }
 
     });

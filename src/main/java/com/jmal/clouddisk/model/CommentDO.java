@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @Validated
-public class Comment {
+public class CommentDO {
     @Id
     String id;
 

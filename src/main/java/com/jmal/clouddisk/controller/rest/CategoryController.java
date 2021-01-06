@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.controller.rest;
 
 import cn.hutool.extra.cglib.CglibUtil;
-import com.jmal.clouddisk.model.Category;
+import com.jmal.clouddisk.model.CategoryDO;
 import com.jmal.clouddisk.model.CategoryDTO;
 import com.jmal.clouddisk.service.impl.CategoryService;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author jmal
@@ -45,9 +44,9 @@ public class CategoryController {
     @ResponseBody
     public ResponseResult<CategoryDTO> categoryInfo(@RequestParam String categoryId) {
         CategoryDTO categoryDTO = new CategoryDTO();
-        Category category = categoryService.getCategoryInfo(categoryId);
-        if(category != null){
-            CglibUtil.copy(category, categoryDTO);
+        CategoryDO categoryDO = categoryService.getCategoryInfo(categoryId);
+        if(categoryDO != null){
+            CglibUtil.copy(categoryDO, categoryDTO);
         }
         return ResultUtil.success(categoryDTO);
     }

@@ -2,6 +2,9 @@ body {
     background-color: #181c27;
     color: #c4c6c9;
 }
+.layui-timeline-axis {
+    background-color: #262e38;
+}
 .slimScrollDiv::-webkit-scrollbar-thumb {
     background-color: #999;
     outline: 2px solid #191d27;
@@ -210,7 +213,7 @@ body {
 /*article-footer*/
 
 footer {
-    color: rgba(68,68,68,0.65);
+    color: #c7c8cf;
 }
 footer a {
     color: #c4c6c9;
@@ -219,6 +222,10 @@ footer a {
     border: 1px solid #181d27;
     background-color: #252d38;
     color: #d1d2da;
+}
+/*article-tail*/
+.article-tail .meta-item .flex-text a:hover {
+    background-color: #191d27;
 }
 /*markdown*/
 .article-body .note-update-date {

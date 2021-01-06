@@ -9,16 +9,14 @@ import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
 
 /**
- * @Description share
+ * @Description 文件分享模型
  * @Author jmal
  * @Date 2020-03-17 16:28
  */
 @Data
-public class ShareBO {
-
+public class ShareDO {
     @Id
     private String id;
-
     /***
      * 链接拥有者
      */
@@ -27,11 +25,17 @@ public class ShareBO {
      * 文件Id
      */
     private String fileId;
-
+    /***
+     * 文件名
+     */
     private String fileName;
-
+    /***
+     * 文件类型
+     */
     private String contentType;
-
+    /***
+     * 是否为文件夹
+     */
     private Boolean isFolder;
     /***
      * 创建时间
