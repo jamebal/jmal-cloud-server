@@ -239,7 +239,7 @@ public class ArticlesController {
         map.addAttribute("alonePages", markdownVOList);
         map.addAttribute("setting", websiteSettingDTO);
         int alonePageShowIndex = 4 - websiteSettingDTO.getAlonePages().size();
-        if (!markdownVOList.isEmpty()) {
+        if (markdownVOList.size() > alonePageShowIndex) {
             markdownVOList = markdownVOList.subList(0, alonePageShowIndex);
         }
         map.addAttribute("showAlonePages", markdownVOList);
