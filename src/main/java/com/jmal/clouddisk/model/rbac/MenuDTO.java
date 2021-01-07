@@ -37,13 +37,13 @@ public class MenuDTO {
     @ApiModelProperty(name = "icon", value = "菜单图标")
     String icon;
     @NotNull(message = "排序号不能为空")
-    @ApiModelProperty(name = "sortNumber", value = "排序号")
+    @ApiModelProperty(name = "sortNumber", value = "排序号", required = true)
     Integer sortNumber;
     @NotNull(message = "菜单类型不能为空")
-    @ApiModelProperty(name = "menuType", value = "菜单类型 0:菜单，1:按钮")
+    @ApiModelProperty(name = "menuType", value = "菜单类型 0:菜单，1:按钮", required = true)
     Integer menuType;
     @NotNull(message = "是否隐藏不能为空")
-    @ApiModelProperty(name = "hide", value = "是否隐藏")
+    @ApiModelProperty(name = "hide", value = "是否隐藏", required = true)
     Boolean hide;
     /***
      * 子菜单

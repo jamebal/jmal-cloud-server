@@ -54,6 +54,7 @@ public class UserServiceImpl implements IUserService {
             }
             user.setPassword(SecureUtil.md5(user.getPassword()));
             user.setCreateTime(LocalDateTime.now());
+            user.setId(null);
             mongoTemplate.save(user, COLLECTION_NAME);
         } else {
             return ResultUtil.warning("该用户已存在");
@@ -236,6 +237,7 @@ public class UserServiceImpl implements IUserService {
             user.setQuota(15);
             user.setPassword(SecureUtil.md5(user.getPassword()));
             user.setCreateTime(LocalDateTime.now());
+            user.setId(null);
             mongoTemplate.save(user, COLLECTION_NAME);
         }
         return ResultUtil.success();

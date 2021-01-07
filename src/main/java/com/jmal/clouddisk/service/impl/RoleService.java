@@ -79,7 +79,8 @@ public class RoleService {
         LocalDateTime dateNow = LocalDateTime.now();
         roleDO.setCreateTime(dateNow);
         roleDO.setUpdateTime(dateNow);
-        mongoTemplate.save(roleDO);
+        roleDO.setId(null);
+        mongoTemplate.save(roleDO, COLLECTION_NAME);
         return ResultUtil.success();
     }
 

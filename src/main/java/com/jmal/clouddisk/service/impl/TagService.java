@@ -142,6 +142,7 @@ public class TagService {
         tagDTO.setSlug(getSlug(tagDTO));
         TagDO tag = new TagDO();
         CglibUtil.copy(tagDTO, tag);
+        tag.setId(null);
         mongoTemplate.save(tag, COLLECTION_NAME);
         return ResultUtil.success();
     }

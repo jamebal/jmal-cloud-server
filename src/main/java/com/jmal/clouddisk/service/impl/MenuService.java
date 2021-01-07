@@ -54,7 +54,7 @@ public class MenuService {
             CglibUtil.copy(menuDO, menuDTO);
             return menuDTO;
         }).collect(Collectors.toList());
-        List<MenuDTO> menuTreeList = getSubCategory(null, menuDTOList);
+        List<MenuDTO> menuTreeList = getSubMenu(null, menuDTOList);
         return menuTreeList;
     }
 
@@ -65,7 +65,7 @@ public class MenuService {
      * @param categoryDTOList  菜单列表
      * @return 菜单列表
      */
-    private List<MenuDTO> getSubCategory(String parentId, List<MenuDTO> menuDTOList) {
+    private List<MenuDTO> getSubMenu(String parentId, List<MenuDTO> menuDTOList) {
         List<MenuDTO> menuDTOTreeList = new ArrayList<>();
         List<MenuDTO> menuList;
         if (StringUtils.isEmpty(parentId)) {
@@ -74,7 +74,7 @@ public class MenuService {
             menuList = menuDTOList.stream().filter(menuDTO -> parentId.equals(menuDTO.getParentId())).collect(Collectors.toList());
         }
         menuList.forEach(subCategory -> {
-            List<MenuDTO> subList = getSubCategory(subCategory.getId(), menuDTOTreeList);
+            List<MenuDTO> subList = getSubMenu(subCategory.getId(), menuDTOList);
             if (!subList.isEmpty()) {
                 subCategory.setChildren(subList);
             }
@@ -122,7 +122,8 @@ public class MenuService {
         }
         MenuDO menuDO = new MenuDO();
         CglibUtil.copy(menuDTO, menuDO);
-        mongoTemplate.save(menuDO);
+        menuDO.setId(null);
+        mongoTemplate.save(menuDO, COLLECTION_NAME);
         return ResultUtil.success();
     }
 
