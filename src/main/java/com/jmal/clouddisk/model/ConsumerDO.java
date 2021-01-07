@@ -24,7 +24,7 @@ public class ConsumerDO {
     @ApiModelProperty(name = "password", value = "密码", example = "123456")
     String password;
     @ApiModelProperty(name = "createTime", value = "创建时间")
-    Long createTime;
+    LocalDateTime createTime;
     @ApiModelProperty(value = "头像", example = "https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif")
     String avatar;
     @ApiModelProperty(name = "slogan", value = "标语")

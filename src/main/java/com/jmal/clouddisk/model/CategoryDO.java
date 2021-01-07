@@ -28,7 +28,7 @@ public class CategoryDO implements Comparable<CategoryDO> {
      */
     private String slug;
     /***
-     * 父级分类名称
+     * 父级分类Id
      */
     private String parentCategoryId;
     /***

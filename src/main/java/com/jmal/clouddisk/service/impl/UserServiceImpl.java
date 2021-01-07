@@ -1,6 +1,8 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.exception.CommonException;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -50,7 +53,7 @@ public class UserServiceImpl implements IUserService {
                 user.setQuota(10);
             }
             user.setPassword(SecureUtil.md5(user.getPassword()));
-            user.setCreateTime(System.currentTimeMillis());
+            user.setCreateTime(LocalDateTime.now());
             mongoTemplate.save(user, COLLECTION_NAME);
         } else {
             return ResultUtil.warning("该用户已存在");
@@ -232,7 +235,7 @@ public class UserServiceImpl implements IUserService {
             user.setShowName(user.getUsername());
             user.setQuota(15);
             user.setPassword(SecureUtil.md5(user.getPassword()));
-            user.setCreateTime(System.currentTimeMillis());
+            user.setCreateTime(LocalDateTime.now());
             mongoTemplate.save(user, COLLECTION_NAME);
         }
         return ResultUtil.success();
