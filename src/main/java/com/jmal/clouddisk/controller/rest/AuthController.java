@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
-import com.jmal.clouddisk.model.ConsumerDO;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;

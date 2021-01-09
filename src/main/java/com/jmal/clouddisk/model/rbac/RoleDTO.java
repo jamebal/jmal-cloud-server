@@ -7,6 +7,7 @@ import lombok.Data;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * @Description 角色传输对象
@@ -26,4 +27,8 @@ public class RoleDTO {
     String code;
     @ApiModelProperty(name = "remarks", value = "备注")
     String remarks;
+    @ApiModelProperty(name = "menuIds", value = "菜单id列表")
+    List<String> menuIds;
+    @ApiModelProperty(hidden = true)
+    LocalDateTime createTime;
 }

@@ -5,8 +5,10 @@ import com.alibaba.fastjson.JSON;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.model.UserAccessTokenDO;
 import com.jmal.clouddisk.model.UserTokenDO;
 import com.jmal.clouddisk.repository.IAuthDAO;
+import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -15,11 +17,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.HandlerInterceptor;
+
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * @author jmal
@@ -39,11 +45,16 @@ public class AuthInterceptor implements HandlerInterceptor {
     private final Cache<String, String> tokenCache = CaffeineUtil.getTokenCache();
 
     @Autowired
-    IAuthDAO authDAO;
+    private IAuthDAO authDAO;
+
+    @Autowired
+    private UserServiceImpl userService;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        if (!StringUtils.isEmpty(getUserNameByHeader(request))) {
+        // 身份认证
+        String username = getUserNameByHeader(request);
+        if (!StringUtils.isEmpty(username)) {
             return true;
         }
         returnJson(response);
@@ -51,16 +62,36 @@ public class AuthInterceptor implements HandlerInterceptor {
     }
 
     /***
-     * 根据jmal-token获取用户名
+     * 根据header获取用户名
      * @param request request
      * @return 用户名
      */
     public String getUserNameByHeader(HttpServletRequest request){
+        String username = null;
         String jmalToken = request.getHeader(JMAL_TOKEN);
         if (StringUtils.isEmpty(jmalToken)) {
             jmalToken = request.getParameter(JMAL_TOKEN);
         }
-        return getUserNameByToken(jmalToken);
+        if(StringUtils.isEmpty(jmalToken)){
+            return getUserNameByAccessToken(request);
+        }
+        username = getUserNameByJmalToken(jmalToken);
+        // jmal-token 身份认证通过, 设置该身份的权限
+        setAuthorities(username);
+        return username;
+    }
+
+    /***
+     * jmal-token 身份认证通过, 设置该身份的权限
+     * @param username
+     */
+    private void setAuthorities(String username) {
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        List<String> authorities = CaffeineUtil.getAuthoritiesCache(username);
+        if(authorities == null){
+            authorities = userService.getAuthorities(username);
+        }
+        requestAttributes.setAttribute("authorities", authorities, 0);
     }
 
     /***
@@ -73,11 +104,16 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (StringUtils.isEmpty(token)) {
             token = request.getParameter(ACCESS_TOKEN);
         }
-        String username = authDAO.getUserNameByAccessToken(token);
-        if(username == null){
+        UserAccessTokenDO userAccessTokenDO = authDAO.getUserNameByAccessToken(token);
+        if(userAccessTokenDO == null || userAccessTokenDO.getUsername() == null){
             throw new CommonException(ExceptionType.ACCESS_FORBIDDEN.getCode(), ExceptionType.ACCESS_FORBIDDEN.getMsg());
         }
-        return username;
+        // access-token 认证通过 设置该身份的权限
+        if(userAccessTokenDO.getAuthorities() != null){
+            ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            requestAttributes.setAttribute("authorities", userAccessTokenDO.getAuthorities(), 0);
+        }
+        return userAccessTokenDO.getUsername();
     }
 
     /***
@@ -85,7 +121,7 @@ public class AuthInterceptor implements HandlerInterceptor {
      * @param jmalToken jmalToken
      * @return 用户名
      */
-    public String getUserNameByToken(String jmalToken) {
+    public String getUserNameByJmalToken(String jmalToken) {
         if (!StringUtils.isEmpty(jmalToken)) {
             String username = tokenCache.getIfPresent(jmalToken);
             if (StringUtils.isEmpty(username)) {
@@ -100,6 +136,9 @@ public class AuthInterceptor implements HandlerInterceptor {
                 if ((System.currentTimeMillis() - userTokenDO.getTimestamp()) < ONE_WEEK) {
                     ThreadUtil.execute(() -> updateToken(jmalToken, userName));
                     return userTokenDO.getUsername();
+                } else {
+                    // 登录超时清除权限缓存
+                    CaffeineUtil.removeAuthoritiesCache(userName);
                 }
                 return null;
             } else {

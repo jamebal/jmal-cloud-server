@@ -18,7 +18,7 @@ import java.util.List;
 @Data
 @Valid
 @ApiModel
-public class MenuDTO {
+public class MenuDTO implements Comparable<MenuDTO>{
     /***
      * 主键
      */
@@ -51,6 +51,11 @@ public class MenuDTO {
     @ApiModelProperty(hidden = true)
     private List<MenuDTO> children;
     /***
+     * 角色是否拥有该菜单
+     */
+    @ApiModelProperty(hidden = true)
+    private Boolean checked;
+    /***
      * 创建时间
      */
     @ApiModelProperty(hidden = true)
@@ -60,4 +65,15 @@ public class MenuDTO {
      */
     @ApiModelProperty(hidden = true)
     LocalDateTime updateTime;
+
+    @Override
+    public int compareTo(MenuDTO o) {
+        if(this.getSortNumber() < o.getSortNumber()){
+            return -1;
+        }
+        if(this.getSortNumber() > o.getSortNumber()){
+            return 1;
+        }
+        return 0;
+    }
 }

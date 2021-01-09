@@ -5,6 +5,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -41,6 +43,25 @@ public class CaffeineUtil {
      * 用户token
      */
     private static Cache<String, String> tokenCache;
+
+    /***
+     * 用户身份权限缓存
+     * key: username
+     * value: 权限标识列表
+     */
+    private final static Cache<String, List<String>> AUTHORITIES_CACHE = Caffeine.newBuilder().build();
+
+    public static List<String> getAuthoritiesCache(String username) {
+        return AUTHORITIES_CACHE.getIfPresent(username);
+    }
+
+    public static void setAuthoritiesCache(String username, List<String> authorities) {
+        AUTHORITIES_CACHE.put(username, authorities);
+    }
+
+    public static void removeAuthoritiesCache(String username) {
+        AUTHORITIES_CACHE.invalidate(username);
+    }
 
     @PostConstruct
     public void initCache(){

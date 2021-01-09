@@ -1,14 +1,12 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
-import cn.hutool.core.date.DateUnit;
-import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.model.ConsumerDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
@@ -23,9 +21,14 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -40,10 +43,13 @@ public class UserServiceImpl implements IUserService {
     private Cache<String, String> tokenCache = CaffeineUtil.getTokenCache();
 
     @Autowired
-    MongoTemplate mongoTemplate;
+    private MongoTemplate mongoTemplate;
 
     @Autowired
-    IFileService fileService;
+    private IFileService fileService;
+
+    @Autowired
+    private RoleService roleService;
 
     @Override
     public ResponseResult<Object> add(ConsumerDO user) {
@@ -232,7 +238,7 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         if (count < 1) {
-            user.setRoles(new String[]{"admin"});
+            user.setRoles(Arrays.asList("Administrators"));
             user.setShowName(user.getUsername());
             user.setQuota(15);
             user.setPassword(SecureUtil.md5(user.getPassword()));
@@ -274,9 +280,34 @@ public class UserServiceImpl implements IUserService {
         return false;
     }
 
+    @Override
+    public List<String> getCurrentUserAuthorities() {
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        HttpServletRequest request = requestAttributes.getRequest();
+        return null;
+    }
+
     private ConsumerDO getUserInfoByName(String name) {
         Query query = new Query();
         query.addCriteria(Criteria.where("username").is(name));
         return mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
+    }
+
+    /***
+     * 获取该用户的权限信息
+     * @param username
+     * @return
+     */
+    public List<String> getAuthorities(String username) {
+        List<String> authorities = new ArrayList<>();
+        ConsumerDO consumerDO = getUserInfoByName(username);
+        if(consumerDO == null){
+            return authorities;
+        }
+        List<String> roleIdList = consumerDO.getRoles();
+        if(roleIdList.isEmpty()){
+            return authorities;
+        }
+        return roleService.getAuthorities(roleIdList);
     }
 }

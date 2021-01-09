@@ -14,6 +14,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,18 +30,22 @@ public class RoleService {
     @Autowired
     private MongoTemplate mongoTemplate;
 
+    @Autowired
+    private MenuService menuService;
+
     /***
      * 角色列表
      * @param page
      * @param pageSize
      * @return
      */
-    public List<RoleDO> list(Integer page, Integer pageSize) {
+    public List<RoleDTO> list(Integer page, Integer pageSize) {
         int skip = (page - 1) * pageSize;
         Query query = new Query();
+        query.fields().exclude("menuIds");
         query.skip(skip);
         query.limit(pageSize);
-        return mongoTemplate.find(query, RoleDO.class, COLLECTION_NAME);
+        return mongoTemplate.find(query, RoleDTO.class, COLLECTION_NAME);
     }
 
     /***
@@ -118,5 +123,42 @@ public class RoleService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(roleIdList));
         mongoTemplate.remove(query, COLLECTION_NAME);
+    }
+
+    /***
+     * 获取角色的菜单id列表
+     * @param roleId
+     * @return
+     */
+    public List<String> getMenuIdList(String roleId) {
+        List<String> menuIdList = new ArrayList<>();
+        RoleDO roleDO = mongoTemplate.findById(roleId, RoleDO.class, COLLECTION_NAME);
+        if(roleDO != null && !roleDO.getMenuIds().isEmpty()){
+            menuIdList = roleDO.getMenuIds();
+        }
+        return menuIdList;
+    }
+
+    /***
+     * 获取权限列表
+     * @param roleIdList 角色Id列表
+     * @return
+     */
+    public List<String> getAuthorities(List<String> roleIdList) {
+        List<String> authorities = new ArrayList<>();
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(roleIdList));
+        List<RoleDO> roleDOList = mongoTemplate.find(query, RoleDO.class, COLLECTION_NAME);
+        if(roleDOList.isEmpty()){
+            return authorities;
+        }
+        List<String> menuIdList = new ArrayList<>();
+        roleDOList.stream().forEach(roleDO -> {
+            menuIdList.addAll(roleDO.getMenuIds());
+        });
+        if(menuIdList.isEmpty()){
+           return authorities;
+        }
+        return menuService.getAuthorities(menuIdList);
     }
 }

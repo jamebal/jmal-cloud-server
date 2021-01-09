@@ -57,6 +57,13 @@ public class ResultUtil {
         return result;
     }
 
+    public static <T> ResponseResult<T> error(ExceptionType exceptionType) {
+        ResponseResult<T> result = new ResponseResult<>();
+        result.setCode(exceptionType.getCode());
+        result.setMessage(exceptionType.getMsg());
+        return result;
+    }
+
     public static <T> ResponseResult<T> warning(String msg) {
         ResponseResult<T> result = new ResponseResult<>();
         result.setCode(-2);

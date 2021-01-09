@@ -1,9 +1,9 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.extra.cglib.CglibUtil;
-import com.jmal.clouddisk.model.CategoryDO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.MenuDTO;
+import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -30,28 +30,30 @@ public class MenuService {
     public static final String COLLECTION_NAME = "menu";
 
     @Autowired
+    private RoleService roleService;
+
+    @Autowired
     private MongoTemplate mongoTemplate;
 
     /***
-     * 菜单列表
-     * @param parentId 父级菜单Id
-     * @return 一级菜单列表
-     */
-    public List<MenuDTO> list(String parentId) {
-        List<MenuDTO> categoryTreeList = tree();
-        return categoryTreeList;
-    }
-
-    /***
      * 菜单树
+     * @param roleId 角色Id
      * @return
      */
-    public List<MenuDTO> tree() {
+    public List<MenuDTO> tree(String roleId) {
         Query query = new Query();
         List<MenuDO> menuDOList = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME);
+        List<String> menuIdList = null;
+        if(!StringUtils.isEmpty(roleId)) {
+            menuIdList = roleService.getMenuIdList(roleId);
+        }
+        List<String> finalMenuIdList = menuIdList;
         List<MenuDTO> menuDTOList = menuDOList.parallelStream().map(menuDO -> {
             MenuDTO menuDTO = new MenuDTO();
             CglibUtil.copy(menuDO, menuDTO);
+            if(finalMenuIdList != null){
+                menuDTO.setChecked(finalMenuIdList.contains(menuDTO.getId()));
+            }
             return menuDTO;
         }).collect(Collectors.toList());
         List<MenuDTO> menuTreeList = getSubMenu(null, menuDTOList);
@@ -69,7 +71,8 @@ public class MenuService {
         List<MenuDTO> menuDTOTreeList = new ArrayList<>();
         List<MenuDTO> menuList;
         if (StringUtils.isEmpty(parentId)) {
-            menuList = menuDTOList.stream().filter(menuDTO -> StringUtils.isEmpty(menuDTO.getParentId())).sorted().collect(Collectors.toList());
+            menuList = menuDTOList.stream().filter(menuDTO ->
+                    StringUtils.isEmpty(menuDTO.getParentId())).sorted().collect(Collectors.toList());
         } else {
             menuList = menuDTOList.stream().filter(menuDTO -> parentId.equals(menuDTO.getParentId())).collect(Collectors.toList());
         }
@@ -182,5 +185,23 @@ public class MenuService {
             menuIds.addAll(findLoopMenu(false, menuIdList1));
         }
         return menuIds;
+    }
+
+    /***
+     * 获取权限列表
+     * @param menuIdList 菜单id列表
+     * @return
+     */
+    public List<String> getAuthorities(List<String> menuIdList) {
+        List<String> authorities = new ArrayList<>();
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(menuIdList));
+        List<MenuDO> menuDOList = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME);
+        menuDOList.stream().forEach(menuDO -> {
+            if(menuDO.getAuthority() != null){
+                authorities.add(menuDO.getAuthority());
+            }
+        });
+        return authorities;
     }
 }

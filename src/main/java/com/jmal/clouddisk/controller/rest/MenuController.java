@@ -1,6 +1,8 @@
 package com.jmal.clouddisk.controller.rest;
 
 import cn.hutool.extra.cglib.CglibUtil;
+import com.jmal.clouddisk.annotation.AnnoManageUtil;
+import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.CategoryDO;
 import com.jmal.clouddisk.model.CategoryDTO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
@@ -31,16 +33,10 @@ public class MenuController {
     @Autowired
     private MenuService menuService;
 
-    @ApiOperation(value = "菜单列表")
-    @PostMapping("/list")
-    public ResponseResult<List<MenuDTO>> list(String parentId){
-        return ResultUtil.success(menuService.list(parentId));
-    }
-
     @ApiOperation("菜单树")
     @GetMapping("/tree")
-    public ResponseResult<List<MenuDTO>> tree(String userId) {
-        return ResultUtil.success(menuService.tree());
+    public ResponseResult<List<MenuDTO>> tree(String roleId) {
+        return ResultUtil.success(menuService.tree(roleId));
     }
 
     @ApiOperation("菜单信息")
@@ -55,8 +51,16 @@ public class MenuController {
         return ResultUtil.success(menuDTO);
     }
 
+    @ApiOperation("权限标识列表")
+    @GetMapping("/authorities")
+    @ResponseBody
+    public ResponseResult<List<String>> authorities() {
+        return ResultUtil.success(AnnoManageUtil.authorities);
+    }
+
     @ApiOperation("添加菜单")
     @PostMapping("/add")
+    @Permission("sys:menu:save")
     public ResponseResult<Object> add(@ModelAttribute @Validated MenuDTO menuDTO) {
         return menuService.add(menuDTO);
     }

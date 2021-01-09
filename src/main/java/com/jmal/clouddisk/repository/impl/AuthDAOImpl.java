@@ -54,14 +54,10 @@ public class AuthDAOImpl implements IAuthDAO {
     }
 
     @Override
-    public String getUserNameByAccessToken(String accessToken) {
+    public UserAccessTokenDO getUserNameByAccessToken(String accessToken) {
         Query query = new Query();
         query.addCriteria(Criteria.where(ACCESS_TOKEN).is(accessToken));
-        UserAccessTokenDO userAccessTokenDO = mongoTemplate.findOne(query, UserAccessTokenDO.class, ACCESS_TOKEN_COLLECTION_NAME);
-        if(userAccessTokenDO != null){
-            return userAccessTokenDO.getUsername();
-        }
-        return null;
+        return mongoTemplate.findOne(query, UserAccessTokenDO.class, ACCESS_TOKEN_COLLECTION_NAME);
     }
 
     @Override

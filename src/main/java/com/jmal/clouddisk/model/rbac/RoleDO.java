@@ -4,6 +4,7 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * @Description 角色模型
@@ -29,6 +30,10 @@ public class RoleDO {
      * 备注
      */
     String remarks;
+    /***
+     * 菜单Id列表
+     */
+    List<String> menuIds;
     /***
      * 创建时间
      */

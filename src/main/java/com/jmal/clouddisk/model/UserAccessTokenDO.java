@@ -3,6 +3,8 @@ package com.jmal.clouddisk.model;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.util.List;
+
 /**
  * @Description 用户授权码
  * @Author jmal
@@ -16,4 +18,8 @@ public class UserAccessTokenDO {
      * 用户授权码
      */
     private String accessToken;
+    /***
+     * 该accessToken的所拥有的权限
+     */
+    private List<String> authorities;
 }

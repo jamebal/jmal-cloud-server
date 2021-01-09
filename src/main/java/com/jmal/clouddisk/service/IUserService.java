@@ -1,8 +1,10 @@
 package com.jmal.clouddisk.service;
 
-import com.jmal.clouddisk.model.ConsumerDO;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.ResponseResult;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * IConsumerService
@@ -115,4 +117,10 @@ public interface IUserService {
      * @return disabled
      */
     boolean getDisabledWebp(String userId);
+
+    /***
+     * 获取当前用户权限
+     * @return 用户权限列表
+     */
+    List<String> getCurrentUserAuthorities();
 }
