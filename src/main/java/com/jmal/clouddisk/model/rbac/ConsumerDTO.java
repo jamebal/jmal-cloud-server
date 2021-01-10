@@ -1,29 +1,35 @@
 package com.jmal.clouddisk.model.rbac;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * @Description 用户模型
+ * @Description 用户模型传输对象
  * @author jmal
  */
 @Data
 @ApiModel
-public class ConsumerDO {
+@Valid
+public class ConsumerDTO {
     @Id
     String id;
-    @ApiModelProperty(name = "username", value = "用户名", example = "admin")
+    @NotNull(message = "用户账号不能为空")
+    @ApiModelProperty(name = "username", value = "用户账号", example = "admin", required = true)
     String username;
-    @ApiModelProperty(name = "showName", value = "显示用户名", example = "管理员1")
+    @NotNull(message = "用户名不能为空")
+    @ApiModelProperty(name = "showName", value = "用户名", example = "管理员1", required = true)
     String showName;
     @ApiModelProperty(name = "password", value = "密码", example = "123456")
     String password;
-    @ApiModelProperty(value = "头像", example = "https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif")
+    @ApiModelProperty(name = "avatar", value = "头像")
     String avatar;
     @ApiModelProperty(name = "slogan", value = "标语")
     String slogan;
@@ -33,13 +39,14 @@ public class ConsumerDO {
     Boolean webpDisabled;
     @ApiModelProperty(name = "roles", value = "角色Id集合")
     List<String> roles;
+    @ApiModelProperty(name = "roleList", value = "角色集合", hidden = true)
+    List<RoleDTO> roleList;
     @ApiModelProperty(name = "quota", value = "默认配额, 10G", example = "10")
     Integer quota;
     @ApiModelProperty(name = "takeUpSpace", value = "已使用的空间")
     Long takeUpSpace;
-    @ApiModelProperty(name = "createTime", value = "创建时间")
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
+    @ApiModelProperty(name = "createTime", value = "创建时间", hidden = true)
     LocalDateTime createTime;
-    @ApiModelProperty(name = "updateTime", value = "修改时间", hidden = true)
-    LocalDateTime updateTime;
 
 }

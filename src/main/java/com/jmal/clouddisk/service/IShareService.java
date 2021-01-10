@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service;
 
 import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.ResponseResult;
 
 import java.util.List;
@@ -81,4 +82,10 @@ public interface IShareService {
      * @return
      */
     ResponseResult<Object> cancelShare(List<String> shareIdList, String userId);
+
+    /***
+     * 删除关联分享
+     * @param userList
+     */
+    void deleteAllByUser(List<ConsumerDO> userList);
 }

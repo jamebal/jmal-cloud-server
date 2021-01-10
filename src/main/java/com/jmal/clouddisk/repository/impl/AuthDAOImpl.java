@@ -2,6 +2,7 @@ package com.jmal.clouddisk.repository.impl;
 
 import com.jmal.clouddisk.model.UserAccessTokenDO;
 import com.jmal.clouddisk.model.UserTokenDO;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.repository.DataSource;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -11,6 +12,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 /**
  * @Description 用户认证
@@ -68,5 +70,19 @@ public class AuthDAOImpl implements IAuthDAO {
         update.set(USERNAME, username);
         update.set(ACCESS_TOKEN, accessToken);
         mongoTemplate.upsert(query, update, ACCESS_TOKEN_COLLECTION_NAME);
+    }
+
+    @Override
+    public void deleteAllByUser(List<ConsumerDO> userList) {
+        if(userList == null || userList.isEmpty()){
+            return;
+        }
+        userList.stream().forEach(user -> {
+            String username = user.getUsername();
+            Query query = new Query();
+            query.addCriteria(Criteria.where(USERNAME).is(username));
+            mongoTemplate.remove(query, ACCESS_TOKEN_COLLECTION_NAME);
+            mongoTemplate.remove(query, USER_TOKEN_COLLECTION_NAME);
+        });
     }
 }

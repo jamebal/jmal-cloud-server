@@ -7,6 +7,7 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
 import com.jmal.clouddisk.model.UserTokenDO;
+import com.jmal.clouddisk.model.rbac.UserLoginContext;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import com.jmal.clouddisk.util.CaffeineUtil;
@@ -86,12 +87,32 @@ public class AuthInterceptor implements HandlerInterceptor {
      * @param username
      */
     private void setAuthorities(String username) {
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         List<String> authorities = CaffeineUtil.getAuthoritiesCache(username);
         if(authorities == null){
             authorities = userService.getAuthorities(username);
+            CaffeineUtil.setAuthoritiesCache(username, authorities);
         }
-        requestAttributes.setAttribute("authorities", authorities, 0);
+        setAuthorities(username, authorities);
+    }
+
+    /***
+     * 设置用户登录信息
+     * access-token, jmal-token 通用
+     * @param username
+     * @param authorities
+     */
+    private void setAuthorities(String username, List<String> authorities) {
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        String userId = CaffeineUtil.getUserIdCache(username);
+        if(StringUtils.isEmpty(userId)) {
+            userId = userService.getUserIdByUserName(username);
+            CaffeineUtil.setUserIdCache(username, userId);
+        }
+        UserLoginContext userLoginContext = new UserLoginContext();
+        userLoginContext.setAuthorities(authorities);
+        userLoginContext.setUserId(userId);
+        userLoginContext.setUsername(username);
+        requestAttributes.setAttribute("user", userLoginContext, 0);
     }
 
     /***
@@ -105,13 +126,13 @@ public class AuthInterceptor implements HandlerInterceptor {
             token = request.getParameter(ACCESS_TOKEN);
         }
         UserAccessTokenDO userAccessTokenDO = authDAO.getUserNameByAccessToken(token);
-        if(userAccessTokenDO == null || userAccessTokenDO.getUsername() == null){
+        String username = userAccessTokenDO.getUsername();
+        if(StringUtils.isEmpty(username)){
             throw new CommonException(ExceptionType.ACCESS_FORBIDDEN.getCode(), ExceptionType.ACCESS_FORBIDDEN.getMsg());
         }
         // access-token 认证通过 设置该身份的权限
         if(userAccessTokenDO.getAuthorities() != null){
-            ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            requestAttributes.setAttribute("authorities", userAccessTokenDO.getAuthorities(), 0);
+            setAuthorities(username, userAccessTokenDO.getAuthorities());
         }
         return userAccessTokenDO.getUsername();
     }
@@ -137,8 +158,9 @@ public class AuthInterceptor implements HandlerInterceptor {
                     ThreadUtil.execute(() -> updateToken(jmalToken, userName));
                     return userTokenDO.getUsername();
                 } else {
-                    // 登录超时清除权限缓存
+                    // 登录超时清除用户缓存
                     CaffeineUtil.removeAuthoritiesCache(userName);
+                    CaffeineUtil.removeUserIdCache(userName);
                 }
                 return null;
             } else {

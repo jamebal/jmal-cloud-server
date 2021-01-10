@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model.rbac;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -29,6 +30,7 @@ public class RoleDTO {
     String remarks;
     @ApiModelProperty(name = "menuIds", value = "菜单id列表")
     List<String> menuIds;
-    @ApiModelProperty(hidden = true)
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
+    @ApiModelProperty(name = "createTime", value = "创建时间", hidden = true)
     LocalDateTime createTime;
 }

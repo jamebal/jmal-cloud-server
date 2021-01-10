@@ -1,9 +1,9 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.extra.cglib.CglibUtil;
+import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.MenuDTO;
-import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -15,6 +15,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,12 +41,19 @@ public class MenuService {
      * @param roleId 角色Id
      * @return
      */
-    public List<MenuDTO> tree(String roleId) {
+    public List<MenuDTO> tree(QueryMenuDTO queryDTO) {
         Query query = new Query();
+        if(!StringUtils.isEmpty(queryDTO.getName())){
+            query.addCriteria(Criteria.where("name").regex(queryDTO.getName(), "i"));
+        }
+        if(!StringUtils.isEmpty(queryDTO.getPath())){
+            query.addCriteria(Criteria.where("path").regex(queryDTO.getPath(), "i"));
+            query.addCriteria(Criteria.where("component").regex(queryDTO.getPath(), "i"));
+        }
         List<MenuDO> menuDOList = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME);
         List<String> menuIdList = null;
-        if(!StringUtils.isEmpty(roleId)) {
-            menuIdList = roleService.getMenuIdList(roleId);
+        if(!StringUtils.isEmpty(queryDTO.getRoleId())) {
+            menuIdList = roleService.getMenuIdList(queryDTO.getRoleId());
         }
         List<String> finalMenuIdList = menuIdList;
         List<MenuDTO> menuDTOList = menuDOList.parallelStream().map(menuDO -> {
@@ -126,6 +134,9 @@ public class MenuService {
         MenuDO menuDO = new MenuDO();
         CglibUtil.copy(menuDTO, menuDO);
         menuDO.setId(null);
+        LocalDateTime dateNow = LocalDateTime.now();
+        menuDO.setCreateTime(dateNow);
+        menuDO.setUpdateTime(dateNow);
         mongoTemplate.save(menuDO, COLLECTION_NAME);
         return ResultUtil.success();
     }
@@ -147,6 +158,7 @@ public class MenuService {
         }
         MenuDO menuDO = new MenuDO();
         CglibUtil.copy(menuDTO, menuDO);
+        menuDO.setUpdateTime(LocalDateTime.now());
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(menuDTO.getId()));
         Update update = MongoUtil.getUpdate(menuDO);

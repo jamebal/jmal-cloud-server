@@ -3,6 +3,7 @@ package com.jmal.clouddisk.service;
 import cn.hutool.db.PageResult;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.ResponseResult;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -319,5 +320,11 @@ public interface IFileService {
      * @return
      */
     String publicViewFile(String relativePath, String userId);
+
+    /***
+     * 删除用户的所有文件
+     * @param userList
+     */
+    void deleteAllByUser(List<ConsumerDO> userList);
 
 }

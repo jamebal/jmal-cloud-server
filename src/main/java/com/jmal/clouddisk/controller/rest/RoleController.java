@@ -1,5 +1,7 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.model.query.QueryRoleDTO;
+import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
 import com.jmal.clouddisk.service.impl.RoleService;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -27,9 +29,9 @@ public class RoleController {
     private RoleService roleService;
 
     @ApiOperation(value = "角色列表")
-    @PostMapping("/list")
-    public ResponseResult<Object> list(@RequestParam Integer page, @RequestParam Integer pageSize){
-        return ResultUtil.success(roleService.list(page, pageSize));
+    @GetMapping("/list")
+    public ResponseResult<List<RoleDTO>> list(QueryRoleDTO queryDTO){
+        return roleService.list(queryDTO);
     }
 
     @ApiOperation(value = "添加角色")

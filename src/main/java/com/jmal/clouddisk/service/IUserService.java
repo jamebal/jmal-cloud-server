@@ -1,6 +1,8 @@
 package com.jmal.clouddisk.service;
 
+import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.util.ResponseResult;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,25 +16,25 @@ import java.util.List;
 public interface IUserService {
     /***
      * 添加用户
-     * @param consumer
+     * @param consumerDTO
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> add(ConsumerDO consumer);
+    ResponseResult<Object> add(ConsumerDTO consumerDTO);
 
     /***
      * 删除用户
-     * @param id id
+     * @param idList
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> delete(String id);
+    ResponseResult<Object> delete(List<String> idList);
 
     /***
      * 修改用户
-     * @param consumer
+     * @param consumerDTO
      * @param blobAvatar
      * @return
      */
-    ResponseResult<Object> update(ConsumerDO consumer, MultipartFile blobAvatar);
+    ResponseResult<Object> update(ConsumerDTO consumerDTO, MultipartFile blobAvatar);
 
     /***
      * 用户信息
@@ -52,9 +54,10 @@ public interface IUserService {
 
     /***
      * 用户列表
-     * @return ResponseResult<Object>
+     * @param queryDTO
+     * @return
      */
-    ResponseResult<Object> userList();
+    ResponseResult<List<ConsumerDTO>> userList(QueryUserDTO queryDTO);
 
     /***
      * 验证用户名

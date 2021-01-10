@@ -2,6 +2,9 @@ package com.jmal.clouddisk.repository;
 
 import com.jmal.clouddisk.model.UserAccessTokenDO;
 import com.jmal.clouddisk.model.UserTokenDO;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
+
+import java.util.List;
 
 /**
  * IAuthDAO
@@ -41,4 +44,10 @@ public interface IAuthDAO {
      * @param accessToken accessToken
      */
     void upsertAccessToken(String username, String accessToken);
+
+    /***
+     * 删除用户的token
+     * @param userList
+     */
+    void deleteAllByUser(List<ConsumerDO> userList);
 }

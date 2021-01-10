@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.extra.cglib.CglibUtil;
+import com.jmal.clouddisk.model.query.QueryRoleDTO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
 import com.jmal.clouddisk.util.MongoUtil;
@@ -12,6 +13,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -39,13 +41,21 @@ public class RoleService {
      * @param pageSize
      * @return
      */
-    public List<RoleDTO> list(Integer page, Integer pageSize) {
-        int skip = (page - 1) * pageSize;
+    public ResponseResult<List<RoleDTO>> list(QueryRoleDTO queryDTO) {
         Query query = new Query();
-        query.fields().exclude("menuIds");
-        query.skip(skip);
-        query.limit(pageSize);
-        return mongoTemplate.find(query, RoleDTO.class, COLLECTION_NAME);
+        long count = mongoTemplate.count(query, COLLECTION_NAME);
+        MongoUtil.commonQuery(queryDTO, query);
+        if(!StringUtils.isEmpty(queryDTO.getName())){
+            query.addCriteria(Criteria.where("name").regex(queryDTO.getName(), "i"));
+        }
+        if(!StringUtils.isEmpty(queryDTO.getCode())){
+            query.addCriteria(Criteria.where("code").regex(queryDTO.getCode(), "i"));
+        }
+        if(!StringUtils.isEmpty(queryDTO.getRemarks())){
+            query.addCriteria(Criteria.where("remarks").regex(queryDTO.getRemarks(), "i"));
+        }
+        List<RoleDTO> roleDTOList = mongoTemplate.find(query, RoleDTO.class, COLLECTION_NAME);
+        return ResultUtil.success(roleDTOList).setCount(count);
     }
 
     /***
@@ -106,8 +116,7 @@ public class RoleService {
         }
         RoleDO roleDO = new RoleDO();
         CglibUtil.copy(roleDTO, roleDO);
-        LocalDateTime dateNow = LocalDateTime.now();
-        roleDO.setUpdateTime(dateNow);
+        roleDO.setUpdateTime(LocalDateTime.now());
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(roleDO.getId()));
         Update update = MongoUtil.getUpdate(roleDO);
@@ -154,11 +163,23 @@ public class RoleService {
         }
         List<String> menuIdList = new ArrayList<>();
         roleDOList.stream().forEach(roleDO -> {
-            menuIdList.addAll(roleDO.getMenuIds());
+            if(roleDO.getMenuIds() != null && !roleDO.getMenuIds().isEmpty()){
+                menuIdList.addAll(roleDO.getMenuIds());
+            }
         });
         if(menuIdList.isEmpty()){
            return authorities;
         }
         return menuService.getAuthorities(menuIdList);
+    }
+
+    /***
+     * 获取角色列表
+     * @param roleIds 角色id列表
+     */
+    public List<RoleDTO> getRoleList(List<String> roleIds) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(roleIds));
+        return mongoTemplate.find(query, RoleDTO.class, COLLECTION_NAME);
     }
 }

@@ -1,13 +1,19 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @Description ConsumerController
@@ -23,20 +29,21 @@ public class UserController {
 
     @ApiOperation(value = "添加用户")
     @PostMapping("/add")
-    public ResponseResult<Object> add(ConsumerDO consumer){
-        return service.add(consumer);
+    public ResponseResult<Object> add(@Validated ConsumerDTO consumerDTO){
+        return service.add(consumerDTO);
     }
 
     @ApiOperation(value = "删除用户")
     @DeleteMapping("/delete")
-    public ResponseResult<Object> delete(@RequestParam String id){
-        return service.delete(id);
+    public ResponseResult<Object> delete(@RequestParam String[] ids){
+        List<String> idList = Arrays.asList(ids);
+        return service.delete(idList);
     }
 
     @ApiOperation(value = "修改用户")
     @PutMapping("/update")
-    public ResponseResult<Object> update(ConsumerDO consumer, MultipartFile blobAvatar){
-        return service.update(consumer,blobAvatar);
+    public ResponseResult<Object> update(ConsumerDTO consumerDTO, MultipartFile blobAvatar){
+        return service.update(consumerDTO, blobAvatar);
     }
 
     @ApiOperation(value = "修改用户密码")
@@ -59,8 +66,8 @@ public class UserController {
 
     @ApiOperation(value = "用户信息列表")
     @GetMapping("/userList")
-    public ResponseResult<Object> consumerList(){
-        return service.userList();
+    public ResponseResult<List<ConsumerDTO>> consumerList(QueryUserDTO queryDTO){
+        return service.userList(queryDTO);
     }
 
 }
