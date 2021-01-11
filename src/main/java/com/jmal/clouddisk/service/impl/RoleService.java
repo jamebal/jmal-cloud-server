@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.extra.cglib.CglibUtil;
+import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
@@ -27,6 +28,11 @@ import java.util.stream.Collectors;
  */
 @Service
 public class RoleService {
+
+    /***
+     * 超级管理员, 拥有所有权限
+     */
+    public static final String ADMINISTRATORS = "Administrators";
 
     public static final String COLLECTION_NAME = "role";
 
@@ -177,6 +183,10 @@ public class RoleService {
             return authorities;
         }
         List<String> menuIdList = new ArrayList<>();
+        for (RoleDO roleDO : roleDOList) {
+            // 如果是超级管理员, 直接返回所有权限
+            return AnnoManageUtil.authorities;
+        }
         roleDOList.forEach(roleDO -> {
             if(roleDO.getMenuIds() != null && !roleDO.getMenuIds().isEmpty()){
                 menuIdList.addAll(roleDO.getMenuIds());

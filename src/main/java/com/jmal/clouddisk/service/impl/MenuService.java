@@ -55,9 +55,13 @@ public class MenuService {
             menuIdList = userService.getMenuIdList(queryDTO.getUserId());
         }
         if(!StringUtils.isEmpty(queryDTO.getRoleId())) {
-            menuIdList = roleService.getMenuIdList(queryDTO.getRoleId());
+            if(menuIdList != null){
+                menuIdList.addAll(roleService.getMenuIdList(queryDTO.getRoleId()));
+            } else {
+                menuIdList = roleService.getMenuIdList(queryDTO.getRoleId());
+            }
         }
-        if(menuIdList != null && !menuIdList.isEmpty()){
+        if(menuIdList != null){
             query.addCriteria(Criteria.where("_id").in(menuIdList));
         }
         if(!StringUtils.isEmpty(queryDTO.getPath())){
@@ -87,7 +91,7 @@ public class MenuService {
             menuList = menuDTOList.stream().filter(menuDTO ->
                     StringUtils.isEmpty(menuDTO.getParentId())).sorted().collect(Collectors.toList());
         } else {
-            menuList = menuDTOList.stream().filter(menuDTO -> parentId.equals(menuDTO.getParentId())).collect(Collectors.toList());
+            menuList = menuDTOList.stream().filter(menuDTO -> parentId.equals(menuDTO.getParentId())).sorted().collect(Collectors.toList());
         }
         menuList.forEach(subCategory -> {
             List<MenuDTO> subList = getSubMenu(subCategory.getId(), menuDTOList);
