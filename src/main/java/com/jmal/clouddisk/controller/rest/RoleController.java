@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
-import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
 import com.jmal.clouddisk.service.impl.RoleService;
 import com.jmal.clouddisk.util.ResponseResult;

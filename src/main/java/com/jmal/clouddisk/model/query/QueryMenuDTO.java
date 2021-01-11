@@ -20,4 +20,6 @@ public class QueryMenuDTO extends QueryBaseDTO {
     String path;
     @ApiModelProperty(name = "roleId", value = "角色Id")
     String roleId;
+    @ApiModelProperty(name = "userId", value = "userId")
+    String userId;
 }

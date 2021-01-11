@@ -16,94 +16,94 @@ import java.util.List;
 public interface IUserService {
     /***
      * 添加用户
-     * @param consumerDTO
+     * @param consumerDTO ConsumerDTO
      * @return ResponseResult<Object>
      */
     ResponseResult<Object> add(ConsumerDTO consumerDTO);
 
     /***
      * 删除用户
-     * @param idList
+     * @param idList userId列表
      * @return ResponseResult<Object>
      */
     ResponseResult<Object> delete(List<String> idList);
 
     /***
      * 修改用户
-     * @param consumerDTO
-     * @param blobAvatar
-     * @return
+     * @param consumerDTO ConsumerDTO
+     * @param blobAvatar MultipartFile
+     * @return ResponseResult
      */
     ResponseResult<Object> update(ConsumerDTO consumerDTO, MultipartFile blobAvatar);
 
     /***
      * 用户信息
-     * @param token
+     * @param token token
      * @param takeUpSpace 是否显示占用空间
-     * @param returnPassWord
-     * @return
+     * @param returnPassWord 是否返回用户名
+     * @return ResponseResult
      */
     ResponseResult<Object> userInfo(String token,Boolean takeUpSpace,Boolean returnPassWord);
 
     /***
      * 用户信息
-     * @param consumerId
+     * @param consumerId userId
      * @return ResponseResult<Object>
      */
     ConsumerDO userInfoById(String consumerId);
 
     /***
      * 用户列表
-     * @param queryDTO
-     * @return
+     * @param queryDTO 查询用户的条件
+     * @return ResponseResult
      */
     ResponseResult<List<ConsumerDTO>> userList(QueryUserDTO queryDTO);
 
     /***
      * 验证用户名
-     * @param token
-     * @return
+     * @param token token
+     * @return 用户名
      */
     String getUserName(String token);
 
     /***
      * 修改用户密码
-     * @param consumer
-     * @return
+     * @param consumer ConsumerDO
+     * @return ResponseResult
      */
     ResponseResult<Object> updatePass(ConsumerDO consumer);
 
     /***
      * 重置密码
-     * @param consumer
-     * @return
+     * @param consumer ConsumerDO
+     * @return ResponseResult
      */
     ResponseResult<Object> resetPass(ConsumerDO consumer);
 
     /***
      * 获取用户userId
-     * @param username
-     * @return
+     * @param username username
+     * @return userId
      */
     String getUserIdByUserName(String username);
 
     /***
      * 是否有用户
-     * @return
+     * @return ResponseResult
      */
     ResponseResult<Boolean> hasUser();
 
     /***
      * 初始化创建管理员
-     * @param consumer
-     * @return
+     * @param consumer ConsumerDO
+     * @return ResponseResult
      */
     ResponseResult<Object> initialization(ConsumerDO consumer);
 
     /***
      * 获取用户名
-     * @param userId
-     * @return
+     * @param userId userId
+     * @return 用户名
      */
     String getUserNameById(String userId);
 
@@ -122,8 +122,16 @@ public interface IUserService {
     boolean getDisabledWebp(String userId);
 
     /***
-     * 获取当前用户权限
+     * 获取该用户的权限信息
+     * @param username username
      * @return 用户权限列表
      */
-    List<String> getCurrentUserAuthorities();
+    List<String> getAuthorities(String username);
+
+    /***
+     * 获取该用户的菜单信息
+     * @param userId userId
+     * @return 用户菜单Id列表
+     */
+    List<String> getMenuIdList(String userId);
 }

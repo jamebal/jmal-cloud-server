@@ -18,6 +18,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @Description 角色管理
@@ -37,9 +38,8 @@ public class RoleService {
 
     /***
      * 角色列表
-     * @param page
-     * @param pageSize
-     * @return
+     * @param queryDTO 角色查询条件
+     * @return ResponseResult
      */
     public ResponseResult<List<RoleDTO>> list(QueryRoleDTO queryDTO) {
         Query query = new Query();
@@ -60,8 +60,8 @@ public class RoleService {
 
     /***
      * roleCode是否存在
-     * @param roleCode
-     * @return
+     * @param roleCode  角色标识
+     * @return 角色标识是否存在
      */
     private boolean existsRoleCode(String roleCode){
         Query query = new Query();
@@ -71,8 +71,8 @@ public class RoleService {
 
     /***
      * roleId是否存在
-     * @param roleId
-     * @return
+     * @param roleId roleId
+     * @return roleId是否存在
      */
     private boolean existsRoleId(String roleId){
         Query query = new Query();
@@ -82,8 +82,7 @@ public class RoleService {
 
     /***
      * 添加角色
-     * @param roleDTO
-     * @return
+     * @param roleDTO 添加角色
      */
     public ResponseResult<Object> add(RoleDTO roleDTO) {
         if (existsRoleCode(roleDTO.getCode())) {
@@ -101,8 +100,7 @@ public class RoleService {
 
     /***
      * 更新角色
-     * @param roleDTO
-     * @return
+     * @param roleDTO RoleDTO
      */
     public ResponseResult<Object> update(RoleDTO roleDTO) {
         if (existsRoleId(roleDTO.getId())) {
@@ -126,7 +124,7 @@ public class RoleService {
 
     /***
      * 删除角色
-     * @param roleIdList
+     * @param roleIdList 角色id列表
      */
     public void delete(List<String> roleIdList) {
         Query query = new Query();
@@ -136,22 +134,39 @@ public class RoleService {
 
     /***
      * 获取角色的菜单id列表
-     * @param roleId
-     * @return
+     * @param roleId 角色id
+     * @return 菜单id列表
      */
     public List<String> getMenuIdList(String roleId) {
         List<String> menuIdList = new ArrayList<>();
         RoleDO roleDO = mongoTemplate.findById(roleId, RoleDO.class, COLLECTION_NAME);
-        if(roleDO != null && !roleDO.getMenuIds().isEmpty()){
+        if(roleDO != null && roleDO.getMenuIds() != null && !roleDO.getMenuIds().isEmpty()){
             menuIdList = roleDO.getMenuIds();
         }
         return menuIdList;
     }
 
     /***
+     * 根据角色id列表获取菜单id列表
+     * @param roleIdList 角色id列表
+     * @return 菜单id列表
+     */
+    public List<String> getMenuIdList(List<String> roleIdList) {
+        List<String> menuIdList = new ArrayList<>();
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(roleIdList));
+        List<RoleDO> roleDOList = mongoTemplate.find(query, RoleDO.class, COLLECTION_NAME);
+        List<String> finalMenuIdList = menuIdList;
+        roleDOList.forEach(roleDO -> finalMenuIdList.addAll(roleDO.getMenuIds()));
+        // 去重
+        menuIdList = menuIdList.stream().distinct().collect(Collectors.toList());
+        return menuIdList;
+    }
+
+    /***
      * 获取权限列表
      * @param roleIdList 角色Id列表
-     * @return
+     * @return 权限列表
      */
     public List<String> getAuthorities(List<String> roleIdList) {
         List<String> authorities = new ArrayList<>();
@@ -162,7 +177,7 @@ public class RoleService {
             return authorities;
         }
         List<String> menuIdList = new ArrayList<>();
-        roleDOList.stream().forEach(roleDO -> {
+        roleDOList.forEach(roleDO -> {
             if(roleDO.getMenuIds() != null && !roleDO.getMenuIds().isEmpty()){
                 menuIdList.addAll(roleDO.getMenuIds());
             }

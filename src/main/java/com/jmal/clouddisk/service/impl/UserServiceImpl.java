@@ -24,14 +24,10 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
-
-import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -147,13 +143,15 @@ public class UserServiceImpl implements IUserService {
         }
         if (blobAvatar != null) {
             ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
-            UploadApiParamDTO upload = new UploadApiParamDTO();
-            upload.setUserId(userId);
-            upload.setUsername(consumer.getUsername());
-            upload.setFilename("avatar-" + TimeUntils.getStringTime(System.currentTimeMillis()));
-            upload.setFile(blobAvatar);
-            fileId = fileService.uploadConsumerImage(upload);
-            update.set("avatar", fileId);
+            if(consumer != null){
+                UploadApiParamDTO upload = new UploadApiParamDTO();
+                upload.setUserId(userId);
+                upload.setUsername(consumer.getUsername());
+                upload.setFilename("avatar-" + TimeUntils.getStringTime(System.currentTimeMillis()));
+                upload.setFile(blobAvatar);
+                fileId = fileService.uploadConsumerImage(upload);
+                update.set("avatar", fileId);
+            }
         }
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
         return ResultUtil.success(fileId);
@@ -221,36 +219,27 @@ public class UserServiceImpl implements IUserService {
         return username;
     }
 
-    /***
-     * 修改密码
-     * @param consumer
-     * @return
-     */
     @Override
     public ResponseResult<Object> updatePass(ConsumerDO consumer) {
         String userId = consumer.getId();
         String newPassword = consumer.getPassword();
         if (!StringUtils.isEmpty(userId) && !StringUtils.isEmpty(newPassword)) {
             ConsumerDO consumer1 = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
-            String oldPassword = consumer1.getPassword();
-            if (newPassword.equals(oldPassword)) {
-                return ResultUtil.warning("新密码不能于旧密码相同!");
+            if(consumer1 != null){
+                if (newPassword.equals(consumer1.getPassword())) {
+                    return ResultUtil.warning("新密码不能于旧密码相同!");
+                }
+                Query query = new Query();
+                query.addCriteria(Criteria.where("_id").is(userId));
+                Update update = new Update();
+                update.set("password", SecureUtil.md5(newPassword));
+                mongoTemplate.upsert(query, update, COLLECTION_NAME);
+                return ResultUtil.successMsg("修改成功!");
             }
-            Query query = new Query();
-            query.addCriteria(Criteria.where("_id").is(userId));
-            Update update = new Update();
-            update.set("password", SecureUtil.md5(newPassword));
-            mongoTemplate.upsert(query, update, COLLECTION_NAME);
-            return ResultUtil.successMsg("修改成功!");
         }
         return ResultUtil.warning("修改失败!");
     }
 
-    /***
-     * 重置密码
-     * @param consumer
-     * @return
-     */
     @Override
     public ResponseResult<Object> resetPass(ConsumerDO consumer) {
         String userId = consumer.getId();
@@ -286,7 +275,7 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         if (count < 1) {
-            user.setRoles(Arrays.asList("Administrators"));
+            user.setRoles(Collections.singletonList("Administrators"));
             user.setShowName(user.getUsername());
             user.setQuota(15);
             user.setPassword(SecureUtil.md5(user.getPassword()));
@@ -328,24 +317,13 @@ public class UserServiceImpl implements IUserService {
         return false;
     }
 
-    @Override
-    public List<String> getCurrentUserAuthorities() {
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        HttpServletRequest request = requestAttributes.getRequest();
-        return null;
-    }
-
     private ConsumerDO getUserInfoByName(String name) {
         Query query = new Query();
         query.addCriteria(Criteria.where("username").is(name));
         return mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
     }
 
-    /***
-     * 获取该用户的权限信息
-     * @param username
-     * @return
-     */
+    @Override
     public List<String> getAuthorities(String username) {
         List<String> authorities = new ArrayList<>();
         ConsumerDO consumerDO = getUserInfoByName(username);
@@ -357,5 +335,16 @@ public class UserServiceImpl implements IUserService {
             return authorities;
         }
         return roleService.getAuthorities(roleIdList);
+    }
+
+    @Override
+    public List<String> getMenuIdList(String userId) {
+        List<String> menuIdList = new ArrayList<>();
+        ConsumerDO consumerDO = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
+        if(consumerDO == null){
+            return menuIdList;
+        }
+        List<String> roleIdList = consumerDO.getRoles();
+        return roleService.getMenuIdList(roleIdList);
     }
 }

@@ -4,6 +4,7 @@ import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.MenuDTO;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -34,45 +35,49 @@ public class MenuService {
     private RoleService roleService;
 
     @Autowired
+    private IUserService userService;
+
+    @Autowired
     private MongoTemplate mongoTemplate;
 
     /***
      * 菜单树
-     * @param roleId 角色Id
-     * @return
+     * @param queryDTO QueryMenuDTO
+     * @return 菜单数列表
      */
     public List<MenuDTO> tree(QueryMenuDTO queryDTO) {
         Query query = new Query();
         if(!StringUtils.isEmpty(queryDTO.getName())){
             query.addCriteria(Criteria.where("name").regex(queryDTO.getName(), "i"));
         }
+        List<String> menuIdList = null;
+        if(!StringUtils.isEmpty(queryDTO.getUserId())){
+            menuIdList = userService.getMenuIdList(queryDTO.getUserId());
+        }
+        if(!StringUtils.isEmpty(queryDTO.getRoleId())) {
+            menuIdList = roleService.getMenuIdList(queryDTO.getRoleId());
+        }
+        if(menuIdList != null && !menuIdList.isEmpty()){
+            query.addCriteria(Criteria.where("_id").in(menuIdList));
+        }
         if(!StringUtils.isEmpty(queryDTO.getPath())){
             query.addCriteria(Criteria.where("path").regex(queryDTO.getPath(), "i"));
             query.addCriteria(Criteria.where("component").regex(queryDTO.getPath(), "i"));
         }
         List<MenuDO> menuDOList = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME);
-        List<String> menuIdList = null;
-        if(!StringUtils.isEmpty(queryDTO.getRoleId())) {
-            menuIdList = roleService.getMenuIdList(queryDTO.getRoleId());
-        }
-        List<String> finalMenuIdList = menuIdList;
         List<MenuDTO> menuDTOList = menuDOList.parallelStream().map(menuDO -> {
             MenuDTO menuDTO = new MenuDTO();
             CglibUtil.copy(menuDO, menuDTO);
-            if(finalMenuIdList != null){
-                menuDTO.setChecked(finalMenuIdList.contains(menuDTO.getId()));
-            }
             return menuDTO;
         }).collect(Collectors.toList());
-        List<MenuDTO> menuTreeList = getSubMenu(null, menuDTOList);
-        return menuTreeList;
+        return getSubMenu(null, menuDTOList);
     }
 
     /**
      * 查找子菜单
      *
      * @param parentId 父菜单id
-     * @param categoryDTOList  菜单列表
+     * @param menuDTOList  菜单列表
      * @return 菜单列表
      */
     private List<MenuDTO> getSubMenu(String parentId, List<MenuDTO> menuDTOList) {
@@ -107,8 +112,8 @@ public class MenuService {
 
     /***
      * 菜单名是否存在
-     * @param name
-     * @return
+     * @param name name
+     * @return boolean
      */
     private boolean existsMenuName(String name){
         Query query = new Query();
@@ -118,8 +123,8 @@ public class MenuService {
 
     /***
      * 添加菜单
-     * @param menuDTO
-     * @return
+     * @param menuDTO menuDTO
+     * @return ResponseResult
      */
     public ResponseResult<Object> add(MenuDTO menuDTO) {
         if (existsMenuName(menuDTO.getName())) {
@@ -143,8 +148,8 @@ public class MenuService {
 
     /***
      * 更新菜单
-     * @param menuDTO
-     * @return
+     * @param menuDTO menuDTO
+     * @return ResponseResult
      */
     public ResponseResult<Object> update(MenuDTO menuDTO) {
         if (getMenuInfo(menuDTO.getId()) == null) {
@@ -202,14 +207,14 @@ public class MenuService {
     /***
      * 获取权限列表
      * @param menuIdList 菜单id列表
-     * @return
+     * @return 权限列表
      */
     public List<String> getAuthorities(List<String> menuIdList) {
         List<String> authorities = new ArrayList<>();
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(menuIdList));
         List<MenuDO> menuDOList = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME);
-        menuDOList.stream().forEach(menuDO -> {
+        menuDOList.forEach(menuDO -> {
             if(menuDO.getAuthority() != null){
                 authorities.add(menuDO.getAuthority());
             }

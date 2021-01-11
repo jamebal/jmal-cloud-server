@@ -31,7 +31,7 @@ public class PermissionAspect {
     public void privilege(){}
 
     @Around("privilege()")
-    public Object before(ProceedingJoinPoint joinPoint) throws Throwable,CommonException {
+    public Object before(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
         Method targetMethod = methodSignature.getMethod();
         final String authority = privilegeParse(targetMethod);
