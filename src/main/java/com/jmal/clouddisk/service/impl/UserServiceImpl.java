@@ -2,17 +2,20 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.crypto.SecureUtil;
+import cn.hutool.extra.cglib.CglibUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.model.ConsumerDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.query.QueryUserDTO;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.model.rbac.ConsumerDTO;
+import com.jmal.clouddisk.model.rbac.UserLoginHolder;
+import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.service.IFileService;
+import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.util.CaffeineUtil;
-import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
-import com.jmal.clouddisk.util.TimeUntils;
+import com.jmal.clouddisk.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -21,9 +24,16 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author jmal
@@ -34,24 +44,39 @@ public class UserServiceImpl implements IUserService {
 
     static final String COLLECTION_NAME = "user";
 
-    private Cache<String, String> tokenCache = CaffeineUtil.getTokenCache();
+    private final Cache<String, String> tokenCache = CaffeineUtil.getTokenCache();
 
     @Autowired
-    MongoTemplate mongoTemplate;
+    private MongoTemplate mongoTemplate;
 
     @Autowired
-    IFileService fileService;
+    private IFileService fileService;
+
+    @Autowired
+    IShareService shareService;
+
+    @Autowired
+    private RoleService roleService;
+
+    @Autowired
+    IAuthDAO authDAO;
+
+    @Autowired
+    private UserLoginHolder userLoginHolder;
 
     @Override
-    public ResponseResult<Object> add(ConsumerDO user) {
-        ConsumerDO user1 = getUserInfoByName(user.getUsername());
+    public ResponseResult<Object> add(ConsumerDTO consumerDTO) {
+        ConsumerDO user1 = getUserInfoByName(consumerDTO.getUsername());
         if (user1 == null) {
-            if (user.getQuota() == null) {
-                user.setQuota(10);
+            if (consumerDTO.getQuota() == null) {
+                consumerDTO.setQuota(10);
             }
-            user.setPassword(SecureUtil.md5(user.getPassword()));
-            user.setCreateTime(System.currentTimeMillis());
-            mongoTemplate.save(user, COLLECTION_NAME);
+            consumerDTO.setPassword(SecureUtil.md5(consumerDTO.getPassword()));
+            ConsumerDO consumerDO = new ConsumerDO();
+            CglibUtil.copy(consumerDTO, consumerDO);
+            consumerDO.setCreateTime(LocalDateTime.now());
+            consumerDO.setId(null);
+            mongoTemplate.save(consumerDO, COLLECTION_NAME);
         } else {
             return ResultUtil.warning("该用户已存在");
         }
@@ -59,15 +84,26 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public ResponseResult<Object> delete(String id) {
+    public ResponseResult<Object> delete(List<String> idList) {
+        String currentUserId = userLoginHolder.getUserId();
+        if(idList.contains(currentUserId)){
+            return ResultUtil.warning("不能删除自己");
+        }
         Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(id));
+        query.addCriteria(Criteria.where("_id").in(idList));
+        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
+        // 删除关联文件
+        fileService.deleteAllByUser(userList);
+        // 删除关联分享
+        shareService.deleteAllByUser(userList);
+        // 删除关联token
+        authDAO.deleteAllByUser(userList);
         mongoTemplate.remove(query, COLLECTION_NAME);
         return ResultUtil.success();
     }
 
     @Override
-    public ResponseResult<Object> update(ConsumerDO user, MultipartFile blobAvatar) {
+    public ResponseResult<Object> update(ConsumerDTO user, MultipartFile blobAvatar) {
         Query query = new Query();
         String userId = user.getId();
         if (!StringUtils.isEmpty(userId)) {
@@ -104,12 +140,17 @@ public class UserServiceImpl implements IUserService {
             fileId = user.getAvatar();
             update.set("avatar", fileId);
         }
+        if (user.getRoles() != null && !user.getRoles().isEmpty()){
+            update.set("roles", user.getRoles());
+        } else {
+            update.unset("roles");
+        }
         if (blobAvatar != null) {
             ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
             UploadApiParamDTO upload = new UploadApiParamDTO();
             upload.setUserId(userId);
             upload.setUsername(consumer.getUsername());
-            upload.setFilename("avatar-" + TimeUntils.getStringTime(System.currentTimeMillis()) + ".jpeg");
+            upload.setFilename("avatar-" + TimeUntils.getStringTime(System.currentTimeMillis()));
             upload.setFile(blobAvatar);
             fileId = fileService.uploadConsumerImage(upload);
             update.set("avatar", fileId);
@@ -145,10 +186,27 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public ResponseResult<Object> userList() {
+    public ResponseResult<List<ConsumerDTO>> userList(QueryUserDTO queryDTO) {
         Query query = new Query();
+        long count = mongoTemplate.count(query, COLLECTION_NAME);
+        MongoUtil.commonQuery(queryDTO, query);
+        if(!StringUtils.isEmpty(queryDTO.getUsername())){
+            query.addCriteria(Criteria.where("username").regex(queryDTO.getUsername(), "i"));
+        }
+        if(!StringUtils.isEmpty(queryDTO.getShowName())){
+            query.addCriteria(Criteria.where("showName").regex(queryDTO.getShowName(), "i"));
+        }
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
-        return ResultUtil.success(userList);
+        List<ConsumerDTO> consumerDTOList = userList.parallelStream().map(consumerDO -> {
+            ConsumerDTO consumerDTO = new ConsumerDTO();
+            CglibUtil.copy(consumerDO, consumerDTO);
+            List<String> roleIds = consumerDO.getRoles();
+            if(roleIds != null && !roleIds.isEmpty()){
+                consumerDTO.setRoleList(roleService.getRoleList(roleIds));
+            }
+            return consumerDTO;
+        }).collect(Collectors.toList());
+        return ResultUtil.success(consumerDTOList).setCount(count);
     }
 
     @Override
@@ -228,11 +286,12 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         if (count < 1) {
-            user.setRoles(new String[]{"admin"});
+            user.setRoles(Arrays.asList("Administrators"));
             user.setShowName(user.getUsername());
             user.setQuota(15);
             user.setPassword(SecureUtil.md5(user.getPassword()));
-            user.setCreateTime(System.currentTimeMillis());
+            user.setCreateTime(LocalDateTime.now());
+            user.setId(null);
             mongoTemplate.save(user, COLLECTION_NAME);
         }
         return ResultUtil.success();
@@ -269,9 +328,34 @@ public class UserServiceImpl implements IUserService {
         return false;
     }
 
+    @Override
+    public List<String> getCurrentUserAuthorities() {
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        HttpServletRequest request = requestAttributes.getRequest();
+        return null;
+    }
+
     private ConsumerDO getUserInfoByName(String name) {
         Query query = new Query();
         query.addCriteria(Criteria.where("username").is(name));
         return mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
+    }
+
+    /***
+     * 获取该用户的权限信息
+     * @param username
+     * @return
+     */
+    public List<String> getAuthorities(String username) {
+        List<String> authorities = new ArrayList<>();
+        ConsumerDO consumerDO = getUserInfoByName(username);
+        if(consumerDO == null){
+            return authorities;
+        }
+        List<String> roleIdList = consumerDO.getRoles();
+        if(roleIdList == null || roleIdList.isEmpty()){
+            return authorities;
+        }
+        return roleService.getAuthorities(roleIdList);
     }
 }

@@ -1,7 +1,11 @@
 package com.jmal.clouddisk.util;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.jmal.clouddisk.model.query.QueryBaseDTO;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -55,6 +59,26 @@ public class MongoUtil {
             }
         }
         return update;
+    }
+
+    /***
+     * 通用查询条件
+     * @param queryBaseDTO
+     * @param query
+     */
+    public static void commonQuery(QueryBaseDTO queryBaseDTO, Query query) {
+        if(queryBaseDTO.getPage() != null && queryBaseDTO.getPageSize() != null) {
+            int skip = (queryBaseDTO.getPage() - 1) * queryBaseDTO.getPageSize();
+            query.skip(skip);
+            query.limit(queryBaseDTO.getPageSize());
+        }
+        if(!StringUtils.isEmpty(queryBaseDTO.getSortProp()) && !StringUtils.isEmpty(queryBaseDTO.getSortOrder())){
+            if ("descending".equals(queryBaseDTO.getSortOrder())) {
+                query.with(new Sort(Sort.Direction.DESC, queryBaseDTO.getSortProp()));
+            } else {
+                query.with(new Sort(Sort.Direction.ASC, queryBaseDTO.getSortProp()));
+            }
+        }
     }
 
 }

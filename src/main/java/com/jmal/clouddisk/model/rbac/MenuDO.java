@@ -1,0 +1,64 @@
+package com.jmal.clouddisk.model.rbac;
+
+import lombok.Data;
+import org.springframework.data.annotation.Id;
+
+import java.time.LocalDateTime;
+
+/**
+ * @Description 菜单模型
+ * @blame jmal
+ * @Date 2021/1/7 8:53 下午
+ */
+@Data
+public class MenuDO {
+    /***
+     * 主键
+     */
+    @Id
+    String id;
+    /***
+     * 父级菜单Id
+     */
+    String parentId;
+    /***
+     * 菜单名称
+     */
+    String name;
+    /***
+     * 权限标识
+     */
+    String authority;
+    /***
+     * 路由地址
+     */
+    String path;
+    /***
+     * 组件路径
+     */
+    String component;
+    /***
+     * 菜单图标
+     */
+    String icon;
+    /***
+     * 排序号
+     */
+    Integer sortNumber;
+    /***
+     * 菜单类型 0:菜单，1:按钮
+     */
+    Integer menuType;
+    /***
+     * 是否隐藏
+     */
+    Boolean hide;
+    /***
+     * 创建时间
+     */
+    LocalDateTime createTime;
+    /***
+     * 修改时间
+     */
+    LocalDateTime updateTime;
+}

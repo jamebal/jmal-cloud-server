@@ -12,6 +12,7 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
@@ -1062,6 +1063,21 @@ public class FileServiceImpl implements IFileService {
         String username = userService.getUserNameById(userId);
         String userDirectory = getUserFilePath(aes.decryptStr(relativePath));
         return "redirect:/file/" + username + userDirectory;
+    }
+
+    @Override
+    public void deleteAllByUser(List<ConsumerDO> userList) {
+        if(userList == null || userList.isEmpty()){
+            return;
+        }
+        userList.stream().forEach(user -> {
+            String username = user.getUsername();
+            String userId = user.getId();
+            FileUtil.del(Paths.get(fileProperties.getRootDir(), username));
+            Query query = new Query();
+            query.addCriteria(Criteria.where("userId").in(userId));
+            mongoTemplate.remove(query, COLLECTION_NAME);
+        });
     }
 
     /***

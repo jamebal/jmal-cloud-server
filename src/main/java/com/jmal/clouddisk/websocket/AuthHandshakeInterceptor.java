@@ -28,7 +28,7 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
     public boolean beforeHandshake(ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse, WebSocketHandler webSocketHandler, Map<String, Object> map) throws Exception {
         ServletServerHttpRequest request = (ServletServerHttpRequest) serverHttpRequest;
         String jmalToken = request.getServletRequest().getParameter("jmal-token");
-        return !StringUtils.isEmpty(authInterceptor.getUserNameByToken(jmalToken));
+        return !StringUtils.isEmpty(authInterceptor.getUserNameByJmalToken(jmalToken));
     }
 
     @Override

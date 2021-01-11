@@ -1,8 +1,10 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.io.FileUtil;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -16,6 +18,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -161,5 +164,19 @@ public class ShareServiceImpl implements IShareService {
         query.addCriteria(Criteria.where("_id").in(shareId));
         mongoTemplate.remove(query,COLLECTION_NAME);
         return ResultUtil.success();
+    }
+
+    @Override
+    public void deleteAllByUser(List<ConsumerDO> userList) {
+        if(userList == null || userList.isEmpty()){
+            return;
+        }
+        userList.stream().forEach(user -> {
+            String username = user.getUsername();
+            String userId = user.getId();
+            Query query = new Query();
+            query.addCriteria(Criteria.where("userId").in(userId));
+            mongoTemplate.remove(query, COLLECTION_NAME);
+        });
     }
 }

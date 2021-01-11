@@ -270,7 +270,8 @@ public class CategoryService {
         categoryDTO.setSlug(getSlug(categoryDTO));
         CategoryDO categoryDO = new CategoryDO();
         CglibUtil.copy(categoryDTO, categoryDO);
-        mongoTemplate.save(categoryDO);
+        categoryDO.setId(null);
+        mongoTemplate.save(categoryDO, COLLECTION_NAME);
         return ResultUtil.success();
     }
 
