@@ -1,7 +1,10 @@
 package com.jmal.clouddisk.model.rbac;
 
+import com.jmal.clouddisk.service.impl.MenuService;
+import com.jmal.clouddisk.service.impl.RoleService;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,11 +15,11 @@ import java.util.List;
  * @Date 2021/1/7 7:41 下午
  */
 @Data
+@Document(collection = RoleService.COLLECTION_NAME)
 public class RoleDO {
     /***
      * 主键
      */
-    @Id
     String id;
     /***
      * 角色名称

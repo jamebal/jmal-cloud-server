@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -56,6 +57,7 @@ public class ShareController {
 
     @ApiOperation("生成分享链接")
     @PostMapping("/share/generate")
+    @Permission("cloud:file:upload")
     public ResponseResult<Object> generateLink(@RequestBody ShareDO share) {
         ResultUtil.checkParamIsNull(share.getFileId(), share.getUserId());
         return shareService.generateLink(share);
@@ -63,6 +65,7 @@ public class ShareController {
 
     @ApiOperation("取消分享")
     @DeleteMapping("/share/cancel")
+    @Permission("cloud:file:delete")
     public ResponseResult<Object> cancelShare(String[] shareId,String userId) {
         ResultUtil.checkParamIsNull(shareId, userId);
         List<String> shareIdList = Arrays.asList(shareId);
@@ -71,6 +74,7 @@ public class ShareController {
 
     @ApiOperation("分享列表")
     @GetMapping("/share/list")
+    @Permission("cloud:file:list")
     public ResponseResult<Object> shareList(UploadApiParamDTO upload) {
         return shareService.shareList(upload);
     }

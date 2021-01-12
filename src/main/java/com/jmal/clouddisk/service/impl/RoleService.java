@@ -185,7 +185,9 @@ public class RoleService {
         List<String> menuIdList = new ArrayList<>();
         for (RoleDO roleDO : roleDOList) {
             // 如果是超级管理员, 直接返回所有权限
-            return AnnoManageUtil.authorities;
+            if(ADMINISTRATORS.equals(roleDO.getCode())){
+                return AnnoManageUtil.AUTHORITIES;
+            }
         }
         roleDOList.forEach(roleDO -> {
             if(roleDO.getMenuIds() != null && !roleDO.getMenuIds().isEmpty()){

@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -29,12 +30,14 @@ public class UserSettingController {
 
     @ApiOperation("生成accessToken")
     @PutMapping("/user/setting/generateAccessToken")
+    @Permission("sys:user:list")
     ResponseResult<String> generateAccessToken(@RequestParam String username) {
         return settingService.generateAccessToken(username);
     }
 
     @ApiOperation("把文件同步到数据库")
     @GetMapping("/user/setting/sync")
+    @Permission(value = "cloud:set:sync", only = "Administrators")
     public ResponseResult<Object> list(@RequestParam String username) {
         settingService.sync(username);
         return ResultUtil.success();
@@ -42,12 +45,14 @@ public class UserSettingController {
 
     @ApiOperation("获取是否禁用webp状态")
     @GetMapping("/user/setting/get/webp")
+    @Permission("sys:user:list")
     public ResponseResult<Boolean> getDisabledWebp(@RequestParam String userId) {
         return ResultUtil.success(userService.getDisabledWebp(userId));
     }
 
     @ApiOperation("是否禁用webp(默认开启)")
     @PutMapping("/user/setting/disabled/webp")
+    @Permission("sys:user:update")
     public ResponseResult<Object> disabledWebp(@RequestParam String userId, @RequestParam Boolean disabled) {
         userService.disabledWebp(userId, disabled);
         return ResultUtil.success();

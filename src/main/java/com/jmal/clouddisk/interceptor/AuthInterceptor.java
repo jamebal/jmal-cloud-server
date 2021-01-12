@@ -68,7 +68,7 @@ public class AuthInterceptor implements HandlerInterceptor {
      * @return 用户名
      */
     public String getUserNameByHeader(HttpServletRequest request){
-        String username = null;
+        String username;
         String jmalToken = request.getHeader(JMAL_TOKEN);
         if (StringUtils.isEmpty(jmalToken)) {
             jmalToken = request.getParameter(JMAL_TOKEN);
@@ -84,7 +84,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     /***
      * jmal-token 身份认证通过, 设置该身份的权限
-     * @param username
+     * @param username username
      */
     private void setAuthorities(String username) {
         List<String> authorities = CaffeineUtil.getAuthoritiesCache(username);
@@ -98,8 +98,8 @@ public class AuthInterceptor implements HandlerInterceptor {
     /***
      * 设置用户登录信息
      * access-token, jmal-token 通用
-     * @param username
-     * @param authorities
+     * @param username username
+     * @param authorities 权限标示列表
      */
     private void setAuthorities(String username, List<String> authorities) {
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();

@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.WebsiteSettingDTO;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 import com.jmal.clouddisk.service.impl.SettingService;
@@ -30,6 +31,7 @@ public class WebsiteSettingController {
 
     @ApiOperation("更新网站设置")
     @PutMapping("/website/setting/update")
+    @Permission("website:set:update")
     public ResponseResult<Object> update(@RequestBody WebsiteSettingDO websiteSettingDO) {
         return settingService.websiteUpdate(websiteSettingDO);
     }

@@ -1,5 +1,6 @@
-package com.jmal.clouddisk.model.rbac;
+package com.jmal.clouddisk.service.impl;
 
+import com.jmal.clouddisk.model.rbac.UserLoginContext;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -17,10 +18,15 @@ public class UserLoginHolder {
 
     /***
      * 获取当前用户信息
-     * @return
+     * @return UserLoginContext
      */
     public UserLoginContext getCurrentUser(){
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if(requestAttributes == null){
+            UserLoginContext userLoginContext = new UserLoginContext();
+            userLoginContext.setAuthorities(new ArrayList<>());
+            return userLoginContext;
+        }
         Object object = requestAttributes.getAttribute("user", 0);
         if(object != null){
             return (UserLoginContext) object;
@@ -33,7 +39,7 @@ public class UserLoginHolder {
 
     /***
      * 获取当前用户权限
-     * @return
+     * @return 权限列表
      */
     public List<String> getAuthorities(){
         return getCurrentUser().getAuthorities();
@@ -41,7 +47,7 @@ public class UserLoginHolder {
 
     /***
      * 获取当前用户名
-     * @return
+     * @return username
      */
     public String getUsername(){
         return getCurrentUser().getUsername();
@@ -49,7 +55,7 @@ public class UserLoginHolder {
 
     /***
      * 获取当前用户Id
-     * @return
+     * @return userId
      */
     public String getUserId(){
         return getCurrentUser().getUserId();

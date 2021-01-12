@@ -216,7 +216,7 @@ public class MenuService {
     public List<String> getAuthorities(List<String> menuIdList) {
         List<String> authorities = new ArrayList<>();
         Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(menuIdList));
+        query.addCriteria(Criteria.where("_id").in(menuIdList));
         List<MenuDO> menuDOList = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME);
         menuDOList.forEach(menuDO -> {
             if(menuDO.getAuthority() != null){
@@ -224,5 +224,22 @@ public class MenuService {
             }
         });
         return authorities;
+    }
+
+    /***
+     * 初始化菜单
+     * @param menuDOList List<MenuDO>
+     */
+    public void initMenus(List<MenuDO> menuDOList) {
+        mongoTemplate.dropCollection(COLLECTION_NAME);
+        mongoTemplate.insertAll(menuDOList);
+    }
+
+    /***
+     * 获取所有菜单
+     * @return List<MenuDO>
+     */
+    public List<MenuDO> getAllMenus() {
+        return mongoTemplate.findAll(MenuDO.class, COLLECTION_NAME);
     }
 }

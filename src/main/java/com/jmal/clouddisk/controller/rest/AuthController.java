@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IAuthService;
@@ -34,12 +35,14 @@ public class AuthController {
 
     @ApiOperation("校验旧密码")
     @PostMapping("/valid-old-pass")
+    @Permission("sys:user:list")
     public ResponseResult<Object> validOldPass(@RequestBody ConsumerDO user){
         return authService.validOldPass(user.getId(), user.getPassword());
     }
 
     @ApiOperation("登出")
     @GetMapping("/logout")
+    @Permission("sys:user:list")
     public ResponseResult<Object> logout(HttpServletRequest request){
         String token = request.getHeader(AuthInterceptor.JMAL_TOKEN);
         return authService.logout(token);

@@ -14,15 +14,13 @@ import java.lang.annotation.*;
 public @interface Permission {
 
     /***
-     * 权限标识
-     * @return
+     * @return 权限标识
      */
     String value() default "";
 
     /***
-     * 角色标识，只有该角色才能通过
-     * @return
+     * @return 角色标识 只有该角色才能通过
      */
-    String only() default "Administrators";
+    String only() default "";
 
 }

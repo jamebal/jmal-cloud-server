@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
@@ -29,12 +30,14 @@ public class UserController {
 
     @ApiOperation(value = "添加用户")
     @PostMapping("/add")
+    @Permission("sys:user:add")
     public ResponseResult<Object> add(@Validated ConsumerDTO consumerDTO){
         return service.add(consumerDTO);
     }
 
     @ApiOperation(value = "删除用户")
     @DeleteMapping("/delete")
+    @Permission("sys:user:delete")
     public ResponseResult<Object> delete(@RequestParam String[] ids){
         List<String> idList = Arrays.asList(ids);
         return service.delete(idList);
@@ -42,30 +45,35 @@ public class UserController {
 
     @ApiOperation(value = "修改用户")
     @PutMapping("/update")
+    @Permission("sys:user:update")
     public ResponseResult<Object> update(ConsumerDTO consumerDTO, MultipartFile blobAvatar){
         return service.update(consumerDTO, blobAvatar);
     }
 
     @ApiOperation(value = "修改用户密码")
     @PutMapping("/update-pass")
+    @Permission("sys:user:update")
     public ResponseResult<Object> updatePass(ConsumerDO consumer){
         return service.updatePass(consumer);
     }
 
     @ApiOperation(value = "重置密码")
     @PutMapping("/reset-pass")
+    @Permission("sys:user:update")
     public ResponseResult<Object> resetPass(ConsumerDO consumer){
         return service.resetPass(consumer);
     }
 
     @ApiOperation(value = "用户信息")
     @GetMapping("/userInfo")
+    @Permission("sys:user:list")
     public ResponseResult<Object> consumerInfo(@RequestParam String id,Boolean takeUpSpace,Boolean returnPassWord){
         return service.userInfo(id, takeUpSpace, returnPassWord);
     }
 
     @ApiOperation(value = "用户信息列表")
     @GetMapping("/userList")
+    @Permission("sys:user:list")
     public ResponseResult<List<ConsumerDTO>> consumerList(QueryUserDTO queryDTO){
         return service.userList(queryDTO);
     }

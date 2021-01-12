@@ -1,18 +1,17 @@
 package com.jmal.clouddisk.acpect;
 
 import com.jmal.clouddisk.annotation.Permission;
-import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.ResultUtil;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -26,8 +25,10 @@ import java.util.List;
 @Component
 public class PermissionAspect {
 
-    @Pointcut("@annotation(com.jmal.clouddisk.annotation.Permission)" )
+    @Autowired
+    private UserLoginHolder userLoginHolder;
 
+    @Pointcut("@annotation(com.jmal.clouddisk.annotation.Permission)" )
     public void privilege(){}
 
     @Around("privilege()")
@@ -40,13 +41,9 @@ public class PermissionAspect {
             return joinPoint.proceed();
         } else {
             // 获取当前身份的权限
-            ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            Object object = requestAttributes.getAttribute("authorities", 0);
-            if(object != null){
-                List<String> authorities = (List<String>) object;
-                if(authorities.contains(authority)){
-                    return joinPoint.proceed();
-                }
+            List<String> authorities = userLoginHolder.getAuthorities();
+            if(authorities != null && authorities.contains(authority)){
+                return joinPoint.proceed();
             }
             return ResultUtil.error(ExceptionType.PERMISSION_DENIED);
         }

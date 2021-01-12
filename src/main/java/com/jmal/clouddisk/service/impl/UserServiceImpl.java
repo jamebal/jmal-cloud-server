@@ -10,7 +10,6 @@ import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
-import com.jmal.clouddisk.model.rbac.UserLoginHolder;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
@@ -38,7 +37,7 @@ import java.util.stream.Collectors;
 @Service
 public class UserServiceImpl implements IUserService {
 
-    static final String COLLECTION_NAME = "user";
+    public static final String COLLECTION_NAME = "user";
 
     private final Cache<String, String> tokenCache = CaffeineUtil.getTokenCache();
 

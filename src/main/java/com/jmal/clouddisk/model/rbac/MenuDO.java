@@ -1,7 +1,9 @@
 package com.jmal.clouddisk.model.rbac;
 
+import com.jmal.clouddisk.service.impl.MenuService;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
@@ -11,11 +13,11 @@ import java.time.LocalDateTime;
  * @Date 2021/1/7 8:53 下午
  */
 @Data
+@Document(collection = MenuService.COLLECTION_NAME)
 public class MenuDO {
     /***
      * 主键
      */
-    @Id
     String id;
     /***
      * 父级菜单Id

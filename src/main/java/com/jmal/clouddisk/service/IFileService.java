@@ -202,7 +202,7 @@ public interface IFileService {
      * @param to
      * @return
      */
-    ResponseResult move(UploadApiParamDTO upload, List<String> froms, String to);
+    ResponseResult<Object> move(UploadApiParamDTO upload, List<String> froms, String to);
 
     /***
      * 复制文件/文件夹
@@ -211,7 +211,7 @@ public interface IFileService {
      * @param to
      * @return
      */
-    ResponseResult copy(UploadApiParamDTO upload, List<String> froms, String to);
+    ResponseResult<Object> copy(UploadApiParamDTO upload, List<String> froms, String to);
 
     /***
      * 上传用户图片
@@ -276,7 +276,7 @@ public interface IFileService {
      * @param username
      * @return
      */
-    ResponseResult upperLevelList(String path, String username);
+    ResponseResult<Object> upperLevelList(String path, String username);
 
     /***
      * 根据path删除文件/文件夹
@@ -284,7 +284,7 @@ public interface IFileService {
      * @param username
      * @return
      */
-    ResponseResult delFile(String path, String username);
+    ResponseResult<Object> delFile(String path, String username);
 
     /***
      * 根据path重命名

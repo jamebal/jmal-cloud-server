@@ -30,6 +30,9 @@ public class AuthServiceImpl implements IAuthService {
     @Autowired
     MongoTemplate mongoTemplate;
 
+    @Autowired
+    UserLoginHolder userLoginHolder;
+
     private final Cache<String, String> tokenCache = CaffeineUtil.getTokenCache();
 
     @Override
@@ -59,6 +62,9 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     public ResponseResult<Object> logout(String token) {
         tokenCache.invalidate(token);
+        String username = userLoginHolder.getUsername();
+        CaffeineUtil.removeAuthoritiesCache(username);
+        CaffeineUtil.removeUserIdCache(username);
         return ResultUtil.success();
     }
 

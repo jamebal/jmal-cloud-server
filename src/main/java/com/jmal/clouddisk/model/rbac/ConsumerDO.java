@@ -1,9 +1,10 @@
 package com.jmal.clouddisk.model.rbac;
 
+import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
-import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,8 +15,8 @@ import java.util.List;
  */
 @Data
 @ApiModel
+@Document(collection = UserServiceImpl.COLLECTION_NAME)
 public class ConsumerDO {
-    @Id
     String id;
     @ApiModelProperty(name = "username", value = "用户名", example = "admin")
     String username;

@@ -2,8 +2,8 @@ package com.jmal.clouddisk.controller.rest;
 
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
+import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
-import com.jmal.clouddisk.model.query.QueryRoleDTO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.MenuDTO;
 import com.jmal.clouddisk.service.impl.MenuService;
@@ -33,6 +33,7 @@ public class MenuController {
 
     @ApiOperation("菜单树")
     @GetMapping("/tree")
+    @Permission("sys:menu:list")
     public ResponseResult<List<MenuDTO>> tree(QueryMenuDTO queryDTO) {
         return ResultUtil.success(menuService.tree(queryDTO));
     }
@@ -40,6 +41,7 @@ public class MenuController {
     @ApiOperation("菜单信息")
     @GetMapping("/info")
     @ResponseBody
+    @Permission("sys:menu:list")
     public ResponseResult<MenuDTO> info(@RequestParam String menuId) {
         MenuDTO menuDTO = new MenuDTO();
         MenuDO menuDO = menuService.getMenuInfo(menuId);
@@ -52,12 +54,14 @@ public class MenuController {
     @ApiOperation("权限标识列表")
     @GetMapping("/authorities")
     @ResponseBody
+    @Permission("sys:menu:list")
     public ResponseResult<List<String>> authorities() {
-        return ResultUtil.success(AnnoManageUtil.authorities);
+        return ResultUtil.success(AnnoManageUtil.AUTHORITIES);
     }
 
     @ApiOperation("添加菜单")
     @PostMapping("/add")
+    @Permission("sys:menu:add")
     public ResponseResult<Object> add(@ModelAttribute @Validated MenuDTO menuDTO) {
         return menuService.add(menuDTO);
     }
@@ -65,6 +69,7 @@ public class MenuController {
     @ApiOperation("更新菜单")
     @PutMapping("/update")
     @ResponseBody
+    @Permission("sys:menu:update")
     public ResponseResult<Object> update(@ModelAttribute MenuDTO menuDTO) {
         if(menuDTO.getId() == null){
             return ResultUtil.warning("缺少参数menuId");
@@ -74,6 +79,7 @@ public class MenuController {
 
     @ApiOperation("删除菜单")
     @DeleteMapping("/delete")
+    @Permission("sys:menu:delete")
     public ResponseResult<Object> delete(@RequestParam String[] menuIds) {
         List<String> categoryList = Arrays.asList(menuIds);
         menuService.delete(categoryList);
