@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.extra.cglib.CglibUtil;
@@ -728,7 +729,12 @@ public class FileServiceImpl implements IFileService {
         contentType = FileContentTypeUtils.getContentType(suffix);
 
         String fileAbsolutePath = file.getAbsolutePath();
-        String relativePath = fileAbsolutePath.substring(fileProperties.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
+        int startIndex = fileProperties.getRootDir().length() + username.length() + 1;
+        int endIndex = fileAbsolutePath.length() - fileName.length();
+        if(startIndex >= endIndex){
+            return null;
+        }
+        String relativePath = fileAbsolutePath.substring(startIndex, endIndex);
         Query query = new Query();
         query.addCriteria(Criteria.where("userId").is(userId));
         query.addCriteria(Criteria.where("path").is(relativePath));

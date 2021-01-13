@@ -135,10 +135,8 @@ public class UserServiceImpl implements IUserService {
             fileId = user.getAvatar();
             update.set("avatar", fileId);
         }
-        if (user.getRoles() != null && !user.getRoles().isEmpty()){
+        if (user.getRoles() != null){
             update.set("roles", user.getRoles());
-        } else {
-            update.unset("roles");
         }
         if (blobAvatar != null) {
             ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
@@ -340,10 +338,9 @@ public class UserServiceImpl implements IUserService {
     public List<String> getMenuIdList(String userId) {
         List<String> menuIdList = new ArrayList<>();
         ConsumerDO consumerDO = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
-        if(consumerDO == null){
+        if(consumerDO == null || consumerDO.getRoles() == null){
             return menuIdList;
         }
-        List<String> roleIdList = consumerDO.getRoles();
-        return roleService.getMenuIdList(roleIdList);
+        return roleService.getMenuIdList(consumerDO.getRoles());
     }
 }
