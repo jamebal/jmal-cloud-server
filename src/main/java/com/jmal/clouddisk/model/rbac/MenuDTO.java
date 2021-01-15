@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.model.rbac;
 
-import com.jmal.clouddisk.model.CategoryDTO;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -58,11 +58,13 @@ public class MenuDTO implements Comparable<MenuDTO>{
     /***
      * 创建时间
      */
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @ApiModelProperty(hidden = true)
     LocalDateTime createTime;
     /***
      * 修改时间
      */
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @ApiModelProperty(hidden = true)
     LocalDateTime updateTime;
 

@@ -219,7 +219,7 @@ public class MenuService {
         query.addCriteria(Criteria.where("_id").in(menuIdList));
         List<MenuDO> menuDOList = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME);
         menuDOList.forEach(menuDO -> {
-            if(menuDO.getAuthority() != null){
+            if(!StringUtils.isEmpty(menuDO.getAuthority())){
                 authorities.add(menuDO.getAuthority());
             }
         });
