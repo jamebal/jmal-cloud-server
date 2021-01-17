@@ -3,6 +3,7 @@ package com.jmal.clouddisk.util;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -59,6 +60,15 @@ public class CaffeineUtil {
 
     public static List<String> getAuthoritiesCache(String username) {
         return AUTHORITIES_CACHE.getIfPresent(username);
+    }
+
+    /***
+     * 缓存中是否存在该usernam的权限
+     * @param username
+     * @return
+     */
+    public static boolean existsAuthoritiesCache(String username) {
+        return AUTHORITIES_CACHE.getIfPresent(username) != null;
     }
 
     public static void setAuthoritiesCache(String username, List<String> authorities) {

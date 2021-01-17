@@ -1,10 +1,13 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -42,6 +45,9 @@ public class RoleService {
 
     @Autowired
     private MenuService menuService;
+
+    @Autowired
+    private IUserService userService;
 
     /***
      * 角色列表
@@ -124,9 +130,40 @@ public class RoleService {
         roleDO.setUpdateTime(LocalDateTime.now());
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(roleDO.getId()));
+        if(roleDO.getMenuIds() != null){
+            // 分配权限后更新相关角色用户的权限缓存
+            ThreadUtil.execute(() -> updateUserCacheByRole(roleDO));
+        }
         Update update = MongoUtil.getUpdate(roleDO);
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
         return ResultUtil.success();
+    }
+
+    /***
+     * 更新相关角色的用户缓存
+     * @param roleDO
+     */
+    private void updateUserCacheByRole(RoleDO roleDO) {
+        if(roleDO.getId() == null){
+            return;
+        }
+        if(roleDO.getMenuIds() == null || roleDO.getMenuIds().isEmpty()){
+            return;
+        }
+        // RoleDO roleDO1 = mongoTemplate.findById(roleDO.getId(), RoleDO.class, COLLECTION_NAME);
+        // // 判断菜单是否发生了变化
+        // if(roleDO.getMenuIds().equals(roleDO1.getMenuIds())){
+        //     return;
+        // }
+        // 获取该角色的权限列表
+        List<String> authorities= menuService.getAuthorities(roleDO.getMenuIds());
+        // 根据角色获取用户名列表
+        List<String> usernameList = userService.getUserNameListByRole(roleDO.getId());
+        usernameList.forEach(username -> {
+            if(CaffeineUtil.existsAuthoritiesCache(username)){
+                CaffeineUtil.setAuthoritiesCache(username,authorities);
+            }
+        });
     }
 
     /***

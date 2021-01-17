@@ -758,13 +758,13 @@ public class FileServiceImpl implements IFileService {
         update.set("isFolder", file.isDirectory());
         update.set("uploadDate", nowDateTime);
         update.set("updateDate", nowDateTime);
+        update.set("isFavorite", false);
         if (file.isFile()) {
             long size = file.length();
             update.set("size", size);
             update.set("md5", size + relativePath + fileName);
             update.set("contentType", contentType);
             update.set("suffix", suffix);
-            update.set("isFavorite", false);
             if (contentType.contains("audio")) {
                 Music music = AudioFileUtils.readAudio(file);
                 update.set("music", music);

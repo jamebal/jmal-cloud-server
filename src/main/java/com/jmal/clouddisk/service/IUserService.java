@@ -134,4 +134,11 @@ public interface IUserService {
      * @return 用户菜单Id列表
      */
     List<String> getMenuIdList(String userId);
+
+    /***
+     * 根据角色获取用户名列表
+     * @param roleId 角色Id
+     * @return
+     */
+    List<String> getUserNameListByRole(String roleId);
 }

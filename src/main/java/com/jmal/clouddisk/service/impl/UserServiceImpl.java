@@ -343,4 +343,12 @@ public class UserServiceImpl implements IUserService {
         }
         return roleService.getMenuIdList(consumerDO.getRoles());
     }
+
+    @Override
+    public List<String> getUserNameListByRole(String roleId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("roles").is(roleId));
+        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
+        return userList.stream().map(consumerDO -> consumerDO.getUsername()).collect(Collectors.toList());
+    }
 }
