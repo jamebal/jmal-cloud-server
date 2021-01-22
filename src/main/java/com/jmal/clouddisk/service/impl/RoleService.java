@@ -4,6 +4,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
+import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
 import com.jmal.clouddisk.service.IUserService;
@@ -259,4 +260,11 @@ public class RoleService {
         return mongoTemplate.find(query, RoleDTO.class, COLLECTION_NAME);
     }
 
+    /***
+     * 获取所有角色
+     * @return List<RoleDO>
+     */
+    public List<RoleDO> getAllRoles() {
+        return mongoTemplate.findAll(RoleDO.class, COLLECTION_NAME);
+    }
 }
