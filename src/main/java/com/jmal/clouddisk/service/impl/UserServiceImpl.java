@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -151,6 +152,10 @@ public class UserServiceImpl implements IUserService {
             }
         }
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        if(user.getRoles() != null){
+            // 修改用户角色后更新相关角色用户的权限缓存
+            ThreadUtil.execute(() -> roleService.updateUserCacheByRole(user.getRoles()));
+        }
         return ResultUtil.success(fileId);
     }
 
@@ -349,6 +354,14 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         query.addCriteria(Criteria.where("roles").is(roleId));
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
-        return userList.stream().map(consumerDO -> consumerDO.getUsername()).collect(Collectors.toList());
+        return userList.stream().map(ConsumerDO::getUsername).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<String> getUserNameListByRole(List<String> rolesIds) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("roles").in(rolesIds));
+        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
+        return userList.stream().map(ConsumerDO::getUsername).collect(Collectors.toList());
     }
 }

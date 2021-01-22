@@ -33,7 +33,7 @@ public class MenuController {
 
     @ApiOperation("菜单树")
     @GetMapping("/tree")
-    @Permission("sys:menu:list")
+    @Permission("sys:user:list")
     public ResponseResult<List<MenuDTO>> tree(QueryMenuDTO queryDTO) {
         return ResultUtil.success(menuService.tree(queryDTO));
     }

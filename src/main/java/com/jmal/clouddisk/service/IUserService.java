@@ -138,7 +138,14 @@ public interface IUserService {
     /***
      * 根据角色获取用户名列表
      * @param roleId 角色Id
-     * @return
+     * @return 用户名列表
      */
     List<String> getUserNameListByRole(String roleId);
+
+    /***
+     * 根据角色获取用户名列表
+     * @param rolesIds 角色Id列表
+     * @return 用户名列表
+     */
+    List<String> getUserNameListByRole(List<String> rolesIds);
 }

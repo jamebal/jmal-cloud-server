@@ -11,7 +11,7 @@
     "parentId": "",
     "path": "/",
     "sortNumber": 0,
-    "updateTime": 1610374559831
+    "updateTime": 1610530002439
   },
   {
     "authority": "",
@@ -60,14 +60,14 @@
     "component": "/fileType/audio",
     "createTime": 1610364811353,
     "hide": false,
-    "icon": "audio",
+    "icon": "file_music",
     "id": "5ffc378b9a2c787ef115f97e",
     "menuType": 0,
     "name": "音乐",
     "parentId": "",
     "path": "/audio",
     "sortNumber": 4,
-    "updateTime": 1610364844882
+    "updateTime": 1610514622979
   },
   {
     "authority": "",
@@ -104,12 +104,12 @@
     "hide": false,
     "icon": "UserSettings",
     "id": "5ffb1b38eb9cf770a889b7ea",
-    "menuType": 0,
+    "menuType": 2,
     "name": "个人信息",
     "parentId": "",
     "path": "/setting/user",
     "sortNumber": 10,
-    "updateTime": 1610365512676
+    "updateTime": 1611286507257
   },
   {
     "authority": "",
@@ -118,12 +118,12 @@
     "hide": false,
     "icon": "huaban",
     "id": "5ffb1b57eb9cf770a889b7eb",
-    "menuType": 0,
+    "menuType": 2,
     "name": "用户管理",
     "parentId": "",
     "path": "/setting/manager-users",
     "sortNumber": 11,
-    "updateTime": 1610364991464
+    "updateTime": 1611286503170
   },
   {
     "authority": "",
@@ -132,12 +132,12 @@
     "hide": false,
     "icon": "role",
     "id": "5ffb1b60eb9cf770a889b7ec",
-    "menuType": 0,
+    "menuType": 2,
     "name": "角色管理",
     "parentId": "",
     "path": "/setting/manager-roles",
     "sortNumber": 12,
-    "updateTime": 1610365014882
+    "updateTime": 1611286498838
   },
   {
     "authority": "",
@@ -146,12 +146,12 @@
     "hide": false,
     "icon": "menu",
     "id": "5ffb1b68eb9cf770a889b7ed",
-    "menuType": 0,
+    "menuType": 2,
     "name": "菜单管理",
     "parentId": "",
     "path": "/setting/manager-menus",
     "sortNumber": 13,
-    "updateTime": 1610365050623
+    "updateTime": 1611286494488
   },
   {
     "authority": "",
@@ -160,12 +160,12 @@
     "hide": false,
     "icon": "wangzhanguanli",
     "id": "5ffb1b6feb9cf770a889b7ee",
-    "menuType": 0,
+    "menuType": 2,
     "name": "网站管理",
     "parentId": "",
     "path": "/setting/website",
     "sortNumber": 14,
-    "updateTime": 1610365072765
+    "updateTime": 1611286489664
   },
   {
     "authority": "",
@@ -174,12 +174,12 @@
     "hide": false,
     "icon": "yunshezhi",
     "id": "5ffb1cf6eb9cf770a889b7f3",
-    "menuType": 0,
+    "menuType": 2,
     "name": "网盘设置",
     "parentId": "",
     "path": "/setting/manager-cloud",
     "sortNumber": 15,
-    "updateTime": 1610365283820
+    "updateTime": 1611286449322
   },
   {
     "authority": "",
@@ -188,12 +188,12 @@
     "hide": false,
     "icon": "guanlizhuanjiawenzhang",
     "id": "5ffd02373d0a062755a22609",
-    "menuType": 0,
+    "menuType": 2,
     "name": "文章",
     "parentId": "5ffb1b6feb9cf770a889b7ee",
     "path": "manager-articles",
     "sortNumber": 0,
-    "updateTime": 1610416706899
+    "updateTime": 1611286486332
   },
   {
     "authority": "",
@@ -202,12 +202,12 @@
     "hide": false,
     "icon": "yemianshezhi",
     "id": "5ffd02863d0a062755a2260a",
-    "menuType": 0,
+    "menuType": 2,
     "name": "独立页面",
     "parentId": "5ffb1b6feb9cf770a889b7ee",
     "path": "manager-alone-page",
     "sortNumber": 1,
-    "updateTime": 1610418941323
+    "updateTime": 1611286479626
   },
   {
     "authority": "",
@@ -216,12 +216,12 @@
     "hide": false,
     "icon": "pifu",
     "id": "5ffd0af43d0a062755a2260b",
-    "menuType": 0,
+    "menuType": 2,
     "name": "外观",
     "parentId": "5ffb1b6feb9cf770a889b7ee",
     "path": "manager-blog",
     "sortNumber": 2,
-    "updateTime": 1610418932069
+    "updateTime": 1611286475810
   },
   {
     "authority": "",
@@ -230,12 +230,12 @@
     "hide": false,
     "icon": "fenlei",
     "id": "5ffd0b203d0a062755a2260c",
-    "menuType": 0,
+    "menuType": 2,
     "name": "分类",
     "parentId": "5ffb1b6feb9cf770a889b7ee",
     "path": "manager-categories",
     "sortNumber": 3,
-    "updateTime": 1610418988435
+    "updateTime": 1611286471732
   },
   {
     "authority": "",
@@ -244,12 +244,12 @@
     "hide": false,
     "icon": "biaoqian",
     "id": "5ffd0b4a3d0a062755a2260d",
-    "menuType": 0,
+    "menuType": 2,
     "name": "标签",
     "parentId": "5ffb1b6feb9cf770a889b7ee",
     "path": "manager-tags",
-    "sortNumber": 0,
-    "updateTime": 1610419018537
+    "sortNumber": 4,
+    "updateTime": 1611295831043
   },
   {
     "authority": "cloud:file:delete",
@@ -551,11 +551,67 @@
     "hide": false,
     "icon": "",
     "id": "5ffd707129d84649e3f02cda",
-    "menuType": 0,
+    "menuType": 1,
     "name": "网站内容删除",
     "parentId": "5ffb1b6feb9cf770a889b7ee",
     "path": "",
     "sortNumber": 13,
-    "updateTime": 1610444913592
+    "updateTime": 1611286458837
+  },
+  {
+    "authority": "",
+    "component": "/setting/website/manager-blog",
+    "createTime": 1611294509422,
+    "hide": false,
+    "icon": "pifu",
+    "id": "600a672db5a9d881713ea266",
+    "menuType": 3,
+    "name": "网站外观",
+    "parentId": "",
+    "path": "/setting/website/manager-blog",
+    "sortNumber": 201,
+    "updateTime": 1611294962760
+  },
+  {
+    "authority": "",
+    "component": "/setting/user",
+    "createTime": 1611295055637,
+    "hide": false,
+    "icon": "shezhi",
+    "id": "600a694fb5a9d881713ea267",
+    "menuType": 4,
+    "name": "基本设置",
+    "parentId": "",
+    "path": "/setting/user",
+    "sortNumber": 202,
+    "updateTime": 1611295082041
+  },
+  {
+    "authority": "",
+    "component": "https://github.com/jamebal/jmal-cloud-view",
+    "createTime": 1611295675482,
+    "hide": false,
+    "icon": "widget-github",
+    "id": "600a6bbbb5a9d881713ea268",
+    "menuType": 4,
+    "name": "github",
+    "parentId": "",
+    "path": "https://github.com/jamebal/jmal-cloud-view",
+    "sortNumber": 203,
+    "updateTime": 1611295675482
+  },
+  {
+    "authority": "",
+    "component": "http://localhost:8088/articles",
+    "createTime": 1611296098682,
+    "hide": false,
+    "icon": "blogger",
+    "id": "600a6d62b5a9d881713ea269",
+    "menuType": 3,
+    "name": "博客",
+    "parentId": "",
+    "path": "http://localhost:8088/articles",
+    "sortNumber": 200,
+    "updateTime": 1611302676373
   }
 ]

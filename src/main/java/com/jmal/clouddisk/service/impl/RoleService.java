@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
@@ -141,7 +140,7 @@ public class RoleService {
 
     /***
      * 更新相关角色的用户缓存
-     * @param roleDO
+     * @param roleDO RoleDO
      */
     private void updateUserCacheByRole(RoleDO roleDO) {
         if(roleDO.getId() == null){
@@ -150,20 +149,32 @@ public class RoleService {
         if(roleDO.getMenuIds() == null || roleDO.getMenuIds().isEmpty()){
             return;
         }
-        // RoleDO roleDO1 = mongoTemplate.findById(roleDO.getId(), RoleDO.class, COLLECTION_NAME);
-        // // 判断菜单是否发生了变化
-        // if(roleDO.getMenuIds().equals(roleDO1.getMenuIds())){
-        //     return;
-        // }
-        // 获取该角色的权限列表
-        List<String> authorities= menuService.getAuthorities(roleDO.getMenuIds());
         // 根据角色获取用户名列表
         List<String> usernameList = userService.getUserNameListByRole(roleDO.getId());
+        updateUserCacheByNames(usernameList);
+    }
+
+    /***
+     * 更新相关角色的用户缓存
+     * @param usernameList 用户名列表
+     */
+    private void updateUserCacheByNames(List<String> usernameList) {
         usernameList.forEach(username -> {
+            // 获取该用户最新的权限列表
+            List<String> authorities = userService.getAuthorities(username);
             if(CaffeineUtil.existsAuthoritiesCache(username)){
-                CaffeineUtil.setAuthoritiesCache(username,authorities);
+                CaffeineUtil.setAuthoritiesCache(username, authorities);
             }
         });
+    }
+
+    /***
+     * 更新相关角色的用户缓存
+     * @param rolesIds rolesIds
+     */
+    public void updateUserCacheByRole(List<String> rolesIds) {
+        List<String> usernameList = userService.getUserNameListByRole(rolesIds);
+        updateUserCacheByNames(usernameList);
     }
 
     /***
@@ -215,7 +226,7 @@ public class RoleService {
     public List<String> getAuthorities(List<String> roleIdList) {
         List<String> authorities = new ArrayList<>();
         Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(roleIdList));
+        query.addCriteria(Criteria.where("_id").in(roleIdList));
         List<RoleDO> roleDOList = mongoTemplate.find(query, RoleDO.class, COLLECTION_NAME);
         if(roleDOList.isEmpty()){
             return authorities;
@@ -247,4 +258,5 @@ public class RoleService {
         query.addCriteria(Criteria.where("_id").in(roleIds));
         return mongoTemplate.find(query, RoleDTO.class, COLLECTION_NAME);
     }
+
 }

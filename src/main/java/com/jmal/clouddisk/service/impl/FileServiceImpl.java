@@ -796,7 +796,7 @@ public class FileServiceImpl implements IFileService {
         if(userService.getDisabledWebp(userId)){
             return file;
         }
-        if("webp".equals(FileUtil.getSuffix(file))){
+        if(SUFFIX_WEBP.equals(FileUtil.getSuffix(file))){
             return file;
         }
         File outputFile = new File(file.getPath() + _SUFFIX_WEBP);
