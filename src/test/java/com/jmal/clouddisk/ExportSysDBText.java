@@ -5,7 +5,9 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.jmal.clouddisk.model.rbac.MenuDO;
+import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.service.impl.MenuService;
+import com.jmal.clouddisk.service.impl.RoleService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +32,9 @@ public class ExportSysDBText {
     @Autowired
     MenuService menuService;
 
+    @Autowired
+    RoleService roleService;
+
     /***
      * 把菜单导出为json文件
      */
@@ -40,6 +45,19 @@ public class ExportSysDBText {
         List<MenuDO> menuDOList = menuService.getAllMenus();
         if(menuDOList.size() > 0){
             FileUtil.writeString(JSONArray.toJSONString(menuDOList),file,StandardCharsets.UTF_8);
+        }
+    }
+
+    /***
+     * 把角色导出为json文件
+     */
+    @Test
+    public void exportRole() {
+        String now = LocalDateTimeUtil.formatNormal(LocalDateTime.now());
+        File file = new File("/Users/jmal/Downloads/role"+now+".json");
+        List<RoleDO> roleDOList = roleService.getAllRoles();
+        if(roleDOList.size() > 0){
+            FileUtil.writeString(JSONArray.toJSONString(roleDOList),file,StandardCharsets.UTF_8);
         }
     }
 }
