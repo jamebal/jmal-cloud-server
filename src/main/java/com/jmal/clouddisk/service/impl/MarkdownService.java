@@ -473,9 +473,12 @@ public class MarkdownService implements IMarkdownService {
             fileService.upsertFolder(docPaths, upload.getUsername(), upload.getUserId());
             currentDirectory = fileService.getUserDirectory(docPaths.toString());
         }
+        if (!StringUtils.isEmpty(upload.getIsDraft()) && upload.getIsDraft()) {
+            filename = fileDocument.getName();
+        }
         File file = Paths.get(fileProperties.getRootDir(), upload.getUsername(), currentDirectory, filename).toFile();
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
-        // 当有文件名和发布日期改变当话则把历史文件删掉
+        // 当有文件名和发布日期改变的话则把历史文件删掉
         if((!StringUtils.isEmpty(fileDocument.getName()) && !filename.equals(fileDocument.getName())) || (!StringUtils.isEmpty(fileDocument.getPath()) && !currentDirectory.equals(fileDocument.getPath()))){
             Path oldPath = Paths.get(fileProperties.getRootDir(), upload.getUsername(), fileDocument.getPath(), fileDocument.getName());
             if(Files.exists(oldPath)){
