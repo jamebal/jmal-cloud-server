@@ -2,7 +2,6 @@ package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.service.impl.RoleService;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -38,7 +37,7 @@ public class UserSettingController {
 
     @ApiOperation("把文件同步到数据库")
     @GetMapping("/user/setting/sync")
-    @Permission(value = "cloud:set:sync", only = RoleService.ADMINISTRATORS)
+    @Permission(value = "cloud:set:sync")
     public ResponseResult<Object> list(@RequestParam String username) {
         settingService.sync(username);
         return ResultUtil.success();

@@ -2,11 +2,9 @@ package com.jmal.clouddisk.interceptor;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.IFileService;
-import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
@@ -22,7 +20,10 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,8 +37,6 @@ import java.nio.file.Paths;
 @Component
 public class FileInterceptor implements HandlerInterceptor {
 
-    public static final String FILE_KEY = "fileKey";
-
     /***
      * 下载操作
      */
@@ -50,10 +49,6 @@ public class FileInterceptor implements HandlerInterceptor {
      * 缩略图
      */
     private static  final String THUMBNAIL = "thumbnail";
-
-    private static final long ONE_WEEK = 7 * 1000L * 60 * 60 * 24;
-
-    private final Cache<String, String> tokenCache = CaffeineUtil.getTokenCache();
 
     @Autowired
     FileProperties fileProperties;

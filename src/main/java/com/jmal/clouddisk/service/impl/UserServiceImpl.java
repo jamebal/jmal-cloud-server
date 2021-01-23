@@ -5,6 +5,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.github.benmanes.caffeine.cache.Cache;
+import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
@@ -51,6 +52,9 @@ public class UserServiceImpl implements IUserService {
 
     @Autowired
     IShareService shareService;
+
+    @Autowired
+    private MenuService menuService;
 
     @Autowired
     private RoleService roleService;
@@ -286,6 +290,10 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         if (count < 1) {
+            // 首先初始化菜单和角色
+            menuService.initMenus();
+            roleService.initRoles();
+            // 再初始化创建者
             String roleId = roleService.getRoleIdByCode(RoleService.ADMINISTRATORS);
             user.setRoles(Collections.singletonList(roleId));
             user.setCreator(true);
@@ -342,6 +350,10 @@ public class UserServiceImpl implements IUserService {
         ConsumerDO consumerDO = getUserInfoByName(username);
         if(consumerDO == null){
             return authorities;
+        }
+        // 如果是创建者, 直接返回所有权限
+        if(consumerDO.getCreator() != null && consumerDO.getCreator()){
+            return AnnoManageUtil.AUTHORITIES;
         }
         List<String> roleIdList = consumerDO.getRoles();
         if(roleIdList == null || roleIdList.isEmpty()){

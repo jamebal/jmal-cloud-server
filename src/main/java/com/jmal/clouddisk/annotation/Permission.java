@@ -19,8 +19,8 @@ public @interface Permission {
     String value() default "";
 
     /***
-     * @return 角色标识 只有该角色才能通过
+     * @return 只有晚盘创建者才能通过
      */
-    String only() default "";
+    boolean onlyCreator() default false;
 
 }

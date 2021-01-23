@@ -1,10 +1,11 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.extra.cglib.CglibUtil;
+import com.alibaba.fastjson.JSONArray;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
-import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
 import com.jmal.clouddisk.service.IUserService;
@@ -20,6 +21,8 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -269,10 +272,15 @@ public class RoleService {
     }
 
     /***
-     * 初始化角色
-     * @param List<MenuDO>
+     * 初始化角色数据
      */
-    public void initRoles(List<RoleDO> roleDOList) {
+    public void initRoles() {
+        InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("db/role.json");
+        if(inputStream == null){
+            return;
+        }
+        String json = new String(IoUtil.readBytes(inputStream), StandardCharsets.UTF_8);
+        List<RoleDO> roleDOList = JSONArray.parseArray(json,RoleDO.class);
         mongoTemplate.dropCollection(COLLECTION_NAME);
         mongoTemplate.insertAll(roleDOList);
     }
@@ -280,7 +288,6 @@ public class RoleService {
     /***
      * 获取roleId
      * @param roleCode roleCode
-     * @return
      */
     public String getRoleIdByCode(String roleCode) {
         Query query = new Query();

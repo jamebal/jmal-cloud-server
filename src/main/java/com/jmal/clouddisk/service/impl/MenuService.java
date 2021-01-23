@@ -1,6 +1,8 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.extra.cglib.CglibUtil;
+import com.alibaba.fastjson.JSONArray;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.MenuDTO;
@@ -16,6 +18,8 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -227,10 +231,15 @@ public class MenuService {
     }
 
     /***
-     * 初始化菜单
-     * @param menuDOList List<MenuDO>
+     * 初始化菜单数据
      */
-    public void initMenus(List<MenuDO> menuDOList) {
+    public void initMenus() {
+        InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("db/menu.json");
+        if(inputStream == null){
+            return;
+        }
+        String json = new String(IoUtil.readBytes(inputStream), StandardCharsets.UTF_8);
+        List<MenuDO> menuDOList = JSONArray.parseArray(json,MenuDO.class);
         mongoTemplate.dropCollection(COLLECTION_NAME);
         mongoTemplate.insertAll(menuDOList);
     }
