@@ -59,7 +59,7 @@ public class UserController {
 
     @ApiOperation(value = "重置密码")
     @PutMapping("/reset-pass")
-    @Permission("sys:user:update")
+    @Permission(value = "sys:user:update")
     public ResponseResult<Object> resetPass(ConsumerDO consumer){
         return service.resetPass(consumer);
     }

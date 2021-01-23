@@ -25,6 +25,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -85,15 +86,23 @@ public class UserServiceImpl implements IUserService {
         if(idList.contains(currentUserId)){
             return ResultUtil.warning("不能删除自己");
         }
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(idList));
-        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
+        Query query1 = new Query();
+        query1.addCriteria(Criteria.where("_id").in(idList));
+        List<ConsumerDO> userList = mongoTemplate.find(query1, ConsumerDO.class, COLLECTION_NAME);
+        // 过滤掉创建者
+        ConsumerDO creator = userList.stream().filter(user -> user.getCreator() != null && user.getCreator()).findAny().orElse(null);
+        if(creator != null){
+            idList = idList.stream().filter(id -> !id.equals(creator.getId())).collect(Collectors.toList());
+            userList.remove(creator);
+        }
         // 删除关联文件
         fileService.deleteAllByUser(userList);
         // 删除关联分享
         shareService.deleteAllByUser(userList);
         // 删除关联token
         authDAO.deleteAllByUser(userList);
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(idList));
         mongoTemplate.remove(query, COLLECTION_NAME);
         return ResultUtil.success();
     }
@@ -277,7 +286,9 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         if (count < 1) {
-            user.setRoles(Collections.singletonList("Administrators"));
+            String roleId = roleService.getRoleIdByCode(RoleService.ADMINISTRATORS);
+            user.setRoles(Collections.singletonList(roleId));
+            user.setCreator(true);
             user.setShowName(user.getUsername());
             user.setQuota(15);
             user.setPassword(SecureUtil.md5(user.getPassword()));

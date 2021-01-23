@@ -42,5 +42,7 @@ public class ConsumerDO {
     LocalDateTime createTime;
     @ApiModelProperty(name = "updateTime", value = "修改时间", hidden = true)
     LocalDateTime updateTime;
+    @ApiModelProperty(name = "creator", value = "晚盘创建者", hidden = true)
+    Boolean creator;
 
 }

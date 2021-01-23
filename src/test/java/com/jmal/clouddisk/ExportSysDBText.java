@@ -2,7 +2,6 @@ package com.jmal.clouddisk;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IoUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
@@ -15,7 +14,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.File;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -44,7 +42,7 @@ public class ExportSysDBText {
         File file = new File("/Users/jmal/Downloads/menu"+now+".json");
         List<MenuDO> menuDOList = menuService.getAllMenus();
         if(menuDOList.size() > 0){
-            FileUtil.writeString(JSONArray.toJSONString(menuDOList),file,StandardCharsets.UTF_8);
+            FileUtil.writeString(JSONArray.toJSONString(menuDOList),file, StandardCharsets.UTF_8);
         }
     }
 

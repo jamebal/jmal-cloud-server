@@ -267,4 +267,25 @@ public class RoleService {
     public List<RoleDO> getAllRoles() {
         return mongoTemplate.findAll(RoleDO.class, COLLECTION_NAME);
     }
+
+    /***
+     * 初始化角色
+     * @param List<MenuDO>
+     */
+    public void initRoles(List<RoleDO> roleDOList) {
+        mongoTemplate.dropCollection(COLLECTION_NAME);
+        mongoTemplate.insertAll(roleDOList);
+    }
+
+    /***
+     * 获取roleId
+     * @param roleCode roleCode
+     * @return
+     */
+    public String getRoleIdByCode(String roleCode) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("code").is(roleCode));
+        RoleDO roleDO = mongoTemplate.findOne(query, RoleDO.class, COLLECTION_NAME);
+        return roleDO == null ? "" : roleDO.getId();
+    }
 }
