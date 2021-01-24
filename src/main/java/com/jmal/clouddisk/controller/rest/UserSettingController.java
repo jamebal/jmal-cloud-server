@@ -57,8 +57,16 @@ public class UserSettingController {
     @ApiOperation("把文件同步到数据库")
     @GetMapping("/user/setting/sync")
     @Permission(value = "cloud:set:sync")
-    public ResponseResult<Object> list(@RequestParam String username) {
+    public ResponseResult<Object> sync(@RequestParam String username) {
         settingService.sync(username);
+        return ResultUtil.success();
+    }
+
+    @ApiOperation("重置角色菜单")
+    @PutMapping("/user/setting/resetMenuAndRole")
+    @Permission(onlyCreator = true)
+    public ResponseResult<Object> resetMenuAndRole() {
+        settingService.resetMenuAndRole();
         return ResultUtil.success();
     }
 

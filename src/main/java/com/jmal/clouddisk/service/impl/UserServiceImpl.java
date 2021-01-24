@@ -391,4 +391,13 @@ public class UserServiceImpl implements IUserService {
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
         return userList.stream().map(ConsumerDO::getUsername).collect(Collectors.toList());
     }
+
+    @Override
+    public boolean getIsCreator(String userId) {
+        ConsumerDO consumerDO = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
+        if(consumerDO == null){
+            return false;
+        }
+        return consumerDO.getCreator() != null && consumerDO.getCreator();
+    }
 }

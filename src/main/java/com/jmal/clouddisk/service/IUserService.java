@@ -148,4 +148,10 @@ public interface IUserService {
      * @return 用户名列表
      */
     List<String> getUserNameListByRole(List<String> rolesIds);
+
+    /***
+     * 判断该用户是否为创建者
+     * @param userId userId
+     */
+    boolean getIsCreator(String userId);
 }

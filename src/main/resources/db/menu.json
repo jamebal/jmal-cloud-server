@@ -177,9 +177,9 @@
     "menuType": 2,
     "name": "网盘设置",
     "parentId": "",
-    "path": "/setting/manager-cloud",
+    "path": "/setting/cloudManager",
     "sortNumber": 15,
-    "updateTime": 1611286449322
+    "updateTime": 1611461927137
   },
   {
     "authority": "",
@@ -604,7 +604,7 @@
     "authority": "",
     "component": "http://localhost:8088/articles",
     "createTime": 1611296098682,
-    "hide": false,
+    "hide": true,
     "icon": "blogger",
     "id": "600a6d62b5a9d881713ea269",
     "menuType": 3,
@@ -612,6 +612,20 @@
     "parentId": "",
     "path": "http://localhost:8088/articles",
     "sortNumber": 200,
-    "updateTime": 1611302676373
+    "updateTime": 1611402594409
+  },
+  {
+    "authority": "",
+    "component": "/setting/authAPP",
+    "createTime": 1611461359808,
+    "hide": false,
+    "icon": "shouquan",
+    "id": "600cf2ef194ba43988898423",
+    "menuType": 2,
+    "name": "授权应用",
+    "parentId": "",
+    "path": "/setting/authAPP",
+    "sortNumber": 16,
+    "updateTime": 1611461838684
   }
 ]

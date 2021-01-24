@@ -21,6 +21,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -49,6 +50,22 @@ public class SettingService {
 
     @Autowired
     private IAuthDAO authDAO;
+
+    @Autowired
+    private MenuService menuService;
+
+    @Autowired
+    private RoleService roleService;
+
+    @PostConstruct
+    public void init(){
+        // 启动时检测是否存在菜单，不存在则初始化
+        if(!menuService.existsMenu()){
+            log.info("初始化角色、菜单！");
+            menuService.initMenus();
+            roleService.initRoles();
+        }
+    }
 
     /***
      * 把文件同步到数据库
@@ -147,5 +164,10 @@ public class SettingService {
      */
     public void deleteAccessToken(String id) {
         authDAO.deleteAccessToken(id);
+    }
+
+    public void resetMenuAndRole() {
+        menuService.initMenus();
+        roleService.initRoles();
     }
 }

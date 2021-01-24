@@ -260,4 +260,11 @@ public class MenuService {
         List<MenuDO> menuDOList = getAllMenus();
         return menuDOList.stream().map(MenuDO::getId).collect(Collectors.toList());
     }
+
+    /***
+     * 是否存在菜单
+     */
+    public boolean existsMenu(){
+       return mongoTemplate.exists(new Query(), COLLECTION_NAME);
+    }
 }
