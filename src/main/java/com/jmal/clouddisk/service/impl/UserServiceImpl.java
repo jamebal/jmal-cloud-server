@@ -369,6 +369,10 @@ public class UserServiceImpl implements IUserService {
         if(consumerDO == null || consumerDO.getRoles() == null){
             return menuIdList;
         }
+        if(consumerDO.getCreator() != null && consumerDO.getCreator()){
+            // 如果是创建者则返回所有菜单
+            return menuService.getAllMenuIdList();
+        }
         return roleService.getMenuIdList(consumerDO.getRoles());
     }
 

@@ -111,12 +111,12 @@ public class FileServiceImpl implements IFileService {
     private static final AES aes = SecureUtil.aes();
 
     /***
-     * 断点恢复上传缓存(以上传的缓存)
+     * 断点恢复上传缓存(已上传的缓存)
      */
     private final Cache<String, CopyOnWriteArrayList<Integer>> resumeCache = CaffeineUtil.getResumeCache();
     /***
      * 上传大文件是需要分片上传，再合并
-     * 以写入(合并)的分片缓存
+     * 已写入(合并)的分片缓存
      */
     private final Cache<String, CopyOnWriteArrayList<Integer>> writtenCache = CaffeineUtil.getWrittenCache();
     /***
@@ -1307,7 +1307,7 @@ public class FileServiceImpl implements IFileService {
             unWrittenChunks.add(chunkNumber);
             unWrittenCache.put(md5, unWrittenChunks);
         }
-        // 以写入的分片
+        // 已写入的分片
         CopyOnWriteArrayList<Integer> writtenChunks = writtenCache.get(md5, key -> new CopyOnWriteArrayList<>());
         Path filePath = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), upload.getFilename());
         Lock lock = chunkWriteLockCache.get(md5, key -> new ReentrantLock());
@@ -1522,7 +1522,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     /***
-     * 缓存以上传的分片
+     * 缓存已上传的分片
      * @param upload
      */
     private void setResumeCache(UploadApiParamDTO upload) {

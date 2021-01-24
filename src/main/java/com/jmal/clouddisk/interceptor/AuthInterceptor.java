@@ -3,7 +3,6 @@ package com.jmal.clouddisk.interceptor;
 import cn.hutool.core.thread.ThreadUtil;
 import com.alibaba.fastjson.JSON;
 import com.github.benmanes.caffeine.cache.Cache;
-import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
 import com.jmal.clouddisk.model.UserTokenDO;
@@ -125,15 +124,20 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (StringUtils.isEmpty(token)) {
             token = request.getParameter(ACCESS_TOKEN);
         }
+        if(StringUtils.isEmpty(token)){
+            return null;
+        }
         UserAccessTokenDO userAccessTokenDO = authDAO.getUserNameByAccessToken(token);
+        if(userAccessTokenDO == null){
+            return null;
+        }
         String username = userAccessTokenDO.getUsername();
         if(StringUtils.isEmpty(username)){
-            throw new CommonException(ExceptionType.ACCESS_FORBIDDEN.getCode(), ExceptionType.ACCESS_FORBIDDEN.getMsg());
+            return null;
         }
         // access-token 认证通过 设置该身份的权限
-        if(userAccessTokenDO.getAuthorities() != null){
-            setAuthorities(username, userAccessTokenDO.getAuthorities());
-        }
+        ThreadUtil.execute(() -> authDAO.updateAccessToken(username));
+        setAuthorities(username);
         return userAccessTokenDO.getUsername();
     }
 

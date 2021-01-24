@@ -6,6 +6,8 @@ import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.model.UserAccessTokenDO;
+import com.jmal.clouddisk.model.UserAccessTokenDTO;
 import com.jmal.clouddisk.model.WebsiteSettingDTO;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 import com.jmal.clouddisk.repository.IAuthDAO;
@@ -112,16 +114,38 @@ public class SettingService {
     /***
      * 生成accessToken
      * @param username 用户名
+     * @param tokenName tokenName
      * @return ResponseResult
      */
-    public ResponseResult<String> generateAccessToken(String username) {
+    public ResponseResult<String> generateAccessToken(String username, String tokenName) {
         byte[] key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue()).getEncoded();
         // 构建
         AES aes = SecureUtil.aes(key);
         // 加密为16进制表示
         String accessToken = aes.encryptHex(username);
-        authDAO.upsertAccessToken(username, accessToken);
+        UserAccessTokenDO userAccessTokenDO = new UserAccessTokenDO();
+        userAccessTokenDO.setName(tokenName);
+        userAccessTokenDO.setUsername(username);
+        userAccessTokenDO.setAccessToken(accessToken);
+        authDAO.generateAccessToken(userAccessTokenDO);
         return ResultUtil.success(accessToken);
     }
 
+    /***
+     * accessToken列表
+     * @param username 用户名
+     * @return List<UserAccessTokenDTO>
+     */
+    public ResponseResult<List<UserAccessTokenDTO>> accessTokenList(String username) {
+        List<UserAccessTokenDTO> list = authDAO.accessTokenList(username);
+        return ResultUtil.success(list);
+    }
+
+    /***
+     * 删除accessToken
+     * @param id accessTokenId
+     */
+    public void deleteAccessToken(String id) {
+        authDAO.deleteAccessToken(id);
+    }
 }

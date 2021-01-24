@@ -295,4 +295,5 @@ public class RoleService {
         RoleDO roleDO = mongoTemplate.findOne(query, RoleDO.class, COLLECTION_NAME);
         return roleDO == null ? "" : roleDO.getId();
     }
+
 }

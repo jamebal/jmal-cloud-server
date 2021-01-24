@@ -3,7 +3,6 @@ package com.jmal.clouddisk.util;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -20,17 +19,17 @@ import java.util.concurrent.locks.Lock;
 public class CaffeineUtil {
 
     /***
-     * 以上传的分片索引
+     * 已上传的分片索引
      */
     private static Cache<String, CopyOnWriteArrayList<Integer>> resumeCache;
 
     /***
-     * 以写入的分片索引
+     * 已写入的分片索引
      */
     private static Cache<String, CopyOnWriteArrayList<Integer>> writtenCache;
 
     /***
-     * 未写入(以上传)的分片索引
+     * 未写入(已上传)的分片索引
      */
     private static Cache<String, CopyOnWriteArrayList<Integer>> unWrittenCache;
 

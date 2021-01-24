@@ -1,13 +1,14 @@
 package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.annotation.Permission;
+import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
-import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.annotations.Api;
@@ -47,6 +48,9 @@ public class FileController {
     AuthInterceptor authInterceptor;
 
     @Autowired
+    UserLoginHolder userLoginHolder;
+
+    @Autowired
     IUserService service;
 
     @ApiOperation("文件列表")
@@ -78,12 +82,12 @@ public class FileController {
     }
 
     @ApiOperation("图片上传(Typora自定义命令上传图片接口)")
-    @PostMapping("/public/img-upload")
+    @PostMapping("/api/img-upload")
+    @Permission("cloud:file:upload")
     public String imgUpload(HttpServletRequest request, MultipartFile file) {
-        String username = authInterceptor.getUserNameByAccessToken(request);
         String filepath = request.getHeader("filepath");
         String baseUrl = request.getHeader("baseurl");
-        return fileService.imgUpload(username, baseUrl, filepath, file);
+        return fileService.imgUpload(userLoginHolder.getUsername(), baseUrl, filepath, file);
     }
 
     @ApiOperation("文件上传")

@@ -251,4 +251,13 @@ public class MenuService {
     public List<MenuDO> getAllMenus() {
         return mongoTemplate.findAll(MenuDO.class, COLLECTION_NAME);
     }
+
+    /***
+     * 获取所有菜单Id
+     * @return List<String>
+     */
+    public List<String> getAllMenuIdList() {
+        List<MenuDO> menuDOList = getAllMenus();
+        return menuDOList.stream().map(MenuDO::getId).collect(Collectors.toList());
+    }
 }

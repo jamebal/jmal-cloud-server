@@ -137,7 +137,7 @@ public class TagService {
      */
     public ResponseResult<Object> add(TagDTO tagDTO) {
         if (tagExists(tagDTO)) {
-            return ResultUtil.warning("该标签名称以存在");
+            return ResultUtil.warning("该标签名称已存在");
         }
         tagDTO.setSlug(getSlug(tagDTO));
         TagDO tag = new TagDO();

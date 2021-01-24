@@ -91,7 +91,7 @@ public class ShareController {
     public ResponseResult<Object> accessShareOpenDir(@RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize) {
         ShareDO shareDO = shareService.getShare(share);
         if(!shareService.checkWhetherExpired(shareDO)){
-            return ResultUtil.warning("该分享以过期");
+            return ResultUtil.warning("该分享已过期");
         }
         return shareService.accessShareOpenDir(shareDO, fileId, pageIndex, pageSize );
     }
@@ -148,11 +148,11 @@ public class ShareController {
     public ResponseResult<Object> preview(@RequestParam String shareId,@RequestParam String fileId) {
         ShareDO shareDO = shareService.getShare(shareId);
         if(!shareService.checkWhetherExpired(shareDO)){
-            return ResultUtil.warning("该分享以过期");
+            return ResultUtil.warning("该分享已过期");
         }
         ConsumerDO consumer = userService.userInfoById(shareDO.getUserId());
         if(consumer == null){
-            return ResultUtil.warning("该分享以过期");
+            return ResultUtil.warning("该分享已过期");
         }
         return ResultUtil.success(fileService.getById(fileId,consumer.getUsername()));
     }
