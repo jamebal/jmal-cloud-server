@@ -13,7 +13,7 @@ JmalCloud 是一款私有云存储网盘项目
 
 - nginx 1.18+
 - mongodb 4.0+
-- jdk 1.8+
+- jdk 1.8
 
 #### 2.下载网盘界面程序，并配置nginx
 
