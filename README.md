@@ -1,7 +1,5 @@
 # jmal-cloud-server
-网盘后端服务
-
- [jmal-cloud-view](https://github.com/jamebal/jmal-cloud-view) 的后端服务
+基于springboot [JmalCloud](https://github.com/jamebal/jmal-cloud-view) 的后端服务
  
  ## dependency
  mongodb
