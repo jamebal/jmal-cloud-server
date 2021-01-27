@@ -473,13 +473,18 @@ public class MarkdownService implements IMarkdownService {
             fileService.upsertFolder(docPaths, upload.getUsername(), upload.getUserId());
             currentDirectory = fileService.getUserDirectory(docPaths.toString());
         }
-        if (!StringUtils.isEmpty(upload.getIsDraft()) && upload.getIsDraft()) {
+        // 文档为草稿时，文件名使用草稿的文件名
+        if (!StringUtils.isEmpty(upload.getIsDraft()) && upload.getIsDraft()  && !StringUtils.isEmpty(fileDocument.getName())) {
             filename = fileDocument.getName();
         }
         File file = Paths.get(fileProperties.getRootDir(), upload.getUsername(), currentDirectory, filename).toFile();
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
-        // 当有文件名和发布日期改变的话则把历史文件删掉
-        if((!StringUtils.isEmpty(fileDocument.getName()) && !filename.equals(fileDocument.getName())) || (!StringUtils.isEmpty(fileDocument.getPath()) && !currentDirectory.equals(fileDocument.getPath()))){
+        // 当有文件名或文件路径改变的话则把历史文件删掉
+        // 文件名是否改变
+        boolean isChangeFileName = !StringUtils.isEmpty(fileDocument.getName()) && !filename.equals(fileDocument.getName());
+        // 文件路径是否改变
+        boolean isChangePath = !StringUtils.isEmpty(fileDocument.getPath()) && !currentDirectory.equals(fileDocument.getPath());
+        if(isChangeFileName || isChangePath){
             Path oldPath = Paths.get(fileProperties.getRootDir(), upload.getUsername(), fileDocument.getPath(), fileDocument.getName());
             if(Files.exists(oldPath)){
                 FileUtil.del(oldPath);

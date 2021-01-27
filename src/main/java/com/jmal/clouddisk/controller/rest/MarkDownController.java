@@ -34,7 +34,7 @@ public class MarkDownController {
 
     @ApiOperation("获取markdown内容")
     @GetMapping("/public/p")
-    public ResponseResult<? extends Object> getMarkDownContent(ArticleDTO articleDTO, Integer pageIndex, Integer pageSize) {
+    public ResponseResult<?> getMarkDownContent(ArticleDTO articleDTO, Integer pageIndex, Integer pageSize) {
         articleDTO.setPageIndex(pageIndex);
         articleDTO.setPageSize(pageSize);
         if (StringUtils.isEmpty(articleDTO.getMark())) {
