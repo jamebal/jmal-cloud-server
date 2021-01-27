@@ -93,3 +93,9 @@ server {
 - [ ] iOS APP
 - [ ] Android APP
 - [ ] PC
+
+### 许可
+
+[MIT](https://github.com/jamebal/jmal-cloud-view/blob/master/LICENSE) license.
+
+Copyright (c) 2020-present jmal
