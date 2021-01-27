@@ -94,6 +94,9 @@ public class FileServiceImpl implements IFileService {
     IShareService shareService;
 
     @Autowired
+    UserLoginHolder userLoginHolder;
+
+    @Autowired
     private SimpMessagingTemplate template;
 
     public static final String COLLECTION_NAME = "fileDocument";
@@ -352,7 +355,8 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public String imgUpload(String username, String baseUrl, String filepath, MultipartFile file) {
+    public String imgUpload(String baseUrl, String filepath, MultipartFile file) {
+        String username = userLoginHolder.getUsername();
         String fileName = file.getOriginalFilename();
         Path path = Paths.get(fileProperties.getRootDir(), username, filepath, fileName);
         try {
@@ -360,6 +364,9 @@ public class FileServiceImpl implements IFileService {
             Path parentPath = path.getParent();
             FileUtil.writeFromStream(file.getInputStream(), newFile);
             loopCreateDir(username, Paths.get(fileProperties.getRootDir(), username).getNameCount(), path);
+            if(!userService.getDisabledWebp(userLoginHolder.getUserId())){
+                fileName += _SUFFIX_WEBP;
+            }
             return baseUrl + Paths.get("/file", username, filepath, fileName).toString();
         } catch (IOException e) {
             throw new CommonException(ExceptionType.FAIL_UPLOAD_FILE.getCode(), ExceptionType.FAIL_UPLOAD_FILE.getMsg());

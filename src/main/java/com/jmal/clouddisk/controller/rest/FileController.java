@@ -82,12 +82,12 @@ public class FileController {
     }
 
     @ApiOperation("图片上传(Typora自定义命令上传图片接口)")
-    @PostMapping("/api/img-upload")
+    @PostMapping("/img-upload")
     @Permission("cloud:file:upload")
     public String imgUpload(HttpServletRequest request, MultipartFile file) {
         String filepath = request.getHeader("filepath");
         String baseUrl = request.getHeader("baseurl");
-        return fileService.imgUpload(userLoginHolder.getUsername(), baseUrl, filepath, file);
+        return fileService.imgUpload(baseUrl, filepath, file);
     }
 
     @ApiOperation("文件上传")

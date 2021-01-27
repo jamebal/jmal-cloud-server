@@ -50,13 +50,12 @@ public interface IFileService {
 
     /**
      * 上传图片
-     * @param username 用户名
      * @param file 文件
      * @param baseUrl baseUrl
      * @param filepath 文件要存放的相对路径
      * @return String
      */
-    String imgUpload(String username, String baseUrl, String filepath, MultipartFile file);
+    String imgUpload(String baseUrl, String filepath, MultipartFile file);
 
     /***
      * 上传文件
