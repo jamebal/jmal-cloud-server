@@ -62,6 +62,10 @@ public class FileProperties {
      * 文件监控扫描时间间隔(秒)
      */
     private Long timeInterval = 10L;
+    /***
+     * webDAV协议前缀
+     */
+    private String webDavPrefix;
 
     public String getRootDir(){
         return Paths.get(rootDir).toString();
@@ -82,4 +86,6 @@ public class FileProperties {
     public String getDocumentDir(){
         return Paths.get(documentDir).toString();
     }
+
+
 }

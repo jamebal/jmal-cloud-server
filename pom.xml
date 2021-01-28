@@ -17,10 +17,19 @@
     <properties>
         <java.version>1.8</java.version>
         <maven-jar-plugin.version>3.0.0</maven-jar-plugin.version>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.version>1.8</java.version>
+        <milton.version>2.7.1.5</milton.version>
     </properties>
 
-    <dependencies>
 
+    <dependencies>
+        <dependency>
+            <groupId>io.milton</groupId>
+            <artifactId>milton-server-ent</artifactId>
+            <version>${milton.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.github.nintha</groupId>
             <artifactId>webp-imageio-core</artifactId>

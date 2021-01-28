@@ -15,3 +15,6 @@ file:
   simText: [txt,html,htm,asp,jsp,xml,json,properties,md,gitignore,java,py,c,cpp,sql,sh,bat,m,bas,prg,cmd]
   #文档类型
   doument: ["pdf","word","doc","docs","xls","xl","md"]
+  # webDAV协议前缀
+  web-dav-prefix: /webDAV
+
