@@ -1,6 +1,7 @@
 package com.jmal.clouddisk;
 
 
+import cn.hutool.core.lang.Console;
 import com.jmal.clouddisk.config.FileProperties;
 import io.milton.config.HttpManagerBuilder;
 import io.milton.http.HttpManager;
@@ -21,6 +22,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -57,6 +59,7 @@ public class UrlFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        // doMiltonProcessing((HttpServletRequest) request, (HttpServletResponse) response);
         HttpServletRequest httpRequest = (HttpServletRequest)request;
         String uri = httpRequest.getRequestURI();
         if(uri.startsWith(API)) {
@@ -64,22 +67,23 @@ public class UrlFilter implements Filter {
             httpRequest.getRequestDispatcher(uri).forward(request,response);
         }
         // 以/webDAV 开头的走webDAV协议
-        if(uri.startsWith(fileProperties.getWebDavPrefix())){
+        if(uri.startsWith(fileProperties.getWebDavPrefixPath())){
             doMiltonProcessing((HttpServletRequest) request, (HttpServletResponse) response);
+            return;
         }
         chain.doFilter(request,response);
     }
 
+    /***
+     * webDAV 的请求
+     * @param req HttpServletRequest
+     * @param resp HttpServletResponse
+     */
     private void doMiltonProcessing(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             MiltonServlet.setThreadlocals(req, resp);
             Request request = new io.milton.servlet.ServletRequest(req, req.getServletContext());
             Response response = new io.milton.servlet.ServletResponse(resp);
-            if("OPTIONS".equals(req.getMethod()) && StringUtils.isEmpty(req.getHeader("authorization"))){
-                List<String> list = new ArrayList<>();
-                list.add("Basic realm =\" server\"");
-                response.setAuthenticateHeader(list);
-            }
             httpManager.process(request, response);
         } finally {
             MiltonServlet.clearThreadlocals();

@@ -16,5 +16,5 @@ file:
   #文档类型
   doument: ["pdf","word","doc","docs","xls","xl","md"]
   # webDAV协议前缀
-  web-dav-prefix: /webDAV
+  web-dav-prefix: webDAV
 

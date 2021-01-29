@@ -19,7 +19,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 @Component
@@ -35,7 +37,10 @@ public class MiltonConfig {
         FileSystemResourceFactory factory = new FileSystemResourceFactory();
         factory.setAllowDirectoryBrowsing(true);
         factory.setRoot(new File(fileProperties.getRootDir()));
-        factory.setSecurityManager(new NullSecurityManager());
+        Map<String, String> nameAndPasswords = new HashMap<>(16);
+        nameAndPasswords.put("user","pwd");
+        factory.setSecurityManager(new MySimpleSecurityManager("user", nameAndPasswords));
+        factory.setContextPath(fileProperties.getWebDavPrefix());
         return factory;
     }
 
@@ -46,14 +51,15 @@ public class MiltonConfig {
         builder.setBuffering(DefaultHttp11ResponseHandler.BUFFERING.whenNeeded);
         builder.setEnableCompression(false);
         builder.setEnableOptionsAuth(true);
-        List<AuthenticationHandler> authenticationHandlers = new ArrayList<>();
-        authenticationHandlers.add(myAuthorizationHandler);
-        AuthenticationService authenticationService = new AuthenticationService(authenticationHandlers);
-        DefaultHttp11ResponseHandler rh = new DefaultHttp11ResponseHandler(authenticationService, new DefaultETagGenerator(), new SimpleContentGenerator());
-        List<Filter> list = new ArrayList<>();
-        list.add(new PreAuthenticationFilter(rh, authenticationHandlers));
-        list.add(new StandardFilter());
-        builder.setFilters(list);
+        builder.setEnableBasicAuth(true);
+        // List<AuthenticationHandler> authenticationHandlers = new ArrayList<>();
+        // authenticationHandlers.add(myAuthorizationHandler);
+        // AuthenticationService authenticationService = new AuthenticationService(authenticationHandlers);
+        // DefaultHttp11ResponseHandler rh = new DefaultHttp11ResponseHandler(authenticationService, new DefaultETagGenerator(), new SimpleContentGenerator());
+        // List<Filter> list = new ArrayList<>();
+        // list.add(new PreAuthenticationFilter(rh, authenticationHandlers));
+        // list.add(new StandardFilter());
+        // builder.setFilters(list);
         return builder;
     }
 }

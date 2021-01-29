@@ -1,15 +1,11 @@
 package com.jmal.clouddisk.config;
 
-import com.jmal.clouddisk.config.YamlPropertyLoaderFactory;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 /**
  * @Description 文件存储配置类
@@ -66,6 +62,10 @@ public class FileProperties {
      * webDAV协议前缀
      */
     private String webDavPrefix;
+
+    public String getWebDavPrefixPath(){
+        return "/" + webDavPrefix;
+    }
 
     public String getRootDir(){
         return Paths.get(rootDir).toString();
