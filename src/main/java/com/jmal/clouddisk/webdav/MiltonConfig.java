@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.webdav;
 
 import com.jmal.clouddisk.config.FileProperties;
+import io.milton.config.HttpManagerBuilder;
 import io.milton.http.ResourceFactory;
 import io.milton.http.fs.FileSystemResourceFactory;
 import io.milton.http.http11.DefaultHttp11ResponseHandler;
@@ -30,8 +31,8 @@ public class MiltonConfig {
     }
 
     @Bean
-    MyHttpManagerBuilder httpManagerBuilder() {
-        MyHttpManagerBuilder builder = new MyHttpManagerBuilder();
+    HttpManagerBuilder httpManagerBuilder() {
+        HttpManagerBuilder builder = new HttpManagerBuilder();
         builder.setResourceFactory(resourceFactory());
         builder.setBuffering(DefaultHttp11ResponseHandler.BUFFERING.whenNeeded);
         builder.setEnableCompression(false);

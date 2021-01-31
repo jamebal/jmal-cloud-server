@@ -1,8 +1,9 @@
 package com.jmal.clouddisk;
 
 
+import cn.hutool.core.lang.Console;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.webdav.MyHttpManagerBuilder;
+import io.milton.config.HttpManagerBuilder;
 import io.milton.http.HttpManager;
 import io.milton.http.Request;
 import io.milton.http.ResourceFactory;
@@ -35,7 +36,7 @@ public class UrlFilter implements Filter {
     private FileProperties fileProperties;
 
     @Autowired
-    private MyHttpManagerBuilder httpManagerBuilder;
+    private HttpManagerBuilder httpManagerBuilder;
 
     private HttpManager httpManager;
 
@@ -80,6 +81,10 @@ public class UrlFilter implements Filter {
             Request request = new io.milton.servlet.ServletRequest(req, req.getServletContext());
             Response response = new io.milton.servlet.ServletResponse(resp);
             httpManager.process(request, response);
+            if(response.getHeaders().containsKey("DAV")){
+                response.setDavHeader("1");
+            }
+            Console.log(response.getHeaders());
         } finally {
             MiltonServlet.clearThreadlocals();
             resp.flushBuffer();
