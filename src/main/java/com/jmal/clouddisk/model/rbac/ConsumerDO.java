@@ -24,6 +24,8 @@ public class ConsumerDO {
     String showName;
     @ApiModelProperty(name = "password", value = "密码", example = "123456")
     String password;
+    @ApiModelProperty(hidden = true, value = "密码加密后的字符串")
+    String encryptPwd;
     @ApiModelProperty(value = "头像", example = "https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif")
     String avatar;
     @ApiModelProperty(name = "slogan", value = "标语")

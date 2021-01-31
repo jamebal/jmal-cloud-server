@@ -1,9 +1,8 @@
 package com.jmal.clouddisk;
 
 
-import cn.hutool.core.lang.Console;
 import com.jmal.clouddisk.config.FileProperties;
-import io.milton.config.HttpManagerBuilder;
+import com.jmal.clouddisk.webdav.MyHttpManagerBuilder;
 import io.milton.http.HttpManager;
 import io.milton.http.Request;
 import io.milton.http.ResourceFactory;
@@ -14,15 +13,11 @@ import io.milton.http.template.ViewResolver;
 import io.milton.servlet.MiltonServlet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -40,7 +35,7 @@ public class UrlFilter implements Filter {
     private FileProperties fileProperties;
 
     @Autowired
-    private HttpManagerBuilder httpManagerBuilder;
+    private MyHttpManagerBuilder httpManagerBuilder;
 
     private HttpManager httpManager;
 

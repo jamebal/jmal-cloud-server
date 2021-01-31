@@ -1,6 +1,10 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
+import cn.hutool.crypto.symmetric.SymmetricCrypto;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IAuthService;
@@ -57,6 +61,20 @@ public class AuthServiceImpl implements IAuthService {
             }
         }
         return ResultUtil.error("用户名或密码错误");
+    }
+
+    public static void main(String[] args) {
+        String content = "wigojmafasdfasdfasdfasdfl";
+
+        String encryptHex = "1c43e028f1c0d7a110fa625b28812b922d42c0e72ef094b38e0fe2993bbf0dd2";
+        long stime = System.currentTimeMillis();
+        SymmetricCrypto aes = new SymmetricCrypto(SymmetricAlgorithm.AES, "e10adc3949ba59abbe56e057f20f883e".getBytes());
+
+        Console.log(aes.encryptHex(content));
+
+        String decryptStr = aes.decryptStr(encryptHex, CharsetUtil.CHARSET_UTF_8);
+
+        Console.log(decryptStr, System.currentTimeMillis() - stime);
     }
 
     @Override

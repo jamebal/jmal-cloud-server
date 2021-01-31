@@ -2,7 +2,10 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
+import cn.hutool.crypto.symmetric.SymmetricCrypto;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
@@ -72,7 +75,11 @@ public class UserServiceImpl implements IUserService {
             if (consumerDTO.getQuota() == null) {
                 consumerDTO.setQuota(10);
             }
-            consumerDTO.setPassword(SecureUtil.md5(consumerDTO.getPassword()));
+            String originalPwd = consumerDTO.getPassword();
+            String password = SecureUtil.md5(originalPwd);
+            SymmetricCrypto aes = new SymmetricCrypto(SymmetricAlgorithm.AES, password.getBytes());
+            consumerDTO.setEncryptPwd(aes.encryptHex(originalPwd));
+            consumerDTO.setPassword(password);
             ConsumerDO consumerDO = new ConsumerDO();
             CglibUtil.copy(consumerDTO, consumerDO);
             consumerDO.setCreateTime(LocalDateTime.now());
@@ -247,7 +254,10 @@ public class UserServiceImpl implements IUserService {
                 Query query = new Query();
                 query.addCriteria(Criteria.where("_id").is(userId));
                 Update update = new Update();
-                update.set("password", SecureUtil.md5(newPassword));
+                String password = SecureUtil.md5(newPassword);
+                SymmetricCrypto aes = new SymmetricCrypto(SymmetricAlgorithm.AES, password.getBytes());
+                update.set("encryptPwd", aes.encryptHex(newPassword));
+                update.set("password", password);
                 mongoTemplate.upsert(query, update, COLLECTION_NAME);
                 return ResultUtil.successMsg("修改成功!");
             }
@@ -262,7 +272,11 @@ public class UserServiceImpl implements IUserService {
             Query query = new Query();
             query.addCriteria(Criteria.where("_id").is(userId));
             Update update = new Update();
-            update.set("password", SecureUtil.md5("jmalcloud"));
+            String originalPwd = "jmalcloud";
+            String password = SecureUtil.md5(originalPwd);
+            SymmetricCrypto aes = new SymmetricCrypto(SymmetricAlgorithm.AES, password.getBytes());
+            update.set("encryptPwd", aes.encryptHex(originalPwd));
+            update.set("password", password);
             mongoTemplate.upsert(query, update, COLLECTION_NAME);
             return ResultUtil.successMsg("重置密码成功!");
         }
@@ -277,6 +291,16 @@ public class UserServiceImpl implements IUserService {
             return consumer.getId();
         }
         return null;
+    }
+
+    @Cacheable(value = "getPasswordByUserName", key = "#username")
+    public String getPasswordByUserName(String username) {
+        ConsumerDO consumer = getUserInfoByName(username);
+        if (consumer == null) {
+            return "";
+        }
+        SymmetricCrypto aes = new SymmetricCrypto(SymmetricAlgorithm.AES, consumer.getPassword().getBytes());
+        return aes.decryptStr(consumer.getEncryptPwd(), CharsetUtil.CHARSET_UTF_8);
     }
 
     @Override
@@ -299,7 +323,11 @@ public class UserServiceImpl implements IUserService {
             user.setCreator(true);
             user.setShowName(user.getUsername());
             user.setQuota(15);
-            user.setPassword(SecureUtil.md5(user.getPassword()));
+            String originalPwd = user.getPassword();
+            String password = SecureUtil.md5(originalPwd);
+            SymmetricCrypto aes = new SymmetricCrypto(SymmetricAlgorithm.AES, password.getBytes());
+            user.setEncryptPwd(aes.encryptHex(originalPwd));
+            user.setPassword(password);
             user.setCreateTime(LocalDateTime.now());
             user.setId(null);
             mongoTemplate.save(user, COLLECTION_NAME);

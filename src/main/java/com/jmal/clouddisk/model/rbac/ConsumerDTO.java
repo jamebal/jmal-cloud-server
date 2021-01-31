@@ -29,6 +29,7 @@ public class ConsumerDTO {
     String showName;
     @ApiModelProperty(name = "password", value = "密码", example = "123456")
     String password;
+    String encryptPwd;
     @ApiModelProperty(name = "avatar", value = "头像")
     String avatar;
     @ApiModelProperty(name = "slogan", value = "标语")

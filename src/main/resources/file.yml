@@ -7,8 +7,8 @@ file:
   documentImgDir: /Image/Document/
   # 断点续传的临时文件目录名称 位于rootDir下,文件监控扫描忽略的目录
   chunkFileDir: ugyuvgbhnouvghjbnk
-  # 是否开启文件监控, 默认不开启(开启会损耗性能)
-  monitor: false
+  # 是否开启文件监控, 默认开启(开启会损耗性能), 开启的好处在于使用webDAV、FTP等修改文件会自动同步
+  monitor: true
   #文件监控扫描时间间隔(秒)
   timeInterval: 10
   #文本类型
