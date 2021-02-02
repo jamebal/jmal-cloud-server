@@ -486,12 +486,15 @@
             function typing () {
                 if (i <= str.length) {
                     divTyping.text(str.slice(0, i++))
+                    if(divTyping.css('display') === 'none'){
+                        divTyping.css('display', 'contents')
+                    }
                     timer = setTimeout(typing, 80)
                 } else {
                     clearTimeout(timer)
                 }
             }
-            setTimeout(typing, 100)
+            setTimeout(typing, 500)
             let labelIcon = $('.changeTheme i')
             let labelTitle = $('.changeTheme span')
             // 添加暗色主题
@@ -504,7 +507,7 @@
                 link.type = 'text/css';
                 link.id = "theme-css-dark";  // 加上id方便后面好查找到进行删除
                 link.rel = 'stylesheet';
-                link.href = '/articles/css/dark/index-2.0.css';
+                link.href = '/articles/css/dark/index-2.1.css';
                 document.getElementsByTagName("head")[0].appendChild(link);
                 labelIcon.removeClass('fa-moon')
                 labelIcon.addClass('fa-sun')

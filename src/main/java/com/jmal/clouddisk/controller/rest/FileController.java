@@ -162,9 +162,9 @@ public class FileController {
     @ApiOperation("显示缩略图")
     @GetMapping("/view/thumbnail")
     @Permission("cloud:file:list")
-    public ResponseEntity<Object> thumbnail(HttpServletRequest request, String id) {
+    public ResponseEntity<Object> thumbnail(String id) {
         ResultUtil.checkParamIsNull(id);
-        Optional<FileDocument> file = fileService.thumbnail(id, service.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN)));
+        Optional<FileDocument> file = fileService.thumbnail(id, userLoginHolder.getUsername());
         return getObjectResponseEntity(file);
     }
 
