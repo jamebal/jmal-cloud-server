@@ -18,7 +18,7 @@
                 </svg>
             </div>
             <div class="flex-text" th:each="tag,tagStat : ${markdown.tags}">
-               <a th:href="'/articles/tags/'+${tag.slug}" th:text="${tag.name}"></a>
+               <a th:href="'/tags/'+${tag.slug}" th:text="${tag.name}"></a>
             </div>
         </div>
     </div>

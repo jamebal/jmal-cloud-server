@@ -154,4 +154,11 @@ public interface IUserService {
      * @param userId userId
      */
     boolean getIsCreator(String userId);
+
+    /***
+     * 获取用户userId
+     * @param showName 用户名
+     * @return userId
+     */
+    String getUserIdByShowName(String showName);
 }

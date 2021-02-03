@@ -210,7 +210,7 @@ public class ArticlesController {
     @GetMapping("/articles/author/{username}")
     public String author(HttpServletRequest request, ModelMap map, @PathVariable String username) {
         boolean isPjax = pjaxMap(request, map, "articles-query");
-        String userId = userService.getUserIdByUserName(username);
+        String userId = userService.getUserIdByShowName(username);
         if (StringUtils.isEmpty(userId)) {
             return "404";
         }

@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
@@ -20,6 +21,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -53,6 +55,9 @@ public class SettingService {
 
     @Autowired
     private MenuService menuService;
+
+    @Autowired
+    private UserServiceImpl userService;
 
     @Autowired
     private RoleService roleService;
@@ -124,6 +129,10 @@ public class SettingService {
         }
         if(websiteSettingDTO.getAlonePages() == null){
             websiteSettingDTO.setAlonePages(new ArrayList<>());
+        }
+        String avatar = userService.getCreatorAvatar();
+        if(!StringUtils.isEmpty(avatar)){
+            websiteSettingDTO.setAvatar(avatar);
         }
         return websiteSettingDTO;
     }

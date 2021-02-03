@@ -30,7 +30,7 @@
                         <div class="layui-timeline-content layui-text">
                             <h3 class="layui-timeline-title" th:text="${articles.get(0).date()}"></h3>
                             <div class="brick" th:each="article : ${articles}">
-                                <a th:href="'/articles/s/'+${article.slug == null ? article.id:article.slug}">
+                                <a th:href="'/s/'+${article.slug == null ? article.id:article.slug}">
                                     <span class="time" th:text="${article.dateTime()}"></span>
                                     <span th:text="${article.name}"> </span>
                                 </a>

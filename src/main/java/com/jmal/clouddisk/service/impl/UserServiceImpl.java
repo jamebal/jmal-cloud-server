@@ -428,4 +428,29 @@ public class UserServiceImpl implements IUserService {
         }
         return consumerDO.getCreator() != null && consumerDO.getCreator();
     }
+
+    @Override
+    public String getUserIdByShowName(String showName) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("showName").is(showName));
+        ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
+        if(consumerDO != null){
+            return consumerDO.getId();
+        }
+        return "";
+    }
+
+    /***
+     * 获取创建者的头像
+     * @return 头像文件Id
+     */
+    public String getCreatorAvatar() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("creator").is(true));
+        ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
+        if(consumerDO == null){
+            return null;
+        }
+        return consumerDO.getAvatar();
+    }
 }

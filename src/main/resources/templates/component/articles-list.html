@@ -6,11 +6,11 @@
                     <section class="meta">
                         <div class="meta" id="header-meta">
                             <h2 class="title">
-                                <a th:href="'/articles/s/'+${article.slug == null ? article.id:article.slug}" th:text="${article.name}"></a>
+                                <a th:href="'/s/'+${article.slug == null ? article.id:article.slug}" th:text="${article.name}"></a>
                             </h2>
                             <div class="new-meta-box">
                                 <div class="new-meta-item author">
-                                    <a th:href="'/articles/author/'+${article.username}" rel="nofollow">
+                                    <a th:href="'/author/'+${article.username}" rel="nofollow">
                                         <img th:src="'/articles/s/view/thumbnail?id='+${article.avatar}">
                                         <p th:text="${article.username}"></p>
                                     </a>
@@ -32,7 +32,7 @@
                                     <div class="flex-text">
                                            <span class="flex-text" th:each="categoryDO,categoryStat : ${article.categories}">
                                             <span th:text="${categoryStat.index > 0?' , ':''}"></span>
-                                               <a th:href="'/articles/categories/'+${categoryDO.slug}" th:text="${categoryDO.name}"></a>
+                                               <a th:href="'/categories/'+${categoryDO.slug}" th:text="${categoryDO.name}"></a>
                                             </span>
                                     </div>
                                 </div>
@@ -45,7 +45,7 @@
                                     <div class="flex-text">
                                            <span class="flex-text" th:each="tag,tagStat : ${article.tags}">
                                             <span th:text="${tagStat.index > 0?' , ':''}"></span>
-                                               <a th:href="'/articles/tags/'+${tag.slug}" th:text="${tag.name}"></a>
+                                               <a th:href="'/tags/'+${tag.slug}" th:text="${tag.name}"></a>
                                             </span>
                                     </div>
                                 </div>
@@ -54,7 +54,7 @@
                         </div>
                     </section>
                     <section class="article typo">
-                        <a th:href="'/articles/s/'+${article.slug == null ? article.id:article.slug}">
+                        <a th:href="'/s/'+${article.slug == null ? article.id:article.slug}">
                             <div class="article-entry" itemprop="articleBody">
                                 <p>
                                     <img class="blog-background articles-list" style="display: none"

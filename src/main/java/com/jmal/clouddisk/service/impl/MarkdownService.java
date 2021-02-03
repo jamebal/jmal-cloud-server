@@ -228,7 +228,7 @@ public class MarkdownService implements IMarkdownService {
         if (fileDocument == null) {
             return null;
         }
-        String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
+        String username = userService.userInfoById(fileDocument.getUserId()).getShowName();
         fileDocument.setUsername(username);
         String filename = fileDocument.getName();
         fileDocument.setName(filename.substring(0, filename.length() - fileDocument.getSuffix().length() - 1));
@@ -353,6 +353,8 @@ public class MarkdownService implements IMarkdownService {
             List<TagDO> tags = tagService.getTagListByIds(markdownVO.getTagIds());
             markdownVO.setTags(tags);
         }
+        String username = userService.userInfoById(fileDocument.getUserId()).getShowName();
+        markdownVO.setUsername(username);
         return markdownVO;
     }
 

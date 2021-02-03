@@ -13,12 +13,12 @@
             <div class="inner">
                 <div class="blog-title"><span id="article-title" th:text="${markdown.name}"></span><span class="typed-cursor">_</span></div>
                 <div class="blog-description font-mono">
-                    <a itemprop="name" th:href="'/articles/author/'+${markdown.username}" rel="author" th:text="${markdown.username}"></a>
+                    <a itemprop="name" th:href="'/author/'+${markdown.username}" rel="author" th:text="${markdown.username}"></a>
                     <span th:text="'· '+${markdown.uploadTime()}"></span>
                     <span class="link"  th:if="${markdown.categories != null && markdown.categories.size() > 0}">
                     ·
                     <a th:each="categoryDO,categoryStat : ${markdown.categories}">
-                        <span th:text="${categoryStat.index > 0?' · ':''}"></span><a th:href="'/articles/categories/'+${categoryDO.name}" th:text="${categoryDO.name}"></a>
+                        <span th:text="${categoryStat.index > 0?' · ':''}"></span><a th:href="'/categories/'+${categoryDO.name}" th:text="${categoryDO.name}"></a>
                     </a>
                 </span>
                     <span class="edit"  th:if="${markdown.editable != null && markdown.editable}">
@@ -30,7 +30,7 @@
                             <use xlink:href="#icon-tag"></use>
                         </svg>
                         <span th:each="tag,tagStat : ${markdown.tags}">
-                        <span th:text="${tagStat.index > 0?' · ':''}"></span><a th:href="'/articles/tags/'+${tag.slug}" th:text="${tag.name}"></a>
+                        <span th:text="${tagStat.index > 0?' · ':''}"></span><a th:href="'/tags/'+${tag.slug}" th:text="${tag.name}"></a>
                     </span>
                     </div>
                 </div>
@@ -507,7 +507,7 @@
                 link.type = 'text/css';
                 link.id = "theme-css-dark";  // 加上id方便后面好查找到进行删除
                 link.rel = 'stylesheet';
-                link.href = '/articles/css/dark/index-2.1.css';
+                link.href = '/articles/css/dark/index-2.0.1.css';
                 document.getElementsByTagName("head")[0].appendChild(link);
                 labelIcon.removeClass('fa-moon')
                 labelIcon.addClass('fa-sun')

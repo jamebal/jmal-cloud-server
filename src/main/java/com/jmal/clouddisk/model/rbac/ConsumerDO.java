@@ -4,6 +4,7 @@ import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -19,7 +20,9 @@ import java.util.List;
 public class ConsumerDO {
     String id;
     @ApiModelProperty(name = "username", value = "用户名", example = "admin")
+    @Indexed
     String username;
+    @Indexed
     @ApiModelProperty(name = "showName", value = "显示用户名", example = "管理员1")
     String showName;
     @ApiModelProperty(name = "password", value = "密码", example = "123456")

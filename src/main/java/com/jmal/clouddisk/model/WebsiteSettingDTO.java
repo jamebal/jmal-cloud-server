@@ -13,6 +13,10 @@ import java.util.List;
 public class WebsiteSettingDTO {
     String userId;
     /***
+     * 用户头像
+     */
+    String avatar;
+    /***
      * 站点背景大图
      */
     String backgroundSite;
