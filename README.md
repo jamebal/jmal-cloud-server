@@ -30,10 +30,8 @@ server {
         server_name xxx;
         # 2.这填写为dist.tar解压后的路径
         root xxx;
-
-        client_body_temp_path /Users/jmal/temp/filetest/rootpath;
-        client_max_body_size 100m;
-        client_body_buffer_size 100m;
+        client_max_body_size 50m;	
+        client_body_buffer_size 512k;
 
         location /api {
                 proxy_pass   http://localhost:8088/;
@@ -53,11 +51,6 @@ server {
                 proxy_connect_timeout 60s;
                 proxy_read_timeout 500s;
                 proxy_send_timeout 500s;
-        }
-
-        location /articles {
-                proxy_pass   http://localhost:8088/articles;
-                proxy_set_header Host $proxy_host;
         }
 
         location ~ \.(eot|otf|ttf|woff|woff2|svg)$ {
