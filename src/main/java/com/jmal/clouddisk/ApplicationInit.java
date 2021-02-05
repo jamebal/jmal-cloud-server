@@ -1,5 +1,6 @@
-package com.jmal.clouddisk.config;
+package com.jmal.clouddisk;
 
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.listener.FileListener;
 import com.jmal.clouddisk.listener.TempDirFilter;
 import lombok.extern.slf4j.Slf4j;

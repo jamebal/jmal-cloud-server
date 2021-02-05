@@ -39,7 +39,7 @@ import java.util.List;
  * 针对资源和集合检索和设置属性。
  * 7.Copy 和 Move。
  * 管理命名空间上下文中的集合和资源。
- * 8. Lock 和 Unlock。
+ * 8. Lock 和 Unlock。webDav2
  * 改写保护。
  *
  * @Date 2021/1/29 2:03 下午
@@ -54,11 +54,22 @@ public class MySimpleSecurityManager implements io.milton.http.SecurityManager {
     private FileProperties fileProperties;
     private String realm;
     private DigestGenerator digestGenerator;
-
-    private static final List<Request.Method> DELETES_METHODS = Arrays.asList(Request.Method.GET,Request.Method.HEAD,Request.Method.OPTIONS,Request.Method.PROPFIND,Request.Method.MKCOL,Request.Method.PUT,Request.Method.PUT, Request.Method.MOVE, Request.Method.COPY, Request.Method.PROPPATCH,Request.Method.DELETE);
-    private static final List<Request.Method> UPDATE_METHODS = Arrays.asList(Request.Method.GET,Request.Method.HEAD,Request.Method.OPTIONS,Request.Method.PROPFIND,Request.Method.MKCOL,Request.Method.PUT,Request.Method.PUT, Request.Method.MOVE, Request.Method.COPY, Request.Method.PROPPATCH);
-    private static final List<Request.Method> UPLOAD_METHODS = Arrays.asList(Request.Method.GET,Request.Method.HEAD,Request.Method.OPTIONS,Request.Method.PROPFIND,Request.Method.MKCOL,Request.Method.PUT);
-    private static final List<Request.Method> LIST_METHODS = Arrays.asList(Request.Method.GET,Request.Method.HEAD,Request.Method.OPTIONS,Request.Method.PROPFIND,Request.Method.MKCOL);
+    /***
+     * 删除资源 Options、Head、Trace、Get、PropFind、PropFind、Mkcol、Put、Post、Copy、Move、Delete。
+     */
+    private static final List<Request.Method> DELETES_METHODS = Arrays.asList(Request.Method.GET,Request.Method.HEAD,Request.Method.TRACE,Request.Method.OPTIONS,Request.Method.PROPFIND,Request.Method.PROPPATCH,Request.Method.MKCOL,Request.Method.PUT,Request.Method.POST,Request.Method.COPY,Request.Method.MOVE,Request.Method.DELETE);
+    /***
+     * 修改资源 Options、Head、Trace、Get、PropFind、PropFind、Mkcol、Put、Post、Copy、Move。
+     */
+    private static final List<Request.Method> UPDATE_METHODS = Arrays.asList(Request.Method.GET,Request.Method.HEAD,Request.Method.TRACE,Request.Method.OPTIONS,Request.Method.PROPFIND,Request.Method.PROPPATCH,Request.Method.MKCOL,Request.Method.PUT,Request.Method.POST,Request.Method.COPY,Request.Method.MOVE);
+    /***
+     * 创建资源 Options、Head、Trace、Get、PropFind、PropFind、Mkcol、Put、Post。
+     */
+    private static final List<Request.Method> UPLOAD_METHODS = Arrays.asList(Request.Method.GET,Request.Method.HEAD,Request.Method.TRACE,Request.Method.OPTIONS,Request.Method.PROPFIND,Request.Method.PROPPATCH,Request.Method.MKCOL,Request.Method.PUT,Request.Method.POST);
+    /***
+     * 浏览检索资源 Options、Head、Trace、Get、PropFind、PropFind。
+     */
+    private static final List<Request.Method> LIST_METHODS = Arrays.asList(Request.Method.GET,Request.Method.HEAD,Request.Method.TRACE,Request.Method.OPTIONS,Request.Method.PROPFIND,Request.Method.PROPPATCH);
 
     public MySimpleSecurityManager() {
         realm = "userRealm";
@@ -97,7 +108,6 @@ public class MySimpleSecurityManager implements io.milton.http.SecurityManager {
         }
         String username = digestRequest.getUser();
         String uri = digestRequest.getUri().replaceFirst(fileProperties.getWebDavPrefixPath(), "");
-        Console.log(uri);
         Path path = Paths.get(uri);
         if (path.getNameCount() < 1) {
             return null;
@@ -117,12 +127,6 @@ public class MySimpleSecurityManager implements io.milton.http.SecurityManager {
 
     @Override
     public boolean authorise(Request request, Request.Method method, Auth auth, Resource resource) {
-        // switch(method) {
-        //     case GET: return true;
-        //     case HEAD: return true;
-        //     case OPTIONS: return true;
-        //     case PROPFIND: return true;
-        // }
         if (auth != null) {
             List<Request.Method> methods = allowMethods(auth.getUser());
             if (methods.contains(method)) {

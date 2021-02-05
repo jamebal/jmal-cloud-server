@@ -180,21 +180,20 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public ResponseResult<Object> userInfo(String id, Boolean takeUpSpace, Boolean returnPassword) {
+    public ResponseResult<ConsumerDTO> userInfo(String id) {
         ConsumerDO consumer = mongoTemplate.findById(id, ConsumerDO.class, COLLECTION_NAME);
         if (consumer == null) {
-            return ResultUtil.success(new ConsumerDO());
+            return ResultUtil.success(new ConsumerDTO());
         }
-        if (takeUpSpace != null && takeUpSpace) {
-            consumer.setTakeUpSpace(fileService.takeUpSpace(consumer.getId()));
+        ConsumerDTO consumerDTO = new ConsumerDTO();
+        CglibUtil.copy(consumer, consumerDTO);
+        consumerDTO.setTakeUpSpace(fileService.takeUpSpace(consumerDTO.getId()));
+        consumerDTO.setPassword(null);
+        consumerDTO.setEncryptPwd(null);
+        if (consumerDTO.getAvatar() == null) {
+            consumerDTO.setAvatar("");
         }
-        if (returnPassword == null || !returnPassword) {
-            consumer.setPassword(null);
-        }
-        if (consumer.getAvatar() == null) {
-            consumer.setAvatar("");
-        }
-        return ResultUtil.success(consumer);
+        return ResultUtil.success(consumerDTO);
     }
 
     @Override

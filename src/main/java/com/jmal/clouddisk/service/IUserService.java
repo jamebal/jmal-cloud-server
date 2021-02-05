@@ -39,11 +39,9 @@ public interface IUserService {
     /***
      * 用户信息
      * @param token token
-     * @param takeUpSpace 是否显示占用空间
-     * @param returnPassWord 是否返回用户名
      * @return ResponseResult
      */
-    ResponseResult<Object> userInfo(String token,Boolean takeUpSpace,Boolean returnPassWord);
+    ResponseResult<ConsumerDTO> userInfo(String token);
 
     /***
      * 用户信息

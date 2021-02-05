@@ -1,4 +1,4 @@
-package com.jmal.clouddisk;
+package com.jmal.clouddisk.config;
 
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.interceptor.FileInterceptor;

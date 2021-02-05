@@ -67,8 +67,8 @@ public class UserController {
     @ApiOperation(value = "用户信息")
     @GetMapping("/userInfo")
     @Permission("sys:user:list")
-    public ResponseResult<Object> consumerInfo(@RequestParam String id,Boolean takeUpSpace,Boolean returnPassWord){
-        return service.userInfo(id, takeUpSpace, returnPassWord);
+    public ResponseResult<ConsumerDTO> consumerInfo(@RequestParam String id){
+        return service.userInfo(id);
     }
 
     @ApiOperation(value = "用户信息列表")

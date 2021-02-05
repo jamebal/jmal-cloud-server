@@ -17,8 +17,8 @@ import java.io.IOException;
  */
 public class WebpTest {
     public static void main(String args[]) throws IOException {
-        String inputJpgPath = "/Users/jmal/Downloads/bolg/photo-1603989112393-db862d0176b4.jpeg";
-        String outputWebpPath = "/Users/jmal/Downloads/bolg/photo-1603989112393-db862d0176b4-webp.jpeg";
+        String inputJpgPath = "/Users/jmal/Pictures/截图/截屏 19.png";
+        String outputWebpPath = "/Users/jmal/Pictures/截图/截屏 19.webp.png";
 
         // 从某处获取图像进行编码
         BufferedImage image = ImageIO.read(new File(inputJpgPath));

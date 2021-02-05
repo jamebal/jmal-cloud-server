@@ -8,7 +8,7 @@
                 </svg>
             </div>
             <div class="flex-text" th:each="categoryDO,categoryStat : ${markdown.categories}">
-                <a th:href="'/articles/categories/'+${categoryDO.slug}" th:text="${categoryDO.name}"></a>
+                <a th:href="'/categories/'+${categoryDO.slug}" th:text="${categoryDO.name}"></a>
             </div>
         </div>
         <div class="meta-item tag" th:if="${markdown.tags != null && markdown.tags.size() > 0}">

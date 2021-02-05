@@ -2,10 +2,12 @@ package com.jmal.clouddisk.interceptor;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.lang.Console;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
+import com.luciad.imageio.webp.WebPWriteParam;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
@@ -15,11 +17,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.FileCacheImageOutputStream;
+import javax.imageio.stream.FileImageOutputStream;
+import javax.imageio.stream.ImageOutputStream;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
+import java.awt.image.RenderedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -49,6 +58,14 @@ public class FileInterceptor implements HandlerInterceptor {
      * 缩略图
      */
     private static  final String THUMBNAIL = "thumbnail";
+    /***
+     * webp
+     */
+    private static  final String WEBP = "webp";
+    /***
+     * 路径最小层级
+     */
+    private static final int MIX_COUNT = 2;
 
     @Autowired
     FileProperties fileProperties;
@@ -66,10 +83,15 @@ public class FileInterceptor implements HandlerInterceptor {
                     response.setHeader("Content-Disposition", "attachment; filename"+ path.getFileName());
                     break;
                 case CROP:
+                    long stime = System.currentTimeMillis();
                     handleCrop(request, response);
+                    Console.log("剪裁耗时",System.currentTimeMillis() - stime,"ms");
                     break;
                 case THUMBNAIL:
                     thumbnail(request, response);
+                    break;
+                case WEBP:
+                    webp(request, response);
                     break;
                 default:
                     return true;
@@ -78,15 +100,43 @@ public class FileInterceptor implements HandlerInterceptor {
         return true;
     }
 
+    private void webp(HttpServletRequest request, HttpServletResponse response) {
+        Path uriPath = Paths.get(request.getRequestURI());
+        uriPath = uriPath.subpath(1, uriPath.getNameCount());
+        try {
+            File file = Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
+            // 从某处获取图像进行编码
+            BufferedImage image = ImageIO.read(file);
+
+            // 获取一个WebP ImageWriter实例
+            ImageWriter writer = ImageIO.getImageWritersByMIMEType("image/webp").next();
+            responseHeader(response, file.getName() + ".webp", new byte[1]);
+            // 配置编码参数
+            WebPWriteParam writeParam = new WebPWriteParam(writer.getLocale());
+            writeParam.setCompressionMode(WebPWriteParam.MODE_DEFAULT);
+            // 在ImageWriter上配置输出
+            FileCacheImageOutputStream output = new FileCacheImageOutputStream(response.getOutputStream(), null);
+            writer.setOutput(output);
+            // 编码
+            writer.write(null, new IIOImage(image, null, null), writeParam);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        }
+
+    }
+
     private void thumbnail(HttpServletRequest request, HttpServletResponse response) {
         try {
             Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), "UTF-8"));
-            if(uriPath.getNameCount() < 2){
+            if(uriPath.getNameCount() < MIX_COUNT){
                 return;
             }
             String username = uriPath.getName(1).toString();
             Path relativePath = uriPath.subpath(1, uriPath.getNameCount());
-            String path = "/" + uriPath.subpath(2, uriPath.getNameCount()).getParent().toString() + "/";
+            String path = "/";
+            if(uriPath.getNameCount() > MIX_COUNT + 1){
+                path = "/" + uriPath.subpath(MIX_COUNT, uriPath.getNameCount()).getParent().toString() + "/";
+            }
             String name = uriPath.getFileName().toString();
             FileDocument fileDocument = fileService.getFileDocumentByPathAndName(path, name, username);
             if(fileDocument != null){
@@ -116,12 +166,7 @@ public class FileInterceptor implements HandlerInterceptor {
     }
 
     private void responseWritImage(HttpServletResponse response, String fileName, byte[] img) {
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + fileName);
-        response.setHeader(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(FileUtil.extName(fileName)));
-        response.setHeader(HttpHeaders.CONNECTION, "close");
-        response.setHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(img.length));
-        response.setHeader(HttpHeaders.CONTENT_ENCODING, "utf-8");
-        response.setHeader(HttpHeaders.CACHE_CONTROL, "public, max-age=604800");
+        responseHeader(response, fileName, img);
         ServletOutputStream outputStream = null;
         try {
             outputStream = response.getOutputStream();
@@ -137,6 +182,15 @@ public class FileInterceptor implements HandlerInterceptor {
                 }
             }
         }
+    }
+
+    private void responseHeader(HttpServletResponse response, String fileName, byte[] img) {
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + fileName);
+        response.setHeader(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(FileUtil.extName(fileName)));
+        response.setHeader(HttpHeaders.CONNECTION, "close");
+        response.setHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(img.length));
+        response.setHeader(HttpHeaders.CONTENT_ENCODING, "utf-8");
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "public, max-age=604800");
     }
 
     /**

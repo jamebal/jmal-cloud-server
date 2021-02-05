@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.config;
+package com.jmal.clouddisk.exception;
 
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;

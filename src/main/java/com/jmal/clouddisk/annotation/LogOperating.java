@@ -10,13 +10,10 @@ import java.lang.annotation.*;
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Target(ElementType.TYPE)
 public @interface LogOperating {
     /**
-     * 日志信息
-     * @return
+     * 操作模块
      */
-    String logInfo() default "";
-
-    OperationType operat() default OperationType.read;
+    String module() default "";
 }
