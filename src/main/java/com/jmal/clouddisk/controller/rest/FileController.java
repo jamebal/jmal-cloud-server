@@ -1,5 +1,8 @@
 package com.jmal.clouddisk.controller.rest;
 
+import cn.hutool.core.lang.Console;
+import com.jmal.clouddisk.annotation.LogOperatingFun;
+import com.jmal.clouddisk.annotation.LogOperation;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -55,6 +58,7 @@ public class FileController {
 
     @ApiOperation("文件列表")
     @GetMapping("/list")
+    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> list(UploadApiParamDTO upload) {
         return fileService.listFiles(upload);

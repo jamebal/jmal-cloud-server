@@ -1,5 +1,7 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.annotation.LogOperatingFun;
+import com.jmal.clouddisk.annotation.LogOperation;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -8,6 +10,7 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +31,7 @@ public class AuthController {
     IUserService userService;
 
     @ApiOperation("登录")
+    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
     @PostMapping("/login")
     public ResponseResult<Object> login(@RequestBody ConsumerDO user){
         return authService.login(user.getUsername(), user.getPassword());

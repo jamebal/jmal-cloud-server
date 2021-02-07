@@ -53,11 +53,11 @@ public class LogOperation {
     /***
      * 耗时
      */
-    private long time;
+    private Long time;
     /***
      * 状态
      */
-    private int status;
+    private Integer status;
     /***
      * 操作时间
      */

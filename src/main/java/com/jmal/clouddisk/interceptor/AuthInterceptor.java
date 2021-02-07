@@ -55,6 +55,8 @@ public class AuthInterceptor implements HandlerInterceptor {
         // 身份认证
         String username = getUserNameByHeader(request);
         if (!StringUtils.isEmpty(username)) {
+            // jmal-token 身份认证通过, 设置该身份的权限
+            setAuthorities(username);
             return true;
         }
         returnJson(response);
@@ -76,8 +78,6 @@ public class AuthInterceptor implements HandlerInterceptor {
             return getUserNameByAccessToken(request);
         }
         username = getUserNameByJmalToken(jmalToken);
-        // jmal-token 身份认证通过, 设置该身份的权限
-        setAuthorities(username);
         return username;
     }
 

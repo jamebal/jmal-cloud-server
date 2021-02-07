@@ -32,6 +32,8 @@ public class UserLoginHolder {
             return (UserLoginContext) object;
         } else {
             UserLoginContext userLoginContext = new UserLoginContext();
+            userLoginContext.setUserId("unkown");
+            userLoginContext.setUsername("unkown");
             userLoginContext.setAuthorities(new ArrayList<>());
             return userLoginContext;
         }

@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 /**
  * @author jmal
  * @Description 日志服务
@@ -17,6 +19,7 @@ public class LogService {
     private MongoTemplate mongoTemplate;
 
     public void addLog(LogOperation logOperation){
+        logOperation.setCreateTime(LocalDateTime.now());
         mongoTemplate.save(logOperation);
     }
 }
