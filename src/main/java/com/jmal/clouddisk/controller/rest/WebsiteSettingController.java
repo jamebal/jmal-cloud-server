@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.WebsiteSettingDTO;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
@@ -25,6 +26,7 @@ public class WebsiteSettingController {
 
     @ApiOperation("获取网站设置")
     @GetMapping("/public/website/setting")
+    @LogOperatingFun
     public ResponseResult<WebsiteSettingDTO> getWebsiteSetting() {
         return ResultUtil.success(settingService.getWebsiteSetting());
     }
@@ -32,6 +34,7 @@ public class WebsiteSettingController {
     @ApiOperation("更新网站设置")
     @PutMapping("/website/setting/update")
     @Permission("website:set:update")
+    @LogOperatingFun
     public ResponseResult<Object> update(@RequestBody WebsiteSettingDO websiteSettingDO) {
         return settingService.websiteUpdate(websiteSettingDO);
     }

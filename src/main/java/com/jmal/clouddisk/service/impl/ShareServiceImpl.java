@@ -112,7 +112,7 @@ public class ShareServiceImpl implements IShareService {
     public List<ShareDO> getShareList(UploadApiParamDTO upload) {
         Query query = new Query();
         query.addCriteria(Criteria.where("userId").is(upload.getUserId()));
-        String order = listByPage(upload, query);
+        String order = FileServiceImpl.listByPage(upload, query);
         if (StringUtils.isEmpty(order)) {
             query.with(new Sort(Sort.Direction.DESC, "createDate"));
         } else {
@@ -124,16 +124,6 @@ public class ShareServiceImpl implements IShareService {
             query.with(new Sort(direction, sortableProp));
         }
         return mongoTemplate.find(query, ShareDO.class, COLLECTION_NAME);
-    }
-
-    static String listByPage(UploadApiParamDTO upload, Query query) {
-        Integer pageSize = upload.getPageSize(), pageIndex = upload.getPageIndex();
-        if (pageSize != null && pageIndex != null) {
-            long skip = (pageIndex - 1) * pageSize;
-            query.skip(skip);
-            query.limit(pageSize);
-        }
-        return upload.getOrder();
     }
 
     private ShareDO findByFileId(String fileId){

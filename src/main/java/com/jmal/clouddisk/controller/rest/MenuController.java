@@ -2,6 +2,7 @@ package com.jmal.clouddisk.controller.rest;
 
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
+import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
@@ -34,6 +35,7 @@ public class MenuController {
     @ApiOperation("菜单树")
     @GetMapping("/tree")
     @Permission("sys:user:list")
+    @LogOperatingFun
     public ResponseResult<List<MenuDTO>> tree(QueryMenuDTO queryDTO) {
         return ResultUtil.success(menuService.tree(queryDTO));
     }
@@ -42,6 +44,7 @@ public class MenuController {
     @GetMapping("/info")
     @ResponseBody
     @Permission("sys:menu:list")
+    @LogOperatingFun
     public ResponseResult<MenuDTO> info(@RequestParam String menuId) {
         MenuDTO menuDTO = new MenuDTO();
         MenuDO menuDO = menuService.getMenuInfo(menuId);
@@ -54,6 +57,7 @@ public class MenuController {
     @ApiOperation("权限标识列表")
     @GetMapping("/authorities")
     @ResponseBody
+    @LogOperatingFun
     @Permission("sys:menu:list")
     public ResponseResult<List<String>> authorities() {
         return ResultUtil.success(AnnoManageUtil.AUTHORITIES);
@@ -61,6 +65,7 @@ public class MenuController {
 
     @ApiOperation("添加菜单")
     @PostMapping("/add")
+    @LogOperatingFun
     @Permission("sys:menu:add")
     public ResponseResult<Object> add(@ModelAttribute @Validated MenuDTO menuDTO) {
         return menuService.add(menuDTO);
@@ -69,6 +74,7 @@ public class MenuController {
     @ApiOperation("更新菜单")
     @PutMapping("/update")
     @ResponseBody
+    @LogOperatingFun
     @Permission("sys:menu:update")
     public ResponseResult<Object> update(@ModelAttribute MenuDTO menuDTO) {
         if(menuDTO.getId() == null){
@@ -79,6 +85,7 @@ public class MenuController {
 
     @ApiOperation("删除菜单")
     @DeleteMapping("/delete")
+    @LogOperatingFun
     @Permission("sys:menu:delete")
     public ResponseResult<Object> delete(@RequestParam String[] menuIds) {
         List<String> categoryList = Arrays.asList(menuIds);

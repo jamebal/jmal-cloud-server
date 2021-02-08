@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller;
 
+import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
-
 
 /**
  * @author jmal
@@ -33,12 +33,14 @@ public class FileViewController {
 
     @ApiOperation("分享：预览文件")
     @GetMapping("/public/preview/{fileId}")
+    @LogOperatingFun
     public String publicPreview(@PathVariable String fileId) {
         return fileService.viewFile(fileId, "preview");
     }
 
     @ApiOperation("预览文档里的图片")
     @GetMapping("/public/view")
+    @LogOperatingFun
     public String imageRelativePath(@RequestParam String relativePath,@RequestParam String userId) {
         ResultUtil.checkParamIsNull(relativePath,userId);
         return fileService.publicViewFile(relativePath, userId);
@@ -46,6 +48,7 @@ public class FileViewController {
 
     @ApiOperation("分享：预览文件")
     @GetMapping("/public/s/preview/{fileId}/{shareId}")
+    @LogOperatingFun
     public String publicPreview(@PathVariable String fileId, @PathVariable String shareId) {
         boolean whetherExpired = shareService.checkWhetherExpired(shareId);
         if(whetherExpired){
@@ -56,6 +59,7 @@ public class FileViewController {
 
     @ApiOperation("分享：下载单个文件")
     @GetMapping("/public/s/download/{fileId}/{shareId}")
+    @LogOperatingFun
     public String publicDownload(@PathVariable String fileId, @PathVariable String shareId) {
         boolean whetherExpired = shareService.checkWhetherExpired(shareId);
         if(whetherExpired){

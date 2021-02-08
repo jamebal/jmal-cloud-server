@@ -4,7 +4,10 @@ package com.jmal.clouddisk;
 import cn.hutool.core.lang.Console;
 import cn.hutool.http.useragent.UserAgent;
 import cn.hutool.http.useragent.UserAgentUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.model.LogOperation;
 import io.milton.config.HttpManagerBuilder;
 import io.milton.http.HttpManager;
 import io.milton.http.Request;
@@ -77,7 +80,8 @@ public class WebFilter implements Filter {
      * @param req HttpServletRequest
      * @param resp HttpServletResponse
      */
-    private void doMiltonProcessing(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    @LogOperatingFun(value = "WebDAV请求", logType = LogOperation.Type.WEBDAV)
+    public void doMiltonProcessing(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             MiltonServlet.setThreadlocals(req, resp);
             Request request = new io.milton.servlet.ServletRequest(req, req.getServletContext());

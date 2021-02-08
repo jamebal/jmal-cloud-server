@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
@@ -30,6 +31,7 @@ public class RoleController {
 
     @ApiOperation(value = "角色列表")
     @GetMapping("/list")
+    @LogOperatingFun
     @Permission("sys:role:list")
     public ResponseResult<List<RoleDTO>> list(QueryRoleDTO queryDTO){
         return roleService.list(queryDTO);
@@ -37,6 +39,7 @@ public class RoleController {
 
     @ApiOperation(value = "添加角色")
     @PostMapping("/add")
+    @LogOperatingFun
     @Permission("sys:role:add")
     public ResponseResult<Object> add(@ModelAttribute @Validated RoleDTO roleDTO){
         return roleService.add(roleDTO);
@@ -44,6 +47,7 @@ public class RoleController {
 
     @ApiOperation(value = "修改角色")
     @PutMapping("/update")
+    @LogOperatingFun
     @Permission("sys:role:update")
     public ResponseResult<Object> update(@ModelAttribute @Validated RoleDTO roleDTO){
         if(roleDTO.getId() == null){
@@ -54,6 +58,7 @@ public class RoleController {
 
     @ApiOperation(value = "删除角色")
     @DeleteMapping("/delete")
+    @LogOperatingFun
     @Permission("sys:role:delete")
     public ResponseResult<Object> delete(@RequestParam String[] roleIds){
         List<String> roleIdList = Arrays.asList(roleIds);

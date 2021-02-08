@@ -1,8 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
-import cn.hutool.core.lang.Console;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
-import com.jmal.clouddisk.annotation.LogOperation;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -66,6 +64,7 @@ public class FileController {
 
     @ApiOperation("查找下级目录")
     @GetMapping("/query-file-tree")
+    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> queryFileTree(UploadApiParamDTO upload, String fileId) {
         return fileService.queryFileTree(upload,fileId);
@@ -73,6 +72,7 @@ public class FileController {
 
     @ApiOperation("搜索文件")
     @GetMapping("/search-file")
+    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> searchFile(UploadApiParamDTO upload, String keyword) {
         return fileService.searchFile(upload, keyword);
@@ -80,6 +80,7 @@ public class FileController {
 
     @ApiOperation("搜索文件并打开文件夹")
     @GetMapping("/search-file-open")
+    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id) {
         return fileService.searchFileAndOpenDir(upload, id);
@@ -87,6 +88,7 @@ public class FileController {
 
     @ApiOperation("图片上传(Typora自定义命令上传图片接口)")
     @PostMapping("/img-upload")
+    @LogOperatingFun
     @Permission("cloud:file:upload")
     public String imgUpload(HttpServletRequest request, MultipartFile file) {
         String filepath = request.getHeader("filepath");
@@ -96,6 +98,7 @@ public class FileController {
 
     @ApiOperation("文件上传")
     @PostMapping("upload")
+    @LogOperatingFun
     @Permission("cloud:file:upload")
     public ResponseResult<Object> uploadPost(UploadApiParamDTO upload) throws IOException {
         return fileService.upload(upload);
@@ -103,6 +106,7 @@ public class FileController {
 
     @ApiOperation("文件夹上传")
     @PostMapping("upload-folder")
+    @LogOperatingFun
     @Permission("cloud:file:upload")
     public ResponseResult<Object> uploadFolder(UploadApiParamDTO upload) {
         return fileService.uploadFolder(upload);
@@ -110,6 +114,7 @@ public class FileController {
 
     @ApiOperation("新建文件夹")
     @PostMapping("new_folder")
+    @LogOperatingFun
     @Permission("cloud:file:upload")
     public ResponseResult<Object> newFolder(UploadApiParamDTO upload) {
         return fileService.newFolder(upload);
@@ -117,6 +122,7 @@ public class FileController {
 
     @ApiOperation("检查文件/分片是否存在")
     @GetMapping("upload")
+    @LogOperatingFun
     @Permission("cloud:file:upload")
     public ResponseResult<Object> checkUpload(UploadApiParamDTO upload) throws IOException {
         return fileService.checkChunkUploaded(upload);
@@ -124,6 +130,7 @@ public class FileController {
 
     @ApiOperation("合并文件")
     @PostMapping("merge")
+    @LogOperatingFun
     @Permission("cloud:file:upload")
     public ResponseResult<Object> merge(UploadApiParamDTO upload) throws IOException {
         return fileService.merge(upload);
@@ -131,6 +138,7 @@ public class FileController {
 
     @ApiOperation("读取simText文件")
     @GetMapping("/preview/text")
+    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> previewText(@RequestParam String id, @RequestParam String username) {
         ResultUtil.checkParamIsNull(id,username);
@@ -139,6 +147,7 @@ public class FileController {
 
     @ApiOperation("根据path读取simText文件")
     @GetMapping("/preview/path/text")
+    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> previewTextByPath(@RequestParam String path,@RequestParam String username) {
         return fileService.previewTextByPath(path, username);
@@ -146,6 +155,7 @@ public class FileController {
 
     @ApiOperation("是否允许下载")
     @GetMapping("/isAllowDownload")
+    @LogOperatingFun
     @Permission("cloud:file:download")
     public ResponseResult<Object> isAllowDownload() {
         return ResultUtil.success(true);
@@ -153,6 +163,7 @@ public class FileController {
 
     @ApiOperation("打包下载")
     @GetMapping("/packageDownload")
+    @LogOperatingFun
     @Permission("cloud:file:download")
     public void packageDownload(HttpServletRequest request, HttpServletResponse response, String[] fileIds) {
         if (fileIds != null && fileIds.length > 0) {
@@ -165,6 +176,7 @@ public class FileController {
 
     @ApiOperation("显示缩略图")
     @GetMapping("/view/thumbnail")
+    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseEntity<Object> thumbnail(String id) {
         ResultUtil.checkParamIsNull(id);
@@ -186,6 +198,7 @@ public class FileController {
 
     @ApiOperation("显示缩略图(mp3封面)")
     @GetMapping("/view/cover")
+    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseEntity<Object> coverOfMp3(HttpServletRequest request, String id) {
         ResultUtil.checkParamIsNull(id);
@@ -195,6 +208,7 @@ public class FileController {
 
     @ApiOperation("收藏文件或文件夹")
     @PostMapping("/favorite")
+    @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> favorite(String[] fileIds) {
         if (fileIds != null && fileIds.length > 0) {
@@ -207,6 +221,7 @@ public class FileController {
 
     @ApiOperation("取消收藏")
     @PostMapping("/unFavorite")
+    @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> unFavorite(String[] fileIds) {
         if (fileIds != null && fileIds.length > 0) {
@@ -219,6 +234,7 @@ public class FileController {
 
     @ApiOperation("删除文件")
     @DeleteMapping("/delete")
+    @LogOperatingFun
     @Permission("cloud:file:delete")
     public ResponseResult<Object> delete(String username, String[] fileIds) {
         if (fileIds != null && fileIds.length > 0) {
@@ -231,6 +247,7 @@ public class FileController {
 
     @ApiOperation("重命名")
     @GetMapping("/rename")
+    @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> rename(String newFileName, String username, String id) {
         return fileService.rename(newFileName, username, id);
@@ -238,6 +255,7 @@ public class FileController {
 
     @ApiOperation("移动文件/文件夹")
     @GetMapping("/move")
+    @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> move(UploadApiParamDTO upload, String[] froms, String to) {
         if (froms != null && froms.length > 0) {
@@ -250,6 +268,7 @@ public class FileController {
 
     @ApiOperation("复制文件/文件夹")
     @GetMapping("/copy")
+    @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> copy(UploadApiParamDTO upload, String[] froms, String to) {
         if (froms != null && froms.length > 0) {
@@ -262,6 +281,7 @@ public class FileController {
 
     @ApiOperation("解压zip文件")
     @GetMapping("/unzip")
+    @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> unzip(@RequestParam String fileId, String destFileId) {
         return fileService.unzip(fileId, destFileId);
@@ -269,6 +289,7 @@ public class FileController {
 
     @ApiOperation("获取目录下的文件")
     @GetMapping("/listfiles")
+    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> listFiles(@RequestParam String path, @RequestParam String username, Boolean tempDir) {
         Boolean dir = tempDir;
@@ -280,6 +301,7 @@ public class FileController {
 
     @ApiOperation("获取上级文件列表")
     @GetMapping("/upper-level-list")
+    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> upperLevelList(@RequestParam String path, @RequestParam String username) {
         return fileService.upperLevelList(path, username);
@@ -287,6 +309,7 @@ public class FileController {
 
     @ApiOperation("根据path删除文件/文件夹")
     @DeleteMapping("/delFile")
+    @LogOperatingFun
     @Permission("cloud:file:delete")
     public ResponseResult<Object> delFile(@RequestParam String path, @RequestParam String username) {
         return fileService.delFile(path, username);
@@ -294,6 +317,7 @@ public class FileController {
 
     @ApiOperation("根据path重命名")
     @GetMapping("/rename/path")
+    @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> renameByPath(@RequestParam String newFileName,@RequestParam String username,@RequestParam String path) {
         return fileService.renameByPath(newFileName, username, path);
@@ -301,6 +325,7 @@ public class FileController {
 
     @ApiOperation("根据path添加文件/文件夹")
     @PostMapping("/addfile")
+    @LogOperatingFun
     @Permission("cloud:file:upload")
     public ResponseResult<Object> addFile(@RequestParam String fileName, @RequestParam Boolean isFolder, @RequestParam String username, @RequestParam String parentPath){
         return fileService.addFile(fileName, isFolder, username, parentPath);

@@ -1,6 +1,9 @@
-package com.jmal.clouddisk.annotation;
+package com.jmal.clouddisk.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -12,6 +15,14 @@ import java.util.Map;
  */
 @Data
 @Document(collection = "log")
+@CompoundIndexes({
+        @CompoundIndex(name = "createTime_1", def = "{'createTime': 1}"),
+        @CompoundIndex(name = "time_1", def = "{'time': 1}"),
+        @CompoundIndex(name = "username_1", def = "{'username': 1}"),
+        @CompoundIndex(name = "ip_1", def = "{'ip': 1}"),
+        @CompoundIndex(name = "operationModule_1", def = "{'operationModule': 1}"),
+        @CompoundIndex(name = "operationFun_1", def = "{'operationFun': 1}"),
+})
 public class LogOperation {
     private String id;
     /***
@@ -39,6 +50,10 @@ public class LogOperation {
      */
     private String url;
     /***
+     * 请求参数
+     */
+    private Map<String, String> params;
+    /***
      * 请求方式
      */
     private String method;
@@ -51,6 +66,10 @@ public class LogOperation {
      */
     private String operatingSystem;
     /***
+     * 浏览器
+     */
+    private String browser;
+    /***
      * 耗时
      */
     private Long time;
@@ -61,6 +80,7 @@ public class LogOperation {
     /***
      * 操作时间
      */
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
     /***
      * 备注
@@ -74,7 +94,7 @@ public class LogOperation {
     /***
      * 日志类型
      */
-    public static enum Type {
+    public enum Type {
         /***
          * 登陆日志
          */
@@ -82,6 +102,14 @@ public class LogOperation {
         /***
          * 操作日志
          */
-        OPERATION
+        OPERATION,
+        /***
+         * 文章访问日志
+         */
+        ARTICLE,
+        /***
+         * webdav
+         */
+        WEBDAV
     }
 }

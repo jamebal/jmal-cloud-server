@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.controller.rest;
 
 import cn.hutool.extra.cglib.CglibUtil;
+import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.CategoryDO;
 import com.jmal.clouddisk.model.CategoryDTO;
@@ -30,6 +31,7 @@ public class CategoryController {
 
     @ApiOperation("分类列表")
     @GetMapping("/category/list")
+    @LogOperatingFun
     @Permission("website:set:list")
     public ResponseResult<List<CategoryDTO>> list(String userId, String parentCategoryId) {
         return ResultUtil.success(categoryService.list(userId, parentCategoryId));
@@ -37,6 +39,7 @@ public class CategoryController {
 
     @ApiOperation("分类树")
     @GetMapping("/category/tree")
+    @LogOperatingFun
     @Permission("website:set:list")
     public ResponseResult<List<CategoryDTO>> tree(String userId) {
         return ResultUtil.success(categoryService.tree(userId, false));
@@ -45,6 +48,7 @@ public class CategoryController {
     @ApiOperation("分类信息")
     @GetMapping("/category/info")
     @ResponseBody
+    @LogOperatingFun
     @Permission("website:set:list")
     public ResponseResult<CategoryDTO> categoryInfo(@RequestParam String categoryId) {
         CategoryDTO categoryDTO = new CategoryDTO();
@@ -57,6 +61,7 @@ public class CategoryController {
 
     @ApiOperation("添加分类")
     @PostMapping("/category/add")
+    @LogOperatingFun
     @Permission("website:set:add")
     public ResponseResult<Object> add(@ModelAttribute @Validated CategoryDTO categoryDTO) {
         return categoryService.add(categoryDTO);
@@ -72,6 +77,7 @@ public class CategoryController {
 
     @ApiOperation("设置默认分类")
     @PutMapping("/category/setDefault")
+    @LogOperatingFun
     @Permission("website:set:update")
     public ResponseResult<Object> setDefault(@RequestParam String categoryId) {
         return categoryService.setDefault(categoryId);
@@ -79,6 +85,7 @@ public class CategoryController {
 
     @ApiOperation("删除分类")
     @DeleteMapping("/category/delete")
+    @LogOperatingFun
     @Permission("website:set:delete")
     public ResponseResult<Object> delete(@RequestParam String[] categoryIds) {
         List<String> categoryList = Arrays.asList(categoryIds);

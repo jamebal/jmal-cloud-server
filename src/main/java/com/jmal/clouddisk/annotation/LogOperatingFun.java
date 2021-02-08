@@ -2,6 +2,8 @@ package com.jmal.clouddisk.annotation;
 
 
 
+import com.jmal.clouddisk.model.LogOperation;
+
 import java.lang.annotation.*;
 
 /**

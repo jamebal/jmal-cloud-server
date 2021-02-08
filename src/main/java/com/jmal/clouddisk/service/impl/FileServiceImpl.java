@@ -215,7 +215,7 @@ public class FileServiceImpl implements IFileService {
     private List<FileIntroVO> getFileDocuments(UploadApiParamDTO upload, Criteria... criteriaList) {
         List<FileIntroVO> fileIntroVOList = new ArrayList<>();
         Query query = getQuery(upload, criteriaList);
-        String order = ShareServiceImpl.listByPage(upload, query);
+        String order = listByPage(upload, query);
         if (!StringUtils.isEmpty(order)) {
             String sortableProp = upload.getSortableProp();
             Sort.Direction direction = Sort.Direction.ASC;
@@ -257,6 +257,20 @@ public class FileServiceImpl implements IFileService {
 
     private int desc(FileBase f1, FileBase f2) {
         return -1;
+    }
+
+    /***
+     * 设置分页条件
+     * @return 排序条件
+     */
+    public static String listByPage(UploadApiParamDTO upload, Query query) {
+        Integer pageSize = upload.getPageSize(), pageIndex = upload.getPageIndex();
+        if (pageSize != null && pageIndex != null) {
+            long skip = (pageIndex - 1) * pageSize;
+            query.skip(skip);
+            query.limit(pageSize);
+        }
+        return upload.getOrder();
     }
 
     private List<FileDocument> getDirDocuments(UploadApiParamDTO upload, Criteria... criteriaList) {

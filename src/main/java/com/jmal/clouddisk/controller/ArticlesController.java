@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.controller;
 
 import cn.hutool.core.util.ReUtil;
+import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
@@ -56,6 +57,7 @@ public class ArticlesController {
     }
 
     @GetMapping("/articles")
+    @LogOperatingFun("文章列表")
     public String index(HttpServletRequest request, ModelMap map) {
         map.addAttribute("mark", "articles");
         boolean isPjax = isPjax(request);
@@ -77,11 +79,13 @@ public class ArticlesController {
     }
 
     @GetMapping("/articles/o/{slug}")
+    @LogOperatingFun(value = "文章", logType = LogOperation.Type.ARTICLE)
     public String alonePage(HttpServletRequest request, @PathVariable String slug, ModelMap map) {
         return articlePage(request, slug, map);
     }
 
     @GetMapping("/articles/s/{slug}")
+    @LogOperatingFun(value = "文章", logType = LogOperation.Type.ARTICLE)
     public String article(HttpServletRequest request, @PathVariable String slug, ModelMap map) {
         return articlePage(request, slug, map);
     }
@@ -106,6 +110,7 @@ public class ArticlesController {
     }
 
     @GetMapping("/articles/categories")
+    @LogOperatingFun(value = "文章分类", logType = LogOperation.Type.ARTICLE)
     public String categories(HttpServletRequest request, ModelMap map) {
         boolean isPjax = pjaxMap(request, map, "categories");
         map.addAttribute("titleName", "分类");
@@ -114,6 +119,7 @@ public class ArticlesController {
     }
 
     @GetMapping("/articles/archives")
+    @LogOperatingFun(value = "文章归档", logType = LogOperation.Type.ARTICLE)
     public String archives(HttpServletRequest request, ModelMap map) {
         boolean isPjax = pjaxMap(request, map, "archives");
         map.addAttribute("titleName", "归档");
@@ -127,6 +133,7 @@ public class ArticlesController {
     }
 
     @GetMapping("/articles/categories/{categorySlugName}")
+    @LogOperatingFun(value = "文章分类", logType = LogOperation.Type.ARTICLE)
     public String getCategoryByName(HttpServletRequest request, ModelMap map, @PathVariable String categorySlugName) {
         boolean isPjax = pjaxMap(request, map, "articles-query");
         if (StringUtils.isEmpty(categorySlugName)) {
@@ -153,6 +160,7 @@ public class ArticlesController {
     }
 
     @GetMapping("/articles/tags")
+    @LogOperatingFun(value = "文章标签", logType = LogOperation.Type.ARTICLE)
     public String tags(HttpServletRequest request, ModelMap map) {
         boolean isPjax = pjaxMap(request, map, "tags");
         map.addAttribute("titleName", "标签");
@@ -161,6 +169,7 @@ public class ArticlesController {
     }
 
     @GetMapping("/articles/tags/{tagSlugName}")
+    @LogOperatingFun(value = "文章标签", logType = LogOperation.Type.ARTICLE)
     public String getTagByName(HttpServletRequest request, ModelMap map, @PathVariable String tagSlugName) {
         boolean isPjax = pjaxMap(request, map, "articles-query");
         if (StringUtils.isEmpty(tagSlugName)) {
@@ -187,6 +196,7 @@ public class ArticlesController {
     }
 
     @GetMapping("/articles/search")
+    @LogOperatingFun(value = "文章搜索", logType = LogOperation.Type.ARTICLE)
     public String search(HttpServletRequest request, ModelMap map, @RequestParam String keyword) {
         boolean isPjax = pjaxMap(request, map, "articles-query");
         int page = 1, pageSize = 10;
@@ -208,6 +218,7 @@ public class ArticlesController {
     }
 
     @GetMapping("/articles/author/{username}")
+    @LogOperatingFun(value = "文章作者", logType = LogOperation.Type.ARTICLE)
     public String author(HttpServletRequest request, ModelMap map, @PathVariable String username) {
         boolean isPjax = pjaxMap(request, map, "articles-query");
         String userId = userService.getUserIdByShowName(username);

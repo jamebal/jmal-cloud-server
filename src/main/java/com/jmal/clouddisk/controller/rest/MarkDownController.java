@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IMarkdownService;
@@ -34,6 +35,7 @@ public class MarkDownController {
 
     @ApiOperation("获取markdown内容")
     @GetMapping("/public/p")
+    @LogOperatingFun
     public ResponseResult<?> getMarkDownContent(ArticleDTO articleDTO, Integer pageIndex, Integer pageSize) {
         articleDTO.setPageIndex(pageIndex);
         articleDTO.setPageSize(pageSize);
@@ -47,6 +49,7 @@ public class MarkDownController {
     @ApiOperation("编辑文档(根据fileId)")
     @PostMapping("/markdown/edit")
     @Permission("cloud:file:update")
+    @LogOperatingFun
     public ResponseResult<Object> editMarkdown(@RequestBody @Validated ArticleParamDTO upload) {
         return fileService.editMarkdown(upload);
     }
@@ -54,6 +57,7 @@ public class MarkDownController {
     @ApiOperation("修改文档排序")
     @PostMapping("/markdown/sort")
     @Permission("cloud:file:update")
+    @LogOperatingFun
     public ResponseResult<Object> sortMarkdown(@RequestBody String[] fileIdList) {
         return fileService.sortMarkdown(Arrays.asList(fileIdList));
     }
@@ -61,6 +65,7 @@ public class MarkDownController {
     @ApiOperation("删除草稿")
     @DeleteMapping("/markdown/deleteDraft")
     @Permission("cloud:file:delete")
+    @LogOperatingFun
     public ResponseResult<Object> deleteDraft(@RequestParam String fileId, @RequestParam String username) {
         return fileService.deleteDraft(fileId, username);
     }
@@ -68,6 +73,7 @@ public class MarkDownController {
     @ApiOperation("编辑文档(根据path)")
     @PostMapping("/markdown/edit1")
     @Permission("cloud:file:update")
+    @LogOperatingFun
     public ResponseResult<Object> editMarkdownByPath(@RequestBody UploadApiParamDTO upload) {
         ResultUtil.checkParamIsNull(upload.getUsername(), upload.getUserId(), upload.getRelativePath(), upload.getContentText());
         return fileService.editMarkdownByPath(upload);
@@ -76,6 +82,7 @@ public class MarkDownController {
     @ApiOperation("上传文档里的图片")
     @PostMapping("/upload-markdown-image")
     @Permission("cloud:file:upload")
+    @LogOperatingFun
     public ResponseResult<Object> uploadMarkdownImage(UploadImageDTO upload) {
         if(StringUtils.isEmpty(upload.getUserId()) || StringUtils.isEmpty(upload.getUsername())) {
             return ResultUtil.warning("参数里缺少 userId 或 username");
@@ -86,6 +93,7 @@ public class MarkDownController {
     @ApiOperation("上传文档里链接图片")
     @PostMapping("/upload-markdown-link-image")
     @Permission("cloud:file:upload")
+    @LogOperatingFun
     public ResponseResult<Object> uploadMarkdownLinkImage(HttpServletRequest request, @RequestBody UploadImageDTO uploadImageDTO) {
         String userId = uploadImageDTO.getUserId();
         String username = uploadImageDTO.getUsername();

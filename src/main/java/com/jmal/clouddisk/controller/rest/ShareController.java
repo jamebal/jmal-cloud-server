@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -51,6 +52,7 @@ public class ShareController {
 
     @ApiOperation("该分享已失效")
     @GetMapping("/public/s/invalid")
+    @LogOperatingFun
     public String invalid() {
         return "该分享已失效";
     }
@@ -58,6 +60,7 @@ public class ShareController {
     @ApiOperation("生成分享链接")
     @PostMapping("/share/generate")
     @Permission("cloud:file:upload")
+    @LogOperatingFun
     public ResponseResult<Object> generateLink(@RequestBody ShareDO share) {
         ResultUtil.checkParamIsNull(share.getFileId(), share.getUserId());
         return shareService.generateLink(share);
@@ -66,6 +69,7 @@ public class ShareController {
     @ApiOperation("取消分享")
     @DeleteMapping("/share/cancel")
     @Permission("cloud:file:delete")
+    @LogOperatingFun
     public ResponseResult<Object> cancelShare(String[] shareId,String userId) {
         ResultUtil.checkParamIsNull(shareId, userId);
         List<String> shareIdList = Arrays.asList(shareId);
@@ -75,12 +79,14 @@ public class ShareController {
     @ApiOperation("分享列表")
     @GetMapping("/share/list")
     @Permission("cloud:file:list")
+    @LogOperatingFun
     public ResponseResult<Object> shareList(UploadApiParamDTO upload) {
         return shareService.shareList(upload);
     }
 
     @ApiOperation("访问分享链接")
     @GetMapping("/public/access-share")
+    @LogOperatingFun
     public ResponseResult<Object> accessShare(@RequestParam String share, Integer pageIndex, Integer pageSize) {
         ResultUtil.checkParamIsNull(share);
         return shareService.accessShare(share, pageIndex, pageSize);
@@ -88,6 +94,7 @@ public class ShareController {
 
     @ApiOperation("访问分享链接里的目录")
     @GetMapping("public/access-share/open")
+    @LogOperatingFun
     public ResponseResult<Object> accessShareOpenDir(@RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize) {
         ShareDO shareDO = shareService.getShare(share);
         if(!shareService.checkWhetherExpired(shareDO)){
@@ -98,6 +105,7 @@ public class ShareController {
 
     @ApiOperation("打包下载")
     @GetMapping("/public/s/packageDownload")
+    @LogOperatingFun
     public void publicPackageDownload(HttpServletRequest request, HttpServletResponse response, @RequestParam String shareId, String[] fileIds) {
         boolean whetherExpired = shareService.checkWhetherExpired(shareId);
         if(whetherExpired){
@@ -119,12 +127,14 @@ public class ShareController {
 
     @ApiOperation("显示缩略图")
     @GetMapping("/articles/s/view/thumbnail")
+    @LogOperatingFun
     public ResponseEntity<Object> articlesThumbnail(String id) {
         return thumbnail(id);
     }
 
     @ApiOperation("显示缩略图")
     @GetMapping("/public/s/view/thumbnail")
+    @LogOperatingFun
     public ResponseEntity<Object> publicThumbnail(String id) {
         return thumbnail(id);
     }
@@ -145,6 +155,7 @@ public class ShareController {
 
     @ApiOperation("读取simText文件")
     @GetMapping("/public/s/preview/text")
+    @LogOperatingFun
     public ResponseResult<Object> preview(@RequestParam String shareId,@RequestParam String fileId) {
         ShareDO shareDO = shareService.getShare(shareId);
         if(!shareService.checkWhetherExpired(shareDO)){

@@ -27,13 +27,15 @@ public class UserLoginHolder {
             userLoginContext.setAuthorities(new ArrayList<>());
             return userLoginContext;
         }
+        return getUserLoginContext(requestAttributes);
+    }
+
+    private UserLoginContext getUserLoginContext(ServletRequestAttributes requestAttributes) {
         Object object = requestAttributes.getAttribute("user", 0);
         if(object != null){
             return (UserLoginContext) object;
         } else {
             UserLoginContext userLoginContext = new UserLoginContext();
-            userLoginContext.setUserId("unkown");
-            userLoginContext.setUsername("unkown");
             userLoginContext.setAuthorities(new ArrayList<>());
             return userLoginContext;
         }

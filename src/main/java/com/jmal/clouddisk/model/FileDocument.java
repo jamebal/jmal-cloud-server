@@ -25,7 +25,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
         @CompoundIndex(name = "user_path", def = "{'userId': 1, 'path': 1}"),
         @CompoundIndex(name = "user_isFolder", def = "{'userId': 1, 'isFolder': 1}"),
         @CompoundIndex(name = "user_isFavorite", def = "{'userId': 1, 'isFavorite': 1}"),
-        @CompoundIndex(name = "user_contentType", def = "{'userId': 1, 'isFavorite': 1}")
+        @CompoundIndex(name = "user_contentType", def = "{'userId': 1, 'contentType': 1}"),
+        @CompoundIndex(name = "user_isFolder_path", def = "{'userId': 1, 'isFolder': 1, 'path': 1}"),
 })
 public class FileDocument extends FileBase{
     private String userId;

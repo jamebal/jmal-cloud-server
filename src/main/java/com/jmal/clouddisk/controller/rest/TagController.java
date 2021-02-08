@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.controller.rest;
 
 import cn.hutool.extra.cglib.CglibUtil;
+import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.TagDO;
 import com.jmal.clouddisk.model.TagDTO;
@@ -31,6 +32,7 @@ public class TagController {
     @ApiOperation("标签列表")
     @GetMapping("/tag/list")
     @Permission("website:set:list")
+    @LogOperatingFun
     public ResponseResult<List<TagDTO>> list(String userId) {
         return ResultUtil.success(tagService.list(userId));
     }
@@ -39,6 +41,7 @@ public class TagController {
     @GetMapping("/tag/info")
     @ResponseBody
     @Permission("website:set:list")
+    @LogOperatingFun
     public ResponseResult<TagDTO> tagInfo(@RequestParam String tagId) {
         TagDTO tagDTO = new TagDTO();
         TagDO tag = tagService.getTagInfo(tagId);
@@ -51,6 +54,7 @@ public class TagController {
     @ApiOperation("添加标签")
     @PostMapping("/tag/add")
     @Permission("website:set:add")
+    @LogOperatingFun
     public ResponseResult<Object> add(@ModelAttribute @Validated TagDTO tagDTO) {
         return tagService.add(tagDTO);
     }
@@ -59,6 +63,7 @@ public class TagController {
     @PutMapping("/tag/update")
     @ResponseBody
     @Permission("website:set:update")
+    @LogOperatingFun
     public ResponseResult<Object> update(@ModelAttribute @Validated TagDTO tagDTO) {
         return tagService.update(tagDTO);
     }
@@ -66,6 +71,7 @@ public class TagController {
     @ApiOperation("删除标签")
     @DeleteMapping("/tag/delete")
     @Permission("website:set:delete")
+    @LogOperatingFun
     public ResponseResult<Object> delete(@RequestParam String[] tagIds) {
         List<String> tagIdList = Arrays.asList(tagIds);
         tagService.delete(tagIdList);

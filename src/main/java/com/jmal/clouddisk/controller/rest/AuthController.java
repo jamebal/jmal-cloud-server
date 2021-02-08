@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.annotation.LogOperatingFun;
-import com.jmal.clouddisk.annotation.LogOperation;
+import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -10,7 +10,6 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,6 +38,7 @@ public class AuthController {
 
     @ApiOperation("校验旧密码")
     @PostMapping("/valid-old-pass")
+    @LogOperatingFun
     @Permission("sys:user:list")
     public ResponseResult<Object> validOldPass(@RequestBody ConsumerDO user){
         return authService.validOldPass(user.getId(), user.getPassword());
@@ -46,6 +46,7 @@ public class AuthController {
 
     @ApiOperation("登出")
     @GetMapping("/logout")
+    @LogOperatingFun
     @Permission("sys:user:list")
     public ResponseResult<Object> logout(HttpServletRequest request){
         String token = request.getHeader(AuthInterceptor.JMAL_TOKEN);
@@ -53,12 +54,14 @@ public class AuthController {
     }
 
     @ApiOperation("是否有用户")
+    @LogOperatingFun
     @GetMapping("/public/has_user")
     public ResponseResult<Boolean> hasUser(){
         return userService.hasUser();
     }
 
     @ApiOperation("初始化创建管理员")
+    @LogOperatingFun
     @PostMapping("/public/initialization")
     public ResponseResult<Object> initialization(ConsumerDO consumer){
         return userService.initialization(consumer);
