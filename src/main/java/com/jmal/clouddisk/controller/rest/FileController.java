@@ -6,6 +6,7 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
@@ -57,6 +58,7 @@ public class FileController {
     @ApiOperation("文件列表")
     @GetMapping("/list")
     @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> list(UploadApiParamDTO upload) {
         return fileService.listFiles(upload);
     }
@@ -64,6 +66,7 @@ public class FileController {
     @ApiOperation("查找下级目录")
     @GetMapping("/query-file-tree")
     @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> queryFileTree(UploadApiParamDTO upload, String fileId) {
         return fileService.queryFileTree(upload,fileId);
     }
@@ -71,6 +74,7 @@ public class FileController {
     @ApiOperation("搜索文件")
     @GetMapping("/search-file")
     @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> searchFile(UploadApiParamDTO upload, String keyword) {
         return fileService.searchFile(upload, keyword);
     }
@@ -78,6 +82,7 @@ public class FileController {
     @ApiOperation("搜索文件并打开文件夹")
     @GetMapping("/search-file-open")
     @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id) {
         return fileService.searchFileAndOpenDir(upload, id);
     }
@@ -135,6 +140,7 @@ public class FileController {
     @ApiOperation("读取simText文件")
     @GetMapping("/preview/text")
     @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> previewText(@RequestParam String id, @RequestParam String username) {
         ResultUtil.checkParamIsNull(id,username);
         return ResultUtil.success(fileService.getById(id, username));
@@ -143,6 +149,7 @@ public class FileController {
     @ApiOperation("根据path读取simText文件")
     @GetMapping("/preview/path/text")
     @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> previewTextByPath(@RequestParam String path,@RequestParam String username) {
         return fileService.previewTextByPath(path, username);
     }
@@ -170,6 +177,7 @@ public class FileController {
     @ApiOperation("显示缩略图")
     @GetMapping("/view/thumbnail")
     @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseEntity<Object> thumbnail(String id) {
         ResultUtil.checkParamIsNull(id);
         Optional<FileDocument> file = fileService.thumbnail(id, userLoginHolder.getUsername());
@@ -191,6 +199,7 @@ public class FileController {
     @ApiOperation("显示缩略图(mp3封面)")
     @GetMapping("/view/cover")
     @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseEntity<Object> coverOfMp3(HttpServletRequest request, String id) {
         ResultUtil.checkParamIsNull(id);
         Optional<FileDocument> file = fileService.coverOfMp3(id, service.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN)));
@@ -281,6 +290,7 @@ public class FileController {
     @ApiOperation("获取目录下的文件")
     @GetMapping("/listfiles")
     @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> listFiles(@RequestParam String path, @RequestParam String username, Boolean tempDir) {
         Boolean dir = tempDir;
         if(dir == null){
@@ -292,6 +302,7 @@ public class FileController {
     @ApiOperation("获取上级文件列表")
     @GetMapping("/upper-level-list")
     @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> upperLevelList(@RequestParam String path, @RequestParam String username) {
         return fileService.upperLevelList(path, username);
     }

@@ -38,6 +38,7 @@ public class AuthController {
 
     @ApiOperation("校验旧密码")
     @PostMapping("/valid-old-pass")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     @Permission("sys:user:list")
     public ResponseResult<Object> validOldPass(@RequestBody ConsumerDO user){
         return authService.validOldPass(user.getId(), user.getPassword());
@@ -54,13 +55,14 @@ public class AuthController {
 
     @ApiOperation("是否有用户")
     @GetMapping("/public/has_user")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Boolean> hasUser(){
         return userService.hasUser();
     }
 
     @ApiOperation("初始化创建管理员")
-    @LogOperatingFun
     @PostMapping("/public/initialization")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> initialization(ConsumerDO consumer){
         return userService.initialization(consumer);
     }

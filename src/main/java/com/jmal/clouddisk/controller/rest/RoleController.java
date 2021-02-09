@@ -2,6 +2,7 @@ package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
+import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
 import com.jmal.clouddisk.service.impl.RoleService;
@@ -32,6 +33,7 @@ public class RoleController {
     @ApiOperation(value = "角色列表")
     @GetMapping("/list")
     @Permission("sys:role:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<List<RoleDTO>> list(QueryRoleDTO queryDTO){
         return roleService.list(queryDTO);
     }

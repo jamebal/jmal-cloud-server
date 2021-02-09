@@ -3,6 +3,7 @@ package com.jmal.clouddisk.controller.rest;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
+import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.TagDO;
 import com.jmal.clouddisk.model.TagDTO;
 import com.jmal.clouddisk.service.impl.TagService;
@@ -32,6 +33,7 @@ public class TagController {
     @ApiOperation("标签列表")
     @GetMapping("/tag/list")
     @Permission("website:set:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<List<TagDTO>> list(String userId) {
         return ResultUtil.success(tagService.list(userId));
     }
@@ -40,6 +42,7 @@ public class TagController {
     @GetMapping("/tag/info")
     @ResponseBody
     @Permission("website:set:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<TagDTO> tagInfo(@RequestParam String tagId) {
         TagDTO tagDTO = new TagDTO();
         TagDO tag = tagService.getTagInfo(tagId);

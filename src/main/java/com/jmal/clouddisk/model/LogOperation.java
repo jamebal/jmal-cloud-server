@@ -110,6 +110,10 @@ public class LogOperation {
          */
         LOGIN,
         /***
+         * 浏览日志
+         */
+        BROWSE,
+        /***
          * 操作日志
          */
         OPERATION,

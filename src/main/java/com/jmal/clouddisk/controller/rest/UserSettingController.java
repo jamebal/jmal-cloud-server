@@ -2,6 +2,7 @@ package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
+import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.UserAccessTokenDTO;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.SettingService;
@@ -44,6 +45,7 @@ public class UserSettingController {
     @ApiOperation("accessToken列表")
     @GetMapping("/user/setting/accessTokenList")
     @Permission("sys:user:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     ResponseResult<List<UserAccessTokenDTO>> accessTokenList() {
         return settingService.accessTokenList(userLoginHolder.getUsername());
     }
@@ -78,6 +80,7 @@ public class UserSettingController {
     @ApiOperation("获取是否禁用webp状态")
     @GetMapping("/user/setting/get/webp")
     @Permission("sys:user:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Boolean> getDisabledWebp(@RequestParam String userId) {
         return ResultUtil.success(userService.getDisabledWebp(userId));
     }

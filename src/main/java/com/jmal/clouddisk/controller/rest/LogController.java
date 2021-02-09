@@ -31,6 +31,7 @@ public class LogController {
     @ApiOperation("日志查询")
     @GetMapping("/list")
     @Permission("sys:log:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<List<LogOperation>> list(@ModelAttribute LogOperationDTO logOperationDTO){
         return logService.list(logOperationDTO);
     }

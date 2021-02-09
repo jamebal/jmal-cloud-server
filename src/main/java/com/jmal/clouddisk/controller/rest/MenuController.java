@@ -4,6 +4,7 @@ import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
+import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.MenuDTO;
@@ -35,6 +36,7 @@ public class MenuController {
     @ApiOperation("菜单树")
     @GetMapping("/tree")
     @Permission("sys:user:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<List<MenuDTO>> tree(QueryMenuDTO queryDTO) {
         return ResultUtil.success(menuService.tree(queryDTO));
     }
@@ -43,6 +45,7 @@ public class MenuController {
     @GetMapping("/info")
     @ResponseBody
     @Permission("sys:menu:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<MenuDTO> info(@RequestParam String menuId) {
         MenuDTO menuDTO = new MenuDTO();
         MenuDO menuDO = menuService.getMenuInfo(menuId);

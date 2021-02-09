@@ -5,6 +5,7 @@ import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.CategoryDO;
 import com.jmal.clouddisk.model.CategoryDTO;
+import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.impl.CategoryService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -32,6 +33,7 @@ public class CategoryController {
     @ApiOperation("分类列表")
     @GetMapping("/category/list")
     @Permission("website:set:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<List<CategoryDTO>> list(String userId, String parentCategoryId) {
         return ResultUtil.success(categoryService.list(userId, parentCategoryId));
     }
@@ -39,6 +41,7 @@ public class CategoryController {
     @ApiOperation("分类树")
     @GetMapping("/category/tree")
     @Permission("website:set:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<List<CategoryDTO>> tree(String userId) {
         return ResultUtil.success(categoryService.tree(userId, false));
     }
@@ -47,6 +50,7 @@ public class CategoryController {
     @GetMapping("/category/info")
     @ResponseBody
     @Permission("website:set:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<CategoryDTO> categoryInfo(@RequestParam String categoryId) {
         CategoryDTO categoryDTO = new CategoryDTO();
         CategoryDO categoryDO = categoryService.getCategoryInfo(categoryId);

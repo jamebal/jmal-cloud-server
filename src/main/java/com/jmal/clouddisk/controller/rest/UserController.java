@@ -2,6 +2,7 @@ package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
+import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
@@ -73,6 +74,7 @@ public class UserController {
     @ApiOperation(value = "用户信息")
     @GetMapping("/userInfo")
     @Permission("sys:user:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<ConsumerDTO> consumerInfo(@RequestParam String id){
         return service.userInfo(id);
     }
@@ -80,6 +82,7 @@ public class UserController {
     @ApiOperation(value = "用户信息列表")
     @GetMapping("/userList")
     @Permission("sys:user:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<List<ConsumerDTO>> consumerList(QueryUserDTO queryDTO){
         return service.userList(queryDTO);
     }

@@ -35,6 +35,7 @@ public class MarkDownController {
 
     @ApiOperation("获取markdown内容")
     @GetMapping("/markdown/p")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<?> getMarkDownContent(ArticleDTO articleDTO, Integer pageIndex, Integer pageSize) {
         articleDTO.setPageIndex(pageIndex);
         articleDTO.setPageSize(pageSize);
