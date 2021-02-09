@@ -95,7 +95,7 @@ public class ArticlesController {
         boolean isPjax = pjaxMap(request, map, "article");
         ArticleVO articleVO = fileService.getMarkDownContentBySlug(slug);
         if (articleVO == null) {
-            return "404";
+            return notFind(request, map);
         }
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
@@ -138,13 +138,13 @@ public class ArticlesController {
     public String getCategoryByName(HttpServletRequest request, ModelMap map, @PathVariable String categorySlugName) {
         boolean isPjax = pjaxMap(request, map, "articles-query");
         if (StringUtils.isEmpty(categorySlugName)) {
-            return "404";
+            return notFind(request, map);
         }
         String categoryId = null;
         if (!StringUtils.isEmpty(categorySlugName)) {
             CategoryDO categoryDO = categoryService.getCategoryInfoBySlug(null, categorySlugName);
             if (categoryDO == null) {
-                return "404";
+                return notFind(request, map);
             }
             ArticlesQueryVO query = categoryDO.toArticlesQuery();
             map.addAttribute("titleName", query.getName());
@@ -174,13 +174,13 @@ public class ArticlesController {
     public String getTagByName(HttpServletRequest request, ModelMap map, @PathVariable String tagSlugName) {
         boolean isPjax = pjaxMap(request, map, "articles-query");
         if (StringUtils.isEmpty(tagSlugName)) {
-            return "404";
+            return notFind(request, map);
         }
         String tagId = null;
         if (!StringUtils.isEmpty(tagSlugName)) {
             TagDO tag = tagService.getTagInfoBySlug(null, tagSlugName);
             if (tag == null) {
-                return "404";
+                return notFind(request, map);
             }
             ArticlesQueryVO query = tag.toArticlesQuery();
             map.addAttribute("titleName", query.getName());
@@ -224,7 +224,7 @@ public class ArticlesController {
         boolean isPjax = pjaxMap(request, map, "articles-query");
         String userId = userService.getUserIdByShowName(username);
         if (StringUtils.isEmpty(userId)) {
-            return "404";
+            return notFind(request, map);
         }
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");

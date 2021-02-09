@@ -26,6 +26,10 @@ public class WebsiteSettingDO {
      */
     String backgroundDescSite;
     /***
+     * 站点地址
+     */
+    String siteUrl;
+    /***
      * 网站 Logo / 站点名称
      */
     String siteName;
