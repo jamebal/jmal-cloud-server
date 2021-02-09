@@ -41,7 +41,7 @@
                     </a>
                     <ul class="dropdown-menu">
                         <li class="dropdown-item alone-page" th:each="page,pageStat : ${alonePages}" th:if="${pageStat.index > (showAlonePages.size() - 1)}">
-                            <a th:href="@{'/o/'+${page.slug}}" th:text="${page.name}"></a>
+                            <a th:href="'/o/'+${page.slug}" th:text="${page.name}"></a>
                         </li>
                     </ul>
                 </li>

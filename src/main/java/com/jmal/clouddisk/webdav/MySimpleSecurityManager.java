@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.webdav;
 
-import cn.hutool.core.lang.Console;
+import com.jmal.clouddisk.WebFilter;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import com.jmal.clouddisk.util.CaffeineUtil;
@@ -70,6 +70,10 @@ public class MySimpleSecurityManager implements io.milton.http.SecurityManager {
      * 浏览检索资源 Options、Head、Trace、Get、PropFind、PropFind。
      */
     private static final List<Request.Method> LIST_METHODS = Arrays.asList(Request.Method.GET,Request.Method.HEAD,Request.Method.TRACE,Request.Method.OPTIONS,Request.Method.PROPFIND,Request.Method.PROPPATCH);
+    /***
+     * 不记录日志的方法 Get、PropFind、PropFind、Lock。
+     */
+    public static final List<String> NO_LOG_METHODS = Arrays.asList(Request.Method.GET.name(),Request.Method.PROPFIND.name(),Request.Method.LOCK.name());
 
     public MySimpleSecurityManager() {
         realm = "userRealm";
@@ -107,12 +111,8 @@ public class MySimpleSecurityManager implements io.milton.http.SecurityManager {
             throw new RuntimeException("No digest generator is configured");
         }
         String username = digestRequest.getUser();
-        String uri = digestRequest.getUri().replaceFirst(fileProperties.getWebDavPrefixPath(), "");
-        Path path = Paths.get(uri);
-        if (path.getNameCount() < 1) {
-            return null;
-        }
-        if (!username.equals(path.getName(0).toString())) {
+        String usernameUri = getUsernameByUri(digestRequest.getUri());
+        if (!username.equals(usernameUri)) {
             return null;
         }
         String actualPassword = userService.getPasswordByUserName(username);
@@ -123,6 +123,23 @@ public class MySimpleSecurityManager implements io.milton.http.SecurityManager {
         } else {
             return null;
         }
+    }
+
+    /***
+     * 根据webdav uri 获取用户名
+     * @param uri uri
+     * @return username
+     */
+    public String getUsernameByUri(String uri) {
+        if (uri.startsWith(WebFilter.API)) {
+            uri = WebFilter.COMPILE.matcher(uri).replaceFirst("");
+        }
+        uri = uri.replaceFirst(fileProperties.getWebDavPrefixPath(), "");
+        Path path = Paths.get(uri);
+        if (path.getNameCount() < 1) {
+            return null;
+        }
+        return path.getName(0).toString();
     }
 
     @Override

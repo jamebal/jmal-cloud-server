@@ -31,7 +31,6 @@ public class RoleController {
 
     @ApiOperation(value = "角色列表")
     @GetMapping("/list")
-    @LogOperatingFun
     @Permission("sys:role:list")
     public ResponseResult<List<RoleDTO>> list(QueryRoleDTO queryDTO){
         return roleService.list(queryDTO);

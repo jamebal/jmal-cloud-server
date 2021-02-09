@@ -38,7 +38,6 @@ public class AuthController {
 
     @ApiOperation("校验旧密码")
     @PostMapping("/valid-old-pass")
-    @LogOperatingFun
     @Permission("sys:user:list")
     public ResponseResult<Object> validOldPass(@RequestBody ConsumerDO user){
         return authService.validOldPass(user.getId(), user.getPassword());
@@ -54,7 +53,6 @@ public class AuthController {
     }
 
     @ApiOperation("是否有用户")
-    @LogOperatingFun
     @GetMapping("/public/has_user")
     public ResponseResult<Boolean> hasUser(){
         return userService.hasUser();

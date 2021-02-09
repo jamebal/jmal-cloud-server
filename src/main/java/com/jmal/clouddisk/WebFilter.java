@@ -1,13 +1,15 @@
 package com.jmal.clouddisk;
 
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.http.useragent.UserAgent;
 import cn.hutool.http.useragent.UserAgentUtil;
-import com.alibaba.fastjson.JSONObject;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.LogOperation;
+import com.jmal.clouddisk.service.impl.LogService;
+import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.webdav.MySimpleSecurityManager;
 import io.milton.config.HttpManagerBuilder;
 import io.milton.http.HttpManager;
 import io.milton.http.Request;
@@ -17,7 +19,9 @@ import io.milton.http.annotated.AnnotationResourceFactory;
 import io.milton.http.template.JspViewResolver;
 import io.milton.http.template.ViewResolver;
 import io.milton.servlet.MiltonServlet;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.*;
@@ -31,17 +35,25 @@ import java.util.regex.Pattern;
  * @Description 路径过滤器
  * @Date 2020/10/20 4:12 下午
  */
+@Slf4j
 @Component
+@Lazy
 public class WebFilter implements Filter {
 
-    private static final String API = "/api";
-    private static final Pattern COMPILE = Pattern.compile(API);
+    public static final String API = "/api";
+    public static final Pattern COMPILE = Pattern.compile(API);
 
     @Autowired
     private FileProperties fileProperties;
 
     @Autowired
     private HttpManagerBuilder httpManagerBuilder;
+
+    @Autowired
+    private MySimpleSecurityManager mySimpleSecurityManager;
+
+    @Autowired
+    private LogService logService;
 
     private HttpManager httpManager;
 
@@ -55,24 +67,43 @@ public class WebFilter implements Filter {
                 arf.setViewResolver(viewResolver);
             }
         }
+        log.info("WEBDAV 服务启动, contextPath: {}", fileProperties.getWebDavPrefixPath());
         this.httpManager = httpManagerBuilder.buildHttpManager();
     }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-        // doMiltonProcessing((HttpServletRequest) request, (HttpServletResponse) response);
-        HttpServletRequest httpRequest = (HttpServletRequest)request;
+        HttpServletRequest httpRequest = (HttpServletRequest) request;
         String uri = httpRequest.getRequestURI();
-        if(uri.startsWith(API)) {
+        if (uri.startsWith(API)) {
             uri = COMPILE.matcher(uri).replaceFirst("");
-            httpRequest.getRequestDispatcher(uri).forward(request,response);
+            httpRequest.getRequestDispatcher(uri).forward(request, response);
         }
         // 以/webDAV 开头的走webDAV协议
-        if(uri.startsWith(fileProperties.getWebDavPrefixPath())){
-            doMiltonProcessing((HttpServletRequest) request, (HttpServletResponse) response);
+        if (uri.startsWith(fileProperties.getWebDavPrefixPath())) {
+            long time = System.currentTimeMillis();
+            ResponseResult<Object> result = doMiltonProcessing((HttpServletRequest) request, (HttpServletResponse) response);
+            recordLog((HttpServletRequest) request, (HttpServletResponse) response, time, result);
             return;
         }
-        chain.doFilter(request,response);
+        chain.doFilter(request, response);
+    }
+
+    /***
+     * 记录webDAV请求日志
+     */
+    private void recordLog(HttpServletRequest request, HttpServletResponse response, long time, ResponseResult<Object> result) {
+        if (MySimpleSecurityManager.NO_LOG_METHODS.contains(request.getMethod())){
+            return;
+        }
+        LogOperation logOperation = new LogOperation();
+        logOperation.setTime(System.currentTimeMillis() - time);
+        String username = mySimpleSecurityManager.getUsernameByUri(request.getRequestURI());
+        logOperation.setUsername(username);
+        logOperation.setOperationModule("WEBDAV");
+        logOperation.setOperationFun("WebDAV请求");
+        logOperation.setType(LogOperation.Type.WEBDAV.name());
+        logService.addLogBefore(logOperation, result, request, response);
     }
 
     /***
@@ -81,26 +112,27 @@ public class WebFilter implements Filter {
      * @param resp HttpServletResponse
      */
     @LogOperatingFun(value = "WebDAV请求", logType = LogOperation.Type.WEBDAV)
-    public void doMiltonProcessing(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    public ResponseResult<Object> doMiltonProcessing(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             MiltonServlet.setThreadlocals(req, resp);
             Request request = new io.milton.servlet.ServletRequest(req, req.getServletContext());
             Response response = new io.milton.servlet.ServletResponse(resp);
             UserAgent userAgent = UserAgentUtil.parse(request.getUserAgentHeader());
-            if(!userAgent.getBrowser().isUnknown()){
+            if (!userAgent.getBrowser().isUnknown()) {
                 notAllowBrowser(resp);
-                return;
+                return ResultUtil.warning("webDAV 不支持浏览器访问");
             }
             // TODO 暂不支持LOCK和UNLOCK
-            if(Request.Method.LOCK.toString().equals(req.getMethod())){
+            if (Request.Method.LOCK.toString().equals(req.getMethod())) {
                 response.setStatus(Response.Status.SC_METHOD_NOT_ALLOWED);
-                return;
+                return ResultUtil.warning("webDAV 暂不支持LOCK和UNLOCK请求");
             }
             httpManager.process(request, response);
         } finally {
             MiltonServlet.clearThreadlocals();
             resp.flushBuffer();
         }
+        return null;
     }
 
     /***

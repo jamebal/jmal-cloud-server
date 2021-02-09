@@ -30,7 +30,6 @@ public class LogController {
 
     @ApiOperation("日志查询")
     @GetMapping("/list")
-    @LogOperatingFun
     @Permission("sys:log:list")
     public ResponseResult<List<LogOperation>> list(@ModelAttribute LogOperationDTO logOperationDTO){
         return logService.list(logOperationDTO);

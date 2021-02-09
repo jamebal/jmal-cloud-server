@@ -73,7 +73,6 @@ public class UserController {
     @ApiOperation(value = "用户信息")
     @GetMapping("/userInfo")
     @Permission("sys:user:list")
-    @LogOperatingFun
     public ResponseResult<ConsumerDTO> consumerInfo(@RequestParam String id){
         return service.userInfo(id);
     }
@@ -81,7 +80,6 @@ public class UserController {
     @ApiOperation(value = "用户信息列表")
     @GetMapping("/userList")
     @Permission("sys:user:list")
-    @LogOperatingFun
     public ResponseResult<List<ConsumerDTO>> consumerList(QueryUserDTO queryDTO){
         return service.userList(queryDTO);
     }

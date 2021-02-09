@@ -50,6 +50,7 @@ public class ArticlesController {
     private static final String X_PJAX_TRUE = "true";
 
     @GetMapping("/public/404")
+    @LogOperatingFun(value = "404", logType = LogOperation.Type.ARTICLE)
     public String notFind(HttpServletRequest request, ModelMap map) {
         boolean isPjax = pjaxMap(request, map, "404");
         map.addAttribute("titleName", "页面没有找到");
@@ -57,7 +58,7 @@ public class ArticlesController {
     }
 
     @GetMapping("/articles")
-    @LogOperatingFun("文章列表")
+    @LogOperatingFun(value = "文章列表", logType = LogOperation.Type.ARTICLE)
     public String index(HttpServletRequest request, ModelMap map) {
         map.addAttribute("mark", "articles");
         boolean isPjax = isPjax(request);
@@ -79,7 +80,7 @@ public class ArticlesController {
     }
 
     @GetMapping("/articles/o/{slug}")
-    @LogOperatingFun(value = "文章", logType = LogOperation.Type.ARTICLE)
+    @LogOperatingFun(value = "独立页面", logType = LogOperation.Type.ARTICLE)
     public String alonePage(HttpServletRequest request, @PathVariable String slug, ModelMap map) {
         return articlePage(request, slug, map);
     }

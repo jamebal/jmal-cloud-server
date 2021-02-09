@@ -32,7 +32,6 @@ public class TagController {
     @ApiOperation("标签列表")
     @GetMapping("/tag/list")
     @Permission("website:set:list")
-    @LogOperatingFun
     public ResponseResult<List<TagDTO>> list(String userId) {
         return ResultUtil.success(tagService.list(userId));
     }
@@ -41,7 +40,6 @@ public class TagController {
     @GetMapping("/tag/info")
     @ResponseBody
     @Permission("website:set:list")
-    @LogOperatingFun
     public ResponseResult<TagDTO> tagInfo(@RequestParam String tagId) {
         TagDTO tagDTO = new TagDTO();
         TagDO tag = tagService.getTagInfo(tagId);

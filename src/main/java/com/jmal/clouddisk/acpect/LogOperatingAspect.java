@@ -10,9 +10,9 @@ import com.jmal.clouddisk.service.impl.LogService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import com.jmal.clouddisk.util.ResponseResult;
+import io.milton.http.Response;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.apache.poi.ss.formula.functions.T;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -38,9 +38,6 @@ import java.util.Map;
 @Aspect
 @Component
 public class LogOperatingAspect {
-
-    @Autowired
-    private UserServiceImpl userService;
 
     @Autowired
     private UserLoginHolder userLoginHolder;
@@ -109,54 +106,6 @@ public class LogOperatingAspect {
             logOperation.setUsername(consumerDO.getUsername());
         }
         // 添加日志
-        addLog(logOperation, attributes, result);
-    }
-
-    private void addLog(LogOperation logOperation, ServletRequestAttributes attributes, Object result) {
-        HttpServletRequest request = attributes.getRequest();
-        HttpServletResponse response = attributes.getResponse();
-        // 用户
-        String username = logOperation.getUsername();
-        if (!StringUtils.isEmpty(username)) {
-            logOperation.setShowName(userService.getShowNameByUserUsernme(username));
-        }
-        // UserAgent
-        UserAgent userAgent = UserAgentUtil.parse(request.getHeader("User-Agent"));
-        if (userAgent != null){
-            logOperation.setOperatingSystem(userAgent.getOs().getName());
-            logOperation.setDeviceModel(userAgent.getPlatform().getName());
-            logOperation.setBrowser(userAgent.getBrowser().getName() + userAgent.getVersion());
-        }
-        // 请求地址
-        logOperation.setUrl(request.getRequestURI());
-        // 请求方式
-        logOperation.setMethod(request.getMethod());
-        // 客户端地址
-        logOperation.setIp(request.getRemoteAddr());
-        // 请求参数
-        Map<String, String> params = new HashMap<>(16);
-        Enumeration<String> enumeration = request.getParameterNames();
-        while (enumeration.hasMoreElements()){
-            String key = enumeration.nextElement();
-            params.put(key, request.getParameter(key));
-        }
-        logOperation.setParams(params);
-        // 返回结果
-        logOperation.setStatus(0);
-        ResponseResult<Object> responseResult;
-        try {
-            responseResult = (ResponseResult<Object>)result;
-            logOperation.setStatus(responseResult.getCode());
-            if(responseResult.getCode() != 0){
-                logOperation.setRemarks(responseResult.getMessage().toString());
-            }
-        } catch (Exception e) {
-            if (response != null){
-                if(response.getStatus() != 200){
-                    logOperation.setStatus(-1);
-             }
-            }
-        }
-        ThreadUtil.execute(() -> logService.addLog(logOperation));
+        logService.addLogBefore(logOperation, result, attributes.getRequest(), attributes.getResponse());
     }
 }

@@ -34,8 +34,7 @@ public class MarkDownController {
     IUserService service;
 
     @ApiOperation("获取markdown内容")
-    @GetMapping("/public/p")
-    @LogOperatingFun
+    @GetMapping("/markdown/p")
     public ResponseResult<?> getMarkDownContent(ArticleDTO articleDTO, Integer pageIndex, Integer pageSize) {
         articleDTO.setPageIndex(pageIndex);
         articleDTO.setPageSize(pageSize);

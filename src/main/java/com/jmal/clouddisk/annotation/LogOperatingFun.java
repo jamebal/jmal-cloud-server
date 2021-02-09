@@ -11,8 +11,8 @@ import java.lang.annotation.*;
  * @author jmal
  */
 @Documented
+@Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
 public @interface LogOperatingFun {
     /**
      * 操作功能

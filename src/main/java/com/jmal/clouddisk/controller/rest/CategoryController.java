@@ -31,7 +31,6 @@ public class CategoryController {
 
     @ApiOperation("分类列表")
     @GetMapping("/category/list")
-    @LogOperatingFun
     @Permission("website:set:list")
     public ResponseResult<List<CategoryDTO>> list(String userId, String parentCategoryId) {
         return ResultUtil.success(categoryService.list(userId, parentCategoryId));
@@ -39,7 +38,6 @@ public class CategoryController {
 
     @ApiOperation("分类树")
     @GetMapping("/category/tree")
-    @LogOperatingFun
     @Permission("website:set:list")
     public ResponseResult<List<CategoryDTO>> tree(String userId) {
         return ResultUtil.success(categoryService.tree(userId, false));
@@ -48,7 +46,6 @@ public class CategoryController {
     @ApiOperation("分类信息")
     @GetMapping("/category/info")
     @ResponseBody
-    @LogOperatingFun
     @Permission("website:set:list")
     public ResponseResult<CategoryDTO> categoryInfo(@RequestParam String categoryId) {
         CategoryDTO categoryDTO = new CategoryDTO();

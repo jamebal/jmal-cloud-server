@@ -35,7 +35,7 @@ public class UserSettingController {
 
     @ApiOperation("生成accessToken")
     @PutMapping("/user/setting/generateAccessToken")
-    @Permission("sys:user:list")
+    @Permission("sys:user:update")
     @LogOperatingFun
     ResponseResult<String> generateAccessToken(@RequestParam String tokenName) {
         return settingService.generateAccessToken(userLoginHolder.getUsername(), tokenName);
@@ -44,7 +44,6 @@ public class UserSettingController {
     @ApiOperation("accessToken列表")
     @GetMapping("/user/setting/accessTokenList")
     @Permission("sys:user:list")
-    @LogOperatingFun
     ResponseResult<List<UserAccessTokenDTO>> accessTokenList() {
         return settingService.accessTokenList(userLoginHolder.getUsername());
     }
@@ -79,7 +78,6 @@ public class UserSettingController {
     @ApiOperation("获取是否禁用webp状态")
     @GetMapping("/user/setting/get/webp")
     @Permission("sys:user:list")
-    @LogOperatingFun
     public ResponseResult<Boolean> getDisabledWebp(@RequestParam String userId) {
         return ResultUtil.success(userService.getDisabledWebp(userId));
     }

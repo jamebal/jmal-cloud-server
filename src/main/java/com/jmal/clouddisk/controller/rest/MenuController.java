@@ -35,7 +35,6 @@ public class MenuController {
     @ApiOperation("菜单树")
     @GetMapping("/tree")
     @Permission("sys:user:list")
-    @LogOperatingFun
     public ResponseResult<List<MenuDTO>> tree(QueryMenuDTO queryDTO) {
         return ResultUtil.success(menuService.tree(queryDTO));
     }
@@ -44,7 +43,6 @@ public class MenuController {
     @GetMapping("/info")
     @ResponseBody
     @Permission("sys:menu:list")
-    @LogOperatingFun
     public ResponseResult<MenuDTO> info(@RequestParam String menuId) {
         MenuDTO menuDTO = new MenuDTO();
         MenuDO menuDO = menuService.getMenuInfo(menuId);
@@ -57,7 +55,6 @@ public class MenuController {
     @ApiOperation("权限标识列表")
     @GetMapping("/authorities")
     @ResponseBody
-    @LogOperatingFun
     @Permission("sys:menu:list")
     public ResponseResult<List<String>> authorities() {
         return ResultUtil.success(AnnoManageUtil.AUTHORITIES);

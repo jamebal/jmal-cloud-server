@@ -25,8 +25,7 @@ public class WebsiteSettingController {
     private SettingService settingService;
 
     @ApiOperation("获取网站设置")
-    @GetMapping("/public/website/setting")
-    @LogOperatingFun
+    @GetMapping("/website/setting")
     public ResponseResult<WebsiteSettingDTO> getWebsiteSetting() {
         return ResultUtil.success(settingService.getWebsiteSetting());
     }

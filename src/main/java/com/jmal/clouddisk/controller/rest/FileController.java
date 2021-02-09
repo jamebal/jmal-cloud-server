@@ -56,7 +56,6 @@ public class FileController {
 
     @ApiOperation("文件列表")
     @GetMapping("/list")
-    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> list(UploadApiParamDTO upload) {
         return fileService.listFiles(upload);
@@ -64,7 +63,6 @@ public class FileController {
 
     @ApiOperation("查找下级目录")
     @GetMapping("/query-file-tree")
-    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> queryFileTree(UploadApiParamDTO upload, String fileId) {
         return fileService.queryFileTree(upload,fileId);
@@ -72,7 +70,6 @@ public class FileController {
 
     @ApiOperation("搜索文件")
     @GetMapping("/search-file")
-    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> searchFile(UploadApiParamDTO upload, String keyword) {
         return fileService.searchFile(upload, keyword);
@@ -80,7 +77,6 @@ public class FileController {
 
     @ApiOperation("搜索文件并打开文件夹")
     @GetMapping("/search-file-open")
-    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id) {
         return fileService.searchFileAndOpenDir(upload, id);
@@ -138,7 +134,6 @@ public class FileController {
 
     @ApiOperation("读取simText文件")
     @GetMapping("/preview/text")
-    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> previewText(@RequestParam String id, @RequestParam String username) {
         ResultUtil.checkParamIsNull(id,username);
@@ -147,7 +142,6 @@ public class FileController {
 
     @ApiOperation("根据path读取simText文件")
     @GetMapping("/preview/path/text")
-    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> previewTextByPath(@RequestParam String path,@RequestParam String username) {
         return fileService.previewTextByPath(path, username);
@@ -155,7 +149,6 @@ public class FileController {
 
     @ApiOperation("是否允许下载")
     @GetMapping("/isAllowDownload")
-    @LogOperatingFun
     @Permission("cloud:file:download")
     public ResponseResult<Object> isAllowDownload() {
         return ResultUtil.success(true);
@@ -176,7 +169,6 @@ public class FileController {
 
     @ApiOperation("显示缩略图")
     @GetMapping("/view/thumbnail")
-    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseEntity<Object> thumbnail(String id) {
         ResultUtil.checkParamIsNull(id);
@@ -198,7 +190,6 @@ public class FileController {
 
     @ApiOperation("显示缩略图(mp3封面)")
     @GetMapping("/view/cover")
-    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseEntity<Object> coverOfMp3(HttpServletRequest request, String id) {
         ResultUtil.checkParamIsNull(id);
@@ -289,7 +280,6 @@ public class FileController {
 
     @ApiOperation("获取目录下的文件")
     @GetMapping("/listfiles")
-    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> listFiles(@RequestParam String path, @RequestParam String username, Boolean tempDir) {
         Boolean dir = tempDir;
@@ -301,7 +291,6 @@ public class FileController {
 
     @ApiOperation("获取上级文件列表")
     @GetMapping("/upper-level-list")
-    @LogOperatingFun
     @Permission("cloud:file:list")
     public ResponseResult<Object> upperLevelList(@RequestParam String path, @RequestParam String username) {
         return fileService.upperLevelList(path, username);

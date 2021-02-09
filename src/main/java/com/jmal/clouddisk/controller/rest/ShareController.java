@@ -52,7 +52,6 @@ public class ShareController {
 
     @ApiOperation("该分享已失效")
     @GetMapping("/public/s/invalid")
-    @LogOperatingFun
     public String invalid() {
         return "该分享已失效";
     }
@@ -127,14 +126,12 @@ public class ShareController {
 
     @ApiOperation("显示缩略图")
     @GetMapping("/articles/s/view/thumbnail")
-    @LogOperatingFun
     public ResponseEntity<Object> articlesThumbnail(String id) {
         return thumbnail(id);
     }
 
     @ApiOperation("显示缩略图")
     @GetMapping("/public/s/view/thumbnail")
-    @LogOperatingFun
     public ResponseEntity<Object> publicThumbnail(String id) {
         return thumbnail(id);
     }
