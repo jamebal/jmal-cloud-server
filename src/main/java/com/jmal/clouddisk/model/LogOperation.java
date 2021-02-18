@@ -106,7 +106,7 @@ public class LogOperation {
      */
     public enum Type {
         /***
-         * 登陆日志
+         * 登录日志
          */
         LOGIN,
         /***

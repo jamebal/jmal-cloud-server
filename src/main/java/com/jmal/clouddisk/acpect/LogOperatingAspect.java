@@ -101,7 +101,7 @@ public class LogOperatingAspect {
         String logType = logOperatingFun.logType().name();
         logOperation.setType(logType);
         if(LogOperation.Type.LOGIN.name().equals(logType)){
-            // 登陆日志
+            // 登录日志
             ConsumerDO consumerDO = (ConsumerDO) joinPoint.getArgs()[0];
             logOperation.setUsername(consumerDO.getUsername());
         }

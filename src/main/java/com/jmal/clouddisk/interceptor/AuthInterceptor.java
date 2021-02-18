@@ -102,16 +102,18 @@ public class AuthInterceptor implements HandlerInterceptor {
      */
     private void setAuthorities(String username, List<String> authorities) {
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        String userId = CaffeineUtil.getUserIdCache(username);
-        if(StringUtils.isEmpty(userId)) {
-            userId = userService.getUserIdByUserName(username);
-            CaffeineUtil.setUserIdCache(username, userId);
+        if (requestAttributes != null){
+            String userId = CaffeineUtil.getUserIdCache(username);
+            if(StringUtils.isEmpty(userId)) {
+                userId = userService.getUserIdByUserName(username);
+                CaffeineUtil.setUserIdCache(username, userId);
+            }
+            UserLoginContext userLoginContext = new UserLoginContext();
+            userLoginContext.setAuthorities(authorities);
+            userLoginContext.setUserId(userId);
+            userLoginContext.setUsername(username);
+            requestAttributes.setAttribute("user", userLoginContext, 0);
         }
-        UserLoginContext userLoginContext = new UserLoginContext();
-        userLoginContext.setAuthorities(authorities);
-        userLoginContext.setUserId(userId);
-        userLoginContext.setUsername(username);
-        requestAttributes.setAttribute("user", userLoginContext, 0);
     }
 
     /***
