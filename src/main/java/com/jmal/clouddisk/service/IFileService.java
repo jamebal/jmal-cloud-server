@@ -326,4 +326,16 @@ public interface IFileService {
      */
     void deleteAllByUser(List<ConsumerDO> userList);
 
+    /***
+     * 设置文件为分享文件
+     * @param file FileDocument
+     * @param expiresAt 过期时间
+     */
+    void setShareFile(FileDocument file, long expiresAt);
+
+    /***
+     * 取消文件的分享状态
+     * @param file FileDocument
+     */
+    void unsetShareFile(FileDocument file);
 }

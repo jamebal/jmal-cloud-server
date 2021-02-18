@@ -2,7 +2,6 @@ package com.jmal.clouddisk.interceptor;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.lang.Console;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.IFileService;
@@ -21,14 +20,10 @@ import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.FileCacheImageOutputStream;
-import javax.imageio.stream.FileImageOutputStream;
-import javax.imageio.stream.ImageOutputStream;
-import javax.imageio.stream.MemoryCacheImageOutputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
-import java.awt.image.RenderedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -57,11 +52,19 @@ public class FileInterceptor implements HandlerInterceptor {
     /***
      * 缩略图
      */
-    private static  final String THUMBNAIL = "thumbnail";
+    private static final String THUMBNAIL = "thumbnail";
     /***
      * webp
      */
-    private static  final String WEBP = "webp";
+    private static final String WEBP = "webp";
+    /***
+     * 操作参数
+     */
+    private static final String OPERATION = "o";
+    /***
+     * fileId参数
+     */
+    private static final String FILE_KEY = "fileKey";
     /***
      * 路径最小层级
      */
@@ -73,19 +76,21 @@ public class FileInterceptor implements HandlerInterceptor {
     @Autowired
     IFileService fileService;
 
+    @Autowired
+    AuthInterceptor authInterceptor;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        String operation = request.getParameter("o");
-        if(!StringUtils.isEmpty(operation)){
+        if (fileAuthError(request)) return false;
+        String operation = request.getParameter(OPERATION);
+        if (!StringUtils.isEmpty(operation)) {
             switch (operation) {
                 case DOWNLOAD:
                     Path path = Paths.get(request.getRequestURI());
-                    response.setHeader("Content-Disposition", "attachment; filename"+ path.getFileName());
+                    response.setHeader("Content-Disposition", "attachment; filename" + path.getFileName());
                     break;
                 case CROP:
-                    long stime = System.currentTimeMillis();
                     handleCrop(request, response);
-                    Console.log("剪裁耗时",System.currentTimeMillis() - stime,"ms");
                     break;
                 case THUMBNAIL:
                     thumbnail(request, response);
@@ -96,6 +101,46 @@ public class FileInterceptor implements HandlerInterceptor {
                 default:
                     return true;
             }
+        }
+        return true;
+    }
+
+    /***
+     * 文件鉴权是否失败
+     * @return true 失败，false 成功
+     */
+    private boolean fileAuthError(HttpServletRequest request) {
+        String fileKey = request.getParameter(FILE_KEY);
+        if (!StringUtils.isEmpty(fileKey)) {
+            FileDocument fileDocument = fileService.getById(fileKey);
+            return authFileDocumentError(fileDocument);
+        } else {
+            String username = authInterceptor.getUserNameByHeader(request);
+            try {
+                Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), "UTF-8"));
+                if (uriPath.getNameCount() < MIX_COUNT) {
+                    return true;
+                }
+                if (!StringUtils.isEmpty(username) && username.equals(uriPath.getName(1).toString())) {
+                    return false;
+                }
+                return authFileDocumentError(getFileDocument(uriPath));
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+        }
+        return true;
+    }
+
+    private boolean authFileDocumentError(FileDocument fileDocument) {
+        if (fileDocument == null) {
+            return true;
+        }
+        if (fileDocument.getIsPublic() != null && fileDocument.getIsPublic()) {
+            return false;
+        }
+        if (fileDocument.getIsShare() != null) {
+            return !fileDocument.getIsShare() || System.currentTimeMillis() >= fileDocument.getExpiresAt();
         }
         return true;
     }
@@ -128,18 +173,12 @@ public class FileInterceptor implements HandlerInterceptor {
     private void thumbnail(HttpServletRequest request, HttpServletResponse response) {
         try {
             Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), "UTF-8"));
-            if(uriPath.getNameCount() < MIX_COUNT){
+            if (uriPath.getNameCount() < MIX_COUNT) {
                 return;
             }
-            String username = uriPath.getName(1).toString();
+            FileDocument fileDocument = getFileDocument(uriPath);
             Path relativePath = uriPath.subpath(1, uriPath.getNameCount());
-            String path = "/";
-            if(uriPath.getNameCount() > MIX_COUNT + 1){
-                path = "/" + uriPath.subpath(MIX_COUNT, uriPath.getNameCount()).getParent().toString() + "/";
-            }
-            String name = uriPath.getFileName().toString();
-            FileDocument fileDocument = fileService.getFileDocumentByPathAndName(path, name, username);
-            if(fileDocument != null){
+            if (fileDocument != null) {
                 if (fileDocument.getContent() == null) {
                     File file = Paths.get(fileProperties.getRootDir(), relativePath.toString()).toFile();
                     if (file.exists()) {
@@ -152,6 +191,16 @@ public class FileInterceptor implements HandlerInterceptor {
         }
     }
 
+    private FileDocument getFileDocument(Path uriPath) {
+        String username = uriPath.getName(1).toString();
+        String path = "/";
+        if (uriPath.getNameCount() > MIX_COUNT + 1) {
+            path = "/" + uriPath.subpath(MIX_COUNT, uriPath.getNameCount()).getParent().toString() + "/";
+        }
+        String name = uriPath.getFileName().toString();
+        return fileService.getFileDocumentByPathAndName(path, name, username);
+    }
+
     private void handleCrop(HttpServletRequest request, HttpServletResponse response) {
         Path uriPath = Paths.get(request.getRequestURI());
         uriPath = uriPath.subpath(1, uriPath.getNameCount());
@@ -160,7 +209,7 @@ public class FileInterceptor implements HandlerInterceptor {
         String w = request.getParameter("w");
         String h = request.getParameter("h");
         byte[] img = imageCrop(file, q, w, h);
-        if(img != null) {
+        if (img != null) {
             responseWritImage(response, file.getName(), img);
         }
     }
@@ -174,7 +223,7 @@ public class FileInterceptor implements HandlerInterceptor {
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         } finally {
-            if(outputStream != null){
+            if (outputStream != null) {
                 try {
                     outputStream.close();
                 } catch (IOException e) {
@@ -195,10 +244,11 @@ public class FileInterceptor implements HandlerInterceptor {
 
     /**
      * 剪裁图片
+     *
      * @param srcFile 源文件
-     * @param q 剪裁后的质量
-     * @param w 剪裁后的宽度
-     * @param h 剪裁后的高度
+     * @param q       剪裁后的质量
+     * @param w       剪裁后的宽度
+     * @param h       剪裁后的高度
      * @return 剪裁后的文件
      */
     private byte[] imageCrop(File srcFile, String q, String w, String h) {
@@ -214,7 +264,7 @@ public class FileInterceptor implements HandlerInterceptor {
             }
             int width = Convert.toInt(w, -1);
             int height = Convert.toInt(h, -1);
-            if(width > 0 && srcWidth > width) {
+            if (width > 0 && srcWidth > width) {
                 if (height <= 0 || srcHeight <= height) {
                     height = (int) (width / (double) srcWidth * srcHeight);
                     height = height == 0 ? width : height;

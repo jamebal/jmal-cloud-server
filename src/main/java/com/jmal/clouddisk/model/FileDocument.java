@@ -17,12 +17,17 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = FileServiceImpl.COLLECTION_NAME)
 @CompoundIndexes({
         @CompoundIndex(name = "name_1", def = "{'name': 1}"),
-        @CompoundIndex(name = "name_-1", def = "{'name': -1}"),
         @CompoundIndex(name = "size_1", def = "{'size': 1}"),
-        @CompoundIndex(name = "size_-1", def = "{'size': -1}"),
         @CompoundIndex(name = "updateDate_1", def = "{'updateDate': 1}"),
-        @CompoundIndex(name = "updateDate_-1", def = "{'updateDate': -1}"),
+        @CompoundIndex(name = "name_1", def = "{'name': 1}"),
+        @CompoundIndex(name = "size_1", def = "{'size': 1}"),
+        @CompoundIndex(name = "updateDate_1", def = "{'updateDate': 1}"),
+        @CompoundIndex(name = "path_name", def = "{'path': 1, 'name': 1}"),
+        @CompoundIndex(name = "user_md5_path", def = "{'userId': 1,'md5': 1, 'path': 1}"),
         @CompoundIndex(name = "user_path", def = "{'userId': 1, 'path': 1}"),
+        @CompoundIndex(name = "user_path_name", def = "{'userId': 1, 'path': 1, 'name': 1}"),
+        @CompoundIndex(name = "user_isFolder_path", def = "{'userId': 1, 'isFolder': 1, 'path': 1}"),
+        @CompoundIndex(name = "user_isFolder_path_name", def = "{'userId': 1, 'isFolder': 1, 'path': 1, 'name': 1}"),
         @CompoundIndex(name = "user_isFolder", def = "{'userId': 1, 'isFolder': 1}"),
         @CompoundIndex(name = "user_isFavorite", def = "{'userId': 1, 'isFavorite': 1}"),
         @CompoundIndex(name = "user_contentType", def = "{'userId': 1, 'contentType': 1}"),
@@ -82,13 +87,17 @@ public class FileDocument extends FileBase{
      */
     private Boolean isFavorite;
     /***
+     * 是否公共文件
+     */
+    private Boolean isPublic;
+    /***
      * 是否分享
      */
     private Boolean isShare;
     /***
      * 分享有效期
      */
-    private Long shareExpirationDate;
+    private Long expiresAt;
     /***
      * 音乐
      */

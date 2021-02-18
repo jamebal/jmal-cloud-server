@@ -40,7 +40,7 @@ public class FileIntroVO extends FileBase{
     /***
      * 分享有效期
      */
-    private Long shareExpirationDate;
+    private Long expiresAt;
     private Music music;
     /***
      * 图片的宽度

@@ -78,10 +78,9 @@ public interface IShareService {
     /***
      * 取消分享
      * @param shareIdList
-     * @param userId
      * @return
      */
-    ResponseResult<Object> cancelShare(List<String> shareIdList, String userId);
+    ResponseResult<Object> cancelShare(List<String> shareIdList);
 
     /***
      * 删除关联分享

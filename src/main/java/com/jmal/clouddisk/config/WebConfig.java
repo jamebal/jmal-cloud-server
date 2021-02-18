@@ -2,7 +2,6 @@ package com.jmal.clouddisk.config;
 
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.interceptor.FileInterceptor;
-import com.jmal.clouddisk.config.FileProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -38,8 +37,8 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
 		registry.addInterceptor(authInterceptor).addPathPatterns("/**").
-				excludePathPatterns("/","/login/**", "/public/**", "/articles/**", "/error/**", "/file/**");
-        registry.addInterceptor(fileInterceptor).addPathPatterns("/file/**");
+				excludePathPatterns("/","/login/**", "/public/**", "/articles/**", "/error/**", "/file/**" , "/files/**");
+        registry.addInterceptor(fileInterceptor).addPathPatterns("/file/**").addPathPatterns("/files/**");
     }
 
     @Override

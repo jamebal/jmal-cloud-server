@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.date.LocalDateTimeUtil;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
@@ -18,7 +18,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,12 +41,17 @@ public class ShareServiceImpl implements IShareService {
     @Override
     public ResponseResult<Object> generateLink(ShareDO share) {
         ShareDO shareDO = findByFileId(share.getFileId());
-        if(shareDO == null){
+        if (shareDO == null) {
             share.setCreateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
             FileDocument file = fileService.getById(share.getFileId());
+            long expireAt = Long.MAX_VALUE;
+            if (share.getExpireDate() != null){
+                expireAt = TimeUntils.getMilli(share.getExpireDate());
+            }
+            fileService.setShareFile(file, expireAt);
             share.setFileName(file.getName());
             share.setContentType(file.getContentType());
-            shareDO = mongoTemplate.save(share,COLLECTION_NAME);
+            shareDO = mongoTemplate.save(share, COLLECTION_NAME);
         }
         return ResultUtil.success(shareDO.getId());
     }
@@ -55,20 +59,20 @@ public class ShareServiceImpl implements IShareService {
     @Override
     public ResponseResult<Object> accessShare(String shareId, Integer pageIndex, Integer pageSize) {
         ShareDO shareDO = mongoTemplate.findById(shareId, ShareDO.class, COLLECTION_NAME);
-        if(shareDO == null){
+        if (shareDO == null) {
             return ResultUtil.success("该链接已失效");
         }
-        if(!checkWhetherExpired(shareDO)){
+        if (!checkWhetherExpired(shareDO)) {
             return ResultUtil.success("该链接已失效");
         }
         UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
         uploadApiParamDTO.setPageIndex(pageIndex);
         uploadApiParamDTO.setPageSize(pageSize);
         uploadApiParamDTO.setUserId(shareDO.getUserId());
-        if(!shareDO.getIsFolder()){
+        if (!shareDO.getIsFolder()) {
             List<FileDocument> list = new ArrayList<>();
             FileDocument fileDocument = fileService.getById(shareDO.getFileId());
-            if(fileDocument != null){
+            if (fileDocument != null) {
                 list.add(fileDocument);
             }
             return ResultUtil.success(list);
@@ -83,9 +87,9 @@ public class ShareServiceImpl implements IShareService {
 
     @Override
     public boolean checkWhetherExpired(ShareDO shareDO) {
-        if(shareDO != null){
+        if (shareDO != null) {
             LocalDateTime expireDate = shareDO.getExpireDate();
-            if(expireDate == null){
+            if (expireDate == null) {
                 return true;
             }
             LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
@@ -126,10 +130,10 @@ public class ShareServiceImpl implements IShareService {
         return mongoTemplate.find(query, ShareDO.class, COLLECTION_NAME);
     }
 
-    private ShareDO findByFileId(String fileId){
+    private ShareDO findByFileId(String fileId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("fileId").is(fileId));
-        return mongoTemplate.findOne(query, ShareDO.class,COLLECTION_NAME);
+        return mongoTemplate.findOne(query, ShareDO.class, COLLECTION_NAME);
     }
 
     @Override
@@ -144,21 +148,23 @@ public class ShareServiceImpl implements IShareService {
     private long getShareCount(String userId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("userId").is(userId));
-        return mongoTemplate.count(query,COLLECTION_NAME);
+        return mongoTemplate.count(query, COLLECTION_NAME);
     }
 
     @Override
-    public ResponseResult<Object> cancelShare(List<String> shareId, String userId) {
+    public ResponseResult<Object> cancelShare(List<String> shareId) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userId));
         query.addCriteria(Criteria.where("_id").in(shareId));
-        mongoTemplate.remove(query,COLLECTION_NAME);
+        ShareDO shareDO = mongoTemplate.findAndRemove(query, ShareDO.class, COLLECTION_NAME);
+        if (shareDO != null){
+            fileService.unsetShareFile(fileService.getById(shareDO.getFileId()));
+        }
         return ResultUtil.success();
     }
 
     @Override
     public void deleteAllByUser(List<ConsumerDO> userList) {
-        if(userList == null || userList.isEmpty()){
+        if (userList == null || userList.isEmpty()) {
             return;
         }
         userList.stream().forEach(user -> {

@@ -29,7 +29,7 @@ public class Test {
      */
     public static void main(String[] args){
 
-        String str = "5fd1b60461f00c5be3249fff";
+        String str = "/jmal/tewo/hq100_M_0.json";
         long stime = System.currentTimeMillis();
 
         StringBuilder out = new StringBuilder();

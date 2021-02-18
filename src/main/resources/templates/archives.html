@@ -3,9 +3,9 @@
 <div id="body">
     <div class="article-header">
         <div class="article-background"></div>
-        <div class="lazyload-container" th:style="${setting.archiveBackground !=null ? 'background-image: url('+setting.archiveBackground+'?o=thumbnail)': 'background-image: url('+ setting.backgroundSite+'?o=thumbnail)'}">
+        <div class="lazyload-container" th:style="${setting.archiveBackground !=null ? 'background-image: url('+setting.archiveBackground+'&o=thumbnail)': 'background-image: url('+ setting.backgroundSite+'&o=thumbnail)'}">
             <img style="display: none"
-                 th:src="${setting.archiveBackground !=null ? setting.archiveBackground+'?o=thumbnail' : setting.archiveBackground+'?o=thumbnail'}"
+                 th:src="${setting.archiveBackground !=null ? setting.archiveBackground+'&o=thumbnail' : setting.archiveBackground+'&o=thumbnail'}"
                  th:data-src="${setting.archiveBackground !=null ? setting.archiveBackground : setting.archiveBackground}"
                  onload="javascript:loadBanner(this,document.querySelector('.article-header'))"
             />

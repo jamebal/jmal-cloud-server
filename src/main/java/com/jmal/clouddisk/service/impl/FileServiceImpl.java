@@ -2,7 +2,6 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.extra.cglib.CglibUtil;
@@ -65,9 +64,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.mongodb.client.model.Accumulators.sum;
-import static com.mongodb.client.model.Aggregates.*;
+import static com.mongodb.client.model.Aggregates.group;
+import static com.mongodb.client.model.Aggregates.match;
 import static com.mongodb.client.model.Filters.*;
-import static com.mongodb.client.model.Sorts.descending;
 import static java.util.stream.Collectors.toList;
 
 
@@ -133,6 +132,7 @@ public class FileServiceImpl implements IFileService {
 
     /**
      * 是否关闭了文件监听或者文件监听的时间间隔大于3秒
+     *
      * @return
      */
     public boolean isNotMonitor() {
@@ -314,7 +314,7 @@ public class FileServiceImpl implements IFileService {
     public ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
-        if(fileDocument == null){
+        if (fileDocument == null) {
             return ResultUtil.success("文件不存在了");
         }
         String currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
@@ -378,7 +378,7 @@ public class FileServiceImpl implements IFileService {
             Path parentPath = path.getParent();
             FileUtil.writeFromStream(file.getInputStream(), newFile);
             loopCreateDir(username, Paths.get(fileProperties.getRootDir(), username).getNameCount(), path);
-            if(!userService.getDisabledWebp(userLoginHolder.getUserId())){
+            if (!userService.getDisabledWebp(userLoginHolder.getUserId())) {
                 fileName += _SUFFIX_WEBP;
             }
             return baseUrl + Paths.get("/file", username, filepath, fileName).toString();
@@ -465,7 +465,7 @@ public class FileServiceImpl implements IFileService {
     @Override
     public FileDocument getFileDocumentByPathAndName(String path, String name, String username) {
         String userId = userService.getUserIdByUserName(username);
-        if(userId == null){
+        if (userId == null) {
             return null;
         }
         Query query = new Query();
@@ -644,6 +644,7 @@ public class FileServiceImpl implements IFileService {
                 Query query = new Query();
                 String searchPath = currentDirectory + fileDocument.getName();
                 String newPath = currentDirectory + newFileName;
+                query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
                 query.addCriteria(Criteria.where("path").regex("^" + searchPath));
                 List<FileDocument> documentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
                 // 修改该文件夹下的所有文件的path
@@ -708,7 +709,7 @@ public class FileServiceImpl implements IFileService {
         upsertFolder(userImagePaths, username, userId);
         File newFile;
         try {
-            if(userService.getDisabledWebp(userId)){
+            if (userService.getDisabledWebp(userId)) {
                 newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
                 FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             } else {
@@ -720,7 +721,7 @@ public class FileServiceImpl implements IFileService {
         } catch (IOException e) {
             throw new CommonException(2, "上传失败");
         }
-        return createFile(username, newFile, userId);
+        return createFile(username, newFile, userId, null);
     }
 
     @Override
@@ -728,11 +729,19 @@ public class FileServiceImpl implements IFileService {
         return getFileDocumentById(fileId);
     }
 
-    public String createFile(String username, File file, String userId){
-        if(StringUtils.isEmpty(username)){
+    /***
+     * 创建文件索引
+     * @param username 用户名
+     * @param file File
+     * @param userId 用户Id
+     * @param isPublic 是否为公共文件
+     * @return
+     */
+    public String createFile(String username, File file, String userId, Boolean isPublic) {
+        if (StringUtils.isEmpty(username)) {
             return null;
         }
-        if(StringUtils.isEmpty(userId)){
+        if (StringUtils.isEmpty(userId)) {
             userId = userService.getUserIdByUserName(username);
             if (StringUtils.isEmpty(userId)) {
                 return null;
@@ -752,7 +761,7 @@ public class FileServiceImpl implements IFileService {
         String fileAbsolutePath = file.getAbsolutePath();
         int startIndex = fileProperties.getRootDir().length() + username.length() + 1;
         int endIndex = fileAbsolutePath.length() - fileName.length();
-        if(startIndex >= endIndex){
+        if (startIndex >= endIndex) {
             return null;
         }
         String relativePath = fileAbsolutePath.substring(startIndex, endIndex);
@@ -780,6 +789,9 @@ public class FileServiceImpl implements IFileService {
         update.set("uploadDate", nowDateTime);
         update.set("updateDate", nowDateTime);
         update.set("isFavorite", false);
+        if (isPublic != null) {
+            update.set("isPublic", true);
+        }
         if (file.isFile()) {
             long size = file.length();
             update.set("size", size);
@@ -810,14 +822,14 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public String createFile(String username, File file) {
-        return createFile(username,file, null);
+        return createFile(username, file, null, null);
     }
 
     private File replaceWebp(String userId, File file) {
-        if(userService.getDisabledWebp(userId)){
+        if (userService.getDisabledWebp(userId)) {
             return file;
         }
-        if(SUFFIX_WEBP.equals(FileUtil.getSuffix(file))){
+        if (SUFFIX_WEBP.equals(FileUtil.getSuffix(file))) {
             return file;
         }
         File outputFile = new File(file.getPath() + _SUFFIX_WEBP);
@@ -825,7 +837,7 @@ public class FileServiceImpl implements IFileService {
         BufferedImage image = null;
         try {
             image = ImageIO.read(file);
-            if(image == null){
+            if (image == null) {
                 return file;
             }
             imageFileToWebp(outputFile, image);
@@ -1077,12 +1089,12 @@ public class FileServiceImpl implements IFileService {
     @Override
     public String viewFile(String fileId, String operation) {
         FileDocument fileDocument = getById(fileId);
-        if(fileDocument == null){
+        if (fileDocument == null) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND.getCode(), ExceptionType.FILE_NOT_FIND.getMsg());
         }
         String username = userService.getUserNameById(fileDocument.getUserId());
         String relativepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(fileDocument.getPath() + fileDocument.getName(), StandardCharsets.UTF_8);
-        return "redirect:/file/" + username + relativepath + "?o=" + operation;
+        return "redirect:/file/" + username + relativepath + "?fileKey=" + fileId + "&o=" + operation;
     }
 
     @Override
@@ -1094,7 +1106,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public void deleteAllByUser(List<ConsumerDO> userList) {
-        if(userList == null || userList.isEmpty()){
+        if (userList == null || userList.isEmpty()) {
             return;
         }
         userList.stream().forEach(user -> {
@@ -1105,6 +1117,58 @@ public class FileServiceImpl implements IFileService {
             query.addCriteria(Criteria.where("userId").in(userId));
             mongoTemplate.remove(query, COLLECTION_NAME);
         });
+    }
+
+    @Override
+    public void setShareFile(FileDocument file, long expiresAt) {
+        if (file == null) {
+            return;
+        }
+        if (!file.getIsFolder()) {
+            setShareOneFile(file.getId(), expiresAt);
+        } else {
+            Query query = new Query();
+            query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
+            query.addCriteria(Criteria.where("isFolder").is(false));
+            query.addCriteria(Criteria.where("path").regex("^" + file.getPath() + file.getName()));
+            List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+            fileDocuments.parallelStream().forEach(fileDocument -> setShareFile(fileDocument, expiresAt));
+        }
+    }
+
+    @Override
+    public void unsetShareFile(FileDocument file) {
+        if (file == null) {
+            return;
+        }
+        if (!file.getIsFolder()) {
+            unsetShareOneFile(file.getId());
+        } else {
+            Query query = new Query();
+            query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
+            query.addCriteria(Criteria.where("isFolder").is(false));
+            query.addCriteria(Criteria.where("path").regex("^" + file.getPath() + file.getName()));
+            List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+            fileDocuments.parallelStream().forEach(fileDocument -> unsetShareFile(fileDocument));
+        }
+    }
+
+    private void setShareOneFile(String fileId, long expiresAt) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        Update update = new Update();
+        update.set("isShare", true);
+        update.set("expiresAt", expiresAt);
+        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+    }
+
+    private void unsetShareOneFile(String fileId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        Update update = new Update();
+        update.unset("isShare");
+        update.unset("expiresAt");
+        mongoTemplate.upsert(query, update, COLLECTION_NAME);
     }
 
     /***
@@ -1188,6 +1252,7 @@ public class FileServiceImpl implements IFileService {
                 mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
                 // 复制其下的子文件或目录
                 Query query = new Query();
+                query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
                 query.addCriteria(Criteria.where("path").regex("^" + fromPath));
                 List<FileDocument> formList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
                 formList = formList.stream().peek(fileDocument -> {
@@ -1231,6 +1296,7 @@ public class FileServiceImpl implements IFileService {
      */
     private boolean isExistsOfToCopy(FileDocument formFileDocument, String toPath) {
         Query query = new Query();
+        query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
         query.addCriteria(Criteria.where("path").is(toPath));
         query.addCriteria(Criteria.where("name").is(formFileDocument.getName()));
         return mongoTemplate.exists(query, COLLECTION_NAME);
@@ -1733,6 +1799,7 @@ public class FileServiceImpl implements IFileService {
             if (fileDocument.getIsFolder()) {
                 // 删除文件夹及其下的所有文件
                 Query query1 = new Query();
+                query1.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
                 query1.addCriteria(Criteria.where("path").regex("^" + fileDocument.getPath() + fileDocument.getName()));
                 mongoTemplate.remove(query1, COLLECTION_NAME);
                 isDel = true;

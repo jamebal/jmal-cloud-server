@@ -585,15 +585,13 @@ public class MarkdownService implements IMarkdownService {
             log.error(e.getMessage(), e);
             throw new CommonException(2, "上传失败");
         }
-        if (fileService.isNotMonitor()) {
-            String fileId = fileService.createFile(username, newFile, userId);
-            map.put("fileId", fileId);
-        }
+        String fileId = fileService.createFile(username, newFile, userId, true);
+        map.put("fileId", fileId);
         String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), newFile.getName()), StandardCharsets.UTF_8);
         map.put("url", filepath);
         map.put("originalURL", upload.getUrl());
         map.put("filename", newFile.getName());
-        map.put("filepath", filepath);
+        map.put("filepath", filepath + "?fileKey="+fileId);
         return ResultUtil.success(map);
     }
 
@@ -631,13 +629,11 @@ public class MarkdownService implements IMarkdownService {
         } catch (IOException e) {
             throw new CommonException(2, "上传失败");
         }
-        if (fileService.isNotMonitor()) {
-            String fileId = fileService.createFile(username, newFile, userId);
-            map.put("fileId", fileId);
-        }
+        String fileId = fileService.createFile(username, newFile, userId, true);
+        map.put("fileId", fileId);
         String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), fileName), StandardCharsets.UTF_8);
         map.put("filename", fileName);
-        map.put("filepath", filepath);
+        map.put("filepath", filepath + "?fileKey="+fileId);
         return map;
     }
 

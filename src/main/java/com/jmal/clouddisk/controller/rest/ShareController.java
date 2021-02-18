@@ -70,10 +70,10 @@ public class ShareController {
     @DeleteMapping("/share/cancel")
     @Permission("cloud:file:delete")
     @LogOperatingFun
-    public ResponseResult<Object> cancelShare(String[] shareId,String userId) {
-        ResultUtil.checkParamIsNull(shareId, userId);
+    public ResponseResult<Object> cancelShare(String[] shareId) {
+        ResultUtil.checkParamIsNull(shareId);
         List<String> shareIdList = Arrays.asList(shareId);
-        return shareService.cancelShare(shareIdList, userId);
+        return shareService.cancelShare(shareIdList);
     }
 
     @ApiOperation("分享列表")

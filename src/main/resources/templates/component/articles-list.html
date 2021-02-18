@@ -61,7 +61,7 @@
                                          th:src="${article.cover != null ? article.cover : setting.backgroundSite}"
                                          th:onload='loadArticlesImage(this,document.getElementById([[${article.id}]]))'/>
                                     <img th:id="${article.id}" class="blog-background articles-list loading"
-                                         th:src="${article.cover != null ? article.cover+'?o=thumbnail' : setting.backgroundSite+'?o=thumbnail'}"/>
+                                         th:src="${article.cover != null ? article.cover+'&o=thumbnail' : setting.backgroundSite+'&o=thumbnail'}"/>
                                 </p>
                             </div>
                         </a>
