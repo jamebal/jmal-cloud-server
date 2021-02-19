@@ -394,7 +394,7 @@ public class FileServiceImpl implements IFileService {
      * @param path
      */
     private void loopCreateDir(String username, int rootPathCount, Path path) {
-        createFile(username, path.toFile());
+        createFile(username, path.toFile(), userLoginHolder.getUserId(),true);
         if (path.getNameCount() > rootPathCount + 1) {
             loopCreateDir(username, rootPathCount, path.getParent());
         }
