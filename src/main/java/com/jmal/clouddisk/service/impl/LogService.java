@@ -1,7 +1,5 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.convert.impl.URLConverter;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.http.useragent.UserAgent;
@@ -69,8 +67,9 @@ public class LogService {
         logOperation.setUrl(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
         // 请求方式
         logOperation.setMethod(request.getMethod());
-        // 客户端地址
-        logOperation.setIp(request.getRemoteAddr());
+        // 客户端ip
+        String realIp = request.getHeader("X-real-ip");
+        logOperation.setIp(StringUtils.isEmpty(realIp) ? request.getRemoteAddr() : realIp);
         // 请求参数
         Map<String, String> params = new HashMap<>(16);
         Enumeration<String> enumeration = request.getParameterNames();
