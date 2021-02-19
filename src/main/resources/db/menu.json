@@ -120,10 +120,10 @@
     "id": "5ffb1b57eb9cf770a889b7eb",
     "menuType": 2,
     "name": "用户管理",
-    "parentId": "",
+    "parentId": "6020dec9cfb7a66f628397a8",
     "path": "/setting/manager-users",
-    "sortNumber": 11,
-    "updateTime": 1611286503170
+    "sortNumber": 0,
+    "updateTime": 1612767350455
   },
   {
     "authority": "",
@@ -134,10 +134,10 @@
     "id": "5ffb1b60eb9cf770a889b7ec",
     "menuType": 2,
     "name": "角色管理",
-    "parentId": "",
+    "parentId": "6020dec9cfb7a66f628397a8",
     "path": "/setting/manager-roles",
-    "sortNumber": 12,
-    "updateTime": 1611286498838
+    "sortNumber": 1,
+    "updateTime": 1612767355583
   },
   {
     "authority": "",
@@ -148,10 +148,10 @@
     "id": "5ffb1b68eb9cf770a889b7ed",
     "menuType": 2,
     "name": "菜单管理",
-    "parentId": "",
+    "parentId": "6020dec9cfb7a66f628397a8",
     "path": "/setting/manager-menus",
-    "sortNumber": 13,
-    "updateTime": 1611286494488
+    "sortNumber": 2,
+    "updateTime": 1612767360124
   },
   {
     "authority": "",
@@ -602,17 +602,17 @@
   },
   {
     "authority": "",
-    "component": "http://localhost:8088/articles",
+    "component": "http://blog/",
     "createTime": 1611296098682,
-    "hide": true,
+    "hide": false,
     "icon": "blogger",
     "id": "600a6d62b5a9d881713ea269",
     "menuType": 3,
     "name": "博客",
     "parentId": "",
-    "path": "http://localhost:8088/articles",
+    "path": "http://blog/",
     "sortNumber": 200,
-    "updateTime": 1611402594409
+    "updateTime": 1612864189374
   },
   {
     "authority": "",
@@ -627,5 +627,47 @@
     "path": "/setting/authAPP",
     "sortNumber": 16,
     "updateTime": 1611461838684
+  },
+  {
+    "authority": "",
+    "component": "",
+    "createTime": 1612766921955,
+    "hide": false,
+    "icon": "file-conf",
+    "id": "6020dec9cfb7a66f628397a8",
+    "menuType": 2,
+    "name": "系统管理",
+    "parentId": "",
+    "path": "/setting/sys",
+    "sortNumber": 11,
+    "updateTime": 1612767490855
+  },
+  {
+    "authority": "",
+    "component": "/setting/sys/logLogin",
+    "createTime": 1612767471077,
+    "hide": false,
+    "icon": "file-log",
+    "id": "6020e0efcfb7a66f628397f5",
+    "menuType": 2,
+    "name": "登陆日志",
+    "parentId": "6020dec9cfb7a66f628397a8",
+    "path": "/setting/log-login",
+    "sortNumber": 3,
+    "updateTime": 1612767741226
+  },
+  {
+    "authority": "",
+    "component": "/setting/sys/logOperation",
+    "createTime": 1612767589900,
+    "hide": false,
+    "icon": "wulianwang-",
+    "id": "6020e165cfb7a66f62839805",
+    "menuType": 2,
+    "name": "操作日志",
+    "parentId": "6020dec9cfb7a66f628397a8",
+    "path": "/setting/log-operation",
+    "sortNumber": 4,
+    "updateTime": 1612858032483
   }
 ]

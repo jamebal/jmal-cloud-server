@@ -12,6 +12,7 @@
       "5ffc37a19a2c787ef115f97f",
       "5ffc37db9a2c787ef115f980",
       "5ffb1b38eb9cf770a889b7ea",
+      "6020dec9cfb7a66f628397a8",
       "5ffb1b57eb9cf770a889b7eb",
       "5ffd3ecf29d8463da118673e",
       "5ffd3f4629d8463da118673f",
@@ -52,7 +53,7 @@
     ],
     "name": "超级管理员",
     "remarks": "超级管理员",
-    "updateTime": 1611461409169
+    "updateTime": 1613718971702
   },
   {
     "code": "admin",
@@ -67,12 +68,6 @@
       "5ffc37a19a2c787ef115f97f",
       "5ffc37db9a2c787ef115f980",
       "5ffb1b38eb9cf770a889b7ea",
-      "5ffb1b57eb9cf770a889b7eb",
-      "5ffd3ecf29d8463da118673e",
-      "5ffb1b60eb9cf770a889b7ec",
-      "5ffd3dc829d8463da118673a",
-      "5ffb1b68eb9cf770a889b7ed",
-      "5ffd3a3329d8463da1186738",
       "5ffb1b6feb9cf770a889b7ee",
       "5ffd02373d0a062755a22609",
       "5ffd02863d0a062755a2260a",
@@ -82,6 +77,7 @@
       "5ffd6ff129d84649e3f02cd7",
       "5ffb1cf6eb9cf770a889b7f3",
       "600cf2ef194ba43988898423",
+      "5ffd38ed29d8463da1186731",
       "5ffd390e29d8463da1186732",
       "600a6d62b5a9d881713ea269",
       "600a672db5a9d881713ea266",
@@ -90,7 +86,7 @@
     ],
     "name": "管理员",
     "remarks": "所有菜单(只读)",
-    "updateTime": 1611461418839
+    "updateTime": 1613718961613
   },
   {
     "code": "visitor-website",
@@ -161,12 +157,6 @@
     "id": "600a7e39ea6b088b81fae2ed",
     "menuIds": [
       "5ffb1b38eb9cf770a889b7ea",
-      "5ffb1b57eb9cf770a889b7eb",
-      "5ffd3ecf29d8463da118673e",
-      "5ffb1b60eb9cf770a889b7ec",
-      "5ffd3dc829d8463da118673a",
-      "5ffb1b68eb9cf770a889b7ed",
-      "5ffd3a3329d8463da1186738",
       "5ffb1b6feb9cf770a889b7ee",
       "5ffd02373d0a062755a22609",
       "5ffd02863d0a062755a2260a",
@@ -174,6 +164,7 @@
       "5ffd0b203d0a062755a2260c",
       "5ffd0b4a3d0a062755a2260d",
       "5ffd6ff129d84649e3f02cd7",
+      "5ffd38ed29d8463da1186731",
       "5ffd390e29d8463da1186732",
       "600a6d62b5a9d881713ea269",
       "600a672db5a9d881713ea266",
@@ -182,7 +173,7 @@
     ],
     "name": "网站管理员",
     "remarks": "网站-所有菜单(只读)",
-    "updateTime": 1611300530405
+    "updateTime": 1613719034018
   },
   {
     "code": "visitor",
@@ -228,12 +219,14 @@
       "5ffd39e829d8463da1186736",
       "5ffd3a5329d8463da1186739",
       "5ffd3a2229d8463da1186737",
+      "6020e0efcfb7a66f628397f5",
+      "6020e165cfb7a66f62839805",
       "600a694fb5a9d881713ea267",
       "600a6bbbb5a9d881713ea268"
     ],
     "name": "系统管理员",
     "remarks": "系统管理菜单可写",
-    "updateTime": 1611301073640
+    "updateTime": 1613719045841
   },
   {
     "code": "general",
@@ -248,6 +241,7 @@
       "5ffc37a19a2c787ef115f97f",
       "5ffc37db9a2c787ef115f980",
       "5ffb1b38eb9cf770a889b7ea",
+      "6020dec9cfb7a66f628397a8",
       "5ffd3ecf29d8463da118673e",
       "5ffd3f5f29d8463da1186740",
       "5ffb1cf6eb9cf770a889b7f3",
@@ -263,6 +257,6 @@
     ],
     "name": "普通用户",
     "remarks": "普通网盘用户",
-    "updateTime": 1611476237139
+    "updateTime": 1613719060086
   }
 ]
