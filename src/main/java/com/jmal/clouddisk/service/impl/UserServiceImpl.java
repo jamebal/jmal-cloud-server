@@ -3,7 +3,10 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.CharsetUtil;
+import cn.hutool.crypto.Mode;
+import cn.hutool.crypto.Padding;
 import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.symmetric.DES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.crypto.symmetric.SymmetricCrypto;
 import cn.hutool.extra.cglib.CglibUtil;
@@ -77,8 +80,8 @@ public class UserServiceImpl implements IUserService {
             }
             String originalPwd = consumerDTO.getPassword();
             String password = SecureUtil.md5(originalPwd);
-            SymmetricCrypto aes = new SymmetricCrypto(SymmetricAlgorithm.AES, password.getBytes());
-            consumerDTO.setEncryptPwd(aes.encryptHex(originalPwd));
+            DES des = new DES(Mode.CTS, Padding.PKCS5Padding, password.getBytes(), "01020304".getBytes());
+            consumerDTO.setEncryptPwd(des.encryptHex(originalPwd));
             consumerDTO.setPassword(password);
             ConsumerDO consumerDO = new ConsumerDO();
             CglibUtil.copy(consumerDTO, consumerDO);
@@ -254,8 +257,8 @@ public class UserServiceImpl implements IUserService {
                 query.addCriteria(Criteria.where("_id").is(userId));
                 Update update = new Update();
                 String password = SecureUtil.md5(newPassword);
-                SymmetricCrypto aes = new SymmetricCrypto(SymmetricAlgorithm.AES, password.getBytes());
-                update.set("encryptPwd", aes.encryptHex(newPassword));
+                DES des = new DES(Mode.CTS, Padding.PKCS5Padding, password.getBytes(), "01020304".getBytes());
+                update.set("encryptPwd", des.encryptHex(newPassword));
                 update.set("password", password);
                 mongoTemplate.upsert(query, update, COLLECTION_NAME);
                 return ResultUtil.successMsg("修改成功!");
@@ -273,8 +276,8 @@ public class UserServiceImpl implements IUserService {
             Update update = new Update();
             String originalPwd = "jmalcloud";
             String password = SecureUtil.md5(originalPwd);
-            SymmetricCrypto aes = new SymmetricCrypto(SymmetricAlgorithm.AES, password.getBytes());
-            update.set("encryptPwd", aes.encryptHex(originalPwd));
+            DES des = new DES(Mode.CTS, Padding.PKCS5Padding, password.getBytes(), "01020304".getBytes());
+            update.set("encryptPwd", des.encryptHex(originalPwd));
             update.set("password", password);
             mongoTemplate.upsert(query, update, COLLECTION_NAME);
             return ResultUtil.successMsg("重置密码成功!");
@@ -307,8 +310,9 @@ public class UserServiceImpl implements IUserService {
         if (consumer == null) {
             return "";
         }
-        SymmetricCrypto aes = new SymmetricCrypto(SymmetricAlgorithm.AES, consumer.getPassword().getBytes());
-        return aes.decryptStr(consumer.getEncryptPwd(), CharsetUtil.CHARSET_UTF_8);
+        String password = consumer.getPassword();
+        DES des = new DES(Mode.CTS, Padding.PKCS5Padding, password.getBytes(), "01020304".getBytes());
+        return des.decryptStr(consumer.getEncryptPwd(), CharsetUtil.CHARSET_UTF_8);
     }
 
     @Override
@@ -333,8 +337,8 @@ public class UserServiceImpl implements IUserService {
             user.setQuota(15);
             String originalPwd = user.getPassword();
             String password = SecureUtil.md5(originalPwd);
-            SymmetricCrypto aes = new SymmetricCrypto(SymmetricAlgorithm.AES, password.getBytes());
-            user.setEncryptPwd(aes.encryptHex(originalPwd));
+            DES des = new DES(Mode.CTS, Padding.PKCS5Padding, password.getBytes(), "01020304".getBytes());
+            user.setEncryptPwd(des.encryptHex(originalPwd));
             user.setPassword(password);
             user.setCreateTime(LocalDateTime.now());
             user.setId(null);
