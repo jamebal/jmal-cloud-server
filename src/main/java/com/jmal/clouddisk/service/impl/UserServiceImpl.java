@@ -292,7 +292,8 @@ public class UserServiceImpl implements IUserService {
         return null;
     }
 
-    public String getShowNameByUserUsernme(String username) {
+    @Cacheable(value = "getShowNameByUserUsername", key = "#username")
+    public String getShowNameByUserUsername(String username) {
         ConsumerDO consumer = getUserInfoByName(username);
         if (consumer == null) {
             return "";

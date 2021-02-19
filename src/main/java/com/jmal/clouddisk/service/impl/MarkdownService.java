@@ -591,7 +591,7 @@ public class MarkdownService implements IMarkdownService {
         map.put("url", filepath);
         map.put("originalURL", upload.getUrl());
         map.put("filename", newFile.getName());
-        map.put("filepath", filepath + "?fileKey="+fileId);
+        map.put("filepath", filepath);
         return ResultUtil.success(map);
     }
 
@@ -633,7 +633,7 @@ public class MarkdownService implements IMarkdownService {
         map.put("fileId", fileId);
         String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), fileName), StandardCharsets.UTF_8);
         map.put("filename", fileName);
-        map.put("filepath", filepath + "?fileKey="+fileId);
+        map.put("filepath", filepath);
         return map;
     }
 

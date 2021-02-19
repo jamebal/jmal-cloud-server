@@ -338,4 +338,10 @@ public interface IFileService {
      * @param file FileDocument
      */
     void unsetShareFile(FileDocument file);
+
+    /***
+     * 设为公共文件
+     * @param fileId 文件Id
+     */
+    void setPublic(String fileId);
 }

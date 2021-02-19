@@ -29,6 +29,7 @@ import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -1151,6 +1152,15 @@ public class FileServiceImpl implements IFileService {
             List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
             fileDocuments.parallelStream().forEach(fileDocument -> unsetShareFile(fileDocument));
         }
+    }
+
+    @Override
+    public void setPublic(String fileId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        Update update = new Update();
+        update.set("isPublic", true);
+        mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
     }
 
     private void setShareOneFile(String fileId, long expiresAt) {

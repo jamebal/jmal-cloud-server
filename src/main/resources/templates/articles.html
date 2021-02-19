@@ -50,8 +50,8 @@
     <div id="body">
         <div class="article-header">
             <div class="article-background"></div>
-            <div class="lazyload-container" th:style="'background-image: url('+${setting.backgroundSite}+'&o=thumbnail)'">
-                <img style="display: none" th:src="${setting.backgroundSite}+'&o=thumbnail'" th:data-src="${setting.backgroundSite}" onload="javascript:loadBanner(this,document.querySelector('.article-header'))"/>
+            <div class="lazyload-container" th:style="'background-image: url('+${setting.backgroundSite}+'?o=thumbnail)'">
+                <img style="display: none" th:src="${setting.backgroundSite}+'?o=thumbnail'" th:data-src="${setting.backgroundSite}" onload="javascript:loadBanner(this,document.querySelector('.article-header'))"/>
             </div>
             <div class="inner">
                 <div class="blog-title"><span id="article-title" th:text="${setting.backgroundTextSite}"></span><span class="typed-cursor">_</span></div>

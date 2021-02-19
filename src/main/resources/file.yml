@@ -10,7 +10,7 @@ file:
   # 是否开启文件监控, 默认开启(开启会损耗性能), 开启的好处在于使用webDAV、FTP等修改文件会自动同步
   monitor: true
   #文件监控扫描时间间隔(秒)
-  timeInterval: 10
+  timeInterval: 30
   #文本类型
   simText: [txt,html,htm,asp,jsp,xml,json,properties,md,gitignore,java,py,c,cpp,sql,sh,bat,m,bas,prg,cmd]
   #文档类型

@@ -219,6 +219,15 @@ public class FileController {
         }
     }
 
+    @ApiOperation("设为公共文件")
+    @PutMapping("/setPublic")
+    @LogOperatingFun
+    @Permission("cloud:file:update")
+    public ResponseResult<Object> setPublic(@RequestParam String fileId) {
+        fileService.setPublic(fileId);
+        return ResultUtil.success();
+    }
+
     @ApiOperation("取消收藏")
     @PostMapping("/unFavorite")
     @LogOperatingFun

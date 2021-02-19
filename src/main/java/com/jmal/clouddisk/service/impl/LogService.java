@@ -56,7 +56,7 @@ public class LogService {
         // 用户
         String username = logOperation.getUsername();
         if (!StringUtils.isEmpty(username)) {
-            logOperation.setShowName(userService.getShowNameByUserUsernme(username));
+            logOperation.setShowName(userService.getShowNameByUserUsername(username));
         }
         // UserAgent
         UserAgent userAgent = UserAgentUtil.parse(request.getHeader("User-Agent"));

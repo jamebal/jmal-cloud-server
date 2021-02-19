@@ -24,17 +24,14 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URLDecoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
  * @author jmal
- * @Description 鉴权拦截器
+ * @Description 文件鉴权拦截器
  * @Date 2020-01-31 22:04
  */
 @Slf4j
