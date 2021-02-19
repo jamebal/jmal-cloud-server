@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -92,8 +93,17 @@ public class FileController {
     @LogOperatingFun
     @Permission("cloud:file:upload")
     public String imgUpload(HttpServletRequest request, MultipartFile file) {
+        if (file == null){
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "缺少文件参数, file");
+        }
         String filepath = request.getHeader("filepath");
+        if (StringUtils.isEmpty(filepath)) {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "headers里缺少参数, filepath: 远程目标文件夹, 例如: '/Image/Typora/Public/Images'");
+        }
         String baseUrl = request.getHeader("baseurl");
+        if (StringUtils.isEmpty(baseUrl)) {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "headers里缺少参数, baseUrl: 远程服务器地址, 例如: 'https://www.jmal.top/api'");
+        }
         return fileService.imgUpload(baseUrl, filepath, file);
     }
 
