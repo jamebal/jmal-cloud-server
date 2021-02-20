@@ -159,8 +159,8 @@ public class FileInterceptor implements HandlerInterceptor {
         return true;
     }
 
-    private void webp(HttpServletRequest request, HttpServletResponse response) {
-        Path uriPath = Paths.get(request.getRequestURI());
+    private void webp(HttpServletRequest request, HttpServletResponse response) throws UnsupportedEncodingException {
+        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), "UTF-8"));
         uriPath = uriPath.subpath(1, uriPath.getNameCount());
         try {
             File file = Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
@@ -215,8 +215,8 @@ public class FileInterceptor implements HandlerInterceptor {
         return fileService.getFileDocumentByPathAndName(path, name, username);
     }
 
-    private void handleCrop(HttpServletRequest request, HttpServletResponse response) {
-        Path uriPath = Paths.get(request.getRequestURI());
+    private void handleCrop(HttpServletRequest request, HttpServletResponse response) throws UnsupportedEncodingException {
+        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), "UTF-8"));
         uriPath = uriPath.subpath(1, uriPath.getNameCount());
         File file = Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
         String q = request.getParameter("q");
