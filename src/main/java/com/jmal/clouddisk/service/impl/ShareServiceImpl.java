@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.date.LocalDateTimeUtil;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
@@ -167,8 +166,7 @@ public class ShareServiceImpl implements IShareService {
         if (userList == null || userList.isEmpty()) {
             return;
         }
-        userList.stream().forEach(user -> {
-            String username = user.getUsername();
+        userList.forEach(user -> {
             String userId = user.getId();
             Query query = new Query();
             query.addCriteria(Criteria.where("userId").in(userId));

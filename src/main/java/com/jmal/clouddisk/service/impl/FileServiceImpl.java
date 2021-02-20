@@ -1088,14 +1088,14 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public String viewFile(String fileId, String operation) {
+    public String viewFile(String shareKey,String fileId, String operation) {
         FileDocument fileDocument = getById(fileId);
         if (fileDocument == null) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND.getCode(), ExceptionType.FILE_NOT_FIND.getMsg());
         }
         String username = userService.getUserNameById(fileDocument.getUserId());
         String relativepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(fileDocument.getPath() + fileDocument.getName(), StandardCharsets.UTF_8);
-        return "redirect:/file/" + username + relativepath + "?fileKey=" + fileId + "&o=" + operation;
+        return "redirect:/file/" + username + relativepath + "?shareKey=" + shareKey + "&o=" + operation;
     }
 
     @Override
@@ -1125,9 +1125,8 @@ public class FileServiceImpl implements IFileService {
         if (file == null) {
             return;
         }
-        if (!file.getIsFolder()) {
-            setShareOneFile(file.getId(), expiresAt);
-        } else {
+        setShareOneFile(file.getId(), expiresAt);
+        if (file.getIsFolder()) {
             Query query = new Query();
             query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
             query.addCriteria(Criteria.where("isFolder").is(false));

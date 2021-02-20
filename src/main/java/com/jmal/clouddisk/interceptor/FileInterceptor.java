@@ -24,7 +24,10 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -61,7 +64,7 @@ public class FileInterceptor implements HandlerInterceptor {
     /***
      * fileId参数
      */
-    private static final String FILE_KEY = "fileKey";
+    private static final String SHARE_KEY = "shareKey";
     /***
      * 路径最小层级
      */
@@ -77,7 +80,7 @@ public class FileInterceptor implements HandlerInterceptor {
     AuthInterceptor authInterceptor;
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws UnsupportedEncodingException {
         if (fileAuthError(request)) return false;
         String operation = request.getParameter(OPERATION);
         if (!StringUtils.isEmpty(operation)) {
@@ -104,32 +107,46 @@ public class FileInterceptor implements HandlerInterceptor {
 
     /***
      * 文件鉴权是否失败
-     * @return true 失败，false 成功
+     * 当有shareKey参数时说明是分享文件的访问
+     * shareKey 代表一个分享的文件或文件夹
+     * 判断当前uri所属的文件是否为该分享的文件或其子文件
+     * @return true 鉴权失败，false 鉴权成功
      */
-    private boolean fileAuthError(HttpServletRequest request) {
-        String fileKey = request.getParameter(FILE_KEY);
-        if (!StringUtils.isEmpty(fileKey)) {
-            FileDocument fileDocument = fileService.getById(fileKey);
-            return authFileDocumentError(fileDocument);
-        } else {
-            String username = authInterceptor.getUserNameByHeader(request);
-            try {
-                Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), "UTF-8"));
-                if (uriPath.getNameCount() < MIX_COUNT) {
-                    return true;
-                }
-                if (!StringUtils.isEmpty(username) && username.equals(uriPath.getName(1).toString())) {
+    private boolean fileAuthError(HttpServletRequest request) throws UnsupportedEncodingException {
+        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), "UTF-8"));
+        String shareKey = request.getParameter(SHARE_KEY);
+        if (!StringUtils.isEmpty(shareKey)) {
+            FileDocument fileDocument = fileService.getById(shareKey);
+            if (!isNotAllowAccess(fileDocument)) {
+                // 判断当前uri所属的文件是否为该分享的文件或其子文件
+                FileDocument thisFile = getFileDocument(uriPath);
+                if (thisFile.getPath().equals(fileDocument.getPath())) {
                     return false;
                 }
-                return authFileDocumentError(getFileDocument(uriPath));
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+                if (fileDocument.getIsFolder()) {
+                    String parentPath = fileDocument.getPath() + fileDocument.getName();
+                    return !thisFile.getPath().startsWith(parentPath);
+                }
             }
+            return true;
+        } else {
+            String username = authInterceptor.getUserNameByHeader(request);
+            if (uriPath.getNameCount() < MIX_COUNT) {
+                return true;
+            }
+            if (!StringUtils.isEmpty(username) && username.equals(uriPath.getName(1).toString())) {
+                return false;
+            }
+            return isNotAllowAccess(getFileDocument(uriPath));
         }
-        return true;
     }
 
-    private boolean authFileDocumentError(FileDocument fileDocument) {
+    /***
+     * 判断文件是否不允许访问
+     * 如果为公共文件，或者分享有效期内的文件，则允许访问
+     * @return true 不允许访问，false 允许访问
+     */
+    private boolean isNotAllowAccess(FileDocument fileDocument) {
         if (fileDocument == null) {
             return true;
         }

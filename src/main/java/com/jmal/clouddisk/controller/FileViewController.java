@@ -2,6 +2,7 @@ package com.jmal.clouddisk.controller;
 
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.model.LogOperation;
+import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -32,13 +33,6 @@ public class FileViewController {
     @Autowired
     IShareService shareService;
 
-    @ApiOperation("分享：预览文件")
-    @GetMapping("/public/preview/{fileId}")
-    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public String publicPreview(@PathVariable String fileId) {
-        return fileService.viewFile(fileId, "preview");
-    }
-
     @ApiOperation("预览文档里的图片")
     @GetMapping("/public/view")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -51,9 +45,10 @@ public class FileViewController {
     @GetMapping("/public/s/preview/{fileId}/{shareId}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public String publicPreview(@PathVariable String fileId, @PathVariable String shareId) {
-        boolean whetherExpired = shareService.checkWhetherExpired(shareId);
+        ShareDO shareDO = shareService.getShare(shareId);
+        boolean whetherExpired = shareService.checkWhetherExpired(shareDO);
         if(whetherExpired){
-            return fileService.viewFile(fileId, "preview");
+            return fileService.viewFile(shareDO.getFileId(), fileId, "preview");
         }
         return "forward:/public/s/invalid";
     }
@@ -62,9 +57,10 @@ public class FileViewController {
     @GetMapping("/public/s/download/{fileId}/{shareId}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public String publicDownload(@PathVariable String fileId, @PathVariable String shareId) {
-        boolean whetherExpired = shareService.checkWhetherExpired(shareId);
+        ShareDO shareDO = shareService.getShare(shareId);
+        boolean whetherExpired = shareService.checkWhetherExpired(shareDO);
         if(whetherExpired){
-            return fileService.viewFile(fileId, "download");
+            return fileService.viewFile(shareDO.getFileId(), fileId, "download");
         }
         return "forward:/public/s/invalid";
     }

@@ -305,12 +305,13 @@ public interface IFileService {
     ResponseResult<Object> addFile(String fileName, Boolean isFolder, String username, String parentPath);
 
     /***
-     * 下载单个文件
-     * @param fileId
+     * 下载、预览文件
+     * @param shareKey 分享文件id
+     * @param fileId 当前文件Id
      * @param operation 操作(下载、预览等操作)
      * @return
      */
-    String viewFile(String fileId, String operation);
+    String viewFile(String shareKey, String fileId, String operation);
 
     /***
      * 预览文档里的图片
