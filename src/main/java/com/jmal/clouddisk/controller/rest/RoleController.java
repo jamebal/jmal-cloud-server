@@ -50,7 +50,7 @@ public class RoleController {
     @PutMapping("/update")
     @LogOperatingFun
     @Permission("sys:role:update")
-    public ResponseResult<Object> update(@ModelAttribute @Validated RoleDTO roleDTO){
+    public ResponseResult<Object> update(@RequestBody @ModelAttribute @Validated RoleDTO roleDTO){
         if(roleDTO.getId() == null){
             return ResultUtil.warning("缺少参数roleId");
         }
@@ -62,8 +62,7 @@ public class RoleController {
     @LogOperatingFun
     @Permission("sys:role:delete")
     public ResponseResult<Object> delete(@RequestParam String[] roleIds){
-        List<String> roleIdList = Arrays.asList(roleIds);
-        roleService.delete(roleIdList);
+        roleService.delete(roleIds);
         return ResultUtil.success();
     }
 

@@ -21,6 +21,7 @@ import java.util.Map;
         @CompoundIndex(name = "username_1", def = "{'username': 1}"),
         @CompoundIndex(name = "showName_1", def = "{'showName': 1}"),
         @CompoundIndex(name = "ip_1", def = "{'ip': 1}"),
+        @CompoundIndex(name = "cityIp_1", def = "{'cityIp': 1}"),
         @CompoundIndex(name = "url_1", def = "{'url': 1}"),
         @CompoundIndex(name = "status_1", def = "{'status': 1}"),
         @CompoundIndex(name = "operationModule_1", def = "{'operationModule': 1}"),
@@ -60,10 +61,6 @@ public class LogOperation {
      */
     private String url;
     /***
-     * 请求参数
-     */
-    private Map<String, String> params;
-    /***
      * 请求方式
      */
     private String method;
@@ -100,6 +97,37 @@ public class LogOperation {
      * 日志类型
      */
     private String type;
+
+    /***
+     * 城市ip
+     */
+    private Integer cityIp;
+
+    private IpInfo ipInfo;
+
+    @Data
+    public static class IpInfo {
+        /***
+         * 国家
+         */
+        private String country;
+        /***
+         * 区域
+         */
+        private String area;
+        /***
+         * 省份
+         */
+        private String province;
+        /***
+         * 城市
+         */
+        private String city;
+        /***
+         * 运营商
+         */
+        private String operators;
+    }
 
     /***
      * 日志类型

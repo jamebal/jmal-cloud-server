@@ -27,9 +27,13 @@ public class LogOperationDTO {
      */
     private String username;
     /***
-     * 操作模块
+     * 排除账号
      */
-    private String operationModule;
+    private String excludeUsername;
+    /***
+     * ip
+     */
+    private String ip;
     /***
      * 日志类型
      */

@@ -1,10 +1,12 @@
 package com.jmal.clouddisk.config;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.nio.file.Paths;
 
 /**
@@ -16,6 +18,7 @@ import java.nio.file.Paths;
 @Component
 @PropertySource(value = "classpath:file.yml", factory = YamlPropertyLoaderFactory.class)
 @ConfigurationProperties(prefix = "file")
+@Slf4j
 public class FileProperties {
     /***
      * 文件存储根目录 文件监控目录
@@ -44,11 +47,11 @@ public class FileProperties {
     /***
      * 文本编辑器支持的文本类型
      */
-    private String[] simText = {"txt","html","htm","asp","jsp","xml","json","properties","md","gitignore","java","py","c","cpp","sql","sh","bat","m","bas","prg","cmd"};
+    private String[] simText = {"txt", "html", "htm", "asp", "jsp", "xml", "json", "properties", "md", "gitignore", "java", "py", "c", "cpp", "sql", "sh", "bat", "m", "bas", "prg", "cmd"};
     /***
      * 文档类型
      */
-    private String[] document = {"pdf","doc","docs","xls","xl","md"};
+    private String[] document = {"pdf", "doc", "docs", "xls", "xl", "md"};
     /***
      * 是否开启文件监控(默认不开启)
      * 开启文件监控会监控 ${rootDir} 目录下文件的变化
@@ -62,12 +65,30 @@ public class FileProperties {
      * webDAV协议前缀
      */
     private String webDavPrefix;
+    /***
+     * ip2region-path
+     */
+    private String ip2regionDbPath;
 
-    public String getWebDavPrefixPath(){
+    public void setIp2regionDbPath(String path) {
+        File file = new File(path);
+        if (!file.exists()) {
+            log.error("Error: Invalid ip2region.db file");
+            ip2regionDbPath = null;
+            return;
+        }
+        this.ip2regionDbPath = path;
+    }
+
+    public String getIp2regionDbPath() {
+        return ip2regionDbPath;
+    }
+
+    public String getWebDavPrefixPath() {
         return "/" + webDavPrefix;
     }
 
-    public String getRootDir(){
+    public String getRootDir() {
         return Paths.get(rootDir).toString();
     }
 
@@ -75,15 +96,15 @@ public class FileProperties {
         return chunkFileDir;
     }
 
-    public String getUserImgDir(){
+    public String getUserImgDir() {
         return Paths.get(userImgDir).toString();
     }
 
-    public String getDocumentImgDir(){
+    public String getDocumentImgDir() {
         return Paths.get(documentImgDir).toString();
     }
 
-    public String getDocumentDir(){
+    public String getDocumentDir() {
         return Paths.get(documentDir).toString();
     }
 

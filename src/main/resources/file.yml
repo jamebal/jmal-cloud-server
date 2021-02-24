@@ -17,4 +17,6 @@ file:
   doument: ["pdf","word","doc","docs","xls","xl","md"]
   # webDAV协议前缀
   web-dav-prefix: webDAV
+  # ip2region.db path
+  ip2region-db-path: /Users/jmal/studio/myProject/github/ip2region/data/ip2region.db
 

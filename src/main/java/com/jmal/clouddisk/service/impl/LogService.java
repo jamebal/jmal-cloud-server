@@ -4,12 +4,15 @@ import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.http.useragent.UserAgent;
 import cn.hutool.http.useragent.UserAgentUtil;
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.LogOperationDTO;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
 import io.milton.http.Response;
+import lombok.extern.slf4j.Slf4j;
+import org.lionsoul.ip2region.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -18,16 +21,14 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author jmal
@@ -35,13 +36,34 @@ import java.util.Map;
  * @Date 2021/2/5 5:43 下午
  */
 @Service
+@Slf4j
 public class LogService {
+
+    private static final int REGION_LENGTH = 5;
+
+    private static final String REGION_DEFAULT = "0";
 
     @Autowired
     private MongoTemplate mongoTemplate;
 
     @Autowired
+    private UserLoginHolder userLoginHolder;
+
+    @Autowired
     private UserServiceImpl userService;
+
+    @Autowired
+    private FileProperties fileProperties;
+
+    private DbSearcher ipSearcher = null;
+
+    @PostConstruct
+    public void initIpDbSearcher() throws DbMakerConfigException, FileNotFoundException {
+        String ip2regionDbPath = fileProperties.getIp2regionDbPath();
+        if (!StringUtils.isEmpty(ip2regionDbPath)) {
+            ipSearcher = new DbSearcher(new DbConfig(), ip2regionDbPath);
+        }
+    }
 
     /***
      * 存储操作日志前
@@ -50,7 +72,7 @@ public class LogService {
      * @param request HttpServletRequest
      * @param response HttpServletResponse
      */
-    public void addLogBefore(LogOperation logOperation, Object result, HttpServletRequest request, HttpServletResponse response){
+    public void addLogBefore(LogOperation logOperation, Object result, HttpServletRequest request, HttpServletResponse response) {
         // 用户
         String username = logOperation.getUsername();
         if (!StringUtils.isEmpty(username)) {
@@ -58,7 +80,7 @@ public class LogService {
         }
         // UserAgent
         UserAgent userAgent = UserAgentUtil.parse(request.getHeader("User-Agent"));
-        if (userAgent != null){
+        if (userAgent != null) {
             logOperation.setOperatingSystem(userAgent.getOs().getName());
             logOperation.setDeviceModel(userAgent.getPlatform().getName());
             logOperation.setBrowser(userAgent.getBrowser().getName() + userAgent.getVersion());
@@ -69,25 +91,21 @@ public class LogService {
         logOperation.setMethod(request.getMethod());
         // 客户端ip
         String realIp = request.getHeader("X-real-ip");
-        logOperation.setIp(StringUtils.isEmpty(realIp) ? request.getRemoteAddr() : realIp);
-        // 请求参数
-        Map<String, String> params = new HashMap<>(16);
-        Enumeration<String> enumeration = request.getParameterNames();
-        while (enumeration.hasMoreElements()){
-            String key = enumeration.nextElement();
-            params.put(key, request.getParameter(key));
+        String ip = StringUtils.isEmpty(realIp) ? request.getRemoteAddr() : realIp;
+        logOperation.setIp(ip);
+        if (Util.isIpAddress(ip)) {
+            setIpInfo(logOperation, ip);
         }
-        logOperation.setParams(params);
         // 返回结果
         logOperation.setStatus(0);
         ResponseResult<Object> responseResult;
-        if (result == null){
+        if (result == null) {
             setStatus(logOperation, response);
         } else {
             try {
-                responseResult = (ResponseResult<Object>)result;
+                responseResult = (ResponseResult<Object>) result;
                 logOperation.setStatus(responseResult.getCode());
-                if(responseResult.getCode() != 0){
+                if (responseResult.getCode() != 0) {
                     logOperation.setRemarks(responseResult.getMessage().toString());
                 }
             } catch (Exception e) {
@@ -97,17 +115,63 @@ public class LogService {
         ThreadUtil.execute(() -> addLog(logOperation));
     }
 
-    private void setStatus(LogOperation logOperation, HttpServletResponse response) {
-        if (response != null){
-            int status = response.getStatus();
-            if(status >= Response.Status.SC_BAD_REQUEST.code){
-                logOperation.setStatus(-1);
+    /***
+     * 设置IP详细信息
+     * @param logOperation LogOperation
+     */
+    private void setIpInfo(LogOperation logOperation, String ip) {
+        if (ipSearcher != null) {
+            try {
+                DataBlock dataBlock = ipSearcher.memorySearch(ip);
+                logOperation.setCityIp(dataBlock.getCityId());
+                logOperation.setIpInfo(region2IpInfo(dataBlock.getRegion()));
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
             }
-            logOperation.setRemarks(status+"");
         }
     }
 
-    public void addLog(LogOperation logOperation){
+    /***
+     * 解析IP区域信息
+     */
+    public LogOperation.IpInfo region2IpInfo(String region) {
+        LogOperation.IpInfo ipInfo = new LogOperation.IpInfo();
+        String[] r = region.split("\\|");
+        if (r.length != REGION_LENGTH) return ipInfo;
+        String country = r[0];
+        if (!REGION_DEFAULT.equals(country)) {
+            ipInfo.setCountry(country);
+        }
+        String area = r[1];
+        if (!REGION_DEFAULT.equals(area)) {
+            ipInfo.setArea(area);
+        }
+        String province = r[2];
+        if (!REGION_DEFAULT.equals(province)) {
+            ipInfo.setProvince(province);
+        }
+        String city = r[3];
+        if (!REGION_DEFAULT.equals(city)) {
+            ipInfo.setCity(city);
+        }
+        String operators = r[4];
+        if (!REGION_DEFAULT.equals(operators)) {
+            ipInfo.setOperators(operators);
+        }
+        return ipInfo;
+    }
+
+    private void setStatus(LogOperation logOperation, HttpServletResponse response) {
+        if (response != null) {
+            int status = response.getStatus();
+            if (status >= Response.Status.SC_BAD_REQUEST.code) {
+                logOperation.setStatus(-1);
+            }
+            logOperation.setRemarks(status + "");
+        }
+    }
+
+    public void addLog(LogOperation logOperation) {
         logOperation.setCreateTime(LocalDateTime.now());
         mongoTemplate.save(logOperation);
     }
@@ -136,13 +200,17 @@ public class LogService {
      */
     private Query getQuery(LogOperationDTO logOperationDTO) {
         Query query = new Query();
+        String excludeUsername = logOperationDTO.getExcludeUsername();
+        if (!StringUtils.isEmpty(excludeUsername)) {
+            query.addCriteria(Criteria.where("username").nin(userLoginHolder.getUsername()));
+        }
         String username = logOperationDTO.getUsername();
         if (!StringUtils.isEmpty(username)) {
             query.addCriteria(Criteria.where("username").is(username));
         }
-        String operationModule = logOperationDTO.getOperationModule();
-        if (!StringUtils.isEmpty(operationModule)) {
-            query.addCriteria(Criteria.where("operationModule").is(operationModule));
+        String ip = logOperationDTO.getIp();
+        if (!StringUtils.isEmpty(ip)) {
+            query.addCriteria(Criteria.where("ip").is(ip));
         }
         String type = logOperationDTO.getType();
         if (!StringUtils.isEmpty(type)) {
@@ -150,7 +218,7 @@ public class LogService {
         }
         Long startTime = logOperationDTO.getStartTime();
         Long endTime = logOperationDTO.getEndTime();
-        if (startTime != null && endTime != null){
+        if (startTime != null && endTime != null) {
             LocalDateTime s = TimeUntils.getLocalDateTime(startTime);
             LocalDateTime e = TimeUntils.getLocalDateTime(endTime);
             query.addCriteria(Criteria.where("createTime").gte(s).lte(e));
@@ -164,7 +232,7 @@ public class LogService {
     private void setSort(LogOperationDTO logOperationDTO, Query query) {
         String sortableProp = logOperationDTO.getSortProp();
         String order = logOperationDTO.getSortOrder();
-        if (StringUtils.isEmpty(sortableProp) || StringUtils.isEmpty(order)){
+        if (StringUtils.isEmpty(sortableProp) || StringUtils.isEmpty(order)) {
             query.with(new Sort(Sort.Direction.DESC, "createTime"));
             return;
         }

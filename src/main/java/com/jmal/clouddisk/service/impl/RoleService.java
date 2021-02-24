@@ -183,11 +183,11 @@ public class RoleService {
 
     /***
      * 删除角色
-     * @param roleIdList 角色id列表
+     * @param roleIds 角色id列表
      */
-    public void delete(List<String> roleIdList) {
+    public void delete(String[] roleIds) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(roleIdList));
+        query.addCriteria(Criteria.where("_id").in((Object[]) roleIds));
         mongoTemplate.remove(query, COLLECTION_NAME);
     }
 
