@@ -1,11 +1,13 @@
 package com.jmal.clouddisk.controller;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CategoryService;
+import com.jmal.clouddisk.service.impl.LogService;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.service.impl.TagService;
 import io.swagger.annotations.Api;
@@ -46,6 +48,9 @@ public class ArticlesController {
     private IMarkdownService fileService;
 
     @Autowired
+    private LogService logService;
+
+    @Autowired
     IUserService userService;
 
     private static final String X_PJAX = "X-PJAX";
@@ -84,12 +89,16 @@ public class ArticlesController {
     @GetMapping("/articles/o/{slug}")
     @LogOperatingFun(value = "独立页面", logType = LogOperation.Type.ARTICLE)
     public String alonePage(HttpServletRequest request, @PathVariable String slug, ModelMap map) {
+        long visits = logService.getVisitsByUrl("/articles/o/" + slug);
+        map.addAttribute("visits", visits);
         return articlePage(request, slug, map);
     }
 
     @GetMapping("/articles/s/{slug}")
     @LogOperatingFun(value = "文章", logType = LogOperation.Type.ARTICLE)
     public String article(HttpServletRequest request, @PathVariable String slug, ModelMap map) {
+        long visits = logService.getVisitsByUrl("/articles/s/" + slug);
+        map.addAttribute("visits", visits);
         return articlePage(request, slug, map);
     }
 

@@ -13,8 +13,11 @@
             <div class="inner">
                 <div class="blog-title"><span id="article-title" th:text="${markdown.name}"></span><span class="typed-cursor">_</span></div>
                 <div class="blog-description font-mono">
-                    <a itemprop="name" th:href="'/author/'+${markdown.username}" rel="author" th:text="${markdown.username}"></a>
+                    <a class="edit" itemprop="name" th:href="'/author/'+${markdown.username}" rel="author" th:text="${markdown.username}"></a>
                     <span th:text="'· '+${markdown.uploadTime()}"></span>
+                    <span th:if="${visits != null}">
+                   · 阅读: <span th:text="${visits}"></span>
+                </span>
                     <span class="link"  th:if="${markdown.categories != null && markdown.categories.size() > 0}">
                     ·
                     <a th:each="categoryDO,categoryStat : ${markdown.categories}">

@@ -258,4 +258,15 @@ public class LogService {
         query.skip(skip);
         query.limit(pageSize);
     }
+
+    /***
+     * 获取url的访问次数
+     * @param url url
+     * @return 访问次数
+     */
+    public long getVisitsByUrl(String url) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("url").is(url));
+        return mongoTemplate.count(query, LogOperation.class);
+    }
 }
