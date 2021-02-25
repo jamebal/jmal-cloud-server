@@ -33,6 +33,14 @@ public interface IMarkdownService {
      * @return Page
      */
     Page<List<MarkdownVO>> getArticles(Integer page, Integer pageSize);
+    /***
+     * 获取已发布文章的完整url
+     */
+    Urlset getSitemapXml();
+    /***
+     * 获取已发布文章的完整url
+     */
+    String getSitemapTxt();
 
     /***
      * 获取独立页面列表
@@ -71,7 +79,6 @@ public interface IMarkdownService {
      * 获取文章列表(根据作者)
      * @param page page
      * @param pageSize pageSize
-     * @param author userId
      * @return Page
      */
     Page<List<MarkdownVO>> getArticlesByAuthor(int page, int pageSize, String userId);

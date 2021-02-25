@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
@@ -57,7 +58,7 @@ import static java.util.stream.Collectors.toList;
  */
 @Service
 @Slf4j
-public class MarkdownService implements IMarkdownService {
+public class MarkdownServiceImpl implements IMarkdownService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
@@ -72,12 +73,15 @@ public class MarkdownService implements IMarkdownService {
     private CategoryService categoryService;
 
     @Autowired
+    private SettingService settingService;
+
+    @Autowired
     private TagService tagService;
 
     @Autowired
     FileServiceImpl fileService;
 
-    private static final AES aes = SecureUtil.aes();
+    private static final AES AES = SecureUtil.aes();
 
     @Override
     public ResponseResult<FileDocument> getMarkDownOne(ArticleDTO articleDTO) {
@@ -103,6 +107,70 @@ public class MarkdownService implements IMarkdownService {
         articleDTO.setPageIndex(page);
         articleDTO.setPageSize(pageSize);
         return getArticles(articleDTO);
+    }
+
+    @Override
+    public Urlset getSitemapXml() {
+        String siteUrl = getSiteUrl();
+        List<FileDocument> fileDocumentList = getArticlesUrl();
+        Urlset urlset = new Urlset();
+        List<Urlset.Url> urlList = new ArrayList<>();
+        fileDocumentList.forEach(fileDocument -> {
+            Urlset.Url url = new Urlset.Url();
+            String prefix = "/s/";
+            if (fileDocument.getAlonePage() != null && fileDocument.getAlonePage()) {
+                prefix = "/o/";
+            }
+            String slug = fileDocument.getSlug();
+            if (StringUtils.isEmpty(slug)){
+                slug = fileDocument.getId();
+            }
+            url.setLoc(siteUrl + prefix + slug);
+            url.setLastmod(LocalDateTimeUtil.format(fileDocument.getUpdateDate(), "yyyy-MM-dd"));
+            urlList.add(url);
+        });
+        urlset.setUrl(urlList);
+        return urlset;
+    }
+
+    @Override
+    public String getSitemapTxt() {
+        String siteUrl = getSiteUrl();
+        List<FileDocument> fileDocumentList = getArticlesUrl();
+        StringBuilder stringBuilder = new StringBuilder();
+        fileDocumentList.forEach(fileDocument -> {
+            stringBuilder.append(siteUrl);
+            if (fileDocument.getAlonePage() != null && fileDocument.getAlonePage()) {
+                stringBuilder.append("/o/");
+            } else {
+                stringBuilder.append("/s/");
+            }
+            String slug = fileDocument.getSlug();
+            if (StringUtils.isEmpty(slug)){
+                stringBuilder.append(fileDocument.getId());
+            } else {
+                stringBuilder.append(slug);
+            }
+            stringBuilder.append("\r\n");
+        });
+        return stringBuilder.toString();
+    }
+
+    private String getSiteUrl() {
+        String siteUrl = settingService.getWebsiteSetting().getSiteUrl();
+        if (siteUrl.endsWith("/")) {
+            siteUrl = siteUrl.substring(0, siteUrl.length() - 1);
+        }
+        return siteUrl;
+    }
+
+    private List<FileDocument> getArticlesUrl() {
+        Query query = new Query();
+        // 查询条件
+        query.skip(0).limit(5000);
+        query.addCriteria(Criteria.where("suffix").is("md"));
+        query.addCriteria(Criteria.where("release").is(true));
+        return mongoTemplate.find(query, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
     }
 
     @Override
@@ -300,10 +368,10 @@ public class MarkdownService implements IMarkdownService {
             query.addCriteria(Criteria.where("draft").exists(true));
         }
         if (articleDTO.getCategoryIds() != null && articleDTO.getCategoryIds().length > 0) {
-            query.addCriteria(Criteria.where("categoryIds").in(articleDTO.getCategoryIds()));
+            query.addCriteria(Criteria.where("categoryIds").in((Object[]) articleDTO.getCategoryIds()));
         }
         if (articleDTO.getTagIds() != null && articleDTO.getTagIds().length > 0) {
-            query.addCriteria(Criteria.where("tagIds").in(articleDTO.getTagIds()));
+            query.addCriteria(Criteria.where("tagIds").in((Object[]) articleDTO.getTagIds()));
         }
         if (!StringUtils.isEmpty(articleDTO.getKeyword())) {
             query.addCriteria(Criteria.where("contentText").regex(articleDTO.getKeyword(), "i"));
@@ -654,7 +722,7 @@ public class MarkdownService implements IMarkdownService {
                 //"/public/view?relativePath="+path + oldSrc +"&userId="+userId;
                 String value = matcher.group(0);
                 if (value.matches("(?!([hH][tT]{2}[pP]:/*|[hH][tT]{2}[pP][sS]:/*|[fF][tT][pP]:/*)).*?$+") && !value.startsWith("/file/public/image")) {
-                    String relativepath = aes.encryptBase64(path + value);
+                    String relativepath = AES.encryptBase64(path + value);
                     try {
                         relativepath = URLEncoder.encode(relativepath, "UTF-8");
                     } catch (UnsupportedEncodingException e) {

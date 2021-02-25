@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.controller;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.model.*;
@@ -15,10 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -62,6 +58,20 @@ public class ArticlesController {
         boolean isPjax = pjaxMap(request, map, "404");
         map.addAttribute("titleName", "页面没有找到");
         return isPjax ? "404" : "index";
+    }
+
+    @GetMapping(value = "/articles/sitemap.xml", produces = {"application/xml;charset=UTF-8"})
+    @LogOperatingFun(value = "sitemap.xml", logType = LogOperation.Type.ARTICLE)
+    @ResponseBody
+    public Urlset sitemapXml() {
+        return fileService.getSitemapXml();
+    }
+
+    @GetMapping(value = "/articles/sitemap.txt", produces = {"text/plain;charset=UTF-8"})
+    @LogOperatingFun(value = "sitemap.txt", logType = LogOperation.Type.ARTICLE)
+    @ResponseBody
+    public String sitemapTxt() {
+        return fileService.getSitemapTxt();
     }
 
     @GetMapping("/articles")
