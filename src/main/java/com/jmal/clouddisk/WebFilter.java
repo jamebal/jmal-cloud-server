@@ -75,9 +75,11 @@ public class WebFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         String uri = httpRequest.getRequestURI();
+        log.error("uri: {}", uri);
         if (uri.startsWith(API)) {
             uri = COMPILE.matcher(uri).replaceFirst("");
             httpRequest.getRequestDispatcher(uri).forward(request, response);
+            return;
         }
         // 以/webDAV 开头的走webDAV协议
         if (uri.startsWith(fileProperties.getWebDavPrefixPath())) {

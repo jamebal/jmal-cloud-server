@@ -90,8 +90,7 @@ public class LogService {
         // 请求方式
         logOperation.setMethod(request.getMethod());
         // 客户端ip
-        String realIp = request.getHeader("X-real-ip");
-        String ip = StringUtils.isEmpty(realIp) ? request.getRemoteAddr() : realIp;
+        String ip = getIpAddress(request);
         logOperation.setIp(ip);
         if (Util.isIpAddress(ip)) {
             setIpInfo(logOperation, ip);
@@ -113,6 +112,38 @@ public class LogService {
             }
         }
         ThreadUtil.execute(() -> addLog(logOperation));
+    }
+
+    private String getIpAddress(HttpServletRequest request) {
+        String ip = request.getHeader("x-forwarded-for");
+        if (!StringUtils.isEmpty(ip)) {
+            // 多次反向代理后会有多个ip值，第一个ip才是真实ip
+            if (ip.contains(",")) {
+                ip = ip.split(",")[0];
+            }
+        }
+        if (StringUtils.isEmpty(ip)) {
+            ip = request.getHeader("X-real-ip");
+        }
+        if (StringUtils.isEmpty(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (StringUtils.isEmpty(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (StringUtils.isEmpty(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (StringUtils.isEmpty(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (StringUtils.isEmpty(ip)) {
+            ip = request.getHeader("X-Real-IP");
+        }
+        if (StringUtils.isEmpty(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
     }
 
     /***

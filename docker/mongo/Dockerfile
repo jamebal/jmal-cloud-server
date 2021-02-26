@@ -19,7 +19,7 @@ RUN mkdir -p /tmp
 COPY docker-entrypoint.sh /usr/local/bin/
 
 #EXPOSE 映射端口
-EXPOSE 80 443 27017
+EXPOSE 27017
 
 #CMD 运行以下命令
 CMD /etc/nginx/sbin/nginx && /usr/bin/mongod

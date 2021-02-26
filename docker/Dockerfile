@@ -4,6 +4,10 @@ MAINTAINER zhushilun084@163.com
 # 支持中文
 ENV LANG en_US.UTF-8
 
+# 时区
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+RUN echo 'Asia/Shanghai' >/etc/timezone
+
 # 安装java环境
 ADD jdk-8u251-linux-x64.tar.gz /usr/local/
 ENV MYPATH /usr/local
@@ -14,15 +18,22 @@ ENV PATH $PATH:$JAVA_HOME/bin:$CLASSPATH
 
 RUN rm -f /usr/local/jdk-8u251-linux-x64.tar.gz
 
+RUN mkdir -p /jmalcloud/files /jmal-cloud-view/dist
+
+COPY nginx.conf /etc/nginx/nginx.conf
+
 COPY README.md /usr/local/README.md
 
+# ip2region.db
+ADD ip2region.db /jmalcloud/
+
 # jmalcloud 后端
-ADD clouddisk-1.0-exec.jar /usr/local/
+ADD clouddisk-2.1.0-exec.jar /usr/local/
 # jmalcloud 前端
-ADD dist.tar /jmal-cloud-view/
+ADD dist-2.1.0.tar /jmal-cloud-view/
 
-VOLUME /jmal-cloud-view/dist /jmalcloud/files
+VOLUME /jmal-cloud-view/ /jmalcloud/
 
-EXPOSE 8088 80 443 27017 10010
+EXPOSE 8088 8080
 
-CMD /etc/nginx/sbin/nginx && /usr/bin/mongod --fork --logpath /var/log/mongodb/mongodb.log && java -jar -Xms50m -Xmx512m clouddisk-1.0-exec.jar --file.rootDir=/jmalcloud/files --file.chunkFileDir=chunkFileDirTemp
+CMD /usr/bin/mongod --fork --logpath /var/log/mongodb/mongodb.log && /etc/nginx/sbin/nginx && java -jar -Xms50m -Xmx512m clouddisk-2.1.0-exec.jar --logging.level.root=warn --spring.profiles.active=prod --file.rootDir=/jmalcloud/files --file.ip2region-db-path=/jmalcloud/ip2region.db

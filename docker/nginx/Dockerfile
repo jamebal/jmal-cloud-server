@@ -66,15 +66,13 @@ RUN rm -rf /tmp
 
 RUN mkdir -p /jmalcloud/files /jmal-cloud-view/dist
 
-COPY nginx.conf /etc/nginx/nginx.conf
-
 RUN /etc/nginx/sbin/nginx -c /etc/nginx/nginx.conf
 RUN ln -s /usr/local/nginx/sbin/* /usr/local/sbin/
 
 VOLUME /etc/nginx/ /var/log/nginx/
 
 #EXPOSE 映射端口
-EXPOSE 80 443
+EXPOSE 80
 
 #CMD 运行以下命令
 CMD ["/etc/nginx/sbin/nginx","-g","daemon off;"]
