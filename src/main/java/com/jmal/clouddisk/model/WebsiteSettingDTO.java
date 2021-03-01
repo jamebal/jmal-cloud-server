@@ -33,7 +33,15 @@ public class WebsiteSettingDTO {
      */
     String siteUrl;
     /***
-     * 网站 Logo / 站点名称
+     * 网站 图标
+     */
+    String siteIco;
+    /***
+     * 网站 Logo
+     */
+    String siteLogo;
+    /***
+     * 站点名称
      */
     String siteName;
     /***

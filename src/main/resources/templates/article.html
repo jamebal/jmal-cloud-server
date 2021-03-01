@@ -5,8 +5,8 @@
             <div class="article-background"></div>
             <div class="lazyload-container" th:style="${markdown.cover !=null ? 'background-image: url('+markdown.cover+'?o=thumbnail)': 'background-image: url('+ setting.backgroundSite+'?o=thumbnail)'}">
                 <img style="display: none"
-                     th:src="${markdown.cover !=null ? markdown.cover+'?o=thumbnail' : setting.archiveBackground+'?o=thumbnail'}"
-                     th:data-src="${markdown.cover !=null ? markdown.cover : setting.archiveBackground}"
+                     th:src="${markdown.cover !=null ? markdown.cover+'?o=thumbnail' : setting.backgroundSite+'?o=thumbnail'}"
+                     th:data-src="${markdown.cover !=null ? markdown.cover : setting.backgroundSite}"
                      onload="javascript:loadBanner(this,document.querySelector('.article-header'))"
                 />
             </div>

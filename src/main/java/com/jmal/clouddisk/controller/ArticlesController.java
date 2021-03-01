@@ -80,7 +80,7 @@ public class ArticlesController {
         map.addAttribute("mark", "articles");
         boolean isPjax = isPjax(request);
         WebsiteSettingDTO websiteSettingDTO;
-        if(!isPjax){
+        if (!isPjax) {
             websiteSettingDTO = getSetting(request, map);
         } else {
             websiteSettingDTO = settingService.getWebsiteSetting();
@@ -99,16 +99,20 @@ public class ArticlesController {
     @GetMapping("/articles/o/{slug}")
     @LogOperatingFun(value = "独立页面", logType = LogOperation.Type.ARTICLE)
     public String alonePage(HttpServletRequest request, @PathVariable String slug, ModelMap map) {
-        long visits = logService.getVisitsByUrl("/articles/o/" + slug);
+        String url = "/articles/o/" + slug;
+        long visits = logService.getVisitsByUrl(url);
         map.addAttribute("visits", visits);
+        map.addAttribute("url", url);
         return articlePage(request, slug, map);
     }
 
     @GetMapping("/articles/s/{slug}")
     @LogOperatingFun(value = "文章", logType = LogOperation.Type.ARTICLE)
     public String article(HttpServletRequest request, @PathVariable String slug, ModelMap map) {
-        long visits = logService.getVisitsByUrl("/articles/s/" + slug);
+        String url = "/articles/s/" + slug;
+        long visits = logService.getVisitsByUrl(url);
         map.addAttribute("visits", visits);
+        map.addAttribute("url", url);
         return articlePage(request, slug, map);
     }
 
@@ -126,9 +130,29 @@ public class ArticlesController {
                 }
             }
         }
+        map.addAttribute("keywords", setKeywords(articleVO));
+        map.addAttribute("description", setDescription(articleVO));
         map.addAttribute("markdown", articleVO);
         map.addAttribute("titleName", articleVO.getName());
         return isPjax ? "article" : "index";
+    }
+
+    private String setDescription(ArticleVO articleVO) {
+        return articleVO.getHtml().substring(0, 500).replaceAll("<[^>]*>","");
+    }
+
+    private String setKeywords(ArticleVO articleVO) {
+        StringBuilder stringBuilder = new StringBuilder();
+        List<TagDO> list = articleVO.getTags();
+        if (list != null && !list.isEmpty()) {
+            for (int i = 0; i < list.size(); i++) {
+                if (i != 0) {
+                    stringBuilder.append(", ");
+                }
+                stringBuilder.append(list.get(i).getName());
+            }
+        }
+        return stringBuilder.toString();
     }
 
     @GetMapping("/articles/categories")
@@ -334,7 +358,7 @@ public class ArticlesController {
 
     private boolean pjaxMap(HttpServletRequest request, ModelMap map, String viewName) {
         boolean isPjax = isPjax(request);
-        if(!isPjax) {
+        if (!isPjax) {
             getSetting(request, map);
         } else {
             map.addAttribute("setting", settingService.getWebsiteSetting());
