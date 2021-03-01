@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.model;
 
 import lombok.Data;
-import lombok.experimental.Accessors;
 
 import java.util.List;
 
@@ -18,7 +17,7 @@ public class WebsiteSettingDO {
      */
     String backgroundSite;
     /***
-     * 首页大图内文字
+     * 首页大图内文字 / 心语
      */
     String backgroundTextSite;
     /***

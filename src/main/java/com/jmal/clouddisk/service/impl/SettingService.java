@@ -1,22 +1,20 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.lang.Console;
+import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.model.UserAccessTokenDO;
-import com.jmal.clouddisk.model.UserAccessTokenDTO;
-import com.jmal.clouddisk.model.WebsiteSettingDTO;
-import com.jmal.clouddisk.model.WebsiteSettingDO;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -61,6 +59,9 @@ public class SettingService {
 
     @Autowired
     private RoleService roleService;
+
+    @Autowired
+    UserLoginHolder userLoginHolder;
 
     @PostConstruct
     public void init(){
@@ -112,8 +113,30 @@ public class SettingService {
     public ResponseResult<Object> websiteUpdate(WebsiteSettingDO websiteSettingDO) {
         Query query = new Query();
         Update update = MongoUtil.getUpdate(websiteSettingDO);
+        // 添加心语记录
+        addHeartwings(websiteSettingDO);
         mongoTemplate.upsert(query, update, COLLECTION_NAME_WEBSITE_SETTING);
         return ResultUtil.success();
+    }
+
+    /***
+     * 添加心语记录
+     * @param websiteSettingDO WebsiteSettingDO
+     */
+    private void addHeartwings(WebsiteSettingDO websiteSettingDO) {
+        WebsiteSettingDO websiteSettingDO1 = mongoTemplate.findOne(new Query(), WebsiteSettingDO.class, COLLECTION_NAME_WEBSITE_SETTING);
+        if (websiteSettingDO1 != null){
+            String oldHeartwings = websiteSettingDO1.getBackgroundTextSite();
+            String heartwings = websiteSettingDO.getBackgroundTextSite();
+            if (!StringUtils.isEmpty(oldHeartwings) && !oldHeartwings.equals(heartwings)) {
+                HeartwingsDO heartwingsDO = new HeartwingsDO();
+                heartwingsDO.setCreateTime(LocalDateTimeUtil.now());
+                heartwingsDO.setCreator(userLoginHolder.getUserId());
+                heartwingsDO.setUsername(userLoginHolder.getUsername());
+                heartwingsDO.setHeartwings(heartwings);
+                mongoTemplate.save(heartwingsDO);
+            }
+        }
     }
 
     /***
@@ -135,6 +158,19 @@ public class SettingService {
             websiteSettingDTO.setAvatar(avatar);
         }
         return websiteSettingDTO;
+    }
+
+    public ResponseResult<List<HeartwingsDO>> getWebsiteHeartwings(Integer page, Integer pageSize, String order) {
+        Query query = new Query();
+        long count = mongoTemplate.count(query, HeartwingsDO.class);
+        query.skip(pageSize * (page - 1));
+        query.limit(pageSize);
+        Sort.Direction direction = Sort.Direction.ASC;
+        if ("descending".equals(order)) {
+            direction = Sort.Direction.DESC;
+        }
+        query.with(new Sort(direction, "createTime"));
+        return ResultUtil.success(mongoTemplate.find(query, HeartwingsDO.class)).setCount(count);
     }
 
     /***
@@ -179,4 +215,5 @@ public class SettingService {
         menuService.initMenus();
         roleService.initRoles();
     }
+
 }

@@ -2,6 +2,7 @@ package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
+import com.jmal.clouddisk.model.HeartwingsDO;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.WebsiteSettingDTO;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
@@ -12,6 +13,8 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * @author jmal
@@ -30,6 +33,13 @@ public class WebsiteSettingController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<WebsiteSettingDTO> getWebsiteSetting() {
         return ResultUtil.success(settingService.getWebsiteSetting());
+    }
+
+    @ApiOperation("获取网站心语记录")
+    @GetMapping("/website/heartwings")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseResult<List<HeartwingsDO>> getWebsiteHeartwings(@RequestParam Integer page, @RequestParam Integer pageSize, @RequestParam String order) {
+        return settingService.getWebsiteHeartwings(page, pageSize, order);
     }
 
     @ApiOperation("更新网站设置")
