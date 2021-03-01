@@ -1,6 +1,6 @@
 FROM jmal/mongo:latest
 MAINTAINER zhushilun084@163.com
-
+ENV VERSION 2.1.5
 # 支持中文
 ENV LANG en_US.UTF-8
 
@@ -28,12 +28,12 @@ COPY README.md /usr/local/README.md
 ADD ip2region.db /jmalcloud/
 
 # jmalcloud 后端
-ADD clouddisk-2.1.0-exec.jar /usr/local/
+ADD clouddisk-$VERSION-exec.jar /usr/local/
 # jmalcloud 前端
-ADD dist-2.1.0.tar /jmal-cloud-view/
+ADD dist-$VERSION.tar /jmal-cloud-view/
 
 VOLUME /jmal-cloud-view/ /jmalcloud/
 
 EXPOSE 8088 8080
 
-CMD /usr/bin/mongod --fork --logpath /var/log/mongodb/mongodb.log && /etc/nginx/sbin/nginx && java -jar -Xms50m -Xmx512m clouddisk-2.1.0-exec.jar --logging.level.root=warn --spring.profiles.active=prod --file.rootDir=/jmalcloud/files --file.ip2region-db-path=/jmalcloud/ip2region.db
+CMD /usr/bin/mongod --fork --logpath /var/log/mongodb/mongodb.log && /etc/nginx/sbin/nginx && java -jar -Xms50m -Xmx512m clouddisk-$VERSION-exec.jar --logging.level.root=warn --spring.profiles.active=prod --file.rootDir=/jmalcloud/files --file.ip2region-db-path=/jmalcloud/ip2region.db
