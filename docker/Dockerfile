@@ -11,9 +11,9 @@ COPY README.md /usr/local/README.md
 # ip2region.db
 ADD ip2region.db /jmalcloud/
 
-# jmalcloud 后端
+# jmalcloud 后端 需先把 clouddisk-$VERSION-exec.jar 复制到此目录
 ADD clouddisk-$VERSION-exec.jar /usr/local/
-# jmalcloud 前端
+# jmalcloud 前端 需先把 dist-$VERSION.tar 复制到此目录
 ADD dist-$VERSION.tar /jmal-cloud-view/
 
 VOLUME /jmal-cloud-view/ /jmalcloud/
