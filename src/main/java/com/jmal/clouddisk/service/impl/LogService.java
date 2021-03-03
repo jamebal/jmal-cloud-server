@@ -154,8 +154,10 @@ public class LogService {
         if (ipSearcher != null) {
             try {
                 DataBlock dataBlock = ipSearcher.memorySearch(ip);
-                logOperation.setCityIp(dataBlock.getCityId());
-                logOperation.setIpInfo(region2IpInfo(dataBlock.getRegion()));
+                if (dataBlock != null) {
+                    logOperation.setCityIp(dataBlock.getCityId());
+                    logOperation.setIpInfo(region2IpInfo(dataBlock.getRegion()));
+                }
             } catch (IOException e) {
                 log.error(e.getMessage(), e);
             }

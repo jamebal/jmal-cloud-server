@@ -937,6 +937,17 @@ public class FileServiceImpl implements IFileService {
         if (webSocketSession != null) {
             Map<String, Object> headers = Maps.newHashMap();
             headers.put("url", url);
+            String userId = userLoginHolder.getUserId();
+            if (StringUtils.isEmpty(userId)) {
+                userId = userService.getUserIdByUserName(username);
+            }
+            if (!StringUtils.isEmpty(userId)) {
+                long takeUpSpace = takeUpSpace(userId);
+                headers.put("space", takeUpSpace);
+            }
+            if (message == null) {
+                message = new Document();
+            }
             template.convertAndSendToUser(username, "/queue/update", message, headers);
         }
     }
@@ -958,8 +969,8 @@ public class FileServiceImpl implements IFileService {
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
             mongoTemplate.remove(query, COLLECTION_NAME);
-            pushMessage(username, fileDocument, "deleteFile");
         }
+        pushMessage(username, fileDocument, "deleteFile");
     }
 
     @Override

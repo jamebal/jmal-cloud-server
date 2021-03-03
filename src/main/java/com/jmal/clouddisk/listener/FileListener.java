@@ -42,7 +42,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
             fileService.createFile(username,file);
             log.info("用户:{},新建文件:{}",username,file.getAbsolutePath());
         }catch (Exception e){
-            log.error("新建文件后续操作失败");
+            log.error("新建文件后续操作失败", e);
         }
     }
 
@@ -59,7 +59,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
             fileService.updateFile(username,file);
             log.info("用户:{},修改文件:{}",username,file.getAbsolutePath());
         }catch (Exception e){
-            log.error("修改文件后续操作失败");
+            log.error("修改文件后续操作失败", e);
         }
     }
 
@@ -76,7 +76,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
             fileService.deleteFile(username,file);
             log.info("用户:{},删除文件:{}",username,file.getAbsolutePath());
         }catch (Exception e){
-            log.error("删除文件后续操作失败");
+            log.error("删除文件后续操作失败", e);
         }
     }
 
@@ -93,7 +93,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
             fileService.createFile(username,directory);
             log.info("用户:{},新建目录:{}",username,directory.getAbsolutePath());
         }catch (Exception e){
-            log.error("新建目录后续操作失败");
+            log.error("新建目录后续操作失败", e);
         }
     }
 
@@ -106,7 +106,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
             String username = ownerOfChangeFile(directory.getAbsolutePath());
             log.info("用户:{},修改目录:{}",username,directory.getAbsolutePath());
         }catch (Exception e){
-            log.error("修改目录后续操作失败");
+            log.error("修改目录后续操作失败", e);
         }
     }
 
@@ -123,7 +123,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
             fileService.deleteFile(username,directory);
             log.info("用户:{},删除目录:{}",username,directory.getAbsolutePath());
         }catch (Exception e){
-            log.error("删除目录后续操作失败");
+            log.error("删除目录后续操作失败", e);
         }
     }
 
@@ -140,7 +140,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
             }
             return relativePaths[0];
         }catch (Exception e){
-            log.error("解析路径失败,fileAbsolutePath:{}",fileAbsolutePath);
+            log.error("解析路径失败,fileAbsolutePath:{}", fileAbsolutePath, e);
         }
         return null;
     }
