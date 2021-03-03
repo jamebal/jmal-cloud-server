@@ -1,4 +1,4 @@
-FROM jmal/nginx:latest
+FROM registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmal-nginx:latest
 
 ## 安装mongodb
 RUN echo -e "\
@@ -15,6 +15,23 @@ RUN mkdir -p /data/db /data/configdb /var/log/mongodb /var/run/mongodb
 VOLUME /data/db /data/configdb
 
 RUN mkdir -p /tmp
+
+# 支持中文
+ENV LANG en_US.UTF-8
+
+# 时区
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+RUN echo 'Asia/Shanghai' >/etc/timezone
+
+# 安装java环境
+ADD jdk-8u251-linux-x64.tar.gz /usr/local/
+ENV MYPATH /usr/local
+WORKDIR $MYPATH
+ENV JAVA_HOME /usr/local/jdk1.8.0_251
+ENV CLASSPATH $JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+ENV PATH $PATH:$JAVA_HOME/bin:$CLASSPATH
+
+RUN rm -f /usr/local/jdk-8u251-linux-x64.tar.gz
 
 COPY docker-entrypoint.sh /usr/local/bin/
 
