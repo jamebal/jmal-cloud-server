@@ -238,11 +238,6 @@
                     top.addClass('animateOut')
                     toggleNav.removeClass('animateRight')
                     toggleNav.addClass('animateLeft')
-                    if(body.style.transform.length > 0) {
-                        document.getElementById("sidebar-nav").style.transform = ''
-                        body.style.transform = ''
-                        document.getElementById("toggle-nav").style.transform = ''
-                    }
                 }
                 if(direction === 'up'){
                     top.removeClass('animateOut')

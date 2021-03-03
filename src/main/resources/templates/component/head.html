@@ -14,6 +14,8 @@
 <meta name="title" th:content="${titleName}" />
 <meta name="keywords" th:content="${keywords}"/>
 <meta name="author" th:content="${markdown != null ? markdown.username : ''}">
+<meta name="promote_title" th:content="${titleName}"/>
+<meta name="promote_image" th:content="${markdown != null && markdown.cover !=null ? markdown.cover : setting.backgroundSite}"/>
 <link rel="stylesheet" type="text/css" href="/articles/fontawesome-free-5.11.2-web/css/all.css">
 <link rel="stylesheet" type="text/css" href="/articles/css/light/index-2.0.2.css">
 <link id="theme-css-dark" th:if="${darkTheme}" rel="stylesheet" type="text/css" href="/articles/css/dark/index-2.0.2.css">

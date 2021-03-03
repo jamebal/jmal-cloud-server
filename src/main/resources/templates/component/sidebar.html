@@ -1,11 +1,20 @@
+<style>
+    @media screen and (max-width: 768px) {
+        html {
+            width: 100vw;
+            margin: 0;
+        }
+    }
+</style>
 <div xmlns:th="http://www.thymeleaf.org">
     <div id="toggle-nav">
         <button class="nav-button" onclick="toggle()">MENU</button>
     </div>
     <div id="sidebar-nav">
         <div class="author navbar-header">
-            <a href="/articles">
-                <img th:src="'/articles/s/view/thumbnail?id='+${setting.avatar}" alt="Avatar" width="100" height="100">
+            <a href="/">
+                <img th:src="${setting.siteUrl} + '/s/view/thumbnail?id='+${setting.avatar}" alt="Avatar" width="100"
+                     height="100">
             </a>
         </div>
         <ul id="menu-menu-1" class="menu navbar-nav">
@@ -59,16 +68,17 @@
     </div>
 </div>
 <script>
+    let body = document.getElementById("body")
+    let footer = document.getElementById("footer")
+    let toggleNav = document.getElementById("toggle-nav")
+    let sidebarNav = document.getElementById("sidebar-nav")
     function toggle() {
-        let body = document.getElementById("body")
-        let footer = document.getElementById("footer")
-        let toggleNav = document.getElementById("toggle-nav")
-        let sidebarNav = document.getElementById("sidebar-nav")
-        if(body.style.transform.length > 0){
-            body.style.transform = ''
-            toggleNav.style.transform = ''
-            sidebarNav.style.transform = ''
-            footer.style.transform = ''
+        body = document.getElementById("body")
+        footer = document.getElementById("footer")
+        toggleNav = document.getElementById("toggle-nav")
+        sidebarNav = document.getElementById("sidebar-nav")
+        if (body.style.transform.length > 0) {
+            putAway()
         } else {
             body.style.transform = 'translateX(17.5rem)'
             footer.style.transform = 'translateX(17.5rem)'
@@ -76,4 +86,72 @@
             sidebarNav.style.transform = 'translateX(17.5rem)'
         }
     }
+
+    function putAway() {
+        if (body.style.transform.length > 0) {
+            body.style.transform = ''
+            toggleNav.style.transform = ''
+            sidebarNav.style.transform = ''
+            footer.style.transform = ''
+        }
+    }
+
+    //定义变量，用于记录坐标和角度
+    let startx, starty, movex, movey, endx, endy, nx, ny, angle;
+
+    //开始触摸函数，event为触摸对象
+    function touchs(event) {
+        //通过if语句判断event.type执行了哪个触摸事件
+        if (event.type === "touchstart") {
+            //console.log('开始');
+            //获取开始的位置数组的第一个触摸位置
+            let touch = event.touches[0];
+            //获取第一个坐标的X轴
+            startx = Math.floor(touch.pageX);
+            //获取第一个坐标的X轴
+            starty = Math.floor(touch.pageY);
+            //触摸中的坐标获取
+        } else if (event.type === "touchmove") {
+            //console.log('滑动中');
+            let touch = event.touches[0];
+            movex = Math.floor(touch.pageX);
+            movey = Math.floor(touch.pageY);
+            //当手指离开屏幕或系统取消触摸事件的时候
+        } else if (event.type === "touchend" || event.type === "touchcancel") {
+            //获取最后的坐标位置
+            endx = Math.floor(event.changedTouches[0].pageX);
+            endy = Math.floor(event.changedTouches[0].pageY);
+            //获取开始位置和离开位置的距离
+            nx = endx - startx;
+            ny = endy - starty;
+            //通过坐标计算角度公式 Math.atan2(y,x)*180/Math.PI
+            angle = Math.atan2(ny, nx) * 180 / Math.PI;
+            if (Math.abs(nx) <= 1 || Math.abs(ny) <= 1) {
+                // 滑动距离太近
+                return false;
+            }
+            //通过滑动的角度判断触摸的方向
+            if (angle < 45 && angle >= -45) {
+                // 右滑动
+                return false;
+            } else if (angle < 135 && angle >= 45) {
+                // 下滑动
+                putAway()
+                return false;
+            } else if ((angle <= 180 && angle >= 135) || (angle >= -180 && angle < -135)) {
+                // 左滑动
+                putAway()
+                return false;
+            } else if (angle <= -45 && angle >= -135) {
+                // 上滑动
+                putAway()
+                return false;
+            }
+        }
+    }
+
+    //添加触摸事件的监听，并直行自定义触摸函数
+    window.addEventListener('touchstart', touchs, false);
+    window.addEventListener('touchmove', touchs, false);
+    window.addEventListener('touchend', touchs, false);
 </script>
