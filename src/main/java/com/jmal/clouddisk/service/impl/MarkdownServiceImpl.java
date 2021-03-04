@@ -34,7 +34,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -86,7 +88,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
     @Override
     public ResponseResult<FileDocument> getMarkDownOne(ArticleDTO articleDTO) {
         String mark = articleDTO.getMark();
-        if(StringUtils.isEmpty(mark)){
+        if (StringUtils.isEmpty(mark)) {
             return ResultUtil.success(new FileDocument());
         }
         FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
@@ -122,7 +124,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
                 prefix = "/o/";
             }
             String slug = fileDocument.getSlug();
-            if (StringUtils.isEmpty(slug)){
+            if (StringUtils.isEmpty(slug)) {
                 slug = fileDocument.getId();
             }
             url.setLoc(siteUrl + prefix + slug);
@@ -146,7 +148,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
                 stringBuilder.append("/s/");
             }
             String slug = fileDocument.getSlug();
-            if (StringUtils.isEmpty(slug)){
+            if (StringUtils.isEmpty(slug)) {
                 stringBuilder.append(fileDocument.getId());
             } else {
                 stringBuilder.append(slug);
@@ -232,7 +234,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
     public Page<Object> getArchives(Integer page, Integer pageSize) {
         boolean pagination = false;
         int skip = 0, limit = 10;
-        if(page != null && pageSize != null){
+        if (page != null && pageSize != null) {
             skip = (page - 1) * pageSize;
             limit = pageSize;
             pagination = true;
@@ -247,7 +249,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
                         computed("day", eq("$dateToString", and(eq("format", "%Y-%m"), eq("date", "$uploadDate")))),
                         include("name"),
                         include("slug")))));
-        if(pagination){
+        if (pagination) {
             list.add(skip(skip));
             list.add(limit(limit));
         }
@@ -272,7 +274,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             resultMap.put(day, aList);
         }
         Page<Object> pageResult;
-        if(pagination){
+        if (pagination) {
             pageResult = new Page<>(page - 1, pageSize, Convert.toInt(count));
         } else {
             pageResult = new Page<>(Convert.toInt(count));
@@ -376,7 +378,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (!StringUtils.isEmpty(articleDTO.getKeyword())) {
             query.addCriteria(Criteria.where("contentText").regex(articleDTO.getKeyword(), "i"));
         }
-        if(limit > 0){
+        if (limit > 0) {
             count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
         }
         // 排序
@@ -390,7 +392,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             query.with(new Sort(Sort.Direction.DESC, "uploadDate"));
         }
         query.skip(skip);
-        if(limit > 0){
+        if (limit > 0) {
             query.limit(limit);
         }
         List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
@@ -404,13 +406,13 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     private MarkdownVO getMarkdownVO(FileDocument fileDocument, boolean isDraft) {
         MarkdownVO markdownVO = new MarkdownVO();
-        if(isDraft){
+        if (isDraft) {
             CglibUtil.copy(getFileDocument(fileDocument.getDraft()), markdownVO);
             markdownVO.setId(fileDocument.getId());
         } else {
             CglibUtil.copy(getFileDocument(fileDocument), markdownVO);
         }
-        if(fileDocument.getDraft() != null){
+        if (fileDocument.getDraft() != null) {
             markdownVO.setDraft(true);
         }
         if (markdownVO.getCategoryIds() != null) {
@@ -449,14 +451,14 @@ public class MarkdownServiceImpl implements IMarkdownService {
         Query query1 = new Query();
         query1.addCriteria(Criteria.where("_id").nin(upload.getFileId()));
         query1.addCriteria(Criteria.where("name").is(upload.getFilename()));
-        if(mongoTemplate.exists(query1, FileServiceImpl.COLLECTION_NAME)){
+        if (mongoTemplate.exists(query1, FileServiceImpl.COLLECTION_NAME)) {
             return ResultUtil.warning("该标题已存在");
         }
         boolean isDraft = false;
         boolean isUpdate = false;
         LocalDateTime nowDate = LocalDateTime.now(TimeUntils.ZONE_ID);
         LocalDateTime uploadDate = nowDate;
-        if(upload.getUploadDate() != null){
+        if (upload.getUploadDate() != null) {
             uploadDate = upload.getUploadDate();
         }
         FileDocument fileDocument = new FileDocument();
@@ -466,7 +468,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             isUpdate = true;
             query.addCriteria(Criteria.where("_id").is(upload.getFileId()));
             fileDocument = mongoTemplate.findById(upload.getFileId(), FileDocument.class, FileServiceImpl.COLLECTION_NAME);
-            if(fileDocument == null){
+            if (fileDocument == null) {
                 return ResultUtil.warning("该文档不存在");
             }
         }
@@ -487,10 +489,10 @@ public class MarkdownServiceImpl implements IMarkdownService {
         fileDocument.setCategoryIds(upload.getCategoryIds());
         fileDocument.setTagIds(tagService.getTagIdsByNames(upload.getTagNames()));
         fileDocument.setIsFolder(false);
-        if(upload.getIsAlonePage() != null && upload.getIsAlonePage()){
+        if (upload.getIsAlonePage() != null && upload.getIsAlonePage()) {
             fileDocument.setAlonePage(upload.getIsAlonePage());
         }
-        if(upload.getPageSort() != null){
+        if (upload.getPageSort() != null) {
             fileDocument.setPageSort(upload.getPageSort());
         }
         if (!StringUtils.isEmpty(upload.getIsDraft()) && upload.getIsDraft()) {
@@ -500,7 +502,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             fileDocument.setContentText(upload.getContentText());
             fileDocument.setHtml(upload.getHtml());
         }
-        if(!isDraft){
+        if (!isDraft) {
             fileDocument.setDraft(null);
         }
         Update update = MongoUtil.getUpdate(fileDocument);
@@ -512,11 +514,11 @@ public class MarkdownServiceImpl implements IMarkdownService {
             fileDocument.setContentText(upload.getContentText());
             update.set("draft", fileDocument);
         } else {
-            if(upload.getFileId() != null) {
+            if (upload.getFileId() != null) {
                 update.unset("draft");
             }
         }
-        if(!isUpdate){
+        if (!isUpdate) {
             FileDocument saved = mongoTemplate.save(fileDocument, FileServiceImpl.COLLECTION_NAME);
             upload.setFileId(saved.getId());
             query.addCriteria(Criteria.where("_id").is(saved.getId()));
@@ -544,7 +546,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             currentDirectory = fileService.getUserDirectory(docPaths.toString());
         }
         // 文档为草稿时，文件名使用草稿的文件名
-        if (!StringUtils.isEmpty(upload.getIsDraft()) && upload.getIsDraft()  && !StringUtils.isEmpty(fileDocument.getName())) {
+        if (!StringUtils.isEmpty(upload.getIsDraft()) && upload.getIsDraft() && !StringUtils.isEmpty(fileDocument.getName())) {
             filename = fileDocument.getName();
         }
         File file = Paths.get(fileProperties.getRootDir(), upload.getUsername(), currentDirectory, filename).toFile();
@@ -554,9 +556,9 @@ public class MarkdownServiceImpl implements IMarkdownService {
         boolean isChangeFileName = !StringUtils.isEmpty(fileDocument.getName()) && !filename.equals(fileDocument.getName());
         // 文件路径是否改变
         boolean isChangePath = !StringUtils.isEmpty(fileDocument.getPath()) && !currentDirectory.equals(fileDocument.getPath());
-        if(isChangeFileName || isChangePath){
+        if (isChangeFileName || isChangePath) {
             Path oldPath = Paths.get(fileProperties.getRootDir(), upload.getUsername(), fileDocument.getPath(), fileDocument.getName());
-            if(Files.exists(oldPath)){
+            if (Files.exists(oldPath)) {
                 FileUtil.del(oldPath);
             }
         }
@@ -568,7 +570,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
-        if(fileDocument == null || fileDocument.getDraft() == null){
+        if (fileDocument == null || fileDocument.getDraft() == null) {
             return ResultUtil.success();
         }
         File draftFile = Paths.get(fileProperties.getRootDir(), username, fileDocument.getDraft().getPath(), fileDocument.getDraft().getName()).toFile();
@@ -625,7 +627,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     @Override
     public ResponseResult<Object> uploadMarkdownLinkImage(UploadImageDTO upload) {
-        if(StringUtils.isEmpty(upload.getUrl())){
+        if (StringUtils.isEmpty(upload.getUrl())) {
             return ResultUtil.warning("url不能为空");
         }
         Map<String, String> map = new HashMap<>(2);
@@ -683,11 +685,11 @@ public class MarkdownServiceImpl implements IMarkdownService {
         fileService.upsertFolder(docImagePaths, username, userId);
         File newFile;
         try {
-            if(userService.getDisabledWebp(userId)){
+            if (userService.getDisabledWebp(userId) != ("ico".equals(FileUtil.getSuffix(fileName)))) {
                 newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
                 FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             } else {
-                if(!fileName.endsWith(FileServiceImpl._SUFFIX_WEBP)){
+                if (!fileName.endsWith(FileServiceImpl._SUFFIX_WEBP)) {
                     fileName = fileName + FileServiceImpl._SUFFIX_WEBP;
                 }
                 newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();

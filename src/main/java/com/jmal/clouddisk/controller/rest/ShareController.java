@@ -59,7 +59,7 @@ public class ShareController {
 
     @ApiOperation("生成分享链接")
     @PostMapping("/share/generate")
-    @Permission("cloud:file:upload")
+    @Permission("cloud:file:update")
     @LogOperatingFun
     public ResponseResult<Object> generateLink(@RequestBody ShareDO share) {
         ResultUtil.checkParamIsNull(share.getFileId(), share.getUserId());

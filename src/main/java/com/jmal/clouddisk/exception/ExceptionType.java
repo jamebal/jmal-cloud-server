@@ -103,7 +103,12 @@ public enum ExceptionType {
     /***
      * 禁止访问
      */
-    ACCESS_FORBIDDEN(19, "禁止访问");
+    ACCESS_FORBIDDEN(19, "禁止访问"),
+
+    /***
+     * 空间已满
+     */
+    SPACE_FULL(20, "空间已满");
 
 
     public int getCode() {

@@ -19,6 +19,11 @@ import java.util.concurrent.locks.Lock;
 public class CaffeineUtil {
 
     /***
+     * 空间已满的用户
+     */
+    private final static Cache<String, String> SPACE_FULL = Caffeine.newBuilder().build();
+
+    /***
      * 已上传的分片索引
      */
     private static Cache<String, CopyOnWriteArrayList<Integer>> resumeCache;
@@ -147,6 +152,18 @@ public class CaffeineUtil {
             initMyCache();
         }
         return chunkWriteLockCache;
+    }
+
+    public static void setSpaceFull(String userId) {
+        SPACE_FULL.put(userId, userId);
+    }
+
+    public static void removeSpaceFull(String userId) {
+        SPACE_FULL.invalidate(userId);
+    }
+
+    public static boolean spaceFull(String userId) {
+        return SPACE_FULL.getIfPresent(userId) != null;
     }
 
 }

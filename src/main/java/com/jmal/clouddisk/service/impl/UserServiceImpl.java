@@ -375,7 +375,7 @@ public class UserServiceImpl implements IUserService {
         if(consumer != null && consumer.getWebpDisabled() != null){
             return consumer.getWebpDisabled();
         }
-        return false;
+        return true;
     }
 
     private ConsumerDO getUserInfoByName(String name) {

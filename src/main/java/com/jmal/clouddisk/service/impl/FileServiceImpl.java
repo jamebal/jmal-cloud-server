@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.codec.Base64;
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
@@ -186,16 +187,27 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public long takeUpSpace(String userId) throws CommonException {
-
+        long space = 0;
         List<Bson> list = Arrays.asList(
                 match(eq("userId", userId)),
                 group(new BsonNull(), sum("totalSize", "$size")));
         AggregateIterable aggregateIterable = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
         Document doc = (Document) aggregateIterable.first();
         if (doc != null) {
-            return doc.getLong("totalSize");
+            space = Convert.toLong(doc.get("totalSize"), 0L);
         }
-        return 0;
+        ConsumerDO consumerDO = userService.userInfoById(userId);
+        if (consumerDO != null && consumerDO.getQuota() != null) {
+            if (space >= consumerDO.getQuota() * 1024L * 1024L * 1024L) {
+                // 空间已满
+                CaffeineUtil.setSpaceFull(userId);
+            } else {
+                if (CaffeineUtil.spaceFull(userId)) {
+                    CaffeineUtil.removeSpaceFull(userId);
+                }
+            }
+        }
+        return space;
     }
 
     /***
@@ -379,7 +391,7 @@ public class FileServiceImpl implements IFileService {
             Path parentPath = path.getParent();
             FileUtil.writeFromStream(file.getInputStream(), newFile);
             loopCreateDir(username, Paths.get(fileProperties.getRootDir(), username).getNameCount(), path);
-            if (!userService.getDisabledWebp(userLoginHolder.getUserId())) {
+            if (!userService.getDisabledWebp(userLoginHolder.getUserId()) != ("ico".equals(FileUtil.getSuffix(newFile)))) {
                 fileName += _SUFFIX_WEBP;
             }
             return baseUrl + Paths.get("/file", username, filepath, fileName).toString();
@@ -710,7 +722,7 @@ public class FileServiceImpl implements IFileService {
         upsertFolder(userImagePaths, username, userId);
         File newFile;
         try {
-            if (userService.getDisabledWebp(userId)) {
+            if (userService.getDisabledWebp(userId) != ("ico".equals(FileUtil.getSuffix(fileName)))) {
                 newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
                 FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             } else {
@@ -827,7 +839,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     private File replaceWebp(String userId, File file) {
-        if (userService.getDisabledWebp(userId)) {
+        if (userService.getDisabledWebp(userId) != ("ico".equals(FileUtil.getSuffix(file)))) {
             return file;
         }
         if (SUFFIX_WEBP.equals(FileUtil.getSuffix(file))) {
