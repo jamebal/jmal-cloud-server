@@ -817,7 +817,9 @@ public class FileServiceImpl implements IFileService {
             }
             if (contentType.startsWith(CONTENT_TYPE_IMAGE)) {
                 // 生成缩略图
-                generateThumbnail(file, update);
+                if (!"ico".equals(suffix) && !"svg".equals(suffix)) {
+                    generateThumbnail(file, update);
+                }
             }
             if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
                 // 写入markdown内容
