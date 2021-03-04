@@ -151,12 +151,12 @@ public class ShareServiceImpl implements IShareService {
     }
 
     @Override
-    public ResponseResult<Object> cancelShare(List<String> shareId) {
+    public ResponseResult<Object> cancelShare(String[] shareId) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(shareId));
-        ShareDO shareDO = mongoTemplate.findAndRemove(query, ShareDO.class, COLLECTION_NAME);
-        if (shareDO != null){
-            fileService.unsetShareFile(fileService.getById(shareDO.getFileId()));
+        query.addCriteria(Criteria.where("_id").in((Object[]) shareId));
+        List<ShareDO> shareDOList = mongoTemplate.findAllAndRemove(query, ShareDO.class, COLLECTION_NAME);
+        if (!shareDOList.isEmpty()) {
+            shareDOList.parallelStream().forEach(shareDO -> fileService.unsetShareFile(fileService.getById(shareDO.getFileId())));
         }
         return ResultUtil.success();
     }

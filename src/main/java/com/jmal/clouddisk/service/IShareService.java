@@ -80,7 +80,7 @@ public interface IShareService {
      * @param shareIdList
      * @return
      */
-    ResponseResult<Object> cancelShare(List<String> shareIdList);
+    ResponseResult<Object> cancelShare(String[] shareIdList);
 
     /***
      * 删除关联分享

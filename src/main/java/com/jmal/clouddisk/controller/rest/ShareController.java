@@ -71,9 +71,7 @@ public class ShareController {
     @Permission("cloud:file:delete")
     @LogOperatingFun
     public ResponseResult<Object> cancelShare(String[] shareId) {
-        ResultUtil.checkParamIsNull(shareId);
-        List<String> shareIdList = Arrays.asList(shareId);
-        return shareService.cancelShare(shareIdList);
+        return shareService.cancelShare(shareId);
     }
 
     @ApiOperation("分享列表")
