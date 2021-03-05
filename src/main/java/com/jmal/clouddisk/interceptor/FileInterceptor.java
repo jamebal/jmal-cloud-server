@@ -146,7 +146,7 @@ public class FileInterceptor implements HandlerInterceptor {
      * 如果为公共文件，或者分享有效期内的文件，则允许访问
      * @return true 不允许访问，false 允许访问
      */
-    private boolean isNotAllowAccess(FileDocument fileDocument) {
+    public boolean isNotAllowAccess(FileDocument fileDocument) {
         if (fileDocument == null) {
             return true;
         }

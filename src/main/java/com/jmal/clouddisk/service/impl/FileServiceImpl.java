@@ -26,6 +26,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
 import org.apache.commons.compress.utils.Lists;
+import org.apache.tika.mime.MimeType;
+import org.apache.tika.mime.MimeTypeException;
+import org.apache.tika.mime.MimeTypes;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -41,6 +44,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.socket.WebSocketSession;
+import sun.net.www.content.image.jpeg;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -520,6 +524,9 @@ public class FileServiceImpl implements IFileService {
         if (fileDocument != null) {
             if (fileDocument.getContent() == null) {
                 String currentDirectory = getUserDirectory(fileDocument.getPath());
+                if (StringUtils.isEmpty(username)) {
+                    username = userService.getUserNameById(fileDocument.getUserId());
+                }
                 File file = new File(fileProperties.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
                 if (file.exists()) {
                     fileDocument.setContent(FileUtil.readBytes(file));
@@ -717,6 +724,14 @@ public class FileServiceImpl implements IFileService {
         String username = upload.getUsername();
         String userId = upload.getUserId();
         String fileName = upload.getFilename();
+        MimeTypes allTypes = MimeTypes.getDefaultMimeTypes();
+        MimeType mimeType = null;
+        try {
+            mimeType = allTypes.forName(multipartFile.getContentType());
+            fileName += mimeType.getExtension();
+        } catch (MimeTypeException e) {
+            log.error(e.getMessage(), e);
+        }
         Path userImagePaths = Paths.get(fileProperties.getUserImgDir());
         // userImagePaths 不存在则新建
         upsertFolder(userImagePaths, username, userId);
@@ -734,7 +749,7 @@ public class FileServiceImpl implements IFileService {
         } catch (IOException e) {
             throw new CommonException(2, "上传失败");
         }
-        return createFile(username, newFile, userId, null);
+        return createFile(username, newFile, userId, true);
     }
 
     @Override

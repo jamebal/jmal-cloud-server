@@ -4,6 +4,7 @@ import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.interceptor.FileInterceptor;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.FileDocument;
@@ -50,6 +51,9 @@ public class ShareController {
 
     @Autowired
     IUserService userService;
+
+    @Autowired
+    FileInterceptor fileInterceptor;
 
     @ApiOperation("该分享已失效")
     @GetMapping("/public/s/invalid")
@@ -140,6 +144,9 @@ public class ShareController {
     private ResponseEntity<Object> thumbnail(String id) {
         ResultUtil.checkParamIsNull(id);
         Optional<FileDocument> file = fileService.thumbnail(id, null);
+        if (fileInterceptor.isNotAllowAccess(file.orElse(null))) {
+            return null;
+        }
         return file.<ResponseEntity<Object>>map(fileDocument ->
                 ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + fileDocument.getName())
