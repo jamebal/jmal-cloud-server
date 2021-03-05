@@ -1,6 +1,6 @@
 FROM registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmal-mongo:latest
 MAINTAINER zhushilun084@163.com
-ENV VERSION 2.1.7
+ENV VERSION 2.1.8
 
 RUN mkdir -p /jmalcloud/files /jmal-cloud-view/dist
 

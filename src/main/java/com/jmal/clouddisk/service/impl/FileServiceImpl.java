@@ -44,7 +44,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.socket.WebSocketSession;
-import sun.net.www.content.image.jpeg;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
