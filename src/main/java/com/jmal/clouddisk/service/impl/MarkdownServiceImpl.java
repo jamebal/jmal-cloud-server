@@ -685,7 +685,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         fileService.upsertFolder(docImagePaths, username, userId);
         File newFile;
         try {
-            if (userService.getDisabledWebp(userId) != ("ico".equals(FileUtil.getSuffix(fileName)))) {
+            if (userService.getDisabledWebp(userId) || ("ico".equals(FileUtil.getSuffix(fileName)))) {
                 newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
                 FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             } else {

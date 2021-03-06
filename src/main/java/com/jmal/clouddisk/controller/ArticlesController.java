@@ -138,7 +138,7 @@ public class ArticlesController {
     }
 
     private String setDescription(ArticleVO articleVO) {
-        return articleVO.getHtml().substring(0, 500).replaceAll("<[^>]*>","");
+        return articleVO.getHtml().substring(0, Math.min(articleVO.getHtml().length(), 500)).replaceAll("<[^>]*>","");
     }
 
     private String setKeywords(ArticleVO articleVO) {

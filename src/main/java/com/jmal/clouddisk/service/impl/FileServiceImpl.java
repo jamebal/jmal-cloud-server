@@ -394,7 +394,7 @@ public class FileServiceImpl implements IFileService {
             Path parentPath = path.getParent();
             FileUtil.writeFromStream(file.getInputStream(), newFile);
             loopCreateDir(username, Paths.get(fileProperties.getRootDir(), username).getNameCount(), path);
-            if (!userService.getDisabledWebp(userLoginHolder.getUserId()) != ("ico".equals(FileUtil.getSuffix(newFile)))) {
+            if (!userService.getDisabledWebp(userLoginHolder.getUserId()) && (!"ico".equals(FileUtil.getSuffix(newFile)))) {
                 fileName += _SUFFIX_WEBP;
             }
             return baseUrl + Paths.get("/file", username, filepath, fileName).toString();
@@ -736,7 +736,7 @@ public class FileServiceImpl implements IFileService {
         upsertFolder(userImagePaths, username, userId);
         File newFile;
         try {
-            if (userService.getDisabledWebp(userId) != ("ico".equals(FileUtil.getSuffix(fileName)))) {
+            if (userService.getDisabledWebp(userId) || ("ico".equals(FileUtil.getSuffix(fileName)))) {
                 newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
                 FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             } else {
@@ -855,7 +855,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     private File replaceWebp(String userId, File file) {
-        if (userService.getDisabledWebp(userId) != ("ico".equals(FileUtil.getSuffix(file)))) {
+        if (userService.getDisabledWebp(userId) || ("ico".equals(FileUtil.getSuffix(file)))) {
             return file;
         }
         if (SUFFIX_WEBP.equals(FileUtil.getSuffix(file))) {
