@@ -450,6 +450,17 @@ public class UserServiceImpl implements IUserService {
         return "";
     }
 
+    @Override
+    public String getShowNameById(String userId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(userId));
+        ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
+        if(consumerDO != null){
+            return consumerDO.getShowName();
+        }
+        return "";
+    }
+
     /***
      * 获取创建者的头像
      * @return 头像文件Id

@@ -230,20 +230,10 @@ public class FileInterceptor implements HandlerInterceptor {
 
     private void responseWritImage(HttpServletResponse response, String fileName, byte[] img) {
         responseHeader(response, fileName, img);
-        ServletOutputStream outputStream = null;
-        try {
-            outputStream = response.getOutputStream();
+        try (ServletOutputStream outputStream = response.getOutputStream()) {
             outputStream.write(img);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
-        } finally {
-            if (outputStream != null) {
-                try {
-                    outputStream.close();
-                } catch (IOException e) {
-                    log.error(e.getMessage(), e);
-                }
-            }
         }
     }
 

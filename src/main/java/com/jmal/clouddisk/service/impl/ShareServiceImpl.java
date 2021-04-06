@@ -1,11 +1,10 @@
 package com.jmal.clouddisk.service.impl;
 
-import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.ShareDO;
-import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
@@ -36,6 +35,12 @@ public class ShareServiceImpl implements IShareService {
 
     @Autowired
     MongoTemplate mongoTemplate;
+
+    @Autowired
+    IUserService userService;
+
+    @Autowired
+    SettingService settingService;
 
     @Override
     public ResponseResult<Object> generateLink(ShareDO share) {
@@ -172,5 +177,17 @@ public class ShareServiceImpl implements IShareService {
             query.addCriteria(Criteria.where("userId").in(userId));
             mongoTemplate.remove(query, COLLECTION_NAME);
         });
+    }
+
+    @Override
+    public ResponseResult<SharerDTO> getSharer(String userId) {
+        SharerDTO sharerDTO = new SharerDTO();
+        sharerDTO.setShowName(userService.getShowNameById(userId));
+        sharerDTO.setUserId(userId);
+        WebsiteSettingDTO websiteSettingDTO = settingService.getWebsiteSetting();
+        if (websiteSettingDTO != null) {
+            sharerDTO.setAvatar(websiteSettingDTO.getSiteUrl() + "/s/view/thumbnail?id=" + websiteSettingDTO.getAvatar());
+        }
+        return ResultUtil.success(sharerDTO);
     }
 }

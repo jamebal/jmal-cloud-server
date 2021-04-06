@@ -20,15 +20,20 @@
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
-        <milton.version>2.7.1.5</milton.version>
+<!--        <milton.version>2.7.1.5</milton.version>-->
     </properties>
 
 
     <dependencies>
+<!--        <dependency>-->
+<!--            <groupId>io.milton</groupId>-->
+<!--            <artifactId>milton-server-ent</artifactId>-->
+<!--            <version>${milton.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>io.milton</groupId>
-            <artifactId>milton-server-ent</artifactId>
-            <version>${milton.version}</version>
+            <artifactId>milton-server-ce</artifactId>
+            <version>2.7.1.7</version>
         </dependency>
         <dependency>
             <groupId>com.github.nintha</groupId>
@@ -109,18 +114,6 @@
             <version>2.6</version>
         </dependency>
 
-        <!-- swagger2 用于JSON API文档的生成-->
-        <!--<dependency>-->
-            <!--<groupId>io.springfox</groupId>-->
-            <!--<artifactId>springfox-swagger2</artifactId>-->
-            <!--&lt;!&ndash;<version>2.9.2</version>&ndash;&gt;-->
-        <!--</dependency>-->
-        <!-- swagger-ui 用于文档界面展示-->
-        <!--<dependency>-->
-            <!--<groupId>io.springfox</groupId>-->
-            <!--<artifactId>springfox-swagger-ui</artifactId>-->
-            <!--<version>2.9.2</version>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
             <artifactId>knife4j-spring-boot-starter</artifactId>
@@ -180,7 +173,7 @@
             <version>3.8.0</version>
         </dependency>
 
-        <!--websokcet-->
+        <!--websocket-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>

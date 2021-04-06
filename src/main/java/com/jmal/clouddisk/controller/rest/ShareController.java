@@ -5,11 +5,8 @@ import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.FileInterceptor;
-import com.jmal.clouddisk.model.LogOperation;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
-import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.ShareDO;
-import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
@@ -92,6 +89,13 @@ public class ShareController {
     public ResponseResult<Object> accessShare(@RequestParam String share, Integer pageIndex, Integer pageSize) {
         ResultUtil.checkParamIsNull(share);
         return shareService.accessShare(share, pageIndex, pageSize);
+    }
+
+    @ApiOperation("获取分享者信息")
+    @GetMapping("/public/get/sharer")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseResult<SharerDTO> getSharer(@RequestParam String userId) {
+        return shareService.getSharer(userId);
     }
 
     @ApiOperation("访问分享链接里的目录")

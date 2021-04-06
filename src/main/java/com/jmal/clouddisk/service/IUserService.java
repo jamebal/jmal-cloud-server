@@ -159,4 +159,11 @@ public interface IUserService {
      * @return userId
      */
     String getUserIdByShowName(String showName);
+
+    /***
+     * 获取用户昵称
+     * @param userId userId
+     * @return 昵称
+     */
+    String getShowNameById(String userId);
 }

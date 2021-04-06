@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service;
 
 import com.jmal.clouddisk.model.ShareDO;
+import com.jmal.clouddisk.model.SharerDTO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -87,4 +88,11 @@ public interface IShareService {
      * @param userList
      */
     void deleteAllByUser(List<ConsumerDO> userList);
+
+    /***
+     * 获取分享者信息
+     * @param userId userId
+     * @return ResponseResult
+     */
+    ResponseResult<SharerDTO> getSharer(String userId);
 }
