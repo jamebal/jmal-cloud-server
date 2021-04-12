@@ -20,20 +20,26 @@
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
-<!--        <milton.version>2.7.1.5</milton.version>-->
     </properties>
-
-
     <dependencies>
-<!--        <dependency>-->
-<!--            <groupId>io.milton</groupId>-->
-<!--            <artifactId>milton-server-ent</artifactId>-->
-<!--            <version>${milton.version}</version>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>io.milton</groupId>
             <artifactId>milton-server-ce</artifactId>
             <version>2.7.1.7</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mozilla.intl.chardet</groupId>
+            <artifactId>chardet</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${pom.basedir}/libs/ext/chardet-1.0.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>net.sourceforge.cpdetector</groupId>
+            <artifactId>cpdetector</artifactId>
+            <version>1.0.10</version>
+            <scope>system</scope>
+            <systemPath>${pom.basedir}/libs/cpdetector_1.0.10.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.github.nintha</groupId>
