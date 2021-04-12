@@ -3,6 +3,9 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.extra.cglib.CglibUtil;
@@ -22,6 +25,7 @@ import com.jmal.clouddisk.websocket.SocketManager;
 import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.result.UpdateResult;
+import info.monitorenter.cpdetector.io.*;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
@@ -57,6 +61,7 @@ import java.io.*;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -470,7 +475,7 @@ public class FileServiceImpl implements IFileService {
                 if (file.length() > 1024 * 1024 * 5) {
                     fileDocument.setContentText(MyFileUtils.readLines(file, 1000));
                 } else {
-                    fileDocument.setContentText(FileUtil.readString(file, StandardCharsets.UTF_8));
+                    fileDocument.setContentText(FileUtil.readString(file, MyFileUtils.getFileEncode(file)));
                 }
             }
             return Optional.of(fileDocument);
@@ -502,7 +507,7 @@ public class FileServiceImpl implements IFileService {
         if (file.length() > 1024 * 1024 * 5) {
             fileDocument.setContentText(MyFileUtils.readLines(file, 1000));
         } else {
-            fileDocument.setContentText(FileUtil.readString(file, StandardCharsets.UTF_8));
+            fileDocument.setContentText(FileUtil.readString(file, MyFileUtils.getFileEncode(file)));
         }
         Path path1 = path.subpath(0, path.getNameCount() - 1);
         int rootCount = Paths.get(fileProperties.getRootDir(), username).getNameCount();
@@ -837,7 +842,7 @@ public class FileServiceImpl implements IFileService {
             }
             if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
                 // 写入markdown内容
-                String markDownContent = FileUtil.readString(file, StandardCharsets.UTF_8);
+                String markDownContent = FileUtil.readString(file, MyFileUtils.getFileEncode(file));
                 update.set("contentText", markDownContent);
             }
         }
@@ -943,7 +948,7 @@ public class FileServiceImpl implements IFileService {
             fileDocument.setUpdateDate(updateDate);
             if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
                 // 写入markdown内容
-                String markDownContent = FileUtil.readString(file, StandardCharsets.UTF_8);
+                String markDownContent = FileUtil.readString(file, MyFileUtils.getFileEncode(file));
                 update.set("contentText", markDownContent);
             }
             pushMessage(username, fileDocument, "updateFile");

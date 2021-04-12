@@ -97,7 +97,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             fileDocument.setUsername(username);
             String currentDirectory = fileService.getUserDirectory(fileDocument.getPath());
             File file = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName()).toFile();
-            String content = FileUtil.readString(file, StandardCharsets.UTF_8);
+            String content = FileUtil.readString(file, MyFileUtils.getFileEncode(file));
             fileDocument.setContentText(content);
         }
         return ResultUtil.success(fileDocument);
