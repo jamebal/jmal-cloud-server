@@ -20,21 +20,20 @@
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
+
+        <milton.version>3.0.0.180</milton.version>
+
     </properties>
     <dependencies>
         <dependency>
             <groupId>io.milton</groupId>
-            <artifactId>milton-server-ce</artifactId>
-            <version>2.7.1.7</version>
-            <scope>system</scope>
-            <systemPath>${pom.basedir}/libs/milton-server-ce-2.7.1.7.jar</systemPath>
+            <artifactId>milton-api</artifactId>
+            <version>${milton.version}</version>
         </dependency>
         <dependency>
             <groupId>io.milton</groupId>
-            <artifactId>milton-api</artifactId>
-            <version>2.7.1.7</version>
-            <scope>system</scope>
-            <systemPath>${pom.basedir}/libs/milton-api-2.7.1.7.jar</systemPath>
+            <artifactId>milton-server-ce</artifactId>
+            <version>${milton.version}</version>
         </dependency>
         <dependency>
             <groupId>org.mozilla.intl.chardet</groupId>
