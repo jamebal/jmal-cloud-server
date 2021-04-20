@@ -21,19 +21,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
 
-        <milton.version>3.0.0.180</milton.version>
-
     </properties>
     <dependencies>
         <dependency>
             <groupId>io.milton</groupId>
-            <artifactId>milton-api</artifactId>
-            <version>${milton.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.milton</groupId>
             <artifactId>milton-server-ce</artifactId>
-            <version>${milton.version}</version>
+            <version>3.0.0.180</version>
         </dependency>
         <dependency>
             <groupId>org.mozilla.intl.chardet</groupId>
