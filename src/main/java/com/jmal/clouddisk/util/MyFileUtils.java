@@ -1,15 +1,10 @@
 package com.jmal.clouddisk.util;
 
-import ch.qos.logback.classic.Logger;
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileReader;
-import cn.hutool.core.lang.Console;
 import info.monitorenter.cpdetector.io.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.stream.Collectors;
 
 /**
@@ -78,7 +73,7 @@ public class MyFileUtils {
 }
 
 class ReaderHandlerString implements FileReader.ReaderHandler {
-    private int lines;
+    private final int lines;
     public ReaderHandlerString(int lines){
         this.lines = lines;
     }
