@@ -71,7 +71,7 @@ public class ShareController {
     @DeleteMapping("/share/cancel")
     @Permission("cloud:file:delete")
     @LogOperatingFun
-    public ResponseResult<Object> cancelShare(String[] shareId) {
+    public ResponseResult<Object> cancelShare(@RequestParam String[] shareId) {
         return shareService.cancelShare(shareId);
     }
 
@@ -112,7 +112,7 @@ public class ShareController {
     @ApiOperation("打包下载")
     @GetMapping("/public/s/packageDownload")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public void publicPackageDownload(HttpServletRequest request, HttpServletResponse response, @RequestParam String shareId, String[] fileIds) {
+    public void publicPackageDownload(HttpServletRequest request, HttpServletResponse response, @RequestParam String shareId, @RequestParam String[] fileIds) {
         boolean whetherExpired = shareService.checkWhetherExpired(shareId);
         if(whetherExpired){
             if (fileIds != null && fileIds.length > 0) {

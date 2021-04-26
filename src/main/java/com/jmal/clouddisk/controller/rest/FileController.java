@@ -175,7 +175,7 @@ public class FileController {
     @GetMapping("/packageDownload")
     @LogOperatingFun
     @Permission("cloud:file:download")
-    public void packageDownload(HttpServletRequest request, HttpServletResponse response, String[] fileIds) {
+    public void packageDownload(HttpServletRequest request, HttpServletResponse response, @RequestParam String[] fileIds) {
         if (fileIds != null && fileIds.length > 0) {
             List<String> fileIdList = Arrays.asList(fileIds);
             fileService.packageDownload(request, response, fileIdList);
@@ -220,7 +220,7 @@ public class FileController {
     @PostMapping("/favorite")
     @LogOperatingFun
     @Permission("cloud:file:update")
-    public ResponseResult<Object> favorite(String[] fileIds) {
+    public ResponseResult<Object> favorite(@RequestParam String[] fileIds) {
         if (fileIds != null && fileIds.length > 0) {
             List<String> list = Arrays.asList(fileIds);
             return fileService.favorite(list);
@@ -242,7 +242,7 @@ public class FileController {
     @PostMapping("/unFavorite")
     @LogOperatingFun
     @Permission("cloud:file:update")
-    public ResponseResult<Object> unFavorite(String[] fileIds) {
+    public ResponseResult<Object> unFavorite(@RequestParam String[] fileIds) {
         if (fileIds != null && fileIds.length > 0) {
             List<String> list = Arrays.asList(fileIds);
             return fileService.unFavorite(list);
@@ -255,7 +255,7 @@ public class FileController {
     @DeleteMapping("/delete")
     @LogOperatingFun
     @Permission("cloud:file:delete")
-    public ResponseResult<Object> delete(String username, String[] fileIds) {
+    public ResponseResult<Object> delete(String username, @RequestParam  String[] fileIds) {
         if (fileIds != null && fileIds.length > 0) {
             List<String> list = Arrays.asList(fileIds);
             return fileService.delete(username, list);
@@ -276,7 +276,7 @@ public class FileController {
     @GetMapping("/move")
     @LogOperatingFun
     @Permission("cloud:file:update")
-    public ResponseResult<Object> move(UploadApiParamDTO upload, String[] froms, String to) {
+    public ResponseResult<Object> move(UploadApiParamDTO upload, @RequestParam String[] froms, String to) {
         if (froms != null && froms.length > 0) {
             List<String> list = Arrays.asList(froms);
             return fileService.move(upload, list, to);
@@ -289,7 +289,7 @@ public class FileController {
     @GetMapping("/copy")
     @LogOperatingFun
     @Permission("cloud:file:update")
-    public ResponseResult<Object> copy(UploadApiParamDTO upload, String[] froms, String to) {
+    public ResponseResult<Object> copy(UploadApiParamDTO upload, @RequestParam String[] froms, String to) {
         if (froms != null && froms.length > 0) {
             List<String> list = Arrays.asList(froms);
             return fileService.copy(upload, list, to);

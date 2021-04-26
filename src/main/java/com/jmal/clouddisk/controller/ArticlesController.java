@@ -12,7 +12,7 @@ import com.jmal.clouddisk.service.impl.TagService;
 import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.ModelMap;
+import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -54,7 +54,7 @@ public class ArticlesController {
 
     @GetMapping("/public/404")
     @LogOperatingFun(value = "404", logType = LogOperation.Type.ARTICLE)
-    public String notFind(HttpServletRequest request, ModelMap map) {
+    public String notFind(HttpServletRequest request, Model map) {
         boolean isPjax = pjaxMap(request, map, "404");
         map.addAttribute("titleName", "页面没有找到");
         return isPjax ? "404" : "index";
@@ -76,7 +76,7 @@ public class ArticlesController {
 
     @GetMapping("/articles")
     @LogOperatingFun(value = "文章列表", logType = LogOperation.Type.ARTICLE)
-    public String index(HttpServletRequest request, ModelMap map) {
+    public String index(HttpServletRequest request, Model map) {
         map.addAttribute("mark", "articles");
         boolean isPjax = isPjax(request);
         WebsiteSettingDTO websiteSettingDTO;
@@ -98,7 +98,7 @@ public class ArticlesController {
 
     @GetMapping("/articles/o/{slug}")
     @LogOperatingFun(value = "独立页面", logType = LogOperation.Type.ARTICLE)
-    public String alonePage(HttpServletRequest request, @PathVariable String slug, ModelMap map) {
+    public String alonePage(HttpServletRequest request, @PathVariable String slug, Model map) {
         String url = "/articles/o/" + slug;
         long visits = logService.getVisitsByUrl(url);
         map.addAttribute("visits", visits);
@@ -108,7 +108,7 @@ public class ArticlesController {
 
     @GetMapping("/articles/s/{slug}")
     @LogOperatingFun(value = "文章", logType = LogOperation.Type.ARTICLE)
-    public String article(HttpServletRequest request, @PathVariable String slug, ModelMap map) {
+    public String article(HttpServletRequest request, @PathVariable String slug, Model map) {
         String url = "/articles/s/" + slug;
         long visits = logService.getVisitsByUrl(url);
         map.addAttribute("visits", visits);
@@ -116,7 +116,7 @@ public class ArticlesController {
         return articlePage(request, slug, map);
     }
 
-    private String articlePage(HttpServletRequest request, String slug, ModelMap map) {
+    private String articlePage(HttpServletRequest request, String slug, Model map) {
         boolean isPjax = pjaxMap(request, map, "article");
         ArticleVO articleVO = fileService.getMarkDownContentBySlug(slug);
         if (articleVO == null) {
@@ -157,7 +157,7 @@ public class ArticlesController {
 
     @GetMapping("/articles/categories")
     @LogOperatingFun(value = "文章分类", logType = LogOperation.Type.ARTICLE)
-    public String categories(HttpServletRequest request, ModelMap map) {
+    public String categories(HttpServletRequest request, Model map) {
         boolean isPjax = pjaxMap(request, map, "categories");
         map.addAttribute("titleName", "分类");
         map.addAttribute("categories", categoryService.list(null, null));
@@ -166,7 +166,7 @@ public class ArticlesController {
 
     @GetMapping("/articles/archives")
     @LogOperatingFun(value = "文章归档", logType = LogOperation.Type.ARTICLE)
-    public String archives(HttpServletRequest request, ModelMap map) {
+    public String archives(HttpServletRequest request, Model map) {
         boolean isPjax = pjaxMap(request, map, "archives");
         map.addAttribute("titleName", "归档");
         int page = 1, pageSize = 100;
@@ -180,7 +180,7 @@ public class ArticlesController {
 
     @GetMapping("/articles/categories/{categorySlugName}")
     @LogOperatingFun(value = "文章分类", logType = LogOperation.Type.ARTICLE)
-    public String getCategoryByName(HttpServletRequest request, ModelMap map, @PathVariable String categorySlugName) {
+    public String getCategoryByName(HttpServletRequest request, Model map, @PathVariable String categorySlugName) {
         boolean isPjax = pjaxMap(request, map, "articles-query");
         if (StringUtils.isEmpty(categorySlugName)) {
             return notFind(request, map);
@@ -207,7 +207,7 @@ public class ArticlesController {
 
     @GetMapping("/articles/tags")
     @LogOperatingFun(value = "文章标签", logType = LogOperation.Type.ARTICLE)
-    public String tags(HttpServletRequest request, ModelMap map) {
+    public String tags(HttpServletRequest request, Model map) {
         boolean isPjax = pjaxMap(request, map, "tags");
         map.addAttribute("titleName", "标签");
         map.addAttribute("tags", tagService.listTagsOfArticle());
@@ -216,7 +216,7 @@ public class ArticlesController {
 
     @GetMapping("/articles/tags/{tagSlugName}")
     @LogOperatingFun(value = "文章标签", logType = LogOperation.Type.ARTICLE)
-    public String getTagByName(HttpServletRequest request, ModelMap map, @PathVariable String tagSlugName) {
+    public String getTagByName(HttpServletRequest request, Model map, @PathVariable String tagSlugName) {
         boolean isPjax = pjaxMap(request, map, "articles-query");
         if (StringUtils.isEmpty(tagSlugName)) {
             return notFind(request, map);
@@ -243,7 +243,7 @@ public class ArticlesController {
 
     @GetMapping("/articles/search")
     @LogOperatingFun(value = "文章搜索", logType = LogOperation.Type.ARTICLE)
-    public String search(HttpServletRequest request, ModelMap map, @RequestParam String keyword) {
+    public String search(HttpServletRequest request, Model map, @RequestParam String keyword) {
         boolean isPjax = pjaxMap(request, map, "articles-query");
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
@@ -265,7 +265,7 @@ public class ArticlesController {
 
     @GetMapping("/articles/author/{username}")
     @LogOperatingFun(value = "文章作者", logType = LogOperation.Type.ARTICLE)
-    public String author(HttpServletRequest request, ModelMap map, @PathVariable String username) {
+    public String author(HttpServletRequest request, Model map, @PathVariable String username) {
         boolean isPjax = pjaxMap(request, map, "articles-query");
         String userId = userService.getUserIdByShowName(username);
         if (StringUtils.isEmpty(userId)) {
@@ -289,7 +289,7 @@ public class ArticlesController {
         return isPjax ? "articles-query" : "index";
     }
 
-    private WebsiteSettingDTO getSetting(HttpServletRequest request, ModelMap map) {
+    private WebsiteSettingDTO getSetting(HttpServletRequest request, Model map) {
         WebsiteSettingDTO websiteSettingDTO = settingService.getWebsiteSetting();
         setOperatingButtonList(websiteSettingDTO);
         List<MarkdownVO> markdownVOList = fileService.getAlonePages();
@@ -349,14 +349,10 @@ public class ArticlesController {
      * @return boolean
      */
     private boolean isPjax(HttpServletRequest request) {
-        boolean pjax = false;
-        if (X_PJAX_TRUE.equals(request.getHeader(X_PJAX))) {
-            pjax = true;
-        }
-        return pjax;
+        return X_PJAX_TRUE.equals(request.getHeader(X_PJAX));
     }
 
-    private boolean pjaxMap(HttpServletRequest request, ModelMap map, String viewName) {
+    private boolean pjaxMap(HttpServletRequest request, Model map, String viewName) {
         boolean isPjax = isPjax(request);
         if (!isPjax) {
             getSetting(request, map);
