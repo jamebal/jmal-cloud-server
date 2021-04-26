@@ -13,7 +13,7 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
  */
 @Configuration
 @EnableWebSocketMessageBroker
-public class WebSocketAutoConfig extends AbstractWebSocketMessageBrokerConfigurer implements WebSocketMessageBrokerConfigurer {
+public class WebSocketAutoConfig implements WebSocketMessageBrokerConfigurer {
 
     @Autowired
     private WebSocketDecoratorFactory webSocketDecoratorFactory;

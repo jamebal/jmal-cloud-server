@@ -197,7 +197,7 @@ public class CategoryService {
      * @param categoryIds 分类id集合
      * @return 分类列表
      */
-    public List<CategoryDO> getCategoryListByIds(String[] categoryIds) {
+    public List<CategoryDO> getCategoryListByIds(Object[] categoryIds) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(categoryIds));
         return mongoTemplate.find(query, CategoryDO.class, COLLECTION_NAME);

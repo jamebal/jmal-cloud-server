@@ -72,7 +72,7 @@ public class MyFileUtils {
 
 }
 
-class ReaderHandlerString implements FileReader.ReaderHandler {
+class ReaderHandlerString implements FileReader.ReaderHandler<Object> {
     private final int lines;
     public ReaderHandlerString(int lines){
         this.lines = lines;

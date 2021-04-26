@@ -238,7 +238,7 @@ public class TagService {
      * @param tagIds 标签id集合
      * @return 标签列表
      */
-    public List<TagDO> getTagListByIds(String[] tagIds) {
+    public List<TagDO> getTagListByIds(Object[] tagIds) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(tagIds));
         return mongoTemplate.find(query, TagDO.class, COLLECTION_NAME);
