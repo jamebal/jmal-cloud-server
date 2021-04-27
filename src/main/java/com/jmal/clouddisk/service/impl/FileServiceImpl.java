@@ -1206,6 +1206,13 @@ public class FileServiceImpl implements IFileService {
         mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
     }
 
+    @Override
+    public List<FileDocument> getAllFile() {
+        Query query = new Query();
+        query.fields().include("_id").include("name").include("contentText");
+        return mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+    }
+
     private void setShareOneFile(String fileId, long expiresAt) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileId));

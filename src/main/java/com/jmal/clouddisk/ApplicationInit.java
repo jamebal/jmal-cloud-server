@@ -3,6 +3,7 @@ package com.jmal.clouddisk;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.listener.FileListener;
 import com.jmal.clouddisk.listener.TempDirFilter;
+import com.jmal.clouddisk.service.impl.LuceneService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
@@ -32,6 +33,9 @@ public class ApplicationInit implements ApplicationRunner {
     @Autowired
     FileListener fileListener;
 
+    @Autowired
+    private LuceneService service;
+
     @Override
     public void run(ApplicationArguments args) throws Exception {
         // 判断是否开启文件监控
@@ -55,5 +59,8 @@ public class ApplicationInit implements ApplicationRunner {
         // 开始监控
         monitor.start();
         log.info("\r\n文件监控服务已开启:\r\n轮询间隔:{}秒\n监控目录:{}\n忽略目录:{}", fileProperties.getTimeInterval(), rootDir, rootDir.toString() + File.separator + fileProperties.getChunkFileDir());
+
+        // 同步 fileDocument 索引
+        service.synFileCreatIndex();
     }
 }
