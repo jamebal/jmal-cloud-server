@@ -88,6 +88,7 @@ public class LogOperatingAspect {
         // swagger的ApiOperation注解, 用来获取操作说明
         ApiOperation apiOperation = method.getAnnotation(ApiOperation.class);
         // swagger的Api注解, 用来获取操作模块
+        @SuppressWarnings("unchecked")
         Api api = (Api) joinPoint.getSourceLocation().getWithinType().getAnnotation(Api.class);
         if(api != null){
             logOperation.setOperationModule(api.tags()[0]);

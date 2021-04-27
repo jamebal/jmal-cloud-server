@@ -72,6 +72,7 @@ public class LogService {
      * @param request HttpServletRequest
      * @param response HttpServletResponse
      */
+    @SuppressWarnings("unchecked")
     public void addLogBefore(LogOperation logOperation, Object result, HttpServletRequest request, HttpServletResponse response) {
         // 用户
         String username = logOperation.getUsername();
@@ -287,7 +288,7 @@ public class LogService {
         if (pageIndex == null) {
             pageIndex = 1;
         }
-        long skip = (pageIndex - 1) * pageSize;
+        long skip = (long) (pageIndex - 1) * pageSize;
         query.skip(skip);
         query.limit(pageSize);
     }
