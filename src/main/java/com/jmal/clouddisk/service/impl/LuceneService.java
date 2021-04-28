@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.http.HtmlUtil;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.IFileService;
@@ -12,16 +13,20 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.highlight.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.PreDestroy;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author jmal
@@ -50,8 +55,8 @@ public class LuceneService {
             Document doc = new Document();
             doc.add(new StringField("id", file.getId(), Field.Store.YES));
             doc.add(new TextField("name", file.getName(), Field.Store.YES));
-            if (file.getContentText() != null){
-                doc.add(new TextField("contentText", file.getContentText(), Field.Store.YES));
+            if (file.getHtml() != null) {
+                doc.add(new TextField("html", file.getHtml(), Field.Store.YES));
             }
             docs.add(doc);
         }
@@ -59,29 +64,46 @@ public class LuceneService {
         indexWriter.commit();
     }
 
-    public ResponseResult<List<FileDocument>> searchFile(SearchDTO searchDTO) throws IOException, ParseException {
-        searcherManager.maybeRefresh();
-        IndexSearcher indexSearcher = searcherManager.acquire();
-
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-
+    public ResponseResult<List<FileDocument>> searchFile(SearchDTO searchDTO) throws IOException, ParseException, InvalidTokenOffsetsException {
         // 模糊匹配,匹配词
         String keyword = searchDTO.getKeyword();
-        if (!StringUtils.isEmpty(keyword)) {
-            // 输入空格,不进行模糊查询
-            if (!"".equals(keyword.replaceAll(" ", ""))) {
-                builder.add(new QueryParser("name", analyzer).parse(keyword), BooleanClause.Occur.MUST);
-            }
+        if (StringUtils.isEmpty(keyword)) {
+            return ResultUtil.success();
         }
-        TopDocs topDocs = indexSearcher.search(builder.build(), 10);
-        ScoreDoc[] hits = topDocs.scoreDocs;
+        searcherManager.maybeRefresh();
+        IndexSearcher indexSearcher = searcherManager.acquire();
         List<FileDocument> fileList = new ArrayList<>();
-        for (ScoreDoc hit : hits) {
-            Document doc = indexSearcher.doc(hit.doc);
-            FileDocument fileDocument = new FileDocument();
-            fileDocument.setId(doc.get("id"));
-            fileDocument.setName(doc.get("name"));
-            fileList.add(fileDocument);
+        String fieldName = "html";
+        try {
+            String[] fields = new String[]{fieldName, "name"};
+            Map<String, Float> boots = new HashMap<>(5);
+            boots.put(fieldName, 10.0f);
+            boots.put("name", 2.0f);
+
+
+            MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, analyzer, boots);
+            Query query = parser.parse(keyword);
+            // 高亮格式，用<B>标签包裹
+            Highlighter highlighter = new Highlighter(new SimpleHTMLFormatter("<B>", "</B>"),
+                    new QueryScorer(query));
+            // 高亮后的段落范围在100字内
+            Fragmenter fragmenter = new SimpleFragmenter(50);
+            highlighter.setTextFragmenter(fragmenter);
+
+            ScoreDoc[] hits = indexSearcher.search(query, 5).scoreDocs;
+            for (ScoreDoc hit : hits) {
+                Document doc = indexSearcher.doc(hit.doc);
+                FileDocument fileDocument = new FileDocument();
+                fileDocument.setId(doc.get("id"));
+                fileDocument.setName(doc.get("name"));
+                String text = doc.get(fieldName);
+                if (text != null) {
+                    fileDocument.setContentText(highlighter.getBestFragment(analyzer, fieldName, HtmlUtil.cleanHtmlTag(text)));
+                }
+                fileList.add(fileDocument);
+            }
+        } finally {
+            searcherManager.release(indexSearcher);
         }
         return ResultUtil.success(fileList);
     }
@@ -94,5 +116,10 @@ public class LuceneService {
         // 再插入file
         createFileIndex(allProduct);
         log.info("同步索引耗时: {}ms", System.currentTimeMillis() - startTime);
+    }
+
+    @PreDestroy
+    public void destroy() throws IOException {
+        searcherManager.close();
     }
 }

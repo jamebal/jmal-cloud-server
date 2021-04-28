@@ -9,9 +9,11 @@ import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.annotation.PreDestroy;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -42,13 +44,7 @@ public class LuceneConfig {
      */
     @Bean
     public Directory indexDir() throws IOException {
-        Path path = Paths.get(LUCENE_INDEX_PATH);
-        File file = path.toFile();
-        if (!file.exists()) {
-            //如果文件夹不存在,则创建
-            file.mkdirs();
-        }
-        return FSDirectory.open(path);
+        return FSDirectory.open(Paths.get(LUCENE_INDEX_PATH));
     }
 
     /**
@@ -62,6 +58,7 @@ public class LuceneConfig {
     public IndexWriter indexWriter(Directory directory, Analyzer analyzer) throws IOException {
         IndexWriterConfig indexWriterConfig = new IndexWriterConfig(analyzer);
         IndexWriter indexWriter = new IndexWriter(directory, indexWriterConfig);
+
         // 清空索引
         indexWriter.deleteAll();
         indexWriter.commit();
@@ -86,5 +83,6 @@ public class LuceneConfig {
         cRTReopenThead.start();
         return searcherManager;
     }
+
 }
 
