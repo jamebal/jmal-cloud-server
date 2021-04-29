@@ -18,7 +18,7 @@ package com.jmal.clouddisk.lucene;
 
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -42,6 +42,15 @@ import java.util.Date;
  * 在不使用命令行参数的情况下运行它以获取使用情况信息
  */
 public class IndexFiles {
+
+    /**
+     * 索引目录
+     */
+    public static final String INDEX_PATH = "/Users/jmal/temp/lucene/index";
+    /**
+     * 文档目录
+     */
+    public static final String DOCS_PATH = "/Users/jmal/temp/filetest/rootpath/jmal/Document";
 
     private IndexFiles() {
     }
@@ -70,15 +79,14 @@ public class IndexFiles {
             }
         }
 
-        // 手动赋值
-        // INDEX_PATH
-        indexPath = "/Users/jmal/temp/lucene/index";
-        // DOCS_PATH
-        docsPath = "/Users/jmal/temp/filetest/rootpath/jmal/文件类型测试";
-
         if (docsPath == null) {
-            System.err.println("使用方法: " + usage);
-            System.exit(1);
+            // 手动赋值
+            // INDEX_PATH
+            indexPath = INDEX_PATH;
+            // DOCS_PATH
+            docsPath = DOCS_PATH;
+            // System.err.println("使用方法: " + usage);
+            // System.exit(1);
         }
 
         final Path docDir = Paths.get(docsPath);
@@ -92,7 +100,7 @@ public class IndexFiles {
             System.out.println("对目录 '" + indexPath + "' 编制索引... ");
 
             Directory dir = FSDirectory.open(Paths.get(indexPath));
-            Analyzer analyzer = new StandardAnalyzer();
+            Analyzer analyzer = new SmartChineseAnalyzer(true);
             IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
 
             if (create) {

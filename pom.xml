@@ -52,23 +52,11 @@
             <artifactId>lucene-analyzers-smartcn</artifactId>
             <version>${lucene.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
             <version>${lucene.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-facet</artifactId>
-            <version>${lucene.version}</version>
-        </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.apache.lucene</groupId>-->
-<!--            <artifactId>lucene-demo</artifactId>-->
-<!--            <version>${lucene.version}</version>-->
-<!--        </dependency>-->
-
         <!-- spring-->
         <dependency>
             <groupId>org.springframework.boot</groupId>

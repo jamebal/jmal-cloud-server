@@ -1207,8 +1207,10 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public List<FileDocument> getAllFile() {
+    public List<FileDocument> getAllDocFile() {
         Query query = new Query();
+        query.addCriteria(Criteria.where("html").exists(true));
+        query.addCriteria(Criteria.where("release").is(true));
         query.fields().include("_id").include("name").include("html");
         return mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
     }

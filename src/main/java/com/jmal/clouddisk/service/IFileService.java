@@ -348,7 +348,8 @@ public interface IFileService {
     void setPublic(String fileId);
 
     /***
-     * 获取所有文件
+     * 获取所有文档数据
+     * 一般是已发布的博客文章, 不包含未发布或者私密的文章
      */
-    List<FileDocument> getAllFile();
+    List<FileDocument> getAllDocFile();
 }
