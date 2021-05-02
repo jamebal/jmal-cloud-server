@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import cn.hutool.core.util.URLUtil;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -7,7 +8,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * @Description UploadApiParam
@@ -154,4 +154,12 @@ public class UploadApiParamDTO {
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime uploadDate;
+
+    public String getFilename() {
+        return URLUtil.decode(filename);
+    }
+
+    public String getRelativePath() {
+        return URLUtil.decode(relativePath);
+    }
 }
