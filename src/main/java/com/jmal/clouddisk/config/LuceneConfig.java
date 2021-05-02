@@ -60,8 +60,8 @@ public class LuceneConfig {
         IndexWriter indexWriter = new IndexWriter(directory, indexWriterConfig);
 
         // 清空索引
-        indexWriter.deleteAll();
-        indexWriter.commit();
+        // indexWriter.deleteAll();
+        // indexWriter.commit();
         return indexWriter;
     }
 

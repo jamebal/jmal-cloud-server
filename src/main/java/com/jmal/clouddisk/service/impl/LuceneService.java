@@ -149,13 +149,16 @@ public class LuceneService {
     }
 
     public void synFileCreatIndex() throws IOException {
-        log.info("同步索引...");
-        long startTime = System.currentTimeMillis();
-        // 获取所有的file
-        List<FileDocument> allProduct = fileService.getAllDocFile();
-        // 再插入file
-        createFileIndex(allProduct);
-        log.info("同步索引耗时: {}ms", System.currentTimeMillis() - startTime);
+        IndexWriter.DocStats docStats = indexWriter.getDocStats();
+        if (docStats.numDocs < 1) {
+            log.info("同步Lucene索引... {}", docStats.numDocs);
+            long startTime = System.currentTimeMillis();
+            // 获取所有的file
+            List<FileDocument> allProduct = fileService.getAllDocFile();
+            // 再插入file
+            createFileIndex(allProduct);
+            log.info("同步Lucene索引耗时: {}ms", System.currentTimeMillis() - startTime);
+        }
     }
 
     @PreDestroy
