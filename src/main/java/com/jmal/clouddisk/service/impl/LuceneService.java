@@ -3,7 +3,6 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.http.HtmlUtil;
-import com.github.houbb.word.checker.util.EnWordCheckers;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.IFileService;
@@ -141,7 +140,6 @@ public class LuceneService {
         //5.利用while循环，拿到分词列表的结果  incrementToken方法返回值如果为false代表读取完毕  true代表没有读取完毕
         while (tokenStream.incrementToken()){
             String word = charTermAttribute.toString();
-            System.out.println(word + "," + EnWordCheckers.isCorrect(word) + "," + word.length());
         }
         //6.关闭
         tokenStream.close();

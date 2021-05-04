@@ -3,6 +3,7 @@ push.sh
 update.sh
 HELP.md
 /log/
+/lucene/
 /docker/
 target/
 !.mvn/wrapper/maven-wrapper.jar
