@@ -35,6 +35,13 @@ public class WebsiteSettingController {
         return ResultUtil.success(settingService.getWebsiteSetting());
     }
 
+    @ApiOperation("获取网站备案信息")
+    @GetMapping("/public/website/record")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseResult<WebsiteSettingDTO> getWebsiteRecord() {
+        return ResultUtil.success(settingService.getWebsiteRecord());
+    }
+
     @ApiOperation("获取网站心语记录")
     @GetMapping("/website/heartwings")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)

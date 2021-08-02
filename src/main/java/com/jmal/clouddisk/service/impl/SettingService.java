@@ -139,6 +139,19 @@ public class SettingService {
         }
     }
 
+    /**
+     * 获取网站备案信息
+     *
+     * @return WebsiteSettingDTO
+     */
+    public WebsiteSettingDTO getWebsiteRecord() {
+        WebsiteSettingDTO websiteSettingDTO = getWebsiteSetting();
+        WebsiteSettingDTO websiteSettingDTO1 = new WebsiteSettingDTO();
+        websiteSettingDTO1.setCopyright(websiteSettingDTO.getCopyright());
+        websiteSettingDTO1.setRecordPermissionNum(websiteSettingDTO.getRecordPermissionNum());
+        return websiteSettingDTO1;
+    }
+
     /***
      * 获取网站设置
      * @return ResponseResult
@@ -163,7 +176,7 @@ public class SettingService {
     public ResponseResult<List<HeartwingsDO>> getWebsiteHeartwings(Integer page, Integer pageSize, String order) {
         Query query = new Query();
         long count = mongoTemplate.count(query, HeartwingsDO.class);
-        query.skip(pageSize * (page - 1));
+        query.skip((long) pageSize * (page - 1));
         query.limit(pageSize);
         Sort.Direction direction = Sort.Direction.ASC;
         if ("descending".equals(order)) {
