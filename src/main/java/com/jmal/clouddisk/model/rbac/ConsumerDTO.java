@@ -7,6 +7,7 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -42,6 +43,7 @@ public class ConsumerDTO {
     List<String> roles;
     @ApiModelProperty(name = "roleList", value = "角色集合", hidden = true)
     List<RoleDTO> roleList;
+    @Max(value = 1073741824, message = "配额过大")
     @ApiModelProperty(name = "quota", value = "默认配额, 10G", example = "10")
     Integer quota;
     @ApiModelProperty(name = "takeUpSpace", value = "已使用的空间")
