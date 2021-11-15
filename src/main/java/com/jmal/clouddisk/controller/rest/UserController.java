@@ -51,7 +51,7 @@ public class UserController {
     @PutMapping("/update")
     @Permission("sys:user:update")
     @LogOperatingFun
-    public ResponseResult<Object> update(@Validated ConsumerDTO consumerDTO, MultipartFile blobAvatar){
+    public ResponseResult<Object> update(ConsumerDTO consumerDTO, MultipartFile blobAvatar){
         return service.update(consumerDTO, blobAvatar);
     }
 
@@ -59,7 +59,7 @@ public class UserController {
     @PutMapping("/update-pass")
     @Permission("sys:user:update")
     @LogOperatingFun
-    public ResponseResult<Object> updatePass(@Validated ConsumerDO consumer){
+    public ResponseResult<Object> updatePass(ConsumerDO consumer){
         return service.updatePass(consumer);
     }
 
@@ -67,7 +67,7 @@ public class UserController {
     @PutMapping("/reset-pass")
     @Permission(value = "sys:user:update")
     @LogOperatingFun
-    public ResponseResult<Object> resetPass(@Validated ConsumerDO consumer){
+    public ResponseResult<Object> resetPass(ConsumerDO consumer){
         return service.resetPass(consumer);
     }
 
