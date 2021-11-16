@@ -39,7 +39,7 @@ docker build -t jmalcloud:$version --build-arg version=$version .
 
 pushDocker() {
   echo "Push the image to the $1 ..."
-  docker login --username=bjmal --password=$password "$1"
+  cat pwd.txt | docker login --username=bjmal --password-stdin "$1"
   docker tag jmalcloud:$version "$1/jmalcloud/jmalcloud:$version"
   docker tag jmalcloud:$version "$1/jmalcloud/jmalcloud:latest"
   docker push "$1/jmalcloud/jmalcloud:$version"
