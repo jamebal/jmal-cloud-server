@@ -1,7 +1,8 @@
 package com.jmal.clouddisk.util;
 
 import cn.hutool.core.io.FileUtil;
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
+
 
 import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
@@ -49,7 +50,7 @@ public class FileFinderUtil {
             tempFile = queue.pop();
             if (tempFile.exists() && tempFile.isDirectory()) {
                 File[] files = tempFile.listFiles(pathname -> {
-                    if(StringUtils.isEmpty(type)){
+                    if(StrUtil.isBlank(type)){
                         return true;
                     }
                     if(pathname.isFile()){
@@ -67,7 +68,7 @@ public class FileFinderUtil {
                     //如果是目录则放进队列
                     if (file.isDirectory()) {
                         queue.add(file);
-                        if(!StringUtils.isEmpty(type)){
+                        if(!StrUtil.isBlank(type)){
                             continue;
                         }
                     }

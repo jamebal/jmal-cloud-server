@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IFileService;
@@ -14,7 +15,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -121,15 +122,15 @@ public class ShareServiceImpl implements IShareService {
         Query query = new Query();
         query.addCriteria(Criteria.where("userId").is(upload.getUserId()));
         String order = FileServiceImpl.listByPage(upload, query);
-        if (StringUtils.isEmpty(order)) {
-            query.with(new Sort(Sort.Direction.DESC, "createDate"));
+        if (StrUtil.isBlank(order)) {
+            query.with(Sort.by(Sort.Direction.DESC, "createDate"));
         } else {
             String sortableProp = upload.getSortableProp();
             Sort.Direction direction = Sort.Direction.ASC;
             if ("descending".equals(order)) {
                 direction = Sort.Direction.DESC;
             }
-            query.with(new Sort(direction, sortableProp));
+            query.with(Sort.by(direction, sortableProp));
         }
         return mongoTemplate.find(query, ShareDO.class, COLLECTION_NAME);
     }

@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
@@ -20,7 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StringUtils;
+
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -97,11 +98,11 @@ public class FileController {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "缺少文件参数, file");
         }
         String filepath = request.getHeader("filepath");
-        if (StringUtils.isEmpty(filepath)) {
+        if (StrUtil.isBlank(filepath)) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "headers里缺少参数, filepath: 远程目标文件夹, 例如: '/Image/Typora/Public/Images'");
         }
         String baseUrl = request.getHeader("baseurl");
-        if (StringUtils.isEmpty(baseUrl)) {
+        if (StrUtil.isBlank(baseUrl)) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "headers里缺少参数, baseUrl: 远程服务器地址, 例如: 'https://www.jmal.top/api'");
         }
         return fileService.imgUpload(baseUrl, filepath, file);

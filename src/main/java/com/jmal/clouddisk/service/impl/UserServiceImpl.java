@@ -3,6 +3,7 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.CharsetUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.Mode;
 import cn.hutool.crypto.Padding;
 import cn.hutool.crypto.SecureUtil;
@@ -28,7 +29,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -123,11 +123,11 @@ public class UserServiceImpl implements IUserService {
     public ResponseResult<Object> update(ConsumerDTO user, MultipartFile blobAvatar) {
         Query query = new Query();
         String userId = user.getId();
-        if (!StringUtils.isEmpty(userId)) {
+        if (!StrUtil.isBlank(userId)) {
             query.addCriteria(Criteria.where("_id").is(userId));
         } else {
             String name = user.getUsername();
-            if (!StringUtils.isEmpty(name)) {
+            if (!StrUtil.isBlank(name)) {
                 query.addCriteria(Criteria.where("username").is(name));
             } else {
                 return ResultUtil.success();
@@ -135,7 +135,7 @@ public class UserServiceImpl implements IUserService {
         }
         Update update = new Update();
         String showName = user.getShowName();
-        if (!StringUtils.isEmpty(showName)) {
+        if (!StrUtil.isBlank(showName)) {
             update.set("showName", showName);
         }
         Integer quota = user.getQuota();
@@ -143,17 +143,17 @@ public class UserServiceImpl implements IUserService {
             update.set("quota", quota);
         }
         String slogan = user.getSlogan();
-        if (!StringUtils.isEmpty(slogan)) {
+        if (!StrUtil.isBlank(slogan)) {
             update.set("slogan", slogan);
         }
         String introduction = user.getIntroduction();
-        if (!StringUtils.isEmpty(introduction)) {
+        if (!StrUtil.isBlank(introduction)) {
             update.set("introduction", introduction);
         } else {
             update.set("introduction", "");
         }
         String fileId = "";
-        if (!StringUtils.isEmpty(user.getAvatar())) {
+        if (!StrUtil.isBlank(user.getAvatar())) {
             fileId = user.getAvatar();
             update.set("avatar", fileId);
         }
@@ -199,7 +199,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public ConsumerDO userInfoById(String userId) {
-        if (StringUtils.isEmpty(userId)) {
+        if (StrUtil.isBlank(userId)) {
             return null;
         }
         return mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
@@ -210,10 +210,10 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         MongoUtil.commonQuery(queryDTO, query);
-        if(!StringUtils.isEmpty(queryDTO.getUsername())){
+        if(!StrUtil.isBlank(queryDTO.getUsername())){
             query.addCriteria(Criteria.where("username").regex(queryDTO.getUsername(), "i"));
         }
-        if(!StringUtils.isEmpty(queryDTO.getShowName())){
+        if(!StrUtil.isBlank(queryDTO.getShowName())){
             query.addCriteria(Criteria.where("showName").regex(queryDTO.getShowName(), "i"));
         }
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
@@ -231,11 +231,11 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public String getUserName(String token) {
-        if (StringUtils.isEmpty(token)) {
+        if (StrUtil.isBlank(token)) {
             throw new CommonException(ExceptionType.PERMISSION_DENIED.getCode(), ExceptionType.PERMISSION_DENIED.getMsg());
         }
         String username = tokenCache.getIfPresent(token);
-        if (StringUtils.isEmpty(username)) {
+        if (StrUtil.isBlank(username)) {
             throw new CommonException(ExceptionType.PERMISSION_DENIED.getCode(), ExceptionType.PERMISSION_DENIED.getMsg());
         }
         return username;
@@ -245,7 +245,7 @@ public class UserServiceImpl implements IUserService {
     public ResponseResult<Object> updatePass(ConsumerDO consumer) {
         String userId = consumer.getId();
         String newPassword = consumer.getPassword();
-        if (!StringUtils.isEmpty(userId) && !StringUtils.isEmpty(newPassword)) {
+        if (!StrUtil.isBlank(userId) && !StrUtil.isBlank(newPassword)) {
             ConsumerDO consumer1 = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
             if(consumer1 != null){
                 if (newPassword.equals(consumer1.getPassword())) {
@@ -268,7 +268,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public ResponseResult<Object> resetPass(ConsumerDO consumer) {
         String userId = consumer.getId();
-        if (!StringUtils.isEmpty(userId)) {
+        if (!StrUtil.isBlank(userId)) {
             Query query = new Query();
             query.addCriteria(Criteria.where("_id").is(userId));
             Update update = new Update();
@@ -347,7 +347,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public String getUserNameById(String userId) {
-        if (!StringUtils.isEmpty(userId)) {
+        if (!StrUtil.isBlank(userId)) {
             ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
             if (consumer != null) {
                 return consumer.getUsername();

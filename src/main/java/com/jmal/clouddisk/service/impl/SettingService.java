@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
@@ -19,7 +20,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -128,7 +129,7 @@ public class SettingService {
         if (websiteSettingDO1 != null){
             String oldHeartwings = websiteSettingDO1.getBackgroundTextSite();
             String heartwings = websiteSettingDO.getBackgroundTextSite();
-            if (!StringUtils.isEmpty(oldHeartwings) && !oldHeartwings.equals(heartwings)) {
+            if (!StrUtil.isBlank(oldHeartwings) && !oldHeartwings.equals(heartwings)) {
                 HeartwingsDO heartwingsDO = new HeartwingsDO();
                 heartwingsDO.setCreateTime(LocalDateTimeUtil.now());
                 heartwingsDO.setCreator(userLoginHolder.getUserId());
@@ -167,7 +168,7 @@ public class SettingService {
             websiteSettingDTO.setAlonePages(new ArrayList<>());
         }
         String avatar = userService.getCreatorAvatar();
-        if(!StringUtils.isEmpty(avatar)){
+        if(!StrUtil.isBlank(avatar)){
             websiteSettingDTO.setAvatar(avatar);
         }
         return websiteSettingDTO;
@@ -182,7 +183,7 @@ public class SettingService {
         if ("descending".equals(order)) {
             direction = Sort.Direction.DESC;
         }
-        query.with(new Sort(direction, "createTime"));
+        query.with(Sort.by(direction, "createTime"));
         return ResultUtil.success(mongoTemplate.find(query, HeartwingsDO.class)).setCount(count);
     }
 

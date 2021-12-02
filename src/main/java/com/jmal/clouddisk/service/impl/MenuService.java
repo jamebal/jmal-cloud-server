@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
@@ -16,7 +17,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -51,14 +51,14 @@ public class MenuService {
      */
     public List<MenuDTO> tree(QueryMenuDTO queryDTO) {
         Query query = new Query();
-        if(!StringUtils.isEmpty(queryDTO.getName())){
+        if(!StrUtil.isBlank(queryDTO.getName())){
             query.addCriteria(Criteria.where("name").regex(queryDTO.getName(), "i"));
         }
         List<String> menuIdList = null;
-        if(!StringUtils.isEmpty(queryDTO.getUserId())){
+        if(!StrUtil.isBlank(queryDTO.getUserId())){
             menuIdList = userService.getMenuIdList(queryDTO.getUserId());
         }
-        if(!StringUtils.isEmpty(queryDTO.getRoleId())) {
+        if(!StrUtil.isBlank(queryDTO.getRoleId())) {
             if(menuIdList != null){
                 menuIdList.addAll(roleService.getMenuIdList(queryDTO.getRoleId()));
             } else {
@@ -68,7 +68,7 @@ public class MenuService {
         if(menuIdList != null){
             query.addCriteria(Criteria.where("_id").in(menuIdList));
         }
-        if(!StringUtils.isEmpty(queryDTO.getPath())){
+        if(!StrUtil.isBlank(queryDTO.getPath())){
             query.addCriteria(Criteria.where("path").regex(queryDTO.getPath(), "i"));
             query.addCriteria(Criteria.where("component").regex(queryDTO.getPath(), "i"));
         }
@@ -91,9 +91,9 @@ public class MenuService {
     private List<MenuDTO> getSubMenu(String parentId, List<MenuDTO> menuDTOList) {
         List<MenuDTO> menuDTOTreeList = new ArrayList<>();
         List<MenuDTO> menuList;
-        if (StringUtils.isEmpty(parentId)) {
+        if (StrUtil.isBlank(parentId)) {
             menuList = menuDTOList.stream().filter(menuDTO ->
-                    StringUtils.isEmpty(menuDTO.getParentId())).sorted().collect(Collectors.toList());
+                    StrUtil.isBlank(menuDTO.getParentId())).sorted().collect(Collectors.toList());
         } else {
             menuList = menuDTOList.stream().filter(menuDTO -> parentId.equals(menuDTO.getParentId())).sorted().collect(Collectors.toList());
         }
@@ -138,7 +138,7 @@ public class MenuService {
         if (existsMenuName(menuDTO.getName())) {
             return ResultUtil.warning("该菜单名称已存在");
         }
-        if (!StringUtils.isEmpty(menuDTO.getParentId())) {
+        if (!StrUtil.isBlank(menuDTO.getParentId())) {
             MenuDO menuDO = getMenuInfo(menuDTO.getParentId());
             if (menuDO == null) {
                 return ResultUtil.warning("该父分级菜单不存在");
@@ -223,7 +223,7 @@ public class MenuService {
         query.addCriteria(Criteria.where("_id").in(menuIdList));
         List<MenuDO> menuDOList = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME);
         menuDOList.forEach(menuDO -> {
-            if(!StringUtils.isEmpty(menuDO.getAuthority())){
+            if(!StrUtil.isBlank(menuDO.getAuthority())){
                 authorities.add(menuDO.getAuthority());
             }
         });

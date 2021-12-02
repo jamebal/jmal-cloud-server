@@ -1,8 +1,9 @@
 package com.jmal.clouddisk.annotation;
 
+import cn.hutool.core.util.StrUtil;
 import org.reflections.Reflections;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
+
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PostConstruct;
@@ -22,7 +23,7 @@ public class AnnoManageUtil {
      * 权限标识列表
      */
     public static final List<String> AUTHORITIES = new ArrayList<>();
- 
+
     /**
      * 通过反射获取所有的权限标识
      *
@@ -42,7 +43,7 @@ public class AnnoManageUtil {
                 if(permission == null){
                     continue;
                 }
-                if(StringUtils.isEmpty(permission.value())){
+                if(StrUtil.isBlank(permission.value())){
                     continue;
                 }
                 if(arrayList.contains(permission.value())){

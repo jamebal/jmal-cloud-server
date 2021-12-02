@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.model.TagDO;
 import com.jmal.clouddisk.model.TagDTO;
@@ -13,7 +14,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -83,7 +84,7 @@ public class TagService {
      */
     private Query getQueryUserId(String userId) {
         Query query = new Query();
-        if (!StringUtils.isEmpty(userId)) {
+        if (!StrUtil.isBlank(userId)) {
             query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
         } else {
             query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
@@ -181,7 +182,7 @@ public class TagService {
     private String getSlug(TagDTO tagDTO) {
         Query query = new Query();
         String slug = tagDTO.getSlug();
-        if (StringUtils.isEmpty(slug)) {
+        if (StrUtil.isBlank(slug)) {
             return tagDTO.getName();
         }
         String id = tagDTO.getId();

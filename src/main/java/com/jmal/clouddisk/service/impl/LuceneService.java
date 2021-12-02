@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HtmlUtil;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.query.SearchDTO;
@@ -25,7 +26,6 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.highlight.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import javax.annotation.PreDestroy;
 import java.io.IOException;
@@ -73,7 +73,7 @@ public class LuceneService {
     public ResponseResult<List<FileDocument>> searchFile(SearchDTO searchDTO) throws IOException, ParseException, InvalidTokenOffsetsException {
         // 模糊匹配,匹配词
         StringBuilder keyword = new StringBuilder(searchDTO.getKeyword());
-        if (StringUtils.isEmpty(keyword.toString())) {
+        if (StrUtil.isBlank(keyword.toString())) {
             return ResultUtil.success();
         }
         searcherManager.maybeRefresh();
@@ -109,7 +109,7 @@ public class LuceneService {
                 FileDocument fileDocument = new FileDocument();
                 fileDocument.setId(doc.get("id"));
                 String name = highlighter.getBestFragment(analyzer, fieldName, doc.get("name"));
-                if (StringUtils.isEmpty(name)) {
+                if (StrUtil.isBlank(name)) {
                     fileDocument.setName(doc.get("name"));
                 } else {
                     fileDocument.setName(name);
@@ -140,6 +140,7 @@ public class LuceneService {
         //5.利用while循环，拿到分词列表的结果  incrementToken方法返回值如果为false代表读取完毕  true代表没有读取完毕
         while (tokenStream.incrementToken()){
             String word = charTermAttribute.toString();
+            System.out.println(word);
         }
         //6.关闭
         tokenStream.close();

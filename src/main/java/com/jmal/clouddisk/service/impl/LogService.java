@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.useragent.UserAgent;
 import cn.hutool.http.useragent.UserAgentUtil;
 import com.jmal.clouddisk.config.FileProperties;
@@ -19,7 +20,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -60,7 +61,7 @@ public class LogService {
     @PostConstruct
     public void initIpDbSearcher() throws DbMakerConfigException, FileNotFoundException {
         String ip2regionDbPath = fileProperties.getIp2regionDbPath();
-        if (!StringUtils.isEmpty(ip2regionDbPath)) {
+        if (!StrUtil.isBlank(ip2regionDbPath)) {
             ipSearcher = new DbSearcher(new DbConfig(), ip2regionDbPath);
         }
     }
@@ -76,7 +77,7 @@ public class LogService {
     public void addLogBefore(LogOperation logOperation, Object result, HttpServletRequest request, HttpServletResponse response) {
         // 用户
         String username = logOperation.getUsername();
-        if (!StringUtils.isEmpty(username)) {
+        if (!StrUtil.isBlank(username)) {
             logOperation.setShowName(userService.getShowNameByUserUsername(username));
         }
         // UserAgent
@@ -117,31 +118,31 @@ public class LogService {
 
     private String getIpAddress(HttpServletRequest request) {
         String ip = request.getHeader("x-forwarded-for");
-        if (!StringUtils.isEmpty(ip)) {
+        if (!StrUtil.isBlank(ip)) {
             // 多次反向代理后会有多个ip值，第一个ip才是真实ip
             if (ip.contains(",")) {
                 ip = ip.split(",")[0];
             }
         }
-        if (StringUtils.isEmpty(ip)) {
+        if (StrUtil.isBlank(ip)) {
             ip = request.getHeader("X-real-ip");
         }
-        if (StringUtils.isEmpty(ip)) {
+        if (StrUtil.isBlank(ip)) {
             ip = request.getHeader("Proxy-Client-IP");
         }
-        if (StringUtils.isEmpty(ip)) {
+        if (StrUtil.isBlank(ip)) {
             ip = request.getHeader("WL-Proxy-Client-IP");
         }
-        if (StringUtils.isEmpty(ip)) {
+        if (StrUtil.isBlank(ip)) {
             ip = request.getHeader("HTTP_CLIENT_IP");
         }
-        if (StringUtils.isEmpty(ip)) {
+        if (StrUtil.isBlank(ip)) {
             ip = request.getHeader("HTTP_X_FORWARDED_FOR");
         }
-        if (StringUtils.isEmpty(ip)) {
+        if (StrUtil.isBlank(ip)) {
             ip = request.getHeader("X-Real-IP");
         }
-        if (StringUtils.isEmpty(ip)) {
+        if (StrUtil.isBlank(ip)) {
             ip = request.getRemoteAddr();
         }
         return ip;
@@ -235,19 +236,19 @@ public class LogService {
     private Query getQuery(LogOperationDTO logOperationDTO) {
         Query query = new Query();
         String excludeUsername = logOperationDTO.getExcludeUsername();
-        if (!StringUtils.isEmpty(excludeUsername)) {
+        if (!StrUtil.isBlank(excludeUsername)) {
             query.addCriteria(Criteria.where("username").nin(userLoginHolder.getUsername()));
         }
         String username = logOperationDTO.getUsername();
-        if (!StringUtils.isEmpty(username)) {
+        if (!StrUtil.isBlank(username)) {
             query.addCriteria(Criteria.where("username").is(username));
         }
         String ip = logOperationDTO.getIp();
-        if (!StringUtils.isEmpty(ip)) {
+        if (!StrUtil.isBlank(ip)) {
             query.addCriteria(Criteria.where("ip").is(ip));
         }
         String type = logOperationDTO.getType();
-        if (!StringUtils.isEmpty(type)) {
+        if (!StrUtil.isBlank(type)) {
             query.addCriteria(Criteria.where("type").is(type));
         }
         Long startTime = logOperationDTO.getStartTime();
@@ -266,15 +267,15 @@ public class LogService {
     private void setSort(LogOperationDTO logOperationDTO, Query query) {
         String sortableProp = logOperationDTO.getSortProp();
         String order = logOperationDTO.getSortOrder();
-        if (StringUtils.isEmpty(sortableProp) || StringUtils.isEmpty(order)) {
-            query.with(new Sort(Sort.Direction.DESC, "createTime"));
+        if (StrUtil.isBlank(sortableProp) || StrUtil.isBlank(order)) {
+            query.with(Sort.by(Sort.Direction.DESC, "createTime"));
             return;
         }
         Sort.Direction direction = Sort.Direction.ASC;
         if ("descending".equals(order)) {
             direction = Sort.Direction.DESC;
         }
-        query.with(new Sort(direction, sortableProp));
+        query.with(Sort.by(direction, sortableProp));
     }
 
     /***

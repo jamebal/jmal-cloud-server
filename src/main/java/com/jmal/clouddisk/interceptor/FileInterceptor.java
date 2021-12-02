@@ -2,6 +2,7 @@ package com.jmal.clouddisk.interceptor;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.IFileService;
@@ -13,7 +14,7 @@ import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
+
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.imageio.IIOImage;
@@ -83,7 +84,7 @@ public class FileInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws UnsupportedEncodingException {
         if (fileAuthError(request)) return false;
         String operation = request.getParameter(OPERATION);
-        if (!StringUtils.isEmpty(operation)) {
+        if (!StrUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD:
                     Path path = Paths.get(request.getRequestURI());
@@ -115,7 +116,7 @@ public class FileInterceptor implements HandlerInterceptor {
     private boolean fileAuthError(HttpServletRequest request) throws UnsupportedEncodingException {
         Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), "UTF-8"));
         String shareKey = request.getParameter(SHARE_KEY);
-        if (!StringUtils.isEmpty(shareKey)) {
+        if (!StrUtil.isBlank(shareKey)) {
             FileDocument fileDocument = fileService.getById(shareKey);
             if (!isNotAllowAccess(fileDocument)) {
                 // 判断当前uri所属的文件是否为该分享的文件或其子文件
@@ -134,7 +135,7 @@ public class FileInterceptor implements HandlerInterceptor {
             if (uriPath.getNameCount() < MIX_COUNT) {
                 return true;
             }
-            if (!StringUtils.isEmpty(username) && username.equals(uriPath.getName(1).toString())) {
+            if (!StrUtil.isBlank(username) && username.equals(uriPath.getName(1).toString())) {
                 return false;
             }
             return isNotAllowAccess(getFileDocument(uriPath));

@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.exception;
 
-import org.springframework.util.StringUtils;
+import cn.hutool.core.util.StrUtil;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -81,7 +81,7 @@ public class CommonException extends RuntimeException {
      */
     public static void checkParam(Object... params) throws CommonException {
         for (Object param : params) {
-            if (StringUtils.isEmpty(param)) {
+            if (StrUtil.isBlankIfStr(param)) {
                 throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
             }
         }

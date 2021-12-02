@@ -11,9 +11,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.exception.ExceptionType;
-import net.sf.cglib.core.Local;
-import org.springframework.util.StringUtils;
 
 import com.jmal.clouddisk.exception.CommonException;
 
@@ -121,7 +120,7 @@ public class TimeUntils {
      * @return
      */
     private static int getMaxDayOfMonth(String time) throws CommonException {
-        if (StringUtils.isEmpty(time)) {
+        if (StrUtil.isBlank(time)) {
             return 30;
         }
         LocalDateTime date = getLocalDateTime(time);

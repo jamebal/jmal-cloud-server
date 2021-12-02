@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.CharsetUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.crypto.symmetric.SymmetricCrypto;
@@ -17,7 +18,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,7 +49,7 @@ public class AuthServiceImpl implements IAuthService {
             return ResultUtil.error("该用户不存在");
         } else {
             String userPassword = user.getPassword();
-            if (!StringUtils.isEmpty(password)) {
+            if (!StrUtil.isBlank(password)) {
                 if (SecureUtil.md5(password).equals(userPassword)) {
                     Map<String, String> map = new HashMap<>(3);
                     String token = TokenUtil.createTokens(userName);
@@ -93,7 +94,7 @@ public class AuthServiceImpl implements IAuthService {
             return ResultUtil.warning("该用户不存在");
         } else {
             String userPassword = user.getPassword();
-            if (!StringUtils.isEmpty(password)) {
+            if (!StrUtil.isBlank(password)) {
                 if (SecureUtil.md5(password).equals(userPassword)) {
                     return ResultUtil.success();
                 }

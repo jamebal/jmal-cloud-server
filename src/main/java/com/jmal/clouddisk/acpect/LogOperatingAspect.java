@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.acpect;
 
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.useragent.UserAgent;
 import cn.hutool.http.useragent.UserAgentUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
@@ -20,7 +21,7 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
+
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -95,7 +96,7 @@ public class LogOperatingAspect {
         }
         // 操作功能
         String operationFun = logOperatingFun.value();
-        if(StringUtils.isEmpty(operationFun)){
+        if(StrUtil.isBlank(operationFun)){
             operationFun = apiOperation.value();
         }
         logOperation.setOperationFun(operationFun);

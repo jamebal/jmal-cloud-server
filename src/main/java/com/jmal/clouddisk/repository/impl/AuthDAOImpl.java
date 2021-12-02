@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.repository.impl;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -14,7 +15,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
-import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
@@ -71,7 +71,7 @@ public class AuthDAOImpl implements IAuthDAO {
 
     @Override
     public void generateAccessToken(UserAccessTokenDO userAccessTokenDO) {
-        if(StringUtils.isEmpty(userAccessTokenDO.getName())){
+        if(StrUtil.isBlank(userAccessTokenDO.getName())){
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }
         Query query = new Query();

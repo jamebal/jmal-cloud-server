@@ -3,7 +3,8 @@ package com.jmal.clouddisk.config;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.mongodb.MongoDbFactory;
+import org.springframework.data.mongodb.MongoDatabaseFactory;
+import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
 import org.springframework.data.mongodb.core.convert.*;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 
@@ -12,20 +13,24 @@ import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
  * @author jmal
  */
 @Configuration
-public class MongoMappingConfig {
-    @Bean
-    public MappingMongoConverter mappingMongoConverter(MongoDbFactory factory,
-                                                       MongoMappingContext context, BeanFactory beanFactory){
-        DbRefResolver dbRefResolver = new DefaultDbRefResolver(factory);
-        MappingMongoConverter converter = new MappingMongoConverter(dbRefResolver,context);
-        try{
-            //指定为MongoCustomConversions,若果项目引用的redis会抛出:available: expected single matching bean but found 2: mongoCustomConversions,redisCustomConversions
-            converter.setCustomConversions(beanFactory.getBean(MongoCustomConversions.class));
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-        //don't save column _class to mongo collection
-        converter.setTypeMapper(new DefaultMongoTypeMapper(null));
-        return converter;
+public class MongoMappingConfig extends AbstractMongoClientConfiguration {
+
+    @Override
+    protected String getDatabaseName() {
+        return "jmalcloud";
     }
+
+    @Override
+    @Bean
+    public MappingMongoConverter mappingMongoConverter(MongoDatabaseFactory databaseFactory, MongoCustomConversions customConversions, MongoMappingContext mappingContext){
+        MappingMongoConverter mmc = super.mappingMongoConverter(databaseFactory,customConversions,mappingContext);
+        mmc.setTypeMapper(defaultMongoTypeMapper());
+        return mmc;
+    }
+
+    @Bean
+    public MongoTypeMapper defaultMongoTypeMapper() {
+        return new DefaultMongoTypeMapper(null);
+    }
+
 }

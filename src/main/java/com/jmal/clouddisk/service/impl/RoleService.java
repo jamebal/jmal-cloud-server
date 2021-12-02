@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
@@ -19,7 +20,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -61,13 +61,13 @@ public class RoleService {
         Query query = new Query();
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         MongoUtil.commonQuery(queryDTO, query);
-        if(!StringUtils.isEmpty(queryDTO.getName())){
+        if(!StrUtil.isBlank(queryDTO.getName())){
             query.addCriteria(Criteria.where("name").regex(queryDTO.getName(), "i"));
         }
-        if(!StringUtils.isEmpty(queryDTO.getCode())){
+        if(!StrUtil.isBlank(queryDTO.getCode())){
             query.addCriteria(Criteria.where("code").regex(queryDTO.getCode(), "i"));
         }
-        if(!StringUtils.isEmpty(queryDTO.getRemarks())){
+        if(!StrUtil.isBlank(queryDTO.getRemarks())){
             query.addCriteria(Criteria.where("remarks").regex(queryDTO.getRemarks(), "i"));
         }
         List<RoleDTO> roleDTOList = mongoTemplate.find(query, RoleDTO.class, COLLECTION_NAME);

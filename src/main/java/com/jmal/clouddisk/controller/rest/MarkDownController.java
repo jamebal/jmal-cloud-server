@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.*;
@@ -11,7 +12,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.util.StringUtils;
+
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,7 +40,7 @@ public class MarkDownController {
     public ResponseResult<?> getMarkDownContent(ArticleDTO articleDTO, Integer pageIndex, Integer pageSize) {
         articleDTO.setPageIndex(pageIndex);
         articleDTO.setPageSize(pageSize);
-        if (StringUtils.isEmpty(articleDTO.getMark())) {
+        if (StrUtil.isBlank(articleDTO.getMark())) {
             return fileService.getMarkdownList(articleDTO);
         } else {
             return fileService.getMarkDownOne(articleDTO);
@@ -84,7 +85,7 @@ public class MarkDownController {
     @Permission("cloud:file:upload")
     @LogOperatingFun
     public ResponseResult<Object> uploadMarkdownImage(UploadImageDTO upload) {
-        if(StringUtils.isEmpty(upload.getUserId()) || StringUtils.isEmpty(upload.getUsername())) {
+        if(StrUtil.isBlank(upload.getUserId()) || StrUtil.isBlank(upload.getUsername())) {
             return ResultUtil.warning("参数里缺少 userId 或 username");
         }
         return fileService.uploadMarkdownImage(upload);
@@ -97,15 +98,15 @@ public class MarkDownController {
     public ResponseResult<Object> uploadMarkdownLinkImage(HttpServletRequest request, @RequestBody UploadImageDTO uploadImageDTO) {
         String userId = uploadImageDTO.getUserId();
         String username = uploadImageDTO.getUsername();
-        if(StringUtils.isEmpty(userId)){
+        if(StrUtil.isBlank(userId)){
             userId = request.getHeader("userId");
             uploadImageDTO.setUserId(userId);
         }
-        if(StringUtils.isEmpty(username)){
+        if(StrUtil.isBlank(username)){
             username = request.getHeader("username");
             uploadImageDTO.setUsername(username);
         }
-        if(StringUtils.isEmpty(userId) || StringUtils.isEmpty(username)) {
+        if(StrUtil.isBlank(userId) || StrUtil.isBlank(username)) {
             return ResultUtil.warning("请求头里或参数里必须含有userId和username");
         }
         return fileService.uploadMarkdownLinkImage(uploadImageDTO);

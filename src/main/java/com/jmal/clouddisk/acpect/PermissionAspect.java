@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.acpect;
 
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
@@ -13,7 +14,7 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
+
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -56,7 +57,7 @@ public class PermissionAspect {
             }
         }
         String authority = permission.value();
-        if (StringUtils.isEmpty(authority)) {
+        if (StrUtil.isBlank(authority)) {
             // 方法上没有权限注解, 直接调用方法
             return joinPoint.proceed();
         }

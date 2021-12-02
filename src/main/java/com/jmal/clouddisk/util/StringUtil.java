@@ -2,7 +2,7 @@ package com.jmal.clouddisk.util;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import org.springframework.util.StringUtils;
+
 
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -48,7 +48,7 @@ public class StringUtil {
      * 文本中是否含有中文
      */
     public static boolean isContainChinese(String str) {
-        if (StringUtils.isEmpty(str)) {
+        if (StrUtil.isBlank(str)) {
             return false;
         }
         Pattern p = Pattern.compile("[\u4e00-\u9fa5]");
@@ -62,7 +62,7 @@ public class StringUtil {
      * 中文 <= 1
      */
     public static boolean isShortStr(String str) {
-        if (StringUtils.isEmpty(str)) {
+        if (StrUtil.isBlank(str)) {
             return true;
         }
         if (isContainChinese(str)) {

@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.websocket;
 
+import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.StringUtils;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,7 +24,7 @@ public class SocketManager {
     }
 
     public static WebSocketSession get(String key) {
-        if(StringUtils.isEmpty(key)){
+        if(StrUtil.isBlank(key)){
             return null;
         }
         return manager.get(key);

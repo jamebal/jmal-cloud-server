@@ -1,12 +1,13 @@
 package com.jmal.clouddisk.listener;
 
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.IFileService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+
 
 import java.io.File;
 
@@ -36,7 +37,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onFileCreate(File file) {
         try{
             String username = ownerOfChangeFile(file.getAbsolutePath());
-            if(StringUtils.isEmpty(username)){
+            if(StrUtil.isBlank(username)){
                 return;
             }
             fileService.createFile(username,file);
@@ -53,7 +54,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onFileChange(File file) {
         try{
             String username = ownerOfChangeFile(file.getAbsolutePath());
-            if(StringUtils.isEmpty(username)){
+            if(StrUtil.isBlank(username)){
                 return;
             }
             fileService.updateFile(username,file);
@@ -70,7 +71,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onFileDelete(File file) {
         try{
             String username = ownerOfChangeFile(file.getAbsolutePath());
-            if(StringUtils.isEmpty(username)){
+            if(StrUtil.isBlank(username)){
                 return;
             }
             fileService.deleteFile(username,file);
@@ -87,7 +88,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onDirectoryCreate(File directory) {
         try{
             String username = ownerOfChangeFile(directory.getAbsolutePath());
-            if(StringUtils.isEmpty(username)){
+            if(StrUtil.isBlank(username)){
                 return;
             }
             fileService.createFile(username,directory);
@@ -117,7 +118,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onDirectoryDelete(File directory) {
         try{
             String username = ownerOfChangeFile(directory.getAbsolutePath());
-            if(StringUtils.isEmpty(username)){
+            if(StrUtil.isBlank(username)){
                 return;
             }
             fileService.deleteFile(username,directory);
