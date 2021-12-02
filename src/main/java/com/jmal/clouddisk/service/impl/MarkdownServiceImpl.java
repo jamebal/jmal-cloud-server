@@ -3,6 +3,7 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
@@ -98,7 +99,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             fileDocument.setUsername(username);
             String currentDirectory = fileService.getUserDirectory(fileDocument.getPath());
             File file = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName()).toFile();
-            String content = FileUtil.readString(file, MyFileUtils.getFileEncode(file));
+            String content = FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file)));
             fileDocument.setContentText(content);
         }
         return ResultUtil.success(fileDocument);

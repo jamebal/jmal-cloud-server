@@ -5,6 +5,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -476,7 +477,7 @@ public class FileServiceImpl implements IFileService {
                 if (file.length() > 1024 * 1024 * 5) {
                     fileDocument.setContentText(MyFileUtils.readLines(file, 1000));
                 } else {
-                    fileDocument.setContentText(FileUtil.readString(file, MyFileUtils.getFileEncode(file)));
+                    fileDocument.setContentText(FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file))));
                 }
             }
             return Optional.of(fileDocument);
@@ -508,7 +509,7 @@ public class FileServiceImpl implements IFileService {
         if (file.length() > 1024 * 1024 * 5) {
             fileDocument.setContentText(MyFileUtils.readLines(file, 1000));
         } else {
-            fileDocument.setContentText(FileUtil.readString(file, MyFileUtils.getFileEncode(file)));
+            fileDocument.setContentText(FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file))));
         }
         Path path1 = path.subpath(0, path.getNameCount() - 1);
         int rootCount = Paths.get(fileProperties.getRootDir(), username).getNameCount();
@@ -843,7 +844,7 @@ public class FileServiceImpl implements IFileService {
             }
             if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
                 // 写入markdown内容
-                String markDownContent = FileUtil.readString(file, MyFileUtils.getFileEncode(file));
+                String markDownContent = FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file)));
                 update.set("contentText", markDownContent);
             }
         }
@@ -949,7 +950,7 @@ public class FileServiceImpl implements IFileService {
             fileDocument.setUpdateDate(updateDate);
             if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
                 // 写入markdown内容
-                String markDownContent = FileUtil.readString(file, MyFileUtils.getFileEncode(file));
+                String markDownContent = FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file)));
                 update.set("contentText", markDownContent);
             }
             pushMessage(username, fileDocument, "updateFile");
