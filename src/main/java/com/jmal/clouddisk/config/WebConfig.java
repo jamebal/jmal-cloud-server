@@ -31,22 +31,22 @@ public class WebConfig implements WebMvcConfigurer {
     @Autowired
     FileInterceptor fileInterceptor;
 
-    /**
-     * 注册拦截器
-     */
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-		registry.addInterceptor(authInterceptor).addPathPatterns("/**").
-				excludePathPatterns("/","/login/**", "/public/**", "/articles/**", "/error/**", "/file/**" , "/files/**");
-        registry.addInterceptor(fileInterceptor).addPathPatterns("/file/**").addPathPatterns("/files/**");
-    }
-
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/file/**")
-                .addResourceLocations("file:" + fileProperties.getRootDir() + File.separator)
-                .setCacheControl(CacheControl.maxAge(7, TimeUnit.DAYS))
-        .resourceChain(true);
-        log.info("静态资源目录:{}", fileProperties.getRootDir() + File.separator);
-    }
+    // /**
+    //  * 注册拦截器
+    //  */
+    // @Override
+    // public void addInterceptors(InterceptorRegistry registry) {
+	// 	registry.addInterceptor(authInterceptor).addPathPatterns("/**").
+	// 			excludePathPatterns("/login/**", "/public/**", "/articles/**", "/error/**", "/file/**" , "/files/**","/swagger-ui/**");
+    //     registry.addInterceptor(fileInterceptor).addPathPatterns("/file/**").addPathPatterns("/files/**");
+    // }
+    //
+    // @Override
+    // public void addResourceHandlers(ResourceHandlerRegistry registry) {
+    //     registry.addResourceHandler("/file/**")
+    //             .addResourceLocations("file:" + fileProperties.getRootDir() + File.separator)
+    //             .setCacheControl(CacheControl.maxAge(7, TimeUnit.DAYS))
+    //     .resourceChain(true);
+    //     log.info("静态资源目录:{}", fileProperties.getRootDir() + File.separator);
+    // }
 }
