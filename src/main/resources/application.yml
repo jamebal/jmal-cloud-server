@@ -22,3 +22,4 @@ springdoc:
     path: /public/api-docs
   swagger-ui:
     path: /public/api
+    doc-expansion: none
