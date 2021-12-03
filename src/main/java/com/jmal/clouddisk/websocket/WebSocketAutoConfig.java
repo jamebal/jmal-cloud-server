@@ -31,7 +31,7 @@ public class WebSocketAutoConfig implements WebSocketMessageBrokerConfigurer {
          * mq表示 你前端到时要对应url映射
          */
         registry.addEndpoint("/mq")
-                .setAllowedOrigins("*")
+                .setAllowedOriginPatterns("*")
                 .addInterceptors(handshakeInterceptor)
                 .setHandshakeHandler(principalHandshakeHandler)
                 .withSockJS();

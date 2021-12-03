@@ -41,7 +41,6 @@ import java.util.Optional;
  */
 @Tag(name = "文件管理")
 @Slf4j
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 public class FileController {
 

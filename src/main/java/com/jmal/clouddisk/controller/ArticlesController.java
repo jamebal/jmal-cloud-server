@@ -27,7 +27,6 @@ import java.util.List;
  * @Description 文章页面
  * @Date 2020/11/16 5:41 下午
  */
-@CrossOrigin(origins = "*", maxAge = 3600)
 @Controller
 @Tag(name = "文章")
 public class ArticlesController {

@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestParam;
  */
 @Tag(name = "文件资源管理")
 @Slf4j
-@CrossOrigin(origins = "*", maxAge = 3600)
 @Controller
 public class FileViewController {
 
