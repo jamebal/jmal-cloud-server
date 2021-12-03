@@ -8,8 +8,8 @@ import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -24,7 +24,7 @@ import java.util.Arrays;
  * @Description markdown
  */
 @Controller
-@Api(tags = "markdown管理")
+@Tag(name = "markdown管理")
 @RestController
 public class MarkDownController {
 
@@ -34,7 +34,7 @@ public class MarkDownController {
     @Autowired
     IUserService service;
 
-    @ApiOperation("获取markdown内容")
+    @Operation(summary = "获取markdown内容")
     @GetMapping("/markdown/p")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<?> getMarkDownContent(ArticleDTO articleDTO, Integer pageIndex, Integer pageSize) {
@@ -47,7 +47,7 @@ public class MarkDownController {
         }
     }
 
-    @ApiOperation("编辑文档(根据fileId)")
+    @Operation(summary = "编辑文档(根据fileId)")
     @PostMapping("/markdown/edit")
     @Permission("cloud:file:update")
     @LogOperatingFun
@@ -55,7 +55,7 @@ public class MarkDownController {
         return fileService.editMarkdown(upload);
     }
 
-    @ApiOperation("修改文档排序")
+    @Operation(summary = "修改文档排序")
     @PostMapping("/markdown/sort")
     @Permission("cloud:file:update")
     @LogOperatingFun
@@ -63,7 +63,7 @@ public class MarkDownController {
         return fileService.sortMarkdown(Arrays.asList(fileIdList));
     }
 
-    @ApiOperation("删除草稿")
+    @Operation(summary = "删除草稿")
     @DeleteMapping("/markdown/deleteDraft")
     @Permission("cloud:file:delete")
     @LogOperatingFun
@@ -71,7 +71,7 @@ public class MarkDownController {
         return fileService.deleteDraft(fileId, username);
     }
 
-    @ApiOperation("编辑文档(根据path)")
+    @Operation(summary = "编辑文档(根据path)")
     @PostMapping("/markdown/edit1")
     @Permission("cloud:file:update")
     @LogOperatingFun
@@ -80,7 +80,7 @@ public class MarkDownController {
         return fileService.editMarkdownByPath(upload);
     }
 
-    @ApiOperation("上传文档里的图片")
+    @Operation(summary = "上传文档里的图片")
     @PostMapping("/upload-markdown-image")
     @Permission("cloud:file:upload")
     @LogOperatingFun
@@ -91,7 +91,7 @@ public class MarkDownController {
         return fileService.uploadMarkdownImage(upload);
     }
 
-    @ApiOperation("上传文档里链接图片")
+    @Operation(summary = "上传文档里链接图片")
     @PostMapping("/upload-markdown-link-image")
     @Permission("cloud:file:upload")
     @LogOperatingFun

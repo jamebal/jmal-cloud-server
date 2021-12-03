@@ -8,8 +8,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
 /**
+ * @author jmal
  * @Description 菜单模型
- * @blame jmal
  * @Date 2021/1/7 8:53 下午
  */
 @Data

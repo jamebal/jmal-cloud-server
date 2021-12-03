@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.model;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 
@@ -16,34 +16,34 @@ import java.util.Comparator;
  * @Date 2020/10/26 4:30 下午
  */
 @Data
-@ApiModel
+@Schema
 @Valid
 public class TagDTO  implements Comparable<TagDTO>{
 
     @Id
-    @ApiModelProperty(hidden = true)
+    @Schema(hidden = true)
     private String id;
 
-    @ApiModelProperty(name = "userId", value = "用户Id")
+    @Schema(name = "userId", title = "用户Id")
     private String userId;
 
     @NotNull(message = "标签名称不能为空")
-    @ApiModelProperty(name = "name", value = "标签名称")
+    @Schema(name = "name", title = "标签名称")
     private String name;
 
-    @ApiModelProperty(name = "slug", value = "缩略名(默认为name)")
+    @Schema(name = "slug", title = "缩略名(默认为name)")
     private String slug;
 
-    @ApiModelProperty(name = "tagBackground", value = "标签背景")
+    @Schema(name = "tagBackground", title = "标签背景")
     String tagBackground;
 
-    @ApiModelProperty(hidden = true, name = "articleNum", value = "文章数")
+    @Schema(hidden = true, name = "articleNum", title = "文章数")
     Long articleNum;
 
-    @ApiModelProperty(hidden = true, name = "color", value = "标签字体颜色")
+    @Schema(hidden = true, name = "color", title = "标签字体颜色")
     String color;
 
-    @ApiModelProperty(hidden = true, name = "fontSize", value = "标签字体大小")
+    @Schema(hidden = true, name = "fontSize", title = "标签字体大小")
     Long fontSize;
 
     @Override

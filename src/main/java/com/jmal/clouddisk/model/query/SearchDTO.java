@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.model.query;
 
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -11,7 +11,7 @@ import lombok.EqualsAndHashCode;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@ApiModel
+@Schema
 public class SearchDTO extends QueryBaseDTO {
     String keyword;
 }

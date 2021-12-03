@@ -8,8 +8,8 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -24,13 +24,13 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("user")
-@Api(tags = "用户管理")
+@Tag(name = "用户管理")
 public class UserController {
 
     @Autowired
     IUserService service;
 
-    @ApiOperation(value = "添加用户")
+    @Operation(summary = "添加用户")
     @PostMapping("/add")
     @Permission("sys:user:add")
     @LogOperatingFun
@@ -38,7 +38,7 @@ public class UserController {
         return service.add(consumerDTO);
     }
 
-    @ApiOperation(value = "删除用户")
+    @Operation(summary = "删除用户")
     @DeleteMapping("/delete")
     @Permission("sys:user:delete")
     @LogOperatingFun
@@ -47,7 +47,7 @@ public class UserController {
         return service.delete(idList);
     }
 
-    @ApiOperation(value = "修改用户")
+    @Operation(summary = "修改用户")
     @PutMapping("/update")
     @Permission("sys:user:update")
     @LogOperatingFun
@@ -55,7 +55,7 @@ public class UserController {
         return service.update(consumerDTO, blobAvatar);
     }
 
-    @ApiOperation(value = "修改用户密码")
+    @Operation(summary = "修改用户密码")
     @PutMapping("/update-pass")
     @Permission("sys:user:update")
     @LogOperatingFun
@@ -63,7 +63,7 @@ public class UserController {
         return service.updatePass(consumer);
     }
 
-    @ApiOperation(value = "重置密码")
+    @Operation(summary = "重置密码")
     @PutMapping("/reset-pass")
     @Permission(value = "sys:user:update")
     @LogOperatingFun
@@ -71,7 +71,7 @@ public class UserController {
         return service.resetPass(consumer);
     }
 
-    @ApiOperation(value = "用户信息")
+    @Operation(summary = "用户信息")
     @GetMapping("/userInfo")
     @Permission("sys:user:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -79,7 +79,7 @@ public class UserController {
         return service.userInfo(id);
     }
 
-    @ApiOperation(value = "用户信息列表")
+    @Operation(summary = "用户信息列表")
     @GetMapping("/userList")
     @Permission("sys:user:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)

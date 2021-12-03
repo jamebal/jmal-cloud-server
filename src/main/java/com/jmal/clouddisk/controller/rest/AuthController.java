@@ -8,8 +8,8 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +21,7 @@ import javax.servlet.http.HttpServletRequest;
  * @author jmal
  */
 @RestController
-@Api(tags = "登录认证")
+@Tag(name = "登录认证")
 public class AuthController {
 
     @Autowired
@@ -29,14 +29,14 @@ public class AuthController {
     @Autowired
     IUserService userService;
 
-    @ApiOperation("登录")
+    @Operation(summary = "登录")
     @LogOperatingFun(logType = LogOperation.Type.LOGIN)
     @PostMapping("/login")
     public ResponseResult<Object> login(@RequestBody ConsumerDO user){
         return authService.login(user.getUsername(), user.getPassword());
     }
 
-    @ApiOperation("校验旧密码")
+    @Operation(summary = "校验旧密码")
     @PostMapping("/valid-old-pass")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     @Permission("sys:user:list")
@@ -44,7 +44,7 @@ public class AuthController {
         return authService.validOldPass(user.getId(), user.getPassword());
     }
 
-    @ApiOperation("登出")
+    @Operation(summary = "登出")
     @GetMapping("/logout")
     @LogOperatingFun
     @Permission("sys:user:list")
@@ -53,14 +53,14 @@ public class AuthController {
         return authService.logout(token);
     }
 
-    @ApiOperation("是否有用户")
+    @Operation(summary = "是否有用户")
     @GetMapping("/public/has_user")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Boolean> hasUser(){
         return userService.hasUser();
     }
 
-    @ApiOperation("初始化创建管理员")
+    @Operation(summary = "初始化创建管理员")
     @PostMapping("/public/initialization")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> initialization(ConsumerDO consumer){

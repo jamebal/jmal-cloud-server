@@ -1,8 +1,8 @@
 package com.jmal.clouddisk.model.rbac;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 
@@ -17,39 +17,39 @@ import java.util.List;
  * @author jmal
  */
 @Data
-@ApiModel
+@Schema
 @Valid
 public class ConsumerDTO {
     @Id
     String id;
     @NotNull(message = "用户账号不能为空")
-    @ApiModelProperty(name = "username", value = "用户账号", example = "admin", required = true)
+    @Schema(name = "username", title = "用户账号", example = "admin", required = true)
     String username;
     @NotNull(message = "用户名不能为空")
-    @ApiModelProperty(name = "showName", value = "用户名", example = "管理员1", required = true)
+    @Schema(name = "showName", title = "用户名", example = "管理员1", required = true)
     String showName;
-    @ApiModelProperty(name = "password", value = "密码", example = "123456")
+    @Schema(name = "password", title = "密码", example = "123456")
     String password;
     String encryptPwd;
-    @ApiModelProperty(name = "avatar", value = "头像")
+    @Schema(name = "avatar", title = "头像")
     String avatar;
-    @ApiModelProperty(name = "slogan", value = "标语")
+    @Schema(name = "slogan", title = "标语")
     String slogan;
-    @ApiModelProperty(name = "introduction", value = "简介")
+    @Schema(name = "introduction", title = "简介")
     String introduction;
-    @ApiModelProperty(name = "webpDisabled", value = "是否禁用webp")
+    @Schema(name = "webpDisabled", title = "是否禁用webp")
     Boolean webpDisabled;
-    @ApiModelProperty(name = "roles", value = "角色Id集合")
+    @Schema(name = "roles", title = "角色Id集合")
     List<String> roles;
-    @ApiModelProperty(name = "roleList", value = "角色集合", hidden = true)
+    @Schema(name = "roleList", title = "角色集合", hidden = true)
     List<RoleDTO> roleList;
     @Max(value = 1073741824, message = "配额过大")
-    @ApiModelProperty(name = "quota", value = "默认配额, 10G", example = "10")
+    @Schema(name = "quota", title = "默认配额, 10G", example = "10")
     Integer quota;
-    @ApiModelProperty(name = "takeUpSpace", value = "已使用的空间")
+    @Schema(name = "takeUpSpace", title = "已使用的空间")
     Long takeUpSpace;
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
-    @ApiModelProperty(name = "createTime", value = "创建时间", hidden = true)
+    @Schema(name = "createTime", title = "创建时间", hidden = true)
     LocalDateTime createTime;
 
 }

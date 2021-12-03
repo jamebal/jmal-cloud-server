@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.model;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import lombok.Data;
 
 import javax.validation.Valid;
@@ -12,42 +12,42 @@ import javax.validation.Valid;
  * @Date 2020/11/26 11:13 上午
  */
 @Data
-@ApiModel
+@Schema
 @Valid
 public class ArticleDTO {
 
-    @ApiModelProperty(name = "mark", value = "文章id")
+    @Schema(name = "mark", title = "文章id")
     String mark;
 
-    @ApiModelProperty(name = "userId", value = "用户Id")
+    @Schema(name = "userId", title = "用户Id")
     String userId;
 
-    @ApiModelProperty(name = "isRelease", value = "是否发布")
+    @Schema(name = "isRelease", title = "是否发布")
     Boolean isRelease;
 
-    @ApiModelProperty(name = "isAlonePage", value = "是否为独立页面")
+    @Schema(name = "isAlonePage", title = "是否为独立页面")
     Boolean isAlonePage;
 
-    @ApiModelProperty(name = "isDraft", value = "是否为草稿")
+    @Schema(name = "isDraft", title = "是否为草稿")
     Boolean isDraft;
 
-    @ApiModelProperty(name = "keyword", value = "关键字")
+    @Schema(name = "keyword", title = "关键字")
     String keyword;
 
-    @ApiModelProperty(name = "categoryIds", value = "分类id集合")
+    @Schema(name = "categoryIds", title = "分类id集合")
     String[] categoryIds;
 
-    @ApiModelProperty(name = "tagIds", value = "标签id集合")
+    @Schema(name = "tagIds", title = "标签id集合")
     String[] tagIds;
 
-    @ApiModelProperty(name = "sortableProp", value = "排序字段")
+    @Schema(name = "sortableProp", title = "排序字段")
     String sortableProp;
 
-    @ApiModelProperty(name = "order", value = "排序的顺序")
+    @Schema(name = "order", title = "排序的顺序")
     String order;
 
-    @ApiModelProperty(hidden = true, name = "pageIndex", value = "当前页数")
+    @Schema(hidden = true, name = "pageIndex", title = "当前页数")
     Integer pageIndex;
-    @ApiModelProperty(hidden = true, name = "pageSize", value = "每页条数")
+    @Schema(hidden = true, name = "pageSize", title = "每页条数")
     Integer pageSize;
 }

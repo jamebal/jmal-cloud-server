@@ -7,8 +7,8 @@ import com.jmal.clouddisk.model.LogOperationDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.impl.LogService;
 import com.jmal.clouddisk.util.ResponseResult;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -22,13 +22,13 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("log")
-@Api(tags = "日志")
+@Tag(name = "日志")
 public class LogController {
 
     @Autowired
     private LogService logService;
 
-    @ApiOperation("日志查询")
+    @Operation(summary = "日志查询")
     @GetMapping("/list")
     @Permission("sys:log:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)

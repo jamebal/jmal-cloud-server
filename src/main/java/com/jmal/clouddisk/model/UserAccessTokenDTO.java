@@ -1,7 +1,8 @@
 package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import io.swagger.annotations.ApiModelProperty;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -26,12 +27,12 @@ public class UserAccessTokenDTO {
      * 创建时间
      */
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
-    @ApiModelProperty(hidden = true)
+    @Schema(hidden = true)
     LocalDateTime createTime;
     /***
      * 最近活动时间
      */
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
-    @ApiModelProperty(hidden = true)
+    @Schema(hidden = true)
     LocalDateTime lastActiveTime;
 }

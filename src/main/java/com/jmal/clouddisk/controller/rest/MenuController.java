@@ -11,8 +11,8 @@ import com.jmal.clouddisk.model.rbac.MenuDTO;
 import com.jmal.clouddisk.service.impl.MenuService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -21,19 +21,19 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
+ * @author jmal
  * @Description 菜单管理
- * @blame jmal
  * @Date 2021/1/7 7:44 下午
  */
 @RestController
 @RequestMapping("menu")
-@Api(tags = "菜单管理")
+@Tag(name = "菜单管理")
 public class MenuController {
 
     @Autowired
     private MenuService menuService;
 
-    @ApiOperation("菜单树")
+    @Operation(summary = "菜单树")
     @GetMapping("/tree")
     @Permission("sys:user:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -41,7 +41,7 @@ public class MenuController {
         return ResultUtil.success(menuService.tree(queryDTO));
     }
 
-    @ApiOperation("菜单信息")
+    @Operation(summary = "菜单信息")
     @GetMapping("/info")
     @ResponseBody
     @Permission("sys:menu:list")
@@ -55,7 +55,7 @@ public class MenuController {
         return ResultUtil.success(menuDTO);
     }
 
-    @ApiOperation("权限标识列表")
+    @Operation(summary = "权限标识列表")
     @GetMapping("/authorities")
     @ResponseBody
     @Permission("sys:menu:list")
@@ -63,7 +63,7 @@ public class MenuController {
         return ResultUtil.success(AnnoManageUtil.AUTHORITIES);
     }
 
-    @ApiOperation("添加菜单")
+    @Operation(summary = "添加菜单")
     @PostMapping("/add")
     @LogOperatingFun
     @Permission("sys:menu:add")
@@ -71,7 +71,7 @@ public class MenuController {
         return menuService.add(menuDTO);
     }
 
-    @ApiOperation("更新菜单")
+    @Operation(summary = "更新菜单")
     @PutMapping("/update")
     @ResponseBody
     @LogOperatingFun
@@ -83,7 +83,7 @@ public class MenuController {
         return menuService.update(menuDTO);
     }
 
-    @ApiOperation("删除菜单")
+    @Operation(summary = "删除菜单")
     @DeleteMapping("/delete")
     @LogOperatingFun
     @Permission("sys:menu:delete")

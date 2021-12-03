@@ -9,8 +9,8 @@ import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.impl.CategoryService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -24,13 +24,13 @@ import java.util.List;
  * @Date 2020/10/26 5:47 下午
  */
 @RestController
-@Api(tags = "分类管理")
+@Tag(name = "分类管理")
 public class CategoryController {
 
     @Autowired
     private CategoryService categoryService;
 
-    @ApiOperation("分类列表")
+    @Operation(summary = "分类列表")
     @GetMapping("/category/list")
     @Permission("website:set:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -38,7 +38,7 @@ public class CategoryController {
         return ResultUtil.success(categoryService.list(userId, parentCategoryId));
     }
 
-    @ApiOperation("分类树")
+    @Operation(summary = "分类树")
     @GetMapping("/category/tree")
     @Permission("website:set:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -46,7 +46,7 @@ public class CategoryController {
         return ResultUtil.success(categoryService.tree(userId, false));
     }
 
-    @ApiOperation("分类信息")
+    @Operation(summary = "分类信息")
     @GetMapping("/category/info")
     @ResponseBody
     @Permission("website:set:list")
@@ -60,7 +60,7 @@ public class CategoryController {
         return ResultUtil.success(categoryDTO);
     }
 
-    @ApiOperation("添加分类")
+    @Operation(summary = "添加分类")
     @PostMapping("/category/add")
     @LogOperatingFun
     @Permission("website:set:add")
@@ -68,7 +68,7 @@ public class CategoryController {
         return categoryService.add(categoryDTO);
     }
 
-    @ApiOperation("更新分类")
+    @Operation(summary = "更新分类")
     @PutMapping("/category/update")
     @ResponseBody
     @Permission("website:set:update")
@@ -76,7 +76,7 @@ public class CategoryController {
         return categoryService.update(categoryDTO);
     }
 
-    @ApiOperation("设置默认分类")
+    @Operation(summary = "设置默认分类")
     @PutMapping("/category/setDefault")
     @LogOperatingFun
     @Permission("website:set:update")
@@ -84,7 +84,7 @@ public class CategoryController {
         return categoryService.setDefault(categoryId);
     }
 
-    @ApiOperation("删除分类")
+    @Operation(summary = "删除分类")
     @DeleteMapping("/category/delete")
     @LogOperatingFun
     @Permission("website:set:delete")

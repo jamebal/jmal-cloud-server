@@ -1,19 +1,13 @@
 package com.jmal.clouddisk.acpect;
 
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.useragent.UserAgent;
-import cn.hutool.http.useragent.UserAgentUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.impl.LogService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
-import com.jmal.clouddisk.service.impl.UserServiceImpl;
-import com.jmal.clouddisk.util.ResponseResult;
-import io.milton.http.Response;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -21,16 +15,10 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.lang.reflect.Method;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
 
 /***
  * @Description 操作日志切面现实
@@ -87,17 +75,17 @@ public class LogOperatingAspect {
         Method method = methodSignature.getMethod();
         LogOperatingFun logOperatingFun = method.getAnnotation(LogOperatingFun.class);
         // swagger的ApiOperation注解, 用来获取操作说明
-        ApiOperation apiOperation = method.getAnnotation(ApiOperation.class);
+        Operation apiOperation = method.getAnnotation(Operation.class);
         // swagger的Api注解, 用来获取操作模块
         @SuppressWarnings("unchecked")
-        Api api = (Api) joinPoint.getSourceLocation().getWithinType().getAnnotation(Api.class);
+        Tag api = (Tag) joinPoint.getSourceLocation().getWithinType().getAnnotation(Tag.class);
         if(api != null){
-            logOperation.setOperationModule(api.tags()[0]);
+            logOperation.setOperationModule(api.name());
         }
         // 操作功能
         String operationFun = logOperatingFun.value();
         if(StrUtil.isBlank(operationFun)){
-            operationFun = apiOperation.value();
+            operationFun = apiOperation.summary();
         }
         logOperation.setOperationFun(operationFun);
         String logType = logOperatingFun.logType().name();

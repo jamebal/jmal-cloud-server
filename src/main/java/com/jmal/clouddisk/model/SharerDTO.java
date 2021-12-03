@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.model;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import lombok.Data;
 
 /**
@@ -10,11 +10,11 @@ import lombok.Data;
  * @Date 2021/4/6 4:25 下午
  */
 @Data
-@ApiModel
+@Schema
 public class SharerDTO {
     String userId;
-    @ApiModelProperty(name = "avatar", value = "头像链接")
+    @Schema(name = "avatar", title = "头像链接")
     String avatar;
-    @ApiModelProperty(name = "showName", value = "昵称")
+    @Schema(name = "showName", title = "昵称")
     String showName;
 }

@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.model;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import lombok.Data;
 
 /**
@@ -10,17 +10,17 @@ import lombok.Data;
  * @Date 2021/2/8 2:16 下午
  */
 @Data
-@ApiModel
+@Schema
 public class LogOperationDTO {
     /***
      * 页数
      */
-    @ApiModelProperty(name = "page", value = "页数", example = "1")
+    @Schema(name = "page", title = "页数", example = "1")
     private Integer page;
     /***
      * 每页条数
      */
-    @ApiModelProperty(name = "pageSize", value = "每页条数", example = "10")
+    @Schema(name = "pageSize", title = "每页条数", example = "10")
     private Integer pageSize;
     /***
      * 账号

@@ -1,25 +1,25 @@
 package com.jmal.clouddisk.model.query;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
+ * @author jmal
  * @Description 菜单查询条件
- * @blame jmal
  * @Date 2021/1/10 2:03 下午
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@ApiModel
+@Schema
 public class QueryMenuDTO extends QueryBaseDTO {
-    @ApiModelProperty(name = "name", value = "菜单名称")
+    @Schema(name = "name", title = "菜单名称")
     String name;
-    @ApiModelProperty(name = "code", value = "菜单地址")
+    @Schema(name = "code", title = "菜单地址")
     String path;
-    @ApiModelProperty(name = "roleId", value = "角色Id")
+    @Schema(name = "roleId", title = "角色Id")
     String roleId;
-    @ApiModelProperty(name = "userId", value = "userId")
+    @Schema(name = "userId", title = "userId")
     String userId;
 }

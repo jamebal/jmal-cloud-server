@@ -10,7 +10,7 @@ import com.jmal.clouddisk.service.impl.CategoryService;
 import com.jmal.clouddisk.service.impl.LogService;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.service.impl.TagService;
-import io.swagger.annotations.Api;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -29,7 +29,7 @@ import java.util.List;
  */
 @CrossOrigin(origins = "*", maxAge = 3600)
 @Controller
-@Api(tags = "文章")
+@Tag(name = "文章")
 public class ArticlesController {
 
     @Autowired

@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.model;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 
@@ -13,70 +13,70 @@ import java.util.List;
 
 /**
  * @Description 文件类别DTO
- * @blame jmal
+ * @Author jmal
  * @Date 2020/10/27 10:48 下午
  */
 @Data
-@ApiModel
+@Schema
 @Valid
 public class CategoryDTO implements Comparable<CategoryDTO> {
 
     @Id
-    @ApiModelProperty(hidden = true)
+    @Schema(hidden = true)
     private String id;
 
-    @ApiModelProperty(name = "userId", value = "用户id")
+    @Schema(name = "userId", title = "用户id")
     private String userId;
 
     @NotNull(message = "分类名称不能为空")
-    @ApiModelProperty(name = "name", value = "分类名称", required = true , example = "新建分类")
+    @Schema(name = "name", title = "分类名称", required = true , example = "新建分类")
     private String name;
 
     /***
      * 缩略名，默认为name
      */
-    @ApiModelProperty(name = "slug", value = "分类缩略名")
+    @Schema(name = "slug", title = "分类缩略名")
     private String slug;
     /***
      * 父级分类Id
      */
-    @ApiModelProperty(name = "parentCategoryId", value = "父级分类Id")
+    @Schema(name = "parentCategoryId", title = "父级分类Id")
     private String parentCategoryId;
     /***
      * 子分类数
      */
-    @ApiModelProperty(hidden = true)
+    @Schema(hidden = true)
     private Integer subCategorySize;
     /***
      * 是否为默认分类
      */
-    @ApiModelProperty(hidden = true)
+    @Schema(hidden = true)
     private Boolean isDefault;
     /***
      * 分类描述
      */
-    @ApiModelProperty(name = "desc", value = "分类描述")
+    @Schema(name = "desc", title = "分类描述")
     private String desc;
     /***
      * 文章数
      */
-    @ApiModelProperty(hidden = true)
+    @Schema(hidden = true)
     private Integer articleNum;
     /***
      * 文章总数
      */
-    @ApiModelProperty(hidden = true)
+    @Schema(hidden = true)
     private Integer value;
     /***
      * 子分类
      */
-    @ApiModelProperty(hidden = true)
+    @Schema(hidden = true)
     private List<CategoryDTO> children;
 
-    @ApiModelProperty(name = "categoryBackground", value = "分类背景")
+    @Schema(name = "categoryBackground", title = "分类背景")
     String categoryBackground;
 
-    @ApiModelProperty(hidden = true, name = "categoryIdsList", value = "分类Id列表")
+    @Schema(hidden = true, name = "categoryIdsList", title = "分类Id列表")
     private List<List<String>> categoryIdsList;
     /***
      * 按照分类名称来排序

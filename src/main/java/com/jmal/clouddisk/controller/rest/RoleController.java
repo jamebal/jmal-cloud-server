@@ -8,8 +8,8 @@ import com.jmal.clouddisk.model.rbac.RoleDTO;
 import com.jmal.clouddisk.service.impl.RoleService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -24,13 +24,13 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("role")
-@Api(tags = "角色管理")
+@Tag(name = "角色管理")
 public class RoleController {
 
     @Autowired
     private RoleService roleService;
 
-    @ApiOperation(value = "角色列表")
+    @Operation(summary = "角色列表")
     @GetMapping("/list")
     @Permission("sys:role:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -38,7 +38,7 @@ public class RoleController {
         return roleService.list(queryDTO);
     }
 
-    @ApiOperation(value = "添加角色")
+    @Operation(summary = "添加角色")
     @PostMapping("/add")
     @LogOperatingFun
     @Permission("sys:role:add")
@@ -46,7 +46,7 @@ public class RoleController {
         return roleService.add(roleDTO);
     }
 
-    @ApiOperation(value = "修改角色")
+    @Operation(summary = "修改角色")
     @PutMapping("/update")
     @LogOperatingFun
     @Permission("sys:role:update")
@@ -57,7 +57,7 @@ public class RoleController {
         return roleService.update(roleDTO);
     }
 
-    @ApiOperation(value = "删除角色")
+    @Operation(summary = "删除角色")
     @DeleteMapping("/delete")
     @LogOperatingFun
     @Permission("sys:role:delete")

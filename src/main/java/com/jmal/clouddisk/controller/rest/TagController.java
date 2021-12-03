@@ -9,8 +9,8 @@ import com.jmal.clouddisk.model.TagDTO;
 import com.jmal.clouddisk.service.impl.TagService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -24,13 +24,13 @@ import java.util.List;
  * @Date 2020/12/02 6:47 下午
  */
 @RestController
-@Api(tags = "标签管理")
+@Tag(name = "标签管理")
 public class TagController {
 
     @Autowired
     private TagService tagService;
 
-    @ApiOperation("标签列表")
+    @Operation(summary = "标签列表")
     @GetMapping("/tag/list")
     @Permission("website:set:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -38,7 +38,7 @@ public class TagController {
         return ResultUtil.success(tagService.list(userId));
     }
 
-    @ApiOperation("标签信息")
+    @Operation(summary = "标签信息")
     @GetMapping("/tag/info")
     @ResponseBody
     @Permission("website:set:list")
@@ -52,7 +52,7 @@ public class TagController {
         return ResultUtil.success(tagDTO);
     }
 
-    @ApiOperation("添加标签")
+    @Operation(summary = "添加标签")
     @PostMapping("/tag/add")
     @Permission("website:set:add")
     @LogOperatingFun
@@ -60,7 +60,7 @@ public class TagController {
         return tagService.add(tagDTO);
     }
 
-    @ApiOperation("更新标签")
+    @Operation(summary = "更新标签")
     @PutMapping("/tag/update")
     @ResponseBody
     @Permission("website:set:update")
@@ -69,7 +69,7 @@ public class TagController {
         return tagService.update(tagDTO);
     }
 
-    @ApiOperation("删除标签")
+    @Operation(summary = "删除标签")
     @DeleteMapping("/tag/delete")
     @Permission("website:set:delete")
     @LogOperatingFun

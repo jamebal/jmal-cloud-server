@@ -14,8 +14,8 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -39,7 +39,7 @@ import java.util.Optional;
  * @Date 2020-01-27 12:59
  * @author jmal
  */
-@Api(tags = "文件管理")
+@Tag(name = "文件管理")
 @Slf4j
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -57,7 +57,7 @@ public class FileController {
     @Autowired
     IUserService service;
 
-    @ApiOperation("文件列表")
+    @Operation(summary = "文件列表")
     @GetMapping("/list")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -65,7 +65,7 @@ public class FileController {
         return fileService.listFiles(upload);
     }
 
-    @ApiOperation("查找下级目录")
+    @Operation(summary = "查找下级目录")
     @GetMapping("/query-file-tree")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -73,7 +73,7 @@ public class FileController {
         return fileService.queryFileTree(upload,fileId);
     }
 
-    @ApiOperation("搜索文件")
+    @Operation(summary = "搜索文件")
     @GetMapping("/search-file")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -81,7 +81,7 @@ public class FileController {
         return fileService.searchFile(upload, keyword);
     }
 
-    @ApiOperation("搜索文件并打开文件夹")
+    @Operation(summary = "搜索文件并打开文件夹")
     @GetMapping("/search-file-open")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -89,7 +89,7 @@ public class FileController {
         return fileService.searchFileAndOpenDir(upload, id);
     }
 
-    @ApiOperation("图片上传(Typora自定义命令上传图片接口)")
+    @Operation(summary = "图片上传(Typora自定义命令上传图片接口)")
     @PostMapping("/img-upload")
     @LogOperatingFun
     @Permission("cloud:file:upload")
@@ -108,7 +108,7 @@ public class FileController {
         return fileService.imgUpload(baseUrl, filepath, file);
     }
 
-    @ApiOperation("文件上传")
+    @Operation(summary = "文件上传")
     @PostMapping("upload")
     @LogOperatingFun
     @Permission("cloud:file:upload")
@@ -116,7 +116,7 @@ public class FileController {
         return fileService.upload(upload);
     }
 
-    @ApiOperation("文件夹上传")
+    @Operation(summary = "文件夹上传")
     @PostMapping("upload-folder")
     @LogOperatingFun
     @Permission("cloud:file:upload")
@@ -124,7 +124,7 @@ public class FileController {
         return fileService.uploadFolder(upload);
     }
 
-    @ApiOperation("新建文件夹")
+    @Operation(summary = "新建文件夹")
     @PostMapping("new_folder")
     @LogOperatingFun
     @Permission("cloud:file:upload")
@@ -132,7 +132,7 @@ public class FileController {
         return fileService.newFolder(upload);
     }
 
-    @ApiOperation("检查文件/分片是否存在")
+    @Operation(summary = "检查文件/分片是否存在")
     @GetMapping("upload")
     @LogOperatingFun
     @Permission("cloud:file:upload")
@@ -140,7 +140,7 @@ public class FileController {
         return fileService.checkChunkUploaded(upload);
     }
 
-    @ApiOperation("合并文件")
+    @Operation(summary = "合并文件")
     @PostMapping("merge")
     @LogOperatingFun
     @Permission("cloud:file:upload")
@@ -148,7 +148,7 @@ public class FileController {
         return fileService.merge(upload);
     }
 
-    @ApiOperation("读取simText文件")
+    @Operation(summary = "读取simText文件")
     @GetMapping("/preview/text")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -157,7 +157,7 @@ public class FileController {
         return ResultUtil.success(fileService.getById(id, username));
     }
 
-    @ApiOperation("根据path读取simText文件")
+    @Operation(summary = "根据path读取simText文件")
     @GetMapping("/preview/path/text")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -165,14 +165,14 @@ public class FileController {
         return fileService.previewTextByPath(path, username);
     }
 
-    @ApiOperation("是否允许下载")
+    @Operation(summary = "是否允许下载")
     @GetMapping("/isAllowDownload")
     @Permission("cloud:file:download")
     public ResponseResult<Object> isAllowDownload() {
         return ResultUtil.success(true);
     }
 
-    @ApiOperation("打包下载")
+    @Operation(summary = "打包下载")
     @GetMapping("/packageDownload")
     @LogOperatingFun
     @Permission("cloud:file:download")
@@ -185,7 +185,7 @@ public class FileController {
         }
     }
 
-    @ApiOperation("显示缩略图")
+    @Operation(summary = "显示缩略图")
     @GetMapping("/view/thumbnail")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -207,7 +207,7 @@ public class FileController {
                         .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
     }
 
-    @ApiOperation("显示缩略图(mp3封面)")
+    @Operation(summary = "显示缩略图(mp3封面)")
     @GetMapping("/view/cover")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -217,7 +217,7 @@ public class FileController {
         return getObjectResponseEntity(file);
     }
 
-    @ApiOperation("收藏文件或文件夹")
+    @Operation(summary = "收藏文件或文件夹")
     @PostMapping("/favorite")
     @LogOperatingFun
     @Permission("cloud:file:update")
@@ -230,7 +230,7 @@ public class FileController {
         }
     }
 
-    @ApiOperation("设为公共文件")
+    @Operation(summary = "设为公共文件")
     @PutMapping("/setPublic")
     @LogOperatingFun
     @Permission("cloud:file:update")
@@ -239,7 +239,7 @@ public class FileController {
         return ResultUtil.success();
     }
 
-    @ApiOperation("取消收藏")
+    @Operation(summary = "取消收藏")
     @PostMapping("/unFavorite")
     @LogOperatingFun
     @Permission("cloud:file:update")
@@ -252,7 +252,7 @@ public class FileController {
         }
     }
 
-    @ApiOperation("删除文件")
+    @Operation(summary = "删除文件")
     @DeleteMapping("/delete")
     @LogOperatingFun
     @Permission("cloud:file:delete")
@@ -265,7 +265,7 @@ public class FileController {
         }
     }
 
-    @ApiOperation("重命名")
+    @Operation(summary = "重命名")
     @GetMapping("/rename")
     @LogOperatingFun
     @Permission("cloud:file:update")
@@ -273,7 +273,7 @@ public class FileController {
         return fileService.rename(newFileName, username, id);
     }
 
-    @ApiOperation("移动文件/文件夹")
+    @Operation(summary = "移动文件/文件夹")
     @GetMapping("/move")
     @LogOperatingFun
     @Permission("cloud:file:update")
@@ -286,7 +286,7 @@ public class FileController {
         }
     }
 
-    @ApiOperation("复制文件/文件夹")
+    @Operation(summary = "复制文件/文件夹")
     @GetMapping("/copy")
     @LogOperatingFun
     @Permission("cloud:file:update")
@@ -299,7 +299,7 @@ public class FileController {
         }
     }
 
-    @ApiOperation("解压zip文件")
+    @Operation(summary = "解压zip文件")
     @GetMapping("/unzip")
     @LogOperatingFun
     @Permission("cloud:file:update")
@@ -307,7 +307,7 @@ public class FileController {
         return fileService.unzip(fileId, destFileId);
     }
 
-    @ApiOperation("获取目录下的文件")
+    @Operation(summary = "获取目录下的文件")
     @GetMapping("/listfiles")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -319,7 +319,7 @@ public class FileController {
         return fileService.listFiles(path, username, dir);
     }
 
-    @ApiOperation("获取上级文件列表")
+    @Operation(summary = "获取上级文件列表")
     @GetMapping("/upper-level-list")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -327,7 +327,7 @@ public class FileController {
         return fileService.upperLevelList(path, username);
     }
 
-    @ApiOperation("根据path删除文件/文件夹")
+    @Operation(summary = "根据path删除文件/文件夹")
     @DeleteMapping("/delFile")
     @LogOperatingFun
     @Permission("cloud:file:delete")
@@ -335,7 +335,7 @@ public class FileController {
         return fileService.delFile(path, username);
     }
 
-    @ApiOperation("根据path重命名")
+    @Operation(summary = "根据path重命名")
     @GetMapping("/rename/path")
     @LogOperatingFun
     @Permission("cloud:file:update")
@@ -343,7 +343,7 @@ public class FileController {
         return fileService.renameByPath(newFileName, username, path);
     }
 
-    @ApiOperation("根据path添加文件/文件夹")
+    @Operation(summary = "根据path添加文件/文件夹")
     @PostMapping("/addfile")
     @LogOperatingFun
     @Permission("cloud:file:upload")

@@ -4,8 +4,8 @@ import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.impl.LuceneService;
 import com.jmal.clouddisk.util.ResponseResult;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,13 +23,13 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/search")
-@Api(tags = "全文搜索")
+@Tag(name = "全文搜索")
 public class LuceneSearchController {
 
     @Autowired
     private LuceneService luceneService;
 
-    @ApiOperation("搜索")
+    @Operation(summary = "搜索")
     @GetMapping("/")
     public ResponseResult<List<FileDocument>> list(SearchDTO searchDTO) throws IOException, ParseException, InvalidTokenOffsetsException {
         return luceneService.searchFile(searchDTO);

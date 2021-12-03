@@ -12,8 +12,8 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -35,7 +35,7 @@ import java.util.Optional;
  * @Author jmal
  * @Date 2020-03-17 16:22
  */
-@Api(tags = "文件分享")
+@Tag(name = "文件分享")
 @RestController
 @Slf4j
 public class ShareController {
@@ -52,13 +52,13 @@ public class ShareController {
     @Autowired
     FileInterceptor fileInterceptor;
 
-    @ApiOperation("该分享已失效")
+    @Operation(summary = "该分享已失效")
     @GetMapping("/public/s/invalid")
     public String invalid() {
         return "该分享已失效";
     }
 
-    @ApiOperation("生成分享链接")
+    @Operation(summary = "生成分享链接")
     @PostMapping("/share/generate")
     @Permission("cloud:file:update")
     @LogOperatingFun
@@ -67,7 +67,7 @@ public class ShareController {
         return shareService.generateLink(share);
     }
 
-    @ApiOperation("取消分享")
+    @Operation(summary = "取消分享")
     @DeleteMapping("/share/cancel")
     @Permission("cloud:file:delete")
     @LogOperatingFun
@@ -75,7 +75,7 @@ public class ShareController {
         return shareService.cancelShare(shareId);
     }
 
-    @ApiOperation("分享列表")
+    @Operation(summary = "分享列表")
     @GetMapping("/share/list")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -83,7 +83,7 @@ public class ShareController {
         return shareService.shareList(upload);
     }
 
-    @ApiOperation("访问分享链接")
+    @Operation(summary = "访问分享链接")
     @GetMapping("/public/access-share")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> accessShare(@RequestParam String share, Integer pageIndex, Integer pageSize) {
@@ -91,14 +91,14 @@ public class ShareController {
         return shareService.accessShare(share, pageIndex, pageSize);
     }
 
-    @ApiOperation("获取分享者信息")
+    @Operation(summary = "获取分享者信息")
     @GetMapping("/public/get/sharer")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<SharerDTO> getSharer(@RequestParam String userId) {
         return shareService.getSharer(userId);
     }
 
-    @ApiOperation("访问分享链接里的目录")
+    @Operation(summary = "访问分享链接里的目录")
     @GetMapping("public/access-share/open")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> accessShareOpenDir(@RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize) {
@@ -109,7 +109,7 @@ public class ShareController {
         return shareService.accessShareOpenDir(shareDO, fileId, pageIndex, pageSize );
     }
 
-    @ApiOperation("打包下载")
+    @Operation(summary = "打包下载")
     @GetMapping("/public/s/packageDownload")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public void publicPackageDownload(HttpServletRequest request, HttpServletResponse response, @RequestParam String shareId, @RequestParam String[] fileIds) {
@@ -131,14 +131,14 @@ public class ShareController {
         }
     }
 
-    @ApiOperation("显示缩略图")
+    @Operation(summary = "显示缩略图")
     @GetMapping("/articles/s/view/thumbnail")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseEntity<Object> articlesThumbnail(String id) {
         return thumbnail(id);
     }
 
-    @ApiOperation("显示缩略图")
+    @Operation(summary = "显示缩略图")
     @GetMapping("/public/s/view/thumbnail")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseEntity<Object> publicThumbnail(String id) {
@@ -162,7 +162,7 @@ public class ShareController {
                         .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
     }
 
-    @ApiOperation("读取simText文件")
+    @Operation(summary = "读取simText文件")
     @GetMapping("/public/s/preview/text")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> preview(@RequestParam String shareId,@RequestParam String fileId) {

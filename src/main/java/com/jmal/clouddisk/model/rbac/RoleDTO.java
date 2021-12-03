@@ -1,8 +1,8 @@
 package com.jmal.clouddisk.model.rbac;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import lombok.Data;
 
 import javax.validation.Valid;
@@ -12,25 +12,25 @@ import java.util.List;
 
 /**
  * @Description 角色传输对象
- * @blame jmal
+ * @Author jmal
  * @Date 2021/1/7 7:41 下午
  */
 @Data
 @Valid
-@ApiModel
+@Schema
 public class RoleDTO {
     String id;
     @NotNull(message = "角色名称不能为空")
-    @ApiModelProperty(name = "name", value = "角色名称", required = true)
+    @Schema(name = "name", title = "角色名称", required = true)
     String name;
     @NotNull(message = "角色标识不能为空")
-    @ApiModelProperty(name = "code", value = "角色标识", required = true)
+    @Schema(name = "code", title = "角色标识", required = true)
     String code;
-    @ApiModelProperty(name = "remarks", value = "备注")
+    @Schema(name = "remarks", title = "备注")
     String remarks;
-    @ApiModelProperty(name = "menuIds", value = "菜单id列表")
+    @Schema(name = "menuIds", title = "菜单id列表")
     List<String> menuIds;
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
-    @ApiModelProperty(name = "createTime", value = "创建时间", hidden = true)
+    @Schema(name = "createTime", title = "创建时间", hidden = true)
     LocalDateTime createTime;
 }
