@@ -7,6 +7,7 @@ import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.service.impl.MenuService;
 import com.jmal.clouddisk.service.impl.RoleService;
+import com.jmal.clouddisk.util.TimeUntils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ public class ExportSysDBText {
      */
     @Test
     public void exportMenu() {
-        String now = LocalDateTimeUtil.formatNormal(LocalDateTime.now());
+        String now = LocalDateTimeUtil.formatNormal(LocalDateTime.now(TimeUntils.ZONE_ID));
         File file = new File("/Users/jmal/Downloads/menu"+now+".json");
         List<MenuDO> menuDOList = menuService.getAllMenus();
         if(menuDOList.size() > 0){
@@ -51,7 +52,7 @@ public class ExportSysDBText {
      */
     @Test
     public void exportRole() {
-        String now = LocalDateTimeUtil.formatNormal(LocalDateTime.now());
+        String now = LocalDateTimeUtil.formatNormal(LocalDateTime.now(TimeUntils.ZONE_ID));
         File file = new File("/Users/jmal/Downloads/role"+now+".json");
         List<RoleDO> roleDOList = roleService.getAllRoles();
         if(roleDOList.size() > 0){

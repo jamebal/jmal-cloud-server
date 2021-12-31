@@ -10,6 +10,7 @@ import com.jmal.clouddisk.model.UserTokenDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.repository.DataSource;
 import com.jmal.clouddisk.repository.IAuthDAO;
+import com.jmal.clouddisk.util.TimeUntils;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -79,7 +80,7 @@ public class AuthDAOImpl implements IAuthDAO {
         if(mongoTemplate.exists(query, ACCESS_TOKEN_COLLECTION_NAME)){
             throw new CommonException(ExceptionType.EXISTING_RESOURCES.getCode(), "该名称已存在");
         }
-        userAccessTokenDO.setCreateTime(LocalDateTime.now());
+        userAccessTokenDO.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
         mongoTemplate.save(userAccessTokenDO, ACCESS_TOKEN_COLLECTION_NAME);
     }
 
@@ -114,7 +115,7 @@ public class AuthDAOImpl implements IAuthDAO {
         Query query = new Query();
         query.addCriteria(Criteria.where(USERNAME).is(username));
         Update update = new Update();
-        update.set("lastActiveTime", LocalDateTime.now());
+        update.set("lastActiveTime", LocalDateTime.now(TimeUntils.ZONE_ID));
         mongoTemplate.upsert(query, update,ACCESS_TOKEN_COLLECTION_NAME);
     }
 

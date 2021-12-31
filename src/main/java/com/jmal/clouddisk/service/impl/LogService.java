@@ -207,7 +207,7 @@ public class LogService {
     }
 
     public void addLog(LogOperation logOperation) {
-        logOperation.setCreateTime(LocalDateTime.now());
+        logOperation.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
         mongoTemplate.save(logOperation);
     }
 

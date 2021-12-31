@@ -3,11 +3,15 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.CharsetUtil;
+import cn.hutool.core.util.HexUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.Mode;
 import cn.hutool.crypto.Padding;
 import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.DES;
+import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
+import cn.hutool.crypto.symmetric.SymmetricCrypto;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
@@ -28,9 +32,11 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.mongodb.core.query.UpdateDefinition;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -69,6 +75,35 @@ public class UserServiceImpl implements IUserService {
     @Autowired
     private UserLoginHolder userLoginHolder;
 
+    @PostConstruct
+    public void forOlderVersions() {
+        // TODO 以后删掉, 适配老版本, 2021-12-31 15:50:22之前的
+        Query query = new Query();
+        query.addCriteria(Criteria.where("password").not().regex("^1000:"));
+        List<ConsumerDO> list = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
+        if (list.isEmpty()) {
+            return;
+        }
+        list.forEach(user -> {
+            String password = user.getPassword();
+            String encrypt = user.getEncryptPwd();
+            DES des = new DES(Mode.CTS, Padding.PKCS5Padding, password.getBytes(), "01020304".getBytes());
+            String originalPwd = des.decryptStr(encrypt, CharsetUtil.CHARSET_UTF_8);
+            String newPassword = PasswordHash.createHash(originalPwd);
+            String key = newPassword.split(":")[2];
+            DES des1 = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
+            user.setEncryptPwd(des1.encryptHex(originalPwd));
+            user.setPassword(newPassword);
+            Query query1 = new Query();
+            query1.addCriteria(Criteria.where("_id").is(user.getId()));
+            Update update = new Update();
+            update.set("encryptPwd", des1.encryptHex(originalPwd));
+            update.set("password", newPassword);
+            mongoTemplate.updateFirst(query1, update, COLLECTION_NAME);
+        });
+
+    }
+
     @Override
     public ResponseResult<Object> add(ConsumerDTO consumerDTO) {
         ConsumerDO user1 = getUserInfoByName(consumerDTO.getUsername());
@@ -77,13 +112,17 @@ public class UserServiceImpl implements IUserService {
                 consumerDTO.setQuota(10);
             }
             String originalPwd = consumerDTO.getPassword();
-            String password = SecureUtil.md5(originalPwd);
-            DES des = new DES(Mode.CTS, Padding.PKCS5Padding, password.getBytes(), "01020304".getBytes());
+            if (originalPwd.length() < 8) {
+                return ResultUtil.warning("密码长度不能少于8位");
+            }
+            String password = PasswordHash.createHash(originalPwd);
+            String key = password.split(":")[2];
+            DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
             consumerDTO.setEncryptPwd(des.encryptHex(originalPwd));
             consumerDTO.setPassword(password);
             ConsumerDO consumerDO = new ConsumerDO();
             CglibUtil.copy(consumerDTO, consumerDO);
-            consumerDO.setCreateTime(LocalDateTime.now());
+            consumerDO.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             consumerDO.setId(null);
             mongoTemplate.save(consumerDO, COLLECTION_NAME);
         } else {
@@ -95,7 +134,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public ResponseResult<Object> delete(List<String> idList) {
         String currentUserId = userLoginHolder.getUserId();
-        if(idList.contains(currentUserId)){
+        if (idList.contains(currentUserId)) {
             return ResultUtil.warning("不能删除自己");
         }
         Query query1 = new Query();
@@ -103,7 +142,7 @@ public class UserServiceImpl implements IUserService {
         List<ConsumerDO> userList = mongoTemplate.find(query1, ConsumerDO.class, COLLECTION_NAME);
         // 过滤掉创建者
         ConsumerDO creator = userList.stream().filter(user -> user.getCreator() != null && user.getCreator()).findAny().orElse(null);
-        if(creator != null){
+        if (creator != null) {
             idList = idList.stream().filter(id -> !id.equals(creator.getId())).collect(Collectors.toList());
             userList.remove(creator);
         }
@@ -157,12 +196,12 @@ public class UserServiceImpl implements IUserService {
             fileId = user.getAvatar();
             update.set("avatar", fileId);
         }
-        if (user.getRoles() != null){
+        if (user.getRoles() != null) {
             update.set("roles", user.getRoles());
         }
         if (blobAvatar != null) {
             ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
-            if(consumer != null){
+            if (consumer != null) {
                 UploadApiParamDTO upload = new UploadApiParamDTO();
                 upload.setUserId(userId);
                 upload.setUsername(consumer.getUsername());
@@ -172,8 +211,9 @@ public class UserServiceImpl implements IUserService {
                 update.set("avatar", fileId);
             }
         }
+        update.set("updateTime", LocalDateTime.now(TimeUntils.ZONE_ID));
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
-        if(user.getRoles() != null){
+        if (user.getRoles() != null) {
             // 修改用户角色后更新相关角色用户的权限缓存
             ThreadUtil.execute(() -> roleService.updateUserCacheByRole(user.getRoles()));
         }
@@ -210,10 +250,10 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         MongoUtil.commonQuery(queryDTO, query);
-        if(!StrUtil.isBlank(queryDTO.getUsername())){
+        if (!StrUtil.isBlank(queryDTO.getUsername())) {
             query.addCriteria(Criteria.where("username").regex(queryDTO.getUsername(), "i"));
         }
-        if(!StrUtil.isBlank(queryDTO.getShowName())){
+        if (!StrUtil.isBlank(queryDTO.getShowName())) {
             query.addCriteria(Criteria.where("showName").regex(queryDTO.getShowName(), "i"));
         }
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
@@ -221,7 +261,7 @@ public class UserServiceImpl implements IUserService {
             ConsumerDTO consumerDTO = new ConsumerDTO();
             CglibUtil.copy(consumerDO, consumerDTO);
             List<String> roleIds = consumerDO.getRoles();
-            if(roleIds != null && !roleIds.isEmpty()){
+            if (roleIds != null && !roleIds.isEmpty()) {
                 consumerDTO.setRoleList(roleService.getRoleList(roleIds));
             }
             return consumerDTO;
@@ -247,17 +287,19 @@ public class UserServiceImpl implements IUserService {
         String newPassword = consumer.getPassword();
         if (!StrUtil.isBlank(userId) && !StrUtil.isBlank(newPassword)) {
             ConsumerDO consumer1 = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
-            if(consumer1 != null){
+            if (consumer1 != null) {
                 if (newPassword.equals(consumer1.getPassword())) {
                     return ResultUtil.warning("新密码不能于旧密码相同!");
                 }
                 Query query = new Query();
                 query.addCriteria(Criteria.where("_id").is(userId));
                 Update update = new Update();
-                String password = SecureUtil.md5(newPassword);
-                DES des = new DES(Mode.CTS, Padding.PKCS5Padding, password.getBytes(), "01020304".getBytes());
+                String password = PasswordHash.createHash(newPassword);
+                String key = password.split(":")[2];
+                DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
                 update.set("encryptPwd", des.encryptHex(newPassword));
                 update.set("password", password);
+                update.set("updateTime", LocalDateTime.now(TimeUntils.ZONE_ID));
                 mongoTemplate.upsert(query, update, COLLECTION_NAME);
                 return ResultUtil.successMsg("修改成功!");
             }
@@ -273,10 +315,12 @@ public class UserServiceImpl implements IUserService {
             query.addCriteria(Criteria.where("_id").is(userId));
             Update update = new Update();
             String originalPwd = "jmalcloud";
-            String password = SecureUtil.md5(originalPwd);
-            DES des = new DES(Mode.CTS, Padding.PKCS5Padding, password.getBytes(), "01020304".getBytes());
+            String password = PasswordHash.createHash(originalPwd);
+            String key = password.split(":")[2];
+            DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
             update.set("encryptPwd", des.encryptHex(originalPwd));
             update.set("password", password);
+            update.set("updateTime", LocalDateTime.now(TimeUntils.ZONE_ID));
             mongoTemplate.upsert(query, update, COLLECTION_NAME);
             return ResultUtil.successMsg("重置密码成功!");
         }
@@ -309,7 +353,8 @@ public class UserServiceImpl implements IUserService {
             return "";
         }
         String password = consumer.getPassword();
-        DES des = new DES(Mode.CTS, Padding.PKCS5Padding, password.getBytes(), "01020304".getBytes());
+        String key = password.split(":")[2];
+        DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
         return des.decryptStr(consumer.getEncryptPwd(), CharsetUtil.CHARSET_UTF_8);
     }
 
@@ -334,11 +379,12 @@ public class UserServiceImpl implements IUserService {
             user.setShowName(user.getUsername());
             user.setQuota(15);
             String originalPwd = user.getPassword();
-            String password = SecureUtil.md5(originalPwd);
-            DES des = new DES(Mode.CTS, Padding.PKCS5Padding, password.getBytes(), "01020304".getBytes());
+            String password = PasswordHash.createHash(originalPwd);
+            String key = password.split(":")[2];
+            DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
             user.setEncryptPwd(des.encryptHex(originalPwd));
             user.setPassword(password);
-            user.setCreateTime(LocalDateTime.now());
+            user.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             user.setId(null);
             mongoTemplate.save(user, COLLECTION_NAME);
         }
@@ -370,7 +416,7 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(userId));
         ConsumerDO consumer = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
-        if(consumer != null && consumer.getWebpDisabled() != null){
+        if (consumer != null && consumer.getWebpDisabled() != null) {
             return consumer.getWebpDisabled();
         }
         return true;
@@ -386,15 +432,15 @@ public class UserServiceImpl implements IUserService {
     public List<String> getAuthorities(String username) {
         List<String> authorities = new ArrayList<>();
         ConsumerDO consumerDO = getUserInfoByName(username);
-        if(consumerDO == null){
+        if (consumerDO == null) {
             return authorities;
         }
         // 如果是创建者, 直接返回所有权限
-        if(consumerDO.getCreator() != null && consumerDO.getCreator()){
+        if (consumerDO.getCreator() != null && consumerDO.getCreator()) {
             return AnnoManageUtil.AUTHORITIES;
         }
         List<String> roleIdList = consumerDO.getRoles();
-        if(roleIdList == null || roleIdList.isEmpty()){
+        if (roleIdList == null || roleIdList.isEmpty()) {
             return authorities;
         }
         return roleService.getAuthorities(roleIdList);
@@ -404,10 +450,10 @@ public class UserServiceImpl implements IUserService {
     public List<String> getMenuIdList(String userId) {
         List<String> menuIdList = new ArrayList<>();
         ConsumerDO consumerDO = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
-        if(consumerDO == null || consumerDO.getRoles() == null){
+        if (consumerDO == null || consumerDO.getRoles() == null) {
             return menuIdList;
         }
-        if(consumerDO.getCreator() != null && consumerDO.getCreator()){
+        if (consumerDO.getCreator() != null && consumerDO.getCreator()) {
             // 如果是创建者则返回所有菜单
             return menuService.getAllMenuIdList();
         }
@@ -433,7 +479,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public boolean getIsCreator(String userId) {
         ConsumerDO consumerDO = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
-        if(consumerDO == null){
+        if (consumerDO == null) {
             return false;
         }
         return consumerDO.getCreator() != null && consumerDO.getCreator();
@@ -444,7 +490,7 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         query.addCriteria(Criteria.where("showName").is(showName));
         ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
-        if(consumerDO != null){
+        if (consumerDO != null) {
             return consumerDO.getId();
         }
         return "";
@@ -455,7 +501,7 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(userId));
         ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
-        if(consumerDO != null){
+        if (consumerDO != null) {
             return consumerDO.getShowName();
         }
         return "";
@@ -469,7 +515,7 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         query.addCriteria(Criteria.where("creator").is(true));
         ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
-        if(consumerDO == null){
+        if (consumerDO == null) {
             return null;
         }
         return consumerDO.getAvatar();

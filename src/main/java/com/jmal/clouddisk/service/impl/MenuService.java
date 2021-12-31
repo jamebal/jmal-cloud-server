@@ -11,6 +11,7 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.TimeUntils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -147,7 +148,7 @@ public class MenuService {
         MenuDO menuDO = new MenuDO();
         CglibUtil.copy(menuDTO, menuDO);
         menuDO.setId(null);
-        LocalDateTime dateNow = LocalDateTime.now();
+        LocalDateTime dateNow = LocalDateTime.now(TimeUntils.ZONE_ID);
         menuDO.setCreateTime(dateNow);
         menuDO.setUpdateTime(dateNow);
         mongoTemplate.save(menuDO, COLLECTION_NAME);
@@ -171,7 +172,7 @@ public class MenuService {
         }
         MenuDO menuDO = new MenuDO();
         CglibUtil.copy(menuDTO, menuDO);
-        menuDO.setUpdateTime(LocalDateTime.now());
+        menuDO.setUpdateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(menuDTO.getId()));
         Update update = MongoUtil.getUpdate(menuDO);

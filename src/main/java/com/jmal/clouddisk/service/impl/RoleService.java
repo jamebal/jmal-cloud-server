@@ -10,10 +10,7 @@ import com.jmal.clouddisk.model.query.QueryRoleDTO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.util.CaffeineUtil;
-import com.jmal.clouddisk.util.MongoUtil;
-import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -106,7 +103,7 @@ public class RoleService {
         }
         RoleDO roleDO = new RoleDO();
         CglibUtil.copy(roleDTO, roleDO);
-        LocalDateTime dateNow = LocalDateTime.now();
+        LocalDateTime dateNow = LocalDateTime.now(TimeUntils.ZONE_ID);
         roleDO.setCreateTime(dateNow);
         roleDO.setUpdateTime(dateNow);
         roleDO.setId(null);
@@ -130,7 +127,7 @@ public class RoleService {
         }
         RoleDO roleDO = new RoleDO();
         CglibUtil.copy(roleDTO, roleDO);
-        roleDO.setUpdateTime(LocalDateTime.now());
+        roleDO.setUpdateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(roleDO.getId()));
         if(roleDO.getMenuIds() != null){
