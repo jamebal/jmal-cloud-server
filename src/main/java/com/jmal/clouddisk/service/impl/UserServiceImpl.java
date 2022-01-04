@@ -1,17 +1,12 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.CharsetUtil;
-import cn.hutool.core.util.HexUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.Mode;
 import cn.hutool.crypto.Padding;
-import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.DES;
-import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
-import cn.hutool.crypto.symmetric.SymmetricCrypto;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
@@ -27,12 +22,10 @@ import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.data.mongodb.core.query.UpdateDefinition;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -125,6 +118,8 @@ public class UserServiceImpl implements IUserService {
             consumerDO.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             consumerDO.setId(null);
             mongoTemplate.save(consumerDO, COLLECTION_NAME);
+            // 更新用户缓存
+            CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
         } else {
             return ResultUtil.warning("该用户已存在");
         }
@@ -152,6 +147,8 @@ public class UserServiceImpl implements IUserService {
         shareService.deleteAllByUser(userList);
         // 删除关联token
         authDAO.deleteAllByUser(userList);
+        // 删除用户缓存
+        CaffeineUtil.removeConsumerListByUsernameCache(userList);
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(idList));
         mongoTemplate.remove(query, COLLECTION_NAME);
@@ -162,42 +159,54 @@ public class UserServiceImpl implements IUserService {
     public ResponseResult<Object> update(ConsumerDTO user, MultipartFile blobAvatar) {
         Query query = new Query();
         String userId = user.getId();
-        if (!StrUtil.isBlank(userId)) {
+        ConsumerDO consumerDO;
+        if (!CharSequenceUtil.isBlank(userId)) {
             query.addCriteria(Criteria.where("_id").is(userId));
+            consumerDO = getUserInfoById(userId);
         } else {
             String name = user.getUsername();
-            if (!StrUtil.isBlank(name)) {
+            if (!CharSequenceUtil.isBlank(name)) {
                 query.addCriteria(Criteria.where("username").is(name));
+                consumerDO = getUserInfoByName(name);
             } else {
                 return ResultUtil.success();
             }
         }
+        if (consumerDO == null) {
+            consumerDO = new ConsumerDO();
+        }
         Update update = new Update();
         String showName = user.getShowName();
-        if (!StrUtil.isBlank(showName)) {
+        if (!CharSequenceUtil.isBlank(showName)) {
             update.set("showName", showName);
+            consumerDO.setShowName(showName);
         }
         Integer quota = user.getQuota();
         if (quota != null) {
             update.set("quota", quota);
+            consumerDO.setQuota(quota);
         }
         String slogan = user.getSlogan();
-        if (!StrUtil.isBlank(slogan)) {
+        if (!CharSequenceUtil.isBlank(slogan)) {
             update.set("slogan", slogan);
+            consumerDO.setSlogan(slogan);
         }
         String introduction = user.getIntroduction();
-        if (!StrUtil.isBlank(introduction)) {
+        if (!CharSequenceUtil.isBlank(introduction)) {
             update.set("introduction", introduction);
         } else {
             update.set("introduction", "");
         }
+        consumerDO.setIntroduction(introduction);
         String fileId = "";
-        if (!StrUtil.isBlank(user.getAvatar())) {
+        if (!CharSequenceUtil.isBlank(user.getAvatar())) {
             fileId = user.getAvatar();
             update.set("avatar", fileId);
+            consumerDO.setAvatar(fileId);
         }
         if (user.getRoles() != null) {
             update.set("roles", user.getRoles());
+            consumerDO.setRoles(user.getRoles());
         }
         if (blobAvatar != null) {
             ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
@@ -209,10 +218,15 @@ public class UserServiceImpl implements IUserService {
                 upload.setFile(blobAvatar);
                 fileId = fileService.uploadConsumerImage(upload);
                 update.set("avatar", fileId);
+                consumerDO.setAvatar(fileId);
             }
         }
-        update.set("updateTime", LocalDateTime.now(TimeUntils.ZONE_ID));
+        LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
+        update.set("updateTime", now);
+        consumerDO.setUpdateTime(now);
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        // 更新用户缓存
+        CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
         if (user.getRoles() != null) {
             // 修改用户角色后更新相关角色用户的权限缓存
             ThreadUtil.execute(() -> roleService.updateUserCacheByRole(user.getRoles()));
@@ -239,7 +253,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public ConsumerDO userInfoById(String userId) {
-        if (StrUtil.isBlank(userId)) {
+        if (CharSequenceUtil.isBlank(userId)) {
             return null;
         }
         return mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
@@ -250,10 +264,10 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         MongoUtil.commonQuery(queryDTO, query);
-        if (!StrUtil.isBlank(queryDTO.getUsername())) {
+        if (!CharSequenceUtil.isBlank(queryDTO.getUsername())) {
             query.addCriteria(Criteria.where("username").regex(queryDTO.getUsername(), "i"));
         }
-        if (!StrUtil.isBlank(queryDTO.getShowName())) {
+        if (!CharSequenceUtil.isBlank(queryDTO.getShowName())) {
             query.addCriteria(Criteria.where("showName").regex(queryDTO.getShowName(), "i"));
         }
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
@@ -271,11 +285,11 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public String getUserName(String token) {
-        if (StrUtil.isBlank(token)) {
+        if (CharSequenceUtil.isBlank(token)) {
             throw new CommonException(ExceptionType.PERMISSION_DENIED.getCode(), ExceptionType.PERMISSION_DENIED.getMsg());
         }
         String username = tokenCache.getIfPresent(token);
-        if (StrUtil.isBlank(username)) {
+        if (CharSequenceUtil.isBlank(username)) {
             throw new CommonException(ExceptionType.PERMISSION_DENIED.getCode(), ExceptionType.PERMISSION_DENIED.getMsg());
         }
         return username;
@@ -285,22 +299,13 @@ public class UserServiceImpl implements IUserService {
     public ResponseResult<Object> updatePass(ConsumerDO consumer) {
         String userId = consumer.getId();
         String newPassword = consumer.getPassword();
-        if (!StrUtil.isBlank(userId) && !StrUtil.isBlank(newPassword)) {
+        if (!CharSequenceUtil.isBlank(userId) && !CharSequenceUtil.isBlank(newPassword)) {
             ConsumerDO consumer1 = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
             if (consumer1 != null) {
                 if (newPassword.equals(consumer1.getPassword())) {
-                    return ResultUtil.warning("新密码不能于旧密码相同!");
+                    return ResultUtil.warning("新密码不能与旧密码相同!");
                 }
-                Query query = new Query();
-                query.addCriteria(Criteria.where("_id").is(userId));
-                Update update = new Update();
-                String password = PasswordHash.createHash(newPassword);
-                String key = password.split(":")[2];
-                DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
-                update.set("encryptPwd", des.encryptHex(newPassword));
-                update.set("password", password);
-                update.set("updateTime", LocalDateTime.now(TimeUntils.ZONE_ID));
-                mongoTemplate.upsert(query, update, COLLECTION_NAME);
+                updatePwd(userId, newPassword);
                 return ResultUtil.successMsg("修改成功!");
             }
         }
@@ -310,24 +315,40 @@ public class UserServiceImpl implements IUserService {
     @Override
     public ResponseResult<Object> resetPass(ConsumerDO consumer) {
         String userId = consumer.getId();
-        if (!StrUtil.isBlank(userId)) {
-            Query query = new Query();
-            query.addCriteria(Criteria.where("_id").is(userId));
-            Update update = new Update();
+        if (!CharSequenceUtil.isBlank(userId)) {
             String originalPwd = "jmalcloud";
-            String password = PasswordHash.createHash(originalPwd);
-            String key = password.split(":")[2];
-            DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
-            update.set("encryptPwd", des.encryptHex(originalPwd));
-            update.set("password", password);
-            update.set("updateTime", LocalDateTime.now(TimeUntils.ZONE_ID));
-            mongoTemplate.upsert(query, update, COLLECTION_NAME);
+            updatePwd(userId, originalPwd);
             return ResultUtil.successMsg("重置密码成功!");
         }
         return ResultUtil.error("重置失败!");
     }
 
-    @Cacheable(value = "getUserIdByUserName", key = "#username")
+    private void updatePwd(String userId, String originalPwd) {
+        if (originalPwd.length() < 8) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "密码长度不能少于8位");
+        }
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(userId));
+        Update update = new Update();
+        String password = PasswordHash.createHash(originalPwd);
+        String key = password.split(":")[2];
+        DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
+        String encryptPwd = des.encryptHex(originalPwd);
+        LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
+        update.set("encryptPwd", encryptPwd);
+        update.set("password", password);
+        update.set("updateTime", now);
+        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        // 更新用户缓存
+        ConsumerDO consumerDO = getUserInfoById(userId);
+        if (consumerDO != null) {
+            consumerDO.setEncryptPwd(encryptPwd);
+            consumerDO.setPassword(password);
+            consumerDO.setUpdateTime(now);
+            CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
+        }
+    }
+
     @Override
     public String getUserIdByUserName(String username) {
         ConsumerDO consumer = getUserInfoByName(username);
@@ -337,7 +358,6 @@ public class UserServiceImpl implements IUserService {
         return null;
     }
 
-    @Cacheable(value = "getShowNameByUserUsername", key = "#username")
     public String getShowNameByUserUsername(String username) {
         ConsumerDO consumer = getUserInfoByName(username);
         if (consumer == null) {
@@ -346,7 +366,6 @@ public class UserServiceImpl implements IUserService {
         return consumer.getShowName();
     }
 
-    @Cacheable(value = "getPasswordByUserName", key = "#username")
     public String getPasswordByUserName(String username) {
         ConsumerDO consumer = getUserInfoByName(username);
         if (consumer == null) {
@@ -393,7 +412,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public String getUserNameById(String userId) {
-        if (!StrUtil.isBlank(userId)) {
+        if (!CharSequenceUtil.isBlank(userId)) {
             ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
             if (consumer != null) {
                 return consumer.getUsername();
@@ -423,9 +442,17 @@ public class UserServiceImpl implements IUserService {
     }
 
     private ConsumerDO getUserInfoByName(String name) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("username").is(name));
-        return mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
+        ConsumerDO consumer = CaffeineUtil.getConsumerByUsernameCache(name);
+        if (consumer == null) {
+            Query query = new Query();
+            query.addCriteria(Criteria.where("username").is(name));
+            consumer = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
+        }
+        return consumer;
+    }
+
+    private ConsumerDO getUserInfoById(String userId) {
+        return mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
     }
 
     @Override

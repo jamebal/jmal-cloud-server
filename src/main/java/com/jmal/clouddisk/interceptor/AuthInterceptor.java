@@ -41,8 +41,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     public static final String ACCESS_TOKEN = "access-token";
 
-    private static final long ONE_WEEK = 7 * 1000L * 60 * 60 * 24;
-
+    private static final long ONE_DAY = 1000L * 60 * 60 * 24;
     private final Cache<String, String> tokenCache = CaffeineUtil.getTokenCache();
 
     @Autowired
@@ -161,7 +160,7 @@ public class AuthInterceptor implements HandlerInterceptor {
                 if (userTokenDO == null) {
                     return null;
                 }
-                if ((System.currentTimeMillis() - userTokenDO.getTimestamp()) < ONE_WEEK) {
+                if ((System.currentTimeMillis() - userTokenDO.getTimestamp()) < ONE_DAY) {
                     ThreadUtil.execute(() -> updateToken(jmalToken, userName));
                     return userTokenDO.getUsername();
                 } else {

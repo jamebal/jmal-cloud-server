@@ -179,7 +179,6 @@ public class MySimpleSecurityManager implements io.milton.http.SecurityManager {
      *     3   >   2    >   1    >   0
      * @return delete/update/upload/list
      */
-    @Cacheable(value = "allowMethods", key = "#username")
     public int maxAuthority(String username){
         List<String> authorities = CaffeineUtil.getAuthoritiesCache(username);
         if (authorities == null) {

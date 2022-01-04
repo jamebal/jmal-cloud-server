@@ -7,6 +7,11 @@ package com.jmal.clouddisk.exception;
  */
 public enum ExceptionType {
 
+
+    /***
+     * 警告
+     */
+    WARNING(-2, ""),
     /***
      * 其他异常
      */

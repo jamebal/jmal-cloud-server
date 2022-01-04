@@ -2,6 +2,7 @@ package com.jmal.clouddisk.util;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -21,7 +22,14 @@ public class CaffeineUtil {
     /***
      * 空间已满的用户
      */
-    private final static Cache<String, String> SPACE_FULL = Caffeine.newBuilder().build();
+    private static final Cache<String, String> SPACE_FULL = Caffeine.newBuilder().build();
+
+    /***
+     * 用户信息缓存
+     * key: username
+     * value: ConsumerDO 用户信息
+     */
+    public static final Cache<String, ConsumerDO> CONSUMER_USERNAME = Caffeine.newBuilder().build();
 
     /***
      * 已上传的分片索引
@@ -111,7 +119,7 @@ public class CaffeineUtil {
             unWrittenCache = Caffeine.newBuilder().build();
         }
         if(tokenCache == null){
-            tokenCache = Caffeine.newBuilder().expireAfterWrite(7, TimeUnit.DAYS).build();
+            tokenCache = Caffeine.newBuilder().expireAfterWrite(1, TimeUnit.DAYS).build();
         }
         if(chunkWriteLockCache == null){
             chunkWriteLockCache = Caffeine.newBuilder().build();
@@ -164,6 +172,34 @@ public class CaffeineUtil {
 
     public static boolean spaceFull(String userId) {
         return SPACE_FULL.getIfPresent(userId) != null;
+    }
+
+    /**
+     * 根据用户名获取用户信息
+     */
+    public static ConsumerDO getConsumerByUsernameCache(String username) {
+        return CONSUMER_USERNAME.getIfPresent(username);
+    }
+
+    /**
+     * 更新用户信息
+     */
+    public static void setConsumerByUsernameCache(String username, ConsumerDO consumerDO) {
+        CONSUMER_USERNAME.put(username, consumerDO);
+    }
+
+    /**
+     * 删除用户信息
+     */
+    public static void removeConsumerListByUsernameCache(List<ConsumerDO> list) {
+        list.forEach(consumerDO -> removeConsumerByUsernameCache(consumerDO.getUsername(), consumerDO));
+    }
+
+    /**
+     * 删除用户信息
+     */
+    public static void removeConsumerByUsernameCache(String username, ConsumerDO consumerDO) {
+        CONSUMER_USERNAME.put(username, consumerDO);
     }
 
 }
