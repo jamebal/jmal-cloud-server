@@ -80,7 +80,7 @@
         </div>
     </div>
     <script th:inline="javascript">
-        $(function(){
+        $(document).ready(function(){
             document.title = [[${titleName}]]
             // 是否为独立页面
             const isAlonePage = [[${markdown.alonePage}]]
@@ -97,7 +97,7 @@
             let contents = []
 
             // 渲染目录
-            renderContents()
+            // renderContents()
             // 添加更新时间
             if(!isAlonePage){
                 addUpdateTime()
@@ -115,6 +115,10 @@
                     },
                     theme: {
                         current: 'light'
+                    },
+                    transform(htmlStr) {
+                        renderContents($(htmlStr))
+                        return htmlStr;
                     },
                     after() {
                         setContentTheme()
@@ -163,8 +167,15 @@
             /***
              * 渲染目录
              */
-            function renderContents(){
-                let headers = $('.article-body').find(":header")
+            function renderContents(article) {
+                let headerList = ["H1","H2","H3","H4","H5","H6"];
+                let headers = []
+                article.each(function () {
+                    let tagName = $(this).prop("tagName")
+                    if (tagName && headerList.indexOf(tagName) > -1) {
+                        headers.push($(this))
+                    }
+                })
                 if(!headers || headers.length < 2){
                     return
                 }
@@ -176,15 +187,15 @@
                 }
                 // 找出最大号的标题, 默认最小为6号标题(h6)
                 let maxTitleNumber = 6
-                headers.each(function () {
-                    const h = $(this).prop("tagName").substring(1,2)
+                headers.forEach(function (header) {
+                    const h = header.prop("tagName").substring(1,2)
                     if(maxTitleNumber > h){
                         maxTitleNumber = h
                     }
                 })
                 maxTitleNumber--
-                headers.each(function (index) {
-                    contents.push(titleOneItem(index, $(this), $(this).prop("tagName"), maxTitleNumber))
+                headers.forEach(function (header, index) {
+                    contents.push(titleOneItem(index, header, header.prop("tagName"), maxTitleNumber))
                 })
                 $('.j-titleList').prepend(contents)
                 // 获取id数组

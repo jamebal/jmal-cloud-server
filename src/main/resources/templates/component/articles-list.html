@@ -72,7 +72,13 @@
         <div id="laypage">
             <div class="layui-box layui-laypage layui-laypage-default" id="layui-laypage-1">
                 <i th:if="${articlesData.getTotalPage() > 1}">
-                    <a data-pjax th:href="'?page=' + ${articlesData.getCurrentPage()-1}" th:class="'layui-laypage-prev'+ ${articlesData.isFirst()?' layui-disabled':''}" >上一页</a>
+                    <i th:if="${articlesData.getCurrentPage() == 1}">
+                        <a data-pjax th:class="'layui-laypage-prev'+ ${articlesData.isFirst()?' layui-disabled':''}" >上一页</a>
+                    </i>
+                    <i th:if="${articlesData.getCurrentPage() > 1}">
+                        <a data-pjax th:href="'?page=' + ${articlesData.getCurrentPage()-1}" th:class="'layui-laypage-prev'+ ${articlesData.isFirst()?' layui-disabled':''}" >上一页</a>
+                    </i>
+
                     <i class="rainbow-page">
                         <i th:if="${articlesData.getCurrentPage() >= 5}">
                             <a data-pjax href="/articles" class="layui-laypage-first" title="首页">1</a>
@@ -89,7 +95,12 @@
                             <a data-pjax th:href="'?page=' + ${articlesData.getTotalPage()}" class="layui-laypage-last" title="尾页" th:text="${articlesData.getTotalPage()}"></a>
                         </i>
                     </i>
-                    <a data-pjax th:href="'?page=' + ${articlesData.getCurrentPage()+1}" th:class="'layui-laypage-next'+ ${articlesData.isLast()?' layui-disabled':''}">下一页</a>
+                    <i th:if="${articlesData.getTotalPage() == articlesData.getCurrentPage()}">
+                        <a data-pjax th:class="'layui-laypage-next'+ ${articlesData.isLast()?' layui-disabled':''}">下一页</a>
+                    </i>
+                    <i th:if="${articlesData.getTotalPage() > articlesData.getCurrentPage()}">
+                        <a data-pjax th:href="'?page=' + ${articlesData.getCurrentPage()+1}" th:class="'layui-laypage-next'+ ${articlesData.isLast()?' layui-disabled':''}">下一页</a>
+                    </i>
                 </i>
             </div>
         </div>
