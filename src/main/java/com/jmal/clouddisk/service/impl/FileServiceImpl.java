@@ -12,7 +12,6 @@ import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.github.benmanes.caffeine.cache.Cache;
-import com.google.common.collect.Maps;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -970,7 +969,7 @@ public class FileServiceImpl implements IFileService {
     private void pushMessage(String username, Object message, String url) {
         WebSocketSession webSocketSession = SocketManager.get(username);
         if (webSocketSession != null) {
-            Map<String, Object> headers = Maps.newHashMap();
+            Map<String, Object> headers = new HashMap<>(4);
             headers.put("url", url);
             String userId = userLoginHolder.getUserId();
             if (StrUtil.isBlank(userId)) {

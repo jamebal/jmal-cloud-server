@@ -2,7 +2,8 @@ package com.jmal.clouddisk.interceptor;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.net.URLDecoder;
+import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.IFileService;
@@ -14,11 +15,12 @@ import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
-
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.HandlerMapping;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.FileCacheImageOutputStream;
 import javax.servlet.ServletOutputStream;
@@ -29,7 +31,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -82,9 +84,11 @@ public class FileInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws UnsupportedEncodingException {
-        if (fileAuthError(request)) return false;
+        if (fileAuthError(request)) {
+            return false;
+        }
         String operation = request.getParameter(OPERATION);
-        if (!StrUtil.isBlank(operation)) {
+        if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD:
                     Path path = Paths.get(request.getRequestURI());
@@ -113,10 +117,12 @@ public class FileInterceptor implements HandlerInterceptor {
      * 判断当前uri所属的文件是否为该分享的文件或其子文件
      * @return true 鉴权失败，false 鉴权成功
      */
-    private boolean fileAuthError(HttpServletRequest request) throws UnsupportedEncodingException {
-        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), "UTF-8"));
+    private boolean fileAuthError(HttpServletRequest request) {
+        String path = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+        request.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE, URLDecoder.decode(path, StandardCharsets.UTF_8));
+        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
         String shareKey = request.getParameter(SHARE_KEY);
-        if (!StrUtil.isBlank(shareKey)) {
+        if (!CharSequenceUtil.isBlank(shareKey)) {
             FileDocument fileDocument = fileService.getById(shareKey);
             if (!isNotAllowAccess(fileDocument)) {
                 // 判断当前uri所属的文件是否为该分享的文件或其子文件
@@ -124,7 +130,7 @@ public class FileInterceptor implements HandlerInterceptor {
                 if (thisFile.getPath().equals(fileDocument.getPath())) {
                     return false;
                 }
-                if (fileDocument.getIsFolder()) {
+                if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
                     String parentPath = fileDocument.getPath() + fileDocument.getName();
                     return !thisFile.getPath().startsWith(parentPath);
                 }
@@ -135,7 +141,7 @@ public class FileInterceptor implements HandlerInterceptor {
             if (uriPath.getNameCount() < MIX_COUNT) {
                 return true;
             }
-            if (!StrUtil.isBlank(username) && username.equals(uriPath.getName(1).toString())) {
+            if (!CharSequenceUtil.isBlank(username) && username.equals(uriPath.getName(1).toString())) {
                 return false;
             }
             return isNotAllowAccess(getFileDocument(uriPath));
@@ -160,8 +166,8 @@ public class FileInterceptor implements HandlerInterceptor {
         return true;
     }
 
-    private void webp(HttpServletRequest request, HttpServletResponse response) throws UnsupportedEncodingException {
-        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), "UTF-8"));
+    private void webp(HttpServletRequest request, HttpServletResponse response) {
+        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
         uriPath = uriPath.subpath(1, uriPath.getNameCount());
         try {
             File file = Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
@@ -173,7 +179,7 @@ public class FileInterceptor implements HandlerInterceptor {
             responseHeader(response, file.getName() + ".webp", new byte[1]);
             // 配置编码参数
             WebPWriteParam writeParam = new WebPWriteParam(writer.getLocale());
-            writeParam.setCompressionMode(WebPWriteParam.MODE_DEFAULT);
+            writeParam.setCompressionMode(ImageWriteParam.MODE_DEFAULT);
             // 在ImageWriter上配置输出
             FileCacheImageOutputStream output = new FileCacheImageOutputStream(response.getOutputStream(), null);
             writer.setOutput(output);
@@ -186,45 +192,42 @@ public class FileInterceptor implements HandlerInterceptor {
     }
 
     private void thumbnail(HttpServletRequest request, HttpServletResponse response) {
-        try {
-            Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), "UTF-8"));
-            if (uriPath.getNameCount() < MIX_COUNT) {
-                return;
-            }
-            FileDocument fileDocument = getFileDocument(uriPath);
-            Path relativePath = uriPath.subpath(1, uriPath.getNameCount());
-            if (fileDocument != null) {
-                if (fileDocument.getContent() == null) {
-                    File file = Paths.get(fileProperties.getRootDir(), relativePath.toString()).toFile();
-                    if (file.exists()) {
-                        fileDocument.setContent(FileUtil.readBytes(file));
-                    }
+        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
+        if (uriPath.getNameCount() < MIX_COUNT) {
+            return;
+        }
+        FileDocument fileDocument = getFileDocument(uriPath);
+        Path relativePath = uriPath.subpath(1, uriPath.getNameCount());
+        if (fileDocument != null) {
+            if (fileDocument.getContent() == null) {
+                File file = Paths.get(fileProperties.getRootDir(), relativePath.toString()).toFile();
+                if (file.exists()) {
+                    fileDocument.setContent(FileUtil.readBytes(file));
                 }
-                responseWritImage(response, fileDocument.getName(), fileDocument.getContent());
             }
-        } catch (UnsupportedEncodingException ignored) {
+            responseWritImage(response, fileDocument.getName(), fileDocument.getContent());
         }
     }
 
     private FileDocument getFileDocument(Path uriPath) {
         String username = uriPath.getName(1).toString();
-        String path = "/";
+        String path = File.separator;
         if (uriPath.getNameCount() > MIX_COUNT + 1) {
-            path = "/" + uriPath.subpath(MIX_COUNT, uriPath.getNameCount()).getParent().toString() + "/";
+            path = File.separator + uriPath.subpath(MIX_COUNT, uriPath.getNameCount()).getParent().toString() + File.separator;
         }
         String name = uriPath.getFileName().toString();
         return fileService.getFileDocumentByPathAndName(path, name, username);
     }
 
-    private void handleCrop(HttpServletRequest request, HttpServletResponse response) throws UnsupportedEncodingException {
-        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), "UTF-8"));
+    private void handleCrop(HttpServletRequest request, HttpServletResponse response) {
+        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
         uriPath = uriPath.subpath(1, uriPath.getNameCount());
         File file = Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
         String q = request.getParameter("q");
         String w = request.getParameter("w");
         String h = request.getParameter("h");
         byte[] img = imageCrop(file, q, w, h);
-        if (img != null) {
+        if (img.length > 0) {
             responseWritImage(response, file.getName(), img);
         }
     }
@@ -287,7 +290,7 @@ public class FileInterceptor implements HandlerInterceptor {
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
-        return null;
+        return new byte[0];
     }
 
 }

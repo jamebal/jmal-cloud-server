@@ -87,7 +87,7 @@ public class AuthInterceptor implements HandlerInterceptor {
      */
     private void setAuthorities(String username) {
         List<String> authorities = CaffeineUtil.getAuthoritiesCache(username);
-        if(authorities == null){
+        if(authorities == null || authorities.isEmpty()){
             authorities = userService.getAuthorities(username);
             CaffeineUtil.setAuthoritiesCache(username, authorities);
         }
