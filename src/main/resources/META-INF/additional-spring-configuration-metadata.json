@@ -1,0 +1,8 @@
+{
+  "properties": [
+    {
+      "name": "version",
+      "type": "java.lang.String",
+      "description": "Edition number."
+  }
+] }
