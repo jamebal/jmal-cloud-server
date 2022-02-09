@@ -213,8 +213,8 @@ public class LogService {
 
     public ResponseResult<List<LogOperation>> list(LogOperationDTO logOperationDTO) {
         Query query = getQuery(logOperationDTO);
-        List<LogOperation> logOperationList = getLogList(logOperationDTO, query);
         long count = mongoTemplate.count(query, LogOperation.class);
+        List<LogOperation> logOperationList = getLogList(logOperationDTO, query);
         return ResultUtil.success(logOperationList).setCount(count);
     }
 
