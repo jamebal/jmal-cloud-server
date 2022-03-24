@@ -235,7 +235,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
     @Override
     public Page<Object> getArchives(Integer page, Integer pageSize) {
         boolean pagination = false;
-        int skip = 0, limit = 10;
+        int skip = 0;
+        int limit = 10;
         if (page != null && pageSize != null) {
             skip = (page - 1) * pageSize;
             limit = pageSize;
@@ -244,13 +245,20 @@ public class MarkdownServiceImpl implements IMarkdownService {
         Query query = new Query();
         query.addCriteria(Criteria.where("release").is(true));
         long count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
-        List<Bson> list = new ArrayList<>(Arrays.asList(
-                match(and(eq("release", true), exists("alonePage", false))),
-                sort(descending("uploadDate")),
-                project(fields(computed("date", "$uploadDate"),
-                        computed("day", eq("$dateToString", and(eq("format", "%Y-%m"), eq("date", "$uploadDate")))),
-                        include("name"),
-                        include("slug")))));
+        List<Bson> list = new ArrayList<>(Arrays.asList(new Document("$match",
+                        new Document("release", true)
+                                .append("alonePage",
+                                        new Document("$exists", false))),
+                new Document("$sort",
+                        new Document("uploadDate", -1L)),
+                new Document("$project",
+                        new Document("date", "$uploadDate")
+                                .append("day",
+                                        new Document("$dateToString",
+                                                new Document("format", "%Y-%m")
+                                                        .append("date", "$uploadDate")))
+                                .append("name", 1L)
+                                .append("slug", 1L))));
         if (pagination) {
             list.add(skip(skip));
             list.add(limit(limit));
