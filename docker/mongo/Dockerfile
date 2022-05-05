@@ -24,14 +24,14 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 RUN echo 'Asia/Shanghai' >/etc/timezone
 
 # 安装java环境
-ADD jdk-8u251-linux-x64.tar.gz /usr/local/
+ADD jdk-8u281-linux-x64.tar.gz /usr/local/
 ENV MYPATH /usr/local
 WORKDIR $MYPATH
-ENV JAVA_HOME /usr/local/jdk1.8.0_251
+ENV JAVA_HOME /usr/local/jdk1.8.0_281
 ENV CLASSPATH $JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
 ENV PATH $PATH:$JAVA_HOME/bin:$CLASSPATH
 
-RUN rm -f /usr/local/jdk-8u251-linux-x64.tar.gz
+RUN rm -f /usr/local/jdk-8u281-linux-x64.tar.gz
 
 COPY docker-entrypoint.sh /usr/local/bin/
 
@@ -39,4 +39,4 @@ COPY docker-entrypoint.sh /usr/local/bin/
 EXPOSE 27017
 
 #CMD 运行以下命令
-CMD /etc/nginx/sbin/nginx && /usr/bin/mongod
+CMD /etc/nginx/sbin/nginx && /usr/bin/mongod --bind_ip=0.0.0.0
