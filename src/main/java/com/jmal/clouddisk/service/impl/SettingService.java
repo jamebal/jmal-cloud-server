@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -8,22 +9,30 @@ import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tika.mime.MimeType;
+import org.apache.tika.mime.MimeTypeException;
+import org.apache.tika.mime.MimeTypes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 
 import javax.annotation.PostConstruct;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -230,4 +239,38 @@ public class SettingService {
         roleService.initRoles();
     }
 
+    // /**
+    //  * 更新网盘设置
+    //  * @param cloudSettingDTO 网盘设置DTO
+    //  */
+    // public ResponseResult<Object> cloudUpdate(CloudSettingDTO cloudSettingDTO) {
+    //     MultipartFile multipartFile = cloudSettingDTO.getFile();
+    //     String fileName = "cloud-logo";
+    //     MimeTypes allTypes = MimeTypes.getDefaultMimeTypes();
+    //     MimeType mimeType = null;
+    //     try {
+    //         mimeType = allTypes.forName(multipartFile.getContentType());
+    //         fileName += mimeType.getExtension();
+    //     } catch (MimeTypeException e) {
+    //         log.error(e.getMessage(), e);
+    //     }
+    //     Path userImagePaths = Paths.get(fileProperties.getUserImgDir());
+    //     // userImagePaths 不存在则新建
+    //     upsertFolder(userImagePaths, username, userId);
+    //     File newFile;
+    //     try {
+    //         if (userService.getDisabledWebp(userId) || ("ico".equals(FileUtil.getSuffix(fileName)))) {
+    //             newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
+    //             FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
+    //         } else {
+    //             fileName = fileName + _SUFFIX_WEBP;
+    //             newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
+    //             BufferedImage image = ImageIO.read(multipartFile.getInputStream());
+    //             imageFileToWebp(newFile, image);
+    //         }
+    //     } catch (IOException e) {
+    //         throw new CommonException(2, "上传失败");
+    //     }
+    //     return createFile(username, newFile, userId, true);
+    // }
 }
