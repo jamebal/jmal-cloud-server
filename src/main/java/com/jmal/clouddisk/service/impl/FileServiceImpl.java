@@ -5,9 +5,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.util.CharsetUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.core.util.URLUtil;
+import cn.hutool.core.util.*;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.extra.cglib.CglibUtil;
@@ -73,6 +71,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Pattern;
 
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Aggregates.group;
@@ -451,7 +450,7 @@ public class FileServiceImpl implements IFileService {
     private long getFolderSize(String userId, String path) {
         List<Bson> list = Arrays.asList(
                 match(and(eq("userId", userId),
-                        eq("isFolder", false), regex("path", "^" + path))),
+                        eq("isFolder", false), regex("path", "^" + ReUtil.escape(path)))),
                 group(new BsonNull(), sum("totalSize", "$size")));
         AggregateIterable<Document> aggregate = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
         long totalSize = 0;
@@ -670,7 +669,7 @@ public class FileServiceImpl implements IFileService {
                 String searchPath = currentDirectory + fileDocument.getName();
                 String newPath = currentDirectory + newFileName;
                 query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
-                query.addCriteria(Criteria.where("path").regex("^" + searchPath));
+                query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(searchPath)));
                 List<FileDocument> documentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
                 // 修改该文件夹下的所有文件的path
                 documentList.parallelStream().forEach(rep -> {
@@ -1175,7 +1174,7 @@ public class FileServiceImpl implements IFileService {
             Query query = new Query();
             query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
             query.addCriteria(Criteria.where("isFolder").is(false));
-            query.addCriteria(Criteria.where("path").regex("^" + file.getPath() + file.getName()));
+            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
             List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
             fileDocuments.parallelStream().forEach(fileDocument -> setShareFile(fileDocument, expiresAt));
         }
@@ -1192,7 +1191,7 @@ public class FileServiceImpl implements IFileService {
             Query query = new Query();
             query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
             query.addCriteria(Criteria.where("isFolder").is(false));
-            query.addCriteria(Criteria.where("path").regex("^" + file.getPath() + file.getName()));
+            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
             List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
             fileDocuments.parallelStream().forEach(fileDocument -> unsetShareFile(fileDocument));
         }
@@ -1316,7 +1315,7 @@ public class FileServiceImpl implements IFileService {
                 // 复制其下的子文件或目录
                 Query query = new Query();
                 query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
-                query.addCriteria(Criteria.where("path").regex("^" + fromPath));
+                query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fromPath)));
                 List<FileDocument> formList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
                 formList = formList.stream().peek(fileDocument -> {
                     String oldPath = fileDocument.getPath();
@@ -1863,7 +1862,7 @@ public class FileServiceImpl implements IFileService {
                 // 删除文件夹及其下的所有文件
                 Query query1 = new Query();
                 query1.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
-                query1.addCriteria(Criteria.where("path").regex("^" + fileDocument.getPath() + fileDocument.getName()));
+                query1.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName())));
                 mongoTemplate.remove(query1, COLLECTION_NAME);
                 isDel = true;
             }
