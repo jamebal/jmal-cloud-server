@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.controller.rest;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.URLUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
@@ -161,7 +162,7 @@ public class FileController {
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> previewTextByPath(@RequestParam String path,@RequestParam String username) {
-        return fileService.previewTextByPath(path, username);
+        return fileService.previewTextByPath(URLUtil.decode(path), username);
     }
 
     @Operation(summary = "是否允许下载")
@@ -315,7 +316,7 @@ public class FileController {
         if(dir == null){
             dir = false;
         }
-        return fileService.listFiles(path, username, dir);
+        return fileService.listFiles(URLUtil.decode(path), username, dir);
     }
 
     @Operation(summary = "获取上级文件列表")
@@ -323,7 +324,7 @@ public class FileController {
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> upperLevelList(@RequestParam String path, @RequestParam String username) {
-        return fileService.upperLevelList(path, username);
+        return fileService.upperLevelList(URLUtil.decode(path), username);
     }
 
     @Operation(summary = "根据path删除文件/文件夹")
@@ -331,7 +332,7 @@ public class FileController {
     @LogOperatingFun
     @Permission("cloud:file:delete")
     public ResponseResult<Object> delFile(@RequestParam String path, @RequestParam String username) {
-        return fileService.delFile(path, username);
+        return fileService.delFile(URLUtil.decode(path), username);
     }
 
     @Operation(summary = "根据path重命名")
@@ -339,7 +340,7 @@ public class FileController {
     @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> renameByPath(@RequestParam String newFileName,@RequestParam String username,@RequestParam String path) {
-        return fileService.renameByPath(newFileName, username, path);
+        return fileService.renameByPath(newFileName, username, URLUtil.decode(path));
     }
 
     @Operation(summary = "根据path添加文件/文件夹")
@@ -347,6 +348,6 @@ public class FileController {
     @LogOperatingFun
     @Permission("cloud:file:upload")
     public ResponseResult<Object> addFile(@RequestParam String fileName, @RequestParam Boolean isFolder, @RequestParam String username, @RequestParam String parentPath){
-        return fileService.addFile(fileName, isFolder, username, parentPath);
+        return fileService.addFile(URLUtil.decode(fileName), isFolder, username, URLUtil.decode(parentPath));
     }
 }

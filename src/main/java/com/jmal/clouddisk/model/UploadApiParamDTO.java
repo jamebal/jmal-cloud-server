@@ -6,6 +6,7 @@ import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 
@@ -161,5 +162,12 @@ public class UploadApiParamDTO {
 
     public String getRelativePath() {
         return URLUtil.decode(relativePath);
+    }
+
+    public String getCurrentDirectory() {
+        if (currentDirectory == null || "undefined".equals(currentDirectory)) {
+            return File.separator;
+        }
+        return URLUtil.decode(currentDirectory);
     }
 }
