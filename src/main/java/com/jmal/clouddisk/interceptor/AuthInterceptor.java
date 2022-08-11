@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.interceptor;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
@@ -54,7 +55,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         // 身份认证
         String username = getUserNameByHeader(request);
-        if (!StrUtil.isBlank(username)) {
+        if (!CharSequenceUtil.isBlank(username)) {
             // jmal-token 身份认证通过, 设置该身份的权限
             setAuthorities(username);
             return true;
@@ -71,10 +72,10 @@ public class AuthInterceptor implements HandlerInterceptor {
     public String getUserNameByHeader(HttpServletRequest request){
         String username;
         String jmalToken = request.getHeader(JMAL_TOKEN);
-        if (StrUtil.isBlank(jmalToken)) {
+        if (CharSequenceUtil.isBlank(jmalToken)) {
             jmalToken = request.getParameter(JMAL_TOKEN);
         }
-        if(StrUtil.isBlank(jmalToken)){
+        if(CharSequenceUtil.isBlank(jmalToken)){
             return getUserNameByAccessToken(request);
         }
         username = getUserNameByJmalToken(jmalToken);
@@ -104,7 +105,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (requestAttributes != null){
             String userId = CaffeineUtil.getUserIdCache(username);
-            if(StrUtil.isBlank(userId)) {
+            if(CharSequenceUtil.isBlank(userId)) {
                 userId = userService.getUserIdByUserName(username);
                 CaffeineUtil.setUserIdCache(username, userId);
             }
@@ -123,10 +124,10 @@ public class AuthInterceptor implements HandlerInterceptor {
      */
     public String getUserNameByAccessToken(HttpServletRequest request){
         String token = request.getHeader(ACCESS_TOKEN);
-        if (StrUtil.isBlank(token)) {
+        if (CharSequenceUtil.isBlank(token)) {
             token = request.getParameter(ACCESS_TOKEN);
         }
-        if(StrUtil.isBlank(token)){
+        if(CharSequenceUtil.isBlank(token)){
             return null;
         }
         UserAccessTokenDO userAccessTokenDO = authDAO.getUserNameByAccessToken(token);
@@ -134,7 +135,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             return null;
         }
         String username = userAccessTokenDO.getUsername();
-        if(StrUtil.isBlank(username)){
+        if(CharSequenceUtil.isBlank(username)){
             return null;
         }
         // access-token 认证通过 设置该身份的权限
@@ -149,11 +150,11 @@ public class AuthInterceptor implements HandlerInterceptor {
      * @return 用户名
      */
     public String getUserNameByJmalToken(String jmalToken) {
-        if (!StrUtil.isBlank(jmalToken)) {
+        if (!CharSequenceUtil.isBlank(jmalToken)) {
             String username = tokenCache.getIfPresent(jmalToken);
-            if (StrUtil.isBlank(username)) {
+            if (CharSequenceUtil.isBlank(username)) {
                 String userName = TokenUtil.getUserName(jmalToken);
-                if(StrUtil.isBlank(userName)){
+                if(CharSequenceUtil.isBlank(userName)){
                     return null;
                 }
                 UserTokenDO userTokenDO = authDAO.findOneUserToken(userName);
