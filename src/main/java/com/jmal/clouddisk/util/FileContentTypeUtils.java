@@ -153,10 +153,11 @@ public class FileContentTypeUtils {
         CONTENT_TYPE.put("djv" , "image/vnd.djvu");
         CONTENT_TYPE.put("djvu" , "image/vnd.djvu");
         CONTENT_TYPE.put("dng" , "image/x-adobe-dng");
-        CONTENT_TYPE.put("doc" , "application/msword");
+        CONTENT_TYPE.put("doc" , "application/officedocument-msword");
         CONTENT_TYPE.put("docbook" , "application/docbook+xml");
         CONTENT_TYPE.put("docm" , "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
         CONTENT_TYPE.put("docx" , "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        CONTENT_TYPE.put("docxf" , "application/vnd.openxmlformats-officeform.wordprocessingml.document");
         CONTENT_TYPE.put("dot" , "text/vnd.graphviz");
         CONTENT_TYPE.put("dsl" , "text/x-dsl");
         CONTENT_TYPE.put("dtd" , "application/xml-dtd");
@@ -473,8 +474,8 @@ public class FileContentTypeUtils {
         CONTENT_TYPE.put("por" , "application/x-spss-por");
         CONTENT_TYPE.put("pot" , "text/x-gettext-translation-template");
         CONTENT_TYPE.put("ppm" , "image/x-portable-pixmap");
-        CONTENT_TYPE.put("pps" , "application/vnd.ms-powerpoint");
-        CONTENT_TYPE.put("ppt" , "application/vnd.ms-powerpoint");
+        CONTENT_TYPE.put("pps" , "application/vnd.ms-office.powerpoint");
+        CONTENT_TYPE.put("ppt" , "application/vnd.ms-office.powerpoint");
         CONTENT_TYPE.put("pptm" , "application/vnd.openxmlformats-officedocument.presentationml.presentation");
         CONTENT_TYPE.put("pptx" , "application/vnd.openxmlformats-officedocument.presentationml.presentation");
         CONTENT_TYPE.put("ppz" , "application/vnd.ms-powerpoint");

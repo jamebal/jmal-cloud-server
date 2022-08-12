@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 public class EditCallback implements Callback {
 
     @Override
-    public int handle(Track body, String fileName) {
+    public int handle(Track body) {
         return 0;
     }
 

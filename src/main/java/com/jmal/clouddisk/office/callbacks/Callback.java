@@ -5,17 +5,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author jmal
- * @Description Callback
+ * @Description OnlyOfficeService Callback
  * @date 2022/8/11 16:29
  */
 public interface Callback {
     /**
      * 处理回调
      * @param body body
-     * @param fileName fileName
      * @return 返回码
      */
-    int handle(Track body, String fileName);
+    int handle(Track body);
 
     /**
      * 获取文档状态

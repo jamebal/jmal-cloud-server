@@ -7,6 +7,9 @@ import lombok.Setter;
 
 import java.util.List;
 
+/**
+ * @author jmal
+ */
 @Getter
 @Setter
 @AllArgsConstructor
@@ -25,4 +28,5 @@ public class Track {
     private String userdata;
     private String lastsave;
     private Boolean notmodified;
+    private String fileId;
 }

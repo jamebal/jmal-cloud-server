@@ -57,6 +57,14 @@ public class FileController {
     @Autowired
     IUserService service;
 
+    @Operation(summary = "根据id获取文件信息")
+    @GetMapping("/file_info/{id}")
+    @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseResult<FileDocument> getFileById(@PathVariable String id) {
+        return ResultUtil.success(fileService.getById(id));
+    }
+
     @Operation(summary = "文件列表")
     @GetMapping("/list")
     @Permission("cloud:file:list")

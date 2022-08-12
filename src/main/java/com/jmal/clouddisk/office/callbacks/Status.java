@@ -19,6 +19,10 @@ public enum Status {
      */
     CORRUPTED(3),
     /**
+     * 退出编辑但是什么都没做
+     */
+    EDIT_NOTHING(4),
+    /**
      * 正在编辑文档，但保存了当前文档状态
      */
     MUST_FORCE_SAVE(6),

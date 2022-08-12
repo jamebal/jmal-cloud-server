@@ -22,12 +22,12 @@ public class CallbackHandler {
         callbackHandlers.put(code, callback);
     }
 
-    public int handle(Track body, String fileName){
+    public int handle(Track body){
         Callback callback = callbackHandlers.get(body.getStatus());
         if (callback == null){
             log.warn("Callback status "+body.getStatus()+" is not supported yet");
            return 0;
         }
-        return callback.handle(body, fileName);
+        return callback.handle(body);
     }
 }

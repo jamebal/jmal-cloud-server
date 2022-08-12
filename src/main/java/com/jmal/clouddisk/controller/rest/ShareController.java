@@ -1,5 +1,8 @@
 package com.jmal.clouddisk.controller.rest;
 
+import cn.hutool.core.convert.Convert;
+import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
@@ -175,5 +178,19 @@ public class ShareController {
             return ResultUtil.warning("该分享已过期");
         }
         return ResultUtil.success(fileService.getById(fileId,consumer.getUsername()));
+    }
+
+    @Operation(summary = "根据id获取分享的文件信息")
+    @GetMapping("/public/file_info/{fileId}")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseResult<FileDocument> getFileById(@PathVariable String fileId) {
+        FileDocument fileDocument = fileService.getById(fileId);
+        if (fileDocument == null) {
+            return ResultUtil.error(ExceptionType.FILE_NOT_FIND.getMsg());
+        }
+        if (BooleanUtil.isTrue(fileDocument.getIsShare()) && (System.currentTimeMillis() < Convert.toLong(fileDocument.getExpiresAt(),   0L))) {
+            return ResultUtil.success(fileService.getById(fileId));
+        }
+        return ResultUtil.warning("该分享已失效");
     }
 }

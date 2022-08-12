@@ -9,6 +9,8 @@ import cn.hutool.core.util.*;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.extra.cglib.CglibUtil;
+import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
@@ -965,7 +967,7 @@ public class FileServiceImpl implements IFileService {
      * @param message
      * @param url
      */
-    private void pushMessage(String username, Object message, String url) {
+    public void pushMessage(String username, Object message, String url) {
         WebSocketSession webSocketSession = SocketManager.get(username);
         if (webSocketSession != null) {
             Map<String, Object> headers = new HashMap<>(4);
