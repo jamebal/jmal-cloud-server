@@ -37,6 +37,7 @@ import org.apache.tika.mime.MimeTypes;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Sort;
@@ -1103,7 +1104,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> addFile(String fileName, Boolean isFolder, String username, String parentPath) {
+    public ResponseResult<FileDocument> addFile(String fileName, Boolean isFolder, String username, String parentPath) {
         String userId = userService.getUserIdByUserName(username);
         if (StrUtil.isBlank(userId)) {
             ResultUtil.error("不存在的用户");
@@ -1129,7 +1130,8 @@ public class FileServiceImpl implements IFileService {
         fileDocument.setPath(resPath);
         fileDocument.setIsFolder(isFolder);
         fileDocument.setSuffix(FileUtil.extName(fileName));
-        createFile(username, path.toFile());
+        String fileId = createFile(username, path.toFile());
+        fileDocument.setId(fileId);
         return ResultUtil.success(fileDocument);
     }
 

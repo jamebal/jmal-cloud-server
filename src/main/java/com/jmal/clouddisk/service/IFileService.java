@@ -1,8 +1,8 @@
 package com.jmal.clouddisk.service;
 
-import cn.hutool.db.PageResult;
 import com.jmal.clouddisk.exception.CommonException;
-import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.ResponseResult;
 import org.springframework.web.multipart.MultipartFile;
@@ -11,7 +11,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
-import java.lang.annotation.Documented;
 import java.util.List;
 import java.util.Optional;
 
@@ -303,7 +302,7 @@ public interface IFileService {
      * @param parentPath
      * @return
      */
-    ResponseResult<Object> addFile(String fileName, Boolean isFolder, String username, String parentPath);
+    ResponseResult<FileDocument> addFile(String fileName, Boolean isFolder, String username, String parentPath);
 
     /***
      * 下载、预览文件

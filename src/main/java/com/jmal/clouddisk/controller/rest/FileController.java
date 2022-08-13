@@ -355,7 +355,7 @@ public class FileController {
     @PostMapping("/addfile")
     @LogOperatingFun
     @Permission("cloud:file:upload")
-    public ResponseResult<Object> addFile(@RequestParam String fileName, @RequestParam Boolean isFolder, @RequestParam String username, @RequestParam String parentPath){
+    public ResponseResult<FileDocument> addFile(@RequestParam String fileName, @RequestParam Boolean isFolder, @RequestParam String username, @RequestParam String parentPath){
         return fileService.addFile(URLUtil.decode(fileName), isFolder, username, URLUtil.decode(parentPath));
     }
 }

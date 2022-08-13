@@ -85,7 +85,7 @@ public class SaveCallback implements Callback {
 
     @Override
     public int getStatus() {
-        // 文件已准备好保存
+        // 2 - 文件已准备好保存
         return Status.SAVE.getCode();
     }
 }
