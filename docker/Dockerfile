@@ -1,10 +1,11 @@
-FROM registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmal-mongo:latest
+FROM openjdk:8u342-jre
 MAINTAINER zhushilun084@163.com
-#ENV VERSION $version
 
 ARG version=1.0.0
 
 ENV VERSION $version
+
+ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
 
 RUN mkdir -p /jmalcloud/files /jmal-cloud-view/dist
 
@@ -22,6 +23,6 @@ ADD dist-$VERSION.tar /jmal-cloud-view/
 
 VOLUME /jmal-cloud-view/ /jmalcloud/
 
-EXPOSE 8088 8080
+EXPOSE 8088
 
-CMD /usr/bin/mongod --bind_ip=0.0.0.0 --fork --logpath /var/log/mongodb/mongodb.log && /etc/nginx/sbin/nginx && java -jar -Xms50m -Xmx512m clouddisk-$VERSION-exec.jar --logging.level.root=warn --spring.profiles.active=prod --file.rootDir=/jmalcloud/files --file.ip2region-db-path=/jmalcloud/ip2region.db
+CMD java -jar -Xms50m -Xmx512m /usr/local/clouddisk-$VERSION-exec.jar --logging.level.root=warn --spring.data.mongodb.uri=$MONGODB_URI --file.rootDir=/jmalcloud/files --file.ip2region-db-path=/jmalcloud/ip2region.db

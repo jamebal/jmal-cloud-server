@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  mongo:
+    container_name: "jmalcloud_mongodb"
+    image: "mongo:4.4"
+    restart: unless-stopped
+  jmalcloud:
+    container_name: "jmalcloud_server"
+    image: "jmalcloud:2.2.40"
+    environment:
+      MONGODB_URI: "mongodb://mongo:27017/jmalcloud"
+    ports:
+      - "7072:8088"
+    volumes:
+      - ./docker/files/:/jmalcloud/files/
+    restart: unless-stopped
+  nginx:
+    container_name: "jmalcloud_nginx"
+    image: "nginx:alpine"
+    ports:
+      - "7070:80"
+      - "7071:8080"
+    volumes:
+      - ./docker/nginx:/etc/nginx/conf.d
+      - ./docker/dist:/var/www/public
+    environment:
+      TZ: "Asia/Shanghai"
+    links:
+      - jmalcloud
+      - office
+    restart: unless-stopped
+  office:
+    container_name: "jmalcloud_office"
+    image: "onlyoffice/documentserver:7.0.0.132"
+    environment:
+      TZ: "Asia/Shanghai"
+    restart: unless-stopped

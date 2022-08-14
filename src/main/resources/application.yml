@@ -5,7 +5,7 @@ server:
       force: true
       charset: UTF-8
       enabled: true
-version: 2.2.34
+version: 2.2.40
 spring:
   application:
     name: jmalcloud
