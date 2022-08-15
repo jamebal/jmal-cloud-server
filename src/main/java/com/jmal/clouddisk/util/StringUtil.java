@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.util;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 
 
@@ -27,7 +28,7 @@ public class StringUtil {
      * @return 转义后的文本
      */
     public static String escape(CharSequence content) {
-        if (StrUtil.isBlank(content)) {
+        if (CharSequenceUtil.isBlank(content)) {
             return StrUtil.str(content);
         }
 
@@ -48,7 +49,7 @@ public class StringUtil {
      * 文本中是否含有中文
      */
     public static boolean isContainChinese(String str) {
-        if (StrUtil.isBlank(str)) {
+        if (CharSequenceUtil.isBlank(str)) {
             return false;
         }
         Pattern p = Pattern.compile("[\u4e00-\u9fa5]");
@@ -62,7 +63,7 @@ public class StringUtil {
      * 中文 <= 1
      */
     public static boolean isShortStr(String str) {
-        if (StrUtil.isBlank(str)) {
+        if (CharSequenceUtil.isBlank(str)) {
             return true;
         }
         if (isContainChinese(str)) {

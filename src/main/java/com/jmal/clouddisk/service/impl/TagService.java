@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.model.TagDO;
@@ -84,7 +85,7 @@ public class TagService {
      */
     private Query getQueryUserId(String userId) {
         Query query = new Query();
-        if (!StrUtil.isBlank(userId)) {
+        if (!CharSequenceUtil.isBlank(userId)) {
             query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
         } else {
             query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
@@ -182,7 +183,7 @@ public class TagService {
     private String getSlug(TagDTO tagDTO) {
         Query query = new Query();
         String slug = tagDTO.getSlug();
-        if (StrUtil.isBlank(slug)) {
+        if (CharSequenceUtil.isBlank(slug)) {
             return tagDTO.getName();
         }
         String id = tagDTO.getId();

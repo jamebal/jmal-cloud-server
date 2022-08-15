@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HtmlUtil;
@@ -73,7 +74,7 @@ public class LuceneService {
     public ResponseResult<List<FileDocument>> searchFile(SearchDTO searchDTO) throws IOException, ParseException, InvalidTokenOffsetsException {
         // 模糊匹配,匹配词
         StringBuilder keyword = new StringBuilder(searchDTO.getKeyword());
-        if (StrUtil.isBlank(keyword.toString())) {
+        if (CharSequenceUtil.isBlank(keyword.toString())) {
             return ResultUtil.success();
         }
         searcherManager.maybeRefresh();
@@ -109,7 +110,7 @@ public class LuceneService {
                 FileDocument fileDocument = new FileDocument();
                 fileDocument.setId(doc.get("id"));
                 String name = highlighter.getBestFragment(analyzer, fieldName, doc.get("name"));
-                if (StrUtil.isBlank(name)) {
+                if (CharSequenceUtil.isBlank(name)) {
                     fileDocument.setName(doc.get("name"));
                 } else {
                     fileDocument.setName(name);

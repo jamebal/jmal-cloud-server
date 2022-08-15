@@ -11,6 +11,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.exception.ExceptionType;
 
@@ -120,7 +121,7 @@ public class TimeUntils {
      * @return
      */
     private static int getMaxDayOfMonth(String time) throws CommonException {
-        if (StrUtil.isBlank(time)) {
+        if (CharSequenceUtil.isBlank(time)) {
             return 30;
         }
         LocalDateTime date = getLocalDateTime(time);

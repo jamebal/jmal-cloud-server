@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.annotation;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import org.reflections.Reflections;
 import org.springframework.stereotype.Component;
@@ -43,7 +44,7 @@ public class AnnoManageUtil {
                 if(permission == null){
                     continue;
                 }
-                if(StrUtil.isBlank(permission.value())){
+                if(CharSequenceUtil.isBlank(permission.value())){
                     continue;
                 }
                 if(arrayList.contains(permission.value())){

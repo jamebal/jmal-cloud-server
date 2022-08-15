@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.model.CategoryDO;
@@ -55,7 +56,7 @@ public class CategoryService {
      */
     private List<CategoryDTO> getSubCategoryList(String parentCategoryId, List<CategoryDTO> categoryTreeList) {
         List<CategoryDTO> categoryDTOList = new ArrayList<>();
-        if (StrUtil.isBlank(parentCategoryId)) {
+        if (CharSequenceUtil.isBlank(parentCategoryId)) {
             return categoryTreeList;
         }
         for (CategoryDTO categoryDTO : categoryTreeList) {
@@ -92,7 +93,7 @@ public class CategoryService {
      */
     public List<CategoryDTO> tree(String userId, boolean statArticleNum) {
         Query query = new Query();
-        if(!StrUtil.isBlank(userId)){
+        if(!CharSequenceUtil.isBlank(userId)){
             query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
         } else {
             query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
@@ -126,8 +127,8 @@ public class CategoryService {
     private List<CategoryDTO> getSubCategory(String parentCategoryId, List<CategoryDTO> categoryDTOList) {
         List<CategoryDTO> categoryTreeList = new ArrayList<>();
         List<CategoryDTO> categoryList;
-        if (StrUtil.isBlank(parentCategoryId)) {
-            categoryList = categoryDTOList.stream().filter(category -> StrUtil.isBlank(category.getParentCategoryId())).sorted().collect(Collectors.toList());
+        if (CharSequenceUtil.isBlank(parentCategoryId)) {
+            categoryList = categoryDTOList.stream().filter(category -> CharSequenceUtil.isBlank(category.getParentCategoryId())).sorted().collect(Collectors.toList());
         } else {
             categoryList = categoryDTOList.stream().filter(category -> parentCategoryId.equals(category.getParentCategoryId())).collect(Collectors.toList());
         }
@@ -161,7 +162,7 @@ public class CategoryService {
             articleNumMap.put(category.getId(), curCnt);
             count += curCnt;
         }
-        if(!StrUtil.isBlank(categoryId)){
+        if(!CharSequenceUtil.isBlank(categoryId)){
             articleNumMap.put(categoryId, count);
         }
         return count;
@@ -212,7 +213,7 @@ public class CategoryService {
      */
     public CategoryDO getCategoryInfo(String userId, String categoryName) {
         Query query = new Query();
-        if (!StrUtil.isBlank(userId)) {
+        if (!CharSequenceUtil.isBlank(userId)) {
             query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
         } else {
             query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
@@ -229,7 +230,7 @@ public class CategoryService {
      */
     public CategoryDO getCategoryInfoBySlug(String userId, String categorySlugName) {
         Query query = new Query();
-        if (!StrUtil.isBlank(userId)) {
+        if (!CharSequenceUtil.isBlank(userId)) {
             query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
         } else {
             query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
@@ -262,7 +263,7 @@ public class CategoryService {
         if (getCategoryInfo(categoryDTO.getUserId(), categoryDTO.getName()) != null) {
             return ResultUtil.warning("该分类名称已存在");
         }
-        if (!StrUtil.isBlank(categoryDTO.getParentCategoryId())) {
+        if (!CharSequenceUtil.isBlank(categoryDTO.getParentCategoryId())) {
             CategoryDO parentCategoryDO = getCategoryInfo(categoryDTO.getParentCategoryId());
             if (parentCategoryDO == null) {
                 return ResultUtil.warning("该父分类不存在");
@@ -305,7 +306,7 @@ public class CategoryService {
     private String getSlug(CategoryDTO categoryDTO) {
         Query query = new Query();
         String slug = categoryDTO.getSlug();
-        if (StrUtil.isBlank(slug)) {
+        if (CharSequenceUtil.isBlank(slug)) {
             return categoryDTO.getName();
         }
         String id = categoryDTO.getId();

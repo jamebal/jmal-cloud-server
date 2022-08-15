@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.util;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 
 
@@ -50,7 +51,7 @@ public class FileFinderUtil {
             tempFile = queue.pop();
             if (tempFile.exists() && tempFile.isDirectory()) {
                 File[] files = tempFile.listFiles(pathname -> {
-                    if(StrUtil.isBlank(type)){
+                    if(CharSequenceUtil.isBlank(type)){
                         return true;
                     }
                     if(pathname.isFile()){
@@ -68,7 +69,7 @@ public class FileFinderUtil {
                     //如果是目录则放进队列
                     if (file.isDirectory()) {
                         queue.add(file);
-                        if(!StrUtil.isBlank(type)){
+                        if(!CharSequenceUtil.isBlank(type)){
                             continue;
                         }
                     }

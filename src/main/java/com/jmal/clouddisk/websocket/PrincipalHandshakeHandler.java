@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.websocket;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.ServerHttpRequest;
@@ -34,7 +35,7 @@ public class PrincipalHandshakeHandler extends DefaultHandshakeHandler {
              * 这边就获取你最熟悉的陌生人,携带参数，你可以cookie，请求头，或者url携带，这边我采用url携带
              */
             final String name = httpRequest.getParameter("name");
-            if (StrUtil.isBlank(name)) {
+            if (CharSequenceUtil.isBlank(name)) {
                 return null;
             }
             return () -> name;

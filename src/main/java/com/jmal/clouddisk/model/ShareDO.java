@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import cn.hutool.core.util.URLUtil;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -58,4 +59,5 @@ public class ShareDO {
      * 允许下载
      */
     private Boolean allowedUpload;
+
 }

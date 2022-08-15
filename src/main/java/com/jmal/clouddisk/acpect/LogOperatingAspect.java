@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.acpect;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.model.LogOperation;
@@ -84,7 +85,7 @@ public class LogOperatingAspect {
         }
         // 操作功能
         String operationFun = logOperatingFun.value();
-        if(StrUtil.isBlank(operationFun)){
+        if(CharSequenceUtil.isBlank(operationFun)){
             operationFun = apiOperation.summary();
         }
         logOperation.setOperationFun(operationFun);
