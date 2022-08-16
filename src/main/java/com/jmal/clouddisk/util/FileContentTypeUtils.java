@@ -533,6 +533,7 @@ public class FileContentTypeUtils {
         CONTENT_TYPE.put("sav" , "application/x-spss-sav");
         CONTENT_TYPE.put("scm" , "text/x-scheme");
         CONTENT_TYPE.put("sda" , "application/vnd.stardivision.draw");
+        CONTENT_TYPE.put("drawio" , "drawio");
         CONTENT_TYPE.put("sdc" , "application/vnd.stardivision.calc");
         CONTENT_TYPE.put("sdd" , "application/vnd.stardivision.impress");
         CONTENT_TYPE.put("sdp" , "application/sdp");
