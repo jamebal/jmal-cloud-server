@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.net.URLDecoder;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.useragent.UserAgent;
@@ -61,7 +62,7 @@ public class LogService {
     @PostConstruct
     public void initIpDbSearcher() throws DbMakerConfigException, FileNotFoundException {
         String ip2regionDbPath = fileProperties.getIp2regionDbPath();
-        if (!StrUtil.isBlank(ip2regionDbPath)) {
+        if (!CharSequenceUtil.isBlank(ip2regionDbPath)) {
             ipSearcher = new DbSearcher(new DbConfig(), ip2regionDbPath);
         }
     }
@@ -77,7 +78,7 @@ public class LogService {
     public void addLogBefore(LogOperation logOperation, Object result, HttpServletRequest request, HttpServletResponse response) {
         // 用户
         String username = logOperation.getUsername();
-        if (!StrUtil.isBlank(username)) {
+        if (!CharSequenceUtil.isBlank(username)) {
             logOperation.setShowName(userService.getShowNameByUserUsername(username));
         }
         // UserAgent
@@ -118,31 +119,31 @@ public class LogService {
 
     private String getIpAddress(HttpServletRequest request) {
         String ip = request.getHeader("x-forwarded-for");
-        if (!StrUtil.isBlank(ip)) {
+        if (!CharSequenceUtil.isBlank(ip)) {
             // 多次反向代理后会有多个ip值，第一个ip才是真实ip
             if (ip.contains(",")) {
                 ip = ip.split(",")[0];
             }
         }
-        if (StrUtil.isBlank(ip)) {
+        if (CharSequenceUtil.isBlank(ip)) {
             ip = request.getHeader("X-real-ip");
         }
-        if (StrUtil.isBlank(ip)) {
+        if (CharSequenceUtil.isBlank(ip)) {
             ip = request.getHeader("Proxy-Client-IP");
         }
-        if (StrUtil.isBlank(ip)) {
+        if (CharSequenceUtil.isBlank(ip)) {
             ip = request.getHeader("WL-Proxy-Client-IP");
         }
-        if (StrUtil.isBlank(ip)) {
+        if (CharSequenceUtil.isBlank(ip)) {
             ip = request.getHeader("HTTP_CLIENT_IP");
         }
-        if (StrUtil.isBlank(ip)) {
+        if (CharSequenceUtil.isBlank(ip)) {
             ip = request.getHeader("HTTP_X_FORWARDED_FOR");
         }
-        if (StrUtil.isBlank(ip)) {
+        if (CharSequenceUtil.isBlank(ip)) {
             ip = request.getHeader("X-Real-IP");
         }
-        if (StrUtil.isBlank(ip)) {
+        if (CharSequenceUtil.isBlank(ip)) {
             ip = request.getRemoteAddr();
         }
         return ip;
@@ -236,19 +237,19 @@ public class LogService {
     private Query getQuery(LogOperationDTO logOperationDTO) {
         Query query = new Query();
         String excludeUsername = logOperationDTO.getExcludeUsername();
-        if (!StrUtil.isBlank(excludeUsername)) {
+        if (!CharSequenceUtil.isBlank(excludeUsername)) {
             query.addCriteria(Criteria.where("username").nin(userLoginHolder.getUsername()));
         }
         String username = logOperationDTO.getUsername();
-        if (!StrUtil.isBlank(username)) {
+        if (!CharSequenceUtil.isBlank(username)) {
             query.addCriteria(Criteria.where("username").is(username));
         }
         String ip = logOperationDTO.getIp();
-        if (!StrUtil.isBlank(ip)) {
+        if (!CharSequenceUtil.isBlank(ip)) {
             query.addCriteria(Criteria.where("ip").is(ip));
         }
         String type = logOperationDTO.getType();
-        if (!StrUtil.isBlank(type)) {
+        if (!CharSequenceUtil.isBlank(type)) {
             query.addCriteria(Criteria.where("type").is(type));
         }
         Long startTime = logOperationDTO.getStartTime();
@@ -267,7 +268,7 @@ public class LogService {
     private void setSort(LogOperationDTO logOperationDTO, Query query) {
         String sortableProp = logOperationDTO.getSortProp();
         String order = logOperationDTO.getSortOrder();
-        if (StrUtil.isBlank(sortableProp) || StrUtil.isBlank(order)) {
+        if (CharSequenceUtil.isBlank(sortableProp) || CharSequenceUtil.isBlank(order)) {
             query.with(Sort.by(Sort.Direction.DESC, "createTime"));
             return;
         }

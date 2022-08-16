@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -122,7 +123,7 @@ public class ShareServiceImpl implements IShareService {
         Query query = new Query();
         query.addCriteria(Criteria.where("userId").is(upload.getUserId()));
         String order = FileServiceImpl.listByPage(upload, query);
-        if (StrUtil.isBlank(order)) {
+        if (CharSequenceUtil.isBlank(order)) {
             query.with(Sort.by(Sort.Direction.DESC, "createDate"));
         } else {
             String sortableProp = upload.getSortableProp();

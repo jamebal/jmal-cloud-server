@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import cn.hutool.core.util.URLUtil;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -8,6 +9,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import java.io.File;
 import java.time.LocalDateTime;
 
 /**
@@ -56,4 +58,15 @@ public class ArticleParamDTO {
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime uploadDate;
+
+    public String getFilename() {
+        return URLUtil.decode(filename);
+    }
+
+    public String getCurrentDirectory() {
+        if (currentDirectory == null || "undefined".equals(currentDirectory)) {
+            return null;
+        }
+        return URLUtil.decode(currentDirectory);
+    }
 }

@@ -5,6 +5,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.*;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
@@ -158,7 +159,7 @@ public class FileServiceImpl implements IFileService {
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
         Criteria criteria;
         String queryFileType = upload.getQueryFileType();
-        if (!StrUtil.isBlank(queryFileType)) {
+        if (!CharSequenceUtil.isBlank(queryFileType)) {
             switch (upload.getQueryFileType()) {
                 case "audio":
                     criteria = Criteria.where("contentType").regex("^audio");
@@ -240,7 +241,7 @@ public class FileServiceImpl implements IFileService {
         List<FileIntroVO> fileIntroVOList = new ArrayList<>();
         Query query = getQuery(upload, criteriaList);
         String order = listByPage(upload, query);
-        if (!StrUtil.isBlank(order)) {
+        if (!CharSequenceUtil.isBlank(order)) {
             String sortableProp = upload.getSortableProp();
             Sort.Direction direction = Sort.Direction.ASC;
             if ("descending".equals(order)) {
@@ -267,10 +268,10 @@ public class FileServiceImpl implements IFileService {
             return fileIntroVO;
         }).collect(toList());
         // 按文件名排序
-        if (StrUtil.isBlank(order)) {
+        if (CharSequenceUtil.isBlank(order)) {
             fileIntroVOList.sort(this::compareByFileName);
         }
-        if (!StrUtil.isBlank(order) && "name".equals(upload.getSortableProp())) {
+        if (!CharSequenceUtil.isBlank(order) && "name".equals(upload.getSortableProp())) {
             fileIntroVOList.sort(this::compareByFileName);
             if ("descending".equals(order)) {
                 fileIntroVOList.sort(this::desc);
@@ -308,7 +309,7 @@ public class FileServiceImpl implements IFileService {
 
     private Query getQuery(UploadApiParamDTO upload, Criteria[] criteriaList) {
         String userId = upload.getUserId();
-        if (StrUtil.isBlank(userId)) {
+        if (CharSequenceUtil.isBlank(userId)) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg() + "userId");
         }
         Query query = new Query();
@@ -347,7 +348,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     private FileDocument getFileDocumentById(String fileId) {
-        if (StrUtil.isBlank(fileId) || FIRST_FILE_TREE_ID.equals(fileId)) {
+        if (CharSequenceUtil.isBlank(fileId) || FIRST_FILE_TREE_ID.equals(fileId)) {
             return null;
         }
         return mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
@@ -382,7 +383,7 @@ public class FileServiceImpl implements IFileService {
     @Override
     public ResponseResult<Object> queryFileTree(UploadApiParamDTO upload, String fileId) {
         String currentDirectory = getUserDirectory(null);
-        if (!StrUtil.isBlank(fileId)) {
+        if (!CharSequenceUtil.isBlank(fileId)) {
             FileDocument fileDocument = mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
             assert fileDocument != null;
             currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
@@ -531,7 +532,7 @@ public class FileServiceImpl implements IFileService {
         if (fileDocument != null) {
             if (fileDocument.getContent() == null) {
                 String currentDirectory = getUserDirectory(fileDocument.getPath());
-                if (StrUtil.isBlank(username)) {
+                if (CharSequenceUtil.isBlank(username)) {
                     username = userService.getUserNameById(fileDocument.getUserId());
                 }
                 File file = new File(fileProperties.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
@@ -570,7 +571,7 @@ public class FileServiceImpl implements IFileService {
 
     private void packageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList, String username) {
         FileDocument fileDocument = getFileInfoBeforeDownload(fileIdList, username);
-        if (StrUtil.isBlank(username)) {
+        if (CharSequenceUtil.isBlank(username)) {
             username = fileDocument.getUsername();
         }
         //响应头的设置
@@ -637,7 +638,7 @@ public class FileServiceImpl implements IFileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds.get(0)));
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
-        if (StrUtil.isBlank(username)) {
+        if (CharSequenceUtil.isBlank(username)) {
             fileDocument.setUsername(userService.getUserNameById(fileDocument.getUserId()));
         }
         int size = fileIds.size();
@@ -773,12 +774,12 @@ public class FileServiceImpl implements IFileService {
      * @return
      */
     public String createFile(String username, File file, String userId, Boolean isPublic) {
-        if (StrUtil.isBlank(username)) {
+        if (CharSequenceUtil.isBlank(username)) {
             return null;
         }
-        if (StrUtil.isBlank(userId)) {
+        if (CharSequenceUtil.isBlank(userId)) {
             userId = userService.getUserIdByUserName(username);
-            if (StrUtil.isBlank(userId)) {
+            if (CharSequenceUtil.isBlank(userId)) {
                 return null;
             }
         }
@@ -926,7 +927,7 @@ public class FileServiceImpl implements IFileService {
         String fileName = file.getName();
         String relativePath = fileAbsolutePath.substring(fileProperties.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
         String userId = userService.getUserIdByUserName(username);
-        if (StrUtil.isBlank(userId)) {
+        if (CharSequenceUtil.isBlank(userId)) {
             return null;
         }
         Query query = new Query();
@@ -974,10 +975,10 @@ public class FileServiceImpl implements IFileService {
             Map<String, Object> headers = new HashMap<>(4);
             headers.put("url", url);
             String userId = userLoginHolder.getUserId();
-            if (StrUtil.isBlank(userId)) {
+            if (CharSequenceUtil.isBlank(userId)) {
                 userId = userService.getUserIdByUserName(username);
             }
-            if (!StrUtil.isBlank(userId)) {
+            if (!CharSequenceUtil.isBlank(userId)) {
                 long takeUpSpace = takeUpSpace(userId);
                 headers.put("space", takeUpSpace);
             }
@@ -994,7 +995,7 @@ public class FileServiceImpl implements IFileService {
         String fileName = file.getName();
         String relativePath = fileAbsolutePath.substring(fileProperties.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
         String userId = userService.getUserIdByUserName(username);
-        if (StrUtil.isBlank(userId)) {
+        if (CharSequenceUtil.isBlank(userId)) {
             return;
         }
         Query query = new Query();
@@ -1017,14 +1018,14 @@ public class FileServiceImpl implements IFileService {
                 throw new CommonException(ExceptionType.FILE_NOT_FIND);
             }
             String username = userService.getUserNameById(fileDocument.getUserId());
-            if (StrUtil.isBlank(username)) {
+            if (CharSequenceUtil.isBlank(username)) {
                 throw new CommonException(ExceptionType.USER_NOT_FIND);
             }
             String filePath = getFilePathByFileId(username, fileDocument);
 
             String destDir;
             boolean isWrite = false;
-            if (StrUtil.isBlank(destFileId)) {
+            if (CharSequenceUtil.isBlank(destFileId)) {
                 // 没有目标目录, 则预览解压到临时目录
                 destDir = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, fileDocument.getName()).toString();
             } else {
@@ -1085,7 +1086,7 @@ public class FileServiceImpl implements IFileService {
             return ResultUtil.error("修改失败,path参数有误！");
         }
         String userId = userService.getUserIdByUserName(username);
-        if (StrUtil.isBlank(userId)) {
+        if (CharSequenceUtil.isBlank(userId)) {
             return ResultUtil.error("修改失败,userId参数有误！");
         }
         File file = path1.toFile();
@@ -1106,7 +1107,7 @@ public class FileServiceImpl implements IFileService {
     @Override
     public ResponseResult<FileDocument> addFile(String fileName, Boolean isFolder, String username, String parentPath) {
         String userId = userService.getUserIdByUserName(username);
-        if (StrUtil.isBlank(userId)) {
+        if (CharSequenceUtil.isBlank(userId)) {
             ResultUtil.error("不存在的用户");
         }
         Path path = Paths.get(fileProperties.getRootDir(), username, parentPath, fileName);
@@ -1654,7 +1655,7 @@ public class FileServiceImpl implements IFileService {
         String userId = upload.getUserId();
         String folderPath = upload.getFolderPath();
         String path = getUserDirectory(upload.getCurrentDirectory());
-        if (!StrUtil.isBlank(folderPath)) {
+        if (!CharSequenceUtil.isBlank(folderPath)) {
             path += folderPath;
         }
         String folderName = upload.getFilename();
@@ -1786,7 +1787,7 @@ public class FileServiceImpl implements IFileService {
      */
     private String getUserDirectoryFilePath(UploadApiParamDTO upload) {
         String currentDirectory = upload.getCurrentDirectory();
-        if (StrUtil.isBlank(currentDirectory)) {
+        if (CharSequenceUtil.isBlank(currentDirectory)) {
             currentDirectory = fileProperties.getSeparator();
         }
         if (upload.getIsFolder()) {
@@ -1808,7 +1809,7 @@ public class FileServiceImpl implements IFileService {
      * @return
      */
     public String getUserDirectory(String currentDirectory) {
-        if (StrUtil.isBlank(currentDirectory)) {
+        if (CharSequenceUtil.isBlank(currentDirectory)) {
             currentDirectory = fileProperties.getSeparator();
         } else {
             if (!currentDirectory.endsWith(fileProperties.getSeparator())) {
@@ -1825,7 +1826,7 @@ public class FileServiceImpl implements IFileService {
      * @return
      */
     private String getUserFilePath(String relativePath) {
-        if (!StrUtil.isBlank(relativePath)) {
+        if (!CharSequenceUtil.isBlank(relativePath)) {
             relativePath = relativePath.replaceAll(fileProperties.getSeparator(), File.separator);
         }
         return relativePath;

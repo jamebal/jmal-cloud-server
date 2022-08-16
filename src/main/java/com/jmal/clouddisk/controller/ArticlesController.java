@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
@@ -89,7 +90,7 @@ public class ArticlesController {
         map.addAttribute("titleName", websiteSettingDTO.getSiteName());
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
-        if (!StrUtil.isBlank(pIndex)) {
+        if (!CharSequenceUtil.isBlank(pIndex)) {
             page = Integer.parseInt(pIndex);
         }
         map.addAttribute("articlesData", fileService.getArticles(page, pageSize));
@@ -171,7 +172,7 @@ public class ArticlesController {
         map.addAttribute("titleName", "归档");
         int page = 1, pageSize = 100;
         String pIndex = request.getParameter("page");
-        if (!StrUtil.isBlank(pIndex)) {
+        if (!CharSequenceUtil.isBlank(pIndex)) {
             page = Integer.parseInt(pIndex);
         }
         map.addAttribute("articlesData", fileService.getArchives(page, pageSize));
@@ -182,11 +183,11 @@ public class ArticlesController {
     @LogOperatingFun(value = "文章分类", logType = LogOperation.Type.ARTICLE)
     public String getCategoryByName(HttpServletRequest request, Model map, @PathVariable String categorySlugName) {
         boolean isPjax = pjaxMap(request, map, "articles-query");
-        if (StrUtil.isBlank(categorySlugName)) {
+        if (CharSequenceUtil.isBlank(categorySlugName)) {
             return notFind(request, map);
         }
         String categoryId = null;
-        if (!StrUtil.isBlank(categorySlugName)) {
+        if (!CharSequenceUtil.isBlank(categorySlugName)) {
             CategoryDO categoryDO = categoryService.getCategoryInfoBySlug(null, categorySlugName);
             if (categoryDO == null) {
                 return notFind(request, map);
@@ -198,7 +199,7 @@ public class ArticlesController {
         }
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
-        if (!StrUtil.isBlank(pIndex)) {
+        if (!CharSequenceUtil.isBlank(pIndex)) {
             page = Integer.parseInt(pIndex);
         }
         map.addAttribute("articlesData", fileService.getArticlesByCategoryId(page, pageSize, categoryId));
@@ -218,11 +219,11 @@ public class ArticlesController {
     @LogOperatingFun(value = "文章标签", logType = LogOperation.Type.ARTICLE)
     public String getTagByName(HttpServletRequest request, Model map, @PathVariable String tagSlugName) {
         boolean isPjax = pjaxMap(request, map, "articles-query");
-        if (StrUtil.isBlank(tagSlugName)) {
+        if (CharSequenceUtil.isBlank(tagSlugName)) {
             return notFind(request, map);
         }
         String tagId = null;
-        if (!StrUtil.isBlank(tagSlugName)) {
+        if (!CharSequenceUtil.isBlank(tagSlugName)) {
             TagDO tag = tagService.getTagInfoBySlug(null, tagSlugName);
             if (tag == null) {
                 return notFind(request, map);
@@ -234,7 +235,7 @@ public class ArticlesController {
         }
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
-        if (!StrUtil.isBlank(pIndex)) {
+        if (!CharSequenceUtil.isBlank(pIndex)) {
             page = Integer.parseInt(pIndex);
         }
         map.addAttribute("articlesData", fileService.getArticlesByTagId(page, pageSize, tagId));
@@ -247,7 +248,7 @@ public class ArticlesController {
         boolean isPjax = pjaxMap(request, map, "articles-query");
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
-        if (!StrUtil.isBlank(pIndex)) {
+        if (!CharSequenceUtil.isBlank(pIndex)) {
             page = Integer.parseInt(pIndex);
         }
         ArticlesQueryVO query = new ArticlesQueryVO();
@@ -268,12 +269,12 @@ public class ArticlesController {
     public String author(HttpServletRequest request, Model map, @PathVariable String username) {
         boolean isPjax = pjaxMap(request, map, "articles-query");
         String userId = userService.getUserIdByShowName(username);
-        if (StrUtil.isBlank(userId)) {
+        if (CharSequenceUtil.isBlank(userId)) {
             return notFind(request, map);
         }
         int page = 1, pageSize = 10;
         String pIndex = request.getParameter("page");
-        if (!StrUtil.isBlank(pIndex)) {
+        if (!CharSequenceUtil.isBlank(pIndex)) {
             page = Integer.parseInt(pIndex);
         }
         ArticlesQueryVO query = new ArticlesQueryVO();
@@ -309,7 +310,7 @@ public class ArticlesController {
      * @param websiteSettingDTO userSettingDTO
      */
     private void setOperatingButtonList(WebsiteSettingDTO websiteSettingDTO) {
-        if (websiteSettingDTO != null && !StrUtil.isBlank(websiteSettingDTO.getOperatingButtons())) {
+        if (websiteSettingDTO != null && !CharSequenceUtil.isBlank(websiteSettingDTO.getOperatingButtons())) {
             String operatingButtons = websiteSettingDTO.getOperatingButtons();
             List<WebsiteSettingDTO.OperatingButton> operatingButtonList = new ArrayList<>();
             for (String button : operatingButtons.split("[\\n]")) {
@@ -317,7 +318,7 @@ public class ArticlesController {
                 int splitIndex = button.indexOf(":");
                 String label = button.substring(0, splitIndex);
                 String title = ReUtil.getGroup0("[^><]+(?=<\\/i>)", label);
-                if (StrUtil.isBlank(title)) {
+                if (CharSequenceUtil.isBlank(title)) {
                     title = "";
                 }
                 operatingButton.setTitle(title);

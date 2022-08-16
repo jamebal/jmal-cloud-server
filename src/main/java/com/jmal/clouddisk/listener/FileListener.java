@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.listener;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.IFileService;
@@ -37,7 +38,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onFileCreate(File file) {
         try{
             String username = ownerOfChangeFile(file.getAbsolutePath());
-            if(StrUtil.isBlank(username)){
+            if(CharSequenceUtil.isBlank(username)){
                 return;
             }
             fileService.createFile(username,file);
@@ -54,7 +55,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onFileChange(File file) {
         try{
             String username = ownerOfChangeFile(file.getAbsolutePath());
-            if(StrUtil.isBlank(username)){
+            if(CharSequenceUtil.isBlank(username)){
                 return;
             }
             fileService.updateFile(username,file);
@@ -71,7 +72,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onFileDelete(File file) {
         try{
             String username = ownerOfChangeFile(file.getAbsolutePath());
-            if(StrUtil.isBlank(username)){
+            if(CharSequenceUtil.isBlank(username)){
                 return;
             }
             fileService.deleteFile(username,file);
@@ -88,7 +89,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onDirectoryCreate(File directory) {
         try{
             String username = ownerOfChangeFile(directory.getAbsolutePath());
-            if(StrUtil.isBlank(username)){
+            if(CharSequenceUtil.isBlank(username)){
                 return;
             }
             fileService.createFile(username,directory);
@@ -118,7 +119,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     public void onDirectoryDelete(File directory) {
         try{
             String username = ownerOfChangeFile(directory.getAbsolutePath());
-            if(StrUtil.isBlank(username)){
+            if(CharSequenceUtil.isBlank(username)){
                 return;
             }
             fileService.deleteFile(username,directory);

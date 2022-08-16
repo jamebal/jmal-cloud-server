@@ -3,6 +3,7 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -90,7 +91,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
     @Override
     public ResponseResult<FileDocument> getMarkDownOne(ArticleDTO articleDTO) {
         String mark = articleDTO.getMark();
-        if (StrUtil.isBlank(mark)) {
+        if (CharSequenceUtil.isBlank(mark)) {
             return ResultUtil.success(new FileDocument());
         }
         FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
@@ -126,7 +127,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
                 prefix = "/o/";
             }
             String slug = fileDocument.getSlug();
-            if (StrUtil.isBlank(slug)) {
+            if (CharSequenceUtil.isBlank(slug)) {
                 slug = fileDocument.getId();
             }
             url.setLoc(siteUrl + prefix + slug);
@@ -150,7 +151,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
                 stringBuilder.append("/s/");
             }
             String slug = fileDocument.getSlug();
-            if (StrUtil.isBlank(slug)) {
+            if (CharSequenceUtil.isBlank(slug)) {
                 stringBuilder.append(fileDocument.getId());
             } else {
                 stringBuilder.append(slug);
@@ -197,7 +198,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         ArticleDTO articleDTO = new ArticleDTO();
         articleDTO.setPageIndex(page);
         articleDTO.setPageSize(pageSize);
-        if (!StrUtil.isBlank(categoryId)) {
+        if (!CharSequenceUtil.isBlank(categoryId)) {
             articleDTO.setCategoryIds(new String[]{categoryId});
         }
         return getArticles(articleDTO);
@@ -208,7 +209,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         ArticleDTO articleDTO = new ArticleDTO();
         articleDTO.setPageIndex(page);
         articleDTO.setPageSize(pageSize);
-        if (!StrUtil.isBlank(tagId)) {
+        if (!CharSequenceUtil.isBlank(tagId)) {
             articleDTO.setTagIds(new String[]{tagId});
         }
         return getArticles(articleDTO);
@@ -296,7 +297,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
     @Override
     public ArticleVO getMarkDownContentBySlug(String slug) {
         FileDocument fileDocument;
-        if (StrUtil.isBlank(slug)) {
+        if (CharSequenceUtil.isBlank(slug)) {
             return null;
         }
         Query query = new Query();
@@ -363,7 +364,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         // 查询条件
         boolean isDraft = false;
         query.addCriteria(Criteria.where("suffix").is("md"));
-        if (!StrUtil.isBlank(articleDTO.getUserId())) {
+        if (!CharSequenceUtil.isBlank(articleDTO.getUserId())) {
             query.addCriteria(Criteria.where("userId").is(articleDTO.getUserId()));
         }
         if (articleDTO.getIsRelease() != null && articleDTO.getIsRelease()) {
@@ -385,14 +386,14 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (articleDTO.getTagIds() != null && articleDTO.getTagIds().length > 0) {
             query.addCriteria(Criteria.where("tagIds").in((Object[]) articleDTO.getTagIds()));
         }
-        if (!StrUtil.isBlank(articleDTO.getKeyword())) {
+        if (!CharSequenceUtil.isBlank(articleDTO.getKeyword())) {
             query.addCriteria(Criteria.where("contentText").regex(articleDTO.getKeyword(), "i"));
         }
         if (limit > 0) {
             count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
         }
         // 排序
-        if (!StrUtil.isBlank(articleDTO.getSortableProp()) && !StrUtil.isBlank(articleDTO.getOrder())) {
+        if (!CharSequenceUtil.isBlank(articleDTO.getSortableProp()) && !CharSequenceUtil.isBlank(articleDTO.getOrder())) {
             if ("descending".equals(articleDTO.getOrder())) {
                 query.with(Sort.by(Sort.Direction.DESC, articleDTO.getSortableProp()));
             } else {
@@ -547,7 +548,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
      */
     private String syncDocFile(ArticleParamDTO upload, LocalDateTime uploadDate, FileDocument fileDocument, String filename) {
         String currentDirectory;
-        if (!StrUtil.isBlank(upload.getCurrentDirectory())) {
+        if (!CharSequenceUtil.isBlank(upload.getCurrentDirectory())) {
             currentDirectory = fileService.getUserDirectory(upload.getCurrentDirectory());
         } else {
             Path docPaths = Paths.get(fileProperties.getDocumentDir(), TimeUntils.getFileTimeStrOfMonth(uploadDate));
@@ -556,16 +557,16 @@ public class MarkdownServiceImpl implements IMarkdownService {
             currentDirectory = fileService.getUserDirectory(docPaths.toString());
         }
         // 文档为草稿时，文件名使用草稿的文件名
-        if (!StrUtil.isBlankIfStr(upload.getIsDraft()) && upload.getIsDraft() && !StrUtil.isBlank(fileDocument.getName())) {
+        if (Boolean.TRUE.equals(!StrUtil.isBlankIfStr(upload.getIsDraft()) && upload.getIsDraft()) && !CharSequenceUtil.isBlank(fileDocument.getName())) {
             filename = fileDocument.getName();
         }
         File file = Paths.get(fileProperties.getRootDir(), upload.getUsername(), currentDirectory, filename).toFile();
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
         // 当有文件名或文件路径改变的话则把历史文件删掉
         // 文件名是否改变
-        boolean isChangeFileName = !StrUtil.isBlank(fileDocument.getName()) && !filename.equals(fileDocument.getName());
+        boolean isChangeFileName = !CharSequenceUtil.isBlank(fileDocument.getName()) && !filename.equals(fileDocument.getName());
         // 文件路径是否改变
-        boolean isChangePath = !StrUtil.isBlank(fileDocument.getPath()) && !currentDirectory.equals(fileDocument.getPath());
+        boolean isChangePath = !CharSequenceUtil.isBlank(fileDocument.getPath()) && !currentDirectory.equals(fileDocument.getPath());
         if (isChangeFileName || isChangePath) {
             Path oldPath = Paths.get(fileProperties.getRootDir(), upload.getUsername(), fileDocument.getPath(), fileDocument.getName());
             if (Files.exists(oldPath)) {
@@ -598,7 +599,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
     private String getSlug(ArticleParamDTO upload) {
         Query query = new Query();
         String slug = upload.getSlug();
-        if (StrUtil.isBlank(slug)) {
+        if (CharSequenceUtil.isBlank(slug)) {
             return upload.getFilename();
         }
         String fileId = upload.getFileId();
@@ -637,7 +638,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     @Override
     public ResponseResult<Object> uploadMarkdownLinkImage(UploadImageDTO upload) {
-        if (StrUtil.isBlank(upload.getUrl())) {
+        if (CharSequenceUtil.isBlank(upload.getUrl())) {
             return ResultUtil.warning("url不能为空");
         }
         Map<String, String> map = new HashMap<>(2);

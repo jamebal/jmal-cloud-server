@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.cglib.CglibUtil;
@@ -58,13 +59,13 @@ public class RoleService {
         Query query = new Query();
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         MongoUtil.commonQuery(queryDTO, query);
-        if(!StrUtil.isBlank(queryDTO.getName())){
+        if(!CharSequenceUtil.isBlank(queryDTO.getName())){
             query.addCriteria(Criteria.where("name").regex(queryDTO.getName(), "i"));
         }
-        if(!StrUtil.isBlank(queryDTO.getCode())){
+        if(!CharSequenceUtil.isBlank(queryDTO.getCode())){
             query.addCriteria(Criteria.where("code").regex(queryDTO.getCode(), "i"));
         }
-        if(!StrUtil.isBlank(queryDTO.getRemarks())){
+        if(!CharSequenceUtil.isBlank(queryDTO.getRemarks())){
             query.addCriteria(Criteria.where("remarks").regex(queryDTO.getRemarks(), "i"));
         }
         List<RoleDTO> roleDTOList = mongoTemplate.find(query, RoleDTO.class, COLLECTION_NAME);

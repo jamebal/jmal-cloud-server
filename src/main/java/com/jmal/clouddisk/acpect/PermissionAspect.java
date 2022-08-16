@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.acpect;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -57,7 +58,7 @@ public class PermissionAspect {
             }
         }
         String authority = permission.value();
-        if (StrUtil.isBlank(authority)) {
+        if (CharSequenceUtil.isBlank(authority)) {
             // 方法上没有权限注解, 直接调用方法
             return joinPoint.proceed();
         }

@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -46,7 +47,7 @@ public class AuthServiceImpl implements IAuthService {
             return ResultUtil.error("用户名或密码错误");
         } else {
             String userPassword = user.getPassword();
-            if (!StrUtil.isBlank(password)) {
+            if (!CharSequenceUtil.isBlank(password)) {
                 if (PasswordHash.validatePassword(password,userPassword)) {
                     Map<String, String> map = new HashMap<>(3);
                     String token = TokenUtil.createTokens(userName);
@@ -77,7 +78,7 @@ public class AuthServiceImpl implements IAuthService {
             return ResultUtil.warning("用户名或密码错误");
         } else {
             String userPassword = user.getPassword();
-            if (!StrUtil.isBlank(password)) {
+            if (!CharSequenceUtil.isBlank(password)) {
                 if (PasswordHash.validatePassword(password, userPassword)) {
                     return ResultUtil.success();
                 }

@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.repository.impl;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.exception.CommonException;
@@ -72,7 +73,7 @@ public class AuthDAOImpl implements IAuthDAO {
 
     @Override
     public void generateAccessToken(UserAccessTokenDO userAccessTokenDO) {
-        if(StrUtil.isBlank(userAccessTokenDO.getName())){
+        if(CharSequenceUtil.isBlank(userAccessTokenDO.getName())){
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }
         Query query = new Query();

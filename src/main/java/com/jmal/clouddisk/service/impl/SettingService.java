@@ -1,7 +1,10 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.lang.Console;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -15,6 +18,7 @@ import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.TimeUntils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.mime.MimeType;
 import org.apache.tika.mime.MimeTypeException;
@@ -37,6 +41,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author jmal
@@ -90,7 +95,7 @@ public class SettingService {
     public void sync(String username) {
         Path path = Paths.get(fileProperties.getRootDir(), username);
         List<File> list = loopFiles(path.toFile());
-        list.parallelStream().forEach(file -> fileService.createFile(username, file));
+        list.forEach(file -> fileService.createFile(username, file));
     }
 
     /***
@@ -138,7 +143,7 @@ public class SettingService {
         if (websiteSettingDO1 != null){
             String oldHeartwings = websiteSettingDO1.getBackgroundTextSite();
             String heartwings = websiteSettingDO.getBackgroundTextSite();
-            if (!StrUtil.isBlank(oldHeartwings) && !oldHeartwings.equals(heartwings)) {
+            if (!CharSequenceUtil.isBlank(oldHeartwings) && !oldHeartwings.equals(heartwings)) {
                 HeartwingsDO heartwingsDO = new HeartwingsDO();
                 heartwingsDO.setCreateTime(LocalDateTimeUtil.now());
                 heartwingsDO.setCreator(userLoginHolder.getUserId());
@@ -177,7 +182,7 @@ public class SettingService {
             websiteSettingDTO.setAlonePages(new ArrayList<>());
         }
         String avatar = userService.getCreatorAvatar();
-        if(!StrUtil.isBlank(avatar)){
+        if(!CharSequenceUtil.isBlank(avatar)){
             websiteSettingDTO.setAvatar(avatar);
         }
         return websiteSettingDTO;

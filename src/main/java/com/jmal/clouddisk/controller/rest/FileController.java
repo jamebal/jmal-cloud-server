@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
@@ -106,11 +107,11 @@ public class FileController {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "缺少文件参数, file");
         }
         String filepath = request.getHeader("filepath");
-        if (StrUtil.isBlank(filepath)) {
+        if (CharSequenceUtil.isBlank(filepath)) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "headers里缺少参数, filepath: 远程目标文件夹, 例如: '/Image/Typora/Public/Images'");
         }
         String baseUrl = request.getHeader("baseurl");
-        if (StrUtil.isBlank(baseUrl)) {
+        if (CharSequenceUtil.isBlank(baseUrl)) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "headers里缺少参数, baseUrl: 远程服务器地址, 例如: 'https://www.jmal.top/api'");
         }
         return fileService.imgUpload(baseUrl, filepath, file);
@@ -278,7 +279,7 @@ public class FileController {
     @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> rename(String newFileName, String username, String id) {
-        return fileService.rename(newFileName, username, id);
+        return fileService.rename(URLUtil.decode(newFileName), username, id);
     }
 
     @Operation(summary = "移动文件/文件夹")
@@ -348,7 +349,7 @@ public class FileController {
     @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> renameByPath(@RequestParam String newFileName,@RequestParam String username,@RequestParam String path) {
-        return fileService.renameByPath(newFileName, username, URLUtil.decode(path));
+        return fileService.renameByPath(URLUtil.decode(newFileName), username, URLUtil.decode(path));
     }
 
     @Operation(summary = "根据path添加文件/文件夹")
