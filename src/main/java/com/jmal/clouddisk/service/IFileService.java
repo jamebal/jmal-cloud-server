@@ -27,7 +27,7 @@ public interface IFileService {
      * @param username
      * @return
      */
-    Optional<Object> getById(String id, String username);
+    Optional<FileDocument> getById(String id, String username);
 
     FileDocument getFileDocumentByPathAndName(String path, String name, String username);
 

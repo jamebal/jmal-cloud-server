@@ -168,7 +168,7 @@ public class ShareController {
     @Operation(summary = "读取simText文件")
     @GetMapping("/public/s/preview/text")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> preview(@RequestParam String shareId,@RequestParam String fileId) {
+    public ResponseResult<Optional<FileDocument>> preview(@RequestParam String shareId ,@RequestParam String fileId) {
         ShareDO shareDO = shareService.getShare(shareId);
         if(!shareService.checkWhetherExpired(shareDO)){
             return ResultUtil.warning("该分享已过期");
@@ -177,20 +177,17 @@ public class ShareController {
         if(consumer == null){
             return ResultUtil.warning("该分享已过期");
         }
-        return ResultUtil.success(fileService.getById(fileId,consumer.getUsername()));
+        return ResultUtil.success(fileService.getById(fileId, consumer.getUsername()));
     }
 
     @Operation(summary = "根据id获取分享的文件信息")
-    @GetMapping("/public/file_info/{fileId}")
+    @GetMapping("/public/file_info/{fileId}/{shareId}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<FileDocument> getFileById(@PathVariable String fileId) {
-        FileDocument fileDocument = fileService.getById(fileId);
-        if (fileDocument == null) {
-            return ResultUtil.error(ExceptionType.FILE_NOT_FIND.getMsg());
+    public ResponseResult<FileDocument> getFileById(@PathVariable String fileId, @PathVariable String shareId) {
+        ShareDO shareDO = shareService.getShare(shareId);
+        if(!shareService.checkWhetherExpired(shareDO)){
+            return ResultUtil.warning("该分享已过期");
         }
-        if (BooleanUtil.isTrue(fileDocument.getIsShare()) && (System.currentTimeMillis() < Convert.toLong(fileDocument.getExpiresAt(),   0L))) {
-            return ResultUtil.success(fileService.getById(fileId));
-        }
-        return ResultUtil.warning("该分享已失效");
+        return ResultUtil.success(fileService.getById(fileId));
     }
 }

@@ -469,7 +469,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public Optional<Object> getById(String id, String username) {
+    public Optional<FileDocument> getById(String id, String username) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
             String currentDirectory = getUserDirectory(fileDocument.getPath());

@@ -161,7 +161,7 @@ public class FileController {
     @GetMapping("/preview/text")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> previewText(@RequestParam String id, @RequestParam String username) {
+    public ResponseResult<Optional<FileDocument>> previewText(@RequestParam String id, @RequestParam String username) {
         ResultUtil.checkParamIsNull(id,username);
         return ResultUtil.success(fileService.getById(id, username));
     }
