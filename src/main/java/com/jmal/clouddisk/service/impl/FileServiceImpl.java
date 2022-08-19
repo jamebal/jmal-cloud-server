@@ -66,6 +66,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -1108,11 +1109,11 @@ public class FileServiceImpl implements IFileService {
     public ResponseResult<FileDocument> addFile(String fileName, Boolean isFolder, String username, String parentPath) {
         String userId = userService.getUserIdByUserName(username);
         if (CharSequenceUtil.isBlank(userId)) {
-            ResultUtil.error("不存在的用户");
+            return ResultUtil.error("不存在的用户");
         }
         Path path = Paths.get(fileProperties.getRootDir(), username, parentPath, fileName);
         if (Files.exists(path)) {
-            ResultUtil.warning("该文件已存在");
+            return ResultUtil.warning("该文件已存在");
         }
         try {
             if (isFolder) {
@@ -1120,7 +1121,7 @@ public class FileServiceImpl implements IFileService {
             } else {
                 Files.createFile(path);
             }
-        } catch (IOException e) {
+        }catch (IOException e) {
             log.error(e.getMessage(), e);
             return ResultUtil.error("新建文件失败");
         }

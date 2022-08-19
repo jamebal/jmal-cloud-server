@@ -22,6 +22,7 @@ if [ ! -f "dist-$version.tar" ]; then
   tar -czf dist-$version.tar dist
 fi
 cp dist-$version.tar $server_dir"/docker/"
+cp dist-$version.tar $server_dir"/www/releases/dist-latest.tar"
 
 # build jmal-cloud-server
 cd $server_dir || exit
@@ -36,6 +37,7 @@ cp "target/clouddisk-$version-exec.jar" "docker/"
 cd "$server_dir/docker" || exit
 echo "location: ${server_dir}/docker "
 docker build -t jmalcloud:$version --build-arg version=$version .
+docker tag jmalcloud:$version "jmalcloud:latest"
 
 pushDocker() {
   echo "Push the image to the $1 ..."
@@ -54,8 +56,8 @@ removeLocalTag() {
 }
 
 # Push the image to the registry
-pushDocker "registry.cn-guangzhou.aliyuncs.com"
-pushDocker "registry.cn-hangzhou.aliyuncs.com"
-pushDocker "registry.cn-chengdu.aliyuncs.com"
-pushDocker "registry.cn-beijing.aliyuncs.com"
+#pushDocker "registry.cn-guangzhou.aliyuncs.com"
+#pushDocker "registry.cn-hangzhou.aliyuncs.com"
+#pushDocker "registry.cn-chengdu.aliyuncs.com"
+#pushDocker "registry.cn-beijing.aliyuncs.com"
 exit 0;
