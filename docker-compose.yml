@@ -12,7 +12,7 @@ services:
     restart: always
   jmalcloud:
     container_name: "jmalcloud_server"
-    image: "jmalcloud:latest"
+    image: "jmal/jmalcloud:latest"
     environment:
       MONGODB_URI: "mongodb://mongo:27017/jmalcloud"
     ports:

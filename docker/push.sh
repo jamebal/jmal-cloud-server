@@ -39,7 +39,7 @@ echo "location: ${server_dir}/docker "
 docker build -t jmalcloud:$version --build-arg version=$version .
 docker tag jmalcloud:$version "jmalcloud:latest"
 
-pushDocker() {
+pushAliYun() {
   echo "Push the image to the $1 ..."
   cat pwd.txt | docker login --username=bjmal --password-stdin "$1"
   docker tag jmalcloud:$version "$1/jmalcloud/jmalcloud:$version"
@@ -49,15 +49,25 @@ pushDocker() {
   removeLocalTag "$1"
 }
 
-removeLocalTag() {
+pushDockerHub() {
+  echo "Push the image to the DockerHub ..."
+  docker tag jmalcloud:$version "jmal/jmalcloud:$version"
+  docker tag jmalcloud:$version "jmal/jmalcloud:latest"
+  docker push "jmal/jmalcloud:$version"
+  docker push "jmal/jmalcloud:latest"
+  removeLocalTag "$1"
+}
+
+removeLocalAliYunTag() {
   docker rmi "$1/jmalcloud/jmalcloud:$version"
   docker rmi "$1/jmalcloud/jmalcloud:latest"
   echo "removed the image $1"
 }
 
 # Push the image to the registry
-#pushDocker "registry.cn-guangzhou.aliyuncs.com"
-#pushDocker "registry.cn-hangzhou.aliyuncs.com"
-#pushDocker "registry.cn-chengdu.aliyuncs.com"
-#pushDocker "registry.cn-beijing.aliyuncs.com"
+pushDockerHub
+#pushAliYun "registry.cn-guangzhou.aliyuncs.com"
+#pushAliYun "registry.cn-hangzhou.aliyuncs.com"
+#pushAliYun "registry.cn-chengdu.aliyuncs.com"
+#pushAliYun "registry.cn-beijing.aliyuncs.com"
 exit 0;
