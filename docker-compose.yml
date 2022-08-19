@@ -45,7 +45,7 @@ services:
     restart: always
   drawio-webapp:
     container_name: "jmalcloud_drawio"
-    image: "jgraph/drawio:20.2.3"
+    image: "jgraph/drawio:16.6.1"
     environment:
       TZ: "Asia/Shanghai"
     restart: always
