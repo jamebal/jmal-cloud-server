@@ -3,23 +3,25 @@ version: '3'
 services:
   mongo:
     container_name: "jmalcloud_mongodb"
-    image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/mongodb:4.4"
+    image: "mongo:4.4"
     environment:
       TZ: "Asia/Shanghai"
     volumes:
       - ./docker/mongodb/data/db:/data/db
       - ./docker/mongodb/custom:/etc/mongo
-    restart: always
+    restart: unless-stopped
+    command: --bind_ip 127.0.0.1 --wiredTigerCacheSizeGB 0.5
   jmalcloud:
     container_name: "jmalcloud_server"
     image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:latest"
     environment:
       MONGODB_URI: "mongodb://mongo:27017/jmalcloud"
+      TZ: "Asia/Shanghai"
     ports:
       - "7072:8088"
     volumes:
       - ./docker/jmalcloud/files/:/jmalcloud/files/
-    restart: always
+    restart: unless-stopped
   nginx:
     container_name: "jmalcloud_nginx"
     image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/nginx:latest"
@@ -35,7 +37,7 @@ services:
       - jmalcloud
       - office
       - drawio-webapp
-    restart: always
+    restart: unless-stopped
   office:
     container_name: "jmalcloud_office"
     # x86:onlyoffice/documentserver:7.0.0.132, arm64:onlyoffice/documentserver:latest-arm64

@@ -16,7 +16,7 @@ ADD ip2region.db /jmalcloud/
 
 ADD clouddisk-$VERSION-exec.jar /usr/local/
 
-VOLUME /jmal-cloud-view/ /jmalcloud/
+VOLUME /jmalcloud/
 
 EXPOSE 8088
 

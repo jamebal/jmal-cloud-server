@@ -19,10 +19,10 @@ cd $view_dir || exit
 echo "location: ${view_dir} "
 if [ ! -f "dist-$version.tar" ]; then
   npm run build:prod
-  tar -czf dist-$version.tar dist
+  tar -czf "dist-$version.tar" dist
 fi
-cp dist-$version.tar $server_dir"/docker/"
-cp dist-$version.tar $server_dir"/www/releases/dist-latest.tar"
+cp "dist-$version.tar" $server_dir"/docker/"
+cp "dist-$version.tar" $server_dir"/www/releases/dist-latest.tar"
 
 # build jmal-cloud-server
 cd $server_dir || exit
@@ -36,26 +36,32 @@ cp "target/clouddisk-$version-exec.jar" "docker/"
 # build jmalcloud of Dockerfile
 cd "$server_dir/docker" || exit
 echo "location: ${server_dir}/docker "
-docker build -t jmalcloud:$version --build-arg version=$version .
-docker tag jmalcloud:$version "jmalcloud:latest"
+docker build -t "jmalcloud:$version" --build-arg "version=$version" .
+docker tag "jmalcloud:$version" "jmalcloud:latest"
 
 pushAliYun() {
   echo "Push the image to the $1 ..."
   cat pwd.txt | docker login --username=bjmal --password-stdin "$1"
-  docker tag jmalcloud:$version "$1/jmalcloud/jmalcloud:$version"
-  docker tag jmalcloud:$version "$1/jmalcloud/jmalcloud:latest"
+  docker tag "jmalcloud:$version" "$1/jmalcloud/jmalcloud:$version"
+  docker tag "jmalcloud:$version" "$1/jmalcloud/jmalcloud:latest"
   docker push "$1/jmalcloud/jmalcloud:$version"
   docker push "$1/jmalcloud/jmalcloud:latest"
-  removeLocalTag "$1"
+  removeLocalAliYunTag "$1"
 }
 
 pushDockerHub() {
   echo "Push the image to the DockerHub ..."
-  docker tag jmalcloud:$version "jmal/jmalcloud:$version"
-  docker tag jmalcloud:$version "jmal/jmalcloud:latest"
+  docker tag "jmalcloud:$version" "jmal/jmalcloud:$version"
+  docker tag "jmalcloud:$version" "jmal/jmalcloud:latest"
   docker push "jmal/jmalcloud:$version"
   docker push "jmal/jmalcloud:latest"
-  removeLocalTag "$1"
+  removeDockerHub
+}
+
+removeDockerHub() {
+  docker rmi "jmal/jmalcloud:$version"
+  docker rmi "jmal/jmalcloud:latest"
+  echo "removed the image DockerHub"
 }
 
 removeLocalAliYunTag() {
@@ -66,8 +72,8 @@ removeLocalAliYunTag() {
 
 # Push the image to the registry
 pushDockerHub
-#pushAliYun "registry.cn-guangzhou.aliyuncs.com"
-#pushAliYun "registry.cn-hangzhou.aliyuncs.com"
-#pushAliYun "registry.cn-chengdu.aliyuncs.com"
-#pushAliYun "registry.cn-beijing.aliyuncs.com"
+pushAliYun "registry.cn-guangzhou.aliyuncs.com"
+pushAliYun "registry.cn-hangzhou.aliyuncs.com"
+pushAliYun "registry.cn-chengdu.aliyuncs.com"
+pushAliYun "registry.cn-beijing.aliyuncs.com"
 exit 0;
