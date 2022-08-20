@@ -10,7 +10,7 @@ services:
       - ./docker/mongodb/data/db:/data/db
       - ./docker/mongodb/custom:/etc/mongo
     restart: unless-stopped
-    command: --bind_ip 127.0.0.1 --wiredTigerCacheSizeGB 0.5
+    command: --wiredTigerCacheSizeGB 0.5
   jmalcloud:
     container_name: "jmalcloud_server"
     image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:latest"
