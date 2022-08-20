@@ -2,6 +2,7 @@
 push.sh
 update.sh
 HELP.md
+.env
 /log/
 /lucene/
 /docker/
