@@ -10,8 +10,6 @@ ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
 
 RUN mkdir -p /jmalcloud/files
 
-COPY nginx.conf /etc/nginx/nginx.conf
-
 COPY README.md /usr/local/README.md
 
 ADD ip2region.db /jmalcloud/

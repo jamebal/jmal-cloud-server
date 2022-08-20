@@ -70,9 +70,9 @@ is_arm() {
 
 env_init() {
   if [[ "$(is_arm)" == "yes" ]]; then
-    env_set OFFICE_IMAGE "onlyoffice/documentserver:latest-arm64"
+    env_set OFFICE_IMAGE "registry.cn-guangzhou.aliyuncs.com/jmalcloud/onlyoffice_documentserver:latest-arm64"
   else
-    env_set OFFICE_IMAGE "onlyoffice/documentserver:7.0.0.132"
+    env_set OFFICE_IMAGE "registry.cn-guangzhou.aliyuncs.com/jmalcloud/onlyoffice_documentserver:7.0.0.132"
   fi
   env_set APP_IPPR "10.$(rand 50 100).$(rand 100 200)"
 }

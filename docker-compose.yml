@@ -3,7 +3,7 @@ version: '3'
 services:
   mongo:
     container_name: "jmalcloud_mongodb"
-    image: "mongo:4.4"
+    image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/mongodb:4.4"
     environment:
       TZ: "Asia/Shanghai"
     volumes:
@@ -12,7 +12,7 @@ services:
     restart: always
   jmalcloud:
     container_name: "jmalcloud_server"
-    image: "jmal/jmalcloud:latest"
+    image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:latest"
     environment:
       MONGODB_URI: "mongodb://mongo:27017/jmalcloud"
     ports:
@@ -22,7 +22,7 @@ services:
     restart: always
   nginx:
     container_name: "jmalcloud_nginx"
-    image: "nginx:latest"
+    image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/nginx:latest"
     ports:
       - "7070:80"
       - "7071:8089"
@@ -45,7 +45,7 @@ services:
     restart: always
   drawio-webapp:
     container_name: "jmalcloud_drawio"
-    image: "jgraph/drawio:16.6.1"
+    image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/jgraph_drawio:16.6.1"
     environment:
       TZ: "Asia/Shanghai"
     restart: always
