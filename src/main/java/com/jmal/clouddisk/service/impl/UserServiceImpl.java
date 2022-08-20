@@ -10,10 +10,12 @@ import cn.hutool.crypto.symmetric.DES;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
+import com.jmal.clouddisk.model.rbac.ConsumerBase;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.repository.IAuthDAO;
@@ -21,6 +23,7 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -30,6 +33,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,6 +48,7 @@ import java.util.stream.Collectors;
  * @Description UserServiceImpl
  */
 @Service
+@Slf4j
 public class UserServiceImpl implements IUserService {
 
     public static final String COLLECTION_NAME = "user";
@@ -64,6 +72,9 @@ public class UserServiceImpl implements IUserService {
 
     @Autowired
     IAuthDAO authDAO;
+
+    @Autowired
+    FileProperties fileProperties;
 
     @Autowired
     private UserLoginHolder userLoginHolder;
@@ -108,15 +119,13 @@ public class UserServiceImpl implements IUserService {
             if (originalPwd.length() < 8) {
                 return ResultUtil.warning("密码长度不能少于8位");
             }
-            String password = PasswordHash.createHash(originalPwd);
-            String key = password.split(":")[2];
-            DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
-            consumerDTO.setEncryptPwd(des.encryptHex(originalPwd));
-            consumerDTO.setPassword(password);
+            encryption(consumerDTO, originalPwd);
             ConsumerDO consumerDO = new ConsumerDO();
             CglibUtil.copy(consumerDTO, consumerDO);
             consumerDO.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             consumerDO.setId(null);
+            // 新建用户目录
+            createUserDir(consumerDO.getUsername());
             mongoTemplate.save(consumerDO, COLLECTION_NAME);
             // 更新用户缓存
             CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
@@ -124,6 +133,21 @@ public class UserServiceImpl implements IUserService {
             return ResultUtil.warning("该用户已存在");
         }
         return ResultUtil.success();
+    }
+
+    /**
+     * 新建用户目录
+     * @param username 用户名
+     */
+    private void createUserDir(String username) {
+        // 新建用户目录
+        Path path = Paths.get(fileProperties.getRootDir(), username);
+        try {
+            Files.createDirectory(path);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -398,16 +422,27 @@ public class UserServiceImpl implements IUserService {
             user.setShowName(user.getUsername());
             user.setQuota(15);
             String originalPwd = user.getPassword();
-            String password = PasswordHash.createHash(originalPwd);
-            String key = password.split(":")[2];
-            DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
-            user.setEncryptPwd(des.encryptHex(originalPwd));
-            user.setPassword(password);
+            encryption(user, originalPwd);
             user.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             user.setId(null);
+            // 新建用户目录
+            createUserDir(user.getUsername());
             mongoTemplate.save(user, COLLECTION_NAME);
         }
         return ResultUtil.success();
+    }
+
+    /**
+     * 加密
+     * @param user ConsumerBase
+     * @param originalPwd 原始密码
+     */
+    private static void encryption(ConsumerBase user, String originalPwd) {
+        String password = PasswordHash.createHash(originalPwd);
+        String key = password.split(":")[2];
+        DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
+        user.setEncryptPwd(des.encryptHex(originalPwd));
+        user.setPassword(password);
     }
 
     @Override

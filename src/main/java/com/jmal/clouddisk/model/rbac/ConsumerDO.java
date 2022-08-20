@@ -4,6 +4,7 @@ import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -15,9 +16,10 @@ import java.util.List;
  * @author jmal
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Schema
 @Document(collection = UserServiceImpl.COLLECTION_NAME)
-public class ConsumerDO {
+public class ConsumerDO extends ConsumerBase {
     String id;
     @Schema(name = "username", title = "用户名", example = "admin")
     @Indexed

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.data.annotation.Id;
 
 import javax.validation.Valid;
@@ -17,9 +18,10 @@ import java.util.List;
  * @author jmal
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Schema
 @Valid
-public class ConsumerDTO {
+public class ConsumerDTO extends ConsumerBase {
     @Id
     String id;
     @NotNull(message = "用户账号不能为空")
