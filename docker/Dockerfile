@@ -10,8 +10,6 @@ ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
 
 RUN mkdir -p /jmalcloud/files
 
-COPY README.md /usr/local/README.md
-
 ADD ip2region.db /jmalcloud/
 
 ADD clouddisk-$VERSION-exec.jar /usr/local/
