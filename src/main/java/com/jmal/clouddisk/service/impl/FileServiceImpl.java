@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.lang.Console;
@@ -28,6 +29,7 @@ import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.result.UpdateResult;
 import info.monitorenter.cpdetector.io.*;
+import jdk.nashorn.internal.ir.annotations.Ignore;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
@@ -66,15 +68,15 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.FileTime;
 import java.text.Collator;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 
@@ -141,9 +143,14 @@ public class FileServiceImpl implements IFileService {
      */
     private final Cache<String, CopyOnWriteArrayList<Integer>> unWrittenCache = CaffeineUtil.getUnWrittenCacheCache();
     /***
-     * 合并文件是的写入锁缓存
+     * 合并文件的写入锁缓存
      */
     private final Cache<String, Lock> chunkWriteLockCache = CaffeineUtil.getChunkWriteLockCache();
+
+    /***
+     * 上传文件夹的写入锁缓存
+     */
+    private final Cache<String, Lock> uploadFolderLockCache = CaffeineUtil.getUploadFolderLockCache();
 
     /**
      * 是否关闭了文件监听或者文件监听的时间间隔大于3秒
@@ -796,64 +803,87 @@ public class FileServiceImpl implements IFileService {
         contentType = FileContentTypeUtils.getContentType(suffix);
 
         String fileAbsolutePath = file.getAbsolutePath();
-        int startIndex = fileProperties.getRootDir().length() + username.length() + 1;
-        int endIndex = fileAbsolutePath.length() - fileName.length();
-        if (startIndex >= endIndex) {
-            return null;
+        Lock lock = null;
+        if (file.isDirectory()) {
+            lock = uploadFolderLockCache.get(fileAbsolutePath, key -> new ReentrantLock());
+            lock.lock();
         }
-        String relativePath = fileAbsolutePath.substring(startIndex, endIndex);
-        Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userId));
-        query.addCriteria(Criteria.where("path").is(relativePath));
-        query.addCriteria(Criteria.where("name").is(fileName));
-        // 文件是否存在
-        FileDocument fileExists = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
-        if (fileExists != null) {
-            if (contentType.contains("audio")) {
-                Update update = new Update();
-                Music music = AudioFileUtils.readAudio(file);
-                update.set("music", music);
-                mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        UpdateResult updateResult = null;
+        try {
+            int startIndex = fileProperties.getRootDir().length() + username.length() + 1;
+            int endIndex = fileAbsolutePath.length() - fileName.length();
+            if (startIndex >= endIndex) {
+                return null;
             }
-            return fileExists.getId();
-        }
-        LocalDateTime nowDateTime = LocalDateTime.now(TimeUntils.ZONE_ID);
-        Update update = new Update();
-        update.set("userId", userId);
-        update.set("name", fileName);
-        update.set("path", relativePath);
-        update.set("isFolder", file.isDirectory());
-        update.set("uploadDate", nowDateTime);
-        update.set("updateDate", nowDateTime);
-        update.set("isFavorite", false);
-        if (isPublic != null) {
-            update.set("isPublic", true);
-        }
-        if (file.isFile()) {
-            long size = file.length();
-            update.set("size", size);
-            update.set("md5", size + relativePath + fileName);
-            update.set("contentType", contentType);
-            update.set("suffix", suffix);
-            if (contentType.contains("audio")) {
-                Music music = AudioFileUtils.readAudio(file);
-                update.set("music", music);
+            String relativePath = fileAbsolutePath.substring(startIndex, endIndex);
+            Query query = new Query();
+            query.addCriteria(Criteria.where("userId").is(userId));
+            query.addCriteria(Criteria.where("path").is(relativePath));
+            query.addCriteria(Criteria.where("name").is(fileName));
+            // 文件是否存在
+            FileDocument fileExists = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+            if (fileExists != null) {
+                if (contentType.contains("audio") && fileExists.getMusic() == null) {
+                    Update update = new Update();
+                    Music music = AudioFileUtils.readAudio(file);
+                    update.set("music", music);
+                    mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
+                }
+                return fileExists.getId();
             }
-            if (contentType.startsWith(CONTENT_TYPE_IMAGE)) {
-                // 生成缩略图
-                if (!"ico".equals(suffix) && !"svg".equals(suffix)) {
-                    generateThumbnail(file, update);
+            LocalDateTime uploadDateTime;
+            LocalDateTime updateDateTime;
+            try {
+                Map<String,Object> attributes = Files.readAttributes(file.toPath(), "lastModifiedTime,creationTime", LinkOption.NOFOLLOW_LINKS);
+                FileTime lastModifiedTime = (FileTime) attributes.get("lastModifiedTime");
+                FileTime creationTime = (FileTime) attributes.get("creationTime");
+                uploadDateTime = LocalDateTimeUtil.of(creationTime.toInstant());
+                updateDateTime = LocalDateTimeUtil.of(lastModifiedTime.toInstant());
+            } catch (IOException e) {
+                uploadDateTime = LocalDateTime.now(TimeUntils.ZONE_ID);
+                updateDateTime = uploadDateTime;
+            }
+            Update update = new Update();
+            update.set("userId", userId);
+            update.set("name", fileName);
+            update.set("path", relativePath);
+            update.set("isFolder", file.isDirectory());
+            update.set("uploadDate", uploadDateTime);
+            update.set("updateDate", updateDateTime);
+            update.set("isFavorite", false);
+            if (isPublic != null) {
+                update.set("isPublic", true);
+            }
+            if (file.isFile()) {
+                long size = file.length();
+                update.set("size", size);
+                update.set("md5", size + relativePath + fileName);
+                update.set("contentType", contentType);
+                update.set("suffix", suffix);
+                if (contentType.contains("audio")) {
+                    Music music = AudioFileUtils.readAudio(file);
+                    update.set("music", music);
+                }
+                if (contentType.startsWith(CONTENT_TYPE_IMAGE)) {
+                    // 生成缩略图
+                    if (!"ico".equals(suffix) && !"svg".equals(suffix)) {
+                        generateThumbnail(file, update);
+                    }
+                }
+                if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
+                    // 写入markdown内容
+                    String markDownContent = FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file)));
+                    update.set("contentText", markDownContent);
                 }
             }
-            if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
-                // 写入markdown内容
-                String markDownContent = FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file)));
-                update.set("contentText", markDownContent);
+            updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
+            pushMessage(username, update.getUpdateObject(), "createFile");
+        } finally {
+            if (lock != null) {
+                lock.unlock();
             }
         }
-        UpdateResult updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
-        pushMessage(username, update.getUpdateObject(), "createFile");
-        if (null != updateResult.getUpsertedId()) {
+        if (updateResult != null && null != updateResult.getUpsertedId()) {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return null;
@@ -908,17 +938,16 @@ public class FileServiceImpl implements IFileService {
     private void generateThumbnail(File file, Update update) {
         Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(file);
         thumbnail.size(256, 256);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try {
+        try(ByteArrayOutputStream out = new ByteArrayOutputStream();) {
             thumbnail.toOutputStream(out);
             FastImageInfo imageInfo = new FastImageInfo(file);
             update.set("w", imageInfo.getWidth());
             update.set("h", imageInfo.getHeight());
             update.set("content", out.toByteArray());
         } catch (UnsupportedFormatException e) {
-            log.warn(e.getMessage(), e);
+            log.warn(e.getMessage() + file.getAbsolutePath(), e);
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            log.error(e.getMessage() + file.getAbsolutePath(), e);
         }
     }
 

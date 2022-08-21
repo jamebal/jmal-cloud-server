@@ -232,7 +232,11 @@
             <artifactId>reactor-core</artifactId>
             <version>3.2.12.RELEASE</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.github.oshi</groupId>
+            <artifactId>oshi-core</artifactId>
+            <version>6.2.2</version>
+        </dependency>
         <!-- ip定位-->
         <dependency>
             <groupId>org.lionsoul</groupId>

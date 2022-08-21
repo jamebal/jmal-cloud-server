@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model.rbac;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
@@ -9,6 +10,8 @@ import lombok.Data;
  */
 @Data
 public class ConsumerBase {
+    @Schema(name = "password", title = "密码", example = "123456")
     String password;
+    @Schema(hidden = true, title = "密码加密后的字符串")
     String encryptPwd;
 }

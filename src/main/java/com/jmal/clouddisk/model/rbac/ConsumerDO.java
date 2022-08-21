@@ -27,10 +27,6 @@ public class ConsumerDO extends ConsumerBase {
     @Indexed
     @Schema(name = "showName", title = "显示用户名", example = "管理员1")
     String showName;
-    @Schema(name = "password", title = "密码", example = "123456")
-    String password;
-    @Schema(hidden = true, title = "密码加密后的字符串")
-    String encryptPwd;
     @Schema(title = "头像", example = "https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif")
     String avatar;
     @Schema(name = "slogan", title = "标语")

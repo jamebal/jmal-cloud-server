@@ -1,47 +1,34 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.hutool.core.date.TimeInterval;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.ArrayUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import com.jmal.clouddisk.util.TimeUntils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tika.mime.MimeType;
-import org.apache.tika.mime.MimeTypeException;
-import org.apache.tika.mime.MimeTypes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 
 import javax.annotation.PostConstruct;
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Set;
 
 /**
  * @author jmal
@@ -78,6 +65,8 @@ public class SettingService {
     @Autowired
     UserLoginHolder userLoginHolder;
 
+    private final Set<String> syncCache = new ConcurrentHashSet<>(1);
+
     @PostConstruct
     public void init(){
         // 启动时检测是否存在菜单，不存在则初始化
@@ -92,32 +81,70 @@ public class SettingService {
      * 把文件同步到数据库
      * @param username 用户名
      */
-    public void sync(String username) {
-        Path path = Paths.get(fileProperties.getRootDir(), username);
-        List<File> list = loopFiles(path.toFile());
-        list.forEach(file -> fileService.createFile(username, file));
+    public ResponseResult<Object> sync(String username) {
+        if (syncCache.isEmpty()) {
+            syncCache.add("syncing");
+            log.info("开始同步");
+            ThreadUtil.execute(() -> {
+                Path path = Paths.get(fileProperties.getRootDir(), username);
+                try {
+                    Files.walkFileTree(path, new SyncFileVisitor(username));
+                } catch (IOException e) {
+                    log.error(e.getMessage() + path, e);
+                } finally {
+                    syncCache.clear();
+                    log.info("同步完成");
+                    fileService.pushMessage(username, null, "synced");
+                }
+            });
+        }
+        return ResultUtil.success();
     }
 
-    /***
-     * 递归遍历目录以及子目录中的所有文件
-     * @param file 当前遍历文件
-     * @return 文件列表
+    /**
+     * 是否正在同步中
      */
-    public static List<File> loopFiles(File file) {
-        final List<File> fileList = new ArrayList<>();
-        if (null == file || !file.exists()) {
-            return fileList;
+    public ResponseResult<Object> isSync() {
+        if (syncCache.isEmpty()) {
+            return ResultUtil.success(false);
         }
-        fileList.add(file);
-        if (file.isDirectory()) {
-            final File[] subFiles = file.listFiles();
-            if (ArrayUtil.isNotEmpty(subFiles)) {
-                for (File tmp : subFiles) {
-                    fileList.addAll(loopFiles(tmp));
-                }
+        return ResultUtil.success(true);
+    }
+
+    private class SyncFileVisitor extends SimpleFileVisitor<Path> {
+
+        private final String username;
+
+        public SyncFileVisitor(String username) {
+            this.username = username;
+        }
+
+        @Override
+        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+            log.error(exc.getMessage(), exc);
+            return super.visitFileFailed(file, exc);
+        }
+
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            try{
+                fileService.createFile(username, dir.toFile());
+            } catch (Exception e) {
+                log.error(e.getMessage() + dir, e);
             }
+            return super.preVisitDirectory(dir, attrs);
         }
-        return fileList;
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            try{
+                fileService.createFile(username, file.toFile());
+            } catch (Exception e) {
+                log.error(e.getMessage() + file, e);
+            }
+            return super.visitFile(file, attrs);
+        }
+
     }
 
     /***

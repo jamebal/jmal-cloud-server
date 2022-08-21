@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.listener;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.IFileService;
 import lombok.extern.slf4j.Slf4j;
@@ -9,8 +8,8 @@ import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-
 import java.io.File;
+import java.nio.file.Paths;
 
 /**
  * 文件变化监听器
@@ -37,14 +36,14 @@ public class FileListener extends FileAlterationListenerAdaptor {
     @Override
     public void onFileCreate(File file) {
         try{
-            String username = ownerOfChangeFile(file.getAbsolutePath());
+            String username = ownerOfChangeFile(file);
             if(CharSequenceUtil.isBlank(username)){
                 return;
             }
             fileService.createFile(username,file);
             log.info("用户:{},新建文件:{}",username,file.getAbsolutePath());
         }catch (Exception e){
-            log.error("新建文件后续操作失败", e);
+            log.error("新建文件后续操作失败, " + file.getAbsolutePath(), e);
         }
     }
 
@@ -54,7 +53,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     @Override
     public void onFileChange(File file) {
         try{
-            String username = ownerOfChangeFile(file.getAbsolutePath());
+            String username = ownerOfChangeFile(file);
             if(CharSequenceUtil.isBlank(username)){
                 return;
             }
@@ -71,7 +70,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     @Override
     public void onFileDelete(File file) {
         try{
-            String username = ownerOfChangeFile(file.getAbsolutePath());
+            String username = ownerOfChangeFile(file);
             if(CharSequenceUtil.isBlank(username)){
                 return;
             }
@@ -88,7 +87,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     @Override
     public void onDirectoryCreate(File directory) {
         try{
-            String username = ownerOfChangeFile(directory.getAbsolutePath());
+            String username = ownerOfChangeFile(directory);
             if(CharSequenceUtil.isBlank(username)){
                 return;
             }
@@ -105,7 +104,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     @Override
     public void onDirectoryChange(File directory) {
         try{
-            String username = ownerOfChangeFile(directory.getAbsolutePath());
+            String username = ownerOfChangeFile(directory);
             log.info("用户:{},修改目录:{}",username,directory.getAbsolutePath());
         }catch (Exception e){
             log.error("修改目录后续操作失败", e);
@@ -118,7 +117,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
     @Override
     public void onDirectoryDelete(File directory) {
         try{
-            String username = ownerOfChangeFile(directory.getAbsolutePath());
+            String username = ownerOfChangeFile(directory);
             if(CharSequenceUtil.isBlank(username)){
                 return;
             }
@@ -131,20 +130,17 @@ public class FileListener extends FileAlterationListenerAdaptor {
 
     /***
      * 判断变化的文件属于哪个用户
-     * @return
+     * @return username
      */
-    private String ownerOfChangeFile(String fileAbsolutePath){
+    private String ownerOfChangeFile(File file){
+        String username = null;
         try {
-            String relativePath = fileAbsolutePath.replace(fileProperties.getRootDir() + File.separator,"");
-            String[] relativePaths = relativePath.split(File.separator);
-            if(relativePaths.length <= 1){
-                return null;
-            }
-            return relativePaths[0];
+            int rootPathCount = Paths.get(fileProperties.getRootDir()).getNameCount();
+            username = file.toPath().subpath(rootPathCount, rootPathCount + 1).toString();
         }catch (Exception e){
-            log.error("解析路径失败,fileAbsolutePath:{}", fileAbsolutePath, e);
+            log.error("解析路径失败,fileAbsolutePath:{}", file.getAbsolutePath(), e);
         }
-        return null;
+        return username;
     }
 
 }

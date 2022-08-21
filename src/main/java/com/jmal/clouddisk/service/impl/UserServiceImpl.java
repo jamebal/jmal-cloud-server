@@ -143,7 +143,9 @@ public class UserServiceImpl implements IUserService {
         // 新建用户目录
         Path path = Paths.get(fileProperties.getRootDir(), username);
         try {
-            Files.createDirectory(path);
+            if (!Files.exists(path)) {
+                Files.createDirectory(path);
+            }
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);
@@ -420,7 +422,7 @@ public class UserServiceImpl implements IUserService {
             user.setRoles(Collections.singletonList(roleId));
             user.setCreator(true);
             user.setShowName(user.getUsername());
-            user.setQuota(15);
+            user.setQuota((int) (SystemUtil.getFreeSpace()/2));
             String originalPwd = user.getPassword();
             encryption(user, originalPwd);
             user.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
@@ -482,6 +484,7 @@ public class UserServiceImpl implements IUserService {
             Query query = new Query();
             query.addCriteria(Criteria.where("username").is(name));
             consumer = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
+            CaffeineUtil.setConsumerByUsernameCache(name, consumer);
         }
         return consumer;
     }

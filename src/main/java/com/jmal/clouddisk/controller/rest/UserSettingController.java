@@ -64,8 +64,14 @@ public class UserSettingController {
     @Permission(value = "cloud:set:sync")
     @LogOperatingFun
     public ResponseResult<Object> sync(@RequestParam String username) {
-        settingService.sync(username);
-        return ResultUtil.success();
+        return settingService.sync(username);
+    }
+
+    @Operation(summary = "是否正在同步")
+    @GetMapping("/user/setting/isSync")
+    @LogOperatingFun
+    public ResponseResult<Object> isSync() {
+        return settingService.isSync();
     }
 
     @Operation(summary = "重置角色菜单")

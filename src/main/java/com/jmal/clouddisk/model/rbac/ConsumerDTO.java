@@ -30,9 +30,6 @@ public class ConsumerDTO extends ConsumerBase {
     @NotNull(message = "用户名不能为空")
     @Schema(name = "showName", title = "用户名", example = "管理员1", required = true)
     String showName;
-    @Schema(name = "password", title = "密码", example = "123456")
-    String password;
-    String encryptPwd;
     @Schema(name = "avatar", title = "头像")
     String avatar;
     @Schema(name = "slogan", title = "标语")

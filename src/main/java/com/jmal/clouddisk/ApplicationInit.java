@@ -58,9 +58,9 @@ public class ApplicationInit implements ApplicationRunner {
         FileAlterationMonitor monitor = new FileAlterationMonitor(interval, observer);
         // 开始监控
         monitor.start();
-        log.info("\r\n文件监控服务已开启:\r\n轮询间隔:{}秒\n监控目录:{}\n忽略目录:{}", fileProperties.getTimeInterval(), rootDir, rootDir.toString() + File.separator + fileProperties.getChunkFileDir());
+        log.info("\r\n文件监控服务已开启:\r\n轮询间隔:{}秒\n监控目录:{}\n忽略目录:{}", fileProperties.getTimeInterval(), rootDir, rootDir + File.separator + fileProperties.getChunkFileDir());
 
         // 同步 fileDocument 索引
-        service.synFileCreatIndex();
+        // service.synFileCreatIndex();
     }
 }
