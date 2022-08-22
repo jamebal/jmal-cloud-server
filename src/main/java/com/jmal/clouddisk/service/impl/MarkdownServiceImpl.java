@@ -12,7 +12,12 @@ import cn.hutool.extra.cglib.CglibUtil;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.annotation.JacksonAnnotation;
+import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.config.JacksonConfig;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.Either;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -26,11 +31,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.json.JacksonJsonParser;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.stereotype.Service;
 
 import org.springframework.web.multipart.MultipartFile;
@@ -418,12 +426,12 @@ public class MarkdownServiceImpl implements IMarkdownService {
     private MarkdownVO getMarkdownVO(FileDocument fileDocument, boolean isDraft) {
         MarkdownVO markdownVO = new MarkdownVO();
         if (isDraft) {
-            CglibUtil.copy(getFileDocument(fileDocument.getDraft()), markdownVO);
+            markdownVO = JSON.parseObject(fileDocument.getDraft(), MarkdownVO.class);
             markdownVO.setId(fileDocument.getId());
         } else {
             CglibUtil.copy(getFileDocument(fileDocument), markdownVO);
         }
-        if (fileDocument.getDraft() != null) {
+        if (!CharSequenceUtil.isBlank(fileDocument.getDraft())) {
             markdownVO.setDraft(true);
         }
         if (markdownVO.getCategoryIds() != null) {
@@ -506,7 +514,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (upload.getPageSort() != null) {
             fileDocument.setPageSort(upload.getPageSort());
         }
-        if (!StrUtil.isBlankIfStr(upload.getIsDraft()) && upload.getIsDraft()) {
+        if (Boolean.TRUE.equals(upload.getIsDraft())) {
             isDraft = true;
         } else {
             fileDocument.setRelease(true);
@@ -523,7 +531,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
                 update = new Update();
             }
             fileDocument.setContentText(upload.getContentText());
-            update.set("draft", fileDocument);
+            fileDocument.setDraft(null);
+            update.set("draft", JSON.toJSONString(fileDocument));
         } else {
             if (upload.getFileId() != null) {
                 update.unset("draft");
@@ -584,7 +593,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (fileDocument == null || fileDocument.getDraft() == null) {
             return ResultUtil.success();
         }
-        File draftFile = Paths.get(fileProperties.getRootDir(), username, fileDocument.getDraft().getPath(), fileDocument.getDraft().getName()).toFile();
+        FileDocument draft = JSON.parseObject(fileDocument.getDraft(), FileDocument.class);
+        File draftFile = Paths.get(fileProperties.getRootDir(), username, draft.getPath(), draft.getName()).toFile();
         FileUtil.del(draftFile);
 
         File file = Paths.get(fileProperties.getRootDir(), username, fileDocument.getPath(), fileDocument.getName()).toFile();

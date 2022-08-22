@@ -115,9 +115,9 @@ public class FileDocument extends FileBase{
      */
     private Integer pageSort;
     /***
-     * 是否有草稿
+     * 是否有草稿(FileDocument对象转String)
      */
-    private FileDocument draft;
+    private String draft;
     /***
      * 封面
      */
