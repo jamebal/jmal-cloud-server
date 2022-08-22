@@ -157,7 +157,7 @@ public class FileContentTypeUtils {
         CONTENT_TYPE.put("docbook" , "application/docbook+xml");
         CONTENT_TYPE.put("docm" , "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
         CONTENT_TYPE.put("docx" , "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-        CONTENT_TYPE.put("docxf" , "application/vnd.openxmlformats-officeform.wordprocessingml.document");
+        CONTENT_TYPE.put("docxf" , "application/vnd.openxmlformats-officeform.document");
         CONTENT_TYPE.put("dot" , "text/vnd.graphviz");
         CONTENT_TYPE.put("dsl" , "text/x-dsl");
         CONTENT_TYPE.put("dtd" , "application/xml-dtd");
@@ -712,7 +712,7 @@ public class FileContentTypeUtils {
         CONTENT_TYPE.put("xliff" , "application/x-xliff");
         CONTENT_TYPE.put("xll" , "application/vnd.ms-excel");
         CONTENT_TYPE.put("xlm" , "application/vnd.ms-excel");
-        CONTENT_TYPE.put("xls" , "application/vnd.ms-excel");
+        CONTENT_TYPE.put("xls" , "application/vnd.ms-office-excel");
         CONTENT_TYPE.put("xlsm" , "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         CONTENT_TYPE.put("xlsx" , "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         CONTENT_TYPE.put("xlt" , "application/vnd.ms-excel");
