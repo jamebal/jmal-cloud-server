@@ -2,32 +2,33 @@ version: '3'
 
 services:
   mongo:
-    container_name: "jmalcloud_mongodb"
+    container_name: "${CONTAINER_NAME_PREFIX}_mongodb"
     image: "mongo:4.4"
     environment:
       TZ: "Asia/Shanghai"
     volumes:
       - ./docker/mongodb/data/db:/data/db
       - ./docker/mongodb/custom:/etc/mongo
+      - ./docker/mongodb/backup:/dump
     restart: unless-stopped
     command: --wiredTigerCacheSizeGB 0.5
   jmalcloud:
-    container_name: "jmalcloud_server"
+    container_name: "${CONTAINER_NAME_PREFIX}_server"
     image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:latest"
     environment:
       MONGODB_URI: "mongodb://mongo:27017/jmalcloud"
       TZ: "Asia/Shanghai"
     ports:
-      - "7072:8088"
+      - "${SERVER_PORT}:8088"
     volumes:
       - ./docker/jmalcloud/files/:/jmalcloud/files/
     restart: unless-stopped
   nginx:
-    container_name: "jmalcloud_nginx"
+    container_name: "${CONTAINER_NAME_PREFIX}_nginx"
     image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/nginx:latest"
     ports:
-      - "7070:80"
-      - "7071:8089"
+      - "${APP_PORT}:80"
+      - "${BLOG_PORT}:8089"
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./docker/www/dist:/var/www/public
@@ -39,14 +40,14 @@ services:
       - drawio-webapp
     restart: unless-stopped
   office:
-    container_name: "jmalcloud_office"
+    container_name: "${CONTAINER_NAME_PREFIX}_office"
     # x86:onlyoffice/documentserver:7.0.0.132, arm64:onlyoffice/documentserver:latest-arm64
     image: "${OFFICE_IMAGE}"
     environment:
       TZ: "Asia/Shanghai"
     restart: always
   drawio-webapp:
-    container_name: "jmalcloud_drawio"
+    container_name: "${CONTAINER_NAME_PREFIX}_drawio"
     image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/jgraph_drawio:16.6.1"
     environment:
       TZ: "Asia/Shanghai"
