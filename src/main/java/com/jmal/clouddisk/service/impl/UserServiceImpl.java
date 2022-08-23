@@ -53,6 +53,8 @@ public class UserServiceImpl implements IUserService {
 
     public static final String COLLECTION_NAME = "user";
 
+    public static final String ROLES = "roles";
+
     private final Cache<String, String> tokenCache = CaffeineUtil.getTokenCache();
 
     @Autowired
@@ -231,7 +233,7 @@ public class UserServiceImpl implements IUserService {
             consumerDO.setAvatar(fileId);
         }
         if (user.getRoles() != null) {
-            update.set("roles", user.getRoles());
+            update.set(ROLES, user.getRoles());
             consumerDO.setRoles(user.getRoles());
         }
         if (blobAvatar != null) {
@@ -343,6 +345,8 @@ public class UserServiceImpl implements IUserService {
         String userId = consumer.getId();
         if (!CharSequenceUtil.isBlank(userId)) {
             String originalPwd = "jmalcloud";
+            // password 1000:0b69ec810783195a102a73c12d4794c29d06904de2f95da1:37c6a397accb83909dc1d15824b8ffb6010649aad9567e99
+            // encryptPwd 919a454fd838b5f036b760537b10d14a
             updatePwd(userId, originalPwd);
             return ResultUtil.successMsg("重置密码成功!");
         }
@@ -528,7 +532,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public List<String> getUserNameListByRole(String roleId) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("roles").is(roleId));
+        query.addCriteria(Criteria.where(ROLES).is(roleId));
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
         return userList.stream().map(ConsumerDO::getUsername).collect(Collectors.toList());
     }
@@ -536,7 +540,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public List<String> getUserNameListByRole(List<String> rolesIds) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("roles").in(rolesIds));
+        query.addCriteria(Criteria.where(ROLES).in(rolesIds));
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
         return userList.stream().map(ConsumerDO::getUsername).collect(Collectors.toList());
     }
