@@ -45,6 +45,7 @@ run_exec() {
     echo "${Error} ${RedBG} 没有找到 $container 容器! ${Font}"
     exit 1
   fi
+  echo "$cmd"
   docker exec -it "$name" /bin/sh -c "$cmd"
 }
 
@@ -63,6 +64,11 @@ rand() {
   local max=$(($2 - $min + 1))
   local num=$(($RANDOM + 1000000000))
   echo $(($num % $max + $min))
+}
+
+local_ipv4() {
+  local ip=$(ifconfig -a | grep inet | grep -v 127.0.0.1 | grep -v inet6 | awk '{print $2}' | tr -d "addr:")
+  echo "$ip"
 }
 
 env_get() {
@@ -142,9 +148,13 @@ help() {
     init,install         安装
     uninstall            卸载
     update               更新
+    start                启动
+    stop                 停止
+    restart              重启
+    mongo                执行容器 mongodb 容器内的命令 example: ./jc.sh mongo mongostat
+    nginx                执行容器 nginx 容器内的命令   example: ./jc.sh nginx nginx -v
     dump                 备份数据库
     restore              恢复数据库
-    restart              重启
     reinstall            卸载后再安装
 "
 }
@@ -202,14 +212,14 @@ uninstall() {
 }
 
 check_run() {
-  server_url="http://127.0.0.1:$(env_get BLOG_PORT)"
+  server_url="http://$(local_ipv4):$(env_get BLOG_PORT)"
   for ((i = 1; i <= 30; i++)); do
-    url_status=$(curl -s -m 5 -IL $server_url | grep 200)
+    url_status=$(curl -s -m 5 -IL "$server_url" | grep 200)
     if [ "$url_status" != "" ]; then
       echo "${OK} ${GreenBG} $1完成 ${Font}"
-      echo "网盘地址: http://127.0.0.1:$(env_get APP_PORT)"
+      echo "网盘地址: http://$(local_ipv4):$(env_get APP_PORT)"
       echo "博客地址: $server_url"
-      echo "API地址: http://127.0.0.1:$(env_get SERVER_PORT)/public/api"
+      echo "API 地址: http://$(local_ipv4):$(env_get SERVER_PORT)/public/api"
       break
     else
       sleep 5
@@ -252,36 +262,31 @@ if [ $# -gt 0 ]; then
     check_run "修改"
   elif [[ "$1" == "nginx" ]]; then
     shift 1
-    e="nginx $@" && run_exec nginx "$e"
+    e="$@" && run_exec nginx "$e"
   elif [[ "$1" == "mongo" ]]; then
     shift 1
-    if [ "$1" = "dump" ]; then
-      run_mongo dump
-    elif [ "$1" = "restore" ]; then
-      run_mongo restore
-    fi
+    e="$@" && run_exec mongodb "$e"
+  elif [[ "$1" == "dump" ]]; then
+    shift 1
+    run_mongo "dump"
+  elif [[ "$1" == "restore" ]]; then
+    shift 1
+    run_mongo restore
   elif [[ "$1" == "restart" ]]; then
     shift 1
     $COMPOSE stop "$@"
+    # 启动容器
+    before_start
     $COMPOSE start "$@"
+    # 检测服务是否启动
+    check_run "启动"
   else
-    echo "$1 is not a jmalcloud command."
+    if [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]] || [[ "$1" == "man" ]]; then
+      help
+    else
+      echo "$1 is not a support parameter."
+    fi
   fi
 else
   help
 fi
-
-## update
-#
-#git pull origin
-#
-## check_docker
-#check_docker
-#
-## env_init
-#env_init
-#
-## Start the container
-#$COMPOSE up -d
-#echo "${OK} ${GreenBG} 安装完成 ${Font}"
-#echo "地址: http://${GreenBG}127.0.0.1:$(env_get APP_PORT)${Font}"
