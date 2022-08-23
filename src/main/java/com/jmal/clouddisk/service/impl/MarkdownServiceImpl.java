@@ -13,11 +13,7 @@ import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.fasterxml.jackson.annotation.JacksonAnnotation;
-import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.config.JacksonConfig;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.Either;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -31,16 +27,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.json.JacksonJsonParser;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.http.codec.json.Jackson2JsonDecoder;
-import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.stereotype.Service;
-
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
@@ -58,10 +50,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.mongodb.client.model.Aggregates.*;
-import static com.mongodb.client.model.Filters.*;
-import static com.mongodb.client.model.Projections.*;
-import static com.mongodb.client.model.Sorts.descending;
+import static com.mongodb.client.model.Aggregates.limit;
+import static com.mongodb.client.model.Aggregates.skip;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -532,7 +522,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             }
             fileDocument.setContentText(upload.getContentText());
             fileDocument.setDraft(null);
-            update.set("draft", JSON.toJSONString(fileDocument));
+            update.set("draft", JSON.toJSONStringWithDateFormat(fileDocument, "yyyy-MM-dd HH:mm:ss"));
         } else {
             if (upload.getFileId() != null) {
                 update.unset("draft");
