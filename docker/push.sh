@@ -1,10 +1,10 @@
 #!/bin/bash
 # version
 if [ -n "$1" ]; then
-    echo "version: $1"
+  echo "version: $1"
 else
-    echo "需要带上版本号, 例如 sh update.sh 2.1.8"
-    exit
+  echo "需要带上版本号, 例如 sh update.sh 2.1.8"
+  exit
 fi
 version=$1
 # jmal-cloud-view Directory location
@@ -13,6 +13,14 @@ view_dir="/Users/jmal/studio/myProject/github/jmal-cloud-view"
 server_dir="/Users/jmal/studio/myProject/github/jmal-cloud-server"
 # docker aliyun registry password
 
+is_arm() {
+  local get_arch=$(arch)
+  if [[ $get_arch =~ "aarch" ]] || [[ $get_arch =~ "arm" ]]; then
+    echo "yes"
+  else
+    echo "no"
+  fi
+}
 
 # build jmal-cloud-view
 cd $view_dir || exit
@@ -39,34 +47,42 @@ echo "location: ${server_dir}/docker "
 docker build -t "jmalcloud:$version" --build-arg "version=$version" .
 docker tag "jmalcloud:$version" "jmalcloud:latest"
 
+docker_arch=""
+
+if [[ "$(is_arm)" == "yes" ]]; then
+    docker_arch="-arm64"
+else
+    docker_arch=""
+fi
+
 pushAliYun() {
   echo "Push the image to the $1 ..."
   cat pwd.txt | docker login --username=bjmal --password-stdin "$1"
-  docker tag "jmalcloud:$version" "$1/jmalcloud/jmalcloud:$version"
-  docker tag "jmalcloud:$version" "$1/jmalcloud/jmalcloud:latest"
-  docker push "$1/jmalcloud/jmalcloud:$version"
-  docker push "$1/jmalcloud/jmalcloud:latest"
+  docker tag "jmalcloud:$version" "$1/jmalcloud/jmalcloud:$version$docker_arch"
+  docker tag "jmalcloud:$version" "$1/jmalcloud/jmalcloud:latest$docker_arch"
+  docker push "$1/jmalcloud/jmalcloud:$version$docker_arch"
+  docker push "$1/jmalcloud/jmalcloud:latest$docker_arch"
   removeLocalAliYunTag "$1"
 }
 
 pushDockerHub() {
   echo "Push the image to the DockerHub ..."
-  docker tag "jmalcloud:$version" "jmal/jmalcloud:$version"
-  docker tag "jmalcloud:$version" "jmal/jmalcloud:latest"
-  docker push "jmal/jmalcloud:$version"
-  docker push "jmal/jmalcloud:latest"
+  docker tag "jmalcloud:$version" "jmal/jmalcloud:$version$docker_arch"
+  docker tag "jmalcloud:$version" "jmal/jmalcloud:latest$docker_arch"
+  docker push "jmal/jmalcloud:$version$docker_arch"
+  docker push "jmal/jmalcloud:latest$docker_arch"
   removeDockerHub
 }
 
 removeDockerHub() {
-  docker rmi "jmal/jmalcloud:$version"
-  docker rmi "jmal/jmalcloud:latest"
+  docker rmi "jmal/jmalcloud:$version$docker_arch"
+  docker rmi "jmal/jmalcloud:latest$docker_arch"
   echo "removed the image DockerHub"
 }
 
 removeLocalAliYunTag() {
-  docker rmi "$1/jmalcloud/jmalcloud:$version"
-  docker rmi "$1/jmalcloud/jmalcloud:latest"
+  docker rmi "$1/jmalcloud/jmalcloud:$version$docker_arch"
+  docker rmi "$1/jmalcloud/jmalcloud:latest$docker_arch"
   echo "removed the image $1"
 }
 
@@ -76,4 +92,4 @@ pushAliYun "registry.cn-guangzhou.aliyuncs.com"
 pushAliYun "registry.cn-hangzhou.aliyuncs.com"
 pushAliYun "registry.cn-chengdu.aliyuncs.com"
 pushAliYun "registry.cn-beijing.aliyuncs.com"
-exit 0;
+exit 0
