@@ -242,10 +242,14 @@ if [ $# -gt 0 ]; then
   elif [[ "$1" == "update" ]]; then
     shift 1
     run_mongo backup
-    #    git fetch --all
-    #    git reset --hard origin/$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
-    #    git pull
-    #    $COMPOSE up -d
+    git fetch --all
+    git reset --hard origin/$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
+    git pull
+    # 启动
+    before_start
+    $COMPOSE up -d
+    # 检测服务是否启动
+    check_run "更新"
   elif [[ "$1" == "uninstall" ]]; then
     shift 1
     uninstall
