@@ -166,4 +166,6 @@ public interface IUserService {
      * @return 昵称
      */
     String getShowNameById(String userId);
+
+    ConsumerDO getUserInfoById(String userId);
 }

@@ -17,4 +17,6 @@ public class SharerDTO {
     String avatar;
     @Schema(name = "showName", title = "昵称")
     String showName;
+    @Schema(name = "username", title = "用户名")
+    String username;
 }

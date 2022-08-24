@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IFileService;
@@ -16,7 +15,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -184,11 +182,12 @@ public class ShareServiceImpl implements IShareService {
     @Override
     public ResponseResult<SharerDTO> getSharer(String userId) {
         SharerDTO sharerDTO = new SharerDTO();
-        sharerDTO.setShowName(userService.getShowNameById(userId));
+        ConsumerDO consumerDO = userService.getUserInfoById(userId);
+        sharerDTO.setShowName(consumerDO.getShowName());
+        sharerDTO.setUsername(consumerDO.getUsername());
         sharerDTO.setUserId(userId);
-        WebsiteSettingDTO websiteSettingDTO = settingService.getWebsiteSetting();
-        if (websiteSettingDTO != null) {
-            sharerDTO.setAvatar(websiteSettingDTO.getSiteUrl() + "/s/view/thumbnail?id=" + websiteSettingDTO.getAvatar());
+        if (consumerDO.getAvatar() != null) {
+            sharerDTO.setAvatar(consumerDO.getAvatar());
         }
         return ResultUtil.success(sharerDTO);
     }

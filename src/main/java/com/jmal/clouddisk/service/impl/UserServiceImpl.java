@@ -493,7 +493,7 @@ public class UserServiceImpl implements IUserService {
         return consumer;
     }
 
-    private ConsumerDO getUserInfoById(String userId) {
+    public ConsumerDO getUserInfoById(String userId) {
         return mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
     }
 
