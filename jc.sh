@@ -1,16 +1,5 @@
 #!/bin/bash
 
-#fonts color
-Green="\033[32m"
-Red="\033[31m"
-GreenBG="\033[42;37m"
-RedBG="\033[41;37m"
-Font="\033[0m"
-
-#notification information
-OK="${Green}[OK]${Font}"
-Error="${Red}[错误]${Font}"
-
 cur_path="$(pwd)"
 cur_arg=$@
 COMPOSE="docker-compose"
@@ -18,21 +7,21 @@ COMPOSE="docker-compose"
 check_docker() {
   docker --version &>/dev/null
   if [ $? -ne 0 ]; then
-    echo "${Error} ${RedBG} 未安装 Docker！${Font}"
+    echo "未安装 Docker！"
     exit 1
   fi
   docker-compose version &>/dev/null
   if [ $? -ne 0 ]; then
     docker compose version &>/dev/null
     if [ $? -ne 0 ]; then
-      echo "${Error} ${RedBG} 未安装 Docker-compose！${Font}"
+      echo "未安装 Docker-compose！"
       exit 1
     fi
     COMPOSE="docker compose"
   fi
   if [[ -n $($COMPOSE version | grep -E "\sv*1") ]]; then
     $COMPOSE version
-    echo "${Error} ${RedBG} Docker-compose 的版本太低了，请升级到 v2+！${Font}"
+    echo "Docker-compose 的版本太低了，请升级到 v2+！"
     exit 1
   fi
 }
@@ -42,7 +31,7 @@ run_exec() {
   local cmd=$2
   local name="$(env_get CONTAINER_NAME_PREFIX)_$container"
   if [ -z "$name" ]; then
-    echo "${Error} ${RedBG} 没有找到 $container 容器! ${Font}"
+    echo "没有找到 $container 容器!"
     exit 1
   fi
   echo "$cmd"
@@ -51,10 +40,10 @@ run_exec() {
 
 judge() {
   if [[ 0 -eq $? ]]; then
-    echo "${OK} ${GreenBG} $1 完成${Font}"
+    echo "$1 完成"
     sleep 1
   else
-    echo "${Error} ${RedBG} $1 失败${Font}"
+    echo "$1 失败"
     exit 1
   fi
 }
@@ -67,8 +56,14 @@ rand() {
 }
 
 local_ipv4() {
-  local ip=$(ifconfig -a | grep inet | grep -v 127.0.0.1 | grep -v inet6 | awk '{print $2}' | tr -d "addr:")
-  echo "$ip"
+  local ip="127.0.0.1"
+  if [[ $(uname) == 'Linux' ]]; then
+    ip=$(ip a | grep inet | grep -v 127.0.0.1 | grep -v inet6 | awk '{print $2}' | tr -d "addr:" | head -n 1)
+  fi
+  if [[ $(uname) == 'Darwin' ]]; then
+      ip=$(ifconfig -a | grep inet | grep -v 127.0.0.1 | grep -v inet6 | awk '{print $2}' | tr -d "addr:" | head -n 1)
+  fi
+  echo "${ip%/*}"
 }
 
 env_get() {
@@ -88,7 +83,7 @@ env_set() {
       sed -i "/^${key}=/c\\${key}=${val}" ${cur_path}/.env
     fi
     if [ $? -ne 0 ]; then
-      echo "${Error} ${RedBG} 设置env参数失败! ${Font}"
+      echo "设置env参数失败!"
       exit 1
     fi
   fi
@@ -197,10 +192,10 @@ uninstall() {
   [[ -z ${uninstall} ]] && uninstall="N"
   case $uninstall in
   [yY][eE][sS] | [yY])
-    echo "${RedBG} 开始卸载... ${Font}"
+    echo "开始卸载... "
     ;;
   *)
-    echo "${GreenBG} 终止卸载。 ${Font}"
+    echo "终止卸载。"
     exit 2
     ;;
   esac
@@ -208,7 +203,7 @@ uninstall() {
   rm -rf "./docker/mongodb/data"
   rm -rf "./docker/mongodb/data"
   rm -rf "./docker/jmalcloud"
-  echo "${OK} ${GreenBG} 卸载完成 ${Font}"
+  echo "卸载完成"
 }
 
 check_run() {
@@ -216,7 +211,8 @@ check_run() {
   for ((i = 1; i <= 30; i++)); do
     url_status=$(curl -s -m 5 -IL "$server_url" | grep 200)
     if [ "$url_status" != "" ]; then
-      echo "${OK} ${GreenBG} $1完成 ${Font}"
+      echo "$1完成"
+      echo ""
       echo "网盘地址: http://$(local_ipv4):$(env_get APP_PORT)"
       echo "博客地址: $server_url"
       echo "API 地址: http://$(local_ipv4):$(env_get SERVER_PORT)/public/api"
@@ -227,7 +223,7 @@ check_run() {
   done
   url_status=$(curl -s -m 5 -IL $server_url | grep 200)
   if [ "$url_status" == "" ]; then
-    echo "${Error} ${RedBG} $1失败，反馈给开发者: https://github.com/jamebal/jmal-cloud-view/issues${Font}"
+    echo "$1失败，反馈给开发者: https://github.com/jamebal/jmal-cloud-view/issues"
   fi
 }
 
