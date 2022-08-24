@@ -1204,15 +1204,42 @@ public class FileServiceImpl implements IFileService {
         if (file == null) {
             return;
         }
-        setShareOneFile(file.getId(), expiresAt);
+        Query query = new Query();
         if (file.getIsFolder()) {
-            Query query = new Query();
+            // 共享文件夹及其下的所有文件
             query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
-            query.addCriteria(Criteria.where("isFolder").is(false));
             query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
-            List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
-            fileDocuments.parallelStream().forEach(fileDocument -> setShareFile(fileDocument, expiresAt));
+            // 设置共享属性
+            setShareAttribute(expiresAt, query);
+        } else {
+            query.addCriteria(Criteria.where("_id").is(file.getId()));
+            // 设置共享属性
+            setShareAttribute(expiresAt, query);
         }
+    }
+
+    /***
+     * 设置共享属性
+     * @param expiresAt 过期时间
+     * @param query 查询条件
+     */
+    private void setShareAttribute(long expiresAt, Query query) {
+        Update update = new Update();
+        update.set("isShare", true);
+        update.set("expiresAt", expiresAt);
+        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
+    }
+
+    /***
+     * 解除共享属性
+     * @param expiresAt 过期时间
+     * @param query 查询条件
+     */
+    private void unsetShareAttribute(Query query) {
+        Update update = new Update();
+        update.unset("isShare");
+        update.unset("expiresAt");
+        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
     }
 
     @Override
@@ -1220,15 +1247,17 @@ public class FileServiceImpl implements IFileService {
         if (file == null) {
             return;
         }
-        if (!file.getIsFolder()) {
-            unsetShareOneFile(file.getId());
-        } else {
-            Query query = new Query();
+        Query query = new Query();
+        if (file.getIsFolder()) {
+            // 解除共享文件夹及其下的所有文件
             query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
-            query.addCriteria(Criteria.where("isFolder").is(false));
             query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
-            List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
-            fileDocuments.parallelStream().forEach(fileDocument -> unsetShareFile(fileDocument));
+            // 解除共享属性
+            unsetShareAttribute(query);
+        } else {
+            query.addCriteria(Criteria.where("_id").is(file.getId()));
+            // 解除共享属性
+            unsetShareAttribute(query);
         }
     }
 
@@ -1248,24 +1277,6 @@ public class FileServiceImpl implements IFileService {
         query.addCriteria(Criteria.where("release").is(true));
         query.fields().include("_id").include("name").include("html");
         return mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
-    }
-
-    private void setShareOneFile(String fileId, long expiresAt) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(fileId));
-        Update update = new Update();
-        update.set("isShare", true);
-        update.set("expiresAt", expiresAt);
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
-    }
-
-    private void unsetShareOneFile(String fileId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(fileId));
-        Update update = new Update();
-        update.unset("isShare");
-        update.unset("expiresAt");
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
     }
 
     /***

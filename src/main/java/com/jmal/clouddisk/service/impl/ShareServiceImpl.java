@@ -161,7 +161,7 @@ public class ShareServiceImpl implements IShareService {
         query.addCriteria(Criteria.where("_id").in((Object[]) shareId));
         List<ShareDO> shareDOList = mongoTemplate.findAllAndRemove(query, ShareDO.class, COLLECTION_NAME);
         if (!shareDOList.isEmpty()) {
-            shareDOList.parallelStream().forEach(shareDO -> fileService.unsetShareFile(fileService.getById(shareDO.getFileId())));
+            shareDOList.forEach(shareDO -> fileService.unsetShareFile(fileService.getById(shareDO.getFileId())));
         }
         return ResultUtil.success();
     }
