@@ -34,7 +34,6 @@ run_exec() {
     echo "没有找到 $container 容器!"
     exit 1
   fi
-  echo "$cmd"
   docker exec -it "$name" /bin/sh -c "$cmd"
 }
 
@@ -237,7 +236,7 @@ if [ $# -gt 0 ]; then
     install
   elif [[ "$1" == "update" ]]; then
     shift 1
-    run_mongo backup
+    run_mongo "dump"
     git fetch --all
     git reset --hard origin/$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
     git pull
@@ -271,7 +270,7 @@ if [ $# -gt 0 ]; then
     run_mongo "dump"
   elif [[ "$1" == "restore" ]]; then
     shift 1
-    run_mongo restore
+    run_mongo "restore"
   elif [[ "$1" == "restart" ]]; then
     shift 1
     $COMPOSE stop "$@"
