@@ -146,7 +146,6 @@ help() {
     --blog_port          博客端口,默认7071
     --server_port        服务端口,默认7072(API地址: http://127.0.0.1:7072/public/api)
     --prefix             容器名称前缀,默认为jmalcloud
-    --dir       资源绝对路径(文件、数据、日志的存储位置),默认为$cur_path/docker/jmalcloud
 
   Management Commands:
     init,install         安装
