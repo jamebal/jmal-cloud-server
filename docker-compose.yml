@@ -7,9 +7,9 @@ services:
     environment:
       TZ: "Asia/Shanghai"
     volumes:
-      - ./docker/mongodb/data/db:/data/db
-      - ./docker/mongodb/custom:/etc/mongo
-      - ./docker/mongodb/backup:/dump
+      - ${RESOURCE_PATH}/mongodb/data/db:/data/db
+      - ${RESOURCE_PATH}/mongodb/custom:/etc/mongo
+      - ${RESOURCE_PATH}/mongodb/backup:/dump
     restart: unless-stopped
     ports:
       - "27018:27017"
@@ -23,7 +23,7 @@ services:
     ports:
       - "${SERVER_PORT}:8088"
     volumes:
-      - ./docker/jmalcloud/files/:/jmalcloud/files/
+      - ${RESOURCE_PATH}/files/:/jmalcloud/files/
     restart: unless-stopped
   nginx:
     container_name: "${CONTAINER_NAME_PREFIX}_nginx"

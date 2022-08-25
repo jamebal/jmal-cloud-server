@@ -1,5 +1,14 @@
 #!/bin/bash
 
+#fonts color
+Green="\033[32m"
+Red="\033[31m"
+Font="\033[0m"
+
+#notification information
+OK="${Green}[OK]${Font}"
+Error="${Red}[错误]${Font}"
+
 cur_path="$(pwd)"
 cur_arg=$@
 COMPOSE="docker-compose"
@@ -7,21 +16,21 @@ COMPOSE="docker-compose"
 check_docker() {
   docker --version &>/dev/null
   if [ $? -ne 0 ]; then
-    echo "未安装 Docker！"
+    echo -e "${Error} ${Red}未安装 Docker！${Font}"
     exit 1
   fi
   docker-compose version &>/dev/null
   if [ $? -ne 0 ]; then
     docker compose version &>/dev/null
     if [ $? -ne 0 ]; then
-      echo "未安装 Docker-compose！"
+      echo -e "${Error} ${Red}未安装 Docker-compose！${Font}"
       exit 1
     fi
     COMPOSE="docker compose"
   fi
   if [[ -n $($COMPOSE version | grep -E "\sv*1") ]]; then
     $COMPOSE version
-    echo "Docker-compose 的版本太低了，请升级到 v2+！"
+    echo -e "${Error} ${Red}Docker-compose 的版本太低了，请升级到 v2+！${Font}"
     exit 1
   fi
 }
@@ -31,7 +40,7 @@ run_exec() {
   local cmd=$2
   local name="$(env_get CONTAINER_NAME_PREFIX)_$container"
   if [ -z "$name" ]; then
-    echo "没有找到 $container 容器!"
+    echo -e "${Error} ${Red}没有找到 $container 容器!${Font}"
     exit 1
   fi
   docker exec -it "$name" /bin/sh -c "$cmd"
@@ -39,10 +48,10 @@ run_exec() {
 
 judge() {
   if [[ 0 -eq $? ]]; then
-    echo "$1 完成"
+    echo -e "${OK} ${Green}$1 完成${Font}"
     sleep 1
   else
-    echo "$1 失败"
+    echo -e "${Error} ${Red}$1 失败${Font}"
     exit 1
   fi
 }
@@ -60,7 +69,7 @@ local_ipv4() {
     ip=$(ip a | grep inet | grep -v 127.0.0.1 | grep -v inet6 | awk '{print $2}' | tr -d "addr:" | head -n 1)
   fi
   if [[ $(uname) == 'Darwin' ]]; then
-      ip=$(ifconfig -a | grep inet | grep -v 127.0.0.1 | grep -v inet6 | awk '{print $2}' | tr -d "addr:" | head -n 1)
+    ip=$(ifconfig -a | grep inet | grep -v 127.0.0.1 | grep -v inet6 | awk '{print $2}' | tr -d "addr:" | head -n 1)
   fi
   echo "${ip%/*}"
 }
@@ -82,7 +91,7 @@ env_set() {
       sed -i "/^${key}=/c\\${key}=${val}" ${cur_path}/.env
     fi
     if [ $? -ne 0 ]; then
-      echo "设置env参数失败!"
+      echo -e "${Error} ${Red}设置env参数失败!${Font}"
       exit 1
     fi
   fi
@@ -137,6 +146,7 @@ help() {
     --blog_port          博客端口,默认7071
     --server_port        服务端口,默认7072(API地址: http://127.0.0.1:7072/public/api)
     --prefix             容器名称前缀,默认为jmalcloud
+    --dir       资源绝对路径(文件、数据、日志的存储位置),默认为$cur_path/docker/jmalcloud
 
   Management Commands:
     init,install         安装
@@ -166,6 +176,7 @@ env_init() {
   env_set BLOG_PORT 7071
   env_set SERVER_PORT 7072
   env_set CONTAINER_NAME_PREFIX "jmalcloud"
+  env_set RESOURCE_PATH "$cur_path/docker/jmalcloud"
 }
 
 before_start() {
@@ -173,6 +184,7 @@ before_start() {
   [[ "$(arg_get blog_port)" -gt 0 ]] && env_set BLOG_PORT "$(arg_get blog_port)"
   [[ "$(arg_get server_port)" -gt 0 ]] && env_set SERVER_PORT "$(arg_get server_port)"
   [[ "$(arg_get prefix)" -gt 0 ]] && env_set CONTAINER_NAME_PREFIX "$(arg_get prefix)"
+  env_set RESOURCE_PATH "$(arg_get dir)"
 }
 
 install() {
@@ -191,10 +203,10 @@ uninstall() {
   [[ -z ${uninstall} ]] && uninstall="N"
   case $uninstall in
   [yY][eE][sS] | [yY])
-    echo "开始卸载... "
+    echo -e "${Red} 开始卸载... ${Font}"
     ;;
   *)
-    echo "终止卸载。"
+    echo -e "${OK} ${Green} 终止卸载 ${Font}"
     exit 2
     ;;
   esac
@@ -202,27 +214,30 @@ uninstall() {
   rm -rf "./docker/mongodb/data"
   rm -rf "./docker/mongodb/data"
   rm -rf "./docker/jmalcloud"
-  echo "卸载完成"
+  echo -e "${OK} ${Green} 卸载完成 ${Font}"
 }
 
 check_run() {
+  spin=('\' '|' '/' '-')
   server_url="http://$(local_ipv4):$(env_get BLOG_PORT)"
-  for ((i = 1; i <= 30; i++)); do
+  for ((i = 0; i <= 300; i++)); do
     url_status=$(curl -s -m 5 -IL "$server_url" | grep 200)
     if [ "$url_status" != "" ]; then
-      echo "$1完成"
-      echo ""
+      echo -ne "                                                              \r"
+      echo -e "${OK} ${Green}$1完成${Font}"
       echo "网盘地址: http://$(local_ipv4):$(env_get APP_PORT)"
       echo "博客地址: $server_url"
       echo "API 地址: http://$(local_ipv4):$(env_get SERVER_PORT)/public/api"
       break
     else
-      sleep 5
+      echo -n "正在启动服务, 请稍等... ${spin[$((i % 4))]}"
+      echo -n -e \\r
+      sleep 0.2
     fi
   done
   url_status=$(curl -s -m 5 -IL $server_url | grep 200)
   if [ "$url_status" == "" ]; then
-    echo "$1失败，反馈给开发者: https://github.com/jamebal/jmal-cloud-view/issues"
+    echo -e "${Error} ${Red}$1失败，反馈给开发者: https://github.com/jamebal/jmal-cloud-view/issues${Font}"
   fi
 }
 
