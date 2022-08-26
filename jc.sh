@@ -175,7 +175,10 @@ env_init() {
   env_set BLOG_PORT 7071
   env_set SERVER_PORT 7072
   env_set CONTAINER_NAME_PREFIX "jmalcloud"
-  env_set RESOURCE_PATH "$cur_path/docker/jmalcloud"
+  local exist=$(cat ${cur_path}/.env | grep "^RESOURCE_PATH=")
+  if [ -z "$exist" ]; then
+    env_set RESOURCE_PATH "$cur_path/docker/jmalcloud"
+  fi
 }
 
 before_start() {
@@ -183,10 +186,6 @@ before_start() {
   [[ "$(arg_get blog_port)" -gt 0 ]] && env_set BLOG_PORT "$(arg_get blog_port)"
   [[ "$(arg_get server_port)" -gt 0 ]] && env_set SERVER_PORT "$(arg_get server_port)"
   [[ "$(arg_get prefix)" -gt 0 ]] && env_set CONTAINER_NAME_PREFIX "$(arg_get prefix)"
-  local exist=$(cat ${cur_path}/.env | grep "^RESOURCE_PATH=")
-  if [ -z "$exist" ]; then
-    env_set RESOURCE_PATH "$(arg_get dir)"
-  fi
 }
 
 install() {
