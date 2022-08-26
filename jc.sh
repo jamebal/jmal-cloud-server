@@ -256,6 +256,7 @@ if [ $# -gt 0 ]; then
     git pull
     # 启动
     before_start
+    $COMPOSE pull
     $COMPOSE up -d
     # 检测服务是否启动
     check_run "更新"
