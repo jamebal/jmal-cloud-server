@@ -175,9 +175,13 @@ env_init() {
   env_set BLOG_PORT 7071
   env_set SERVER_PORT 7072
   env_set CONTAINER_NAME_PREFIX "jmalcloud"
-  local exist=$(cat ${cur_path}/.env | grep "^RESOURCE_PATH=")
-  if [ -z "$exist" ]; then
-    env_set RESOURCE_PATH "$cur_path/docker/jmalcloud"
+  local file_ptah=$(cat ${cur_path}/.env | grep "^RESOURCE_DB_PATH=")
+  if [ -z "$file_ptah" ]; then
+    env_set RESOURCE_DB_PATH "$cur_path/docker/jmalcloud/mongodb"
+  fi
+  local db_ptah=$(cat ${cur_path}/.env | grep "^RESOURCE_FILE_PATH=")
+  if [ -z "$db_ptah" ]; then
+    env_set RESOURCE_FILE_PATH "$cur_path/docker/jmalcloud/files"
   fi
 }
 
