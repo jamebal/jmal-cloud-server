@@ -488,7 +488,9 @@ public class UserServiceImpl implements IUserService {
             Query query = new Query();
             query.addCriteria(Criteria.where("username").is(name));
             consumer = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
-            CaffeineUtil.setConsumerByUsernameCache(name, consumer);
+            if (consumer != null) {
+                CaffeineUtil.setConsumerByUsernameCache(name, consumer);
+            }
         }
         return consumer;
     }
