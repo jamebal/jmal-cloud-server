@@ -173,7 +173,7 @@ public class UploadApiParamDTO {
 
     public String getFolderPath() {
         if (folderPath == null || "undefined".equals(folderPath)) {
-            return File.separator;
+            return null;
         }
         return URLUtil.decode(folderPath);
     }
