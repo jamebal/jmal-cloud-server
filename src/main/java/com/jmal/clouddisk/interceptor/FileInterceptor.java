@@ -71,7 +71,7 @@ public class FileInterceptor implements HandlerInterceptor {
     /***
      * 路径最小层级
      */
-    private static final int MIX_COUNT = 2;
+    private static final int MIN_COUNT = 2;
 
     @Autowired
     FileProperties fileProperties;
@@ -138,8 +138,12 @@ public class FileInterceptor implements HandlerInterceptor {
             return true;
         } else {
             String username = authInterceptor.getUserNameByHeader(request);
-            if (uriPath.getNameCount() < MIX_COUNT) {
+            int nameCount = uriPath.getNameCount();
+            if (nameCount < MIN_COUNT) {
                 return true;
+            }
+            if (nameCount == MIN_COUNT && path.startsWith("logo")) {
+                return false;
             }
             if (!CharSequenceUtil.isBlank(username) && username.equals(uriPath.getName(1).toString())) {
                 return false;
@@ -193,7 +197,7 @@ public class FileInterceptor implements HandlerInterceptor {
 
     private void thumbnail(HttpServletRequest request, HttpServletResponse response) {
         Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
-        if (uriPath.getNameCount() < MIX_COUNT) {
+        if (uriPath.getNameCount() < MIN_COUNT) {
             return;
         }
         FileDocument fileDocument = getFileDocument(uriPath);
@@ -212,8 +216,8 @@ public class FileInterceptor implements HandlerInterceptor {
     private FileDocument getFileDocument(Path uriPath) {
         String username = uriPath.getName(1).toString();
         String path = File.separator;
-        if (uriPath.getNameCount() > MIX_COUNT + 1) {
-            path = File.separator + uriPath.subpath(MIX_COUNT, uriPath.getNameCount()).getParent().toString() + File.separator;
+        if (uriPath.getNameCount() > MIN_COUNT + 1) {
+            path = File.separator + uriPath.subpath(MIN_COUNT, uriPath.getNameCount()).getParent().toString() + File.separator;
         }
         String name = uriPath.getFileName().toString();
         return fileService.getFileDocumentByPathAndName(path, name, username);
