@@ -9,10 +9,11 @@ import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -65,6 +66,22 @@ public class UserSettingController {
     @LogOperatingFun
     public ResponseResult<Object> sync(@RequestParam String username) {
         return settingService.sync(username);
+    }
+
+    @Operation(summary = "上传网盘logo")
+    @PostMapping("/user/setting/upload_logo")
+    @Permission(value = "cloud:set:sync")
+    @LogOperatingFun
+    public ResponseResult<Object> uploadLogo(MultipartFile file) {
+        return settingService.uploadLogo(file);
+    }
+
+    @Operation(summary = "修改网盘名称")
+    @PutMapping("/user/setting/update_netdisk_name")
+    @Permission(value = "cloud:set:sync")
+    @LogOperatingFun
+    public ResponseResult<Object> updateNetdiskName(@RequestParam String netdiskName) {
+        return settingService.updateNetdiskName(netdiskName);
     }
 
     @Operation(summary = "是否正在同步")

@@ -25,6 +25,14 @@ public class WebsiteSettingDO {
      */
     String backgroundDescSite;
     /***
+     * 网盘logo文件名
+     */
+    String netdiskLogo;
+    /***
+     * 网盘名称
+     */
+    String netdiskName;
+    /***
      * 站点地址
      */
     String siteUrl;

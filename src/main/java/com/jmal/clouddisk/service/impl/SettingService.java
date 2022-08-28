@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -21,8 +22,10 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -109,6 +112,37 @@ public class SettingService {
             return ResultUtil.success(false);
         }
         return ResultUtil.success(true);
+    }
+
+    /**
+     * 上传网盘logo
+     * @param file logo文件
+     */
+    public ResponseResult<Object> uploadLogo(MultipartFile file) {
+        String fileName = "logo."+ FileUtil.extName(file.getOriginalFilename());
+        File dist = new File(fileProperties.getRootDir() + File.separator + fileName);
+        try {
+            FileUtil.writeFromStream(file.getInputStream(), dist);
+            Update update = new Update();
+            update.set("netdiskLogo", fileName);
+            mongoTemplate.upsert(new Query(), update, COLLECTION_NAME_WEBSITE_SETTING);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            return ResultUtil.error("上传网盘logo失败");
+        }
+        return ResultUtil.success(fileName);
+    }
+
+    /**
+     * 修改网盘名称
+     * @param netdiskName 网盘名称
+     */
+    public ResponseResult<Object> updateNetdiskName(String netdiskName) {
+        Query query = new Query();
+        Update update = new Update();
+        update.set("netdiskName", netdiskName);
+        mongoTemplate.upsert(query, update, COLLECTION_NAME_WEBSITE_SETTING);
+        return ResultUtil.success("修改成功");
     }
 
     private class SyncFileVisitor extends SimpleFileVisitor<Path> {
