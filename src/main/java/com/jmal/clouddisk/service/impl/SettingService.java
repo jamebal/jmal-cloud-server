@@ -3,6 +3,7 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -119,18 +120,29 @@ public class SettingService {
      * @param file logo文件
      */
     public ResponseResult<Object> uploadLogo(MultipartFile file) {
-        String fileName = "logo."+ FileUtil.extName(file.getOriginalFilename());
-        File dist = new File(fileProperties.getRootDir() + File.separator + fileName);
+        String filename = "logo-" + System.currentTimeMillis() + "." + FileUtil.extName(file.getOriginalFilename());
+        File dist = new File(fileProperties.getRootDir() + File.separator + filename);
         try {
+            String oldFilename = null;
+            Query query = new Query();
+            WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(query, WebsiteSettingDO.class, COLLECTION_NAME_WEBSITE_SETTING);
+            if (websiteSettingDO != null){
+                oldFilename = websiteSettingDO.getNetdiskLogo();
+            }
+            // 保存新的logo文件
             FileUtil.writeFromStream(file.getInputStream(), dist);
             Update update = new Update();
-            update.set("netdiskLogo", fileName);
+            update.set("netdiskLogo", filename);
             mongoTemplate.upsert(new Query(), update, COLLECTION_NAME_WEBSITE_SETTING);
+            if (!CharSequenceUtil.isBlank(oldFilename)) {
+                // 删除之前的logo文件
+                PathUtil.del(Paths.get(fileProperties.getRootDir(), oldFilename));
+            }
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             return ResultUtil.error("上传网盘logo失败");
         }
-        return ResultUtil.success(fileName);
+        return ResultUtil.success(filename);
     }
 
     /**
@@ -225,6 +237,8 @@ public class SettingService {
         WebsiteSettingDTO websiteSettingDTO1 = new WebsiteSettingDTO();
         websiteSettingDTO1.setCopyright(websiteSettingDTO.getCopyright());
         websiteSettingDTO1.setRecordPermissionNum(websiteSettingDTO.getRecordPermissionNum());
+        websiteSettingDTO1.setNetdiskName(websiteSettingDTO.getNetdiskName());
+        websiteSettingDTO1.setNetdiskLogo(websiteSettingDTO.getNetdiskLogo());
         return websiteSettingDTO1;
     }
 
