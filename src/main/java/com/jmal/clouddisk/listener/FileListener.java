@@ -136,6 +136,9 @@ public class FileListener extends FileAlterationListenerAdaptor {
         String username = null;
         try {
             int rootPathCount = Paths.get(fileProperties.getRootDir()).getNameCount();
+            if (file.toPath().getNameCount() == rootPathCount + 1) {
+                return null;
+            }
             username = file.toPath().subpath(rootPathCount, rootPathCount + 1).toString();
         }catch (Exception e){
             log.error("解析路径失败,fileAbsolutePath:{}", file.getAbsolutePath(), e);
