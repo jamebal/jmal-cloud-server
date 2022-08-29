@@ -50,5 +50,9 @@ public class ConsumerDTO extends ConsumerBase {
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @Schema(name = "createTime", title = "创建时间", hidden = true)
     LocalDateTime createTime;
+    @Schema(name = "netdiskLogo", title = "网盘logo文件名", hidden = true)
+    String netdiskLogo;
+    @Schema(name = "netdiskName", title = "网盘名称", hidden = true)
+    String netdiskName;
 
 }

@@ -52,7 +52,7 @@ public class SettingService {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    private static final String COLLECTION_NAME_WEBSITE_SETTING = "websiteSetting";
+    protected static final String COLLECTION_NAME_WEBSITE_SETTING = "websiteSetting";
 
     @Autowired
     private IAuthDAO authDAO;

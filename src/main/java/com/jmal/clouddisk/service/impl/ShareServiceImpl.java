@@ -189,6 +189,11 @@ public class ShareServiceImpl implements IShareService {
         if (consumerDO.getAvatar() != null) {
             sharerDTO.setAvatar(consumerDO.getAvatar());
         }
+        WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(new Query(), WebsiteSettingDO.class, SettingService.COLLECTION_NAME_WEBSITE_SETTING);
+        if(websiteSettingDO != null){
+            sharerDTO.setNetdiskName(websiteSettingDO.getNetdiskName());
+            sharerDTO.setNetdiskLogo(websiteSettingDO.getNetdiskLogo());
+        }
         return ResultUtil.success(sharerDTO);
     }
 }

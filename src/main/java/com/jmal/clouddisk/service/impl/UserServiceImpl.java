@@ -14,6 +14,7 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.WebsiteSettingDO;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerBase;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -275,6 +276,11 @@ public class UserServiceImpl implements IUserService {
         consumerDTO.setEncryptPwd(null);
         if (consumerDTO.getAvatar() == null) {
             consumerDTO.setAvatar("");
+        }
+        WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(new Query(), WebsiteSettingDO.class, SettingService.COLLECTION_NAME_WEBSITE_SETTING);
+        if(websiteSettingDO != null) {
+            consumerDTO.setNetdiskName(websiteSettingDO.getNetdiskName());
+            consumerDTO.setNetdiskLogo(websiteSettingDO.getNetdiskLogo());
         }
         return ResultUtil.success(consumerDTO);
     }

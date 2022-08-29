@@ -19,4 +19,8 @@ public class SharerDTO {
     String showName;
     @Schema(name = "username", title = "用户名")
     String username;
+    @Schema(name = "netdiskLogo", title = "网盘logo文件名", hidden = true)
+    String netdiskLogo;
+    @Schema(name = "netdiskName", title = "网盘名称", hidden = true)
+    String netdiskName;
 }
