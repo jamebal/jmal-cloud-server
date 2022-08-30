@@ -260,15 +260,8 @@ if [ $# -gt 0 ]; then
     git fetch --all
     git reset --hard origin/$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
     git pull origin master
-    # 初始化文件
-    mkdir -p "${cur_path}/docker/www/"
-    tar -xzf "${cur_path}/www/releases/dist-latest.tar" -C "${cur_path}/docker/www/"
-    # 启动
-    before_start
-    $COMPOSE pull
-    $COMPOSE up -d
-    # 检测服务是否启动
-    check_run "更新"
+    run_exec nginx "nginx -s reload"
+    install
   elif [[ "$1" == "uninstall" ]]; then
     shift 1
     uninstall
