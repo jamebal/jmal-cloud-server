@@ -260,6 +260,9 @@ if [ $# -gt 0 ]; then
     git fetch --all
     git reset --hard origin/$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
     git pull
+    # 初始化文件
+    mkdir -p "${cur_path}/docker/www/"
+    tar -xzf "${cur_path}/www/releases/dist-latest.tar" -C "${cur_path}/docker/www/"
     # 启动
     before_start
     $COMPOSE pull
@@ -292,6 +295,14 @@ if [ $# -gt 0 ]; then
   elif [[ "$1" == "restore" ]]; then
     shift 1
     run_mongo "restore"
+  elif [[ "$1" == "start" ]]; then
+    shift 1
+    # 启动容器
+    before_start
+    $COMPOSE start "$@"
+  elif [[ "$1" == "stop" ]]; then
+    shift 1
+    $COMPOSE stop "$@"
   elif [[ "$1" == "restart" ]]; then
     shift 1
     $COMPOSE stop "$@"

@@ -30,7 +30,7 @@ if [ ! -f "dist-$version.tar" ]; then
   npm run build:prod
   tar -czf "dist-$version.tar" dist
 fi
-echo "current $(pwd)}"
+echo "current $(pwd)"
 echo "copy dist-$version.tar to $server_dir/docker/"
 cp "dist-$version.tar" $server_dir"/docker/"
 echo "copy dist-$version.tar to $server_dir/www/releases/dist-latest.tar"
@@ -38,7 +38,7 @@ cp "dist-$version.tar" $server_dir"/www/releases/dist-latest.tar"
 
 # build jmal-cloud-server
 cd $server_dir || exit
-echo "current $(pwd)}"
+echo "current $(pwd)"
 echo "location: ${server_dir} "
 if [ ! -f "target/clouddisk-$version-exec.jar" ]; then
   mvn clean
