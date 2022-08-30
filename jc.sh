@@ -259,7 +259,7 @@ if [ $# -gt 0 ]; then
     run_mongo "dump"
     git fetch --all
     git reset --hard origin/$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
-    git pull
+    git pull origin master
     # 初始化文件
     mkdir -p "${cur_path}/docker/www/"
     tar -xzf "${cur_path}/www/releases/dist-latest.tar" -C "${cur_path}/docker/www/"
