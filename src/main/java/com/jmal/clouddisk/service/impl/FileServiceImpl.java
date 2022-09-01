@@ -4,15 +4,11 @@ import cn.hutool.core.codec.Base64;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.*;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.extra.cglib.CglibUtil;
-import cn.hutool.json.JSONUtil;
-import com.alibaba.fastjson.JSONObject;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
@@ -28,8 +24,6 @@ import com.jmal.clouddisk.websocket.SocketManager;
 import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.result.UpdateResult;
-import info.monitorenter.cpdetector.io.*;
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
@@ -40,9 +34,7 @@ import org.apache.tika.mime.MimeTypes;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -66,7 +58,6 @@ import java.io.*;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.FileTime;
@@ -74,11 +65,8 @@ import java.text.Collator;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.regex.Pattern;
 
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Aggregates.group;
@@ -426,7 +414,7 @@ public class FileServiceImpl implements IFileService {
      * @param path
      */
     private void loopCreateDir(String username, int rootPathCount, Path path) {
-        createFile(username, path.toFile(), userLoginHolder.getUserId(),true);
+        createFile(username, path.toFile(), userLoginHolder.getUserId(), true);
         if (path.getNameCount() > rootPathCount + 1) {
             loopCreateDir(username, rootPathCount, path.getParent());
         }
@@ -834,7 +822,7 @@ public class FileServiceImpl implements IFileService {
             LocalDateTime uploadDateTime;
             LocalDateTime updateDateTime;
             try {
-                Map<String,Object> attributes = Files.readAttributes(file.toPath(), "lastModifiedTime,creationTime", LinkOption.NOFOLLOW_LINKS);
+                Map<String, Object> attributes = Files.readAttributes(file.toPath(), "lastModifiedTime,creationTime", LinkOption.NOFOLLOW_LINKS);
                 FileTime lastModifiedTime = (FileTime) attributes.get("lastModifiedTime");
                 FileTime creationTime = (FileTime) attributes.get("creationTime");
                 uploadDateTime = LocalDateTimeUtil.of(creationTime.toInstant());
@@ -938,7 +926,7 @@ public class FileServiceImpl implements IFileService {
     private void generateThumbnail(File file, Update update) {
         Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(file);
         thumbnail.size(256, 256);
-        try(ByteArrayOutputStream out = new ByteArrayOutputStream();) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream();) {
             thumbnail.toOutputStream(out);
             FastImageInfo imageInfo = new FastImageInfo(file);
             update.set("w", imageInfo.getWidth());
@@ -1150,7 +1138,7 @@ public class FileServiceImpl implements IFileService {
             } else {
                 Files.createFile(path);
             }
-        }catch (IOException e) {
+        } catch (IOException e) {
             log.error(e.getMessage(), e);
             return ResultUtil.error("新建文件失败");
         }
@@ -1167,7 +1155,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public String viewFile(String shareKey,String fileId, String operation) {
+    public String viewFile(String shareKey, String fileId, String operation) {
         FileDocument fileDocument = getById(fileId);
         if (fileDocument == null) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND.getCode(), ExceptionType.FILE_NOT_FIND.getMsg());
@@ -1210,36 +1198,49 @@ public class FileServiceImpl implements IFileService {
             query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
             query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
             // 设置共享属性
-            setShareAttribute(expiresAt, query);
+            setShareAttribute(file, expiresAt, query);
         } else {
             query.addCriteria(Criteria.where("_id").is(file.getId()));
             // 设置共享属性
-            setShareAttribute(expiresAt, query);
+            setShareAttribute(file, expiresAt, query);
         }
     }
 
     /***
      * 设置共享属性
+     * @param fileDocument FileDocument
      * @param expiresAt 过期时间
      * @param query 查询条件
      */
-    private void setShareAttribute(long expiresAt, Query query) {
+    private void setShareAttribute(FileDocument fileDocument, long expiresAt, Query query) {
         Update update = new Update();
         update.set("isShare", true);
         update.set("expiresAt", expiresAt);
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
+        // 修改文件夹
+        updateShateFolder(fileDocument, update);
     }
 
     /***
      * 解除共享属性
-     * @param expiresAt 过期时间
+     * @param fileDocument FileDocument
      * @param query 查询条件
      */
-    private void unsetShareAttribute(Query query) {
+    private void unsetShareAttribute(FileDocument fileDocument, Query query) {
         Update update = new Update();
         update.unset("isShare");
         update.unset("expiresAt");
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
+        // 修改文件夹
+        updateShateFolder(fileDocument, update);
+    }
+
+    private void updateShateFolder(FileDocument fileDocument, Update update) {
+        if (fileDocument.getIsFolder()) {
+            Query query1 = new Query();
+            query1.addCriteria(Criteria.where("_id").is(fileDocument.getId()));
+            mongoTemplate.updateFirst(query1, update, COLLECTION_NAME);
+        }
     }
 
     @Override
@@ -1253,11 +1254,11 @@ public class FileServiceImpl implements IFileService {
             query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
             query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
             // 解除共享属性
-            unsetShareAttribute(query);
+            unsetShareAttribute(file, query);
         } else {
             query.addCriteria(Criteria.where("_id").is(file.getId()));
             // 解除共享属性
-            unsetShareAttribute(query);
+            unsetShareAttribute(file, query);
         }
     }
 

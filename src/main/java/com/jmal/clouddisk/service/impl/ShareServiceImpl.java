@@ -45,14 +45,14 @@ public class ShareServiceImpl implements IShareService {
     @Override
     public ResponseResult<Object> generateLink(ShareDO share) {
         ShareDO shareDO = findByFileId(share.getFileId());
+        share.setCreateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
+        FileDocument file = fileService.getById(share.getFileId());
+        long expireAt = Long.MAX_VALUE;
+        if (share.getExpireDate() != null){
+            expireAt = TimeUntils.getMilli(share.getExpireDate());
+        }
+        fileService.setShareFile(file, expireAt);
         if (shareDO == null) {
-            share.setCreateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
-            FileDocument file = fileService.getById(share.getFileId());
-            long expireAt = Long.MAX_VALUE;
-            if (share.getExpireDate() != null){
-                expireAt = TimeUntils.getMilli(share.getExpireDate());
-            }
-            fileService.setShareFile(file, expireAt);
             share.setFileName(file.getName());
             share.setContentType(file.getContentType());
             shareDO = mongoTemplate.save(share, COLLECTION_NAME);
