@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.util;
 
 import cn.hutool.core.io.file.FileReader;
+import cn.hutool.core.util.CharsetUtil;
 import info.monitorenter.cpdetector.io.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -8,12 +9,18 @@ import java.io.*;
 import java.util.stream.Collectors;
 
 /**
+ * @author jmal
  * @Description 文件工具类
- * @Author jmal
  * @Date 2020-06-16 16:24
  */
 @Slf4j
 public class MyFileUtils {
+
+    private static final String UNKNOWN_CHARSET = "void";
+
+    private MyFileUtils(){
+
+    }
 
     /***
      * 读取文件的前${lines}行
@@ -32,6 +39,7 @@ public class MyFileUtils {
      * @return 字符编码
      */
     public static String getFileEncode(File file) {
+        String encode;
         /*
          * detector是探测器，它把探测任务交给具体的探测实现类的实例完成。
          * cpDetector内置了一些常用的探测实现类，这些探测实现类的实例可以通过add方法 加进来，如ParsingDetector、
@@ -65,9 +73,14 @@ public class MyFileUtils {
             log.error(ex.getMessage(), ex);
         }
         if (charset != null){
-            return charset.name();
+            encode = charset.name();
+        } else {
+            return CharsetUtil.UTF_8;
         }
-        return "UTF-8";
+        if (UNKNOWN_CHARSET.equals(encode)) {
+            return CharsetUtil.UTF_8;
+        }
+        return encode;
     }
 
 }

@@ -7,7 +7,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 
 /**
  * @Description 操作日志
@@ -28,7 +27,7 @@ import java.util.Map;
         @CompoundIndex(name = "operationFun_1", def = "{'operationFun': 1}"),
         @CompoundIndex(name = "deviceModel_1", def = "{'deviceModel': 1}"),
         @CompoundIndex(name = "operatingSystem_1", def = "{'operatingSystem': 1}"),
-        @CompoundIndex(name = "browser_1", def = "{'browser': 1}"),
+        @CompoundIndex(name = "browser_1", def = "{'operatingSystem': 1}"),
         @CompoundIndex(name = "type_1", def = "{'type': 1}"),
         @CompoundIndex(name = "type_createTime_1", def = "{'type': 1, 'createTime': 1}"),
         @CompoundIndex(name = "type_username_1", def = "{'type': 1, 'username': 1}"),

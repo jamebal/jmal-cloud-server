@@ -843,26 +843,7 @@ public class FileServiceImpl implements IFileService {
                 update.set("isPublic", true);
             }
             if (file.isFile()) {
-                long size = file.length();
-                update.set("size", size);
-                update.set("md5", size + relativePath + fileName);
-                update.set("contentType", contentType);
-                update.set("suffix", suffix);
-                if (contentType.contains("audio")) {
-                    Music music = AudioFileUtils.readAudio(file);
-                    update.set("music", music);
-                }
-                if (contentType.startsWith(CONTENT_TYPE_IMAGE)) {
-                    // 生成缩略图
-                    if (!"ico".equals(suffix) && !"svg".equals(suffix)) {
-                        generateThumbnail(file, update);
-                    }
-                }
-                if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
-                    // 写入markdown内容
-                    String markDownContent = FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file)));
-                    update.set("contentText", markDownContent);
-                }
+                setFileConfig(file, fileName, suffix, contentType, relativePath, update);
             }
             updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
             pushMessage(username, update.getUpdateObject(), "createFile");
@@ -875,6 +856,35 @@ public class FileServiceImpl implements IFileService {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return null;
+    }
+
+    private void setFileConfig(File file, String fileName, String suffix, String contentType, String relativePath, Update update) {
+        long size = file.length();
+        update.set("size", size);
+        update.set("md5", size + relativePath + fileName);
+        update.set("contentType", contentType);
+        update.set("suffix", suffix);
+        if (contentType.contains("audio")) {
+            Music music = AudioFileUtils.readAudio(file);
+            update.set("music", music);
+        }
+        if (contentType.startsWith(CONTENT_TYPE_IMAGE)) {
+            // 生成缩略图
+            if (!"ico".equals(suffix) && !"svg".equals(suffix)) {
+                generateThumbnail(file, update);
+            }
+        }
+        if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
+            // 写入markdown内容
+            String markDownContent = FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file)));
+            update.set("contentText", markDownContent);
+        }
+    }
+
+    public static void main(String[] args) {
+        File file = new File("/Users/jmal/temp/filetest/rootpath/jmal/合并文件测试/mall-admin-web/node_modules/regjsparser/node_modules/jsesc/README.md");
+        String encode = MyFileUtils.getFileEncode(file);
+        System.out.println(CharsetUtil.charset(encode));
     }
 
     @Override
@@ -924,9 +934,11 @@ public class FileServiceImpl implements IFileService {
      * @param update
      */
     private void generateThumbnail(File file, Update update) {
-        Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(file);
-        thumbnail.size(256, 256);
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream();) {
+        ByteArrayOutputStream out = null;
+        try {
+            Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(file);
+            thumbnail.size(256, 256);
+            out = new ByteArrayOutputStream();
             thumbnail.toOutputStream(out);
             FastImageInfo imageInfo = new FastImageInfo(file);
             update.set("w", imageInfo.getWidth());
@@ -936,6 +948,18 @@ public class FileServiceImpl implements IFileService {
             log.warn(e.getMessage() + file.getAbsolutePath(), e);
         } catch (IOException e) {
             log.error(e.getMessage() + file.getAbsolutePath(), e);
+        } catch (Exception e) {
+            log.error(e.getMessage() + file.getAbsolutePath(), e);
+        } catch (Error e) {
+            log.error(e.getMessage() + file.getAbsolutePath(), e);
+        } finally {
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    log.error(e.getMessage() + file.getAbsolutePath(), e);
+                }
+            }
         }
     }
 

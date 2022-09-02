@@ -268,6 +268,9 @@ public class FileInterceptor implements HandlerInterceptor {
             Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(srcFile);
             //获取图片信息
             BufferedImage bim = ImageIO.read(srcFile);
+            if (bim == null) {
+                return new byte[0];
+            }
             int srcWidth = bim.getWidth();
             int srcHeight = bim.getHeight();
             double quality = Convert.toDouble(q, 0.8);
