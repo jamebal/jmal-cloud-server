@@ -3,11 +3,10 @@ package com.jmal.clouddisk;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.listener.FileListener;
 import com.jmal.clouddisk.listener.TempDirFilter;
-import com.jmal.clouddisk.service.impl.LuceneService;
+import com.jmal.clouddisk.service.MongodbIndex;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -27,19 +26,28 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class ApplicationInit implements ApplicationRunner {
 
-    @Autowired
+    final
     FileProperties fileProperties;
 
-    @Autowired
+    final
     FileListener fileListener;
 
-    @Autowired
-    private LuceneService service;
+    final
+    MongodbIndex mongodbIndex;
+
+    public ApplicationInit(FileProperties fileProperties, FileListener fileListener, MongodbIndex mongodbIndex) {
+        this.fileProperties = fileProperties;
+        this.fileListener = fileListener;
+        this.mongodbIndex = mongodbIndex;
+    }
+
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
         // 判断是否开启文件监控
-        if (!fileProperties.getMonitor()) return;
+        if (Boolean.FALSE.equals(fileProperties.getMonitor())) {
+            return;
+        }
         Path rootDir = Paths.get(fileProperties.getRootDir());
         if (!Files.exists(rootDir)) {
             Files.createDirectories(rootDir);
@@ -52,15 +60,13 @@ public class ApplicationInit implements ApplicationRunner {
         // 使用过滤器
         FileAlterationObserver observer = new FileAlterationObserver(new File(fileProperties.getRootDir()), tempDirFilter);
         // 不使用过滤器
-//        FileAlterationObserver observer = new FileAlterationObserver(new File(rootDir));
         observer.addListener(fileListener);
         //创建文件变化监听器
         FileAlterationMonitor monitor = new FileAlterationMonitor(interval, observer);
         // 开始监控
         monitor.start();
         log.info("\r\n文件监控服务已开启:\r\n轮询间隔:{}秒\n监控目录:{}\n忽略目录:{}", fileProperties.getTimeInterval(), rootDir, rootDir + File.separator + fileProperties.getChunkFileDir());
-
-        // 同步 fileDocument 索引
-        // service.synFileCreatIndex();
+        // 检测mongo索引
+        mongodbIndex.checkMongoIndex();
     }
 }
