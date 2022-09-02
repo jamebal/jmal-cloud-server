@@ -35,50 +35,48 @@ public class MongodbIndex {
     }
 
     private void logIndex() {
-        List<IndexModel> indexModelList = new ArrayList<>();
+        List<IndexModel> indexLogList = new ArrayList<>();
 
-        indexModelList.add(new IndexModel(new Document("createTime", 1)));
+        indexLogList.add(new IndexModel(new Document("createTime", 1)));
 
-        indexModelList.add(new IndexModel(new Document("time", 1)));
+        indexLogList.add(new IndexModel(new Document("time", 1)));
 
-        indexModelList.add(new IndexModel(new Document("username", 1)));
+        indexLogList.add(new IndexModel(new Document("username", 1)));
 
-        indexModelList.add(new IndexModel(new Document("showName", 1)));
+        indexLogList.add(new IndexModel(new Document("showName", 1)));
 
-        indexModelList.add(new IndexModel(new Document("ip", 1)));
+        indexLogList.add(new IndexModel(new Document("ip", 1)));
 
-        indexModelList.add(new IndexModel(new Document("cityIp", 1)));
+        indexLogList.add(new IndexModel(new Document("cityIp", 1)));
 
-        indexModelList.add(new IndexModel(new Document("url", 1)));
+        indexLogList.add(new IndexModel(new Document("url", 1)));
 
-        indexModelList.add(new IndexModel(new Document("status", 1)));
+        indexLogList.add(new IndexModel(new Document("status", 1)));
 
-        indexModelList.add(new IndexModel(new Document("operationModule", 1)));
+        indexLogList.add(new IndexModel(new Document("operationModule", 1)));
 
-        indexModelList.add(new IndexModel(new Document("operationFun", 1)));
+        indexLogList.add(new IndexModel(new Document("operationFun", 1)));
 
-        indexModelList.add(new IndexModel(new Document("deviceModel", 1)));
+        indexLogList.add(new IndexModel(new Document("deviceModel", 1)));
 
-        indexModelList.add(new IndexModel(new Document("operatingSystem", 1)));
+        indexLogList.add(new IndexModel(new Document("operatingSystem", 1)));
 
-        indexModelList.add(new IndexModel(new Document("operatingSystem", 1)));
-
-        indexModelList.add(new IndexModel(new Document("type", 1)));
+        indexLogList.add(new IndexModel(new Document("type", 1)));
 
         Document indexTypeCreateTime = new Document("type", 1);
         indexTypeCreateTime.put("createTime", 1);
-        indexModelList.add(new IndexModel(indexTypeCreateTime));
+        indexLogList.add(new IndexModel(indexTypeCreateTime));
+
+        Document indexTypeUsernameCreateTime = new Document("type", 1);
+        indexTypeUsernameCreateTime.put("createTime", 1);
+        indexTypeUsernameCreateTime.put("username", 1);
+        indexLogList.add(new IndexModel(indexTypeUsernameCreateTime));
 
         Document indexTypeUsername = new Document("type", 1);
         indexTypeUsername.put("username", 1);
-        indexModelList.add(new IndexModel(indexTypeUsername));
+        indexLogList.add(new IndexModel(indexTypeUsername));
 
-        Document indexTypeUsernameCreateTime = new Document("type", 1);
-        indexTypeUsernameCreateTime.put("username", 1);
-        indexTypeCreateTime.put("createTime", 1);
-        indexModelList.add(new IndexModel(indexTypeUsernameCreateTime));
-
-        mongoTemplate.getCollection(FileServiceImpl.COLLECTION_NAME).createIndexes(indexModelList);
+        mongoTemplate.getCollection("log").createIndexes(indexLogList);
     }
 
     private void fileDocumentIndex() {
