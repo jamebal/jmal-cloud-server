@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service;
 
 import com.jmal.clouddisk.service.impl.FileServiceImpl;
+import com.mongodb.client.ListIndexesIterable;
 import com.mongodb.client.model.IndexModel;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
@@ -76,7 +77,16 @@ public class MongodbIndex {
         indexTypeUsername.put("username", 1);
         indexLogList.add(new IndexModel(indexTypeUsername));
 
-        mongoTemplate.getCollection("log").createIndexes(indexLogList);
+        ListIndexesIterable<Document> listIndexesIterable = mongoTemplate.getCollection("log").listIndexes();
+        long indexCount = 0;
+        for (Document ignored : listIndexesIterable) {
+            indexCount++;
+        }
+
+        if (indexCount < 2) {
+            mongoTemplate.getCollection("log").createIndexes(indexLogList);
+        }
+
     }
 
     private void fileDocumentIndex() {
@@ -124,6 +134,15 @@ public class MongodbIndex {
         indexUserIdContentType.put("contentType", 1);
         indexModelList.add(new IndexModel(indexUserIdContentType));
 
-        mongoTemplate.getCollection(FileServiceImpl.COLLECTION_NAME).createIndexes(indexModelList);
+        ListIndexesIterable<Document> listIndexesIterable = mongoTemplate.getCollection(FileServiceImpl.COLLECTION_NAME).listIndexes();
+        long indexCount = 0;
+        for (Document ignored : listIndexesIterable) {
+            indexCount++;
+        }
+
+        if (indexCount < 2) {
+            mongoTemplate.getCollection(FileServiceImpl.COLLECTION_NAME).createIndexes(indexModelList);
+        }
+
     }
 }
