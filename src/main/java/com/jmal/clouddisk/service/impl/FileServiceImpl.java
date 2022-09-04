@@ -933,7 +933,7 @@ public class FileServiceImpl implements IFileService {
      * @param file
      * @param update
      */
-    private synchronized void generateThumbnail(File file, Update update) {
+    private void generateThumbnail(File file, Update update) {
         ByteArrayOutputStream out = null;
         try {
             Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(file);
