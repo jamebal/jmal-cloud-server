@@ -260,6 +260,7 @@ if [ $# -gt 0 ]; then
     git fetch --all
     git reset --hard origin/$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
     git pull origin master
+    $COMPOSE pull
     run_exec nginx "nginx -s reload"
     install
   elif [[ "$1" == "uninstall" ]]; then
