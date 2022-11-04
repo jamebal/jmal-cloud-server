@@ -45,10 +45,8 @@ public class OpenApiConfig {
      * 添加全局的请求头参数
      */
     @Bean
-    public OpenApiCustomiser customerGlobalHeaderOpenApiCustomiser() {
+    public OpenApiCustomiser customerGlobalHeaderOpenApiCustomizer() {
         return openApi -> openApi.getPaths().values().stream().flatMap(pathItem -> pathItem.readOperations().stream())
-                .forEach(operation -> {
-                    operation.addParametersItem(new HeaderParameter().$ref("#/components/parameters/myGlobalHeader"));
-                });
+                .forEach(operation -> operation.addParametersItem(new HeaderParameter().$ref("#/components/parameters/myGlobalHeader")));
     }
 }
