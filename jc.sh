@@ -225,7 +225,7 @@ uninstall() {
 check_run() {
   spin=('\' '|' '/' '-')
   server_url="http://$(local_ipv4):$(env_get BLOG_PORT)"
-  for ((i = 0; i <= 300; i++)); do
+  for ((i = 0; i <= 350; i++)); do
     url_status=$(curl -s -m 5 -IL "$server_url" | grep 200)
     if [ "$url_status" != "" ]; then
       echo -ne "                                                              \r"
