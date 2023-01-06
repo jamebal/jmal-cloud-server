@@ -99,6 +99,20 @@
   },
   {
     "authority": "",
+    "component": "/fileType/document",
+    "createTime": 1672918491000,
+    "hide": false,
+    "icon": "image",
+    "id": "63b79129a7b6db0f8c1f2ad9",
+    "menuType": 0,
+    "name": "文档",
+    "parentId": "",
+    "path": "/document",
+    "sortNumber": 7,
+    "updateTime": 1672918491000
+  },
+  {
+    "authority": "",
     "component": "/setting/sys/cusomerInfo",
     "createTime": 1610292024328,
     "hide": false,
