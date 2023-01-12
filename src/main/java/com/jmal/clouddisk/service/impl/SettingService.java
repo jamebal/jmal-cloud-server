@@ -237,6 +237,8 @@ public class SettingService {
         WebsiteSettingDTO websiteSettingDTO1 = new WebsiteSettingDTO();
         websiteSettingDTO1.setCopyright(websiteSettingDTO.getCopyright());
         websiteSettingDTO1.setRecordPermissionNum(websiteSettingDTO.getRecordPermissionNum());
+        websiteSettingDTO1.setNetworkRecordNumber(websiteSettingDTO.getNetworkRecordNumber());
+        websiteSettingDTO1.setNetworkRecordNumberStr(websiteSettingDTO.getNetworkRecordNumberStr());
         websiteSettingDTO1.setNetdiskName(websiteSettingDTO.getNetdiskName());
         websiteSettingDTO1.setNetdiskLogo(websiteSettingDTO.getNetdiskLogo());
         return websiteSettingDTO1;

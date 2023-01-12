@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import cn.hutool.core.util.StrUtil;
 import lombok.Data;
 
 import java.util.List;
@@ -86,6 +87,16 @@ public class WebsiteSettingDTO {
      */
     String recordPermissionNum;
 
+    /**
+     * 公网备案号
+     */
+    String networkRecordNumber;
+
+    /**
+     * 公网备案号 展示文本
+     */
+    String networkRecordNumberStr;
+
     @Data
     public static class OperatingButton {
         /***
@@ -104,5 +115,9 @@ public class WebsiteSettingDTO {
 
     public boolean isShowAlonePage(String page){
         return alonePages.contains(page);
+    }
+
+    public boolean isShowBeian(){
+        return !StrUtil.isBlank(networkRecordNumberStr);
     }
 }

@@ -76,4 +76,13 @@ public class WebsiteSettingDO {
      * 备案许可号
      */
     String recordPermissionNum;
+    /**
+     * 公网备案号
+     */
+    String networkRecordNumber;
+
+    /**
+     * 公网备案号 展示文本
+     */
+    String networkRecordNumberStr;
 }

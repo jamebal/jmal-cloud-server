@@ -1,8 +1,10 @@
 <footer id="footer" class="clearfix" xmlns:th="http://www.thymeleaf.org">
     <br><br><br>
     <div class="copyright">
-        <p><span th:text="${setting.copyright}">Journey Magical AL</span></p>
-        <p><a href="http://beian.miit.gov.cn" target="_blank" th:text="${setting.recordPermissionNum}"> 鄂 ICP 备 2020021454 号</a></p>
+        <p><span th:text="${setting.copyright}"></span></p>
+        <p style="margin-top: 5px;">
+            <a href="http://beian.miit.gov.cn" target="_blank" th:text="${setting.recordPermissionNum}"></a>
+            <a target="_blank" style="margin-left: 5px;" th:href="'http://www.beian.gov.cn/portal/registerSystemInfo?recordcode='+${setting.networkRecordNumber}"><img th:if="${setting.isShowBeian()}" style="width: 15px;" src="/articles/img/beian.png" /><span th:text="${setting.networkRecordNumberStr}"></span></a>
+        </p>
     </div>
-    <br>
 </footer>
