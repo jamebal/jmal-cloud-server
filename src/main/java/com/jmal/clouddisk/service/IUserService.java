@@ -58,6 +58,12 @@ public interface IUserService {
     ResponseResult<List<ConsumerDTO>> userList(QueryUserDTO queryDTO);
 
     /***
+     * 所有用户列表
+     * @return 用户列表
+     */
+    List<ConsumerDTO> userListAll();
+
+    /***
      * 验证用户名
      * @param token token
      * @return 用户名

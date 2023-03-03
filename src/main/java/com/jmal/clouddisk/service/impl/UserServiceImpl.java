@@ -318,6 +318,18 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
+    public List<ConsumerDTO> userListAll() {
+        Query query = new Query();
+        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
+        return userList.parallelStream().map(consumerDO -> {
+            ConsumerDTO consumerDTO = new ConsumerDTO();
+            consumerDTO.setPassword(decrypt(consumerDO));
+            consumerDTO.setUsername(consumerDO.getUsername());
+            return consumerDTO;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
     public String getUserName(String token) {
         if (CharSequenceUtil.isBlank(token)) {
             throw new CommonException(ExceptionType.PERMISSION_DENIED.getCode(), ExceptionType.PERMISSION_DENIED.getMsg());
@@ -407,6 +419,10 @@ public class UserServiceImpl implements IUserService {
         if (consumer == null) {
             return "";
         }
+        return decrypt(consumer);
+    }
+
+    public static String decrypt(ConsumerDO consumer) {
         String password = consumer.getPassword();
         String key = password.split(":")[2];
         DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
