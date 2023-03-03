@@ -2,8 +2,6 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.extra.cglib.CglibUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
@@ -13,6 +11,7 @@ import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -77,7 +76,7 @@ public class MenuService {
         List<MenuDO> menuDOList = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME);
         List<MenuDTO> menuDTOList = menuDOList.parallelStream().map(menuDO -> {
             MenuDTO menuDTO = new MenuDTO();
-            CglibUtil.copy(menuDO, menuDTO);
+            BeanUtils.copyProperties(menuDO, menuDTO);
             return menuDTO;
         }).collect(Collectors.toList());
         return getSubMenu(null, menuDTOList);
@@ -147,7 +146,7 @@ public class MenuService {
             }
         }
         MenuDO menuDO = new MenuDO();
-        CglibUtil.copy(menuDTO, menuDO);
+        BeanUtils.copyProperties(menuDTO, menuDO);
         menuDO.setId(null);
         LocalDateTime dateNow = LocalDateTime.now(TimeUntils.ZONE_ID);
         menuDO.setCreateTime(dateNow);
@@ -172,7 +171,7 @@ public class MenuService {
             return ResultUtil.warning("该菜单名称已存在");
         }
         MenuDO menuDO = new MenuDO();
-        CglibUtil.copy(menuDTO, menuDO);
+        BeanUtils.copyProperties(menuDTO, menuDO);
         menuDO.setUpdateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(menuDTO.getId()));

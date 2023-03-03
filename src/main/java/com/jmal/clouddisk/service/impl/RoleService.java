@@ -3,8 +3,6 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.extra.cglib.CglibUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
@@ -12,6 +10,7 @@ import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -103,7 +102,7 @@ public class RoleService {
             return ResultUtil.warning("该角色标识已存在");
         }
         RoleDO roleDO = new RoleDO();
-        CglibUtil.copy(roleDTO, roleDO);
+        BeanUtils.copyProperties(roleDTO, roleDO);
         LocalDateTime dateNow = LocalDateTime.now(TimeUntils.ZONE_ID);
         roleDO.setCreateTime(dateNow);
         roleDO.setUpdateTime(dateNow);
@@ -127,7 +126,7 @@ public class RoleService {
             return ResultUtil.warning("该分类标识已存在");
         }
         RoleDO roleDO = new RoleDO();
-        CglibUtil.copy(roleDTO, roleDO);
+        BeanUtils.copyProperties(roleDTO, roleDO);
         roleDO.setUpdateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(roleDO.getId()));

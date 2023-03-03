@@ -1,8 +1,6 @@
 package com.jmal.clouddisk.repository.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
@@ -12,13 +10,14 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.repository.DataSource;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.util.TimeUntils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
-import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,7 +38,7 @@ public class AuthDAOImpl implements IAuthDAO {
 
     private static final String ACCESS_TOKEN_COLLECTION_NAME = "access_token";
 
-    @Resource
+    @Autowired
     private MongoTemplate mongoTemplate;
 
     @Override
@@ -106,7 +105,7 @@ public class AuthDAOImpl implements IAuthDAO {
         List<UserAccessTokenDO> userAccessTokenDOList = mongoTemplate.find(query, UserAccessTokenDO.class, ACCESS_TOKEN_COLLECTION_NAME);
         return userAccessTokenDOList.stream().map(userAccessTokenDO -> {
             UserAccessTokenDTO userAccessTokenDTO = new UserAccessTokenDTO();
-            CglibUtil.copy(userAccessTokenDO, userAccessTokenDTO);
+            BeanUtils.copyProperties(userAccessTokenDO, userAccessTokenDTO);
             return userAccessTokenDTO;
         }).collect(Collectors.toList());
     }

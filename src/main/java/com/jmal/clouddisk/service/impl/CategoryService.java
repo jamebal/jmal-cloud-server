@@ -2,20 +2,18 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.model.CategoryDO;
 import com.jmal.clouddisk.model.CategoryDTO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
-
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -101,7 +99,7 @@ public class CategoryService {
         List<CategoryDO> categoryDOList = mongoTemplate.find(query, CategoryDO.class, COLLECTION_NAME);
         List<CategoryDTO> categoryDTOList = categoryDOList.parallelStream().map(category -> {
             CategoryDTO categoryDTO = new CategoryDTO();
-            CglibUtil.copy(category, categoryDTO);
+            BeanUtils.copyProperties(category, categoryDTO);
             if (statArticleNum) {
                 getCategoryArticlesNum(categoryDTO);
             }
@@ -271,7 +269,7 @@ public class CategoryService {
         }
         categoryDTO.setSlug(getSlug(categoryDTO));
         CategoryDO categoryDO = new CategoryDO();
-        CglibUtil.copy(categoryDTO, categoryDO);
+        BeanUtils.copyProperties(categoryDTO, categoryDO);
         categoryDO.setId(null);
         mongoTemplate.save(categoryDO, COLLECTION_NAME);
         return ResultUtil.success();
@@ -295,7 +293,7 @@ public class CategoryService {
         }
         categoryDTO.setSlug(getSlug(categoryDTO));
         CategoryDO categoryDO = new CategoryDO();
-        CglibUtil.copy(categoryDTO, categoryDO);
+        BeanUtils.copyProperties(categoryDTO, categoryDO);
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(categoryDTO.getId()));
         Update update = MongoUtil.getUpdate(categoryDO);

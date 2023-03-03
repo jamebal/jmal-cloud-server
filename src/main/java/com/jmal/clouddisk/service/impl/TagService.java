@@ -1,14 +1,13 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.model.TagDO;
 import com.jmal.clouddisk.model.TagDTO;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import org.bson.types.ObjectId;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -45,7 +44,7 @@ public class TagService {
         List<TagDO> tagList = mongoTemplate.find(query, TagDO.class, COLLECTION_NAME);
         return tagList.parallelStream().map(tag -> {
             TagDTO tagDTO = new TagDTO();
-            CglibUtil.copy(tag, tagDTO);
+            BeanUtils.copyProperties(tag, tagDTO);
             return tagDTO;
         }).sorted().collect(Collectors.toList());
     }
@@ -59,7 +58,7 @@ public class TagService {
         List<TagDO> tagList = mongoTemplate.find(query, TagDO.class, COLLECTION_NAME);
         return tagList.parallelStream().map(tag -> {
             TagDTO tagDTO = new TagDTO();
-            CglibUtil.copy(tag, tagDTO);
+            BeanUtils.copyProperties(tag, tagDTO);
             getTagArticlesNum(tagDTO);
             tagDTO.setFontSize(Math.round(Math.log(tagDTO.getArticleNum()  * 5) *  10));
             tagDTO.setColor("rgb("+Math.round(Math.random() * 100 + 80)+","+Math.round(Math.random() * 100 + 80)+","+Math.round(Math.random() * 100 + 80)+")");
@@ -143,7 +142,7 @@ public class TagService {
         }
         tagDTO.setSlug(getSlug(tagDTO));
         TagDO tag = new TagDO();
-        CglibUtil.copy(tagDTO, tag);
+        BeanUtils.copyProperties(tagDTO, tag);
         tag.setId(null);
         mongoTemplate.save(tag, COLLECTION_NAME);
         return ResultUtil.success();
@@ -172,7 +171,7 @@ public class TagService {
         }
         tagDTO.setSlug(getSlug(tagDTO));
         TagDO tag = new TagDO();
-        CglibUtil.copy(tagDTO, tag);
+        BeanUtils.copyProperties(tagDTO, tag);
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(tagDTO.getId()));
         Update update = MongoUtil.getUpdate(tag);

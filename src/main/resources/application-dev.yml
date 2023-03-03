@@ -12,7 +12,6 @@ spring:
           max-age: 0
       chain:
         cache: false
-# 日志级别,生产环境改为warn
 logging:
   level:
     root: info

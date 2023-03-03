@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
@@ -16,19 +15,18 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -286,7 +284,7 @@ public class FileController {
     @GetMapping("/move")
     @LogOperatingFun
     @Permission("cloud:file:update")
-    public ResponseResult<Object> move(UploadApiParamDTO upload, @RequestParam String[] froms, String to) {
+    public ResponseResult<Object> move(UploadApiParamDTO upload, @RequestParam String[] froms, String to) throws IOException {
         if (froms != null && froms.length > 0) {
             List<String> list = Arrays.asList(froms);
             return fileService.move(upload, list, to);
@@ -299,7 +297,7 @@ public class FileController {
     @GetMapping("/copy")
     @LogOperatingFun
     @Permission("cloud:file:update")
-    public ResponseResult<Object> copy(UploadApiParamDTO upload, @RequestParam String[] froms, String to) {
+    public ResponseResult<Object> copy(UploadApiParamDTO upload, @RequestParam String[] froms, String to) throws IOException {
         if (froms != null && froms.length > 0) {
             List<String> list = Arrays.asList(froms);
             return fileService.copy(upload, list, to);

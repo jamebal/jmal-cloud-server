@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.controller.rest;
 
-import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.CategoryDO;
@@ -9,8 +8,9 @@ import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.impl.CategoryService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -55,7 +55,7 @@ public class CategoryController {
         CategoryDTO categoryDTO = new CategoryDTO();
         CategoryDO categoryDO = categoryService.getCategoryInfo(categoryId);
         if(categoryDO != null){
-            CglibUtil.copy(categoryDO, categoryDTO);
+            BeanUtils.copyProperties(categoryDO, categoryDTO);
         }
         return ResultUtil.success(categoryDTO);
     }

@@ -8,7 +8,6 @@ import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
-import cn.hutool.extra.cglib.CglibUtil;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -26,6 +25,7 @@ import com.mongodb.client.AggregateIterable;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -312,7 +312,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         String filename = fileDocument.getName();
         fileDocument.setName(filename.substring(0, filename.length() - fileDocument.getSuffix().length() - 1));
         ArticleVO articleVO = new ArticleVO();
-        CglibUtil.copy(fileDocument, articleVO);
+        BeanUtils.copyProperties(fileDocument, articleVO);
 
         if (articleVO.getCategoryIds() != null) {
             List<CategoryDO> categories = categoryService.getCategoryListByIds(articleVO.getCategoryIds());
@@ -419,7 +419,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             markdownVO = JSON.parseObject(fileDocument.getDraft(), MarkdownVO.class);
             markdownVO.setId(fileDocument.getId());
         } else {
-            CglibUtil.copy(getFileDocument(fileDocument), markdownVO);
+            BeanUtils.copyProperties(getFileDocument(fileDocument), markdownVO);
         }
         if (!CharSequenceUtil.isBlank(fileDocument.getDraft())) {
             markdownVO.setDraft(true);
@@ -655,8 +655,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
             }
             File destFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString()).toFile();
             final File outFile = response.completeFileNameFromHeader(destFile);
-            if (!outFile.getName().endsWith(FileServiceImpl._SUFFIX_WEBP)) {
-                newFile = new File(outFile.getPath() + FileServiceImpl._SUFFIX_WEBP);
+            if (!outFile.getName().endsWith(FileServiceImpl.POINT_SUFFIX_WEBP)) {
+                newFile = new File(outFile.getPath() + FileServiceImpl.POINT_SUFFIX_WEBP);
             } else {
                 newFile = new File(outFile.getPath());
             }
@@ -700,8 +700,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
                 newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
                 FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             } else {
-                if (!fileName.endsWith(FileServiceImpl._SUFFIX_WEBP)) {
-                    fileName = fileName + FileServiceImpl._SUFFIX_WEBP;
+                if (!fileName.endsWith(FileServiceImpl.POINT_SUFFIX_WEBP)) {
+                    fileName = fileName + FileServiceImpl.POINT_SUFFIX_WEBP;
                 }
                 newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
                 BufferedImage image = ImageIO.read(multipartFile.getInputStream());

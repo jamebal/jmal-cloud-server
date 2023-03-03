@@ -1,32 +1,22 @@
 package com.jmal.clouddisk;
 
 
-import cn.hutool.http.useragent.UserAgent;
-import cn.hutool.http.useragent.UserAgentUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.impl.LogService;
 import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.webdav.MySimpleSecurityManager;
 import io.milton.config.HttpManagerBuilder;
 import io.milton.http.HttpManager;
-import io.milton.http.Request;
-import io.milton.http.ResourceFactory;
-import io.milton.http.Response;
-import io.milton.http.annotated.AnnotationResourceFactory;
-import io.milton.http.template.JspViewResolver;
-import io.milton.http.template.ViewResolver;
-import io.milton.servlet.MiltonServlet;
+import jakarta.servlet.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.regex.Pattern;
 
@@ -59,16 +49,16 @@ public class WebFilter implements Filter {
 
     @Override
     public void init(FilterConfig filterConfig) {
-        ResourceFactory rf = httpManagerBuilder.getMainResourceFactory();
-        if (rf instanceof AnnotationResourceFactory) {
-            AnnotationResourceFactory arf = (AnnotationResourceFactory) rf;
-            if (arf.getViewResolver() == null) {
-                ViewResolver viewResolver = new JspViewResolver(filterConfig.getServletContext());
-                arf.setViewResolver(viewResolver);
-            }
-        }
-        log.info("WEBDAV 服务启动, contextPath: {}", fileProperties.getWebDavPrefixPath());
-        this.httpManager = httpManagerBuilder.buildHttpManager();
+        // ResourceFactory rf = httpManagerBuilder.getMainResourceFactory();
+        // if (rf instanceof AnnotationResourceFactory) {
+        //     AnnotationResourceFactory arf = (AnnotationResourceFactory) rf;
+        //     if (arf.getViewResolver() == null) {
+        //         ViewResolver viewResolver = new JspViewResolver(filterConfig.getServletContext());
+        //         arf.setViewResolver(viewResolver);
+        //     }
+        // }
+        // log.info("WEBDAV 服务启动, contextPath: {}", fileProperties.getWebDavPrefixPath());
+        // this.httpManager = httpManagerBuilder.buildHttpManager();
     }
 
     @Override
@@ -114,25 +104,25 @@ public class WebFilter implements Filter {
      */
     @LogOperatingFun(value = "WebDAV请求", logType = LogOperation.Type.WEBDAV)
     public ResponseResult<Object> doMiltonProcessing(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            MiltonServlet.setThreadlocals(req, resp);
-            Request request = new io.milton.servlet.ServletRequest(req, req.getServletContext());
-            Response response = new io.milton.servlet.ServletResponse(resp);
-            UserAgent userAgent = UserAgentUtil.parse(request.getUserAgentHeader());
-            if (!userAgent.getBrowser().isUnknown()) {
-                notAllowBrowser(resp);
-                return ResultUtil.warning("webDAV 不支持浏览器访问");
-            }
-            // TODO 暂不支持LOCK和UNLOCK
-            if (Request.Method.LOCK.toString().equals(req.getMethod())) {
-                response.setStatus(Response.Status.SC_METHOD_NOT_ALLOWED);
-                return ResultUtil.warning("webDAV 暂不支持LOCK和UNLOCK请求");
-            }
-            httpManager.process(request, response);
-        } finally {
-            MiltonServlet.clearThreadlocals();
-            resp.flushBuffer();
-        }
+        // try {
+        //     MiltonServlet.setThreadlocals( req, resp);
+        //     Request request = new io.milton.servlet.ServletRequest(req, req.getServletContext());
+        //     Response response = new io.milton.servlet.ServletResponse(resp);
+        //     UserAgent userAgent = UserAgentUtil.parse(request.getUserAgentHeader());
+        //     if (!userAgent.getBrowser().isUnknown()) {
+        //         notAllowBrowser(resp);
+        //         return ResultUtil.warning("webDAV 不支持浏览器访问");
+        //     }
+        //     // TODO 暂不支持LOCK和UNLOCK
+        //     if (Request.Method.LOCK.toString().equals(req.getMethod())) {
+        //         response.setStatus(Response.Status.SC_METHOD_NOT_ALLOWED);
+        //         return ResultUtil.warning("webDAV 暂不支持LOCK和UNLOCK请求");
+        //     }
+        //     httpManager.process(request, response);
+        // } finally {
+        //     MiltonServlet.clearThreadlocals();
+        //     resp.flushBuffer();
+        // }
         return null;
     }
 

@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.acpect;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -19,6 +18,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.lang.reflect.Method;
 
 /***
@@ -97,6 +98,6 @@ public class LogOperatingAspect {
             logOperation.setUsername(consumerDO.getUsername());
         }
         // 添加日志
-        logService.addLogBefore(logOperation, result, attributes.getRequest(), attributes.getResponse());
+        logService.addLogBefore(logOperation, result, (HttpServletRequest) attributes.getRequest(), (HttpServletResponse) attributes.getResponse());
     }
 }

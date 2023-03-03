@@ -3,7 +3,6 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.useragent.UserAgent;
 import cn.hutool.http.useragent.UserAgentUtil;
 import com.jmal.clouddisk.config.FileProperties;
@@ -13,6 +12,8 @@ import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
 import io.milton.http.Response;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.lionsoul.ip2region.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +23,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
-
 import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

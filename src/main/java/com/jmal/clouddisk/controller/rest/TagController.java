@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.controller.rest;
 
-import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.LogOperation;
@@ -9,8 +8,9 @@ import com.jmal.clouddisk.model.TagDTO;
 import com.jmal.clouddisk.service.impl.TagService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -47,7 +47,7 @@ public class TagController {
         TagDTO tagDTO = new TagDTO();
         TagDO tag = tagService.getTagInfo(tagId);
         if(tag != null){
-            CglibUtil.copy(tag, tagDTO);
+            BeanUtils.copyProperties(tag, tagDTO);
         }
         return ResultUtil.success(tagDTO);
     }

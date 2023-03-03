@@ -49,12 +49,9 @@
             <charset>UTF-8</charset>
         </encoder>
         <!-- 日志记录器的滚动策略，按日期，按大小记录 -->
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- 每天日志归档路径以及格式 -->
-            <fileNamePattern>${log.path}/info/log-info-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>100MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/error/log-info-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
             <!--日志文件保留天数-->
             <maxHistory>15</maxHistory>
         </rollingPolicy>
@@ -77,11 +74,9 @@
             <charset>UTF-8</charset> <!-- 此处设置字符集 -->
         </encoder>
         <!-- 日志记录器的滚动策略，按日期，按大小记录 -->
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.path}/warn/log-warn-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>100MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/error/log-warn-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
             <!--日志文件保留天数-->
             <maxHistory>15</maxHistory>
         </rollingPolicy>
@@ -104,11 +99,9 @@
             <charset>UTF-8</charset> <!-- 此处设置字符集 -->
         </encoder>
         <!-- 日志记录器的滚动策略，按日期，按大小记录 -->
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>${log.path}/error/log-error-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>100MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxFileSize>100MB</maxFileSize>
             <!--日志文件保留天数-->
             <maxHistory>15</maxHistory>
         </rollingPolicy>
@@ -133,41 +126,13 @@
         第一种把<root level="INFO">改成<root level="DEBUG">这样就会打印sql，不过这样日志那边会出现很多其他消息
         第二种就是单独给mapper下目录配置DEBUG模式，代码如下，这样配置sql语句会打印，其他还是正常DEBUG级别：
      -->
-    <!--开发环境:打印控制台-->
-    <!-- 和我们项目的环境对应一定要！ -->
-    <springProfile name="dev">
-        <!--可以输出项目中的debug日志，包括mybatis的sql日志-->
-        <logger name="com.jmal" level="DEBUG" />
-        <!--
-            root节点是必选节点，用来指定最基础的日志输出级别，只有一个level属性
-            level:用来设置打印级别，大小写无关：TRACE, DEBUG, INFO, WARN, ERROR, ALL 和 OFF，默认是DEBUG
-            可以包含零个或多个appender元素。
-        -->
-        <root level="DEBUG">
-            <appender-ref ref="CONSOLE" />
-            <appender-ref ref="INFO_FILE" />
-            <appender-ref ref="WARN_FILE" />
-            <appender-ref ref="ERROR_FILE" />
-        </root>
-    </springProfile>
+    <root level="DEBUG">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="INFO_FILE" />
+        <appender-ref ref="WARN_FILE" />
+        <appender-ref ref="ERROR_FILE" />
+    </root>
 
 
-    <!-- 日志在生成环境中的级别一定要提高，保证效率！ -->
-    <!--生产环境:输出到文件-->
-    <springProfile name="prod">
-
-        <logger name="com.jmal" level="DEBUG" />
-        <!--
-            root节点是必选节点，用来指定最基础的日志输出级别，只有一个level属性
-            level:用来设置打印级别，大小写无关：TRACE, DEBUG, INFO, WARN, ERROR, ALL 和 OFF，默认是DEBUG
-            可以包含零个或多个appender元素。
-        -->
-        <root level="DEBUG">
-            <appender-ref ref="CONSOLE" />
-            <appender-ref ref="INFO_FILE" />
-            <appender-ref ref="WARN_FILE" />
-            <appender-ref ref="ERROR_FILE" />
-        </root>
-    </springProfile>
 
 </configuration>

@@ -7,7 +7,6 @@ import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.crypto.Mode;
 import cn.hutool.crypto.Padding;
 import cn.hutool.crypto.symmetric.DES;
-import cn.hutool.extra.cglib.CglibUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.config.FileProperties;
@@ -25,6 +24,7 @@ import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -124,7 +124,7 @@ public class UserServiceImpl implements IUserService {
             }
             encryption(consumerDTO, originalPwd);
             ConsumerDO consumerDO = new ConsumerDO();
-            CglibUtil.copy(consumerDTO, consumerDO);
+            BeanUtils.copyProperties(consumerDTO, consumerDO);
             consumerDO.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             consumerDO.setId(null);
             // 新建用户目录
@@ -270,7 +270,7 @@ public class UserServiceImpl implements IUserService {
             return ResultUtil.success(new ConsumerDTO());
         }
         ConsumerDTO consumerDTO = new ConsumerDTO();
-        CglibUtil.copy(consumer, consumerDTO);
+        BeanUtils.copyProperties(consumer, consumerDTO);
         consumerDTO.setTakeUpSpace(fileService.takeUpSpace(consumerDTO.getId()));
         consumerDTO.setPassword(null);
         consumerDTO.setEncryptPwd(null);
@@ -307,7 +307,7 @@ public class UserServiceImpl implements IUserService {
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
         List<ConsumerDTO> consumerDTOList = userList.parallelStream().map(consumerDO -> {
             ConsumerDTO consumerDTO = new ConsumerDTO();
-            CglibUtil.copy(consumerDO, consumerDTO);
+            BeanUtils.copyProperties(consumerDO, consumerDTO);
             List<String> roleIds = consumerDO.getRoles();
             if (roleIds != null && !roleIds.isEmpty()) {
                 consumerDTO.setRoleList(roleService.getRoleList(roleIds));

@@ -4,11 +4,13 @@ import cn.hutool.core.codec.Base64;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.*;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.CharsetUtil;
+import cn.hutool.core.util.ReUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
-import cn.hutool.extra.cglib.CglibUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
@@ -24,6 +26,8 @@ import com.jmal.clouddisk.websocket.SocketManager;
 import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.result.UpdateResult;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
@@ -34,6 +38,7 @@ import org.apache.tika.mime.MimeTypes;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -42,16 +47,14 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.socket.WebSocketSession;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.FileImageOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotNull;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -59,7 +62,10 @@ import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.text.Collator;
 import java.time.LocalDateTime;
@@ -67,6 +73,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Aggregates.group;
@@ -108,7 +115,7 @@ public class FileServiceImpl implements IFileService {
     public static final String CONTENT_TYPE_MARK_DOWN = "text/markdown";
     public static final String CONTENT_TYPE_WEBP = "image/webp";
     public static final String SUFFIX_WEBP = "webp";
-    public static final String _SUFFIX_WEBP = ".webp";
+    public static final String POINT_SUFFIX_WEBP = ".webp";
 
     /***
      * 前端文件夹树的第一级的文件Id
@@ -163,7 +170,7 @@ public class FileServiceImpl implements IFileService {
                 case "video":
                     criteria = Criteria.where("contentType").regex("^video");
                     break;
-                case "image":
+                case CONTENT_TYPE_IMAGE:
                     criteria = Criteria.where("contentType").regex("^image");
                     break;
                 case "text":
@@ -254,13 +261,13 @@ public class FileServiceImpl implements IFileService {
             LocalDateTime updateDate = fileDocument.getUpdateDate();
             long update = TimeUntils.getMilli(updateDate);
             fileDocument.setAgoTime(now - update);
-            if (fileDocument.getIsFolder()) {
+            if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
                 String path = fileDocument.getPath() + fileDocument.getName() + File.separator;
                 long size = getFolderSize(fileDocument.getUserId(), path);
                 fileDocument.setSize(size);
             }
             FileIntroVO fileIntroVO = new FileIntroVO();
-            CglibUtil.copy(fileDocument, fileIntroVO);
+            BeanUtils.copyProperties(fileDocument, fileIntroVO);
             return fileIntroVO;
         }).collect(toList());
         // 按文件名排序
@@ -285,9 +292,10 @@ public class FileServiceImpl implements IFileService {
      * @return 排序条件
      */
     public static String listByPage(UploadApiParamDTO upload, Query query) {
-        Integer pageSize = upload.getPageSize(), pageIndex = upload.getPageIndex();
+        Integer pageSize = upload.getPageSize();
+        Integer pageIndex = upload.getPageIndex();
         if (pageSize != null && pageIndex != null) {
-            long skip = (pageIndex - 1) * pageSize;
+            long skip = (pageIndex - 1L) * pageSize;
             query.skip(skip);
             query.limit(pageSize);
         }
@@ -400,7 +408,7 @@ public class FileServiceImpl implements IFileService {
             FileUtil.writeFromStream(file.getInputStream(), newFile);
             loopCreateDir(username, Paths.get(fileProperties.getRootDir(), username).getNameCount(), path);
             if (!userService.getDisabledWebp(userLoginHolder.getUserId()) && (!"ico".equals(FileUtil.getSuffix(newFile)))) {
-                fileName += _SUFFIX_WEBP;
+                fileName += POINT_SUFFIX_WEBP;
             }
             return baseUrl + Paths.get("/file", username, filepath, fileName).toString();
         } catch (IOException e) {
@@ -567,6 +575,9 @@ public class FileServiceImpl implements IFileService {
 
     private void packageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList, String username) {
         FileDocument fileDocument = getFileInfoBeforeDownload(fileIdList, username);
+        if (fileDocument == null) {
+            return;
+        }
         if (CharSequenceUtil.isBlank(username)) {
             username = fileDocument.getUsername();
         }
@@ -634,6 +645,9 @@ public class FileServiceImpl implements IFileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds.get(0)));
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+        if (fileDocument == null) {
+            return null;
+        }
         if (CharSequenceUtil.isBlank(username)) {
             fileDocument.setUsername(userService.getUserNameById(fileDocument.getUserId()));
         }
@@ -692,7 +706,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult move(UploadApiParamDTO upload, List<String> froms, String to) {
+    public ResponseResult move(UploadApiParamDTO upload, List<String> froms, String to) throws IOException {
         // 复制
         ResponseResult result = getCopyResult(upload, froms, to);
         if (result != null) {
@@ -702,10 +716,10 @@ public class FileServiceImpl implements IFileService {
         return delete(upload.getUsername(), froms);
     }
 
-    private ResponseResult getCopyResult(UploadApiParamDTO upload, List<String> froms, String to) {
+    private ResponseResult getCopyResult(UploadApiParamDTO upload, List<String> froms, String to) throws IOException {
         for (String from : froms) {
             ResponseResult result = copy(upload, from, to);
-            if (result.getCode() != 0 && result.getCode() != -2) {
+            if (result.getCode() != 0) {
                 return result;
             }
         }
@@ -713,7 +727,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult copy(UploadApiParamDTO upload, List<String> froms, String to) {
+    public ResponseResult copy(UploadApiParamDTO upload, List<String> froms, String to) throws IOException {
         // 复制
         ResponseResult result = getCopyResult(upload, froms, to);
         if (result != null) {
@@ -745,7 +759,7 @@ public class FileServiceImpl implements IFileService {
                 newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
                 FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             } else {
-                fileName = fileName + _SUFFIX_WEBP;
+                fileName = fileName + POINT_SUFFIX_WEBP;
                 newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
                 BufferedImage image = ImageIO.read(multipartFile.getInputStream());
                 imageFileToWebp(newFile, image);
@@ -899,7 +913,7 @@ public class FileServiceImpl implements IFileService {
         if (SUFFIX_WEBP.equals(FileUtil.getSuffix(file))) {
             return file;
         }
-        File outputFile = new File(file.getPath() + _SUFFIX_WEBP);
+        File outputFile = new File(file.getPath() + POINT_SUFFIX_WEBP);
         // 从某处获取图像进行编码
         BufferedImage image = null;
         try {
@@ -921,7 +935,7 @@ public class FileServiceImpl implements IFileService {
         ImageWriter writer = ImageIO.getImageWritersByMIMEType(CONTENT_TYPE_WEBP).next();
         // 配置编码参数
         WebPWriteParam writeParam = new WebPWriteParam(writer.getLocale());
-        writeParam.setCompressionMode(WebPWriteParam.MODE_DEFAULT);
+        writeParam.setCompressionMode(ImageWriteParam.MODE_DEFAULT);
         // 在ImageWriter上配置输出
         writer.setOutput(new FileImageOutputStream(outputFile));
         // 编码
@@ -1157,7 +1171,7 @@ public class FileServiceImpl implements IFileService {
             return ResultUtil.warning("该文件已存在");
         }
         try {
-            if (isFolder) {
+            if (BooleanUtil.isTrue(isFolder)) {
                 Files.createDirectories(path);
             } else {
                 Files.createFile(path);
@@ -1204,7 +1218,7 @@ public class FileServiceImpl implements IFileService {
         userList.stream().forEach(user -> {
             String username = user.getUsername();
             String userId = user.getId();
-            FileUtil.del(Paths.get(fileProperties.getRootDir(), username));
+            PathUtil.del(Paths.get(fileProperties.getRootDir(), username));
             Query query = new Query();
             query.addCriteria(Criteria.where("userId").in(userId));
             mongoTemplate.remove(query, COLLECTION_NAME);
@@ -1338,7 +1352,7 @@ public class FileServiceImpl implements IFileService {
             }
             fileDocument.setPath(path);
             return fileDocument;
-        }).sorted(this::compareByFileName).collect(toList());
+        }).sorted(this::compareByFileName).collect(Collectors.toList());
     }
 
     /***
@@ -1366,7 +1380,7 @@ public class FileServiceImpl implements IFileService {
      * @param to
      * @return
      */
-    private ResponseResult<Object> copy(UploadApiParamDTO upload, String from, String to) {
+    private ResponseResult<Object> copy(UploadApiParamDTO upload, String from, String to) throws IOException {
         FileDocument formFileDocument = getFileDocumentById(from);
         String fromPath = getRelativePathByFileId(formFileDocument);
         String fromFilePath = getUserDir(upload.getUsername()) + fromPath;
@@ -1388,11 +1402,12 @@ public class FileServiceImpl implements IFileService {
                 query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
                 query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fromPath)));
                 List<FileDocument> formList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
-                formList = formList.stream().peek(fileDocument -> {
+                formList = formList.stream().map(fileDocument -> {
                     String oldPath = fileDocument.getPath();
                     String newPath = toPath + oldPath.substring(1);
                     copyFileDocument(fileDocument, newPath);
-                }).collect(toList());
+                    return fileDocument;
+                }).collect(Collectors.toList());
                 mongoTemplate.insert(formList, COLLECTION_NAME);
             } else {
                 // 复制文件
@@ -1573,7 +1588,6 @@ public class FileServiceImpl implements IFileService {
         // 目标文件
         File outputFile = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), upload.getFilename()).toFile();
         long postion = outputFile.length();
-        long count = file.length();
         try (FileOutputStream fileOutputStream = new FileOutputStream(outputFile, true);
              FileChannel outChannel = fileOutputStream.getChannel()) {
             try (FileInputStream fileInputStream = new FileInputStream(file);
@@ -1592,7 +1606,6 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public ResponseResult<Object> uploadFolder(UploadApiParamDTO upload) throws CommonException {
-        LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
         // 新建文件夹
         String userDirectoryFilePath = getUserDirectoryFilePath(upload);
         //没有分片,直接存
@@ -1633,113 +1646,6 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success();
     }
 
-    /***
-     * 保存文件信息
-     * @param upload
-     * @param md5
-     * @param date
-     */
-    private FileDocument saveFileInfo(UploadApiParamDTO upload, String md5, LocalDateTime date) throws IOException {
-        String contentType = upload.getContentType();
-        FileDocument fileDocument = new FileDocument();
-        String filename = upload.getFilename();
-        String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
-        String relativePath = upload.getRelativePath();
-        relativePath = relativePath.substring(0, relativePath.length() - filename.length());
-        fileDocument.setPath(currentDirectory + relativePath);
-        fileDocument.setSize(upload.getTotalSize());
-        fileDocument.setContentType(contentType);
-        fileDocument.setMd5(md5);
-        fileDocument.setName(filename);
-        fileDocument.setIsFolder(upload.getIsFolder());
-        saveFileInfo(upload, date, fileDocument);
-        if (contentType.startsWith(CONTENT_TYPE_IMAGE)) {
-            // 生成缩略图
-            Thumbnails.Builder<? extends InputStream> thumbnail = Thumbnails.of(upload.getInputStream());
-            thumbnail.size(256, 256);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            try {
-                thumbnail.toOutputStream(out);
-                fileDocument.setContent(out.toByteArray());
-            } catch (UnsupportedFormatException e) {
-                log.warn(e.getMessage());
-            }
-        }
-        return saveFileInfo(fileDocument);
-    }
-
-    private FileDocument saveFileInfo(FileDocument fileDocument) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(fileDocument.getUserId()));
-        query.addCriteria(Criteria.where("isFolder").is(fileDocument.getIsFolder()));
-        query.addCriteria(Criteria.where("path").is(fileDocument.getPath()));
-        query.addCriteria(Criteria.where("name").is(fileDocument.getName()));
-        FileDocument res = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
-        if (res != null) {
-            Update update = new Update();
-            update.set("size", fileDocument.getSize());
-            update.set("md5", fileDocument.getMd5());
-            mongoTemplate.upsert(query, update, COLLECTION_NAME);
-            res.setSize(fileDocument.getSize());
-            res.setMd5(fileDocument.getMd5());
-        } else {
-            return mongoTemplate.save(fileDocument, COLLECTION_NAME);
-        }
-        return res;
-    }
-
-    /***
-     * 部分文件信息
-     * @param upload
-     * @param date
-     * @param fileDocument
-     */
-    private void saveFileInfo(UploadApiParamDTO upload, LocalDateTime date, FileDocument fileDocument) {
-        fileDocument.setIsFavorite(false);
-        fileDocument.setUploadDate(date);
-        fileDocument.setUpdateDate(date);
-        fileDocument.setSuffix(upload.getSuffix());
-        fileDocument.setUserId(upload.getUserId());
-    }
-
-    private static byte[] toByteArray(InputStream input) throws IOException {
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
-        int n;
-        while (-1 != (n = input.read(buffer))) {
-            output.write(buffer, 0, n);
-        }
-        return output.toByteArray();
-    }
-
-    /***
-     * 保存文件夹信息
-     * @param upload
-     * @param date
-     */
-    private void saveFolderInfo(UploadApiParamDTO upload, LocalDateTime date) {
-        String userId = upload.getUserId();
-        String folderPath = upload.getFolderPath();
-        String path = getUserDirectory(upload.getCurrentDirectory());
-        if (!CharSequenceUtil.isBlank(folderPath)) {
-            path += folderPath;
-        }
-        String folderName = upload.getFilename();
-        Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userId));
-        query.addCriteria(Criteria.where("isFolder").is(true));
-        query.addCriteria(Criteria.where("path").is(path));
-        query.addCriteria(Criteria.where("name").is(folderName));
-        Update update = new Update();
-        update.set("userId", userId);
-        update.set("isFolder", true);
-        update.set("path", path);
-        update.set("name", folderName);
-        update.set("uploadDate", date);
-        update.set("updateDate", date);
-        update.set("isFavorite", false);
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
-    }
 
     /***
      * 缓存已上传的分片
@@ -1829,19 +1735,22 @@ public class FileServiceImpl implements IFileService {
     public ResponseResult<Object> merge(UploadApiParamDTO upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
         String md5 = upload.getIdentifier();
-        File file = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), upload.getFilename()).toFile();
-        File outputFile = Paths.get(fileProperties.getRootDir(), upload.getUsername(), getUserDirectoryFilePath(upload)).toFile();
+        Path file = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), upload.getFilename());
+        Path outputFile = Paths.get(fileProperties.getRootDir(), upload.getUsername(), getUserDirectoryFilePath(upload));
         // 清除缓存
         resumeCache.invalidate(md5);
         writtenCache.invalidate(md5);
         unWrittenCache.invalidate(md5);
         chunkWriteLockCache.invalidate(md5);
-        File chunkDir = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), md5).toFile();
-        FileUtil.del(chunkDir);
-        FileUtil.move(file, outputFile, true);
+        Path chunkDir = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), md5);
+        PathUtil.del(chunkDir);
+        if (!Files.exists(outputFile)) {
+            Files.createFile(outputFile);
+        }
+        PathUtil.move(file, outputFile, true);
         uploadResponse.setUpload(true);
         if (isNotMonitor()) {
-            createFile(upload.getUsername(), outputFile);
+            createFile(upload.getUsername(), outputFile.toFile());
         }
         return ResultUtil.success(uploadResponse);
     }

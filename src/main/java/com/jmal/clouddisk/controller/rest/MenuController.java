@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.controller.rest;
 
-import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
@@ -11,8 +10,9 @@ import com.jmal.clouddisk.model.rbac.MenuDTO;
 import com.jmal.clouddisk.service.impl.MenuService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -50,7 +50,7 @@ public class MenuController {
         MenuDTO menuDTO = new MenuDTO();
         MenuDO menuDO = menuService.getMenuInfo(menuId);
         if(menuDO != null){
-            CglibUtil.copy(menuDO, menuDTO);
+            BeanUtils.copyProperties(menuDO, menuDTO);
         }
         return ResultUtil.success(menuDTO);
     }

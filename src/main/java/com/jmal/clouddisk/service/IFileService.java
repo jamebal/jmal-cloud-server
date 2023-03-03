@@ -7,8 +7,8 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.ResponseResult;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -201,7 +201,7 @@ public interface IFileService {
      * @param to
      * @return
      */
-    ResponseResult<Object> move(UploadApiParamDTO upload, List<String> froms, String to);
+    ResponseResult<Object> move(UploadApiParamDTO upload, List<String> froms, String to) throws IOException;
 
     /***
      * 复制文件/文件夹
@@ -210,7 +210,7 @@ public interface IFileService {
      * @param to
      * @return
      */
-    ResponseResult<Object> copy(UploadApiParamDTO upload, List<String> froms, String to);
+    ResponseResult<Object> copy(UploadApiParamDTO upload, List<String> froms, String to) throws IOException;
 
     /***
      * 上传用户图片

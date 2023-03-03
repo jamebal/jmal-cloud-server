@@ -9,6 +9,9 @@ import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.luciad.imageio.webp.WebPWriteParam;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
@@ -23,9 +26,6 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.FileCacheImageOutputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -82,7 +82,6 @@ public class FileInterceptor implements HandlerInterceptor {
     @Autowired
     AuthInterceptor authInterceptor;
 
-    @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws UnsupportedEncodingException {
         if (fileAuthError(request)) {
             return false;

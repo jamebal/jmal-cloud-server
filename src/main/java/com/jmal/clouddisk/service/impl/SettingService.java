@@ -9,7 +9,6 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
-import cn.hutool.extra.cglib.CglibUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.repository.IAuthDAO;
@@ -17,6 +16,7 @@ import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -253,7 +253,7 @@ public class SettingService {
         Query query = new Query();
         WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(query, WebsiteSettingDO.class, COLLECTION_NAME_WEBSITE_SETTING);
         if(websiteSettingDO != null){
-            CglibUtil.copy(websiteSettingDO, websiteSettingDTO);
+            BeanUtils.copyProperties(websiteSettingDO, websiteSettingDTO);
         }
         if(websiteSettingDTO.getAlonePages() == null){
             websiteSettingDTO.setAlonePages(new ArrayList<>());
