@@ -40,6 +40,10 @@ public class FileProperties {
      * markdown类型文件(文章)里图片默认存储的位置
      */
     private String documentImgDir = "/Image/Document/";
+    /**
+     * FTP server 端口号
+     */
+    private Integer ftpServerPort = 8089;
     /***
      * 默认分隔符
      */

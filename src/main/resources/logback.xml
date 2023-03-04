@@ -19,7 +19,7 @@
     <!-- white:白色 -->
     <!-- magenta:洋红 -->
     <property name="CONSOLE_LOG_PATTERN"
-              value="%yellow(%date{yyyy-MM-dd HH:mm:ss}) |%highlight(%-5level) |%blue(%thread) |%blue(%file:%line) |%green(%logger) |%cyan(%msg%n)"/>
+              value="%yellow(%date{yyyy-MM-dd HH:mm:ss.SSS}) |%highlight(%-5level) |%blue(%thread) |%blue(%file:%line) |%green(%logger) |%cyan(%msg%n)"/>
 
 
     <!--输出到控制台-->

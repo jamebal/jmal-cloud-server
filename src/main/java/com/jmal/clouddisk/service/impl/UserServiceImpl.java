@@ -3,10 +3,9 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.CharsetUtil;
-import cn.hutool.crypto.Mode;
-import cn.hutool.crypto.Padding;
-import cn.hutool.crypto.symmetric.DES;
+import cn.hutool.core.util.HexUtil;
+import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
+import cn.hutool.crypto.symmetric.SymmetricCrypto;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.config.FileProperties;
@@ -33,7 +32,6 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -82,35 +80,6 @@ public class UserServiceImpl implements IUserService {
     @Autowired
     private UserLoginHolder userLoginHolder;
 
-    @PostConstruct
-    public void forOlderVersions() {
-        // TODO 以后删掉, 适配老版本, 2021-12-31 15:50:22之前的
-        Query query = new Query();
-        query.addCriteria(Criteria.where("password").not().regex("^1000:"));
-        List<ConsumerDO> list = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
-        if (list.isEmpty()) {
-            return;
-        }
-        list.forEach(user -> {
-            String password = user.getPassword();
-            String encrypt = user.getEncryptPwd();
-            DES des = new DES(Mode.CTS, Padding.PKCS5Padding, password.getBytes(), "01020304".getBytes());
-            String originalPwd = des.decryptStr(encrypt, CharsetUtil.CHARSET_UTF_8);
-            String newPassword = PasswordHash.createHash(originalPwd);
-            String key = newPassword.split(":")[2];
-            DES des1 = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
-            user.setEncryptPwd(des1.encryptHex(originalPwd));
-            user.setPassword(newPassword);
-            Query query1 = new Query();
-            query1.addCriteria(Criteria.where("_id").is(user.getId()));
-            Update update = new Update();
-            update.set("encryptPwd", des1.encryptHex(originalPwd));
-            update.set("password", newPassword);
-            mongoTemplate.updateFirst(query1, update, COLLECTION_NAME);
-        });
-
-    }
-
     @Override
     public ResponseResult<Object> add(ConsumerDTO consumerDTO) {
         ConsumerDO user1 = getUserInfoByName(consumerDTO.getUsername());
@@ -140,6 +109,7 @@ public class UserServiceImpl implements IUserService {
 
     /**
      * 新建用户目录
+     *
      * @param username 用户名
      */
     private void createUserDir(String username) {
@@ -278,7 +248,7 @@ public class UserServiceImpl implements IUserService {
             consumerDTO.setAvatar("");
         }
         WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(new Query(), WebsiteSettingDO.class, SettingService.COLLECTION_NAME_WEBSITE_SETTING);
-        if(websiteSettingDO != null) {
+        if (websiteSettingDO != null) {
             consumerDTO.setNetdiskName(websiteSettingDO.getNetdiskName());
             consumerDTO.setNetdiskLogo(websiteSettingDO.getNetdiskLogo());
         }
@@ -323,7 +293,7 @@ public class UserServiceImpl implements IUserService {
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
         return userList.parallelStream().map(consumerDO -> {
             ConsumerDTO consumerDTO = new ConsumerDTO();
-            consumerDTO.setPassword(decrypt(consumerDO));
+            consumerDTO.setEncryptPwd(consumerDO.getEncryptPwd());
             consumerDTO.setUsername(consumerDO.getUsername());
             return consumerDTO;
         }).collect(Collectors.toList());
@@ -379,9 +349,7 @@ public class UserServiceImpl implements IUserService {
         query.addCriteria(Criteria.where("_id").is(userId));
         Update update = new Update();
         String password = PasswordHash.createHash(originalPwd);
-        String key = password.split(":")[2];
-        DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
-        String encryptPwd = des.encryptHex(originalPwd);
+        String encryptPwd = getAES().encryptHex(originalPwd);
         LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
         update.set("encryptPwd", encryptPwd);
         update.set("password", password);
@@ -419,14 +387,7 @@ public class UserServiceImpl implements IUserService {
         if (consumer == null) {
             return "";
         }
-        return decrypt(consumer);
-    }
-
-    public static String decrypt(ConsumerDO consumer) {
-        String password = consumer.getPassword();
-        String key = password.split(":")[2];
-        DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
-        return des.decryptStr(consumer.getEncryptPwd(), CharsetUtil.CHARSET_UTF_8);
+        return getAES().decryptStr(consumer.getEncryptPwd());
     }
 
     @Override
@@ -448,7 +409,7 @@ public class UserServiceImpl implements IUserService {
             user.setRoles(Collections.singletonList(roleId));
             user.setCreator(true);
             user.setShowName(user.getUsername());
-            user.setQuota((int) (SystemUtil.getFreeSpace()/2));
+            user.setQuota((int) (SystemUtil.getFreeSpace() / 2));
             String originalPwd = user.getPassword();
             encryption(user, originalPwd);
             user.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
@@ -462,15 +423,20 @@ public class UserServiceImpl implements IUserService {
 
     /**
      * 加密
-     * @param user ConsumerBase
+     *
+     * @param user        ConsumerBase
      * @param originalPwd 原始密码
      */
     private static void encryption(ConsumerBase user, String originalPwd) {
         String password = PasswordHash.createHash(originalPwd);
-        String key = password.split(":")[2];
-        DES des = new DES(Mode.CTS, Padding.PKCS5Padding, key.getBytes(), key.substring(0, 8).getBytes());
-        user.setEncryptPwd(des.encryptHex(originalPwd));
+        String encryptPwd = getAES().encryptHex(originalPwd);
+        user.setEncryptPwd(encryptPwd);
         user.setPassword(password);
+    }
+
+
+    private static SymmetricCrypto getAES() {
+        return new SymmetricCrypto(SymmetricAlgorithm.AES, HexUtil.decodeHex("5db9c44cce5ec26868fbe0267c64526126c8d36eae29da1a"));
     }
 
     @Override

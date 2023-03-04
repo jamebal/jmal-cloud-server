@@ -9,7 +9,6 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -30,17 +29,18 @@ public class ShareServiceImpl implements IShareService {
 
     private static final String COLLECTION_NAME = "share";
 
-    @Autowired
-    IFileService fileService;
+    private final IFileService fileService;
 
-    @Autowired
-    MongoTemplate mongoTemplate;
+    private final MongoTemplate mongoTemplate;
 
-    @Autowired
-    IUserService userService;
+    private final IUserService userService;
 
-    @Autowired
-    SettingService settingService;
+
+    public ShareServiceImpl(IFileService fileService, MongoTemplate mongoTemplate, IUserService userService) {
+        this.fileService = fileService;
+        this.mongoTemplate = mongoTemplate;
+        this.userService = userService;
+    }
 
     @Override
     public ResponseResult<Object> generateLink(ShareDO share) {
@@ -48,15 +48,16 @@ public class ShareServiceImpl implements IShareService {
         share.setCreateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
         FileDocument file = fileService.getById(share.getFileId());
         long expireAt = Long.MAX_VALUE;
-        if (share.getExpireDate() != null){
+        if (share.getExpireDate() != null) {
             expireAt = TimeUntils.getMilli(share.getExpireDate());
         }
-        fileService.setShareFile(file, expireAt);
         if (shareDO == null) {
             share.setFileName(file.getName());
             share.setContentType(file.getContentType());
             shareDO = mongoTemplate.save(share, COLLECTION_NAME);
         }
+        file.setShareId(shareDO.getId());
+        fileService.setShareFile(file, expireAt);
         return ResultUtil.success(shareDO.getId());
     }
 
@@ -97,7 +98,7 @@ public class ShareServiceImpl implements IShareService {
                 return true;
             }
             LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
-            return expireDate.compareTo(now) > 0;
+            return expireDate.isAfter(now);
         }
         return false;
     }
@@ -190,7 +191,7 @@ public class ShareServiceImpl implements IShareService {
             sharerDTO.setAvatar(consumerDO.getAvatar());
         }
         WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(new Query(), WebsiteSettingDO.class, SettingService.COLLECTION_NAME_WEBSITE_SETTING);
-        if(websiteSettingDO != null){
+        if (websiteSettingDO != null) {
             sharerDTO.setNetdiskName(websiteSettingDO.getNetdiskName());
             sharerDTO.setNetdiskLogo(websiteSettingDO.getNetdiskLogo());
         }

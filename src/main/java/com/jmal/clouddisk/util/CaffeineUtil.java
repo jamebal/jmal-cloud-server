@@ -3,9 +3,9 @@ package com.jmal.clouddisk.util;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;

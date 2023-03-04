@@ -1255,8 +1255,8 @@ public class FileServiceImpl implements IFileService {
         update.set("isShare", true);
         update.set("expiresAt", expiresAt);
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
-        // 修改文件夹
-        updateShateFolder(fileDocument, update);
+        // 修改第一个文件/文件夹
+        updateShareFirst(fileDocument, update, true);
     }
 
     /***
@@ -1269,16 +1269,19 @@ public class FileServiceImpl implements IFileService {
         update.unset("isShare");
         update.unset("expiresAt");
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
-        // 修改文件夹
-        updateShateFolder(fileDocument, update);
+        // 修改第一个文件/文件夹
+        updateShareFirst(fileDocument, update, false);
     }
 
-    private void updateShateFolder(FileDocument fileDocument, Update update) {
-        if (fileDocument.getIsFolder()) {
-            Query query1 = new Query();
-            query1.addCriteria(Criteria.where("_id").is(fileDocument.getId()));
-            mongoTemplate.updateFirst(query1, update, COLLECTION_NAME);
+    private void updateShareFirst(FileDocument fileDocument, Update update, boolean share) {
+        if (share) {
+            update.set("shareId", fileDocument.getShareId());
+        } else {
+            update.unset("shareId");
         }
+        Query query1 = new Query();
+        query1.addCriteria(Criteria.where("_id").is(fileDocument.getId()));
+        mongoTemplate.updateFirst(query1, update, COLLECTION_NAME);
     }
 
     @Override
