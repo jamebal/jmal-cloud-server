@@ -5,5 +5,6 @@
 |  `--'  | |  |  |  |  /  _____  \  |  `----.|  `----.|  `----.|  `--'  | |  `--'  | |  '--'  |
  \______/  |__|  |__| /__/     \__\ |_______| \______||_______| \______/   \______/  |_______/
 
-${spring.application.name} ${version}
-Powered by Spring Boot ${spring-boot.version}
+:: jmalcloud   ::    (v${version})
+:: Spring Boot ::    (v${spring-boot.version})
+:: JDK Version ::    (v${java.version})
