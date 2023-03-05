@@ -207,6 +207,22 @@ public class UserServiceImpl implements IUserService {
             update.set(ROLES, user.getRoles());
             consumerDO.setRoles(user.getRoles());
         }
+        // 设置用户头像
+        fileId = setConsumerAvatar(blobAvatar, userId, consumerDO, update, fileId);
+        LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
+        update.set("updateTime", now);
+        consumerDO.setUpdateTime(now);
+        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        // 更新用户缓存
+        CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
+        if (user.getRoles() != null) {
+            // 修改用户角色后更新相关角色用户的权限缓存
+            ThreadUtil.execute(() -> roleService.updateUserCacheByRole(user.getRoles()));
+        }
+        return ResultUtil.success(fileId);
+    }
+
+    private String setConsumerAvatar(MultipartFile blobAvatar, String userId, ConsumerDO consumerDO, Update update, String fileId) {
         if (blobAvatar != null) {
             ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
             if (consumer != null) {
@@ -219,18 +235,11 @@ public class UserServiceImpl implements IUserService {
                 update.set("avatar", fileId);
                 consumerDO.setAvatar(fileId);
             }
+        } else {
+            // 设置头像文件为public
+            fileService.setPublic(fileId);
         }
-        LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
-        update.set("updateTime", now);
-        consumerDO.setUpdateTime(now);
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
-        // 更新用户缓存
-        CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
-        if (user.getRoles() != null) {
-            // 修改用户角色后更新相关角色用户的权限缓存
-            ThreadUtil.execute(() -> roleService.updateUserCacheByRole(user.getRoles()));
-        }
-        return ResultUtil.success(fileId);
+        return fileId;
     }
 
     @Override
