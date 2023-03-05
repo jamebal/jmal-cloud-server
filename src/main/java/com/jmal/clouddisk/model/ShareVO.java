@@ -15,4 +15,13 @@ public class ShareVO {
      */
     private String extractionCode;
 
+    private Boolean isPrivacy;
+
+    private String userId;
+
+    private String fileName;
+
+    private Boolean isFolder;
+    private String contentType;
+
 }

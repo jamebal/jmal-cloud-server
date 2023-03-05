@@ -1571,7 +1571,7 @@ public class FileServiceImpl implements IFileService {
                 appenFile(upload, unWrittenChunks, writtenChunks);
             }
         } catch (Exception e) {
-            throw new CommonException(ExceptionType.FAIL_MERGA_FILE);
+            throw new CommonException(ExceptionType.FAIL_MERGE_FILE);
         } finally {
             lock.unlock();
         }
@@ -1610,7 +1610,7 @@ public class FileServiceImpl implements IFileService {
                 unWrittenCache.put(md5, unWrittenChunks);
             }
         } catch (IOException e) {
-            throw new CommonException(ExceptionType.FAIL_MERGA_FILE);
+            throw new CommonException(ExceptionType.FAIL_MERGE_FILE);
         }
     }
 

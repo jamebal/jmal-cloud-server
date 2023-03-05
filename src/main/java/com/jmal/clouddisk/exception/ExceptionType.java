@@ -27,11 +27,11 @@ public enum ExceptionType {
     /***
      * 时间格式不正确
      */
-    UNPARSEABLE_DATE(2, "时间格式不正确"),
+    INCORRECT_DATE(2, "时间格式不正确"),
     /***
      * 缺少Header
      */
-    MISSING_HEADERTERS(3, "缺少Header"),
+    MISSING_HEADERS(3, "缺少Header"),
     /***
      * 该资源已存在
      */
@@ -39,12 +39,15 @@ public enum ExceptionType {
     /***
      * 未登录或登录超时
      */
-    LOGIN_EXCEPRION(5, "未登录或登录超时"),
+    LOGIN_EXCEPTION(5, "未登录或登录超时"),
     /***
-     * 本地系统上传数据到平台的问题
+     * 分享码错误
      */
-    UPLOAD_LSC_EXCEPRION(6, "本地系统上传数据到平台的问题"),
-
+    SHARE_CODE_EXCEPTION(6, "分享码错误"),
+    /***
+     * 未验证分享码
+     */
+    SHARE_CODE_VALID(21, "未验证分享码"),
     /***
      * 文件不存在
      */
@@ -93,7 +96,7 @@ public enum ExceptionType {
     /***
      * 合并文件失败
      */
-    FAIL_MERGA_FILE(16, "合并文件失败"),
+    FAIL_MERGE_FILE(16, "合并文件失败"),
 
     /***
      * 删除文件失败
@@ -124,8 +127,8 @@ public enum ExceptionType {
         return msg;
     }
 
-    private int code;
-    private String msg;
+    private final int code;
+    private final String msg;
 
     ExceptionType(int code, String msg) {
         this.code = code;

@@ -194,7 +194,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         ServletOutputStream out = null;
         try {
             out = response.getOutputStream();
-            ResponseResult<Object> result = ResultUtil.error(ExceptionType.LOGIN_EXCEPRION.getCode(), ExceptionType.LOGIN_EXCEPRION.getMsg());
+            ResponseResult<Object> result = ResultUtil.error(ExceptionType.LOGIN_EXCEPTION.getCode(), ExceptionType.LOGIN_EXCEPTION.getMsg());
             out.write(JSON.toJSONString(result).getBytes());
         } catch (IOException e) {
             log.error(e.getMessage(), e);

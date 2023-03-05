@@ -12,6 +12,7 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -119,6 +120,13 @@ public class ShareServiceImpl implements IShareService {
         }
         if (!checkWhetherExpired(shareDO)) {
             return ResultUtil.success("该链接已失效");
+        }
+        // 检查是否为私密链接
+        if (BooleanUtil.isTrue(shareDO.getIsPrivacy())) {
+            ShareVO shareVO = new ShareVO();
+            BeanUtils.copyProperties(shareDO, shareVO);
+            shareVO.setExtractionCode(null);
+            return ResultUtil.success(shareVO);
         }
         UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
         uploadApiParamDTO.setPageIndex(pageIndex);

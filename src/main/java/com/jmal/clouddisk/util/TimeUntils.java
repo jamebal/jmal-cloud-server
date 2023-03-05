@@ -12,7 +12,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.exception.ExceptionType;
 
 import com.jmal.clouddisk.exception.CommonException;
@@ -67,7 +66,7 @@ public class TimeUntils {
                     break;
             }
         } catch (DateTimeParseException e) {
-            throw new CommonException(ExceptionType.UNPARSEABLE_DATE.getCode(), String.format("时间格式不正确,应为%s或者%s或者%s或者%s", "yyyy", "yyyy-MM", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss"));
+            throw new CommonException(ExceptionType.INCORRECT_DATE.getCode(), String.format("时间格式不正确,应为%s或者%s或者%s或者%s", "yyyy", "yyyy-MM", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss"));
         }
         return date;
     }
@@ -111,7 +110,7 @@ public class TimeUntils {
     }
 
     private static int throwTimeTypeException() throws CommonException {
-        throw new CommonException(ExceptionType.UNPARSEABLE_DATE.getCode(), "时间类型格式不正确,应为:minute/hour/day/week/month/year");
+        throw new CommonException(ExceptionType.INCORRECT_DATE.getCode(), "时间类型格式不正确,应为:minute/hour/day/week/month/year");
     }
 
     /**

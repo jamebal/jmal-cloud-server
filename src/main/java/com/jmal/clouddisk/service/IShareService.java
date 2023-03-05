@@ -38,10 +38,10 @@ public interface IShareService {
      */
     ShareDO getShare(String share);
 
-    /***
+    /**
      * 检查是否过期
-     * @param shareDO
-     * @return
+     * @param shareDO ShareDO
+     * @return true 没过期， false 过期了
      */
     boolean checkWhetherExpired(ShareDO shareDO);
 
