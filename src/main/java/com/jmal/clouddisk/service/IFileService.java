@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service;
 
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -331,8 +332,9 @@ public interface IFileService {
      * 设置文件为分享文件
      * @param file FileDocument
      * @param expiresAt 过期时间
+     * @param share share
      */
-    void setShareFile(FileDocument file, long expiresAt);
+    void setShareFile(FileDocument file, long expiresAt, ShareDO share);
 
     /***
      * 取消文件的分享状态

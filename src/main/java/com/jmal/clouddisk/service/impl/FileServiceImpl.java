@@ -1226,7 +1226,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public void setShareFile(FileDocument file, long expiresAt) {
+    public void setShareFile(FileDocument file, long expiresAt, ShareDO share) {
         if (file == null) {
             return;
         }
@@ -1236,11 +1236,11 @@ public class FileServiceImpl implements IFileService {
             query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
             query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
             // 设置共享属性
-            setShareAttribute(file, expiresAt, query);
+            setShareAttribute(file, expiresAt, share, query);
         } else {
             query.addCriteria(Criteria.where("_id").is(file.getId()));
             // 设置共享属性
-            setShareAttribute(file, expiresAt, query);
+            setShareAttribute(file, expiresAt, share, query);
         }
     }
 
@@ -1249,11 +1249,16 @@ public class FileServiceImpl implements IFileService {
      * @param fileDocument FileDocument
      * @param expiresAt 过期时间
      * @param query 查询条件
+     * @param ShareDO share
      */
-    private void setShareAttribute(FileDocument fileDocument, long expiresAt, Query query) {
+    private void setShareAttribute(FileDocument fileDocument, long expiresAt, ShareDO share, Query query) {
         Update update = new Update();
         update.set("isShare", true);
         update.set("expiresAt", expiresAt);
+        update.set("isPrivacy", share.getIsPrivacy());
+        if (BooleanUtil.isTrue(share.getIsPrivacy())) {
+            update.set("extractionCode", share.getExtractionCode());
+        }
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         // 修改第一个文件/文件夹
         updateShareFirst(fileDocument, update, true);
@@ -1268,6 +1273,8 @@ public class FileServiceImpl implements IFileService {
         Update update = new Update();
         update.unset("isShare");
         update.unset("expiresAt");
+        update.unset("isPrivacy");
+        update.unset("extractionCode");
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         // 修改第一个文件/文件夹
         updateShareFirst(fileDocument, update, false);

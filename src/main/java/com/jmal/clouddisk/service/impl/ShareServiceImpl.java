@@ -1,6 +1,9 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IFileService;
@@ -13,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -51,14 +55,60 @@ public class ShareServiceImpl implements IShareService {
         if (share.getExpireDate() != null) {
             expireAt = TimeUntils.getMilli(share.getExpireDate());
         }
+        share.setIsFolder(share.getIsFolder());
+        if (expireAt < Long.MAX_VALUE) {
+            share.setExpireDate(LocalDateTimeUtil.of(expireAt));
+        }
+        share.setFileName(file.getName());
+        share.setContentType(file.getContentType());
+        share.setIsPrivacy(BooleanUtil.isTrue(share.getIsPrivacy()));
         if (shareDO == null) {
-            share.setFileName(file.getName());
-            share.setContentType(file.getContentType());
+            if (share.getIsPrivacy()) {
+                share.setExtractionCode(generateExtractionCode());
+            }
             shareDO = mongoTemplate.save(share, COLLECTION_NAME);
+        } else {
+            updateShare(share, shareDO, file);
         }
         file.setShareId(shareDO.getId());
-        fileService.setShareFile(file, expireAt);
-        return ResultUtil.success(shareDO.getId());
+        fileService.setShareFile(file, expireAt, share);
+        ShareVO shareVO = new ShareVO();
+        shareVO.setShareId(shareDO.getId());
+        if (share.getIsPrivacy()) {
+            shareVO.setExtractionCode(share.getExtractionCode());
+        }
+        return ResultUtil.success(shareVO);
+    }
+
+    private void updateShare(ShareDO share, ShareDO shareDO, FileDocument file) {
+        Query query = new Query().addCriteria(Criteria.where("fileId").is(share.getFileId()));
+        Update update = new Update();
+        update.set("fileName", file.getName());
+        if (share.getExpireDate() != null) {
+            update.set("expireDate", share.getExpireDate());
+        } else {
+            update.unset("expireDate");
+        }
+        update.set("isPrivacy", share.getIsPrivacy());
+        if (share.getIsPrivacy() && shareDO.getExtractionCode() == null) {
+            shareDO.setExtractionCode(generateExtractionCode());
+            update.set("extractionCode", shareDO.getExtractionCode());
+        }
+        if (!share.getIsPrivacy() && shareDO.getExtractionCode() != null) {
+            update.unset("extractionCode");
+        }
+        if (shareDO.getExtractionCode() != null) {
+            share.setExtractionCode(shareDO.getExtractionCode());
+        }
+        mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
+    }
+
+    /***
+     * 生成提取码
+     * @return 提取码
+     */
+    private String generateExtractionCode() {
+        return RandomUtil.randomString(4);
     }
 
     @Override

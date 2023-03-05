@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.model;
 
-import cn.hutool.core.util.URLUtil;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -46,10 +45,17 @@ public class ShareDO {
     /***
      * 过期时间
      */
-    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm")
     private LocalDateTime expireDate;
-
+    /***
+     * 是否为私密链接
+     */
+    private Boolean isPrivacy;
+    /***
+     * 提取码
+     */
+    private String extractionCode;
     /***
      * 禁止上传
      */

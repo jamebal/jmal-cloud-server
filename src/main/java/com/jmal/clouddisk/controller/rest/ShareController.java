@@ -67,6 +67,14 @@ public class ShareController {
         return shareService.generateLink(share);
     }
 
+    @Operation(summary = "获取分享信息")
+    @GetMapping("/get/share")
+    @Permission("cloud:file:list")
+    @LogOperatingFun
+    public ResponseResult<ShareDO> getShare(@RequestParam String shareId) {
+        return ResultUtil.success(shareService.getShare(shareId));
+    }
+
     @Operation(summary = "取消分享")
     @DeleteMapping("/share/cancel")
     @Permission("cloud:file:delete")
