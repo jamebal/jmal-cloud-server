@@ -1,17 +1,23 @@
 package com.jmal.clouddisk.util;
 
 
+import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.lang.Console;
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Calendar;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author jmal
@@ -19,32 +25,53 @@ import java.util.Map;
 @Slf4j
 public class TokenUtil {
 
-    private static final String SECRET = "JKKLJOoasdlfj";
+    private TokenUtil() {
+
+    }
 
     /**
      * 生成token
      *
-     * @param name
-     * @return
+     * @param key token key
+     * @param password password
+     * @param localDataTime 过期时间
+     * @return token
      */
-    public static String createTokens(String name) {
+    public static String createToken(String key, String password, LocalDateTime localDataTime) {
+        return getToken(key, password, localDataTime);
+    }
+
+    private static String getToken(String key, String password, LocalDateTime localDataTime) {
         Map<String, Object> map = new HashMap<>(3);
         map.put("alg", "HS256");
         map.put("typ", "JWT");
-        // header
-        return JWT.create().withHeader(map)
+        JWTCreator.Builder builder = JWT.create();
+        builder.withHeader(map)
                 // payload
                 .withClaim("iss", "Service")
                 // sign time
-                .withClaim("aud", "WEB").withClaim("username", name)
-                // signature
-                .sign(Algorithm.HMAC256(SECRET));
+                .withClaim("aud", "WEB").withClaim("username", key);
+        if (localDataTime != null) {
+            builder.withExpiresAt(Date.from(localDataTime.atZone(ZoneId.systemDefault()).toInstant()));
+        }
+        return builder.sign(Algorithm.HMAC256(password));
     }
 
-    public static String getUserName(String token) {
+    /**
+     * 生成token
+     *
+     * @param key token key
+     * @param password password
+     * @return token
+     */
+    public static String createToken(String key, String password) {
+        return getToken(key, password, null);
+    }
+
+    public static String getTokenKey(String token, String password) {
         // 获取username
-        Map<String, Claim> claims = verifyToken(token);
-        if (claims == null) {
+        Map<String, Claim> claims = verifyToken(token, password);
+        if (claims.isEmpty()) {
             return null;
         }
         Claim userNameClaim = claims.get("username");
@@ -54,24 +81,36 @@ public class TokenUtil {
         return userNameClaim.asString();
     }
 
-    private static Map<String, Claim> verifyToken(String token) {
+    private static Map<String, Claim> verifyToken(String token, String password) {
         DecodedJWT jwt;
         try {
-            JWTVerifier verifier = JWT.require(Algorithm.HMAC256(SECRET)).build();
+            JWTVerifier verifier = JWT.require(Algorithm.HMAC256(password)).build();
             jwt = verifier.verify(token);
         } catch (Exception e) {
-            return null;
+            return Collections.emptyMap();
         }
         if (jwt != null) {
             return jwt.getClaims();
         }
-        return null;
+        return Collections.emptyMap();
     }
 
-//    public static void main(String[] args) {
-//        String token = createTokens("jmal");
-//        String jmal = getUserName(token);
-//        Console.log(jmal);
-//    }
+    public static void main(String[] args) {
+        String key = "jmal";
+        String password = "oiyugihiyuighjiougihbjhug";
+        LocalDateTime ldt = LocalDateTimeUtil.now().plusSeconds(2);
+        String token = createToken(key, password, ldt);
+        String verifyKey1 = getTokenKey(token, password);
+        Console.log("verifyKey1: ", verifyKey1);
+        try {
+            TimeUnit.SECONDS.sleep(3);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        String verifyKey2 = getTokenKey(token, password);
+        Console.log("verifyKey2: ", verifyKey2);
+
+    }
+
 
 }

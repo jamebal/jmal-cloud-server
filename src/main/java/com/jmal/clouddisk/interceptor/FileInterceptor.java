@@ -4,10 +4,15 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.service.IFileService;
+import com.jmal.clouddisk.service.IShareService;
+import com.jmal.clouddisk.service.impl.ShareServiceImpl;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
+import com.jmal.clouddisk.util.ResponseResult;
 import com.luciad.imageio.webp.WebPWriteParam;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -82,6 +87,9 @@ public class FileInterceptor implements HandlerInterceptor {
     @Autowired
     AuthInterceptor authInterceptor;
 
+    @Autowired
+    IShareService shareService;
+
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws UnsupportedEncodingException {
         if (fileAuthError(request)) {
             return false;
@@ -123,7 +131,7 @@ public class FileInterceptor implements HandlerInterceptor {
         String shareKey = request.getParameter(SHARE_KEY);
         if (!CharSequenceUtil.isBlank(shareKey)) {
             FileDocument fileDocument = fileService.getById(shareKey);
-            if (!isNotAllowAccess(fileDocument)) {
+            if (!isNotAllowAccess(fileDocument, request)) {
                 // 判断当前uri所属的文件是否为该分享的文件或其子文件
                 FileDocument thisFile = getFileDocument(uriPath);
                 if (thisFile.getPath().equals(fileDocument.getPath())) {
@@ -147,7 +155,7 @@ public class FileInterceptor implements HandlerInterceptor {
             if (!CharSequenceUtil.isBlank(username) && username.equals(uriPath.getName(1).toString())) {
                 return false;
             }
-            return isNotAllowAccess(getFileDocument(uriPath));
+            return isNotAllowAccess(getFileDocument(uriPath), request);
         }
     }
 
@@ -156,15 +164,35 @@ public class FileInterceptor implements HandlerInterceptor {
      * 如果为公共文件，或者分享有效期内的文件，则允许访问
      * @return true 不允许访问，false 允许访问
      */
-    public boolean isNotAllowAccess(FileDocument fileDocument) {
+    public boolean isNotAllowAccess(FileDocument fileDocument, HttpServletRequest request) {
         if (fileDocument == null) {
             return true;
         }
         if (fileDocument.getIsPublic() != null && fileDocument.getIsPublic()) {
             return false;
         }
+        // 分享文件
         if (fileDocument.getIsShare() != null) {
-            return !fileDocument.getIsShare() || System.currentTimeMillis() >= fileDocument.getExpiresAt();
+            if (System.currentTimeMillis() >= fileDocument.getExpiresAt()) {
+                // 过期了
+                return true;
+            }
+            if (fileDocument.getShareId() == null) {
+                return true;
+            }
+            ShareDO shareDO = shareService.getShare(fileDocument.getShareId());
+            if (shareDO == null) {
+                return true;
+            }
+            if (BooleanUtil.isFalse(shareDO.getIsPrivacy())) {
+                return false;
+            }
+            String shareToken = request.getHeader(ShareServiceImpl.SHARE_TOKEN);
+            if (CharSequenceUtil.isBlank(shareToken)) {
+                shareToken = request.getParameter(ShareServiceImpl.SHARE_TOKEN);
+            }
+            ResponseResult<Object> result = shareService.validShare(shareToken, shareDO.getId());
+            return result != null;
         }
         return true;
     }

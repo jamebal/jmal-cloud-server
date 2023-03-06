@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 public class ShareDO {
     @Id
     private String id;
+    private Boolean shareBase;
     /***
      * 链接拥有者
      */

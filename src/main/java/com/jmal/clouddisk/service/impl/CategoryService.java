@@ -4,6 +4,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.model.CategoryDO;
 import com.jmal.clouddisk.model.CategoryDTO;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -31,8 +32,6 @@ public class CategoryService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
-
-    private static final String USERID_PARAM = "userId";
 
     private static final String COLLECTION_NAME = "category";
 
@@ -92,9 +91,9 @@ public class CategoryService {
     public List<CategoryDTO> tree(String userId, boolean statArticleNum) {
         Query query = new Query();
         if(!CharSequenceUtil.isBlank(userId)){
-            query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
+            query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
         } else {
-            query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
+            query.addCriteria(Criteria.where(IUserService.USER_ID).exists(false));
         }
         List<CategoryDO> categoryDOList = mongoTemplate.find(query, CategoryDO.class, COLLECTION_NAME);
         List<CategoryDTO> categoryDTOList = categoryDOList.parallelStream().map(category -> {
@@ -212,9 +211,9 @@ public class CategoryService {
     public CategoryDO getCategoryInfo(String userId, String categoryName) {
         Query query = new Query();
         if (!CharSequenceUtil.isBlank(userId)) {
-            query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
+            query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
         } else {
-            query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
+            query.addCriteria(Criteria.where(IUserService.USER_ID).exists(false));
         }
         query.addCriteria(Criteria.where("name").is(categoryName));
         return mongoTemplate.findOne(query, CategoryDO.class, COLLECTION_NAME);
@@ -229,9 +228,9 @@ public class CategoryService {
     public CategoryDO getCategoryInfoBySlug(String userId, String categorySlugName) {
         Query query = new Query();
         if (!CharSequenceUtil.isBlank(userId)) {
-            query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
+            query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
         } else {
-            query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
+            query.addCriteria(Criteria.where(IUserService.USER_ID).exists(false));
         }
         query.addCriteria(Criteria.where("slug").is(categorySlugName));
         CategoryDO categoryDO = mongoTemplate.findOne(query, CategoryDO.class, COLLECTION_NAME);

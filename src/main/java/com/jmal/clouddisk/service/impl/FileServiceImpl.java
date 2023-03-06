@@ -1193,7 +1193,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public String viewFile(String shareKey, String fileId, String operation) {
+    public String viewFile(String  shareKey, String fileId, String operation) {
         FileDocument fileDocument = getById(fileId);
         if (fileDocument == null) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND.getCode(), ExceptionType.FILE_NOT_FIND.getMsg());
@@ -1254,6 +1254,7 @@ public class FileServiceImpl implements IFileService {
     private void setShareAttribute(FileDocument fileDocument, long expiresAt, ShareDO share, Query query) {
         Update update = new Update();
         update.set("isShare", true);
+        update.set("shareId", share.getId());
         update.set("expiresAt", expiresAt);
         update.set("isPrivacy", share.getIsPrivacy());
         if (BooleanUtil.isTrue(share.getIsPrivacy())) {
@@ -1271,6 +1272,7 @@ public class FileServiceImpl implements IFileService {
      */
     private void unsetShareAttribute(FileDocument fileDocument, Query query) {
         Update update = new Update();
+        update.unset("shareId");
         update.unset("isShare");
         update.unset("expiresAt");
         update.unset("isPrivacy");
@@ -1282,9 +1284,9 @@ public class FileServiceImpl implements IFileService {
 
     private void updateShareFirst(FileDocument fileDocument, Update update, boolean share) {
         if (share) {
-            update.set("shareId", fileDocument.getShareId());
+            update.set("shareBase", true);
         } else {
-            update.unset("shareId");
+            update.unset("shareBase");
         }
         Query query1 = new Query();
         query1.addCriteria(Criteria.where("_id").is(fileDocument.getId()));

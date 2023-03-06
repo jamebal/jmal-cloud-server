@@ -14,6 +14,9 @@ import java.util.List;
  * @author jmal
  */
 public interface IUserService {
+    String USER_ID = "userId";
+    String USERNAME = "username";
+    String SHOW_NAME = "showName";
     /***
      * 添加用户
      * @param consumerDTO ConsumerDTO
@@ -165,13 +168,6 @@ public interface IUserService {
      * @return userId
      */
     String getUserIdByShowName(String showName);
-
-    /***
-     * 获取用户昵称
-     * @param userId userId
-     * @return 昵称
-     */
-    String getShowNameById(String userId);
 
     ConsumerDO getUserInfoById(String userId);
 }

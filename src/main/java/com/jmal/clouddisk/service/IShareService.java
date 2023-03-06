@@ -24,12 +24,12 @@ public interface IShareService {
 
     /***
      * 访问分享链接
-     * @param shareId
-     * @param pageIndex
-     * @param pageSize
-     * @return
+     * @param shareDO ShareDO
+     * @param pageIndex pageIndex
+     * @param pageSize pageSize
+     * @return 文件列表
      */
-    ResponseResult<Object> accessShare(String shareId, Integer pageIndex, Integer pageSize);
+    ResponseResult<Object> accessShare(ShareDO shareDO, Integer pageIndex, Integer pageSize);
 
     /***
      * 获取分享信息
@@ -95,4 +95,18 @@ public interface IShareService {
      * @return ResponseResult
      */
     ResponseResult<SharerDTO> getSharer(String userId);
+
+    /**
+     * 验证提取码
+     * @param shareId shareId
+     * @param shareCode 提取码
+     * @return ResponseResult
+     */
+    ResponseResult<Object> validShareCode(String shareId, String shareCode);
+
+    ResponseResult<Object> validShareCode(String shareToken, ShareDO shareDO);
+
+    ResponseResult<Object> validShare(String shareToken, ShareDO shareDO);
+
+    ResponseResult<Object> validShare(String shareToken, String shareId);
 }

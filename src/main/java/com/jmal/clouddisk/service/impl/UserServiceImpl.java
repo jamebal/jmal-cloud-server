@@ -40,7 +40,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author jmal
@@ -63,7 +62,7 @@ public class UserServiceImpl implements IUserService {
     private IFileService fileService;
 
     @Autowired
-    IShareService shareService;
+    private IShareService shareService;
 
     @Autowired
     private MenuService menuService;
@@ -72,10 +71,10 @@ public class UserServiceImpl implements IUserService {
     private RoleService roleService;
 
     @Autowired
-    IAuthDAO authDAO;
+    private IAuthDAO authDAO;
 
     @Autowired
-    FileProperties fileProperties;
+    private FileProperties fileProperties;
 
     @Autowired
     private UserLoginHolder userLoginHolder;
@@ -121,7 +120,6 @@ public class UserServiceImpl implements IUserService {
             }
         } catch (IOException e) {
             log.error(e.getMessage(), e);
-            throw new RuntimeException(e);
         }
     }
 
@@ -137,7 +135,7 @@ public class UserServiceImpl implements IUserService {
         // 过滤掉创建者
         ConsumerDO creator = userList.stream().filter(user -> user.getCreator() != null && user.getCreator()).findAny().orElse(null);
         if (creator != null) {
-            idList = idList.stream().filter(id -> !id.equals(creator.getId())).collect(Collectors.toList());
+            idList = idList.stream().filter(id -> !id.equals(creator.getId())).toList();
             userList.remove(creator);
         }
         // 删除关联文件
@@ -165,7 +163,7 @@ public class UserServiceImpl implements IUserService {
         } else {
             String name = user.getUsername();
             if (!CharSequenceUtil.isBlank(name)) {
-                query.addCriteria(Criteria.where("username").is(name));
+                query.addCriteria(Criteria.where(USERNAME).is(name));
                 consumerDO = getUserInfoByName(name);
             } else {
                 return ResultUtil.success();
@@ -177,7 +175,7 @@ public class UserServiceImpl implements IUserService {
         Update update = new Update();
         String showName = user.getShowName();
         if (!CharSequenceUtil.isBlank(showName)) {
-            update.set("showName", showName);
+            update.set(SHOW_NAME, showName);
             consumerDO.setShowName(showName);
         }
         Integer quota = user.getQuota();
@@ -278,10 +276,10 @@ public class UserServiceImpl implements IUserService {
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         MongoUtil.commonQuery(queryDTO, query);
         if (!CharSequenceUtil.isBlank(queryDTO.getUsername())) {
-            query.addCriteria(Criteria.where("username").regex(queryDTO.getUsername(), "i"));
+            query.addCriteria(Criteria.where(USERNAME).regex(queryDTO.getUsername(), "i"));
         }
         if (!CharSequenceUtil.isBlank(queryDTO.getShowName())) {
-            query.addCriteria(Criteria.where("showName").regex(queryDTO.getShowName(), "i"));
+            query.addCriteria(Criteria.where(SHOW_NAME).regex(queryDTO.getShowName(), "i"));
         }
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
         List<ConsumerDTO> consumerDTOList = userList.parallelStream().map(consumerDO -> {
@@ -292,7 +290,7 @@ public class UserServiceImpl implements IUserService {
                 consumerDTO.setRoleList(roleService.getRoleList(roleIds));
             }
             return consumerDTO;
-        }).collect(Collectors.toList());
+        }).toList();
         return ResultUtil.success(consumerDTOList).setCount(count);
     }
 
@@ -305,7 +303,7 @@ public class UserServiceImpl implements IUserService {
             consumerDTO.setEncryptPwd(consumerDO.getEncryptPwd());
             consumerDTO.setUsername(consumerDO.getUsername());
             return consumerDTO;
-        }).collect(Collectors.toList());
+        }).toList();
     }
 
     @Override
@@ -399,6 +397,25 @@ public class UserServiceImpl implements IUserService {
         return getAES().decryptStr(consumer.getEncryptPwd());
     }
 
+    public String getEncryptPwdByUserName(String username) {
+        if (CharSequenceUtil.isBlank(username)) {
+            return null;
+        }
+        ConsumerDO consumer = getUserInfoByName(username);
+        if (consumer == null) {
+            return null;
+        }
+        return consumer.getEncryptPwd();
+    }
+
+    public String getEncryptPwdByUserId(String userId) {
+        String username = getUserNameById(userId);
+        if (CharSequenceUtil.isBlank(username)) {
+            return null;
+        }
+        return getEncryptPwdByUserName(username);
+    }
+
     @Override
     public ResponseResult<Boolean> hasUser() {
         Query query = new Query();
@@ -483,7 +500,7 @@ public class UserServiceImpl implements IUserService {
         ConsumerDO consumer = CaffeineUtil.getConsumerByUsernameCache(name);
         if (consumer == null) {
             Query query = new Query();
-            query.addCriteria(Criteria.where("username").is(name));
+            query.addCriteria(Criteria.where(USERNAME).is(name));
             consumer = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
             if (consumer != null) {
                 CaffeineUtil.setConsumerByUsernameCache(name, consumer);
@@ -533,7 +550,7 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         query.addCriteria(Criteria.where(ROLES).is(roleId));
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
-        return userList.stream().map(ConsumerDO::getUsername).collect(Collectors.toList());
+        return userList.stream().map(ConsumerDO::getUsername).toList();
     }
 
     @Override
@@ -541,7 +558,7 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         query.addCriteria(Criteria.where(ROLES).in(rolesIds));
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
-        return userList.stream().map(ConsumerDO::getUsername).collect(Collectors.toList());
+        return userList.stream().map(ConsumerDO::getUsername).toList();
     }
 
     @Override
@@ -556,21 +573,10 @@ public class UserServiceImpl implements IUserService {
     @Override
     public String getUserIdByShowName(String showName) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("showName").is(showName));
+        query.addCriteria(Criteria.where(SHOW_NAME).is(showName));
         ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
         if (consumerDO != null) {
             return consumerDO.getId();
-        }
-        return "";
-    }
-
-    @Override
-    public String getShowNameById(String userId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(userId));
-        ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
-        if (consumerDO != null) {
-            return consumerDO.getShowName();
         }
         return "";
     }

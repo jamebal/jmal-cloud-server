@@ -12,6 +12,7 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
+import com.jmal.clouddisk.util.TokenUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -24,6 +25,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.jmal.clouddisk.controller.rest.ShareController.SHARE_EXPIRED;
+
 /**
  * @Description 分享
  * @Author jmal
@@ -34,14 +37,18 @@ public class ShareServiceImpl implements IShareService {
 
     private static final String COLLECTION_NAME = "share";
 
+    public static final String SHARE_TOKEN = "share-token";
+
+    public static final String LINK_FAILED = "该链接已失效";
+
     private final IFileService fileService;
 
     private final MongoTemplate mongoTemplate;
 
-    private final IUserService userService;
+    private final UserServiceImpl userService;
 
 
-    public ShareServiceImpl(IFileService fileService, MongoTemplate mongoTemplate, IUserService userService) {
+    public ShareServiceImpl(IFileService fileService, MongoTemplate mongoTemplate, UserServiceImpl userService) {
         this.fileService = fileService;
         this.mongoTemplate = mongoTemplate;
         this.userService = userService;
@@ -64,18 +71,18 @@ public class ShareServiceImpl implements IShareService {
         share.setContentType(file.getContentType());
         share.setIsPrivacy(BooleanUtil.isTrue(share.getIsPrivacy()));
         if (shareDO == null) {
-            if (share.getIsPrivacy()) {
+            if (Boolean.TRUE.equals(share.getIsPrivacy())) {
                 share.setExtractionCode(generateExtractionCode());
             }
             shareDO = mongoTemplate.save(share, COLLECTION_NAME);
         } else {
             updateShare(share, shareDO, file);
         }
-        file.setShareId(shareDO.getId());
+        file.setShareBase(shareDO.getShareBase());
         fileService.setShareFile(file, expireAt, share);
         ShareVO shareVO = new ShareVO();
         shareVO.setShareId(shareDO.getId());
-        if (share.getIsPrivacy()) {
+        if (Boolean.TRUE.equals(share.getIsPrivacy())) {
             shareVO.setExtractionCode(share.getExtractionCode());
         }
         return ResultUtil.success(shareVO);
@@ -91,11 +98,11 @@ public class ShareServiceImpl implements IShareService {
             update.unset("expireDate");
         }
         update.set("isPrivacy", share.getIsPrivacy());
-        if (share.getIsPrivacy() && shareDO.getExtractionCode() == null) {
+        if (Boolean.TRUE.equals(share.getIsPrivacy()) && shareDO.getExtractionCode() == null) {
             shareDO.setExtractionCode(generateExtractionCode());
             update.set("extractionCode", shareDO.getExtractionCode());
         }
-        if (!share.getIsPrivacy() && shareDO.getExtractionCode() != null) {
+        if (Boolean.TRUE.equals(!share.getIsPrivacy()) && shareDO.getExtractionCode() != null) {
             update.unset("extractionCode");
         }
         if (shareDO.getExtractionCode() != null) {
@@ -113,26 +120,43 @@ public class ShareServiceImpl implements IShareService {
     }
 
     @Override
-    public ResponseResult<Object> accessShare(String shareId, Integer pageIndex, Integer pageSize) {
+    public ResponseResult<Object> validShareCode(String shareId, String shareCode) {
         ShareDO shareDO = mongoTemplate.findById(shareId, ShareDO.class, COLLECTION_NAME);
         if (shareDO == null) {
-            return ResultUtil.success("该链接已失效");
+            return ResultUtil.warning(LINK_FAILED);
         }
+        if (shareCode.equals(shareDO.getExtractionCode())) {
+            // 验证成功 返回share-token
+            String password = userService.getEncryptPwdByUserId(shareDO.getUserId());
+            if (CharSequenceUtil.isBlank(password)) {
+                return ResultUtil.warning(LINK_FAILED);
+            }
+            // share-token有效期为24个小时
+            String shareToken = TokenUtil.createToken(shareId, password, LocalDateTimeUtil.now().plusDays(1));
+            return ResultUtil.success(shareToken);
+        }
+        return ResultUtil.warning("提取码有误");
+    }
+
+    public ResponseResult<Object> validShare(String shareToken, String shareId) {
+        ShareDO shareDO = getShare(shareId);
+        return validShare(shareToken, shareDO);
+    }
+
+    public ResponseResult<Object> validShare(String shareToken, ShareDO shareDO) {
         if (!checkWhetherExpired(shareDO)) {
-            return ResultUtil.success("该链接已失效");
+            return ResultUtil.warning(SHARE_EXPIRED);
         }
-        // 检查是否为私密链接
-        if (BooleanUtil.isTrue(shareDO.getIsPrivacy())) {
-            ShareVO shareVO = new ShareVO();
-            BeanUtils.copyProperties(shareDO, shareVO);
-            shareVO.setExtractionCode(null);
-            return ResultUtil.success(shareVO);
-        }
+        return validShareCode(shareToken, shareDO);
+    }
+
+    @Override
+    public ResponseResult<Object> accessShare(ShareDO shareDO, Integer pageIndex, Integer pageSize) {
         UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
         uploadApiParamDTO.setPageIndex(pageIndex);
         uploadApiParamDTO.setPageSize(pageSize);
         uploadApiParamDTO.setUserId(shareDO.getUserId());
-        if (!shareDO.getIsFolder()) {
+        if (Boolean.FALSE.equals(shareDO.getIsFolder())) {
             List<FileDocument> list = new ArrayList<>();
             FileDocument fileDocument = fileService.getById(shareDO.getFileId());
             if (fileDocument != null) {
@@ -144,8 +168,35 @@ public class ShareServiceImpl implements IShareService {
     }
 
     @Override
-    public ShareDO getShare(String share) {
-        return mongoTemplate.findById(share, ShareDO.class, COLLECTION_NAME);
+    public ResponseResult<Object> validShareCode(String shareToken, ShareDO shareDO) {
+        if (!checkWhetherExpired(shareDO)) {
+            return ResultUtil.success(LINK_FAILED);
+        }
+        // 检查是否为私密链接
+        if (BooleanUtil.isTrue(shareDO.getIsPrivacy())) {
+            ShareVO shareVO = new ShareVO();
+            BeanUtils.copyProperties(shareDO, shareVO);
+            shareVO.setExtractionCode(null);
+            // 先检查有没有share-token
+            if (CharSequenceUtil.isBlank(shareToken)) {
+                return ResultUtil.success(shareVO);
+            }
+            // 再检查share-token是否正确
+            String password = userService.getEncryptPwdByUserId(shareDO.getUserId());
+            if (CharSequenceUtil.isBlank(password)) {
+                return ResultUtil.success(shareVO);
+            }
+            if (!shareDO.getId().equals(TokenUtil.getTokenKey(shareToken, password))) {
+                // 验证失败
+                return ResultUtil.success(shareVO);
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public ShareDO getShare(String shareId) {
+        return mongoTemplate.findById(shareId, ShareDO.class, COLLECTION_NAME);
     }
 
     @Override
@@ -178,7 +229,7 @@ public class ShareServiceImpl implements IShareService {
     @Override
     public List<ShareDO> getShareList(UploadApiParamDTO upload) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(upload.getUserId()));
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(upload.getUserId()));
         String order = FileServiceImpl.listByPage(upload, query);
         if (CharSequenceUtil.isBlank(order)) {
             query.with(Sort.by(Sort.Direction.DESC, "createDate"));
@@ -255,4 +306,5 @@ public class ShareServiceImpl implements IShareService {
         }
         return ResultUtil.success(sharerDTO);
     }
+
 }

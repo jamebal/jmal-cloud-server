@@ -99,6 +99,10 @@ public class FileDocument extends FileBase{
      */
     private String shareId;
     /***
+     * shareBase
+     */
+    private Boolean shareBase;
+    /***
      * 分享有效期
      */
     private Long expiresAt;

@@ -2,16 +2,15 @@ package com.jmal.clouddisk.controller;
 
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.model.LogOperation;
-import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
+import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,6 +31,8 @@ public class FileViewController {
     @Autowired
     IShareService shareService;
 
+    private static final String FORWARD_INVALID = "forward:/public/s/invalid";
+
     @Operation(summary = "预览文档里的图片")
     @GetMapping("/public/view")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -41,27 +42,21 @@ public class FileViewController {
     }
 
     @Operation(summary = "分享：预览文件")
-    @GetMapping("/public/s/preview/{fileId}/{shareId}")
+    @GetMapping("/public/s/preview/{fileId}/{shareId}/{shareToken}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public String publicPreview(@PathVariable String fileId, @PathVariable String shareId) {
-        ShareDO shareDO = shareService.getShare(shareId);
-        boolean whetherExpired = shareService.checkWhetherExpired(shareDO);
-        if(whetherExpired){
-            return fileService.viewFile(shareDO.getFileId(), fileId, "preview");
-        }
-        return "forward:/public/s/invalid";
+    public String publicPreview(@PathVariable String fileId, @PathVariable String shareId, @PathVariable String shareToken) {
+        ResponseResult<Object> validSHare = shareService.validShare(shareToken, shareId);
+        if (validSHare != null) return FORWARD_INVALID;
+        return fileService.viewFile(fileId, fileId, "preview");
     }
 
     @Operation(summary = "分享：下载单个文件")
-    @GetMapping("/public/s/download/{fileId}/{shareId}")
+    @GetMapping("/public/s/download/{fileId}/{shareId}/{shareToken}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public String publicDownload(@PathVariable String fileId, @PathVariable String shareId) {
-        ShareDO shareDO = shareService.getShare(shareId);
-        boolean whetherExpired = shareService.checkWhetherExpired(shareDO);
-        if(whetherExpired){
-            return fileService.viewFile(shareDO.getFileId(), fileId, "download");
-        }
-        return "forward:/public/s/invalid";
+    public String publicDownload(@PathVariable String fileId, @PathVariable String shareId, @PathVariable String shareToken) {
+        ResponseResult<Object> validSHare = shareService.validShare(shareToken, shareId);
+        if (validSHare != null) return FORWARD_INVALID;
+        return fileService.viewFile(fileId, fileId, "download");
     }
 
 }

@@ -152,7 +152,7 @@ public class LogService {
      * @param logOperation LogOperation
      */
     private void setIpInfo(LogOperation logOperation, String ip) {
-        if (ipSearcher != null) {
+        if (ipSearcher != null && !CharSequenceUtil.isBlank(ip)) {
             try {
                 DataBlock dataBlock = ipSearcher.memorySearch(ip);
                 if (dataBlock != null) {

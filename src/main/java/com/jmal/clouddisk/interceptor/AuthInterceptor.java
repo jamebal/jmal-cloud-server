@@ -14,16 +14,16 @@ import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TokenUtil;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
@@ -43,13 +43,17 @@ public class AuthInterceptor implements HandlerInterceptor {
     private static final long ONE_DAY = 1000L * 60 * 60 * 24;
     private final Cache<String, String> tokenCache = CaffeineUtil.getTokenCache();
 
-    @Autowired
-    private IAuthDAO authDAO;
+    private final IAuthDAO authDAO;
 
-    @Autowired
-    private UserServiceImpl userService;
+    private final UserServiceImpl userService;
 
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    public AuthInterceptor(IAuthDAO authDAO, UserServiceImpl userService) {
+        this.authDAO = authDAO;
+        this.userService = userService;
+    }
+
+    @Override
+    public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
         // 身份认证
         String username = getUserNameByHeader(request);
         if (!CharSequenceUtil.isBlank(username)) {
@@ -150,7 +154,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (!CharSequenceUtil.isBlank(jmalToken)) {
             String username = tokenCache.getIfPresent(jmalToken);
             if (CharSequenceUtil.isBlank(username)) {
-                String userName = TokenUtil.getUserName(jmalToken);
+                String userName = TokenUtil.getTokenKey(jmalToken, userService.getEncryptPwdByUserName(username));
                 if(CharSequenceUtil.isBlank(userName)){
                     return null;
                 }

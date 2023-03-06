@@ -37,7 +37,7 @@ public class FileIntroVO extends FileBase{
      * 是否分享
      */
     private Boolean isShare;
-    private String shareId;
+    private Boolean shareBase;
     /***
      * 分享有效期
      */

@@ -3,12 +3,12 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.model.TagDO;
 import com.jmal.clouddisk.model.TagDTO;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import org.bson.types.ObjectId;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author jmal
@@ -27,12 +26,13 @@ import java.util.stream.Collectors;
 @Service
 public class TagService {
 
-    @Autowired
-    private MongoTemplate mongoTemplate;
-
-    private static final String USERID_PARAM = "userId";
+    private final MongoTemplate mongoTemplate;
 
     private static final String COLLECTION_NAME = "tag";
+
+    public TagService(MongoTemplate mongoTemplate) {
+        this.mongoTemplate = mongoTemplate;
+    }
 
     /***
      * 标签列表
@@ -46,7 +46,7 @@ public class TagService {
             TagDTO tagDTO = new TagDTO();
             BeanUtils.copyProperties(tag, tagDTO);
             return tagDTO;
-        }).sorted().collect(Collectors.toList());
+        }).sorted().toList();
     }
 
     /***
@@ -60,10 +60,10 @@ public class TagService {
             TagDTO tagDTO = new TagDTO();
             BeanUtils.copyProperties(tag, tagDTO);
             getTagArticlesNum(tagDTO);
-            tagDTO.setFontSize(Math.round(Math.log(tagDTO.getArticleNum()  * 5) *  10));
+            tagDTO.setFontSize(Math.round(Math.log(tagDTO.getArticleNum() * 5d) *  10d));
             tagDTO.setColor("rgb("+Math.round(Math.random() * 100 + 80)+","+Math.round(Math.random() * 100 + 80)+","+Math.round(Math.random() * 100 + 80)+")");
             return tagDTO;
-        }).filter(tag -> tag.getArticleNum() > 0).sorted().collect(Collectors.toList());
+        }).filter(tag -> tag.getArticleNum() > 0).sorted().toList();
     }
 
     /***
@@ -85,9 +85,9 @@ public class TagService {
     private Query getQueryUserId(String userId) {
         Query query = new Query();
         if (!CharSequenceUtil.isBlank(userId)) {
-            query.addCriteria(Criteria.where(USERID_PARAM).is(userId));
+            query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
         } else {
-            query.addCriteria(Criteria.where(USERID_PARAM).exists(false));
+            query.addCriteria(Criteria.where(IUserService.USER_ID).exists(false));
         }
         return query;
     }

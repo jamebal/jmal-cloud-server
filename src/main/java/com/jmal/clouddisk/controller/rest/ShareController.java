@@ -10,6 +10,7 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.ShareServiceImpl;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,7 +18,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -40,17 +41,26 @@ import java.util.Optional;
 @Slf4j
 public class ShareController {
 
-    @Autowired
+    public static final String SHARE_EXPIRED = "该分享已过期";
+
+    final
     IShareService shareService;
 
-    @Autowired
+    final
     IFileService fileService;
 
-    @Autowired
+    final
     IUserService userService;
 
-    @Autowired
+    final
     FileInterceptor fileInterceptor;
+
+    public ShareController(IShareService shareService, IFileService fileService, IUserService userService, FileInterceptor fileInterceptor) {
+        this.shareService = shareService;
+        this.fileService = fileService;
+        this.userService = userService;
+        this.fileInterceptor = fileInterceptor;
+    }
 
     @Operation(summary = "该分享已失效")
     @GetMapping("/public/s/invalid")
@@ -91,12 +101,24 @@ public class ShareController {
         return shareService.shareList(upload);
     }
 
+    @Operation(summary = "验证提取码")
+    @PostMapping("/public/valid-share-code")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseResult<Object> validShareCode(@RequestBody Map<String, String> body) {
+        String shareId = body.get("shareId");
+        String shareCode = body.get("shareCode");
+        ResultUtil.checkParamIsNull(shareId, shareCode);
+        return shareService.validShareCode(shareId, shareCode);
+    }
+
     @Operation(summary = "访问分享链接")
     @GetMapping("/public/access-share")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> accessShare(@RequestParam String share, Integer pageIndex, Integer pageSize) {
-        ResultUtil.checkParamIsNull(share);
-        return shareService.accessShare(share, pageIndex, pageSize);
+    public ResponseResult<Object> accessShare(HttpServletRequest request, @RequestParam String share, Integer pageIndex, Integer pageSize) {
+        ShareDO shareDO = shareService.getShare(share);
+        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(ShareServiceImpl.SHARE_TOKEN), shareDO);
+        if (validSHare != null) return validSHare;
+        return shareService.accessShare(shareDO, pageIndex, pageSize);
     }
 
     @Operation(summary = "获取分享者信息")
@@ -109,35 +131,39 @@ public class ShareController {
     @Operation(summary = "访问分享链接里的目录")
     @GetMapping("public/access-share/open")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> accessShareOpenDir(@RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize) {
+    public ResponseResult<Object> accessShareOpenDir(HttpServletRequest request, @RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize) {
         ShareDO shareDO = shareService.getShare(share);
-        if(!shareService.checkWhetherExpired(shareDO)){
-            return ResultUtil.warning("该分享已过期");
-        }
-        return shareService.accessShareOpenDir(shareDO, fileId, pageIndex, pageSize );
+        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(ShareServiceImpl.SHARE_TOKEN), shareDO);
+        if (validSHare != null) return validSHare;
+        return shareService.accessShareOpenDir(shareDO, fileId, pageIndex, pageSize);
     }
 
     @Operation(summary = "打包下载")
     @GetMapping("/public/s/packageDownload")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public void publicPackageDownload(HttpServletRequest request, HttpServletResponse response, @RequestParam String shareId, @RequestParam String[] fileIds) {
-        boolean whetherExpired = shareService.checkWhetherExpired(shareId);
-        if(whetherExpired){
-            if (fileIds != null && fileIds.length > 0) {
-                List<String> fileIdList = Arrays.asList(fileIds);
-                fileService.publicPackageDownload(request, response, fileIdList);
-            } else {
-                throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
-            }
+        ResponseResult<Object> validShare = shareService.validShare(request.getParameter(ShareServiceImpl.SHARE_TOKEN), shareId);
+        if (validShare != null) {
+            response(response, invalid());
+            return;
+        }
+        if (fileIds != null && fileIds.length > 0) {
+            List<String> fileIdList = Arrays.asList(fileIds);
+            fileService.publicPackageDownload(request, response, fileIdList);
         } else {
-            try (OutputStream out = response.getOutputStream()) {
-                out.write(invalid().getBytes(StandardCharsets.UTF_8));
-                out.flush();
-            } catch (IOException e) {
-                log.error(e.getMessage(), e);
-            }
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }
     }
+
+    private void response(HttpServletResponse response, String msg) {
+        try (OutputStream out = response.getOutputStream()) {
+            out.write(msg.getBytes(StandardCharsets.UTF_8));
+            out.flush();
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
 
     @Operation(summary = "显示缩略图")
     @GetMapping("/articles/s/view/thumbnail")
@@ -156,7 +182,7 @@ public class ShareController {
     private ResponseEntity<Object> thumbnail(String id) {
         ResultUtil.checkParamIsNull(id);
         Optional<FileDocument> file = fileService.thumbnail(id, null);
-        if (fileInterceptor.isNotAllowAccess(file.orElse(null))) {
+        if (fileInterceptor.isNotAllowAccess(file.orElse(null), null)) {
             return null;
         }
         return file.<ResponseEntity<Object>>map(fileDocument ->
@@ -173,14 +199,13 @@ public class ShareController {
     @Operation(summary = "读取simText文件")
     @GetMapping("/public/s/preview/text")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Optional<FileDocument>> preview(@RequestParam String shareId ,@RequestParam String fileId) {
+    public ResponseResult<Object> preview(HttpServletRequest request, @RequestParam String shareId, @RequestParam String fileId) {
         ShareDO shareDO = shareService.getShare(shareId);
-        if(!shareService.checkWhetherExpired(shareDO)){
-            return ResultUtil.warning("该分享已过期");
-        }
+        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(ShareServiceImpl.SHARE_TOKEN), shareDO);
+        if (validSHare != null) return validSHare;
         ConsumerDO consumer = userService.userInfoById(shareDO.getUserId());
-        if(consumer == null){
-            return ResultUtil.warning("该分享已过期");
+        if (consumer == null) {
+            return ResultUtil.warning(SHARE_EXPIRED);
         }
         return ResultUtil.success(fileService.getById(fileId, consumer.getUsername()));
     }
@@ -188,11 +213,10 @@ public class ShareController {
     @Operation(summary = "根据id获取分享的文件信息")
     @GetMapping("/public/file_info/{fileId}/{shareId}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<FileDocument> getFileById(@PathVariable String fileId, @PathVariable String shareId) {
-        ShareDO shareDO = shareService.getShare(shareId);
-        if(!shareService.checkWhetherExpired(shareDO)){
-            return ResultUtil.warning("该分享已过期");
-        }
+    public ResponseResult<Object> getFileById(HttpServletRequest request, @PathVariable String fileId, @PathVariable String shareId) {
+        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(ShareServiceImpl.SHARE_TOKEN), shareId);
+        if (validSHare != null) return validSHare;
         return ResultUtil.success(fileService.getById(fileId));
     }
+
 }
