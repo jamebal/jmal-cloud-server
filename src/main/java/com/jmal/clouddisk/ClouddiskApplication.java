@@ -3,6 +3,7 @@ package com.jmal.clouddisk;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * ClouddiskApplication
@@ -11,6 +12,7 @@ import org.springframework.cache.annotation.EnableCaching;
  */
 @SpringBootApplication
 @EnableCaching
+@EnableScheduling
 public class ClouddiskApplication {
 
     public static void main(String[] args) {

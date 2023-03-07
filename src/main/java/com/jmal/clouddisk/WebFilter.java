@@ -7,6 +7,7 @@ import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.impl.LogService;
+import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.webdav.MySimpleSecurityManager;
@@ -86,6 +87,7 @@ public class WebFilter implements Filter {
             recordLog((HttpServletRequest) request, (HttpServletResponse) response, time, result);
             return;
         }
+        CaffeineUtil.setLastAccessTimeCache();
         chain.doFilter(request, response);
     }
 

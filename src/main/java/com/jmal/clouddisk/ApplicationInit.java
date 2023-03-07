@@ -4,11 +4,13 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.listener.FileListener;
 import com.jmal.clouddisk.listener.TempDirFilter;
 import com.jmal.clouddisk.service.MongodbIndex;
+import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -35,12 +37,22 @@ public class ApplicationInit implements ApplicationRunner {
     final
     MongodbIndex mongodbIndex;
 
+    /**
+     * 5分钟
+     */
+    public static final long DIFF_TIME = 5 * 60 * 1000;
+
+    private FileAlterationMonitor monitor;
+
+    private FileAlterationObserver observer;
+
+    private boolean isMonitor = true;
+
     public ApplicationInit(FileProperties fileProperties, FileListener fileListener, MongodbIndex mongodbIndex) {
         this.fileProperties = fileProperties;
         this.fileListener = fileListener;
         this.mongodbIndex = mongodbIndex;
     }
-
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -58,15 +70,44 @@ public class ApplicationInit implements ApplicationRunner {
         TempDirFilter tempDirFilter = new TempDirFilter(fileProperties.getRootDir(), fileProperties.getChunkFileDir());
 
         // 使用过滤器
-        FileAlterationObserver observer = new FileAlterationObserver(new File(fileProperties.getRootDir()), tempDirFilter);
+        observer = new FileAlterationObserver(new File(fileProperties.getRootDir()), tempDirFilter);
         // 不使用过滤器
         observer.addListener(fileListener);
         //创建文件变化监听器
-        FileAlterationMonitor monitor = new FileAlterationMonitor(interval, observer);
+        monitor = new FileAlterationMonitor(interval, observer);
         // 开始监控
         monitor.start();
         log.info("\r\n文件监控服务已开启:\r\n轮询间隔:{}秒\n监控目录:{}\n忽略目录:{}", fileProperties.getTimeInterval(), rootDir, rootDir + File.separator + fileProperties.getChunkFileDir());
         // 检测mongo索引
         mongodbIndex.checkMongoIndex();
+    }
+
+    @Scheduled(fixedDelay = 1000, initialDelay = 5000)
+    private void check() {
+        // 5分钟没人访问时，降低轮询频率
+        long diff = System.currentTimeMillis() - CaffeineUtil.getLastAccessTimeCache();
+        try {
+            if (diff > DIFF_TIME) {
+                if (isMonitor) {
+                    monitor.stop();
+                    monitor = null;
+                    monitor = new FileAlterationMonitor(30 * 60 * 1000, observer);
+                    monitor.start();
+                    log.info("轮询间隔改为30分钟");
+                    isMonitor = false;
+                }
+            } else {
+                if (!isMonitor) {
+                    monitor.stop();
+                    monitor = null;
+                    monitor = new FileAlterationMonitor(3000, observer);
+                    monitor.start();
+                    log.info("轮询间隔改为3秒钟");
+                    isMonitor = true;
+                }
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
     }
 }
