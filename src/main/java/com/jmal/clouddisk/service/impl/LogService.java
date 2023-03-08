@@ -16,7 +16,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.lionsoul.ip2region.*;
+import org.lionsoul.ip2region.xdb.Searcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -24,8 +24,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -55,13 +53,22 @@ public class LogService {
     @Autowired
     private FileProperties fileProperties;
 
-    private DbSearcher ipSearcher = null;
+    private Searcher ipSearcher = null;
 
     @PostConstruct
-    public void initIpDbSearcher() throws DbMakerConfigException, FileNotFoundException {
+    public void initIpDbSearcher() {
         String ip2regionDbPath = fileProperties.getIp2regionDbPath();
-        if (!CharSequenceUtil.isBlank(ip2regionDbPath)) {
-            ipSearcher = new DbSearcher(new DbConfig(), ip2regionDbPath);
+        byte[] vIndex;
+        try {
+            vIndex = Searcher.loadVectorIndexFromFile(ip2regionDbPath);
+        } catch (Exception e) {
+            log.error("failed to load vector index from {}: {}\n", ip2regionDbPath, e);
+            return;
+        }
+        try {
+            ipSearcher = Searcher.newWithVectorIndex(ip2regionDbPath, vIndex);
+        } catch (Exception e) {
+            log.error("failed to create vectorIndex cached searcher with {}: {}\n", ip2regionDbPath, e);
         }
     }
 
@@ -93,9 +100,7 @@ public class LogService {
         // 客户端ip
         String ip = getIpAddress(request);
         logOperation.setIp(ip);
-        if (Util.isIpAddress(ip)) {
-            setIpInfo(logOperation, ip);
-        }
+        setIpInfo(logOperation, ip);
         // 返回结果
         logOperation.setStatus(0);
         ResponseResult<Object> responseResult;
@@ -154,12 +159,11 @@ public class LogService {
     private void setIpInfo(LogOperation logOperation, String ip) {
         if (ipSearcher != null && !CharSequenceUtil.isBlank(ip)) {
             try {
-                DataBlock dataBlock = ipSearcher.memorySearch(ip);
-                if (dataBlock != null) {
-                    logOperation.setCityIp(dataBlock.getCityId());
-                    logOperation.setIpInfo(region2IpInfo(dataBlock.getRegion()));
+                String region = ipSearcher.search(ip);
+                if (!CharSequenceUtil.isBlank(region)) {
+                    logOperation.setIpInfo(region2IpInfo(region));
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 log.error(e.getMessage(), e);
             }
         }

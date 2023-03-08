@@ -1,12 +1,13 @@
 package com.jmal.clouddisk.config;
 
+import cn.hutool.core.io.file.PathUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -75,9 +76,9 @@ public class FileProperties {
     private String ip2regionDbPath;
 
     public void setIp2regionDbPath(String path) {
-        File file = new File(path);
-        if (!file.exists()) {
-            log.error("Error: Invalid ip2region.db file");
+        Path dbPath = Paths.get(path);
+        if (!PathUtil.exists(dbPath, true)) {
+            log.error("Error: Invalid ip2region.xdb file");
             ip2regionDbPath = null;
             return;
         }

@@ -97,11 +97,6 @@ public class LogOperation {
      */
     private String type;
 
-    /***
-     * 城市ip
-     */
-    private Integer cityIp;
-
     private IpInfo ipInfo;
 
     @Data
