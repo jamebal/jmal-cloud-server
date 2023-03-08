@@ -43,7 +43,7 @@ public class AuthServiceImpl implements IAuthService {
             String userPassword = user.getPassword();
             if (!CharSequenceUtil.isBlank(password) && PasswordHash.validatePassword(password, userPassword)) {
                 Map<String, String> map = new HashMap<>(3);
-                String token = TokenUtil.createToken(userName, user.getPassword());
+                String token = TokenUtil.createToken(userName);
                 map.put("token", token);
                 map.put("username", userName);
                 map.put("userId", user.getId());

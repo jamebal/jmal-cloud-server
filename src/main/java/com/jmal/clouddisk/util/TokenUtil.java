@@ -38,10 +38,10 @@ public class TokenUtil {
      * @return token
      */
     public static String createToken(String key, String password, LocalDateTime localDataTime) {
-        return getToken(key, password, localDataTime);
+        return generateToken(key, password, localDataTime);
     }
 
-    private static String getToken(String key, String password, LocalDateTime localDataTime) {
+    private static String generateToken(String key, String password, LocalDateTime localDataTime) {
         Map<String, Object> map = new HashMap<>(3);
         map.put("alg", "HS256");
         map.put("typ", "JWT");
@@ -65,7 +65,21 @@ public class TokenUtil {
      * @return token
      */
     public static String createToken(String key, String password) {
-        return getToken(key, password, null);
+        return generateToken(key, password, null);
+    }
+
+    /**
+     * 生成token
+     *
+     * @param key token key
+     * @return token
+     */
+    public static String createToken(String key) {
+        return generateToken(key, "23acda38e1d31cbce55a9419015bac7a", null);
+    }
+
+    public static String getTokenKey(String token) {
+        return getTokenKey(token, "23acda38e1d31cbce55a9419015bac7a");
     }
 
     public static String getTokenKey(String token, String password) {

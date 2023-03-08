@@ -1,5 +1,6 @@
 package com.jmal.clouddisk;
 
+import cn.hutool.core.date.DateUnit;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.listener.FileListener;
 import com.jmal.clouddisk.listener.TempDirFilter;
@@ -36,11 +37,6 @@ public class ApplicationInit implements ApplicationRunner {
 
     final
     MongodbIndex mongodbIndex;
-
-    /**
-     * 5分钟
-     */
-    public static final long DIFF_TIME = 5 * 60 * 1000;
 
     private FileAlterationMonitor monitor;
 
@@ -87,11 +83,11 @@ public class ApplicationInit implements ApplicationRunner {
         // 5分钟没人访问时，降低轮询频率
         long diff = System.currentTimeMillis() - CaffeineUtil.getLastAccessTimeCache();
         try {
-            if (diff > DIFF_TIME) {
+            if (diff > DateUnit.MINUTE.getMillis() * 5) {
                 if (isMonitor) {
                     monitor.stop();
                     monitor = null;
-                    monitor = new FileAlterationMonitor(30 * 60 * 1000, observer);
+                    monitor = new FileAlterationMonitor(DateUnit.MINUTE.getMillis() * 30, observer);
                     monitor.start();
                     log.info("轮询间隔改为30分钟");
                     isMonitor = false;
@@ -100,7 +96,7 @@ public class ApplicationInit implements ApplicationRunner {
                 if (!isMonitor) {
                     monitor.stop();
                     monitor = null;
-                    monitor = new FileAlterationMonitor(3000, observer);
+                    monitor = new FileAlterationMonitor(DateUnit.SECOND.getMillis() * 3, observer);
                     monitor.start();
                     log.info("轮询间隔改为3秒钟");
                     isMonitor = true;

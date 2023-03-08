@@ -1,9 +1,12 @@
 package com.jmal.clouddisk.websocket;
 
+import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.WebSocketHandler;
+import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.WebSocketHandlerDecorator;
 import org.springframework.web.socket.handler.WebSocketHandlerDecoratorFactory;
@@ -18,11 +21,12 @@ import java.security.Principal;
 @Component
 @Slf4j
 public class WebSocketDecoratorFactory implements WebSocketHandlerDecoratorFactory {
+    @NotNull
     @Override
-    public WebSocketHandler decorate(WebSocketHandler handler) {
+    public WebSocketHandler decorate(@NotNull WebSocketHandler handler) {
         return new WebSocketHandlerDecorator(handler) {
             @Override
-            public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+            public void afterConnectionEstablished(@NotNull WebSocketSession session) throws Exception {
                 Principal principal = session.getPrincipal();
                 if (principal != null) {
                     log.info("user:{} 已连接", principal.getName());
@@ -35,7 +39,7 @@ public class WebSocketDecoratorFactory implements WebSocketHandlerDecoratorFacto
             }
 
             @Override
-            public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
+            public void afterConnectionClosed(@NotNull WebSocketSession session, @NotNull CloseStatus closeStatus) throws Exception {
                 Principal principal = session.getPrincipal();
                 if (principal != null) {
                     log.info("user:{} 断开连接", principal.getName());
@@ -44,6 +48,13 @@ public class WebSocketDecoratorFactory implements WebSocketHandlerDecoratorFacto
                 }
                 super.afterConnectionClosed(session, closeStatus);
             }
+
+            @Override
+            public void handleMessage(@NotNull WebSocketSession session, @NotNull WebSocketMessage<?> message) throws Exception {
+                CaffeineUtil.setLastAccessTimeCache();
+                super.handleMessage(session, message);
+            }
         };
     }
+
 }

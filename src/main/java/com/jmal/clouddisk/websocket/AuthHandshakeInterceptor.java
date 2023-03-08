@@ -1,9 +1,8 @@
 package com.jmal.clouddisk.websocket;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -21,18 +20,21 @@ import java.util.Map;
 @Component
 public class AuthHandshakeInterceptor implements HandshakeInterceptor {
 
-    @Autowired
-    AuthInterceptor authInterceptor;
+    private final AuthInterceptor authInterceptor;
+
+    public AuthHandshakeInterceptor(AuthInterceptor authInterceptor) {
+        this.authInterceptor = authInterceptor;
+    }
 
     @Override
-    public boolean beforeHandshake(ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse, WebSocketHandler webSocketHandler, Map<String, Object> map) throws Exception {
+    public boolean beforeHandshake(@NotNull ServerHttpRequest serverHttpRequest, @NotNull ServerHttpResponse serverHttpResponse, @NotNull WebSocketHandler webSocketHandler, @NotNull Map<String, Object> map) {
         ServletServerHttpRequest request = (ServletServerHttpRequest) serverHttpRequest;
         String jmalToken = request.getServletRequest().getParameter("jmal-token");
         return !CharSequenceUtil.isBlank(authInterceptor.getUserNameByJmalToken(jmalToken));
     }
 
     @Override
-    public void afterHandshake(ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse, WebSocketHandler webSocketHandler, Exception e) {
-
+    public void afterHandshake(@NotNull ServerHttpRequest request, @NotNull ServerHttpResponse response, @NotNull WebSocketHandler wsHandler, Exception exception) {
+        // 啥都没干
     }
 }

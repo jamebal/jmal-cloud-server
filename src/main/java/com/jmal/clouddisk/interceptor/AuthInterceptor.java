@@ -154,7 +154,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (!CharSequenceUtil.isBlank(jmalToken)) {
             String username = tokenCache.getIfPresent(jmalToken);
             if (CharSequenceUtil.isBlank(username)) {
-                String userName = TokenUtil.getTokenKey(jmalToken, userService.getEncryptPwdByUserName(username));
+                String userName = TokenUtil.getTokenKey(jmalToken);
                 if(CharSequenceUtil.isBlank(userName)){
                     return null;
                 }
