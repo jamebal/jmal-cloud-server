@@ -1,6 +1,7 @@
 package com.jmal.clouddisk;
 
 import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.io.FileUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.listener.FileListener;
 import com.jmal.clouddisk.listener.TempDirFilter;
@@ -78,9 +79,11 @@ public class ApplicationInit implements ApplicationRunner {
         mongodbIndex.checkMongoIndex();
     }
 
+    /**
+     * 5分钟没人访问时，降低轮询频率
+     */
     @Scheduled(fixedDelay = 1000, initialDelay = 5000)
     private void check() {
-        // 5分钟没人访问时，降低轮询频率
         long diff = System.currentTimeMillis() - CaffeineUtil.getLastAccessTimeCache();
         try {
             if (diff > DateUnit.MINUTE.getMillis() * 5) {
@@ -104,6 +107,26 @@ public class ApplicationInit implements ApplicationRunner {
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 定时清理临时目录
+     * 每天凌晨2点执行
+     * 清理临时目录中7天前的文件
+     */
+    @Scheduled(cron = "0 0 2 * * ?")
+    private void cleanTempDir() {
+        // 临时目录
+        Path tempPath = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir());
+        for (File username : FileUtil.ls(tempPath.toString())) {
+            if (username.isDirectory()) {
+                for (File file : FileUtil.ls(username.getAbsolutePath())) {
+                    if (file.lastModified() < (System.currentTimeMillis() - DateUnit.DAY.getMillis() * 7)) {
+                        FileUtil.del(file);
+                    }
+                }
+            }
         }
     }
 }
