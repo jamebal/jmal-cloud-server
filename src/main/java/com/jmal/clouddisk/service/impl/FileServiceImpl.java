@@ -5,6 +5,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.CharsetUtil;
@@ -25,6 +26,7 @@ import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.websocket.SocketManager;
 import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.result.UpdateResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -146,15 +148,6 @@ public class FileServiceImpl implements IFileService {
      * 上传文件夹的写入锁缓存
      */
     private final Cache<String, Lock> uploadFolderLockCache = CaffeineUtil.getUploadFolderLockCache();
-
-    /**
-     * 是否关闭了文件监听或者文件监听的时间间隔大于3秒
-     *
-     * @return
-     */
-    public boolean isNotMonitor() {
-        return !fileProperties.getMonitor() || fileProperties.getTimeInterval() >= 3L;
-    }
 
     @Override
     public ResponseResult<Object> listFiles(UploadApiParamDTO upload) throws CommonException {
@@ -859,6 +852,10 @@ public class FileServiceImpl implements IFileService {
             if (file.isFile()) {
                 setFileConfig(file, fileName, suffix, contentType, relativePath, update);
             }
+
+            // 检查该文件的上级目录是否有已经分享的目录
+            checkShareBase(update, relativePath);
+
             updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
             pushMessage(username, update.getUpdateObject(), "createFile");
         } finally {
@@ -870,6 +867,49 @@ public class FileServiceImpl implements IFileService {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return null;
+    }
+
+    private void checkShareBase(Update update, String relativePath) {
+        Path path = Paths.get(relativePath);
+        StringBuilder pathStr = new StringBuilder("/");
+        List<Document> documentList = new ArrayList<>(path.getNameCount());
+        for (int i = 0; i < path.getNameCount(); i++) {
+            String filename = path.getName(i).toString();
+            if (i > 0) {
+                pathStr.append("/");
+            }
+            Document document = new Document("path", pathStr.toString()).append("name", filename);
+            documentList.add(document);
+            pathStr.append(filename);
+        }
+
+        List<Document> list = Arrays.asList(new Document("$match", new Document("$or", documentList)), new Document("$match", new Document("shareBase", true)));
+        AggregateIterable<Document> result = mongoTemplate.getCollection("fileDocument").aggregate(list);
+        Document shareDocument = null;
+        try (MongoCursor<Document> mongoCursor = result.iterator()) {
+            while (mongoCursor.hasNext()) {
+                shareDocument = mongoCursor.next();
+            }
+        }
+        if (shareDocument != null) {
+            Long expiresAt = Convert.toLong(shareDocument.get("expiresAt"), null);
+            if (expiresAt == null) {
+                return;
+            }
+            String shareId = Convert.toStr(shareDocument.get("shareId"), null);
+            if (shareId == null) {
+                return;
+            }
+            Boolean isPrivacy = Convert.toBool(shareDocument.get("isPrivacy"), null);
+            if (isPrivacy == null) {
+                return;
+            }
+            String extractionCode = Convert.toStr(shareDocument.get("extractionCode"), null);
+            if (isPrivacy && extractionCode == null) {
+                return;
+            }
+            setShareAttribute(update, expiresAt, shareId, isPrivacy, null);
+        }
     }
 
     private void setFileConfig(File file, String fileName, String suffix, String contentType, String relativePath, Update update) {
@@ -1253,16 +1293,29 @@ public class FileServiceImpl implements IFileService {
      */
     private void setShareAttribute(FileDocument fileDocument, long expiresAt, ShareDO share, Query query) {
         Update update = new Update();
-        update.set("isShare", true);
-        update.set("shareId", share.getId());
-        update.set("expiresAt", expiresAt);
-        update.set("isPrivacy", share.getIsPrivacy());
-        if (BooleanUtil.isTrue(share.getIsPrivacy())) {
-            update.set("extractionCode", share.getExtractionCode());
-        }
+        update = setShareAttribute(update, expiresAt, share.getId(), share.getIsPrivacy(), share.getExtractionCode());
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         // 修改第一个文件/文件夹
         updateShareFirst(fileDocument, update, true);
+    }
+
+    /**
+     * 设置共享属性
+     * @param expiresAt 过期时间
+     * @param shareId shareId
+     * @param isPrivacy isPrivacy
+     * @param extractionCode extractionCode
+     * @return
+     */
+    private static Update setShareAttribute(Update update, long expiresAt, String shareId, Boolean isPrivacy, String extractionCode) {
+        update.set("isShare", true);
+        update.set("shareId", shareId);
+        update.set("expiresAt", expiresAt);
+        update.set("isPrivacy", isPrivacy);
+        if (BooleanUtil.isTrue(isPrivacy)) {
+            update.set("extractionCode", extractionCode);
+        }
+        return update;
     }
 
     /***
@@ -1513,9 +1566,7 @@ public class FileServiceImpl implements IFileService {
             upload.setContentType(file.getContentType());
             upload.setSuffix(FileUtil.extName(filename));
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
-            if (isNotMonitor()) {
-                createFile(upload.getUsername(), chunkFile);
-            }
+            createFile(upload.getUsername(), chunkFile);
             uploadResponse.setUpload(true);
         } else {
             // 多个分片
@@ -1626,9 +1677,7 @@ public class FileServiceImpl implements IFileService {
             FileUtil.mkdir(dir);
         }
         // 保存文件夹信息
-        if (isNotMonitor()) {
-            createFile(upload.getUsername(), dir);
-        }
+        createFile(upload.getUsername(), dir);
         return ResultUtil.success();
     }
 
@@ -1652,9 +1701,7 @@ public class FileServiceImpl implements IFileService {
         if (!dir.exists()) {
             FileUtil.mkdir(dir);
         }
-        if (isNotMonitor()) {
-            createFile(upload.getUsername(), dir);
-        }
+        createFile(upload.getUsername(), dir);
         return ResultUtil.success();
     }
 
@@ -1761,9 +1808,7 @@ public class FileServiceImpl implements IFileService {
         }
         PathUtil.move(file, outputFile, true);
         uploadResponse.setUpload(true);
-        if (isNotMonitor()) {
-            createFile(upload.getUsername(), outputFile.toFile());
-        }
+        createFile(upload.getUsername(), outputFile.toFile());
         return ResultUtil.success(uploadResponse);
     }
 

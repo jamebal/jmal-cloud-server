@@ -108,6 +108,7 @@ public class ShareServiceImpl implements IShareService {
         if (shareDO.getExtractionCode() != null) {
             share.setExtractionCode(shareDO.getExtractionCode());
         }
+        share.setId(shareDO.getId());
         mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
     }
 
