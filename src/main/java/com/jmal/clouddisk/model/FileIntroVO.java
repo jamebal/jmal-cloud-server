@@ -38,6 +38,11 @@ public class FileIntroVO extends FileBase{
      */
     private Boolean isShare;
 
+    /***
+     * 是否为私密链接
+     */
+    private Boolean isPrivacy;
+
     private Boolean shareBase;
     /***
      * 分享有效期
