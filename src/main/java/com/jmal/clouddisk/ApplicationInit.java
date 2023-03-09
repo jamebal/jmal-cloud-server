@@ -88,7 +88,7 @@ public class ApplicationInit implements ApplicationRunner {
         try {
             if (diff > DateUnit.MINUTE.getMillis() * 5) {
                 if (isMonitor) {
-                    monitor.stop();
+                    monitor.stop(DateUnit.SECOND.getMillis());
                     monitor = null;
                     monitor = new FileAlterationMonitor(DateUnit.MINUTE.getMillis() * 30, observer);
                     monitor.start();
@@ -97,7 +97,7 @@ public class ApplicationInit implements ApplicationRunner {
                 }
             } else {
                 if (!isMonitor) {
-                    monitor.stop();
+                    monitor.stop(DateUnit.SECOND.getMillis());
                     monitor = null;
                     monitor = new FileAlterationMonitor(DateUnit.SECOND.getMillis() * 3, observer);
                     monitor.start();
