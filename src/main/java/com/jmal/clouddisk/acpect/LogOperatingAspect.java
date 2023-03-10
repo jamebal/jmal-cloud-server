@@ -8,6 +8,8 @@ import com.jmal.clouddisk.service.impl.LogService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -18,8 +20,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.lang.reflect.Method;
 
 /***
@@ -94,8 +94,12 @@ public class LogOperatingAspect {
         logOperation.setType(logType);
         if(LogOperation.Type.LOGIN.name().equals(logType)){
             // 登录日志
-            ConsumerDO consumerDO = (ConsumerDO) joinPoint.getArgs()[0];
-            logOperation.setUsername(consumerDO.getUsername());
+            for (Object arg : joinPoint.getArgs()) {
+                if (arg instanceof ConsumerDO consumerDO) {
+                    logOperation.setUsername(consumerDO.getUsername());
+                    break;
+                }
+            }
         }
         // 添加日志
         logService.addLogBefore(logOperation, result, (HttpServletRequest) attributes.getRequest(), (HttpServletResponse) attributes.getResponse());

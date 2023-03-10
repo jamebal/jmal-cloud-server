@@ -2,7 +2,6 @@ package com.jmal.clouddisk.repository;
 
 import com.jmal.clouddisk.model.UserAccessTokenDO;
 import com.jmal.clouddisk.model.UserAccessTokenDTO;
-import com.jmal.clouddisk.model.UserTokenDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 
 import java.util.List;
@@ -19,19 +18,6 @@ public interface IAuthDAO {
      */
     DataSource getDataSource();
 
-    /**
-     * 获取用户上次缓存的token的时间戳
-     * @param username 用户名
-     * @return UserToken
-     */
-    UserTokenDO findOneUserToken(String username);
-
-    /***
-     * 更新用户token的时间戳
-     * @param username 用户名
-     */
-    void updateToken(String username);
-
     /***
      * 根据AccessToken获取用户名
      * @param accessToken accessToken
@@ -47,7 +33,7 @@ public interface IAuthDAO {
 
     /***
      * 删除用户的token
-     * @param userList
+     * @param userList userList
      */
     void deleteAllByUser(List<ConsumerDO> userList);
 

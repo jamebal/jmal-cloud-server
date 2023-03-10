@@ -2,19 +2,16 @@ package com.jmal.clouddisk.interceptor;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
-import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
-import com.jmal.clouddisk.model.UserTokenDO;
 import com.jmal.clouddisk.model.rbac.UserLoginContext;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
-import com.jmal.clouddisk.util.CaffeineUtil;
-import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
-import com.jmal.clouddisk.util.TokenUtil;
+import com.jmal.clouddisk.util.*;
 import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +22,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -38,10 +36,11 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     public static final String JMAL_TOKEN = "jmal-token";
 
+    public static final String NAME_HEADER = "name";
+
     public static final String ACCESS_TOKEN = "access-token";
 
-    private static final long ONE_DAY = 1000L * 60 * 60 * 24;
-    private final Cache<String, String> tokenCache = CaffeineUtil.getTokenCache();
+    public static final String REFRESH_TOKEN = "refresh-token";
 
     private final IAuthDAO authDAO;
 
@@ -55,7 +54,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
         // 身份认证
-        String username = getUserNameByHeader(request);
+        String username = getUserNameByHeader(request, response);
         if (!CharSequenceUtil.isBlank(username)) {
             // jmal-token 身份认证通过, 设置该身份的权限
             setAuthorities(username);
@@ -70,17 +69,19 @@ public class AuthInterceptor implements HandlerInterceptor {
      * @param request request
      * @return 用户名
      */
-    public String getUserNameByHeader(HttpServletRequest request){
-        String username;
+    public String getUserNameByHeader(HttpServletRequest request, HttpServletResponse response) {
+        String name = request.getHeader(NAME_HEADER);
         String jmalToken = request.getHeader(JMAL_TOKEN);
         if (CharSequenceUtil.isBlank(jmalToken)) {
             jmalToken = request.getParameter(JMAL_TOKEN);
         }
-        if(CharSequenceUtil.isBlank(jmalToken)){
+        if (CharSequenceUtil.isBlank(name)) {
+            name = request.getParameter(NAME_HEADER);
+        }
+        if (CharSequenceUtil.isBlank(jmalToken)) {
             return getUserNameByAccessToken(request);
         }
-        username = getUserNameByJmalToken(jmalToken);
-        return username;
+        return getUserNameByJmalToken(request, response, jmalToken, name);
     }
 
     /***
@@ -89,7 +90,7 @@ public class AuthInterceptor implements HandlerInterceptor {
      */
     private void setAuthorities(String username) {
         List<String> authorities = CaffeineUtil.getAuthoritiesCache(username);
-        if(authorities == null || authorities.isEmpty()){
+        if (authorities == null || authorities.isEmpty()) {
             authorities = userService.getAuthorities(username);
             CaffeineUtil.setAuthoritiesCache(username, authorities);
         }
@@ -104,9 +105,9 @@ public class AuthInterceptor implements HandlerInterceptor {
      */
     private void setAuthorities(String username, List<String> authorities) {
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (requestAttributes != null){
+        if (requestAttributes != null) {
             String userId = CaffeineUtil.getUserIdCache(username);
-            if(CharSequenceUtil.isBlank(userId)) {
+            if (CharSequenceUtil.isBlank(userId)) {
                 userId = userService.getUserIdByUserName(username);
                 CaffeineUtil.setUserIdCache(username, userId);
             }
@@ -123,20 +124,20 @@ public class AuthInterceptor implements HandlerInterceptor {
      * @param request request
      * @return 用户名
      */
-    public String getUserNameByAccessToken(HttpServletRequest request){
+    public String getUserNameByAccessToken(HttpServletRequest request) {
         String token = request.getHeader(ACCESS_TOKEN);
         if (CharSequenceUtil.isBlank(token)) {
             token = request.getParameter(ACCESS_TOKEN);
         }
-        if(CharSequenceUtil.isBlank(token)){
+        if (CharSequenceUtil.isBlank(token)) {
             return null;
         }
         UserAccessTokenDO userAccessTokenDO = authDAO.getUserNameByAccessToken(token);
-        if(userAccessTokenDO == null){
+        if (userAccessTokenDO == null) {
             return null;
         }
         String username = userAccessTokenDO.getUsername();
-        if(CharSequenceUtil.isBlank(username)){
+        if (CharSequenceUtil.isBlank(username)) {
             return null;
         }
         // access-token 认证通过 设置该身份的权限
@@ -150,46 +151,48 @@ public class AuthInterceptor implements HandlerInterceptor {
      * @param jmalToken jmalToken
      * @return 用户名
      */
-    public String getUserNameByJmalToken(String jmalToken) {
-        if (!CharSequenceUtil.isBlank(jmalToken)) {
-            String username = tokenCache.getIfPresent(jmalToken);
-            if (CharSequenceUtil.isBlank(username)) {
-                String userName = TokenUtil.getTokenKey(jmalToken);
-                if(CharSequenceUtil.isBlank(userName)){
-                    return null;
-                }
-                UserTokenDO userTokenDO = authDAO.findOneUserToken(userName);
-                if (userTokenDO == null) {
-                    return null;
-                }
-                if ((System.currentTimeMillis() - userTokenDO.getTimestamp()) < ONE_DAY) {
-                    ThreadUtil.execute(() -> updateToken(jmalToken, userName));
-                    return userTokenDO.getUsername();
-                } else {
-                    // 登录超时清除用户缓存
-                    CaffeineUtil.removeAuthoritiesCache(userName);
-                    CaffeineUtil.removeUserIdCache(userName);
-                }
+    public String getUserNameByJmalToken(HttpServletRequest request, HttpServletResponse response, String jmalToken, String name) {
+        if (!CharSequenceUtil.isBlank(jmalToken) && !CharSequenceUtil.isBlank(name)) {
+            String hashPassword = userService.getHashPasswordUserName(name);
+            if (hashPassword == null) {
                 return null;
-            } else {
-                ThreadUtil.execute(() -> updateToken(jmalToken, username));
+            }
+            String username = TokenUtil.getTokenKey(jmalToken, hashPassword);
+            if (username == null && request != null) {
+                String refreshToken = getCookie(request);
+                if (StrUtil.isBlank(refreshToken)) {
+                    return null;
+                }
+                username = TokenUtil.getTokenKey(refreshToken, hashPassword);
+                if (name.equals(username)) {
+                    // 自动续token
+                    boolean rememberMe = !StrUtil.isBlank(request.getHeader("RememberMe"));
+                    LocalDateTime jmalTokenExpirat = LocalDateTime.now();
+                    jmalTokenExpirat = jmalTokenExpirat.plusSeconds(rememberMe ? 30 * 24 : 10);
+                    jmalToken = TokenUtil.createToken(username, hashPassword, jmalTokenExpirat);
+                    Cookie cookie = new Cookie("jmal_token", jmalToken);
+                    cookie.setPath("/");
+                    response.addCookie(cookie);
+                }
+            }
+            if (name.equals(username)) {
                 return username;
             }
+            return null;
         }
         return null;
     }
 
-
-
-    /**
-     * 刷新token
-     *
-     * @param jmalToken jmalToken
-     * @param username username
-     */
-    private void updateToken(String jmalToken, String username) {
-        tokenCache.put(jmalToken, username);
-        authDAO.updateToken(username);
+    public String getCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals(REFRESH_TOKEN)) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 
     private void returnJson(HttpServletResponse response) {

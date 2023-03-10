@@ -5,7 +5,6 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
 import com.jmal.clouddisk.model.UserAccessTokenDTO;
-import com.jmal.clouddisk.model.UserTokenDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.repository.DataSource;
 import com.jmal.clouddisk.repository.IAuthDAO;
@@ -30,8 +29,6 @@ import java.util.stream.Collectors;
 @Repository
 public class AuthDAOImpl implements IAuthDAO {
 
-    private static final String USER_TOKEN_COLLECTION_NAME = "user_token";
-
     private static final String USERNAME = "username";
 
     private static final String ACCESS_TOKEN = "accessToken";
@@ -44,23 +41,6 @@ public class AuthDAOImpl implements IAuthDAO {
     @Override
     public DataSource getDataSource() {
         return DataSource.mongodb;
-    }
-
-    @Override
-    public UserTokenDO findOneUserToken(String username) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(USERNAME).is(username));
-        return mongoTemplate.findOne(query, UserTokenDO.class, USER_TOKEN_COLLECTION_NAME);
-    }
-
-    @Override
-    public void updateToken(String username) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(USERNAME).is(username));
-        Update update = new Update();
-        update.set(USERNAME, username);
-        update.set("timestamp", System.currentTimeMillis());
-        mongoTemplate.upsert(query, update, USER_TOKEN_COLLECTION_NAME);
     }
 
     @Override
@@ -94,7 +74,6 @@ public class AuthDAOImpl implements IAuthDAO {
             Query query = new Query();
             query.addCriteria(Criteria.where(USERNAME).is(username));
             mongoTemplate.remove(query, ACCESS_TOKEN_COLLECTION_NAME);
-            mongoTemplate.remove(query, USER_TOKEN_COLLECTION_NAME);
         });
     }
 

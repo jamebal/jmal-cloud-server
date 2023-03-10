@@ -91,7 +91,7 @@ public class FileInterceptor implements HandlerInterceptor {
     IShareService shareService;
 
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws UnsupportedEncodingException {
-        if (fileAuthError(request)) {
+        if (fileAuthError(request, response)) {
             return false;
         }
         String operation = request.getParameter(OPERATION);
@@ -124,7 +124,7 @@ public class FileInterceptor implements HandlerInterceptor {
      * 判断当前uri所属的文件是否为该分享的文件或其子文件
      * @return true 鉴权失败，false 鉴权成功
      */
-    private boolean fileAuthError(HttpServletRequest request) {
+    private boolean fileAuthError(HttpServletRequest request, HttpServletResponse response) {
         String path = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
         request.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE, URLDecoder.decode(path, StandardCharsets.UTF_8));
         Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
@@ -144,7 +144,7 @@ public class FileInterceptor implements HandlerInterceptor {
             }
             return true;
         } else {
-            String username = authInterceptor.getUserNameByHeader(request);
+            String username = authInterceptor.getUserNameByHeader(request, response);
             int nameCount = uriPath.getNameCount();
             if (nameCount < MIN_COUNT) {
                 return true;
@@ -186,6 +186,9 @@ public class FileInterceptor implements HandlerInterceptor {
             }
             if (BooleanUtil.isFalse(shareDO.getIsPrivacy())) {
                 return false;
+            }
+            if (request == null) {
+                return true;
             }
             String shareToken = request.getHeader(ShareServiceImpl.SHARE_TOKEN);
             if (CharSequenceUtil.isBlank(shareToken)) {

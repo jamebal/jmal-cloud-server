@@ -1,6 +1,8 @@
 package com.jmal.clouddisk.service;
 
 import com.jmal.clouddisk.util.ResponseResult;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * IAuthService
@@ -15,14 +17,14 @@ public interface IAuthService {
      * @param passWord 密码
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> login(String userName, String passWord);
+    ResponseResult<Object> login(HttpServletRequest request, HttpServletResponse response, String userName, String passWord);
 
     /***
      * 登出
      * @param token token
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> logout(String token);
+    ResponseResult<Object> logout(String token, HttpServletResponse response);
 
     /***
      * 检验旧密码

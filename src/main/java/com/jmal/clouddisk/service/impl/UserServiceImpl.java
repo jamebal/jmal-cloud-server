@@ -6,7 +6,6 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.HexUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.crypto.symmetric.SymmetricCrypto;
-import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
@@ -52,8 +51,6 @@ public class UserServiceImpl implements IUserService {
     public static final String COLLECTION_NAME = "user";
 
     public static final String ROLES = "roles";
-
-    private final Cache<String, String> tokenCache = CaffeineUtil.getTokenCache();
 
     @Autowired
     private MongoTemplate mongoTemplate;
@@ -307,18 +304,6 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public String getUserName(String token) {
-        if (CharSequenceUtil.isBlank(token)) {
-            throw new CommonException(ExceptionType.PERMISSION_DENIED.getCode(), ExceptionType.PERMISSION_DENIED.getMsg());
-        }
-        String username = tokenCache.getIfPresent(token);
-        if (CharSequenceUtil.isBlank(username)) {
-            throw new CommonException(ExceptionType.PERMISSION_DENIED.getCode(), ExceptionType.PERMISSION_DENIED.getMsg());
-        }
-        return username;
-    }
-
-    @Override
     public ResponseResult<Object> updatePass(ConsumerDO consumer) {
         String userId = consumer.getId();
         String newPassword = consumer.getPassword();
@@ -397,7 +382,7 @@ public class UserServiceImpl implements IUserService {
         return getAES().decryptStr(consumer.getEncryptPwd());
     }
 
-    public String getEncryptPwdByUserName(String username) {
+    public String getHashPasswordUserName(String username) {
         if (CharSequenceUtil.isBlank(username)) {
             return null;
         }
@@ -405,15 +390,7 @@ public class UserServiceImpl implements IUserService {
         if (consumer == null) {
             return null;
         }
-        return consumer.getEncryptPwd();
-    }
-
-    public String getEncryptPwdByUserId(String userId) {
-        String username = getUserNameById(userId);
-        if (CharSequenceUtil.isBlank(username)) {
-            return null;
-        }
-        return getEncryptPwdByUserName(username);
+        return consumer.getPassword();
     }
 
     @Override

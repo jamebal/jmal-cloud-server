@@ -47,7 +47,7 @@ public class FileViewController {
     public String publicPreview(@PathVariable String fileId, @PathVariable String shareId, @PathVariable String shareToken) {
         ResponseResult<Object> validSHare = shareService.validShare(shareToken, shareId);
         if (validSHare != null) return FORWARD_INVALID;
-        return fileService.viewFile(fileId, fileId, "preview");
+        return fileService.viewFile(fileId, fileId, shareToken, "preview");
     }
 
     @Operation(summary = "分享：下载单个文件")
@@ -56,7 +56,7 @@ public class FileViewController {
     public String publicDownload(@PathVariable String fileId, @PathVariable String shareId, @PathVariable String shareToken) {
         ResponseResult<Object> validSHare = shareService.validShare(shareToken, shareId);
         if (validSHare != null) return FORWARD_INVALID;
-        return fileService.viewFile(fileId, fileId, "download");
+        return fileService.viewFile(fileId, fileId, shareToken, "download");
     }
 
 }

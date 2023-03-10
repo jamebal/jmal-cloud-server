@@ -3,6 +3,9 @@ package com.jmal.clouddisk.util;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.HexUtil;
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.JWTVerifier;
@@ -10,6 +13,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -23,10 +27,13 @@ import java.util.concurrent.TimeUnit;
  * @author jmal
  */
 @Slf4j
+@Component
 public class TokenUtil {
 
-    private TokenUtil() {
+    private static String secret = null;
 
+    private TokenUtil() {
+        secret = HexUtil.encodeHexStr(SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue()).getEncoded());
     }
 
     /**
@@ -61,25 +68,14 @@ public class TokenUtil {
      * 生成token
      *
      * @param key token key
-     * @param password password
      * @return token
      */
-    public static String createToken(String key, String password) {
-        return generateToken(key, password, null);
-    }
-
-    /**
-     * 生成token
-     *
-     * @param key token key
-     * @return token
-     */
-    public static String createToken(String key) {
-        return generateToken(key, "23acda38e1d31cbce55a9419015bac7a", null);
+    public static String createToken(String key, LocalDateTime localDateTime) {
+        return generateToken(key, secret, localDateTime);
     }
 
     public static String getTokenKey(String token) {
-        return getTokenKey(token, "23acda38e1d31cbce55a9419015bac7a");
+        return getTokenKey(token, secret);
     }
 
     public static String getTokenKey(String token, String password) {

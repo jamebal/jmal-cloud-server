@@ -128,12 +128,8 @@ public class ShareServiceImpl implements IShareService {
         }
         if (shareCode.equals(shareDO.getExtractionCode())) {
             // 验证成功 返回share-token
-            String password = userService.getEncryptPwdByUserId(shareDO.getUserId());
-            if (CharSequenceUtil.isBlank(password)) {
-                return ResultUtil.warning(LINK_FAILED);
-            }
-            // share-token有效期为24个小时
-            String shareToken = TokenUtil.createToken(shareId, password, LocalDateTimeUtil.now().plusDays(1));
+            // share-token有效期为2个小时
+            String shareToken = TokenUtil.createToken(shareId, LocalDateTimeUtil.now().plusHours(2));
             return ResultUtil.success(shareToken);
         }
         return ResultUtil.warning("提取码有误");
@@ -183,11 +179,7 @@ public class ShareServiceImpl implements IShareService {
                 return ResultUtil.success(shareVO);
             }
             // 再检查share-token是否正确
-            String password = userService.getEncryptPwdByUserId(shareDO.getUserId());
-            if (CharSequenceUtil.isBlank(password)) {
-                return ResultUtil.success(shareVO);
-            }
-            if (!shareDO.getId().equals(TokenUtil.getTokenKey(shareToken, password))) {
+            if (!shareDO.getId().equals(TokenUtil.getTokenKey(shareToken))) {
                 // 验证失败
                 return ResultUtil.success(shareVO);
             }

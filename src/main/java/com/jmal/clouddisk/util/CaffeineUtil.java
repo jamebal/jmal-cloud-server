@@ -59,11 +59,6 @@ public class CaffeineUtil {
     private static Cache<String, Lock> uploadFolderLockCache;
 
     /***
-     * 用户token
-     */
-    private static Cache<String, String> tokenCache;
-
-    /***
      * 用户身份权限缓存
      * key: username
      * value: 权限标识列表
@@ -82,9 +77,9 @@ public class CaffeineUtil {
     }
 
     /***
-     * 缓存中是否存在该usernam的权限
-     * @param username
-     * @return
+     * 缓存中是否存在该username的权限
+     * @param username username
+     * @return bool
      */
     public static boolean existsAuthoritiesCache(String username) {
         return AUTHORITIES_CACHE.getIfPresent(username) != null;
@@ -125,9 +120,6 @@ public class CaffeineUtil {
         if(unWrittenCache == null){
             unWrittenCache = Caffeine.newBuilder().build();
         }
-        if(tokenCache == null){
-            tokenCache = Caffeine.newBuilder().expireAfterWrite(1, TimeUnit.DAYS).build();
-        }
         if(chunkWriteLockCache == null){
             chunkWriteLockCache = Caffeine.newBuilder().build();
         }
@@ -155,14 +147,6 @@ public class CaffeineUtil {
             initMyCache();
         }
         return unWrittenCache;
-    }
-
-
-    public static Cache<String, String> getTokenCache(){
-        if(tokenCache == null){
-            initMyCache();
-        }
-        return tokenCache;
     }
 
     public static Cache<String, Lock> getChunkWriteLockCache(){

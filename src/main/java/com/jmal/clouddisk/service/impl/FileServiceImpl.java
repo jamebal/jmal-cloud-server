@@ -10,6 +10,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -543,7 +544,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public Optional<FileDocument> coverOfMp3(String id, String userName) throws CommonException {
+    public Optional<FileDocument> coverOfMp3(String id) throws CommonException {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument == null) {
             return Optional.empty();
@@ -562,7 +563,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public void packageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList) {
-        String username = userService.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN));
+        String username = request.getParameter(AuthInterceptor.NAME_HEADER);
         packageDownload(request, response, fileIdList, username);
     }
 
@@ -1233,14 +1234,25 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public String viewFile(String  shareKey, String fileId, String operation) {
+    public String viewFile(String  shareKey, String fileId, String shareToken, String operation) {
         FileDocument fileDocument = getById(fileId);
         if (fileDocument == null) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND.getCode(), ExceptionType.FILE_NOT_FIND.getMsg());
         }
         String username = userService.getUserNameById(fileDocument.getUserId());
         String relativepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(fileDocument.getPath() + fileDocument.getName(), StandardCharsets.UTF_8);
-        return "redirect:/file/" + username + relativepath + "?shareKey=" + shareKey + "&o=" + operation;
+        StringBuilder sb = StrUtil.builder()
+                .append("redirect:/file/")
+                .append(username)
+                .append(relativepath)
+                .append("?shareKey=")
+                .append(shareKey)
+                .append("&o=")
+                .append(operation);
+        if (!StrUtil.isBlank(shareToken)) {
+            sb.append("&share-token=").append(shareToken);
+        }
+        return sb.toString();
     }
 
     @Override

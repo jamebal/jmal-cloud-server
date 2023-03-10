@@ -1,19 +1,22 @@
 package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.annotation.LogOperatingFun;
-import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
+import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 登录、登出、验证
@@ -32,8 +35,8 @@ public class AuthController {
     @Operation(summary = "登录")
     @LogOperatingFun(logType = LogOperation.Type.LOGIN)
     @PostMapping("/login")
-    public ResponseResult<Object> login(@RequestBody ConsumerDO user){
-        return authService.login(user.getUsername(), user.getPassword());
+    public ResponseResult<Object> login(@RequestBody ConsumerDO user, HttpServletRequest request, HttpServletResponse response){
+        return authService.login(request, response, user.getUsername(), user.getPassword());
     }
 
     @Operation(summary = "校验旧密码")
@@ -48,9 +51,9 @@ public class AuthController {
     @GetMapping("/logout")
     @LogOperatingFun
     @Permission("sys:user:list")
-    public ResponseResult<Object> logout(HttpServletRequest request){
+    public ResponseResult<Object> logout(HttpServletRequest request, HttpServletResponse response){
         String token = request.getHeader(AuthInterceptor.JMAL_TOKEN);
-        return authService.logout(token);
+        return authService.logout(token, response);
     }
 
     @Operation(summary = "是否有用户")

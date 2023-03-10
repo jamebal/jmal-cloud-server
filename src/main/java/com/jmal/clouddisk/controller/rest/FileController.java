@@ -218,9 +218,9 @@ public class FileController {
     @GetMapping("/view/cover")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> coverOfMp3(HttpServletRequest request, String id) {
+    public ResponseEntity<Object> coverOfMp3(String id) {
         ResultUtil.checkParamIsNull(id);
-        Optional<FileDocument> file = fileService.coverOfMp3(id, service.getUserName(request.getParameter(AuthInterceptor.JMAL_TOKEN)));
+        Optional<FileDocument> file = fileService.coverOfMp3(id);
         return getObjectResponseEntity(file);
     }
 

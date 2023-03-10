@@ -67,13 +67,6 @@ public interface IUserService {
     List<ConsumerDTO> userListAll();
 
     /***
-     * 验证用户名
-     * @param token token
-     * @return 用户名
-     */
-    String getUserName(String token);
-
-    /***
      * 修改用户密码
      * @param consumer ConsumerDO
      * @return ResponseResult

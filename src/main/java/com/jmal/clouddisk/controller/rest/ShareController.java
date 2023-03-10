@@ -169,20 +169,20 @@ public class ShareController {
     @GetMapping("/articles/s/view/thumbnail")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseEntity<Object> articlesThumbnail(String id) {
-        return thumbnail(id);
+        return thumbnail(id, null);
     }
 
     @Operation(summary = "显示缩略图")
     @GetMapping("/public/s/view/thumbnail")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> publicThumbnail(String id) {
-        return thumbnail(id);
+    public ResponseEntity<Object> publicThumbnail(String id, HttpServletRequest request) {
+        return thumbnail(id, request);
     }
 
-    private ResponseEntity<Object> thumbnail(String id) {
+    private ResponseEntity<Object> thumbnail(String id, HttpServletRequest request) {
         ResultUtil.checkParamIsNull(id);
         Optional<FileDocument> file = fileService.thumbnail(id, null);
-        if (fileInterceptor.isNotAllowAccess(file.orElse(null), null)) {
+        if (fileInterceptor.isNotAllowAccess(file.orElse(null), request)) {
             return null;
         }
         return file.<ResponseEntity<Object>>map(fileDocument ->

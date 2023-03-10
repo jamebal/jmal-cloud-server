@@ -164,11 +164,10 @@ public interface IFileService {
 
     /***
      * 显示缩略图(mp3封面)
-     * @param id
-     * @param userName
-     * @return
+     * @param id fileId
+     * @return FileDocument
      */
-    Optional<FileDocument> coverOfMp3(String id, String userName);
+    Optional<FileDocument> coverOfMp3(String id);
 
     /***
      * 分享里的打包下载
@@ -312,7 +311,7 @@ public interface IFileService {
      * @param operation 操作(下载、预览等操作)
      * @return
      */
-    String viewFile(String shareKey, String fileId, String operation);
+    String viewFile(String shareKey, String fileId, String shareToken, String operation);
 
     /***
      * 预览文档里的图片
