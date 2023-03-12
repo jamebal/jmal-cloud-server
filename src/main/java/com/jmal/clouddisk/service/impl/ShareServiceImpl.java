@@ -125,8 +125,8 @@ public class ShareServiceImpl implements IShareService {
         }
         if (shareCode.equals(shareDO.getExtractionCode())) {
             // 验证成功 返回share-token
-            // share-token有效期为2个小时
-            String shareToken = TokenUtil.createToken(shareId, LocalDateTimeUtil.now().plusHours(2));
+            // share-token有效期为6个小时
+            String shareToken = TokenUtil.createToken(shareId, LocalDateTimeUtil.now().plusHours(6));
             return ResultUtil.success(shareToken);
         }
         return ResultUtil.warning("提取码有误");
@@ -280,7 +280,12 @@ public class ShareServiceImpl implements IShareService {
     }
 
     @Override
-    public ResponseResult<SharerDTO> getSharer(String userId) {
+    public ResponseResult<SharerDTO> getSharer(String shareId) {
+        ShareDO shareDO = getShare(shareId);
+        if (shareDO == null) {
+            return ResultUtil.success();
+        }
+        String userId = shareDO.getUserId();
         SharerDTO sharerDTO = new SharerDTO();
         ConsumerDO consumerDO = userService.getUserInfoById(userId);
         sharerDTO.setShowName(consumerDO.getShowName());

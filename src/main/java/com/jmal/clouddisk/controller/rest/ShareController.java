@@ -126,8 +126,8 @@ public class ShareController {
     @Operation(summary = "获取分享者信息")
     @GetMapping("/public/get/sharer")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<SharerDTO> getSharer(@RequestParam String userId) {
-        return shareService.getSharer(userId);
+    public ResponseResult<SharerDTO> getSharer(@RequestParam String shareId) {
+        return shareService.getSharer(shareId);
     }
 
     @Operation(summary = "访问分享链接里的目录")

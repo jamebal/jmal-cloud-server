@@ -91,10 +91,10 @@ public interface IShareService {
 
     /***
      * 获取分享者信息
-     * @param userId userId
+     * @param shareId shareId
      * @return ResponseResult
      */
-    ResponseResult<SharerDTO> getSharer(String userId);
+    ResponseResult<SharerDTO> getSharer(String shareId);
 
     /**
      * 验证提取码

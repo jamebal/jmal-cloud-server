@@ -1,6 +1,10 @@
 package com.jmal.clouddisk.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
+
+import java.time.LocalDateTime;
 
 /**
  * @Description 文件分享模型
@@ -23,5 +27,8 @@ public class ShareVO {
 
     private Boolean isFolder;
     private String contentType;
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm")
+    private LocalDateTime expireDate;
 
 }
