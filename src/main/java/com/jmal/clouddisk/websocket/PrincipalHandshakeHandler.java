@@ -1,6 +1,8 @@
 package com.jmal.clouddisk.websocket;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.jmal.clouddisk.interceptor.AuthInterceptor;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.server.ServerHttpRequest;
@@ -9,7 +11,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.security.Principal;
 import java.util.Map;
 
@@ -33,7 +34,7 @@ public class PrincipalHandshakeHandler extends DefaultHandshakeHandler {
             /*
              * 这边就获取你最熟悉的陌生人,携带参数，你可以cookie，请求头，或者url携带，这边我采用url携带
              */
-            final String name = httpRequest.getParameter("name");
+            String name = AuthInterceptor.getCookie(httpRequest, "username");
             if (CharSequenceUtil.isBlank(name)) {
                 return null;
             }

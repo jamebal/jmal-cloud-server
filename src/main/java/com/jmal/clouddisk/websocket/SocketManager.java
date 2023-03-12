@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentMap;
 @Slf4j
 public class SocketManager {
 
-    public SocketManager() {
+    private SocketManager() {
 
     }
     private static final ConcurrentHashMap<String, WebSocketSession> manager = new ConcurrentHashMap<>();
