@@ -21,10 +21,12 @@ import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.util.UriUtils;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -276,7 +278,8 @@ public class FileInterceptor implements HandlerInterceptor {
     }
 
     private void responseHeader(HttpServletResponse response, String fileName, byte[] img) {
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + fileName);
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + ContentDisposition.builder("attachment")
+                .filename(UriUtils.encode(fileName, StandardCharsets.UTF_8)));
         response.setHeader(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(FileUtil.extName(fileName)));
         response.setHeader(HttpHeaders.CONNECTION, "close");
         response.setHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(img.length));

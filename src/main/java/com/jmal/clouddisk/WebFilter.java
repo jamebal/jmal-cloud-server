@@ -1,7 +1,6 @@
 package com.jmal.clouddisk;
 
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.http.useragent.UserAgent;
 import cn.hutool.http.useragent.UserAgentUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
@@ -91,7 +90,6 @@ public class WebFilter implements Filter {
         }
         CaffeineUtil.setLastAccessTimeCache();
         chain.doFilter(request, response);
-        Console.log(httpServletResponse.getHeaderNames(), httpServletResponse.getHeader("Content-Disposition"));
     }
 
     /***
