@@ -2,14 +2,16 @@ package com.jmal.clouddisk.interceptor;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
 import com.jmal.clouddisk.model.rbac.UserLoginContext;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
-import com.jmal.clouddisk.util.*;
+import com.jmal.clouddisk.util.CaffeineUtil;
+import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.TokenUtil;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -146,10 +148,13 @@ public class AuthInterceptor implements HandlerInterceptor {
         return userAccessTokenDO.getUsername();
     }
 
-    /***
+    /**
      * 根据jmal-token获取用户名
-     * @param jmalToken jmalToken
-     * @return 用户名
+     * @param request HttpServletRequest
+     * @param response HttpServletResponse
+     * @param jmalToken jmal-token
+     * @param name      username
+     * @return username
      */
     public String getUserNameByJmalToken(HttpServletRequest request, HttpServletResponse response, String jmalToken, String name) {
         if (!CharSequenceUtil.isBlank(jmalToken) && !CharSequenceUtil.isBlank(name)) {
@@ -159,21 +164,12 @@ public class AuthInterceptor implements HandlerInterceptor {
             }
             String username = TokenUtil.getTokenKey(jmalToken, hashPassword);
             if (username == null && request != null) {
-                String refreshToken = getCookie(request);
-                if (StrUtil.isBlank(refreshToken)) {
+                String refreshToken = getCookie(request, REFRESH_TOKEN);
+                if (CharSequenceUtil.isBlank(refreshToken)) {
                     return null;
                 }
-                username = TokenUtil.getTokenKey(refreshToken, hashPassword);
-                if (name.equals(username)) {
-                    // 自动续token
-                    boolean rememberMe = !StrUtil.isBlank(request.getHeader("RememberMe"));
-                    LocalDateTime jmalTokenExpirat = LocalDateTime.now();
-                    jmalTokenExpirat = jmalTokenExpirat.plusSeconds(rememberMe ? 30 * 24 : 10);
-                    jmalToken = TokenUtil.createToken(username, hashPassword, jmalTokenExpirat);
-                    Cookie cookie = new Cookie("jmal_token", jmalToken);
-                    cookie.setPath("/");
-                    response.addCookie(cookie);
-                }
+                // 自动续token
+                username = renewJmalToken(request, response, name, hashPassword, refreshToken);
             }
             if (name.equals(username)) {
                 return username;
@@ -183,11 +179,60 @@ public class AuthInterceptor implements HandlerInterceptor {
         return null;
     }
 
-    public String getCookie(HttpServletRequest request) {
+    /**
+     * 自动续token
+     */
+    private static String renewJmalToken(HttpServletRequest request, HttpServletResponse response, String name, String hashPassword, String refreshToken) {
+        String username = TokenUtil.getTokenKey(refreshToken, hashPassword);
+        if (name.equals(username)) {
+            boolean rememberMe = name.equals(getCookie(request,"rememberName"));
+            String jmalToken = generateJmalToken(hashPassword, username, rememberMe);
+            Cookie cookie = new Cookie(JMAL_TOKEN, jmalToken);
+            cookie.setPath("/");
+            response.addCookie(cookie);
+            setRefreshCookie(response, hashPassword, username, rememberMe);
+        }
+        return username;
+    }
+
+    /**
+     * 生成jmal-token
+     * @param hashPassword hashPassword
+     * @param username username
+     * @param rememberMe rememberMe
+     * @return jmal-token
+     */
+    public static String generateJmalToken(String hashPassword, String username, boolean rememberMe) {
+        LocalDateTime jmalTokenExpiration = LocalDateTime.now();
+        // 如果用户勾选了记住我, jmal-token 期限为1天, 否则为2小时
+        jmalTokenExpiration = jmalTokenExpiration.plusSeconds(rememberMe ? 24 * 3600 : 2 * 3600);
+        return TokenUtil.createToken(username, hashPassword, jmalTokenExpiration);
+    }
+
+    /**
+     * 设置 refreshToken
+     * @param response HttpServletResponse
+     * @param hashPassword hashPassword
+     * @param username username
+     * @param rememberMe rememberMe
+     */
+    public static void setRefreshCookie(HttpServletResponse response, String hashPassword, String username, boolean rememberMe) {
+        LocalDateTime refreshTokenExpiration = LocalDateTime.now();
+        // 如果用户勾选了记住我, refreshToken期限为30天, 否则为1天
+        int refreshMaxAge = rememberMe ? 30 * 24 * 3600 : 24 * 3600;
+        refreshTokenExpiration = refreshTokenExpiration.plusSeconds(refreshMaxAge);
+        Cookie cookie = new Cookie(AuthInterceptor.REFRESH_TOKEN, TokenUtil.createToken(username, hashPassword, refreshTokenExpiration));
+        cookie.setMaxAge(refreshMaxAge);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        response.addCookie(cookie);
+    }
+
+    public static String getCookie(HttpServletRequest request, String name) {
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
-                if (cookie.getName().equals(REFRESH_TOKEN)) {
+                if (cookie.getName().equals(name)) {
                     return cookie.getValue();
                 }
             }

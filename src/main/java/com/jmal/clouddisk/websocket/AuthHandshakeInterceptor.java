@@ -2,10 +2,12 @@ package com.jmal.clouddisk.websocket;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
+import jakarta.servlet.http.HttpServletRequest;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
+import org.springframework.http.server.ServletServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
@@ -28,14 +30,23 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
 
     @Override
     public boolean beforeHandshake(@NotNull ServerHttpRequest serverHttpRequest, @NotNull ServerHttpResponse serverHttpResponse, @NotNull WebSocketHandler webSocketHandler, @NotNull Map<String, Object> map) {
-        ServletServerHttpRequest request = (ServletServerHttpRequest) serverHttpRequest;
-        String jmalToken = request.getServletRequest().getParameter("jmal-token");
-        String name = request.getServletRequest().getParameter("name");
-        return !CharSequenceUtil.isBlank(authInterceptor.getUserNameByJmalToken(null, null, jmalToken, name));
+        ServletServerHttpRequest servletServerHttpRequest = (ServletServerHttpRequest) serverHttpRequest;
+        ServletServerHttpResponse response = (ServletServerHttpResponse) serverHttpResponse;
+        HttpServletRequest request = servletServerHttpRequest.getServletRequest();
+        String jmalToken = AuthInterceptor.getCookie(request, AuthInterceptor.JMAL_TOKEN);
+        if (CharSequenceUtil.isBlank(jmalToken)) {
+            return false;
+        }
+        String name = AuthInterceptor.getCookie(request, "username");
+        if (CharSequenceUtil.isBlank(name)) {
+            return false;
+        }
+        return !CharSequenceUtil.isBlank(authInterceptor.getUserNameByJmalToken(request, response.getServletResponse(), jmalToken, name));
     }
 
     @Override
     public void afterHandshake(@NotNull ServerHttpRequest request, @NotNull ServerHttpResponse response, @NotNull WebSocketHandler wsHandler, Exception exception) {
         // 啥都没干
     }
+
 }

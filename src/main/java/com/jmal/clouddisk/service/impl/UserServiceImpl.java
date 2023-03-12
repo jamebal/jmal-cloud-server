@@ -297,7 +297,6 @@ public class UserServiceImpl implements IUserService {
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
         return userList.parallelStream().map(consumerDO -> {
             ConsumerDTO consumerDTO = new ConsumerDTO();
-            consumerDTO.setEncryptPwd(consumerDO.getEncryptPwd());
             consumerDTO.setUsername(consumerDO.getUsername());
             return consumerDTO;
         }).toList();
@@ -341,7 +340,7 @@ public class UserServiceImpl implements IUserService {
         query.addCriteria(Criteria.where("_id").is(userId));
         Update update = new Update();
         String password = PasswordHash.createHash(originalPwd);
-        String encryptPwd = getAES().encryptHex(originalPwd);
+        String encryptPwd = getAES(password.split(":")[2]).encryptHex(originalPwd);
         LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
         update.set("encryptPwd", encryptPwd);
         update.set("password", password);
@@ -379,7 +378,14 @@ public class UserServiceImpl implements IUserService {
         if (consumer == null) {
             return "";
         }
-        return getAES().decryptStr(consumer.getEncryptPwd());
+        if (consumer.getPassword() == null) {
+            return "";
+        }
+        if (consumer.getPassword().split(":").length < 2) {
+            return "";
+        }
+        String key = consumer.getPassword().split(":")[2];
+        return getAES(key).decryptStr(consumer.getEncryptPwd());
     }
 
     public String getHashPasswordUserName(String username) {
@@ -432,14 +438,14 @@ public class UserServiceImpl implements IUserService {
      */
     private static void encryption(ConsumerBase user, String originalPwd) {
         String password = PasswordHash.createHash(originalPwd);
-        String encryptPwd = getAES().encryptHex(originalPwd);
+        String encryptPwd = getAES(password.split(":")[2]).encryptHex(originalPwd);
         user.setEncryptPwd(encryptPwd);
         user.setPassword(password);
     }
 
 
-    private static SymmetricCrypto getAES() {
-        return new SymmetricCrypto(SymmetricAlgorithm.AES, HexUtil.decodeHex("5db9c44cce5ec26868fbe0267c64526126c8d36eae29da1a"));
+    private static SymmetricCrypto getAES(String key) {
+        return new SymmetricCrypto(SymmetricAlgorithm.AES, HexUtil.decodeHex(key));
     }
 
     @Override

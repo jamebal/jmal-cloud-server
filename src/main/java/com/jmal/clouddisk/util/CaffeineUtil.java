@@ -193,14 +193,14 @@ public class CaffeineUtil {
      * 删除用户信息
      */
     public static void removeConsumerListByUsernameCache(List<ConsumerDO> list) {
-        list.forEach(consumerDO -> removeConsumerByUsernameCache(consumerDO.getUsername(), consumerDO));
+        list.forEach(consumerDO -> removeConsumerByUsernameCache(consumerDO.getUsername()));
     }
 
     /**
      * 删除用户信息
      */
-    public static void removeConsumerByUsernameCache(String username, ConsumerDO consumerDO) {
-        CONSUMER_USERNAME.put(username, consumerDO);
+    public static void removeConsumerByUsernameCache(String username) {
+        CONSUMER_USERNAME.invalidate(username);
     }
 
     public static Long getLastAccessTimeCache() {

@@ -2,7 +2,6 @@ package com.jmal.clouddisk.model.rbac;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.annotation.Id;
@@ -54,5 +53,8 @@ public class ConsumerDTO extends ConsumerBase {
     String netdiskLogo;
     @Schema(name = "netdiskName", title = "网盘名称", hidden = true)
     String netdiskName;
+
+    @Schema(name = "rememberMe", title = "记住我", hidden = true)
+    Boolean rememberMe;
 
 }

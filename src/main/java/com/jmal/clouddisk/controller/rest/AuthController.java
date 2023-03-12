@@ -5,6 +5,7 @@ import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -35,8 +36,8 @@ public class AuthController {
     @Operation(summary = "登录")
     @LogOperatingFun(logType = LogOperation.Type.LOGIN)
     @PostMapping("/login")
-    public ResponseResult<Object> login(@RequestBody ConsumerDO user, HttpServletRequest request, HttpServletResponse response){
-        return authService.login(request, response, user.getUsername(), user.getPassword());
+    public ResponseResult<Object> login(@RequestBody ConsumerDTO userDTO, HttpServletRequest request, HttpServletResponse response){
+        return authService.login(request, response, userDTO);
     }
 
     @Operation(summary = "校验旧密码")
