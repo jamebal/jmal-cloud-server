@@ -7,10 +7,10 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.FileInterceptor;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.service.impl.ShareServiceImpl;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -105,7 +105,7 @@ public class ShareController {
     @PostMapping("/public/valid-share-code")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> validShareCode(@RequestBody Map<String, String> body) {
-        String shareId = body.get("shareId");
+        String shareId = body.get(Constants.SHARE_ID);
         String shareCode = body.get("shareCode");
         ResultUtil.checkParamIsNull(shareId, shareCode);
         return shareService.validShareCode(shareId, shareCode);
@@ -116,7 +116,7 @@ public class ShareController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> accessShare(HttpServletRequest request, @RequestParam String share, Integer pageIndex, Integer pageSize) {
         ShareDO shareDO = shareService.getShare(share);
-        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(ShareServiceImpl.SHARE_TOKEN), shareDO);
+        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
         if (validSHare != null) return validSHare;
         return shareService.accessShare(shareDO, pageIndex, pageSize);
     }
@@ -133,7 +133,7 @@ public class ShareController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> accessShareOpenDir(HttpServletRequest request, @RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize) {
         ShareDO shareDO = shareService.getShare(share);
-        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(ShareServiceImpl.SHARE_TOKEN), shareDO);
+        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
         if (validSHare != null) return validSHare;
         return shareService.accessShareOpenDir(shareDO, fileId, pageIndex, pageSize);
     }
@@ -142,7 +142,7 @@ public class ShareController {
     @GetMapping("/public/s/packageDownload")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public void publicPackageDownload(HttpServletRequest request, HttpServletResponse response, @RequestParam String shareId, @RequestParam String[] fileIds) {
-        ResponseResult<Object> validShare = shareService.validShare(request.getParameter(ShareServiceImpl.SHARE_TOKEN), shareId);
+        ResponseResult<Object> validShare = shareService.validShare(request.getParameter(Constants.SHARE_TOKEN), shareId);
         if (validShare != null) {
             response(response, invalid());
             return;
@@ -201,7 +201,7 @@ public class ShareController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> preview(HttpServletRequest request, @RequestParam String shareId, @RequestParam String fileId) {
         ShareDO shareDO = shareService.getShare(shareId);
-        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(ShareServiceImpl.SHARE_TOKEN), shareDO);
+        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
         if (validSHare != null) return validSHare;
         ConsumerDO consumer = userService.userInfoById(shareDO.getUserId());
         if (consumer == null) {
@@ -214,7 +214,7 @@ public class ShareController {
     @GetMapping("/public/file_info/{fileId}/{shareId}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> getFileById(HttpServletRequest request, @PathVariable String fileId, @PathVariable String shareId) {
-        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(ShareServiceImpl.SHARE_TOKEN), shareId);
+        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareId);
         if (validSHare != null) return validSHare;
         return ResultUtil.success(fileService.getById(fileId));
     }

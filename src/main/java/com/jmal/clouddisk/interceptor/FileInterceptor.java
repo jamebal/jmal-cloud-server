@@ -8,9 +8,9 @@ import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareDO;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
-import com.jmal.clouddisk.service.impl.ShareServiceImpl;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.luciad.imageio.webp.WebPWriteParam;
@@ -190,9 +190,9 @@ public class FileInterceptor implements HandlerInterceptor {
             if (request == null) {
                 return true;
             }
-            String shareToken = request.getHeader(ShareServiceImpl.SHARE_TOKEN);
+            String shareToken = request.getHeader(Constants.SHARE_TOKEN);
             if (CharSequenceUtil.isBlank(shareToken)) {
-                shareToken = request.getParameter(ShareServiceImpl.SHARE_TOKEN);
+                shareToken = request.getParameter(Constants.SHARE_TOKEN);
             }
             ResponseResult<Object> result = shareService.validShare(shareToken, shareDO.getId());
             return result != null;

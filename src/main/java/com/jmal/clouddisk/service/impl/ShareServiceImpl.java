@@ -6,6 +6,7 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
@@ -36,10 +37,6 @@ import static com.jmal.clouddisk.controller.rest.ShareController.SHARE_EXPIRED;
 public class ShareServiceImpl implements IShareService {
 
     private static final String COLLECTION_NAME = "share";
-
-    public static final String SHARE_TOKEN = "share-token";
-
-    public static final String LINK_FAILED = "该链接已失效";
 
     private final IFileService fileService;
 
@@ -97,13 +94,13 @@ public class ShareServiceImpl implements IShareService {
         } else {
             update.unset("expireDate");
         }
-        update.set("isPrivacy", share.getIsPrivacy());
+        update.set(Constants.IS_PRIVACY, share.getIsPrivacy());
         if (Boolean.TRUE.equals(share.getIsPrivacy()) && shareDO.getExtractionCode() == null) {
             shareDO.setExtractionCode(generateExtractionCode());
-            update.set("extractionCode", shareDO.getExtractionCode());
+            update.set(Constants.EXTRACTION_CODE, shareDO.getExtractionCode());
         }
         if (Boolean.TRUE.equals(!share.getIsPrivacy()) && shareDO.getExtractionCode() != null) {
-            update.unset("extractionCode");
+            update.unset(Constants.EXTRACTION_CODE);
         }
         if (shareDO.getExtractionCode() != null) {
             share.setExtractionCode(shareDO.getExtractionCode());
@@ -124,7 +121,7 @@ public class ShareServiceImpl implements IShareService {
     public ResponseResult<Object> validShareCode(String shareId, String shareCode) {
         ShareDO shareDO = mongoTemplate.findById(shareId, ShareDO.class, COLLECTION_NAME);
         if (shareDO == null) {
-            return ResultUtil.warning(LINK_FAILED);
+            return ResultUtil.warning(Constants.LINK_FAILED);
         }
         if (shareCode.equals(shareDO.getExtractionCode())) {
             // 验证成功 返回share-token
@@ -167,7 +164,7 @@ public class ShareServiceImpl implements IShareService {
     @Override
     public ResponseResult<Object> validShareCode(String shareToken, ShareDO shareDO) {
         if (!checkWhetherExpired(shareDO)) {
-            return ResultUtil.success(LINK_FAILED);
+            return ResultUtil.success(Constants.LINK_FAILED);
         }
         // 检查是否为私密链接
         if (BooleanUtil.isTrue(shareDO.getIsPrivacy())) {

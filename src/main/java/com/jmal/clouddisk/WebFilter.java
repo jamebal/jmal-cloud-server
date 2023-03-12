@@ -1,6 +1,7 @@
 package com.jmal.clouddisk;
 
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.http.useragent.UserAgent;
 import cn.hutool.http.useragent.UserAgentUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
@@ -74,6 +75,7 @@ public class WebFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
+        HttpServletResponse httpServletResponse = (HttpServletResponse) response;
         String uri = httpRequest.getRequestURI();
         if (uri.startsWith(API)) {
             uri = COMPILE.matcher(uri).replaceFirst("");
@@ -83,12 +85,13 @@ public class WebFilter implements Filter {
         // 以/webDAV 开头的走webDAV协议
         if (uri.startsWith(fileProperties.getWebDavPrefixPath())) {
             long time = System.currentTimeMillis();
-            ResponseResult<Object> result = doMiltonProcessing((HttpServletRequest) request, (HttpServletResponse) response);
-            recordLog((HttpServletRequest) request, (HttpServletResponse) response, time, result);
+            ResponseResult<Object> result = doMiltonProcessing(httpRequest, httpServletResponse);
+            recordLog(httpRequest, httpServletResponse, time, result);
             return;
         }
         CaffeineUtil.setLastAccessTimeCache();
         chain.doFilter(request, response);
+        Console.log(httpServletResponse.getHeaderNames(), httpServletResponse.getHeader("Content-Disposition"));
     }
 
     /***

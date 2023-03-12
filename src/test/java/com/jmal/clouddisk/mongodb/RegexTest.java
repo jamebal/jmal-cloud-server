@@ -2,6 +2,7 @@ package com.jmal.clouddisk.mongodb;
 
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
+import com.jmal.clouddisk.service.Constants;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCursor;
 import org.bson.Document;
@@ -45,9 +46,10 @@ public class RegexTest {
             documentList.add(document);
             pathStr.append(filename);
         }
-        Console.log(documentList);
-
-        List<Document> list = Arrays.asList(new Document("$match", new Document("$or", documentList)), new Document("$match", new Document("shareBase", true)));
+        if (documentList.isEmpty()) {
+            return;
+        }
+        List<Document> list = Arrays.asList(new Document("$match", new Document("$or", documentList)), new Document("$match", new Document(Constants.SHARE_BASE, true)));
         AggregateIterable<Document> result = mongoTemplate.getCollection("fileDocument").aggregate(list);
         Document document = null;
         try (MongoCursor<Document> mongoCursor = result.iterator()) {

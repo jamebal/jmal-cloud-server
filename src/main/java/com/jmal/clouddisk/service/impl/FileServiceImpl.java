@@ -5,7 +5,6 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.CharsetUtil;
@@ -20,6 +19,7 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
@@ -864,7 +864,7 @@ public class FileServiceImpl implements IFileService {
                 lock.unlock();
             }
         }
-        if (updateResult != null && null != updateResult.getUpsertedId()) {
+        if (null != updateResult.getUpsertedId()) {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return null;
@@ -883,9 +883,11 @@ public class FileServiceImpl implements IFileService {
             documentList.add(document);
             pathStr.append(filename);
         }
-
-        List<Document> list = Arrays.asList(new Document("$match", new Document("$or", documentList)), new Document("$match", new Document("shareBase", true)));
-        AggregateIterable<Document> result = mongoTemplate.getCollection("fileDocument").aggregate(list);
+        if (documentList.isEmpty()) {
+            return;
+        }
+        List<Document> list = Arrays.asList(new Document("$match", new Document("$or", documentList)), new Document("$match", new Document(Constants.SHARE_BASE, true)));
+        AggregateIterable<Document> result = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
         Document shareDocument = null;
         try (MongoCursor<Document> mongoCursor = result.iterator()) {
             while (mongoCursor.hasNext()) {
@@ -893,19 +895,19 @@ public class FileServiceImpl implements IFileService {
             }
         }
         if (shareDocument != null) {
-            Long expiresAt = Convert.toLong(shareDocument.get("expiresAt"), null);
+            Long expiresAt = Convert.toLong(shareDocument.get(Constants.EXPIRES_AT), null);
             if (expiresAt == null) {
                 return;
             }
-            String shareId = Convert.toStr(shareDocument.get("shareId"), null);
+            String shareId = Convert.toStr(shareDocument.get(Constants.SHARE_ID), null);
             if (shareId == null) {
                 return;
             }
-            Boolean isPrivacy = Convert.toBool(shareDocument.get("isPrivacy"), null);
+            Boolean isPrivacy = Convert.toBool(shareDocument.get(Constants.IS_PRIVACY), null);
             if (isPrivacy == null) {
                 return;
             }
-            String extractionCode = Convert.toStr(shareDocument.get("extractionCode"), null);
+            String extractionCode = Convert.toStr(shareDocument.get(Constants.EXTRACTION_CODE), null);
             if (isPrivacy && extractionCode == null) {
                 return;
             }
@@ -1001,11 +1003,7 @@ public class FileServiceImpl implements IFileService {
             update.set("content", out.toByteArray());
         } catch (UnsupportedFormatException e) {
             log.warn(e.getMessage() + file.getAbsolutePath(), e);
-        } catch (IOException e) {
-            log.error(e.getMessage() + file.getAbsolutePath(), e);
-        } catch (Exception e) {
-            log.error(e.getMessage() + file.getAbsolutePath(), e);
-        } catch (Error e) {
+        } catch (Exception | Error e) {
             log.error(e.getMessage() + file.getAbsolutePath(), e);
         } finally {
             if (out != null) {
@@ -1062,9 +1060,9 @@ public class FileServiceImpl implements IFileService {
 
     /***
      * 给用户推送消息
-     * @param username
-     * @param message
-     * @param url
+     * @param username username
+     * @param message message
+     * @param url url
      */
     public void pushMessage(String username, Object message, String url) {
         WebSocketSession webSocketSession = SocketManager.get(username);
@@ -1160,7 +1158,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult upperLevelList(String path, String username) {
+    public ResponseResult<Object> upperLevelList(String path, String username) {
         String upperLevel = Paths.get(fileProperties.getRootDir(), username, path).getParent().toString();
         if (Paths.get(fileProperties.getRootDir()).toString().equals(upperLevel)) {
             upperLevel = Paths.get(fileProperties.getRootDir(), username).toString();
@@ -1169,9 +1167,9 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult delFile(String path, String username) throws CommonException {
+    public ResponseResult<Object> delFile(String path, String username) throws CommonException {
         Path p = Paths.get(fileProperties.getRootDir(), username, path);
-        FileUtil.del(p);
+        PathUtil.del(p);
         deleteFile(username, p.toFile());
         return ResultUtil.success();
     }
@@ -1249,7 +1247,7 @@ public class FileServiceImpl implements IFileService {
                 .append(shareKey)
                 .append("&o=")
                 .append(operation);
-        if (!StrUtil.isBlank(shareToken)) {
+        if (!CharSequenceUtil.isBlank(shareToken)) {
             sb.append("&share-token=").append(shareToken);
         }
         return sb.toString();
@@ -1267,7 +1265,7 @@ public class FileServiceImpl implements IFileService {
         if (userList == null || userList.isEmpty()) {
             return;
         }
-        userList.stream().forEach(user -> {
+        userList.forEach(user -> {
             String username = user.getUsername();
             String userId = user.getId();
             PathUtil.del(Paths.get(fileProperties.getRootDir(), username));
@@ -1283,7 +1281,7 @@ public class FileServiceImpl implements IFileService {
             return;
         }
         Query query = new Query();
-        if (file.getIsFolder()) {
+        if (Boolean.TRUE.equals(file.getIsFolder())) {
             // 共享文件夹及其下的所有文件
             query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
             query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
@@ -1301,11 +1299,10 @@ public class FileServiceImpl implements IFileService {
      * @param fileDocument FileDocument
      * @param expiresAt 过期时间
      * @param query 查询条件
-     * @param ShareDO share
      */
     private void setShareAttribute(FileDocument fileDocument, long expiresAt, ShareDO share, Query query) {
         Update update = new Update();
-        update = setShareAttribute(update, expiresAt, share.getId(), share.getIsPrivacy(), share.getExtractionCode());
+         setShareAttribute(update, expiresAt, share.getId(), share.getIsPrivacy(), share.getExtractionCode());
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         // 修改第一个文件/文件夹
         updateShareFirst(fileDocument, update, true);
@@ -1317,17 +1314,15 @@ public class FileServiceImpl implements IFileService {
      * @param shareId shareId
      * @param isPrivacy isPrivacy
      * @param extractionCode extractionCode
-     * @return
      */
-    private static Update setShareAttribute(Update update, long expiresAt, String shareId, Boolean isPrivacy, String extractionCode) {
+    private static void setShareAttribute(Update update, long expiresAt, String shareId, Boolean isPrivacy, String extractionCode) {
         update.set("isShare", true);
-        update.set("shareId", shareId);
-        update.set("expiresAt", expiresAt);
-        update.set("isPrivacy", isPrivacy);
+        update.set(Constants.SHARE_ID, shareId);
+        update.set(Constants.EXPIRES_AT, expiresAt);
+        update.set(Constants.IS_PRIVACY, isPrivacy);
         if (BooleanUtil.isTrue(isPrivacy)) {
-            update.set("extractionCode", extractionCode);
+            update.set(Constants.EXTRACTION_CODE, extractionCode);
         }
-        return update;
     }
 
     /***
@@ -1337,11 +1332,11 @@ public class FileServiceImpl implements IFileService {
      */
     private void unsetShareAttribute(FileDocument fileDocument, Query query) {
         Update update = new Update();
-        update.unset("shareId");
+        update.unset(Constants.SHARE_ID);
         update.unset("isShare");
-        update.unset("expiresAt");
-        update.unset("isPrivacy");
-        update.unset("extractionCode");
+        update.unset(Constants.EXPIRES_AT);
+        update.unset(Constants.IS_PRIVACY);
+        update.unset(Constants.EXTRACTION_CODE);
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         // 修改第一个文件/文件夹
         updateShareFirst(fileDocument, update, false);
@@ -1349,9 +1344,9 @@ public class FileServiceImpl implements IFileService {
 
     private void updateShareFirst(FileDocument fileDocument, Update update, boolean share) {
         if (share) {
-            update.set("shareBase", true);
+            update.set(Constants.SHARE_BASE, true);
         } else {
-            update.unset("shareBase");
+            update.unset(Constants.SHARE_BASE);
         }
         Query query1 = new Query();
         query1.addCriteria(Criteria.where("_id").is(fileDocument.getId()));
