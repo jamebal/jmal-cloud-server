@@ -19,11 +19,9 @@ check_docker() {
     echo -e "${Error} ${Red}未安装 Docker！${Font}"
     exit 1
   fi
-  if ! groups | grep -q "\bdocker\b"; then
-      if [ $(id -u) != 0 ]; then
-          echo -e "${Error} ${Red}您必须具有 root/sudo 权限或者在 docker 用户组才能运行此脚本。${Font}"
-          exit 1
-      fi
+  if ! docker ps > /dev/null 2>&1; then
+    echo -e "${Error} ${Red}您必须具有 root/sudo 权限或者在 docker 用户组才能运行此脚本。${Font}"
+    exit 1
   fi
   docker-compose version &>/dev/null
   if [ $? -ne 0 ]; then
