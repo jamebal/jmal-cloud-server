@@ -50,7 +50,7 @@ echo "copy target/clouddisk-$version-exec.jar $server_dir/docker/"
 # build jmalcloud of Dockerfile
 cd "$server_dir/docker" || exit
 echo "location: ${server_dir}/docker "
-docker build -t "jmalcloud:$version" --build-arg "version=$version" .
+docker build -t "jmalcloud:$version" --build-arg "version=$version" . --load
 docker tag "jmalcloud:$version" "jmalcloud:latest"
 
 docker_arch=""
@@ -96,7 +96,7 @@ removeLocalAliYunTag() {
 # Push the image to the registry
 pushDockerHub
 pushAliYun "registry.cn-guangzhou.aliyuncs.com"
-pushAliYun "registry.cn-hangzhou.aliyuncs.com"
-pushAliYun "registry.cn-chengdu.aliyuncs.com"
-pushAliYun "registry.cn-beijing.aliyuncs.com"
+#pushAliYun "registry.cn-hangzhou.aliyuncs.com"
+#pushAliYun "registry.cn-chengdu.aliyuncs.com"
+#pushAliYun "registry.cn-beijing.aliyuncs.com"
 exit 0
