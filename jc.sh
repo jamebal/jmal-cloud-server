@@ -19,6 +19,12 @@ check_docker() {
     echo -e "${Error} ${Red}未安装 Docker！${Font}"
     exit 1
   fi
+  if ! groups | grep -q "\bdocker\b"; then
+      if [ $(id -u) != 0 ]; then
+          echo -e "${Error} ${Red}您必须具有 root/sudo 权限或者在 docker 用户组才能运行此脚本。${Font}"
+          exit 1
+      fi
+  fi
   docker-compose version &>/dev/null
   if [ $? -ne 0 ]; then
     docker compose version &>/dev/null
@@ -32,6 +38,9 @@ check_docker() {
     $COMPOSE version
     echo -e "${Error} ${Red}Docker-compose 的版本太低了，请升级到 v2+！${Font}"
     exit 1
+  fi
+  if [ ! -f docker-compose.yml ]; then
+      cp docker-compose.example.yml docker-compose.yml
   fi
 }
 
