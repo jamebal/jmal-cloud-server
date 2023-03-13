@@ -73,15 +73,16 @@ pushAliYun() {
 }
 
 pushDockerHub() {
+  cat docker_hub_pwd.txt | docker login --username=jmal --password-stdin
   echo "Push the image to the DockerHub ..."
+  docker buildx build --platform linux/amd64,linux/arm64 -t "jmalcloud:$version" --build-arg "version=$version" . --push
   docker buildx build --platform linux/amd64,linux/arm64 -t "jmalcloud:latest" --build-arg "version=$version" . --push
-  docker buildx build --platform linux/amd64,linux/arm64 -t "jmalcloud:latest" --build-arg "version=$version" . --push
-  removeDockerHub
+#  removeDockerHub
 }
 
 removeDockerHub() {
-  docker rmi "jmal/jmalcloud:$version$docker_arch"
-  docker rmi "jmal/jmalcloud:latest$docker_arch"
+  docker rmi "jmal/jmalcloud:$version"
+  docker rmi "jmal/jmalcloud:latest"
   echo "removed the image DockerHub"
 }
 
