@@ -74,10 +74,8 @@ pushAliYun() {
 
 pushDockerHub() {
   echo "Push the image to the DockerHub ..."
-  docker tag "jmalcloud:$version" "jmal/jmalcloud:$version$docker_arch"
-  docker tag "jmalcloud:$version" "jmal/jmalcloud:latest$docker_arch"
-  docker push "jmal/jmalcloud:$version$docker_arch"
-  docker push "jmal/jmalcloud:latest$docker_arch"
+  docker buildx build --platform linux/amd64,linux/arm64 -t "jmalcloud:latest" --build-arg "version=$version" . --push
+  docker buildx build --platform linux/amd64,linux/arm64 -t "jmalcloud:latest" --build-arg "version=$version" . --push
   removeDockerHub
 }
 

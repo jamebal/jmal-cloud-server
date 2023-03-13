@@ -16,7 +16,7 @@ services:
     command: --wiredTigerCacheSizeGB 0.5
   jmalcloud:
     container_name: "${CONTAINER_NAME_PREFIX}_server"
-    image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:latest${DOCKER_ARCH}"
+    image: "jmal/jmalcloud:latest"
     environment:
       MONGODB_URI: "mongodb://mongo:27017/jmalcloud"
       TZ: "Asia/Shanghai"
