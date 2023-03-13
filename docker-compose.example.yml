@@ -24,7 +24,6 @@ services:
       - "${SERVER_PORT}:8088"
     volumes:
       - ${RESOURCE_FILE_PATH}:/jmalcloud/files/
-    restart: unless-stopped
   nginx:
     container_name: "${CONTAINER_NAME_PREFIX}_nginx"
     image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/nginx:latest${DOCKER_ARCH}"
