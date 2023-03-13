@@ -157,6 +157,7 @@ help() {
   Management Commands:
     init,install         安装
     uninstall            卸载
+    pull                 拉取最新的的程序和镜像
     update               更新
     start                启动
     stop                 停止
@@ -253,6 +254,19 @@ check_run() {
   fi
 }
 
+pull() {
+  git fetch --all
+  git reset --hard origin/$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
+  git pull origin master
+  $COMPOSE pull
+}
+
+backup_and_install() {
+  run_mongo "dump"
+  run_exec nginx "nginx -s reload"
+  install
+}
+
 ########################################################################################################
 check_docker
 env_init
@@ -261,15 +275,13 @@ if [ $# -gt 0 ]; then
   if [[ "$1" == "init" ]] || [[ "$1" == "install" ]]; then
     shift 1
     install
+  elif [[ "$1" == "pull" ]]; then
+    shift 1
+    pull
   elif [[ "$1" == "update" ]]; then
     shift 1
-    run_mongo "dump"
-    git fetch --all
-    git reset --hard origin/$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
-    git pull origin master
-    $COMPOSE pull
-    run_exec nginx "nginx -s reload"
-    install
+    pull
+    backup_and_install
   elif [[ "$1" == "uninstall" ]]; then
     shift 1
     uninstall
