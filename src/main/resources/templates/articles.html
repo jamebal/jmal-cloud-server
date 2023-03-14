@@ -66,9 +66,9 @@
         <div class="back-top" style="display: none">
             <svg class="icon" aria-hidden="true"><use xlink:href="#icon-Up"></use></svg>
         </div>
-        <div th:include="component/articles-list.html"></div>
+        <div th:insert="~{component/articles-list.html}"></div>
     </div>
-    <div th:replace="component/common-js.html"></div>
+    <div th:replace="~{component/common-js.html}"></div>
     <script th:inline="javascript">
         $(function(){
             // let image = new Image();

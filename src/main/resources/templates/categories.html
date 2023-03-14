@@ -25,7 +25,7 @@
             </el-main>
         </div>
     </div>
-    <div th:replace="component/common-js.html"></div>
+    <div th:replace="~{component/common-js.html}"></div>
     <script th:inline="javascript">
         $(function() {
             if (typeof echarts !== 'undefined') {
