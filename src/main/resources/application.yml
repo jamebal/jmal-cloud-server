@@ -19,11 +19,22 @@ spring:
     type: caffeine
     caffeine:
       spec: initialCapacity=100,maximumSize=500,expireAfterWrite=3600s
+  file-storage:
+    default-platform: aliyun-oss-1 #默认使用的存储平台
+    thumbnail-suffix: ".min.jpg" #缩略图后缀，例如【.min.jpg】【.png】
+    aliyun-oss: # 阿里云 OSS
+      - platform: aliyun-oss-1 # 存储平台标识
+        enable-storage: true  # 启用存储
+        access-key: LTAI5tKXXGYbM6TA23xqKbqK
+        secret-key: TleIx8d8BRlHadNwutng2OEV2Qq9Gr
+        end-point: oss-cn-guangzhou.aliyuncs.com
+        bucket-name: jmalcloud
+        domain: https://oss-cn-guangzhou.aliyuncs.com/ # 访问域名，注意“/”结尾，例如：https://abc.oss-cn-shanghai.aliyuncs.com/
+        base-path:  # 基础路径
 springdoc:
-  packages-to-scan: com.jmal.clouddisk.controller
+  packages-to-scan: com.jmal.clouddisk.controller,com.jmal.clouddisk.oss
   api-docs:
     path: /public/api-docs
   swagger-ui:
     path: /public/api
     doc-expansion: none
-
