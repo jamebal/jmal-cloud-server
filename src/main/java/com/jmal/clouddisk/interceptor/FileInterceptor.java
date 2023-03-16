@@ -20,7 +20,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
@@ -37,7 +37,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -80,42 +79,46 @@ public class FileInterceptor implements HandlerInterceptor {
      */
     private static final int MIN_COUNT = 2;
 
-    @Autowired
+    private final
     FileProperties fileProperties;
 
-    @Autowired
+    private final
     IFileService fileService;
 
-    @Autowired
+    private final
     AuthInterceptor authInterceptor;
 
-    @Autowired
+    private final
     IShareService shareService;
 
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws UnsupportedEncodingException {
+    public FileInterceptor(FileProperties fileProperties, IFileService fileService, AuthInterceptor authInterceptor, IShareService shareService) {
+        this.fileProperties = fileProperties;
+        this.fileService = fileService;
+        this.authInterceptor = authInterceptor;
+        this.shareService = shareService;
+    }
+
+    @Override
+    public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
         if (fileAuthError(request, response)) {
             return false;
         }
         String operation = request.getParameter(OPERATION);
         if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
-                case DOWNLOAD:
+                case DOWNLOAD -> {
                     Path path = Paths.get(request.getRequestURI());
                     response.setHeader("Content-Disposition", "attachment; filename" + path.getFileName());
-                    break;
-                case CROP:
-                    handleCrop(request, response);
-                    break;
-                case THUMBNAIL:
-                    thumbnail(request, response);
-                    break;
-                case WEBP:
-                    webp(request, response);
-                    break;
-                default:
+                }
+                case CROP -> handleCrop(request, response);
+                case THUMBNAIL -> thumbnail(request, response);
+                case WEBP -> webp(request, response);
+                default -> {
                     return true;
+                }
             }
         }
+        responseHeader(response, null, null);
         return true;
     }
 
@@ -132,19 +135,7 @@ public class FileInterceptor implements HandlerInterceptor {
         Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
         String shareKey = request.getParameter(SHARE_KEY);
         if (!CharSequenceUtil.isBlank(shareKey)) {
-            FileDocument fileDocument = fileService.getById(shareKey);
-            if (!isNotAllowAccess(fileDocument, request)) {
-                // 判断当前uri所属的文件是否为该分享的文件或其子文件
-                FileDocument thisFile = getFileDocument(uriPath);
-                if (thisFile.getPath().equals(fileDocument.getPath())) {
-                    return false;
-                }
-                if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
-                    String parentPath = fileDocument.getPath() + fileDocument.getName();
-                    return !thisFile.getPath().startsWith(parentPath);
-                }
-            }
-            return true;
+            return validShareFile(request, uriPath, shareKey);
         } else {
             String username = authInterceptor.getUserNameByHeader(request, response);
             int nameCount = uriPath.getNameCount();
@@ -161,6 +152,22 @@ public class FileInterceptor implements HandlerInterceptor {
         }
     }
 
+    private boolean validShareFile(HttpServletRequest request, Path uriPath, String shareKey) {
+        FileDocument fileDocument = fileService.getById(shareKey);
+        if (!isNotAllowAccess(fileDocument, request)) {
+            // 判断当前uri所属的文件是否为该分享的文件或其子文件
+            FileDocument thisFile = getFileDocument(uriPath);
+            if (thisFile.getPath().equals(fileDocument.getPath())) {
+                return false;
+            }
+            if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
+                String parentPath = fileDocument.getPath() + fileDocument.getName();
+                return !thisFile.getPath().startsWith(parentPath);
+            }
+        }
+        return true;
+    }
+
     /***
      * 判断文件是否不允许访问
      * 如果为公共文件，或者分享有效期内的文件，则允许访问
@@ -175,31 +182,35 @@ public class FileInterceptor implements HandlerInterceptor {
         }
         // 分享文件
         if (fileDocument.getIsShare() != null) {
-            if (System.currentTimeMillis() >= fileDocument.getExpiresAt()) {
-                // 过期了
-                return true;
-            }
-            if (fileDocument.getShareId() == null) {
-                return true;
-            }
-            ShareDO shareDO = shareService.getShare(fileDocument.getShareId());
-            if (shareDO == null) {
-                return true;
-            }
-            if (BooleanUtil.isFalse(shareDO.getIsPrivacy())) {
-                return false;
-            }
-            if (request == null) {
-                return true;
-            }
-            String shareToken = request.getHeader(Constants.SHARE_TOKEN);
-            if (CharSequenceUtil.isBlank(shareToken)) {
-                shareToken = request.getParameter(Constants.SHARE_TOKEN);
-            }
-            ResponseResult<Object> result = shareService.validShare(shareToken, shareDO.getId());
-            return result != null;
+            return validShareFile(fileDocument, request);
         }
         return true;
+    }
+
+    private boolean validShareFile(FileDocument fileDocument, HttpServletRequest request) {
+        if (System.currentTimeMillis() >= fileDocument.getExpiresAt()) {
+            // 过期了
+            return true;
+        }
+        if (fileDocument.getShareId() == null) {
+            return true;
+        }
+        ShareDO shareDO = shareService.getShare(fileDocument.getShareId());
+        if (shareDO == null) {
+            return true;
+        }
+        if (BooleanUtil.isFalse(shareDO.getIsPrivacy())) {
+            return false;
+        }
+        if (request == null) {
+            return true;
+        }
+        String shareToken = request.getHeader(Constants.SHARE_TOKEN);
+        if (CharSequenceUtil.isBlank(shareToken)) {
+            shareToken = request.getParameter(Constants.SHARE_TOKEN);
+        }
+        ResponseResult<Object> result = shareService.validShare(shareToken, shareDO.getId());
+        return result != null;
     }
 
     private void webp(HttpServletRequest request, HttpServletResponse response) {
@@ -278,11 +289,15 @@ public class FileInterceptor implements HandlerInterceptor {
     }
 
     private void responseHeader(HttpServletResponse response, String fileName, byte[] img) {
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + ContentDisposition.builder("attachment")
-                .filename(UriUtils.encode(fileName, StandardCharsets.UTF_8)));
-        response.setHeader(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(FileUtil.extName(fileName)));
+        if (!CharSequenceUtil.isBlank(fileName)) {
+            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + ContentDisposition.builder("attachment")
+                    .filename(UriUtils.encode(fileName, StandardCharsets.UTF_8)));
+            response.setHeader(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(FileUtil.extName(fileName)));
+        }
+        if (img != null) {
+            response.setHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(img.length));
+        }
         response.setHeader(HttpHeaders.CONNECTION, "close");
-        response.setHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(img.length));
         response.setHeader(HttpHeaders.CONTENT_ENCODING, "utf-8");
         response.setHeader(HttpHeaders.CACHE_CONTROL, "public, max-age=604800");
     }
