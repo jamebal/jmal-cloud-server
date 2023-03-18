@@ -22,6 +22,7 @@ services:
       TZ: "Asia/Shanghai"
     ports:
       - "${SERVER_PORT}:8088"
+      - "${FTP_SERVER_PORT}:8089"
     volumes:
       - ${RESOURCE_FILE_PATH}:/jmalcloud/files/
   nginx:

@@ -182,6 +182,7 @@ env_init() {
   env_set APP_PORT 7070
   env_set BLOG_PORT 7071
   env_set SERVER_PORT 7072
+  env_set FTP_SERVER_PORT 7073
   env_set CONTAINER_NAME_PREFIX "jmalcloud"
   local file_ptah=$(cat ${cur_path}/.env | grep "^RESOURCE_DB_PATH=")
   if [ -z "$file_ptah" ]; then
@@ -197,6 +198,7 @@ before_start() {
   [[ "$(arg_get port)" -gt 0 ]] && env_set APP_PORT "$(arg_get port)"
   [[ "$(arg_get blog_port)" -gt 0 ]] && env_set BLOG_PORT "$(arg_get blog_port)"
   [[ "$(arg_get server_port)" -gt 0 ]] && env_set SERVER_PORT "$(arg_get server_port)"
+  [[ "$(arg_get ftp_server_port)" -gt 0 ]] && env_set FTP_SERVER_PORT "$(arg_get ftp_server_port)"
   [[ "$(arg_get prefix)" -gt 0 ]] && env_set CONTAINER_NAME_PREFIX "$(arg_get prefix)"
 }
 
