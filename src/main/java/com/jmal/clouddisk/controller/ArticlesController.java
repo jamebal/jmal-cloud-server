@@ -16,10 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,7 +51,7 @@ public class ArticlesController {
     private static final String X_PJAX = "X-PJAX";
     private static final String X_PJAX_TRUE = "true";
 
-    @GetMapping("/public/404")
+    @RequestMapping("/public/404")
     @LogOperatingFun(value = "404", logType = LogOperation.Type.ARTICLE)
     public String notFind(HttpServletRequest request, Model map) {
         boolean isPjax = pjaxMap(request, map, "404");

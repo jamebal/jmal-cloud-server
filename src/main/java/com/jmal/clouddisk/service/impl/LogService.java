@@ -164,7 +164,7 @@ public class LogService {
                     logOperation.setIpInfo(region2IpInfo(region));
                 }
             } catch (Exception e) {
-                log.error(e.getMessage());
+                // log.error(e.getMessage());
             }
         }
     }

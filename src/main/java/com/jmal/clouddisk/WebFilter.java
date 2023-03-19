@@ -1,6 +1,7 @@
 package com.jmal.clouddisk;
 
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.http.useragent.UserAgent;
 import cn.hutool.http.useragent.UserAgentUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
@@ -14,11 +15,7 @@ import com.jmal.clouddisk.webdav.MySimpleSecurityManager;
 import io.milton.config.HttpManagerBuilder;
 import io.milton.http.HttpManager;
 import io.milton.http.Request;
-import io.milton.http.ResourceFactory;
 import io.milton.http.Response;
-import io.milton.http.annotated.AnnotationResourceFactory;
-import io.milton.http.template.JspViewResolver;
-import io.milton.http.template.ViewResolver;
 import io.milton.servlet.MiltonServlet;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -58,18 +55,18 @@ public class WebFilter implements Filter {
 
     private HttpManager httpManager;
 
-    @Override
-    public void init(FilterConfig filterConfig) {
-         ResourceFactory rf = httpManagerBuilder.getMainResourceFactory();
-         if (rf instanceof AnnotationResourceFactory arf) {
-             if (arf.getViewResolver() == null) {
-                 ViewResolver viewResolver = new JspViewResolver(filterConfig.getServletContext());
-                 arf.setViewResolver(viewResolver);
-             }
-         }
-         log.info("WEBDAV 服务启动, contextPath: {}", fileProperties.getWebDavPrefixPath());
-         this.httpManager = httpManagerBuilder.buildHttpManager();
-    }
+    // @Override
+    // public void init(FilterConfig filterConfig) {
+    //      ResourceFactory rf = httpManagerBuilder.getMainResourceFactory();
+    //      if (rf instanceof AnnotationResourceFactory arf) {
+    //          if (arf.getViewResolver() == null) {
+    //              ViewResolver viewResolver = new JspViewResolver(filterConfig.getServletContext());
+    //              arf.setViewResolver(viewResolver);
+    //          }
+    //      }
+    //      log.info("WEBDAV 服务启动, contextPath: {}", fileProperties.getWebDavPrefixPath());
+    //      this.httpManager = httpManagerBuilder.buildHttpManager();
+    // }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
@@ -82,12 +79,12 @@ public class WebFilter implements Filter {
             return;
         }
         // 以/webDAV 开头的走webDAV协议
-        if (uri.startsWith(fileProperties.getWebDavPrefixPath())) {
-            long time = System.currentTimeMillis();
-            ResponseResult<Object> result = doMiltonProcessing(httpRequest, httpServletResponse);
-            recordLog(httpRequest, httpServletResponse, time, result);
-            return;
-        }
+        // if (uri.startsWith(fileProperties.getWebDavPrefixPath())) {
+        //     long time = System.currentTimeMillis();
+        //     ResponseResult<Object> result = doMiltonProcessing(httpRequest, httpServletResponse);
+        //     recordLog(httpRequest, httpServletResponse, time, result);
+        //     return;
+        // }
         CaffeineUtil.setLastAccessTimeCache();
         chain.doFilter(request, response);
     }
@@ -130,7 +127,17 @@ public class WebFilter implements Filter {
                  response.setStatus(Response.Status.SC_METHOD_NOT_ALLOWED);
                  return ResultUtil.warning("webDAV 暂不支持LOCK和UNLOCK请求");
              }
+             if (Request.Method.OPTIONS.toString().equals(req.getMethod())) {
+                 Console.log("---------- request start -----------");
+                 Console.log(request.getHeaders());
+                 Console.log("---------- request end -----------");
+             }
              httpManager.process(request, response);
+             if (Request.Method.OPTIONS.toString().equals(req.getMethod())) {
+                 Console.log("---------- response start -----------");
+                 Console.log(response.getStatus(), response.getHeaders());
+                 Console.log("---------- response end -----------");
+             }
          } finally {
              MiltonServlet.clearThreadlocals();
              resp.flushBuffer();
