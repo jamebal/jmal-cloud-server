@@ -55,7 +55,7 @@ public class WebdavConfig {
 
             // 设置安全约束
             SecurityCollection securityCollection = new SecurityCollection();
-            securityCollection.addPattern("/webDAV/*");
+            securityCollection.addPattern(fileProperties.getWebDavPrefixPath() + "/*");
 
             SecurityConstraint securityConstraint = new SecurityConstraint();
             securityConstraint.addAuthRole("webdav");
