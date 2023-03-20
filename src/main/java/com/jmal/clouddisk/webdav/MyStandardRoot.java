@@ -23,8 +23,4 @@ public class MyStandardRoot extends StandardRoot {
         return super.createMainResourceSet();
     }
 
-    @Override
-    public boolean mkdir(String path) {
-        return super.mkdir(path);
-    }
 }

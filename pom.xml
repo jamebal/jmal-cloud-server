@@ -80,13 +80,6 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
-        <!-- webDav server-->
-        <dependency>
-            <groupId>io.milton</groupId>
-            <artifactId>milton-server-ce</artifactId>
-            <version>4.0.0.1129</version>
-        </dependency>
-
         <!-- 获取文件编码-->
         <dependency>
             <groupId>antlr</groupId>
@@ -331,6 +324,15 @@
                 <version>${project.parent.version}</version>
                 <configuration>
                     <classifier>exec</classifier>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                    <compilerArgs>--enable-preview</compilerArgs>
                 </configuration>
             </plugin>
         </plugins>

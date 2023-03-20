@@ -10,8 +10,4 @@ public class MyDirResourceSet extends DirResourceSet {
         super(root, webAppMount, base, internalPath);
     }
 
-    @Override
-    public boolean mkdir(String path) {
-        return super.mkdir(path);
-    }
 }

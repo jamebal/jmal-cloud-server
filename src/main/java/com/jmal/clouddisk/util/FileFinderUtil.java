@@ -3,9 +3,9 @@ package com.jmal.clouddisk.util;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
+import jakarta.activation.MimetypesFileTypeMap;
 
 
-import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +33,6 @@ public class FileFinderUtil {
      * @return		满足查询条件的文件名列表
      */
     public static List<File> findFiles(String baseDirName,String type, String targetFileName, int count) {
-        MimetypesFileTypeMap mimetypesFileTypeMap =  new MimetypesFileTypeMap();
         List<File> fileList = new ArrayList<>();
         //判断目录是否存在
         File baseDir = new File(baseDirName);

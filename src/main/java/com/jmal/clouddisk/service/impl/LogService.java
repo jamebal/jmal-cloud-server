@@ -11,11 +11,11 @@ import com.jmal.clouddisk.model.LogOperationDTO;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
-import io.milton.http.Response;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.Response;
 import org.lionsoul.ip2region.xdb.Searcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -202,7 +202,7 @@ public class LogService {
     private void setStatus(LogOperation logOperation, HttpServletResponse response) {
         if (response != null) {
             int status = response.getStatus();
-            if (status >= Response.Status.SC_BAD_REQUEST.code) {
+            if (status >= HttpServletResponse.SC_BAD_REQUEST) {
                 logOperation.setStatus(-1);
             }
             logOperation.setRemarks(status + "");
