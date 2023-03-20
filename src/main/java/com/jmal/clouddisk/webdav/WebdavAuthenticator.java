@@ -35,6 +35,7 @@ public class WebdavAuthenticator extends DigestAuthenticator {
 
     @Override
     protected boolean doAuthenticate(Request request, HttpServletResponse response) throws IOException {
+        Console.log(request.getRequestURI());
         long time = System.currentTimeMillis();
         boolean auth = myAuthenticate(request, response);
         recordLog(request, response, time);
@@ -51,9 +52,7 @@ public class WebdavAuthenticator extends DigestAuthenticator {
                 getKey(), nonces, isValidateUri());
 
         if (authorization != null && digestInfo.parse(request, authorization)) {
-            if (digestInfo.validate(request)) {
-                principal = digestInfo.authenticate(context.getRealm());
-            }
+            principal = digestInfo.authenticate(context.getRealm());
             if (principal != null && !digestInfo.isNonceStale()) {
                 String username = digestInfo.getUsername();
                 String usernameUri = MyRealm.getUsernameByUri(fileProperties.getWebDavPrefixPath(), request.getRequestURI());
