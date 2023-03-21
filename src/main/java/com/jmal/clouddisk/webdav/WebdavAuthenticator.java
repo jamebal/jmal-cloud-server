@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.webdav;
 
-import cn.hutool.core.lang.Console;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.impl.LogService;
@@ -35,7 +34,6 @@ public class WebdavAuthenticator extends DigestAuthenticator {
 
     @Override
     protected boolean doAuthenticate(Request request, HttpServletResponse response) throws IOException {
-        Console.log(request.getRequestURI());
         long time = System.currentTimeMillis();
         boolean auth = myAuthenticate(request, response);
         recordLog(request, response, time);
