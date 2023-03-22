@@ -18,9 +18,14 @@ import java.util.List;
 public class WebdavAuthenticator extends DigestAuthenticator {
 
     /**
+     * Post、Copy、Move
+     */
+    private static final List<String> OPERATION_METHODS = Arrays.asList(WebdavMethod.POST.getCode(), WebdavMethod.COPY.getCode(), WebdavMethod.MOVE.getCode());
+
+    /**
      * 不记录日志的方法 Get、PropFind、PropFind、Lock。
      */
-    private static final List<String> NO_LOG_METHODS = Arrays.asList(WebdavMethod.GET.getCode(), WebdavMethod.PROPFIND.getCode(), WebdavMethod.LOCK.getCode());
+    private static final List<String> NO_LOG_METHODS = Arrays.asList(WebdavMethod.GET.getCode(), WebdavMethod.PROPFIND.getCode(), WebdavMethod.LOCK.getCode(), WebdavMethod.UNLOCK.getCode());
 
     private final FileProperties fileProperties;
 
@@ -35,9 +40,22 @@ public class WebdavAuthenticator extends DigestAuthenticator {
     @Override
     protected boolean doAuthenticate(Request request, HttpServletResponse response) throws IOException {
         long time = System.currentTimeMillis();
+        if (OPERATION_METHODS.contains(request.getMethod())) {
+            setScheme(request);
+        }
         boolean auth = myAuthenticate(request, response);
         recordLog(request, response, time);
         return auth;
+    }
+
+    private static void setScheme(Request request) {
+        String scheme = request.getHeader("scheme");
+        if (scheme.isBlank()) {
+            scheme = request.getHeader("Scheme");
+        }
+        if (!scheme.isBlank()) {
+            request.getCoyoteRequest().scheme().setString(scheme);
+        }
     }
 
     private boolean myAuthenticate(Request request, HttpServletResponse response) throws IOException {
