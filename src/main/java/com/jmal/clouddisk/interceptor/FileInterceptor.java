@@ -299,7 +299,7 @@ public class FileInterceptor implements HandlerInterceptor {
         }
         response.setHeader(HttpHeaders.CONNECTION, "close");
         response.setHeader(HttpHeaders.CONTENT_ENCODING, "utf-8");
-        response.setHeader(HttpHeaders.CACHE_CONTROL, "public, max-age=604800");
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "max-age=2592000");
     }
 
     /**
