@@ -10,6 +10,8 @@ import org.apache.catalina.connector.Request;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.List;
@@ -49,12 +51,15 @@ public class WebdavAuthenticator extends DigestAuthenticator {
     }
 
     private static void setScheme(Request request) {
-        String scheme = request.getHeader("scheme");
-        if (scheme.isBlank()) {
-            scheme = request.getHeader("Scheme");
-        }
-        if (!scheme.isBlank()) {
-            request.getCoyoteRequest().scheme().setString(scheme);
+        String destinationHeader = request.getHeader("Destination");
+        if (!destinationHeader.isBlank()) {
+            URI destinationUri;
+            try {
+                destinationUri = new URI (destinationHeader);
+                request.getCoyoteRequest().scheme().setString(destinationUri.getScheme());
+            } catch (URISyntaxException ignored){
+
+            }
         }
     }
 
