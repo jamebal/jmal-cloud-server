@@ -20,7 +20,7 @@ check_docker() {
     exit 1
   fi
   if ! docker ps > /dev/null 2>&1; then
-    echo -e "${Error} ${Red}您必须具有 root/sudo 权限或者在 docker 用户组才能运行此脚本。${Font}"
+    echo -e "${Error} ${Red}请确保您有操作docker的权限。${Font}"
     exit 1
   fi
   docker-compose version &>/dev/null
