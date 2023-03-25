@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -32,7 +32,9 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author jmal
@@ -69,12 +71,16 @@ public class SettingService {
     @Autowired
     UserLoginHolder userLoginHolder;
 
-    private final Set<String> syncCache = new ConcurrentHashSet<>(1);
+    private static final Map<String, SyncFileVisitor> syncFileVisitorMap = new ConcurrentHashMap<>(16);
+
+    private static final Map<String, String> syncCache = new ConcurrentHashMap<>(16);
+
+    private static final String SYNCED = "synced";
 
     @PostConstruct
-    public void init(){
+    public void init() {
         // 启动时检测是否存在菜单，不存在则初始化
-        if(!menuService.existsMenu()){
+        if (!menuService.existsMenu()) {
             log.info("初始化角色、菜单！");
             menuService.initMenus();
             roleService.initRoles();
@@ -86,37 +92,48 @@ public class SettingService {
      * @param username 用户名
      */
     public ResponseResult<Object> sync(String username) {
-        if (syncCache.isEmpty()) {
-            syncCache.add("syncing");
-            log.info("开始同步");
+        syncCache.computeIfAbsent(username, key -> {
             ThreadUtil.execute(() -> {
                 Path path = Paths.get(fileProperties.getRootDir(), username);
+                TimeInterval timeInterval = new TimeInterval();
                 try {
-                    Files.walkFileTree(path, new SyncFileVisitor(username));
+                    FileCountVisitor fileCountVisitor = new FileCountVisitor();
+                    PathUtil.walkFiles(path, fileCountVisitor);
+                    log.info("开始同步, 文件数: {}", fileCountVisitor.getCount());
+                    timeInterval.start();
+                    SyncFileVisitor syncFileVisitor = new SyncFileVisitor(username, fileCountVisitor.getCount());
+                    syncFileVisitorMap.put(username, syncFileVisitor);
+                    Files.walkFileTree(path, syncFileVisitor);
                 } catch (IOException e) {
                     log.error(e.getMessage() + path, e);
                 } finally {
-                    syncCache.clear();
-                    log.info("同步完成");
-                    fileService.pushMessage(username, null, "synced");
+                    syncCache.remove(username);
+                    syncFileVisitorMap.remove(username);
+                    log.info("同步完成, 耗时: {}s", timeInterval.intervalSecond());
+                    fileService.pushMessage(username, 100, SYNCED);
                 }
             });
-        }
+            return "syncing";
+        });
         return ResultUtil.success();
     }
 
     /**
      * 是否正在同步中
      */
-    public ResponseResult<Object> isSync() {
-        if (syncCache.isEmpty()) {
-            return ResultUtil.success(false);
+    public ResponseResult<Object> isSync(String username) {
+        if (!syncCache.containsKey(username)) {
+            return ResultUtil.success(100);
         }
-        return ResultUtil.success(true);
+        if (syncFileVisitorMap.containsKey(username)) {
+            return ResultUtil.success(syncFileVisitorMap.get(username).getPercent());
+        }
+        return ResultUtil.success(100);
     }
 
     /**
      * 上传网盘logo
+     *
      * @param file logo文件
      */
     public ResponseResult<Object> uploadLogo(MultipartFile file) {
@@ -126,7 +143,7 @@ public class SettingService {
             String oldFilename = null;
             Query query = new Query();
             WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(query, WebsiteSettingDO.class, COLLECTION_NAME_WEBSITE_SETTING);
-            if (websiteSettingDO != null){
+            if (websiteSettingDO != null) {
                 oldFilename = websiteSettingDO.getNetdiskLogo();
             }
             // 保存新的logo文件
@@ -147,6 +164,7 @@ public class SettingService {
 
     /**
      * 修改网盘名称
+     *
      * @param netdiskName 网盘名称
      */
     public ResponseResult<Object> updateNetdiskName(String netdiskName) {
@@ -160,9 +178,20 @@ public class SettingService {
     private class SyncFileVisitor extends SimpleFileVisitor<Path> {
 
         private final String username;
+        private final double totalCount;
 
-        public SyncFileVisitor(String username) {
+        private int percent = 0;
+
+        private final AtomicLong processCount;
+
+        public SyncFileVisitor(String username, double totalCount) {
             this.username = username;
+            this.totalCount = totalCount;
+            this.processCount = new AtomicLong(0);
+        }
+
+        public int getPercent() {
+            return percent;
         }
 
         @Override
@@ -173,24 +202,59 @@ public class SettingService {
 
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-            try{
+            try {
                 fileService.createFile(username, dir.toFile());
             } catch (Exception e) {
                 log.error(e.getMessage() + dir, e);
+            } finally {
+                processCount.addAndGet(1);
             }
             return super.preVisitDirectory(dir, attrs);
         }
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            try{
-                fileService.createFile(username, file.toFile());
+            try {
+                synchronized (this) {
+                    fileService.createFile(username, file.toFile());
+                }
             } catch (Exception e) {
                 log.error(e.getMessage() + file, e);
+            } finally {
+                if (totalCount > 0) {
+                    if (processCount.get() <= 2) {
+                        fileService.pushMessage(username, 1, SYNCED);
+                    }
+                    processCount.addAndGet(1);
+                    int currentPercent = (int) (processCount.get()/totalCount * 100);
+                    if (currentPercent > percent) {
+                        fileService.pushMessage(username, currentPercent, SYNCED);
+                    }
+                    percent = currentPercent;
+                }
             }
             return super.visitFile(file, attrs);
         }
+    }
 
+    private static class FileCountVisitor extends SimpleFileVisitor<Path> {
+        private final AtomicLong count = new AtomicLong(0);
+
+        public long getCount() {
+            return count.get();
+        }
+
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            count.addAndGet(1);
+            return super.preVisitDirectory(dir, attrs);
+        }
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            count.addAndGet(1);
+            return super.visitFile(file, attrs);
+        }
     }
 
     /***
@@ -213,7 +277,7 @@ public class SettingService {
      */
     private void addHeartwings(WebsiteSettingDO websiteSettingDO) {
         WebsiteSettingDO websiteSettingDO1 = mongoTemplate.findOne(new Query(), WebsiteSettingDO.class, COLLECTION_NAME_WEBSITE_SETTING);
-        if (websiteSettingDO1 != null){
+        if (websiteSettingDO1 != null) {
             String oldHeartwings = websiteSettingDO1.getBackgroundTextSite();
             String heartwings = websiteSettingDO.getBackgroundTextSite();
             if (!CharSequenceUtil.isBlank(oldHeartwings) && !oldHeartwings.equals(heartwings)) {
@@ -252,14 +316,14 @@ public class SettingService {
         WebsiteSettingDTO websiteSettingDTO = new WebsiteSettingDTO();
         Query query = new Query();
         WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(query, WebsiteSettingDO.class, COLLECTION_NAME_WEBSITE_SETTING);
-        if(websiteSettingDO != null){
+        if (websiteSettingDO != null) {
             BeanUtils.copyProperties(websiteSettingDO, websiteSettingDTO);
         }
-        if(websiteSettingDTO.getAlonePages() == null){
+        if (websiteSettingDTO.getAlonePages() == null) {
             websiteSettingDTO.setAlonePages(new ArrayList<>());
         }
         String avatar = userService.getCreatorAvatar();
-        if(!CharSequenceUtil.isBlank(avatar)){
+        if (!CharSequenceUtil.isBlank(avatar)) {
             websiteSettingDTO.setAvatar(avatar);
         }
         return websiteSettingDTO;

@@ -87,8 +87,8 @@ public class UserSettingController {
     @Operation(summary = "是否正在同步")
     @GetMapping("/user/setting/isSync")
     @LogOperatingFun
-    public ResponseResult<Object> isSync() {
-        return settingService.isSync();
+    public ResponseResult<Object> isSync(@RequestParam String username) {
+        return settingService.isSync(username);
     }
 
     @Operation(summary = "重置角色菜单")

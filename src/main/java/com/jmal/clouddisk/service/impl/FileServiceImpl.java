@@ -991,28 +991,18 @@ public class FileServiceImpl implements IFileService {
      * @param update
      */
     private void generateThumbnail(File file, Update update) {
-        ByteArrayOutputStream out = null;
-        try {
+        try(ByteArrayOutputStream out = new ByteArrayOutputStream();) {
             Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(file);
             thumbnail.size(256, 256);
-            out = new ByteArrayOutputStream();
             thumbnail.toOutputStream(out);
             FastImageInfo imageInfo = new FastImageInfo(file);
             update.set("w", imageInfo.getWidth());
             update.set("h", imageInfo.getHeight());
             update.set("content", out.toByteArray());
         } catch (UnsupportedFormatException e) {
-            log.warn(e.getMessage() + file.getAbsolutePath(), e);
+            log.warn(e.getMessage() + file.getAbsolutePath());
         } catch (Exception | Error e) {
-            log.error(e.getMessage() + file.getAbsolutePath(), e);
-        } finally {
-            if (out != null) {
-                try {
-                    out.close();
-                } catch (IOException e) {
-                    log.error(e.getMessage() + file.getAbsolutePath(), e);
-                }
-            }
+            log.error(e.getMessage() + file.getAbsolutePath());
         }
     }
 

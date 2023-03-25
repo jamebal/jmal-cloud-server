@@ -55,6 +55,7 @@ public class WebSocketAutoConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureWebSocketTransport(WebSocketTransportRegistration registry) {
+        registry.setSendBufferSizeLimit(1024 * 1024);
         registry.addDecoratorFactory(webSocketDecoratorFactory);
     }
 }
