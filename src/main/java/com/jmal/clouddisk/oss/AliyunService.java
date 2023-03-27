@@ -52,9 +52,9 @@ public class AliyunService {
     public static Client createClient() throws Exception {
         Config config = new Config()
                 // 必填，您的 AccessKey ID
-                .setAccessKeyId("LTAI5tBjKeTFNuJNnpuLGef4")
+                .setAccessKeyId("")
                 // 必填，您的 AccessKey Secret
-                .setAccessKeySecret("qLN8Fd9Ib4JwN3vF5FyieHutPcN3SA");
+                .setAccessKeySecret("");
         // 访问的域名
         config.endpoint = "sts.cn-guangzhou.aliyuncs.com";
         return new Client(config);
