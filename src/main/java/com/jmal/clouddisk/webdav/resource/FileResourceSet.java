@@ -1,5 +1,7 @@
 package com.jmal.clouddisk.webdav.resource;
 
+import com.jmal.clouddisk.oss.FileInfo;
+import com.jmal.clouddisk.webdav.WebdavConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.WebResource;
 import org.apache.catalina.WebResourceRoot;
@@ -14,7 +16,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author jmal
@@ -24,31 +29,29 @@ import java.util.Set;
 @Slf4j
 public class FileResourceSet extends AbstractFileResourceSet {
 
+    private final AliyunOSSStorageService aliyunOSSStorageService;
+
+    private final Map<String, FileInfo> fileInfoMap = new ConcurrentHashMap<>();
+
     public FileResourceSet(WebResourceRoot root, String base) {
         super("/");
         setRoot(root);
         setWebAppMount("/");
         setBase(base);
+        this.aliyunOSSStorageService = WebdavConfig.getBean(AliyunOSSStorageService.class);
     }
 
 
     @Override
     public WebResource getResource(String path) {
+        String thisPath = path;
         checkPath(path);
         WebResourceRoot root = getRoot();
         File f;
-        if (path.startsWith("/jmal/aliyunoss")) {
-            Path prePath = Paths.get(path);
-            if (prePath.getNameCount() == 2) {
-                path = "/";
-            } else {
-                path = path.substring("/jmal/aliyunoss".length());
-            }
-            String name = "";
-            if (!path.equals("/")) {
-                name = path;
-            }
-            f = new File("/Users/jmal/Downloads/jpom-2.10.29/agent-2.10.29-release", name);
+        Path prePath = Paths.get(path);
+        if (path.startsWith("/jmal/aliyunoss") && prePath.getNameCount() > 2) {
+            path = path.substring("/jmal/aliyunoss".length());
+            return new AliyunOSSFileResource(root, path, fileInfoMap.get(thisPath), isReadOnly(), getManifest());
         } else {
             f = file(path, false);
         }
@@ -67,21 +70,28 @@ public class FileResourceSet extends AbstractFileResourceSet {
 
     @Override
     public String[] list(String path) {
+        String thisPath = path;
         checkPath(path);
 
         File f;
         if (path.startsWith("/jmal/aliyunoss")) {
             Path prePath = Paths.get(path);
-            if (prePath.getNameCount() == 2) {
-                path = "/";
-            } else {
-                path = path.substring("/jmal/aliyunoss".length());
-            }
             String name = "";
-            if (!path.equals("/")) {
+            if (prePath.getNameCount() > 2) {
+                path = path.substring("/jmal/aliyunoss/".length());
                 name = path;
+                if (!name.endsWith("/")) {
+                    name = name + "/";
+                }
             }
-            f = new File("/Users/jmal/Downloads/jpom-2.10.29/agent-2.10.29-release", name);
+            List<FileInfo> fileInfoList = this.aliyunOSSStorageService.fileInfoList(name);
+            String[] result = new String[fileInfoList.size()];
+            for (int i = 0; i < fileInfoList.size(); i++) {
+                FileInfo fileInfo = fileInfoList.get(i);
+                result[i] = fileInfo.getName();
+                fileInfoMap.put(thisPath + "/" + fileInfo.getName(), fileInfo);
+            }
+            return result;
         } else {
             f = file(path, true);
         }

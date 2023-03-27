@@ -1,34 +1,48 @@
-package com.jmal.clouddisk.oss;
+package com.jmal.clouddisk.webdav.resource;
 
 import com.aliyun.oss.ClientException;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
 import com.aliyun.oss.model.ListObjectsRequest;
+import com.aliyun.oss.model.OSSObject;
 import com.aliyun.oss.model.OSSObjectSummary;
 import com.aliyun.oss.model.ObjectListing;
-import org.junit.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import com.jmal.clouddisk.oss.FileInfo;
+import jakarta.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
 
-/**
- * @author jmal
- * @Description AliyunOSSTest
- * @date 2023/3/27 17:50
- */
-@SpringBootTest
-public class AliyunOSSTest {
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
+@Service
+@Lazy
+@Slf4j
+public class AliyunOSSStorageService {
     private static String endpoint = "https://oss-cn-guangzhou.aliyuncs.com";
     private static final String accessKeyId = "";
     private static final String accessKeySecret = "";
     private static final String bucketName = "jmalcloud";
 
-    @Test
-    public void listFile(){
+    private OSS ossClient;
 
+    public AliyunOSSStorageService() {
         // 创建OSSClient实例。
-        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+        this.ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+    }
 
+    public boolean delete(String objectName) {
+        // 删除文件或目录。如果要删除目录，目录必须为空。
+        ossClient.deleteObject(bucketName, objectName);
+        return true;
+    }
+
+    public List<FileInfo> fileInfoList(String path) {
+        List<FileInfo> fileInfoList = new ArrayList<>();
         try {
             // 构造ListObjectsRequest请求。
             ListObjectsRequest listObjectsRequest = new ListObjectsRequest(bucketName);
@@ -37,22 +51,31 @@ public class AliyunOSSTest {
             listObjectsRequest.setDelimiter("/");
 
             // 列出fun目录下的所有文件和文件夹。
-            listObjectsRequest.setPrefix("jmalcloud/abc/");
+            listObjectsRequest.setPrefix(path);
 
             ObjectListing listing = ossClient.listObjects(listObjectsRequest);
 
-            // 遍历所有文件。
-            System.out.println("Objects:");
             // objectSummaries的列表中给出的是fun目录下的文件。
             for (OSSObjectSummary objectSummary : listing.getObjectSummaries()) {
-                System.out.println(objectSummary.getKey());
+                if (!objectSummary.getKey().equals(path)) {
+                    FileInfo fileInfo = new FileInfo();
+                    fileInfo.setSize(objectSummary.getSize());
+                    fileInfo.setKey(objectSummary.getKey());
+                    fileInfo.setETag(objectSummary.getETag());
+                    fileInfo.setLastModified(objectSummary.getLastModified());
+                    fileInfo.setBucketName(bucketName);
+                    fileInfoList.add(fileInfo);
+                }
             }
 
-            // 遍历所有commonPrefix。
-            System.out.println("\nCommonPrefixes:");
             // commonPrefixs列表中显示的是fun目录下的所有子文件夹。由于fun/movie/001.avi和fun/movie/007.avi属于fun文件夹下的movie目录，因此这两个文件未在列表中。
             for (String commonPrefix : listing.getCommonPrefixes()) {
-                System.out.println(commonPrefix);
+                FileInfo fileInfo = new FileInfo();
+                fileInfo.setSize(0);
+                fileInfo.setKey(commonPrefix);
+                fileInfo.setLastModified(new Date());
+                fileInfo.setBucketName(bucketName);
+                fileInfoList.add(fileInfo);
             }
         } catch (OSSException oe) {
             System.out.println("Caught an OSSException, which means your request made it to OSS, "
@@ -66,11 +89,20 @@ public class AliyunOSSTest {
                     + "a serious internal problem while trying to communicate with OSS, "
                     + "such as not being able to access the network.");
             System.out.println("Error Message:" + ce.getMessage());
-        } finally {
-            if (ossClient != null) {
-                ossClient.shutdown();
-            }
         }
+        return fileInfoList;
     }
 
+    public OSSObject getObject(String objectName) throws IOException {
+        // 创建OSSClient实例。
+        OSSObject ossObject = this.ossClient.getObject(bucketName, objectName);
+        return ossObject;
+    }
+
+    @PreDestroy
+    public void destroy() {
+        if (this.ossClient != null) {
+            this.ossClient.shutdown();
+        }
+    }
 }

@@ -8,6 +8,7 @@ import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,11 +23,18 @@ public class WebdavConfig {
 
     private final MyWebdavServlet myWebdavServlet;
 
-    public WebdavConfig(FileProperties fileProperties, MyRealm myRealm, WebdavAuthenticator webdavAuthenticator, MyWebdavServlet myWebdavServlet) {
+    private static ApplicationContext context;
+
+    public WebdavConfig(FileProperties fileProperties, MyRealm myRealm, WebdavAuthenticator webdavAuthenticator, MyWebdavServlet myWebdavServlet, ApplicationContext context) {
         this.fileProperties = fileProperties;
         this.myRealm = myRealm;
         this.webdavAuthenticator = webdavAuthenticator;
         this.myWebdavServlet = myWebdavServlet;
+        this.context = context;
+    }
+
+    public static <T> T getBean(Class<T> requiredType) {
+        return context.getBean(requiredType);
     }
 
     @Bean
