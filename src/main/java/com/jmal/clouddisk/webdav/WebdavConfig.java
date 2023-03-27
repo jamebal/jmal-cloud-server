@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.webdav;
 
 import com.jmal.clouddisk.config.FileProperties;
-import org.apache.catalina.servlets.WebdavServlet;
+import com.jmal.clouddisk.webdav.resource.FileResourceSet;
 import org.apache.tomcat.util.descriptor.web.LoginConfig;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
 import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
@@ -20,21 +20,24 @@ public class WebdavConfig {
 
     private final WebdavAuthenticator webdavAuthenticator;
 
-    public WebdavConfig(FileProperties fileProperties, MyRealm myRealm, WebdavAuthenticator webdavAuthenticator) {
+    private final MyWebdavServlet myWebdavServlet;
+
+    public WebdavConfig(FileProperties fileProperties, MyRealm myRealm, WebdavAuthenticator webdavAuthenticator, MyWebdavServlet myWebdavServlet) {
         this.fileProperties = fileProperties;
         this.myRealm = myRealm;
         this.webdavAuthenticator = webdavAuthenticator;
+        this.myWebdavServlet = myWebdavServlet;
     }
 
     @Bean
-    public ServletRegistrationBean<WebdavServlet> webdavServlet() {
-        ServletRegistrationBean<WebdavServlet> registration = new ServletRegistrationBean<>(new WebdavServlet(), fileProperties.getWebDavPrefixPath() + "/*");
+    public ServletRegistrationBean<MyWebdavServlet> webdavServlet() {
+        ServletRegistrationBean<MyWebdavServlet> registration = new ServletRegistrationBean<>(myWebdavServlet, fileProperties.getWebDavPrefixPath() + "/*");
         registration.setName("WebDAV servlet");
-        registration.setServlet(new WebdavServlet());
+        registration.setServlet(myWebdavServlet);
         registration.setLoadOnStartup(1);
         registration.addInitParameter("listings", String.valueOf(true));
         registration.addInitParameter("readonly", String.valueOf(false));
-        registration.addInitParameter("debug", String.valueOf(0));
+        registration.addInitParameter("debug", String.valueOf(1));
         return registration;
     }
 
@@ -44,7 +47,7 @@ public class WebdavConfig {
             // 创建一个新的WebResourceRoot实例
             MyStandardRoot standardRoot = new MyStandardRoot(context);
             // 自定义静态资源的位置
-            standardRoot.addPreResources(new MyDirResourceSet(standardRoot, "/", fileProperties.getRootDir(), "/"));
+            standardRoot.addPreResources(new FileResourceSet(standardRoot, fileProperties.getRootDir()));
             // 将新的WebResourceRoot设置为应用程序的资源根目录
             context.setResources(standardRoot);
             context.getPipeline().addValve(webdavAuthenticator);
