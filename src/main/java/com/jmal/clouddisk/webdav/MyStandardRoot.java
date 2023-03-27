@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.webdav;
 
+import com.jmal.clouddisk.webdav.resource.FileResourceSet;
 import org.apache.catalina.Context;
 import org.apache.catalina.WebResourceSet;
 import org.apache.catalina.webresources.StandardRoot;
@@ -11,9 +12,9 @@ public class MyStandardRoot extends StandardRoot {
 
     @Override
     protected WebResourceSet createMainResourceSet() {
-        MyDirResourceSet myDirResourceSet = null;
+        FileResourceSet myDirResourceSet = null;
         for (WebResourceSet preResource : getPreResources()) {
-            if (preResource instanceof MyDirResourceSet myDirResourceSet1) {
+            if (preResource instanceof FileResourceSet myDirResourceSet1) {
                 myDirResourceSet = myDirResourceSet1;
             }
         }
