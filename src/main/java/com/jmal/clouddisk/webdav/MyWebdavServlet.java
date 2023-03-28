@@ -1,7 +1,9 @@
 package com.jmal.clouddisk.webdav;
 
 import cn.hutool.core.lang.Console;
+import com.aliyun.oss.model.OSSObject;
 import com.jmal.clouddisk.webdav.resource.AliyunOSSFileResource;
+import com.jmal.clouddisk.webdav.resource.OSSInputStream;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,21 +41,35 @@ public class MyWebdavServlet extends WebdavServlet {
     }
 
     @Override
-    protected void copy(WebResource resource, long length, ServletOutputStream ostream, Ranges.Entry range) throws IOException {
-        IOException exception = null;
-
+    protected void copy(WebResource resource, long length, ServletOutputStream outStream, Ranges.Entry range) throws IOException {
+        IOException exception;
         InputStream resourceInputStream = resource.getInputStream();
-        InputStream istream = new BufferedInputStream(resourceInputStream, input);
-        exception = copyRange(istream, ostream, getStart(range, length), getEnd(range, length));
-        Console.log(resource.getName(), exception);
-        // Clean up the input stream
-        istream.close();
-
+        InputStream inStream = new BufferedInputStream(resourceInputStream, input);
+        exception = copyRange(inStream, outStream, getStart(range, length), getEnd(range, length));
+        Console.log("copy1", resource.getName(), exception);
+        inStream.close();
         if (resource instanceof AliyunOSSFileResource aliyunOSSFileResource) {
             aliyunOSSFileResource.closeObject();
         }
+        if (exception != null) {
+            throw exception;
+        }
+    }
 
-        // Rethrow any exception that has occurred
+    @Override
+    protected void copy(InputStream is, ServletOutputStream outStream) throws IOException {
+        IOException exception;
+        OSSObject object = null;
+        if (is instanceof OSSInputStream ossInputStream) {
+            object = ossInputStream.getOssObject();
+        }
+        Console.log("copy2", object);
+        InputStream inStream = new BufferedInputStream(is, input);
+        exception = copyRange(inStream, outStream);
+        inStream.close();
+        if (object != null) {
+            object.close();
+        }
         if (exception != null) {
             throw exception;
         }

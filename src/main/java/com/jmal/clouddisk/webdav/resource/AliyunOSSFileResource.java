@@ -17,6 +17,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.util.jar.Manifest;
+import java.util.zip.CheckedInputStream;
 
 public class AliyunOSSFileResource extends AbstractResource {
 
@@ -150,13 +151,12 @@ public class AliyunOSSFileResource extends AbstractResource {
     public void closeObject() throws IOException {
         if (this.ossObject != null) {
             this.ossObject.close();
-            this.ossObject = null;
         }
     }
 
     @Override
     protected InputStream doGetInputStream() {
-        Console.log(needConvert, this.ossObject);
+        Console.log("doGetInputStream");
         if (needConvert) {
             byte[] content = getContent();
             if (content == null) {
@@ -168,6 +168,13 @@ public class AliyunOSSFileResource extends AbstractResource {
         try {
             OSSObject object = this.aliyunOSSStorageService.getObject(resource.getKey());
             setOSSObject(object);
+            InputStream is = object.getObjectContent();
+            if (is instanceof CheckedInputStream checkedInputStream) {
+                Console.log("checkedInputStream");
+                OSSInputStream ossInputStream = new OSSInputStream(checkedInputStream, checkedInputStream.getChecksum());
+                ossInputStream.setOssObject(object);
+                return ossInputStream;
+            }
             return object.getObjectContent();
         } catch (IOException e) {
             return null;
@@ -195,7 +202,8 @@ public class AliyunOSSFileResource extends AbstractResource {
         byte[] result = new byte[size];
 
         int pos = 0;
-        try (InputStream is = this.aliyunOSSStorageService.getObject(resource.getKey()).getObjectContent()) {
+        try (OSSObject object = this.aliyunOSSStorageService.getObject(resource.getKey());
+             InputStream is = object.getObjectContent()) {
             while (pos < size) {
                 int n = is.read(result, pos, size - pos);
                 if (n < 0) {
