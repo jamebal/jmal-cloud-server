@@ -16,6 +16,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.jar.Manifest;
 import java.util.zip.CheckedInputStream;
 
@@ -39,6 +40,8 @@ public class AliyunOSSFileResource extends AbstractResource {
 
 
     private final FileInfo resource;
+    public AtomicBoolean lock1 = new AtomicBoolean();
+    public AtomicBoolean lock2 = new AtomicBoolean();
     private final String name;
     private final boolean readOnly;
     private final Manifest manifest;
@@ -148,15 +151,20 @@ public class AliyunOSSFileResource extends AbstractResource {
         this.ossObject = ossObject;
     }
 
+    public OSSObject getOSSObject() {
+        return this.ossObject;
+    }
+
     public void closeObject() throws IOException {
         if (this.ossObject != null) {
             this.ossObject.close();
+            this.ossObject = null;
         }
     }
 
     @Override
     protected InputStream doGetInputStream() {
-        Console.log("doGetInputStream");
+        Console.log("AliyunOSSStorageService doGetInputStream");
         if (needConvert) {
             byte[] content = getContent();
             if (content == null) {
@@ -166,13 +174,20 @@ public class AliyunOSSFileResource extends AbstractResource {
             }
         }
         try {
-            OSSObject object = this.aliyunOSSStorageService.getObject(resource.getKey());
-            setOSSObject(object);
+            OSSObject object;
+            synchronized (resource) {
+                if (this.ossObject == null) {
+                    object = this.aliyunOSSStorageService.getObject(resource.getKey());
+                    setOSSObject(object);
+                } else {
+                    object = getOSSObject();
+                }
+            }
             InputStream is = object.getObjectContent();
             if (is instanceof CheckedInputStream checkedInputStream) {
-                Console.log("checkedInputStream");
+                Console.log("AliyunOSSStorageService checkedInputStream");
                 OSSInputStream ossInputStream = new OSSInputStream(checkedInputStream, checkedInputStream.getChecksum());
-                ossInputStream.setOssObject(object);
+                ossInputStream.setOssFileResource(this);
                 return ossInputStream;
             }
             return object.getObjectContent();

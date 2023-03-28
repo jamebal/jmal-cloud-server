@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.webdav.resource;
 
+import cn.hutool.core.lang.Console;
 import org.apache.catalina.WebResourceRoot;
 import org.apache.catalina.webresources.AbstractResource;
 import org.apache.juli.logging.Log;
@@ -146,6 +147,7 @@ public class LocalFileResource extends AbstractResource {
 
     @Override
     protected InputStream doGetInputStream() {
+        Console.log("LocalFileResource doGetInputStream");
         if (needConvert) {
             byte[] content = getContent();
             if (content == null) {
@@ -155,6 +157,7 @@ public class LocalFileResource extends AbstractResource {
             }
         }
         try {
+            Console.log("LocalFileResource FileInputStream");
             return new FileInputStream(resource);
         } catch (FileNotFoundException fnfe) {
             // Race condition (file has been deleted) - not an error

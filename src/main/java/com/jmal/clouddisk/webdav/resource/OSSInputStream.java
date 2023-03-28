@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.webdav.resource;
 
-import com.aliyun.oss.model.OSSObject;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,7 +16,7 @@ public class OSSInputStream extends CheckedInputStream {
 
     @Getter
     @Setter
-    private OSSObject ossObject;
+    private AliyunOSSFileResource ossFileResource;
 
     /**
      * Creates an input stream using the specified Checksum.
