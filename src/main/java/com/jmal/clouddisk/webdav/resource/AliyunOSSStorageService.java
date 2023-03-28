@@ -4,16 +4,14 @@ import com.aliyun.oss.ClientException;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
-import com.aliyun.oss.model.ListObjectsRequest;
-import com.aliyun.oss.model.OSSObject;
-import com.aliyun.oss.model.OSSObjectSummary;
-import com.aliyun.oss.model.ObjectListing;
+import com.aliyun.oss.model.*;
 import com.jmal.clouddisk.oss.FileInfo;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -33,6 +31,10 @@ public class AliyunOSSStorageService {
     public AliyunOSSStorageService() {
         // 创建OSSClient实例。
         this.ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+    }
+
+    public String getBucketName() {
+        return bucketName;
     }
 
     public boolean delete(String objectName) {
@@ -97,6 +99,39 @@ public class AliyunOSSStorageService {
         // 创建OSSClient实例。
         OSSObject ossObject = this.ossClient.getObject(bucketName, objectName);
         return ossObject;
+    }
+
+    public boolean mkdir(String objectName) {
+        if (objectName.endsWith("/")) {
+            objectName = objectName + "/";
+        }
+        try {
+            String content = "";
+            // 创建PutObjectRequest对象。
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, new ByteArrayInputStream(content.getBytes()));
+            // 如果需要上传时设置存储类型和访问权限，请参考以下示例代码。
+            // ObjectMetadata metadata = new ObjectMetadata();
+            // metadata.setHeader(OSSHeaders.OSS_STORAGE_CLASS, StorageClass.Standard.toString());
+            // metadata.setObjectAcl(CannedAccessControlList.Private);
+            // putObjectRequest.setMetadata(metadata);
+
+            // 上传字符串。
+            ossClient.putObject(putObjectRequest);
+            return true;
+        } catch (OSSException oe) {
+            System.out.println("Caught an OSSException, which means your request made it to OSS, "
+                    + "but was rejected with an error response for some reason.");
+            System.out.println("Error Message:" + oe.getErrorMessage());
+            System.out.println("Error Code:" + oe.getErrorCode());
+            System.out.println("Request ID:" + oe.getRequestId());
+            System.out.println("Host ID:" + oe.getHostId());
+        } catch (ClientException ce) {
+            System.out.println("Caught an ClientException, which means the client encountered "
+                    + "a serious internal problem while trying to communicate with OSS, "
+                    + "such as not being able to access the network.");
+            System.out.println("Error Message:" + ce.getMessage());
+        }
+        return false;
     }
 
     @PreDestroy

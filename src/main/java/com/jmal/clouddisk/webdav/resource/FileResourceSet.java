@@ -51,6 +51,10 @@ public class FileResourceSet extends AbstractFileResourceSet {
         Path prePath = Paths.get(path);
         if (path.startsWith("/jmal/aliyunoss") && prePath.getNameCount() > 2) {
             path = path.substring("/jmal/aliyunoss".length());
+            FileInfo fileInfo = fileInfoMap.get(thisPath);
+            if (fileInfo == null) {
+               return new EmptyOSSResource(root, path);
+            }
             return new AliyunOSSFileResource(root, path, fileInfoMap.get(thisPath), isReadOnly(), getManifest());
         } else {
             f = file(path, false);
@@ -96,7 +100,6 @@ public class FileResourceSet extends AbstractFileResourceSet {
             f = file(path, true);
         }
 
-        // File f = file(path, true);
         if (f == null) {
             return EMPTY_STRING_ARRAY;
         }
@@ -123,21 +126,19 @@ public class FileResourceSet extends AbstractFileResourceSet {
         File f;
         if (path.startsWith("/jmal/aliyunoss")) {
             Path prePath = Paths.get(path);
-            if (prePath.getNameCount() == 2) {
-                path = "/";
-            } else {
-                path = path.substring("/jmal/aliyunoss".length());
-            }
             String name = "";
-            if (!path.equals("/")) {
+            if (prePath.getNameCount() > 2) {
+                path = path.substring("/jmal/aliyunoss/".length());
                 name = path;
+                if (!name.endsWith("/")) {
+                    name = name + "/";
+                }
             }
-            f = new File("/Users/jmal/Downloads/jpom-2.10.29/agent-2.10.29-release", name);
+            return this.aliyunOSSStorageService.mkdir(name);
         } else {
             f = file(path, false);
         }
 
-        // File f = file(path, false);
         if (f == null) {
             return false;
         }

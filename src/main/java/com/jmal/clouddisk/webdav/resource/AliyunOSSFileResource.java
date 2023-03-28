@@ -16,6 +16,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.jar.Manifest;
 import java.util.zip.CheckedInputStream;
@@ -54,6 +55,15 @@ public class AliyunOSSFileResource extends AbstractResource {
     public AliyunOSSFileResource(WebResourceRoot root, String webAppPath,
                                  FileInfo resource, boolean readOnly, Manifest manifest) {
         super(root,webAppPath);
+        this.aliyunOSSStorageService = WebdavConfig.getBean(AliyunOSSStorageService.class);
+        if (resource == null) {
+            FileInfo fileInfo = new FileInfo();
+            fileInfo.setSize(0);
+            fileInfo.setKey(webAppPath);
+            fileInfo.setLastModified(new Date());
+            fileInfo.setBucketName(aliyunOSSStorageService.getBucketName());
+            resource = fileInfo;
+        }
         this.resource = resource;
         if (webAppPath.charAt(webAppPath.length() - 1) == '/') {
             String realName = resource.getName() + '/';
@@ -75,7 +85,6 @@ public class AliyunOSSFileResource extends AbstractResource {
         this.readOnly = readOnly;
         this.manifest = manifest;
         this.needConvert = PROPERTIES_NEED_CONVERT && name.endsWith(".properties");
-        this.aliyunOSSStorageService = WebdavConfig.getBean(AliyunOSSStorageService.class);
     }
 
     @Override
