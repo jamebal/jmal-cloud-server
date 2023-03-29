@@ -4,8 +4,8 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.URLUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.jmal.clouddisk.webdav.resource.OssFileResource;
 import com.jmal.clouddisk.oss.OssInputStream;
+import com.jmal.clouddisk.webdav.resource.OssFileResource;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,8 +42,10 @@ public class MyWebdavServlet extends WebdavServlet {
         if (filterMac(request, response, method)) return;
         // 过滤掉过于频繁的GET请求
         if (filterTooManyRequest(request, response, method)) return;
+        long time = System.currentTimeMillis();
+        log.info("request: {}, requestId: {}, uri: {} {}", "---", time, method, URLUtil.decode(request.getRequestURI()));
         super.service(request, response);
-        log.info("response: {}, uri: {} {}", response.getStatus(), method, URLUtil.decode(request.getRequestURI()));
+        log.info("response: {}, requestId: {}, uri: {} {}", response.getStatus(), time, method, URLUtil.decode(request.getRequestURI()));
     }
 
     /**
@@ -87,6 +89,7 @@ public class MyWebdavServlet extends WebdavServlet {
         }
         InputStream inStream = new BufferedInputStream(resourceInputStream, input);
         exception = copyRange(inStream, outStream, getStart(range, length), getEnd(range, length));
+        Console.log("copy1", ossFileResource);
         inStream.close();
         if (ossFileResource != null) {
             ossFileResource.closeObject();
@@ -105,6 +108,7 @@ public class MyWebdavServlet extends WebdavServlet {
         }
         InputStream inStream = new BufferedInputStream(is, input);
         exception = copyRange(inStream, outStream);
+        Console.log("copy2", ossFileResource);
         inStream.close();
         if (ossFileResource != null) {
             ossFileResource.closeObject();

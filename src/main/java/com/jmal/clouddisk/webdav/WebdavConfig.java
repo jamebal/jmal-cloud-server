@@ -9,8 +9,6 @@ import com.jmal.clouddisk.webdav.resource.FileResourceSet;
 import org.apache.tomcat.util.descriptor.web.LoginConfig;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
 import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
-import org.checkerframework.checker.units.qual.C;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
@@ -73,7 +71,7 @@ public class WebdavConfig {
         registration.setLoadOnStartup(1);
         registration.addInitParameter("listings", String.valueOf(true));
         registration.addInitParameter("readonly", String.valueOf(false));
-        registration.addInitParameter("debug", String.valueOf(1));
+        registration.addInitParameter("debug", String.valueOf(0));
         return registration;
     }
 

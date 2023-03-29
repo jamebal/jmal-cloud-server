@@ -2,8 +2,8 @@ package com.jmal.clouddisk.webdav.resource;
 
 import cn.hutool.core.lang.Console;
 import com.jmal.clouddisk.oss.BucketInfo;
-import com.jmal.clouddisk.oss.IOssStorageService;
 import com.jmal.clouddisk.oss.FileInfo;
+import com.jmal.clouddisk.oss.IOssStorageService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.WebResource;
@@ -47,6 +47,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
 
     @Override
     public WebResource getResource(String path) {
+        log.info("getResource: {}", path);
         String thisPath = path;
         checkPath(path);
         WebResourceRoot root = getRoot();
@@ -56,9 +57,12 @@ public class FileResourceSet extends AbstractFileResourceSet {
         if (ossPath != null && prePath.getNameCount() > 2) {
             path = path.substring(ossPath.length() + 1);
             FileInfo fileInfo = fileInfoMap.get(thisPath);
-            // if (fileInfo == null) {
-            //     fileInfo = getOssStorageService(ossPath).getFileInfo(path);
-            // }
+            if (fileInfo == null) {
+                if (!path.endsWith("/")) {
+                    path += "/";
+                }
+                fileInfo = getOssStorageService(ossPath).getFileInfo(path);
+            }
             if (fileInfo == null) {
                 return new EmptyResource(root, path);
             }
@@ -99,9 +103,6 @@ public class FileResourceSet extends AbstractFileResourceSet {
                 result[i] = fileName;
                 String webPath = path + "/" + fileName;
                 fileInfoMap.put(webPath, fileInfo);
-                if (fileInfo.isFolder()) {
-                    fileInfoMap.put(webPath + "/", fileInfo);
-                }
             }
             Console.log(result.length, fileInfoMap);
             return result;
@@ -139,7 +140,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
             String name = getObjectName(thisPath, ossPath);
             FileInfo fileInfo = getOssStorageService(ossPath).mkdir(name);
             if (fileInfo != null) {
-                fileInfoMap.put(thisPath + "/", fileInfo);
+                fileInfoMap.put(thisPath, fileInfo);
             }
             return fileInfo != null;
         } else {
