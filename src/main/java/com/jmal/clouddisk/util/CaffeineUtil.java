@@ -3,6 +3,7 @@ package com.jmal.clouddisk.util;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.oss.BucketInfo;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,13 @@ import java.util.concurrent.locks.Lock;
  */
 @Component
 public class CaffeineUtil {
+
+    /**
+     * 用户oss存储路径前缀缓存
+     * key: 路径前缀，例如：/jmal/aliyunStorage ,其中jmal为用户名,aliyunStorage 为oss存储的挂载文件夹名称，由用户自定义
+     * value: BucketInfo
+     */
+    private static final Cache<String, BucketInfo> OSS_DIAMETER_PREFIX_CACHE = Caffeine.newBuilder().build();
 
     private static final Cache<String, Long> LAST_ACCESS_TIME_CACHE = Caffeine.newBuilder().build();
 
@@ -211,4 +219,25 @@ public class CaffeineUtil {
         LAST_ACCESS_TIME_CACHE.put("lastAccessTime", System.currentTimeMillis());
     }
 
+    public static void setOssDiameterPrefixCache(String path, BucketInfo bucketInfo) {
+        OSS_DIAMETER_PREFIX_CACHE.put(path, bucketInfo);
+    }
+
+    public static BucketInfo getOssDiameterPrefixCache(String path) {
+        return OSS_DIAMETER_PREFIX_CACHE.getIfPresent(path);
+    }
+
+    /**
+     * 获取oss path
+     * @param path url path
+     * @return oss path
+     */
+    public static String getOssPath(String path) {
+        for (String prefixPath : OSS_DIAMETER_PREFIX_CACHE.asMap().keySet()) {
+            if (path.startsWith(prefixPath)){
+                return prefixPath;
+            }
+        }
+        return null;
+    }
 }

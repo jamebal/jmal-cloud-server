@@ -1,7 +1,10 @@
 package com.jmal.clouddisk.webdav.resource;
 
+import cn.hutool.core.lang.Console;
+import com.jmal.clouddisk.oss.BucketInfo;
+import com.jmal.clouddisk.oss.IOssStorageService;
 import com.jmal.clouddisk.oss.FileInfo;
-import com.jmal.clouddisk.webdav.WebdavConfig;
+import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.WebResource;
 import org.apache.catalina.WebResourceRoot;
@@ -29,16 +32,16 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class FileResourceSet extends AbstractFileResourceSet {
 
-    private final AliyunOSSStorageService aliyunOSSStorageService;
-
     private final Map<String, FileInfo> fileInfoMap = new ConcurrentHashMap<>();
 
-    public FileResourceSet(WebResourceRoot root, String base) {
+    private final Map<String, IOssStorageService> ossStorageServiceMap;
+
+    public FileResourceSet(WebResourceRoot root, String base, Map<String, IOssStorageService> ossStorageServiceMap) {
         super("/");
         setRoot(root);
         setWebAppMount("/");
         setBase(base);
-        this.aliyunOSSStorageService = WebdavConfig.getBean(AliyunOSSStorageService.class);
+        this.ossStorageServiceMap = ossStorageServiceMap;
     }
 
 
@@ -49,17 +52,20 @@ public class FileResourceSet extends AbstractFileResourceSet {
         WebResourceRoot root = getRoot();
         File f;
         Path prePath = Paths.get(path);
-        if (path.startsWith("/jmal/aliyunoss") && prePath.getNameCount() > 2) {
-            path = path.substring("/jmal/aliyunoss".length());
+        String ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null && prePath.getNameCount() > 2) {
+            path = path.substring(ossPath.length() + 1);
             FileInfo fileInfo = fileInfoMap.get(thisPath);
+            // if (fileInfo == null) {
+            //     fileInfo = getOssStorageService(ossPath).getFileInfo(path);
+            // }
             if (fileInfo == null) {
-               return new EmptyOSSResource(root, path);
+                return new EmptyResource(root, path);
             }
-            return new AliyunOSSFileResource(root, path, fileInfoMap.get(thisPath), isReadOnly(), getManifest());
+            return new OssFileResource(root, path, fileInfo, isReadOnly(), getManifest(), getOssStorageService(ossPath));
         } else {
             f = file(path, false);
         }
-        // File f = file(path, false);
         if (f == null) {
             return new EmptyResource(root, path);
         }
@@ -72,29 +78,32 @@ public class FileResourceSet extends AbstractFileResourceSet {
         return new LocalFileResource(root, path, f, isReadOnly(), getManifest());
     }
 
+    private IOssStorageService getOssStorageService(String ossPath) {
+        BucketInfo bucketInfo = CaffeineUtil.getOssDiameterPrefixCache(ossPath);
+        return this.ossStorageServiceMap.get(bucketInfo.getPlatform().getKey());
+    }
+
     @Override
     public String[] list(String path) {
-        String thisPath = path;
         checkPath(path);
 
         File f;
-        if (path.startsWith("/jmal/aliyunoss")) {
-            Path prePath = Paths.get(path);
-            String name = "";
-            if (prePath.getNameCount() > 2) {
-                path = path.substring("/jmal/aliyunoss/".length());
-                name = path;
-                if (!name.endsWith("/")) {
-                    name = name + "/";
-                }
-            }
-            List<FileInfo> fileInfoList = this.aliyunOSSStorageService.fileInfoList(name);
+        String ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null) {
+            String name = getObjectName(path, ossPath);
+            List<FileInfo> fileInfoList = getOssStorageService(ossPath).fileInfoList(name);
             String[] result = new String[fileInfoList.size()];
             for (int i = 0; i < fileInfoList.size(); i++) {
                 FileInfo fileInfo = fileInfoList.get(i);
-                result[i] = fileInfo.getName();
-                fileInfoMap.put(thisPath + "/" + fileInfo.getName(), fileInfo);
+                String fileName = fileInfo.getName();
+                result[i] = fileName;
+                String webPath = path + "/" + fileName;
+                fileInfoMap.put(webPath, fileInfo);
+                if (fileInfo.isFolder()) {
+                    fileInfoMap.put(webPath + "/", fileInfo);
+                }
             }
+            Console.log(result.length, fileInfoMap);
             return result;
         } else {
             f = file(path, true);
@@ -118,23 +127,21 @@ public class FileResourceSet extends AbstractFileResourceSet {
 
     @Override
     public boolean mkdir(String path) {
+        String thisPath = path;
         checkPath(path);
         if (isReadOnly()) {
             return false;
         }
 
         File f;
-        if (path.startsWith("/jmal/aliyunoss")) {
-            Path prePath = Paths.get(path);
-            String name = "";
-            if (prePath.getNameCount() > 2) {
-                path = path.substring("/jmal/aliyunoss/".length());
-                name = path;
-                if (!name.endsWith("/")) {
-                    name = name + "/";
-                }
+        String ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null) {
+            String name = getObjectName(thisPath, ossPath);
+            FileInfo fileInfo = getOssStorageService(ossPath).mkdir(name);
+            if (fileInfo != null) {
+                fileInfoMap.put(thisPath + "/", fileInfo);
             }
-            return this.aliyunOSSStorageService.mkdir(name);
+            return fileInfo != null;
         } else {
             f = file(path, false);
         }
@@ -143,6 +150,18 @@ public class FileResourceSet extends AbstractFileResourceSet {
             return false;
         }
         return f.mkdir();
+    }
+
+    private static String getObjectName(String path, String ossPath) {
+        Path prePath = Paths.get(path);
+        String name = "";
+        if (prePath.getNameCount() > 2) {
+            name = path.substring(ossPath.length() + 1);
+            if (!name.endsWith("/")) {
+                name = name + "/";
+            }
+        }
+        return name;
     }
 
     @Override
@@ -158,30 +177,23 @@ public class FileResourceSet extends AbstractFileResourceSet {
             return false;
         }
 
-        // write() is meant to create a file so ensure that the path doesn't
-        // end in '/'
         if (path.endsWith("/")) {
             return false;
         }
 
         File dest;
-        if (path.startsWith("/jmal/aliyunoss")) {
+        String ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null) {
             Path prePath = Paths.get(path);
-            if (prePath.getNameCount() == 2) {
-                path = "/";
-            } else {
-                path = path.substring("/jmal/aliyunoss".length());
+            if (prePath.getNameCount() > 2) {
+                path = path.substring(ossPath.length() + 1);
             }
-            String name = "";
-            if (!path.equals("/")) {
-                name = path;
-            }
-            dest = new File("/Users/jmal/Downloads/jpom-2.10.29/agent-2.10.29-release", name);
+            getOssStorageService(ossPath).writeObject(is, path);
+            return true;
         } else {
             dest = file(path, false);
         }
 
-        // File dest = file(path, false);
         if (dest == null) {
             return false;
         }

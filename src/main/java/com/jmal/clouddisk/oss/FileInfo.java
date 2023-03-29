@@ -19,4 +19,8 @@ public class FileInfo {
         return path.getFileName().toString();
     }
 
+    public boolean isFolder() {
+        return key.endsWith("/");
+    }
+
 }
