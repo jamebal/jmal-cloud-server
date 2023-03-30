@@ -3,14 +3,12 @@ package com.jmal.clouddisk.webdav.resource;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.FileInfo;
 import com.jmal.clouddisk.oss.IOssStorageService;
-import com.jmal.clouddisk.oss.OssInputStream;
 import org.apache.catalina.WebResourceRoot;
 import org.apache.catalina.webresources.AbstractResource;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -18,7 +16,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.util.jar.Manifest;
-import java.util.zip.CheckedInputStream;
 
 public class OssFileResource extends AbstractResource {
 
@@ -44,8 +41,6 @@ public class OssFileResource extends AbstractResource {
     private final boolean readOnly;
     private final Manifest manifest;
     private final boolean needConvert;
-
-    private AbstractOssObject abstractOssObject;
 
     private final IOssStorageService ossStorageService;
 
@@ -144,21 +139,6 @@ public class OssFileResource extends AbstractResource {
         return true;
     }
 
-    private void setOSSObject(AbstractOssObject ossObject) {
-        this.abstractOssObject = ossObject;
-    }
-
-    public AbstractOssObject getOSSObject() {
-        return this.abstractOssObject;
-    }
-
-    public void closeObject() throws IOException {
-        if (this.abstractOssObject != null) {
-            this.abstractOssObject.closeObject();
-            this.abstractOssObject = null;
-        }
-    }
-
     @Override
     protected InputStream doGetInputStream() {
         if (needConvert) {
@@ -169,24 +149,7 @@ public class OssFileResource extends AbstractResource {
                 return new ByteArrayInputStream(content);
             }
         }
-        AbstractOssObject object;
-        synchronized (resource) {
-            if (this.abstractOssObject == null) {
-                object = this.ossStorageService.getObject(resource.getKey());
-                if (object == null) {
-                    return null;
-                }
-                setOSSObject(object);
-            } else {
-                object = getOSSObject();
-            }
-        }
-        InputStream is = object.getInputStream();
-        if (is instanceof CheckedInputStream checkedInputStream) {
-            OssInputStream ossInputStream = new OssInputStream(checkedInputStream, checkedInputStream.getChecksum());
-            ossInputStream.setOssFileResource(this);
-            return ossInputStream;
-        }
+        AbstractOssObject object = this.ossStorageService.getObject(resource.getKey());
         return object.getInputStream();
     }
 

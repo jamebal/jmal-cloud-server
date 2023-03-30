@@ -32,7 +32,7 @@ public interface IOssStorageService {
 
     AbstractOssObject getObject(String objectName);
 
-    FileInfo mkdir(String objectName);
+    boolean mkdir(String objectName);
 
     void writeObject(InputStream inputStream, String objectName);
 

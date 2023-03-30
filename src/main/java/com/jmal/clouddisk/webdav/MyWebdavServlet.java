@@ -1,11 +1,10 @@
 package com.jmal.clouddisk.webdav;
 
 import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.URLUtil;
-import cn.hutool.http.server.HttpServerRequest;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.oss.OssInputStream;
@@ -18,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.WebResource;
 import org.apache.catalina.servlets.WebdavServlet;
 import org.apache.tomcat.util.http.parser.Ranges;
-import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedInputStream;
@@ -76,6 +74,10 @@ public class MyWebdavServlet extends WebdavServlet {
     private static boolean filterTooManyRequest(HttpServletRequest request, HttpServletResponse response, String method) throws IOException {
         String uri = request.getRequestURI();
         if (method.equals(WebdavMethod.GET.getCode())) {
+            if (!CharSequenceUtil.isBlank(request.getHeader("If-Range")) || !CharSequenceUtil.isBlank(request.getHeader("Range"))) {
+                response.sendError(423);
+                return true;
+            }
             Long time = REQUEST_URI_GET_MAP.getIfPresent(uri);
             if (time != null && (System.currentTimeMillis() - time) < 4000) {
                 response.sendError(423);
@@ -84,49 +86,6 @@ public class MyWebdavServlet extends WebdavServlet {
             REQUEST_URI_GET_MAP.put(uri, System.currentTimeMillis());
         }
         return false;
-    }
-
-    @Override
-    protected void copy(WebResource resource, long length, ServletOutputStream outStream, Ranges.Entry range) throws IOException {
-        IOException exception;
-        InputStream resourceInputStream = resource.getInputStream();
-        OssFileResource ossFileResource = null;
-        if (resourceInputStream instanceof OssInputStream ossInputStream) {
-            ossFileResource = ossInputStream.getOssFileResource();
-        }
-        InputStream inStream = new BufferedInputStream(resourceInputStream, input);
-        Console.log(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_MS_PATTERN), "copy-1", ossFileResource != null ? ossFileResource.getFileInfo() : "");
-        exception = copyRange(inStream, outStream, getStart(range, length), getEnd(range, length));
-        Console.log(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_MS_PATTERN),"copy-1.1", ossFileResource != null ? ossFileResource.getFileInfo() : "");
-        inStream.close();
-        if (ossFileResource != null) {
-            ossFileResource.closeObject();
-        }
-        if (exception != null) {
-            Console.log("exception1", exception, ossFileResource, ossFileResource != null ? ossFileResource.getFileInfo() : "");
-            throw exception;
-        }
-    }
-
-    @Override
-    protected void copy(InputStream is, ServletOutputStream outStream) throws IOException {
-        IOException exception;
-        OssFileResource ossFileResource = null;
-        if (is instanceof OssInputStream ossInputStream) {
-            ossFileResource = ossInputStream.getOssFileResource();
-        }
-        InputStream inStream = new BufferedInputStream(is, input);
-        Console.log(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_MS_PATTERN),"copy-2", ossFileResource != null ? ossFileResource.getFileInfo() : "");
-        exception = copyRange(inStream, outStream);
-        Console.log(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_MS_PATTERN),"copy-2.1", ossFileResource != null ? ossFileResource.getFileInfo() : "");
-        inStream.close();
-        if (ossFileResource != null) {
-            ossFileResource.closeObject();
-        }
-        if (exception != null) {
-            Console.log("exception2", exception, ossFileResource, ossFileResource != null ? ossFileResource.getFileInfo() : "");
-            throw exception;
-        }
     }
 
     @Override
@@ -139,6 +98,10 @@ public class MyWebdavServlet extends WebdavServlet {
         }
         super.doGet(request, response);
         log.info("GET response: {} uri: {} {}", response.getStatus(), "---", URLUtil.decode(request.getRequestURI()));
+        if (response.getStatus() == 206) {
+            response.setStatus(200);
+            log.info("GET response: {} uri: {} {}", response.getStatus(), "---", URLUtil.decode(request.getRequestURI()));
+        }
     }
 
     @Override
@@ -150,42 +113,6 @@ public class MyWebdavServlet extends WebdavServlet {
             return;
         }
         super.doDelete(req, resp);
-    }
-
-    @Override
-    protected void copy(InputStream is, PrintWriter writer, String encoding) throws IOException {
-        Console.log("copy3");
-        super.copy(is, writer, encoding);
-    }
-
-    @Override
-    protected void copy(WebResource resource, long length, ServletOutputStream ostream, Ranges ranges, String contentType) throws IOException {
-        Console.log("copy4");
-        super.copy(resource, length, ostream, ranges, contentType);
-    }
-
-    private static long getStart(Ranges.Entry range, long length) {
-        long start = range.getStart();
-        if (start == -1 ) {
-            long end = range.getEnd();
-            // If there is no start, then the start is based on the end
-            if (end >= length) {
-                return 0;
-            } else {
-                return length - end;
-            }
-        } else {
-            return start;
-        }
-    }
-
-    private static long getEnd(Ranges.Entry range, long length) {
-        long end = range.getEnd();
-        if (range.getStart() == -1 || end == -1 || end >= length) {
-            return length - 1;
-        } else {
-            return end;
-        }
     }
 
 

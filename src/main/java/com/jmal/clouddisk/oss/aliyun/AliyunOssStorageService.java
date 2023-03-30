@@ -21,7 +21,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -206,13 +205,19 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
     }
 
     @Override
-    public FileInfo mkdir(String objectName) {
+    public boolean mkdir(String objectName) {
         FileInfo fileInfo = newFolder(objectName);
         if (fileInfo != null) {
             fileInfoCache.put(objectName, fileInfo);
-            return fileInfo;
+            if (objectName.endsWith("/")) {
+                fileInfoCache.put(objectName.substring(0, objectName.length() - 1), fileInfo);
+            } else {
+                fileInfoCache.put(objectName + "/", fileInfo);
+            }
+            fileInfoListCache.invalidateAll();
+            return true;
         }
-        return null;
+        return false;
     }
 
     private FileInfo newFolder(String objectName) {

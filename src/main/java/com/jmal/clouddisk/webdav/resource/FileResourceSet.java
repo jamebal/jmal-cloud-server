@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.webdav.resource;
 
-import cn.hutool.core.lang.Console;
 import com.jmal.clouddisk.oss.BucketInfo;
 import com.jmal.clouddisk.oss.FileInfo;
 import com.jmal.clouddisk.oss.IOssStorageService;
@@ -125,8 +124,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
         String ossPath = CaffeineUtil.getOssPath(path);
         if (ossPath != null) {
             String name = getObjectName(thisPath, ossPath);
-            FileInfo fileInfo = getOssStorageService(ossPath).mkdir(name);
-            return fileInfo != null;
+            return getOssStorageService(ossPath).mkdir(name);
         } else {
             f = file(path, false);
         }

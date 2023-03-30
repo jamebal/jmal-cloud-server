@@ -20,11 +20,6 @@ public class AliyunOssObject extends AbstractOssObject {
     }
 
     @Override
-    public void closeObject() throws IOException {
-        this.ossObject.close();
-    }
-
-    @Override
     public InputStream getInputStream() {
         return this.ossObject.getObjectContent();
     }
