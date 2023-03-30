@@ -6,10 +6,9 @@ import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
 import com.aliyun.oss.model.*;
-import com.jmal.clouddisk.oss.AbstractOssObject;
-import com.jmal.clouddisk.oss.FileInfo;
-import com.jmal.clouddisk.oss.IOssStorageService;
-import com.jmal.clouddisk.oss.PlatformOSS;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jmal.clouddisk.oss.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.annotation.Lazy;
@@ -17,9 +16,13 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Lazy
@@ -32,9 +35,15 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
 
     private final OSS ossClient;
 
-    public AliyunOssStorageService() {
+    private final VirtualFileService virtualFileService;
+
+    private static final Cache<String, List<FileInfo>> fileInfoListCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(1024).expireAfterWrite(5, TimeUnit.MINUTES).build();
+    private static final Cache<String, FileInfo> fileInfoCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(1024).expireAfterWrite(5, TimeUnit.MINUTES).build();
+
+    public AliyunOssStorageService(VirtualFileService virtualFileService) {
         // 创建OSSClient实例。
         this.ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+        this.virtualFileService = virtualFileService;
     }
 
     @Override
@@ -49,42 +58,35 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
 
     @Override
     public FileInfo getFileInfo(String objectName) {
-        Console.log("AliyunOSSStorageService", "getFileInfo", objectName);
-        try{
-            if (objectName.endsWith("/")) {
-                List<FileInfo> fileInfoList = fileInfoList(objectName, true);
-                if (!fileInfoList.isEmpty()) {
-                    return fileInfoList.get(0);
-                }
-            } else {
-                OSSObject object = this.ossClient.getObject(bucketName, objectName);
-                if (object != null) {
-                    FileInfo fileInfo = new FileInfo();
-                    fileInfo.setSize(object.getObjectMetadata().getContentLength());
-                    fileInfo.setKey(object.getKey());
-                    fileInfo.setETag(object.getObjectMetadata().getETag());
-                    fileInfo.setLastModified(object.getObjectMetadata().getLastModified());
-                    fileInfo.setBucketName(bucketName);
-                    return fileInfo;
-                }
+        FileInfo fileInfo = fileInfoCache.getIfPresent(objectName);
+        if (fileInfo == null) {
+            Console.log("AliyunOSSStorageService", "getFileInfo", objectName);
+            String name = "";
+            Path path = Paths.get(objectName);
+            if (path.getNameCount() > 1) {
+                name = path.getParent().toString();
             }
-        }catch (Exception e) {
-            return null;
+            fileInfoList(name);
         }
-        return null;
+        return fileInfoCache.getIfPresent(objectName);
     }
 
     @Override
     public boolean delete(String objectName) {
         Console.log("AliyunOSSStorageService", "delete", objectName);
+        boolean deleted = false;
         if (objectName.endsWith("/")) {
             // 删除目录
-            return deleteDir(objectName);
+            deleted = deleteDir(objectName);
         } else {
             // 删除文件
             ossClient.deleteObject(bucketName, objectName);
-            return true;
+            deleted = true;
         }
+        if (deleted) {
+            clearCache();
+        }
+        return deleted;
     }
 
     private boolean deleteDir(String objectName) {
@@ -121,11 +123,20 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
 
     @Override
     public List<FileInfo> fileInfoList(String path) {
-        return fileInfoList(path, false);
+        List<FileInfo> fileInfoList = fileInfoListCache.get(path, key -> fileInfoList(path, false));
+        if (fileInfoList != null && !fileInfoList.isEmpty()) {
+            for (FileInfo fileInfo : fileInfoList) {
+                String key = fileInfo.getKey();
+                if (fileInfo.isFolder()) {
+                    fileInfoCache.put(key.substring(0, key.length() - 1), fileInfo);
+                }
+                fileInfoCache.put(fileInfo.getKey(), fileInfo);
+            }
+        }
+        return fileInfoList;
     }
 
     private List<FileInfo> fileInfoList(String path, boolean onlySelf) {
-        Console.log("AliyunOSSStorageService", "fileInfoList", path);
         List<FileInfo> fileInfoList = new ArrayList<>();
         try {
             // 构造ListObjectsRequest请求。
@@ -136,7 +147,7 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
 
             // 列出fun目录下的所有文件和文件夹。
             listObjectsRequest.setPrefix(path);
-
+            Console.log("AliyunOSSStorageService", "fileInfoList", path);
             ObjectListing listing = ossClient.listObjects(listObjectsRequest);
 
             // objectSummaries的列表中给出的是fun目录下的文件。
@@ -196,6 +207,15 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
 
     @Override
     public FileInfo mkdir(String objectName) {
+        FileInfo fileInfo = newFolder(objectName);
+        if (fileInfo != null) {
+            fileInfoCache.put(objectName, fileInfo);
+            return fileInfo;
+        }
+        return null;
+    }
+
+    private FileInfo newFolder(String objectName) {
         Console.log("AliyunOSSStorageService", "mkdir", objectName);
         if (!objectName.endsWith("/")) {
             objectName = objectName + "/";
@@ -238,7 +258,8 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
             // 设置该属性可以返回response。如果不设置，则返回的response为空。
             putObjectRequest.setProcess("true");
             // 创建PutObject请求。
-            ossClient.putObject(putObjectRequest);
+            PutObjectResult result = ossClient.putObject(putObjectRequest);
+            Console.log("PutObjectResult", result);
         } catch (OSSException oe) {
             printOSSException(oe);
         } catch (ClientException ce) {
@@ -257,6 +278,11 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
         log.error("Error Code:" + oe.getErrorCode());
         log.error("Request ID:" + oe.getRequestId());
         log.error("Host ID:" + oe.getHostId());
+    }
+
+    public void clearCache() {
+        fileInfoListCache.invalidateAll();
+        fileInfoCache.invalidateAll();
     }
 
     @Override

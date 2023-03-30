@@ -22,7 +22,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author jmal
@@ -31,8 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class FileResourceSet extends AbstractFileResourceSet {
-
-    private final Map<String, FileInfo> fileInfoMap = new ConcurrentHashMap<>();
 
     private final Map<String, IOssStorageService> ossStorageServiceMap;
 
@@ -48,7 +45,6 @@ public class FileResourceSet extends AbstractFileResourceSet {
     @Override
     public WebResource getResource(String path) {
         log.info("getResource: {}", path);
-        String thisPath = path;
         checkPath(path);
         WebResourceRoot root = getRoot();
         File f;
@@ -56,13 +52,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
         String ossPath = CaffeineUtil.getOssPath(path);
         if (ossPath != null && prePath.getNameCount() > 2) {
             path = path.substring(ossPath.length() + 1);
-            FileInfo fileInfo = fileInfoMap.get(thisPath);
-            if (fileInfo == null) {
-                if (!path.endsWith("/")) {
-                    path += "/";
-                }
-                fileInfo = getOssStorageService(ossPath).getFileInfo(path);
-            }
+            FileInfo fileInfo = getOssStorageService(ossPath).getFileInfo(path);
             if (fileInfo == null) {
                 return new EmptyResource(root, path);
             }
@@ -101,10 +91,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
                 FileInfo fileInfo = fileInfoList.get(i);
                 String fileName = fileInfo.getName();
                 result[i] = fileName;
-                String webPath = path + "/" + fileName;
-                fileInfoMap.put(webPath, fileInfo);
             }
-            Console.log(result.length, fileInfoMap);
             return result;
         } else {
             f = file(path, true);
@@ -139,9 +126,6 @@ public class FileResourceSet extends AbstractFileResourceSet {
         if (ossPath != null) {
             String name = getObjectName(thisPath, ossPath);
             FileInfo fileInfo = getOssStorageService(ossPath).mkdir(name);
-            if (fileInfo != null) {
-                fileInfoMap.put(thisPath, fileInfo);
-            }
             return fileInfo != null;
         } else {
             f = file(path, false);

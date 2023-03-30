@@ -1,7 +1,11 @@
 package com.jmal.clouddisk.webdav;
 
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.URLUtil;
+import cn.hutool.http.server.HttpServerRequest;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.oss.OssInputStream;
@@ -14,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.WebResource;
 import org.apache.catalina.servlets.WebdavServlet;
 import org.apache.tomcat.util.http.parser.Ranges;
+import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedInputStream;
@@ -22,6 +27,8 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
+import java.util.Enumeration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -33,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class MyWebdavServlet extends WebdavServlet {
 
-    private static final Cache<String, Long> REQUEST_URI_GET_MAP = Caffeine.newBuilder().expireAfterWrite(3L, TimeUnit.SECONDS).build();
+    private static final Cache<String, Long> REQUEST_URI_GET_MAP = Caffeine.newBuilder().expireAfterWrite(5L, TimeUnit.SECONDS).build();
 
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -70,7 +77,7 @@ public class MyWebdavServlet extends WebdavServlet {
         String uri = request.getRequestURI();
         if (method.equals(WebdavMethod.GET.getCode())) {
             Long time = REQUEST_URI_GET_MAP.getIfPresent(uri);
-            if (time != null && (System.currentTimeMillis() - time) < 2000) {
+            if (time != null && (System.currentTimeMillis() - time) < 4000) {
                 response.sendError(423);
                 return true;
             }
@@ -88,13 +95,15 @@ public class MyWebdavServlet extends WebdavServlet {
             ossFileResource = ossInputStream.getOssFileResource();
         }
         InputStream inStream = new BufferedInputStream(resourceInputStream, input);
+        Console.log(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_MS_PATTERN), "copy-1", ossFileResource != null ? ossFileResource.getFileInfo() : "");
         exception = copyRange(inStream, outStream, getStart(range, length), getEnd(range, length));
-        Console.log("copy1", ossFileResource);
+        Console.log(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_MS_PATTERN),"copy-1.1", ossFileResource != null ? ossFileResource.getFileInfo() : "");
         inStream.close();
         if (ossFileResource != null) {
             ossFileResource.closeObject();
         }
         if (exception != null) {
+            Console.log("exception1", exception, ossFileResource, ossFileResource != null ? ossFileResource.getFileInfo() : "");
             throw exception;
         }
     }
@@ -107,15 +116,29 @@ public class MyWebdavServlet extends WebdavServlet {
             ossFileResource = ossInputStream.getOssFileResource();
         }
         InputStream inStream = new BufferedInputStream(is, input);
+        Console.log(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_MS_PATTERN),"copy-2", ossFileResource != null ? ossFileResource.getFileInfo() : "");
         exception = copyRange(inStream, outStream);
-        Console.log("copy2", ossFileResource);
+        Console.log(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_MS_PATTERN),"copy-2.1", ossFileResource != null ? ossFileResource.getFileInfo() : "");
         inStream.close();
         if (ossFileResource != null) {
             ossFileResource.closeObject();
         }
         if (exception != null) {
+            Console.log("exception2", exception, ossFileResource, ossFileResource != null ? ossFileResource.getFileInfo() : "");
             throw exception;
         }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        log.info("GET request: uri: {} {}", "---", URLUtil.decode(request.getRequestURI()));
+        Enumeration<String> headerNames = request.getHeaderNames();
+        while (headerNames.hasMoreElements()) {
+            String name = headerNames.nextElement();
+            Console.log(name, request.getHeader(name));
+        }
+        super.doGet(request, response);
+        log.info("GET response: {} uri: {} {}", response.getStatus(), "---", URLUtil.decode(request.getRequestURI()));
     }
 
     @Override

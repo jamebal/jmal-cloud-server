@@ -1,24 +1,22 @@
 package com.jmal.clouddisk.webdav.resource;
 
-import com.jmal.clouddisk.oss.IOssStorageService;
-import com.jmal.clouddisk.oss.aliyun.AliyunOssStorageService;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.FileInfo;
+import com.jmal.clouddisk.oss.IOssStorageService;
 import com.jmal.clouddisk.oss.OssInputStream;
-import com.jmal.clouddisk.webdav.WebdavConfig;
 import org.apache.catalina.WebResourceRoot;
 import org.apache.catalina.webresources.AbstractResource;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
-import java.util.Date;
 import java.util.jar.Manifest;
 import java.util.zip.CheckedInputStream;
 
@@ -89,7 +87,7 @@ public class OssFileResource extends AbstractResource {
 
     @Override
     public boolean isVirtual() {
-        return false;
+        return true;
     }
 
     @Override
@@ -213,8 +211,11 @@ public class OssFileResource extends AbstractResource {
         byte[] result = new byte[size];
 
         int pos = 0;
-        try (AbstractOssObject object = this.ossStorageService.getObject(resource.getKey());
-             InputStream is = object.getInputStream()) {
+        try (AbstractOssObject object = this.ossStorageService.getObject(resource.getKey())) {
+            if (object == null) {
+                return null;
+            }
+            InputStream is = object.getInputStream();
             while (pos < size) {
                 int n = is.read(result, pos, size - pos);
                 if (n < 0) {
@@ -285,5 +286,9 @@ public class OssFileResource extends AbstractResource {
     @Override
     protected Log getLog() {
         return log;
+    }
+
+    public FileInfo getFileInfo() {
+        return resource;
     }
 }
