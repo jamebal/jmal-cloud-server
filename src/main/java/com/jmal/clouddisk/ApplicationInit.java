@@ -43,7 +43,7 @@ public class ApplicationInit implements ApplicationRunner {
 
     private FileAlterationObserver observer;
 
-    private boolean isMonitor = true;
+    private boolean isMonitor = false;
 
     public ApplicationInit(FileProperties fileProperties, FileListener fileListener, MongodbIndex mongodbIndex) {
         this.fileProperties = fileProperties;
@@ -74,6 +74,7 @@ public class ApplicationInit implements ApplicationRunner {
         monitor = new FileAlterationMonitor(interval, observer);
         // 开始监控
         monitor.start();
+        isMonitor = true;
         log.info("\r\n文件监控服务已开启:\r\n轮询间隔:{}秒\n监控目录:{}\n忽略目录:{}", fileProperties.getTimeInterval(), rootDir, rootDir + File.separator + fileProperties.getChunkFileDir());
         // 检测mongo索引
         mongodbIndex.checkMongoIndex();

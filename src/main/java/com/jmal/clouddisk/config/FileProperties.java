@@ -58,10 +58,10 @@ public class FileProperties {
      */
     private String[] document = {"pdf", "doc", "docs", "xls", "xl", "md"};
     /***
-     * 是否开启文件监控(默认不开启)
+     * 是否开启文件监控(默认开启)
      * 开启文件监控会监控 ${rootDir} 目录下文件的变化
      */
-    private Boolean monitor = false;
+    private Boolean monitor = true;
     /***
      * 文件监控扫描时间间隔(秒)
      */
