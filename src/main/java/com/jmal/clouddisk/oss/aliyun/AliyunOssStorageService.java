@@ -236,7 +236,7 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
             // putObjectRequest.setMetadata(metadata);
             // 上传字符串。
             ossClient.putObject(putObjectRequest);
-            return newFolderFileInfo(objectName);
+            return newFileInfo(objectName);
         } catch (OSSException oe) {
             printOSSException(oe);
         } catch (ClientException ce) {
@@ -245,7 +245,7 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
         return null;
     }
 
-    private FileInfo newFolderFileInfo(String objectName) {
+    private FileInfo newFileInfo(String objectName) {
         FileInfo fileInfo = new FileInfo();
         fileInfo.setSize(0);
         fileInfo.setKey(objectName);
@@ -264,12 +264,18 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
             putObjectRequest.setProcess("true");
             // 创建PutObject请求。
             PutObjectResult result = ossClient.putObject(putObjectRequest);
-            Console.log("PutObjectResult", result);
+            Console.log("PutObjectResult", objectName, result.getResponse());
+            fileInfoCache.put(objectName, newFileInfo(objectName));
+            fileInfoListCache.invalidateAll();
         } catch (OSSException oe) {
             printOSSException(oe);
         } catch (ClientException ce) {
             printClientException(ce);
         }
+    }
+
+    private class PutCallback extends Callback {
+
     }
 
     private static void printClientException(ClientException ce) {
