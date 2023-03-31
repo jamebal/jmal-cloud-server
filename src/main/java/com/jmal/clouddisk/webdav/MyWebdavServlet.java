@@ -2,6 +2,7 @@ package com.jmal.clouddisk.webdav;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.URLUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.oss.AbstractOssObject;
@@ -41,6 +42,7 @@ public class MyWebdavServlet extends WebdavServlet {
         // 过滤掉过于频繁的GET请求
         if (filterTooManyRequest(request, response, method)) return;
         super.service(request, response);
+        log.info("response: {}, uri: {} {}", response.getStatus(), method, URLUtil.decode(request.getRequestURI()));
     }
 
     /**
