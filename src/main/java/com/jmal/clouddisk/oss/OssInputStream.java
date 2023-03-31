@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.oss;
 
-import com.jmal.clouddisk.webdav.resource.OssFileResource;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,7 +16,7 @@ public class OssInputStream extends CheckedInputStream {
 
     @Getter
     @Setter
-    private OssFileResource ossFileResource;
+    private AbstractOssObject abstractOssObject;
 
     public OssInputStream(InputStream in, Checksum checksum) {
         super(in, checksum);

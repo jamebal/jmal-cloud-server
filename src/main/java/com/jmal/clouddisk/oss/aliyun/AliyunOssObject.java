@@ -1,10 +1,15 @@
 package com.jmal.clouddisk.oss.aliyun;
 
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
+import com.aliyun.oss.OSS;
 import com.aliyun.oss.model.OSSObject;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 
 /**
  * @author jmal
@@ -25,7 +30,23 @@ public class AliyunOssObject extends AbstractOssObject {
     }
 
     @Override
+    public void closeObject() throws IOException {
+        this.ossObject.forcedClose();
+        Console.log(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_MS_PATTERN), this.ossObject.getKey(), "shutdown");
+    }
+
+    @Override
+    public String getKey() {
+        return this.ossObject.getKey();
+    }
+
+    @Override
+    public long getContentLength() {
+        return this.ossObject.getObjectMetadata().getContentLength();
+    }
+
+    @Override
     public void close() throws IOException {
-        this.ossObject.close();
+        closeObject();
     }
 }

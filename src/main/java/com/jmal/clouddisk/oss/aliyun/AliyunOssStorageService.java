@@ -34,15 +34,12 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
 
     private final OSS ossClient;
 
-    private final VirtualFileService virtualFileService;
+    private static final Cache<String, List<String>> fileInfoListCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(1024).expireAfterWrite(5, TimeUnit.MINUTES).build();
+    private static final Cache<String, FileInfo> fileInfoCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(2048).expireAfterWrite(5, TimeUnit.MINUTES).build();
 
-    private static final Cache<String, List<FileInfo>> fileInfoListCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(1024).expireAfterWrite(5, TimeUnit.MINUTES).build();
-    private static final Cache<String, FileInfo> fileInfoCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(1024).expireAfterWrite(5, TimeUnit.MINUTES).build();
-
-    public AliyunOssStorageService(VirtualFileService virtualFileService) {
+    public AliyunOssStorageService() {
         // 创建OSSClient实例。
         this.ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
-        this.virtualFileService = virtualFileService;
     }
 
     @Override
@@ -59,15 +56,13 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
     public FileInfo getFileInfo(String objectName) {
         FileInfo fileInfo = fileInfoCache.getIfPresent(objectName);
         if (fileInfo == null) {
-            Console.log("AliyunOSSStorageService", "getFileInfo", objectName);
-            String name = "";
-            Path path = Paths.get(objectName);
-            if (path.getNameCount() > 1) {
-                name = path.getParent().toString();
+            if (objectName.endsWith("/")) {
+                fileInfo = fileInfoCache.getIfPresent(objectName.substring(0, objectName.length() - 1));
+            } else {
+                fileInfo = fileInfoCache.getIfPresent(objectName + "/");
             }
-            fileInfoList(name);
         }
-        return fileInfoCache.getIfPresent(objectName);
+        return fileInfo;
     }
 
     @Override
@@ -121,18 +116,24 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
     }
 
     @Override
-    public List<FileInfo> fileInfoList(String path) {
-        List<FileInfo> fileInfoList = fileInfoListCache.get(path, key -> fileInfoList(path, false));
-        if (fileInfoList != null && !fileInfoList.isEmpty()) {
-            for (FileInfo fileInfo : fileInfoList) {
-                String key = fileInfo.getKey();
-                if (fileInfo.isFolder()) {
-                    fileInfoCache.put(key.substring(0, key.length() - 1), fileInfo);
+    public String[] list(String objectName) {
+        List<String> list = fileInfoList(objectName);
+        return list.toArray(new String[0]);
+    }
+
+    private List<String> fileInfoList(String path) {
+        return fileInfoListCache.get(path, key -> {
+            List<String> folderList = new ArrayList<>();
+            List<FileInfo> fileInfos = fileInfoList(path, false);
+            if (!fileInfos.isEmpty()) {
+                for (FileInfo fileInfo : fileInfos) {
+                    String objectKey = fileInfo.getKey();
+                    fileInfoCache.put(objectKey, fileInfo);
+                    folderList.add(fileInfo.getName());
                 }
-                fileInfoCache.put(fileInfo.getKey(), fileInfo);
             }
-        }
-        return fileInfoList;
+            return folderList;
+        });
     }
 
     private List<FileInfo> fileInfoList(String path, boolean onlySelf) {
@@ -209,11 +210,6 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
         FileInfo fileInfo = newFolder(objectName);
         if (fileInfo != null) {
             fileInfoCache.put(objectName, fileInfo);
-            if (objectName.endsWith("/")) {
-                fileInfoCache.put(objectName.substring(0, objectName.length() - 1), fileInfo);
-            } else {
-                fileInfoCache.put(objectName + "/", fileInfo);
-            }
             fileInfoListCache.invalidateAll();
             return true;
         }
@@ -263,19 +259,16 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
             // 设置该属性可以返回response。如果不设置，则返回的response为空。
             putObjectRequest.setProcess("true");
             // 创建PutObject请求。
-            PutObjectResult result = ossClient.putObject(putObjectRequest);
-            Console.log("PutObjectResult", objectName, result.getResponse());
-            fileInfoCache.put(objectName, newFileInfo(objectName));
+            ossClient.putObject(putObjectRequest);
+            if (getFileInfo(objectName) == null) {
+                fileInfoCache.put(objectName, newFileInfo(objectName));
+            }
             fileInfoListCache.invalidateAll();
         } catch (OSSException oe) {
             printOSSException(oe);
         } catch (ClientException ce) {
             printClientException(ce);
         }
-    }
-
-    private class PutCallback extends Callback {
-
     }
 
     private static void printClientException(ClientException ce) {

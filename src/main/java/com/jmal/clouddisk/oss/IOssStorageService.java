@@ -23,17 +23,16 @@ public interface IOssStorageService {
 
     boolean delete(String objectName);
 
-    /**
-     * 列出当前文件夹下的所有文件和文件夹
-     * @param path 当前文件夹名称
-     * @return List<FileInfo>
-     */
-    List<FileInfo> fileInfoList(String path);
-
     AbstractOssObject getObject(String objectName);
 
     boolean mkdir(String objectName);
 
     void writeObject(InputStream inputStream, String objectName);
 
+    /**
+     * 列出当前文件夹下的所有文件和文件夹
+     * @param objectName 当前文件夹名称
+     * @return String[]
+     */
+    String[] list(String objectName);
 }

@@ -84,14 +84,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
         String ossPath = CaffeineUtil.getOssPath(path);
         if (ossPath != null) {
             String name = getObjectName(path, ossPath);
-            List<FileInfo> fileInfoList = getOssStorageService(ossPath).fileInfoList(name);
-            String[] result = new String[fileInfoList.size()];
-            for (int i = 0; i < fileInfoList.size(); i++) {
-                FileInfo fileInfo = fileInfoList.get(i);
-                String fileName = fileInfo.getName();
-                result[i] = fileName;
-            }
-            return result;
+            return getOssStorageService(ossPath).list(name);
         } else {
             f = file(path, true);
         }
