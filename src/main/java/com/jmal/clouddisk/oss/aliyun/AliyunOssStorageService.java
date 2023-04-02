@@ -60,12 +60,15 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
         FileInfo fileInfo = getFileInfoCache(objectName);
         if (fileInfo == null) {
             Path objectPath = Paths.get(objectName);
-            refresh(objectName);
             String path = "";
             if (objectPath.getNameCount() > 1) {
                 path = objectPath.getParent().toString();
             }
             refresh(path);
+        }
+        fileInfo = getFileInfoCache(objectName);
+        if (fileInfo == null) {
+            refresh(objectName);
         }
         fileInfo = getFileInfoCache(objectName);
         if (fileInfo == null) {
