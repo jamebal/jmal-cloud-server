@@ -1,9 +1,7 @@
 package com.jmal.clouddisk.oss;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.thread.ThreadUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
@@ -157,16 +155,6 @@ public class OssStorageBase {
         return fileNameList;
     }
 
-    public boolean mkdir(String ossPath, String objectName) {
-        // 临时目录绝对路径
-        Path tempFileAbsolutePath = Paths.get(fileProperties.getRootDir(), ossPath, objectName);
-        PathUtil.mkdir(tempFileAbsolutePath);
-        setTempFileCache(objectName, tempFileAbsolutePath);
-        // 稍后执行真正的mkdir
-        ThreadUtil.execute(() -> ossStorageService.mkdir(objectName));
-        return true;
-    }
-
     public boolean writeObject(InputStream inputStream, String ossPath, String objectName) {
         Console.log("AliyunOSSStorageService", "writeObject", objectName);
         // 临时文件绝对路径
@@ -182,7 +170,7 @@ public class OssStorageBase {
             Files.copy(inputStream, tempFileAbsolutePath, StandardCopyOption.REPLACE_EXISTING);
             setTempFileCache(objectName, tempFileAbsolutePath);
             // 稍后执行真正的上传
-            ThreadUtil.execute(() -> ossStorageService.uploadFile(tempFileAbsolutePath, objectName));
+            ossStorageService.uploadFile(tempFileAbsolutePath, objectName);
         } catch (IOException e) {
             log.warn(e.getMessage(), e);
             return false;

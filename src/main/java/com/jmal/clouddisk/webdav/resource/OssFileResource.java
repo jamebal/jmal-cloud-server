@@ -9,7 +9,10 @@ import org.apache.catalina.webresources.AbstractResource;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -159,10 +162,12 @@ public class OssFileResource extends AbstractResource {
         } catch (FileNotFoundException e) {
             return null;
         }
-        OssInputStream ossInputStream = null;
+        OssInputStream ossInputStream;
         if (inputStream instanceof CheckedInputStream checkedInputStream) {
             ossInputStream = new OssInputStream(inputStream, checkedInputStream.getChecksum());
             ossInputStream.setAbstractOssObject(object);
+        } else {
+            return inputStream;
         }
         return ossInputStream;
     }

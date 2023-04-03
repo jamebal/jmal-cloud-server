@@ -39,5 +39,4 @@ public interface IOssStorageService {
 
     void uploadFile(Path tempFileAbsolutePath, String objectName);
 
-    void mkdir(String objectName);
 }

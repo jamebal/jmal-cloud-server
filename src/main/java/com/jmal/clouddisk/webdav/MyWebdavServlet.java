@@ -12,8 +12,10 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.WebResource;
 import org.apache.catalina.connector.ClientAbortException;
 import org.apache.catalina.servlets.WebdavServlet;
+import org.apache.tomcat.util.http.parser.Ranges;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedInputStream;
@@ -81,8 +83,15 @@ public class MyWebdavServlet extends WebdavServlet {
     }
 
     @Override
+    protected void copy(WebResource resource, long length, ServletOutputStream ostream, Ranges.Entry range) throws IOException {
+        Console.log("copy1");
+        super.copy(resource, length, ostream, range);
+    }
+
+    @Override
     protected void copy(InputStream is, ServletOutputStream outStream) throws IOException {
         IOException exception;
+        Console.log("copy2");
         AbstractOssObject abstractOssObject = null;
         if (is instanceof OssInputStream ossInputStream) {
             abstractOssObject = ossInputStream.getAbstractOssObject();

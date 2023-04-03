@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.oss.aliyun;
 
+import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.lang.Console;
 import com.aliyun.oss.ClientException;
 import com.aliyun.oss.OSS;
@@ -8,7 +9,6 @@ import com.aliyun.oss.OSSException;
 import com.aliyun.oss.model.*;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.oss.*;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 
@@ -17,6 +17,8 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -187,19 +189,12 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
 
     @Override
     public boolean mkdir(String ossPath, String objectName) {
-        return ossStorageBase.mkdir(ossPath, objectName);
-    }
-
-    @SneakyThrows
-    @Override
-    public void mkdir(String objectName) {
-        TimeUnit.SECONDS.sleep(10);
         FileInfo fileInfo = newFolder(objectName);
         if (fileInfo != null) {
             OssStorageBase.setFileInfoCache(objectName, fileInfo);
             OssStorageBase.fileInfoListCache.invalidateAll();
         }
-        OssStorageBase.clearTempFileCache(objectName);
+        return fileInfo != null;
     }
 
     private FileInfo newFolder(String objectName) {
@@ -229,8 +224,23 @@ public class AliyunOssStorageService implements IOssStorageService, DisposableBe
 
     @Override
     public void uploadFile(Path tempFileAbsolutePath, String objectName) {
+        Timer timer = new Timer();
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                executeUpload(tempFileAbsolutePath, objectName);
+            }
+        };
+        // 在10秒后执行上传
+        timer.schedule(task, 10000);
+    }
+
+    private void executeUpload(Path tempFileAbsolutePath, String objectName) {
         try {
             TimeUnit.SECONDS.sleep(10);
+            if (!PathUtil.exists(tempFileAbsolutePath, false)) {
+                return;
+            }
             printOperation(getPlatform().getKey(), "upload", objectName);
             // 创建PutObjectRequest对象。
             PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, tempFileAbsolutePath.toFile());
