@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.oss;
 
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -11,8 +12,6 @@ import java.util.List;
 public interface IOssStorageService {
 
     PlatformOSS getPlatform();
-
-    String getBucketName();
 
     /**
      * 获取单个文件夹信息
@@ -25,9 +24,9 @@ public interface IOssStorageService {
 
     AbstractOssObject getObject(String objectName);
 
-    boolean mkdir(String objectName);
+    boolean mkdir(String ossPath, String objectName);
 
-    void writeObject(InputStream inputStream, String objectName);
+    boolean write(InputStream inputStream, String ossPath, String objectName);
 
     /**
      * 列出当前文件夹下的所有文件和文件夹
@@ -35,4 +34,10 @@ public interface IOssStorageService {
      * @return String[]
      */
     String[] list(String objectName);
+
+    List<FileInfo> getFileInfoList(String objectName);
+
+    void uploadFile(Path tempFileAbsolutePath, String objectName);
+
+    void mkdir(String objectName);
 }

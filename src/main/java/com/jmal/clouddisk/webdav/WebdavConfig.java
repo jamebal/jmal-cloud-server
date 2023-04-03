@@ -4,6 +4,7 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.oss.BucketInfo;
 import com.jmal.clouddisk.oss.IOssStorageService;
 import com.jmal.clouddisk.oss.PlatformOSS;
+import com.jmal.clouddisk.oss.aliyun.AliyunOssStorageService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.webdav.resource.FileResourceSet;
 import org.apache.tomcat.util.descriptor.web.LoginConfig;
@@ -33,21 +34,14 @@ public class WebdavConfig {
 
     private static ApplicationContext context;
 
-    private final List<IOssStorageService> ossStorageServiceList;
-
     private static final Map<String, IOssStorageService> OSS_STORAGE_SERVICE_MAP = new ConcurrentHashMap<>();
 
-    public WebdavConfig(FileProperties fileProperties, MyRealm myRealm, WebdavAuthenticator webdavAuthenticator, MyWebdavServlet myWebdavServlet, ApplicationContext context, List<IOssStorageService> ossStorageServiceList) {
+    public WebdavConfig(FileProperties fileProperties, MyRealm myRealm, WebdavAuthenticator webdavAuthenticator, MyWebdavServlet myWebdavServlet, ApplicationContext context) {
         this.fileProperties = fileProperties;
         this.myRealm = myRealm;
         this.webdavAuthenticator = webdavAuthenticator;
         this.myWebdavServlet = myWebdavServlet;
         this.context = context;
-        this.ossStorageServiceList = ossStorageServiceList;
-
-        for (IOssStorageService iOssStorageService : this.ossStorageServiceList) {
-            OSS_STORAGE_SERVICE_MAP.put(iOssStorageService.getPlatform().getKey(), iOssStorageService);
-        }
 
         // TODO 临时插入
         BucketInfo bucketInfo = new BucketInfo();
@@ -56,6 +50,10 @@ public class WebdavConfig {
         bucketInfo.setUsername("jmal");
         bucketInfo.setFolderName("aliyunoss");
         CaffeineUtil.setOssDiameterPrefixCache("/jmal/aliyunoss", bucketInfo);
+
+        IOssStorageService iOssStorageService = new AliyunOssStorageService(fileProperties);
+
+        OSS_STORAGE_SERVICE_MAP.put(iOssStorageService.getPlatform().getKey(), iOssStorageService);
 
     }
 

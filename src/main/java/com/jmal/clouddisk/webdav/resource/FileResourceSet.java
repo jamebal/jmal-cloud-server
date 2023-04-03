@@ -18,7 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -107,7 +106,6 @@ public class FileResourceSet extends AbstractFileResourceSet {
 
     @Override
     public boolean mkdir(String path) {
-        String thisPath = path;
         checkPath(path);
         if (isReadOnly()) {
             return false;
@@ -116,8 +114,8 @@ public class FileResourceSet extends AbstractFileResourceSet {
         File f;
         String ossPath = CaffeineUtil.getOssPath(path);
         if (ossPath != null) {
-            String name = getObjectName(thisPath, ossPath);
-            return getOssStorageService(ossPath).mkdir(name);
+            String name = getObjectName(path, ossPath);
+            return getOssStorageService(ossPath).mkdir(ossPath, name);
         } else {
             f = file(path, false);
         }
@@ -164,8 +162,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
             if (prePath.getNameCount() > 2) {
                 path = path.substring(ossPath.length() + 1);
             }
-            getOssStorageService(ossPath).writeObject(is, path);
-            return true;
+            return getOssStorageService(ossPath).write(is, ossPath, path);
         } else {
             dest = file(path, false);
         }

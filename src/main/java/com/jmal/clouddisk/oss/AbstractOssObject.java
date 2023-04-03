@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.oss;
 
 import java.io.Closeable;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -11,11 +12,13 @@ import java.io.InputStream;
  */
 public abstract class AbstractOssObject implements Closeable {
 
-    public abstract InputStream getInputStream();
+    public abstract InputStream getInputStream() throws FileNotFoundException;
 
     public abstract void closeObject() throws IOException;
 
-    public abstract String getKey();
+    public String getKey() {
+        return "";
+    }
 
     public abstract long getContentLength();
 }
