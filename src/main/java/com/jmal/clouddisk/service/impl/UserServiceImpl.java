@@ -22,6 +22,7 @@ import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -340,7 +341,7 @@ public class UserServiceImpl implements IUserService {
         query.addCriteria(Criteria.where("_id").is(userId));
         Update update = new Update();
         String password = PasswordHash.createHash(originalPwd);
-        String encryptPwd = getAES(password.split(":")[2]).encryptHex(originalPwd);
+        String encryptPwd = getEncryptPwd(originalPwd, password);
         LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
         update.set("encryptPwd", encryptPwd);
         update.set("password", password);
@@ -375,17 +376,29 @@ public class UserServiceImpl implements IUserService {
 
     public String getPasswordByUserName(String username) {
         ConsumerDO consumer = getUserInfoByName(username);
+        String key = getPwdKey(consumer);
+        if (key == null) return "";
+        return getAES(key).decryptStr(consumer.getEncryptPwd());
+    }
+
+    public String getDecryptStrByUser(String secret, ConsumerDO consumer) {
+        String key = getPwdKey(consumer);
+        if (key == null) return "";
+        return getAES(key).decryptStr(secret);
+    }
+
+    @Nullable
+    private static String getPwdKey(ConsumerDO consumer) {
         if (consumer == null) {
-            return "";
+            return null;
         }
         if (consumer.getPassword() == null) {
-            return "";
+            return null;
         }
         if (consumer.getPassword().split(":").length < 2) {
-            return "";
+            return null;
         }
-        String key = consumer.getPassword().split(":")[2];
-        return getAES(key).decryptStr(consumer.getEncryptPwd());
+        return consumer.getPassword().split(":")[2];
     }
 
     public String getHashPasswordUserName(String username) {
@@ -438,9 +451,13 @@ public class UserServiceImpl implements IUserService {
      */
     private static void encryption(ConsumerBase user, String originalPwd) {
         String password = PasswordHash.createHash(originalPwd);
-        String encryptPwd = getAES(password.split(":")[2]).encryptHex(originalPwd);
+        String encryptPwd = getEncryptPwd(originalPwd, password);
         user.setEncryptPwd(encryptPwd);
         user.setPassword(password);
+    }
+
+    public static String getEncryptPwd(String originalPwd, String password) {
+        return getAES(password.split(":")[2]).encryptHex(originalPwd);
     }
 
 

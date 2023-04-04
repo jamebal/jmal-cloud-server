@@ -74,7 +74,6 @@ public class BaseOssService {
         this.tempFileCache = Caffeine.newBuilder().build();
         this.tempFileListCache = Caffeine.newBuilder().build();
         this.waitingUploadCache = Caffeine.newBuilder().build();
-        Console.error(this, ossService);
     }
 
     /**

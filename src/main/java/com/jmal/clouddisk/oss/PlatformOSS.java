@@ -8,8 +8,8 @@ import lombok.Getter;
  * @date 2023/3/29 14:00
  */
 public enum PlatformOSS {
-    ALIYUN("aliyunOss", "阿里云OSS"),
-    TENCENT("tencentOss", "腾讯云OSS");
+    ALIYUN("aliyun", "阿里云OSS"),
+    TENCENT("tencent", "腾讯云OSS");
 
     @Getter
     private final String key;
@@ -20,4 +20,14 @@ public enum PlatformOSS {
         this.key = key;
         this.value = value;
     }
+
+    public static PlatformOSS getPlatform(String key) {
+        for (PlatformOSS platformOSS : values()) {
+            if (platformOSS.getKey().equals(key)) {
+                return platformOSS;
+            }
+        }
+        return ALIYUN;
+    }
+
 }

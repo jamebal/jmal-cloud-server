@@ -9,6 +9,7 @@ import com.aliyun.oss.OSSException;
 import com.aliyun.oss.model.*;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.oss.*;
+import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
@@ -21,12 +22,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 @Slf4j
 public class AliyunOssService implements IOssService {
 
-    private static String endpoint = "https://oss-cn-guangzhou.aliyuncs.com";
-    private static final String accessKeyId = System.getenv("ALIYUN_OSS_SECRET_ID");
-    private static final String accessKeySecret = System.getenv("ALIYUN_OSS_SECRET_KEY");
-    private static final String bucketName = "jmalcloud";
-
-    private static final String region = "cn-guangzhou";
+    private final String bucketName;
 
     private final OSS ossClient;
 
@@ -34,11 +30,16 @@ public class AliyunOssService implements IOssService {
 
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
-    public AliyunOssService(FileProperties fileProperties) {
+    public AliyunOssService(FileProperties fileProperties, OssConfigDTO ossConfigDTO) {
+        String endpoint = ossConfigDTO.getEndpoint();
+        String accessKeyId = ossConfigDTO.getAccessKey();
+        String accessKeySecret = ossConfigDTO.getSecretKey();
+        this.bucketName = ossConfigDTO.getBucket();
         // 创建OSSClient实例。
         this.ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor);
+        log.info( "{}配置加载成功, bucket: {}, username: {}", getPlatform().getValue(), bucketName, ossConfigDTO.getUsername());
     }
 
     @Override
@@ -153,7 +154,7 @@ public class AliyunOssService implements IOssService {
         return fileInfoList;
     }
 
-    private static FileInfo getFileInfo(OSSObjectSummary objectSummary) {
+    private FileInfo getFileInfo(OSSObjectSummary objectSummary) {
         FileInfo fileInfo = new FileInfo();
         fileInfo.setSize(objectSummary.getSize());
         fileInfo.setKey(objectSummary.getKey());

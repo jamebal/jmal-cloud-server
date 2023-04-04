@@ -4,6 +4,7 @@ import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.oss.*;
+import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.auth.BasicCOSCredentials;
@@ -24,11 +25,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 @Slf4j
 public class TencentOssService implements IOssService {
 
-    private static String endpoint = "https://test-1303879235.cos.ap-guangzhou.myqcloud.com";
-    private static final String accessKeyId = System.getenv("TENCENT_OSS_SECRET_ID");
-    private static final String accessKeySecret = System.getenv("TENCENT_OSS_SECRET_KEY");
-    private static final String region = "ap-guangzhou";
-    private static final String bucketName = "test-1303879235";
+    private final String bucketName;
 
     private final COSClient cosClient;
 
@@ -36,14 +33,19 @@ public class TencentOssService implements IOssService {
 
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
-    public TencentOssService(FileProperties fileProperties) {
+    public TencentOssService(FileProperties fileProperties, OssConfigDTO ossConfigDTO) {
         // 创建COSClient实例。
+        String accessKeyId = ossConfigDTO.getAccessKey();
+        String accessKeySecret = ossConfigDTO.getSecretKey();
+        String region = ossConfigDTO.getRegion();
+        this.bucketName = ossConfigDTO.getBucket();
         COSCredentials cred = new BasicCOSCredentials(accessKeyId, accessKeySecret);
         ClientConfig clientConfig = new ClientConfig(new Region(region));
         clientConfig.setHttpProtocol(HttpProtocol.https);
         this.cosClient = new COSClient(cred, clientConfig);
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor);
+        log.info( "{}配置加载成功, bucket: {}, username: {}", getPlatform().getValue(), bucketName, ossConfigDTO.getUsername());
     }
 
     @Override
@@ -169,7 +171,7 @@ public class TencentOssService implements IOssService {
         return fileInfoList;
     }
 
-    private static FileInfo getFileInfo(COSObjectSummary objectSummary) {
+    private FileInfo getFileInfo(COSObjectSummary objectSummary) {
         FileInfo fileInfo = new FileInfo();
         fileInfo.setSize(objectSummary.getSize());
         fileInfo.setKey(objectSummary.getKey());
