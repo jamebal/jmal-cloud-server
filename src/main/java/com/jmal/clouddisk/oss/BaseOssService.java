@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.oss;
 
 import cn.hutool.core.io.file.PathUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -173,7 +172,7 @@ public class BaseOssService {
         List<String> fileNameList = fileInfoListCache.get(objectName, key -> {
             List<String> folderList = new ArrayList<>();
             List<FileInfo> fileInfos = ossService.getFileInfoList(objectName);
-            if (!fileInfos.isEmpty()) {
+            if (fileInfos != null && !fileInfos.isEmpty()) {
                 for (FileInfo fileInfo : fileInfos) {
                     setFileInfoCache(fileInfo.getKey(), fileInfo);
                     folderList.add(fileInfo.getName());

@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.oss.web.model;
 
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
-import com.jmal.clouddisk.oss.OssConfig;
+import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.PlatformOSS;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import lombok.Data;
@@ -14,7 +14,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
  * @date 2023/4/4 16:08
  */
 @Data
-@Document(collection = OssConfig.COLLECTION_NAME)
+@Document(collection = OssConfigService.COLLECTION_NAME)
 @CompoundIndex(name = "userId_1", def = "{'userId': 1}")
 public class OssConfigDO {
     private String id;

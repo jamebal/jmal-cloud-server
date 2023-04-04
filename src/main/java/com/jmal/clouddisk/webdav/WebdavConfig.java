@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.webdav;
 
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.oss.OssConfig;
 import com.jmal.clouddisk.webdav.resource.FileResourceSet;
 import org.apache.tomcat.util.descriptor.web.LoginConfig;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
@@ -27,15 +26,12 @@ public class WebdavConfig {
 
     private static ApplicationContext context;
 
-    private final OssConfig ossConfig;
-
-    public WebdavConfig(FileProperties fileProperties, MyRealm myRealm, WebdavAuthenticator webdavAuthenticator, MyWebdavServlet myWebdavServlet, ApplicationContext context, OssConfig ossConfig) {
+    public WebdavConfig(FileProperties fileProperties, MyRealm myRealm, WebdavAuthenticator webdavAuthenticator, MyWebdavServlet myWebdavServlet, ApplicationContext context) {
         this.fileProperties = fileProperties;
         this.myRealm = myRealm;
         this.webdavAuthenticator = webdavAuthenticator;
         this.myWebdavServlet = myWebdavServlet;
         this.context = context;
-        this.ossConfig = ossConfig;
     }
 
     public static <T> T getBean(Class<T> requiredType) {
@@ -60,7 +56,7 @@ public class WebdavConfig {
             // 创建一个新的WebResourceRoot实例
             MyStandardRoot standardRoot = new MyStandardRoot(context);
             // 自定义静态资源的位置
-            standardRoot.addPreResources(new FileResourceSet(standardRoot, fileProperties.getRootDir(), OssConfig.getOssServiceMap()));
+            standardRoot.addPreResources(new FileResourceSet(standardRoot, fileProperties.getRootDir()));
             // 将新的WebResourceRoot设置为应用程序的资源根目录
             context.setResources(standardRoot);
             context.getPipeline().addValve(webdavAuthenticator);

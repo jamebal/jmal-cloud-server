@@ -172,7 +172,16 @@ public class AliyunOssService implements IOssService {
         }
         printOperation(getPlatform().getKey(), "getObject", objectName);
         // 创建OSSClient实例。
-        return new AliyunOssObject(getAliyunOssObject(objectName));
+        com.aliyun.oss.model.OSSObject ossObject = getAliyunOssObject(objectName);
+        if (ossObject == null) {
+            return null;
+        }
+        return new AliyunOssObject(ossObject);
+    }
+
+    @Override
+    public boolean doesBucketExist() {
+        return this.ossClient.doesBucketExist(bucketName);
     }
 
     private com.aliyun.oss.model.OSSObject getAliyunOssObject(String objectName) {

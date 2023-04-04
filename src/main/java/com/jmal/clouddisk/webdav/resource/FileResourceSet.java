@@ -3,6 +3,7 @@ package com.jmal.clouddisk.webdav.resource;
 import com.jmal.clouddisk.oss.BucketInfo;
 import com.jmal.clouddisk.oss.FileInfo;
 import com.jmal.clouddisk.oss.IOssService;
+import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.WebResource;
@@ -18,7 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -29,14 +30,12 @@ import java.util.Set;
 @Slf4j
 public class FileResourceSet extends AbstractFileResourceSet {
 
-    private final Map<String, IOssService> ossStorageServiceMap;
 
-    public FileResourceSet(WebResourceRoot root, String base, Map<String, IOssService> ossStorageServiceMap) {
+    public FileResourceSet(WebResourceRoot root, String base) {
         super("/");
         setRoot(root);
         setWebAppMount("/");
         setBase(base);
-        this.ossStorageServiceMap = ossStorageServiceMap;
     }
 
 
@@ -72,7 +71,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
 
     private IOssService getOssStorageService(String ossPath) {
         BucketInfo bucketInfo = CaffeineUtil.getOssDiameterPrefixCache(ossPath);
-        return this.ossStorageServiceMap.get(bucketInfo.getPlatform().getKey());
+        return OssConfigService.getOssServiceMap().get(bucketInfo.getPlatform().getKey());
     }
 
     @Override
@@ -92,11 +91,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
             return EMPTY_STRING_ARRAY;
         }
         String[] result = f.list();
-        if (result == null) {
-            return EMPTY_STRING_ARRAY;
-        } else {
-            return result;
-        }
+        return Objects.requireNonNullElse(result, EMPTY_STRING_ARRAY);
     }
 
     @Override

@@ -188,13 +188,21 @@ public class TencentOssService implements IOssService {
             return new TempFileObject(path.toFile());
         }
         printOperation(getPlatform().getKey(), "getObject", objectName);
-        return new TencentOssObject(getTencentObject(objectName));
+        COSObject ossObject = getTencentObject(objectName);
+        if (ossObject == null) {
+            return null;
+        }
+        return new TencentOssObject(ossObject);
+    }
+
+    @Override
+    public boolean doesBucketExist() {
+        return this.cosClient.doesBucketExist(bucketName);
     }
 
     private COSObject getTencentObject(String objectName) {
         try {
-            GetObjectRequest getObjectRequest = new GetObjectRequest(bucketName, objectName);
-            return this.cosClient.getObject(getObjectRequest);
+            return this.cosClient.getObject(new GetObjectRequest(bucketName, objectName));
         } catch (Exception e) {
             return null;
         }

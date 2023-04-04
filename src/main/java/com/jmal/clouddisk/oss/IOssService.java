@@ -39,5 +39,7 @@ public interface IOssService {
 
     void uploadFile(Path tempFileAbsolutePath, String objectName);
 
+    boolean doesBucketExist();
+
     void close();
 }
