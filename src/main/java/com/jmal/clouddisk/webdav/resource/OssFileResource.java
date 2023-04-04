@@ -2,7 +2,7 @@ package com.jmal.clouddisk.webdav.resource;
 
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.FileInfo;
-import com.jmal.clouddisk.oss.IOssStorageService;
+import com.jmal.clouddisk.oss.IOssService;
 import com.jmal.clouddisk.oss.OssInputStream;
 import org.apache.catalina.WebResourceRoot;
 import org.apache.catalina.webresources.AbstractResource;
@@ -45,9 +45,9 @@ public class OssFileResource extends AbstractResource {
     private final Manifest manifest;
     private final boolean needConvert;
 
-    private final IOssStorageService ossStorageService;
+    private final IOssService ossStorageService;
 
-    public OssFileResource(WebResourceRoot root, String webAppPath, FileInfo resource, boolean readOnly, Manifest manifest, IOssStorageService ossStorageService) {
+    public OssFileResource(WebResourceRoot root, String webAppPath, FileInfo resource, boolean readOnly, Manifest manifest, IOssService ossStorageService) {
         super(root,webAppPath);
         this.ossStorageService = ossStorageService;
         this.resource = resource;

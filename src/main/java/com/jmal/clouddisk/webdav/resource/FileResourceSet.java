@@ -2,7 +2,7 @@ package com.jmal.clouddisk.webdav.resource;
 
 import com.jmal.clouddisk.oss.BucketInfo;
 import com.jmal.clouddisk.oss.FileInfo;
-import com.jmal.clouddisk.oss.IOssStorageService;
+import com.jmal.clouddisk.oss.IOssService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.WebResource;
@@ -29,9 +29,9 @@ import java.util.Set;
 @Slf4j
 public class FileResourceSet extends AbstractFileResourceSet {
 
-    private final Map<String, IOssStorageService> ossStorageServiceMap;
+    private final Map<String, IOssService> ossStorageServiceMap;
 
-    public FileResourceSet(WebResourceRoot root, String base, Map<String, IOssStorageService> ossStorageServiceMap) {
+    public FileResourceSet(WebResourceRoot root, String base, Map<String, IOssService> ossStorageServiceMap) {
         super("/");
         setRoot(root);
         setWebAppMount("/");
@@ -70,7 +70,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
         return new LocalFileResource(root, path, f, isReadOnly(), getManifest());
     }
 
-    private IOssStorageService getOssStorageService(String ossPath) {
+    private IOssService getOssStorageService(String ossPath) {
         BucketInfo bucketInfo = CaffeineUtil.getOssDiameterPrefixCache(ossPath);
         return this.ossStorageServiceMap.get(bucketInfo.getPlatform().getKey());
     }

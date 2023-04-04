@@ -9,7 +9,7 @@ import java.util.List;
  * @Description oss 存储接口
  * @date 2023/3/29 11:48
  */
-public interface IOssStorageService {
+public interface IOssService {
 
     PlatformOSS getPlatform();
 
@@ -39,4 +39,5 @@ public interface IOssStorageService {
 
     void uploadFile(Path tempFileAbsolutePath, String objectName);
 
+    void close();
 }

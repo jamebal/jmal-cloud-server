@@ -5,7 +5,6 @@ import com.jmal.clouddisk.oss.aliyun.AliyunOssService;
 import com.jmal.clouddisk.oss.tencent.TencentOssService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import jakarta.annotation.PreDestroy;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;

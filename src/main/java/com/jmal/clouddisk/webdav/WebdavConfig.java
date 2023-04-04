@@ -1,19 +1,11 @@
 package com.jmal.clouddisk.webdav;
 
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.oss.BucketInfo;
-import com.jmal.clouddisk.oss.IOssService;
 import com.jmal.clouddisk.oss.OssConfig;
-import com.jmal.clouddisk.oss.PlatformOSS;
-import com.jmal.clouddisk.oss.aliyun.AliyunOssService;
-import com.jmal.clouddisk.oss.tencent.TencentOssService;
-import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.webdav.resource.FileResourceSet;
-import jakarta.annotation.PreDestroy;
 import org.apache.tomcat.util.descriptor.web.LoginConfig;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
 import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
@@ -21,8 +13,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Configuration
 public class WebdavConfig {
