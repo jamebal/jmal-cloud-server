@@ -2,14 +2,18 @@ package com.jmal.clouddisk.webdav;
 
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.oss.BucketInfo;
-import com.jmal.clouddisk.oss.IOssStorageService;
+import com.jmal.clouddisk.oss.IOssService;
+import com.jmal.clouddisk.oss.OssConfig;
 import com.jmal.clouddisk.oss.PlatformOSS;
-import com.jmal.clouddisk.oss.aliyun.AliyunOssStorageService;
+import com.jmal.clouddisk.oss.aliyun.AliyunOssService;
+import com.jmal.clouddisk.oss.tencent.TencentOssService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.webdav.resource.FileResourceSet;
+import jakarta.annotation.PreDestroy;
 import org.apache.tomcat.util.descriptor.web.LoginConfig;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
 import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
@@ -17,7 +21,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,27 +37,15 @@ public class WebdavConfig {
 
     private static ApplicationContext context;
 
-    private static final Map<String, IOssStorageService> OSS_STORAGE_SERVICE_MAP = new ConcurrentHashMap<>();
+    private final OssConfig ossConfig;
 
-    public WebdavConfig(FileProperties fileProperties, MyRealm myRealm, WebdavAuthenticator webdavAuthenticator, MyWebdavServlet myWebdavServlet, ApplicationContext context) {
+    public WebdavConfig(FileProperties fileProperties, MyRealm myRealm, WebdavAuthenticator webdavAuthenticator, MyWebdavServlet myWebdavServlet, ApplicationContext context, OssConfig ossConfig) {
         this.fileProperties = fileProperties;
         this.myRealm = myRealm;
         this.webdavAuthenticator = webdavAuthenticator;
         this.myWebdavServlet = myWebdavServlet;
         this.context = context;
-
-        // TODO 临时插入
-        BucketInfo bucketInfo = new BucketInfo();
-        bucketInfo.setPlatform(PlatformOSS.ALIYUN);
-        bucketInfo.setBucketName("jmalcloud");
-        bucketInfo.setUsername("jmal");
-        bucketInfo.setFolderName("aliyunoss");
-        CaffeineUtil.setOssDiameterPrefixCache("/jmal/aliyunoss", bucketInfo);
-
-        IOssStorageService iOssStorageService = new AliyunOssStorageService(fileProperties);
-
-        OSS_STORAGE_SERVICE_MAP.put(iOssStorageService.getPlatform().getKey(), iOssStorageService);
-
+        this.ossConfig = ossConfig;
     }
 
     public static <T> T getBean(Class<T> requiredType) {
@@ -79,7 +70,7 @@ public class WebdavConfig {
             // 创建一个新的WebResourceRoot实例
             MyStandardRoot standardRoot = new MyStandardRoot(context);
             // 自定义静态资源的位置
-            standardRoot.addPreResources(new FileResourceSet(standardRoot, fileProperties.getRootDir(), OSS_STORAGE_SERVICE_MAP));
+            standardRoot.addPreResources(new FileResourceSet(standardRoot, fileProperties.getRootDir(), OssConfig.getOssServiceMap()));
             // 将新的WebResourceRoot设置为应用程序的资源根目录
             context.setResources(standardRoot);
             context.getPipeline().addValve(webdavAuthenticator);

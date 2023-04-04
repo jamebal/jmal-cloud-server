@@ -7,6 +7,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.OssInputStream;
+import com.jmal.clouddisk.util.CaffeineUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,6 +34,8 @@ import java.util.concurrent.TimeUnit;
 @Component
 @Slf4j
 public class MyWebdavServlet extends WebdavServlet {
+
+    public static final String PATH_DELIMITER = "/";
 
     private static final Cache<String, Long> REQUEST_URI_GET_MAP = Caffeine.newBuilder().expireAfterWrite(3L, TimeUnit.SECONDS).build();
 
@@ -132,10 +135,15 @@ public class MyWebdavServlet extends WebdavServlet {
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String uri = req.getRequestURI();
-        // 禁止删除oss根目录
-        if (uri.endsWith("/jmal/aliyunoss/")) {
-            sendNotAllowed(req, resp);
-            return;
+        Path uriPath = Paths.get(uri);
+        if (uriPath.getNameCount() > 1) {
+            String path = PATH_DELIMITER + uriPath.subpath(1, uriPath.getNameCount());
+            String ossPath = CaffeineUtil.getOssPath(path);
+            if (ossPath != null && uri.endsWith(ossPath + PATH_DELIMITER)) {
+                // 禁止删除oss根目录
+                sendNotAllowed(req, resp);
+                return;
+            }
         }
         super.doDelete(req, resp);
     }

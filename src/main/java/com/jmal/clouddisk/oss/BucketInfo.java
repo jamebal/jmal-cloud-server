@@ -17,6 +17,7 @@ public class BucketInfo {
     PlatformOSS platform;
 
     public String getWebPathPrefix() {
-        return Paths.get(username, folderName).toString();
+        return Paths.get(username, folderName) + "/";
     }
+
 }
