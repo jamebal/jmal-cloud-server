@@ -26,8 +26,8 @@ public interface IOssWebService {
         List<Map<String, String>> maps = new ArrayList<>(PlatformOSS.values().length);
         for (PlatformOSS platformOSS : PlatformOSS.values()) {
             Map<String, String> map = new HashMap<>(2);
-            map.put("key", platformOSS.getKey());
-            map.put("value", platformOSS.getValue());
+            map.put("value", platformOSS.getKey());
+            map.put("label", platformOSS.getValue());
             maps.add(map);
         }
         return maps;

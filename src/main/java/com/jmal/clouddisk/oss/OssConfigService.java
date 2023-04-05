@@ -2,7 +2,9 @@ package com.jmal.clouddisk.oss;
 
 import cn.hutool.core.io.file.PathUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.listener.FileMonitor;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.aliyun.AliyunOssService;
 import com.jmal.clouddisk.oss.tencent.TencentOssService;
@@ -12,12 +14,15 @@ import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.webdav.MyWebdavServlet;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,19 +35,29 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Description OssConfig
  * @date 2023/4/4 15:13
  */
-@Component
+@Service
+@Slf4j
 public class OssConfigService {
 
     public static final String COLLECTION_NAME = "OssConfig";
     private static final Map<String, IOssService> OSS_SERVICE_MAP = new ConcurrentHashMap<>();
-
     private final UserServiceImpl userService;
 
     private final FileProperties fileProperties;
 
+    private final FileMonitor fileMonitor;
+
     private final MongoTemplate mongoTemplate;
 
-    public OssConfigService(FileProperties fileProperties, UserServiceImpl userService, MongoTemplate mongoTemplate) {
+    public OssConfigService(FileProperties fileProperties, UserServiceImpl userService, MongoTemplate mongoTemplate, FileMonitor fileMonitor) {
+        this.userService = userService;
+        this.mongoTemplate = mongoTemplate;
+        this.fileProperties = fileProperties;
+        this.fileMonitor = fileMonitor;
+    }
+
+    @PostConstruct
+    public void init() {
         // load config
         List<OssConfigDO> ossConfigDOList = mongoTemplate.findAll(OssConfigDO.class);
         for (OssConfigDO ossConfigDO : ossConfigDOList) {
@@ -51,29 +66,67 @@ public class OssConfigService {
             if (consumerDO == null) {
                 continue;
             }
-            OssConfigDTO ossConfigDTO = ossConfigDO.toOssConfigDTO(userService, userService.userInfoById(userId));
+            OssConfigDTO ossConfigDTO = ossConfigDO.toOssConfigDTO(userService.userInfoById(userId));
             ossConfigDTO.setUsername(consumerDO.getUsername());
-            setBucketInfoCache(ossConfigDO, ossConfigDTO);
-            IOssService ossService = getOssService(fileProperties, ossConfigDO.getPlatform(), ossConfigDTO);
-            if (ossService != null) {
-                setOssServiceMap(ossConfigDO.getPlatform().getKey(), ossService);
+            IOssService ossService = null;
+            try {
+                ossService = newOssService(fileProperties, ossConfigDO.getPlatform(), ossConfigDTO);
+                if (ossService != null) {
+                    setBucketInfoCache(ossConfigDO.getPlatform(), ossConfigDTO, ossService);
+                }
+            } catch (Exception e) {
+                log.error(ossConfigDO.getPlatform().getValue() + " 配置加载失败!");
+                log.error(e.getMessage(), e);
+                if (ossService != null) {
+                    ossService.close();
+                }
             }
         }
-        this.userService = userService;
-        this.mongoTemplate = mongoTemplate;
-        this.fileProperties = fileProperties;
     }
 
-    private static void setBucketInfoCache(OssConfigDO ossConfigDO, OssConfigDTO ossConfigDTO) {
+    public void setOssServiceMap(String key, IOssService ossService) {
+        OSS_SERVICE_MAP.put(key, ossService);
+    }
+
+    public static IOssService getOssService(String key) {
+        return OSS_SERVICE_MAP.get(key);
+    }
+
+    private void setBucketInfoCache(PlatformOSS platformOSS, OssConfigDTO ossConfigDTO, IOssService ossService) {
         BucketInfo bucketInfo = new BucketInfo();
-        bucketInfo.setPlatform(ossConfigDO.getPlatform());
+        bucketInfo.setPlatform(platformOSS);
         bucketInfo.setBucketName(ossConfigDTO.getBucket());
         bucketInfo.setUsername(ossConfigDTO.getUsername());
         bucketInfo.setFolderName(ossConfigDTO.getFolderName());
-        CaffeineUtil.setOssDiameterPrefixCache(bucketInfo.getWebPathPrefix(), bucketInfo);
+        String webPathPrefix = bucketInfo.getWebPathPrefix();
+        // 销毁掉之前的IOssService
+        destroyOssService(webPathPrefix);
+        // setOssDiameterPrefixCache
+        CaffeineUtil.setOssDiameterPrefixCache(webPathPrefix, bucketInfo);
+        // setOssService
+        setOssServiceMap(webPathPrefix, ossService);
+        fileMonitor.addDirFilter(webPathPrefix);
     }
 
-    private static IOssService getOssService(FileProperties fileProperties, PlatformOSS platformOSS, OssConfigDTO ossConfigDTO) {
+    private void destroyOssService(String key) {
+        CaffeineUtil.removeOssDiameterPrefixCache(key);
+        if (OSS_SERVICE_MAP.containsKey(key)) {
+            // 销毁掉之前的IOssService
+            getOssService(key).close();
+        }
+        OSS_SERVICE_MAP.remove(key);
+        // 移除webPathPrefix的文件夹的 过滤器
+        fileMonitor.removeDirFilter(key);
+    }
+
+    /**
+     * 创建IOssService对象
+     * @param fileProperties  FileProperties
+     * @param platformOSS     PlatformOSS
+     * @param ossConfigDTO    OssConfigDTO
+     * @return IOssService 对象
+     */
+    private static IOssService newOssService(FileProperties fileProperties, PlatformOSS platformOSS, OssConfigDTO ossConfigDTO) {
         IOssService ossService = null;
         switch (platformOSS) {
             case ALIYUN -> ossService = new AliyunOssService(fileProperties, ossConfigDTO);
@@ -82,66 +135,98 @@ public class OssConfigService {
         return ossService;
     }
 
-    public static Map<String, IOssService> getOssServiceMap() {
-        return OSS_SERVICE_MAP;
-    }
-
-    public static void setOssServiceMap(String platformKey, IOssService ossService) {
-        OSS_SERVICE_MAP.put(platformKey, ossService);
-    }
-
     @PreDestroy
     public void destroy() {
-        getOssServiceMap().values().forEach(IOssService::close);
+        OSS_SERVICE_MAP.values().forEach(IOssService::close);
     }
 
-    public ResponseResult<Object> putOssConfig(OssConfigDTO ossConfigDTO) {
-        IOssService ossService;
+    public void putOssConfig(OssConfigDTO ossConfigDTO) {
+        IOssService ossService = null;
         String userId = ossConfigDTO.getUserId();
         ConsumerDO consumerDO = userService.getUserInfoById(userId);
         if (consumerDO == null) {
-            return ResultUtil.error(ExceptionType.PARAMETERS_VALUE.getCode(), "无效参数 userId");
+            throw new CommonException(ExceptionType.PARAMETERS_VALUE.getCode(), "无效参数 userId");
         }
         ossConfigDTO.setUsername(consumerDO.getUsername());
+        Query query = new Query();
+        // 销毁旧配置
+        destroyOldConfig(ossConfigDTO, userId, consumerDO, query);
+
+        // 配置转换 DTO -> DO
         OssConfigDO ossConfigDO = ossConfigDTO.toOssConfigDO(consumerDO.getPassword());
-        String configErr = "配置有误";
+
+        String configErr = "配置有误 或者 Access Key 没有权限";
         try {
             // 检查配置可用性
-            ossService = getOssService(fileProperties, ossConfigDO.getPlatform(), ossConfigDTO);
+            ossService = newOssService(fileProperties, ossConfigDO.getPlatform(), ossConfigDTO);
             if (ossService == null) {
-                return ResultUtil.warning(configErr);
+                throw new CommonException(ExceptionType.WARNING.getCode(), configErr);
             }
             boolean doesBucketExist = ossService.doesBucketExist();
             if (!doesBucketExist) {
-                return ResultUtil.warning("Bucket 不存在");
+                ossService.close();
+                throw new CommonException(ExceptionType.WARNING.getCode(), "Bucket 不存在");
             } else {
-                setOssConfig(ossConfigDTO, ossService, userId, ossConfigDO);
+                // 更新配置
+                updateOssConfig(ossConfigDTO, ossService, query, ossConfigDO);
             }
         } catch (Exception e) {
-            return ResultUtil.warning(configErr);
+            log.warn(e.getMessage());
+            if (ossService != null) {
+                ossService.close();
+            }
+            throw new CommonException(ExceptionType.WARNING.getCode(), configErr);
         }
-        return ResultUtil.success();
     }
 
-    private void setOssConfig(OssConfigDTO ossConfigDTO, IOssService ossService, String userId, OssConfigDO ossConfigDO) {
+    /**
+     * 销毁旧配置
+     */
+    private void destroyOldConfig(OssConfigDTO ossConfigDTO, String userId, ConsumerDO consumerDO, Query query) {
+        query.addCriteria(Criteria.where("userId").is(userId));
+        query.addCriteria(Criteria.where("bucket").is(ossConfigDTO.getBucket()));
+        query.addCriteria(Criteria.where("platform").is(PlatformOSS.getPlatform(ossConfigDTO.getPlatform())));
+        // 检查目录是否存在
+        boolean existFolder = existFolderName(consumerDO.getUsername(), ossConfigDTO.getFolderName());
+        // 旧配置
+        OssConfigDO oldOssConfigDO = mongoTemplate.findOne(query, OssConfigDO.class);
+        if (oldOssConfigDO != null) {
+            if (!oldOssConfigDO.getFolderName().equals(ossConfigDTO.getFolderName())) {
+                // 修改了目录名
+                Path oldPath = Paths.get(fileProperties.getRootDir(), ossConfigDTO.getUsername(), oldOssConfigDO.getFolderName());
+                PathUtil.del(oldPath);
+                if (existFolder) {
+                    throw new CommonException(ExceptionType.WARNING.getCode(), "目录已存在: " + ossConfigDTO.getFolderName());
+                }
+            }
+            // 销毁 old OssService
+            destroyOssService(MyWebdavServlet.getPathDelimiter(ossConfigDTO.getUsername(), oldOssConfigDO.getFolderName()));
+            if (ossConfigDTO.getAccessKey().contains("*")) {
+                ossConfigDTO.setAccessKey(UserServiceImpl.getDecryptStrByUser(oldOssConfigDO.getAccessKey(), consumerDO));
+            }
+            if (ossConfigDTO.getSecretKey().contains("*")) {
+                ossConfigDTO.setSecretKey(UserServiceImpl.getDecryptStrByUser(oldOssConfigDO.getSecretKey(), consumerDO));
+            }
+        }
+        if (existFolder && oldOssConfigDO == null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "目录已存在: " + ossConfigDTO.getFolderName());
+        }
+
+    }
+
+    /**
+     * 更新配置
+     */
+    private void updateOssConfig(OssConfigDTO ossConfigDTO, IOssService ossService, Query query, OssConfigDO ossConfigDO) {
         // mkdir
         Path path = Paths.get(fileProperties.getRootDir(), ossConfigDTO.getUsername(), ossConfigDTO.getFolderName());
         PathUtil.mkdir(path);
-        setBucketInfoCache(ossConfigDO, ossConfigDTO);
-        setOssServiceMap(ossConfigDO.getPlatform().getKey(), ossService);
-        Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userId));
-        query.addCriteria(Criteria.where("bucket").is(ossConfigDTO.getBucket()));
-        query.addCriteria(Criteria.where("platform").is(ossConfigDO.getPlatform()));
+        setBucketInfoCache(ossConfigDO.getPlatform(), ossConfigDTO, ossService);
         Update update = new Update();
         update.set("platform", ossConfigDO.getPlatform());
         update.set("folderName", ossConfigDO.getFolderName());
-        if (!ossConfigDTO.getAccessKey().contains("*")) {
-            update.set("accessKey", ossConfigDO.getAccessKey());
-        }
-        if (!ossConfigDTO.getSecretKey().contains("*")) {
-            update.set("secretKey", ossConfigDO.getSecretKey());
-        }
+        update.set("accessKey", ossConfigDO.getAccessKey());
+        update.set("secretKey", ossConfigDO.getSecretKey());
         update.set("endpoint", ossConfigDO.getEndpoint());
         update.set("region", ossConfigDO.getRegion());
         update.set("bucket", ossConfigDO.getBucket());
@@ -155,8 +240,33 @@ public class OssConfigService {
      * @param username   username
      * @param folderName 目录名
      */
-    public ResponseResult<Boolean> existFolderName(String username, String folderName) {
+    private boolean existFolderName(String username, String folderName) {
         Path path = Paths.get(fileProperties.getRootDir(), username, folderName);
-        return ResultUtil.success(PathUtil.exists(path, false));
+        return PathUtil.exists(path, false);
+    }
+
+    /**
+     * OSS配置列表
+     */
+    public ResponseResult<Object> ossConfigList() {
+        List<OssConfigDO> ossConfigDOList = mongoTemplate.findAll(OssConfigDO.class);
+        List<OssConfigDTO> ossConfigDTOList = ossConfigDOList.stream().map(OssConfigDO::toOssConfigDTO).toList();
+        return ResultUtil.success(ossConfigDTOList);
+    }
+
+    /**
+     * 删除OSS配置
+     * @param id ossConfigId
+     */
+    public ResponseResult<Object> deleteOssConfig(String id) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(id));
+        OssConfigDO ossConfigDO = mongoTemplate.findAndRemove(query, OssConfigDO.class);
+        if (ossConfigDO != null) {
+            // 销毁IOssService
+            String key = MyWebdavServlet.getPathDelimiter(userService.getUserNameById(ossConfigDO.getUserId()), ossConfigDO.getFolderName());
+            destroyOssService(key);
+        }
+        return ResultUtil.success();
     }
 }

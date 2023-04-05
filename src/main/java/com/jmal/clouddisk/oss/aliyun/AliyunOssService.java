@@ -13,6 +13,7 @@ import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 @Slf4j
-public class AliyunOssService implements IOssService {
+public class AliyunOssService implements IOssService, Closeable {
 
     private final String bucketName;
 
@@ -39,7 +40,7 @@ public class AliyunOssService implements IOssService {
         this.ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor);
-        log.info( "{}配置加载成功, bucket: {}, username: {}", getPlatform().getValue(), bucketName, ossConfigDTO.getUsername());
+        log.info("{}配置加载成功, bucket: {}, username: {}, {}", getPlatform().getValue(), bucketName, ossConfigDTO.getUsername(), this.hashCode());
     }
 
     @Override
@@ -181,7 +182,12 @@ public class AliyunOssService implements IOssService {
 
     @Override
     public boolean doesBucketExist() {
-        return this.ossClient.doesBucketExist(bucketName);
+        boolean exist;
+        exist = this.ossClient.doesBucketExist(bucketName);
+        if (exist) {
+            this.ossClient.getBucketStat(bucketName);
+        }
+        return exist;
     }
 
     private com.aliyun.oss.model.OSSObject getAliyunOssObject(String objectName) {
@@ -274,7 +280,7 @@ public class AliyunOssService implements IOssService {
 
     @Override
     public void close() {
-        log.info("platform: {}, bucketName: {} shutdown...", getPlatform().getValue(), bucketName);
+        log.info("platform: {}, bucketName: {} shutdown... {}", getPlatform().getValue(), bucketName, this.hashCode());
         if (this.ossClient != null) {
             this.ossClient.shutdown();
         }

@@ -381,7 +381,7 @@ public class UserServiceImpl implements IUserService {
         return getAES(key).decryptStr(consumer.getEncryptPwd());
     }
 
-    public String getDecryptStrByUser(String secret, ConsumerDO consumer) {
+    public static String getDecryptStrByUser(String secret, ConsumerDO consumer) {
         String key = getPwdKey(consumer);
         if (key == null) return "";
         return getAES(key).decryptStr(secret);

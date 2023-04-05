@@ -30,6 +30,11 @@ public class CommonException extends RuntimeException {
         this.msg = type.getMsg();
     }
 
+    public CommonException(String msg) {
+        this.code = -1;
+        this.msg = msg;
+    }
+
     public int getCode() {
         return code;
     }

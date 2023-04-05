@@ -1,24 +1,23 @@
-package com.jmal.clouddisk;
+package com.jmal.clouddisk.listener;
 
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.io.FileUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.listener.FileListener;
-import com.jmal.clouddisk.listener.TempDirFilter;
 import com.jmal.clouddisk.service.MongodbIndex;
 import com.jmal.clouddisk.util.CaffeineUtil;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,18 +25,15 @@ import java.util.concurrent.TimeUnit;
  * @Date 2020-02-21 14:54
  * @author jmal
  */
-@Component
+@Service
 @Slf4j
-public class ApplicationInit implements ApplicationRunner {
+public class FileMonitor {
 
-    final
-    FileProperties fileProperties;
+    final FileProperties fileProperties;
 
-    final
-    FileListener fileListener;
+    final FileListener fileListener;
 
-    final
-    MongodbIndex mongodbIndex;
+    final MongodbIndex mongodbIndex;
 
     private FileAlterationMonitor monitor;
 
@@ -45,14 +41,19 @@ public class ApplicationInit implements ApplicationRunner {
 
     private boolean isMonitor = false;
 
-    public ApplicationInit(FileProperties fileProperties, FileListener fileListener, MongodbIndex mongodbIndex) {
+    /**
+     * 续要过滤掉的目录列表
+     */
+    private static final Set<String> FILTER_DIR_SET = new CopyOnWriteArraySet<>();
+
+    public FileMonitor(FileProperties fileProperties, FileListener fileListener, MongodbIndex mongodbIndex) {
         this.fileProperties = fileProperties;
         this.fileListener = fileListener;
         this.mongodbIndex = mongodbIndex;
     }
 
-    @Override
-    public void run(ApplicationArguments args) throws Exception {
+    @PostConstruct
+    public void init() throws Exception {
         // 判断是否开启文件监控
         if (Boolean.FALSE.equals(fileProperties.getMonitor())) {
             return;
@@ -63,13 +64,8 @@ public class ApplicationInit implements ApplicationRunner {
         }
         // 轮询间隔(秒)
         long interval = TimeUnit.SECONDS.toMillis(fileProperties.getTimeInterval());
-        // 创建过滤器
-        TempDirFilter tempDirFilter = new TempDirFilter(fileProperties.getRootDir(), fileProperties.getChunkFileDir());
-
-        // 使用过滤器
-        observer = new FileAlterationObserver(new File(fileProperties.getRootDir()), tempDirFilter);
-        // 不使用过滤器
-        observer.addListener(fileListener);
+        FILTER_DIR_SET.add(fileProperties.getChunkFileDir());
+        newObserver();
         //创建文件变化监听器
         monitor = new FileAlterationMonitor(interval, observer);
         // 开始监控
@@ -78,6 +74,44 @@ public class ApplicationInit implements ApplicationRunner {
         log.info("\r\n文件监控服务已开启:\r\n轮询间隔:{}秒\n监控目录:{}\n忽略目录:{}", fileProperties.getTimeInterval(), rootDir, rootDir + File.separator + fileProperties.getChunkFileDir());
         // 检测mongo索引
         mongodbIndex.checkMongoIndex();
+    }
+
+    private void newObserver() {
+        // 创建过滤器
+        TempDirFilter tempDirFilter = new TempDirFilter(fileProperties.getRootDir(), FILTER_DIR_SET);
+        // 使用过滤器
+        observer = new FileAlterationObserver(new File(fileProperties.getRootDir()), tempDirFilter);
+        observer.addListener(fileListener);
+    }
+
+    private void reloadObserver() {
+        try {
+            newObserver();
+            fastInterval();
+            log.info("reload FileMonitor, filterDir: {}", FILTER_DIR_SET);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 在过滤器里添加路径
+     * @param path 需要过滤掉的路径
+     */
+    public void addDirFilter(String path) {
+        FILTER_DIR_SET.add(path);
+        reloadObserver();
+    }
+
+    /**
+     * 需要移除的路径
+     * @param path 需要移除的路径
+     */
+    public void removeDirFilter(String path) {
+        if (FILTER_DIR_SET.contains(path)) {
+            FILTER_DIR_SET.remove(path);
+            reloadObserver();
+        }
     }
 
     /**
@@ -98,17 +132,21 @@ public class ApplicationInit implements ApplicationRunner {
                 }
             } else {
                 if (!isMonitor) {
-                    monitor.stop(DateUnit.SECOND.getMillis());
-                    monitor = null;
-                    monitor = new FileAlterationMonitor(DateUnit.SECOND.getMillis() * 3, observer);
-                    monitor.start();
-                    log.info("轮询间隔改为3秒钟");
-                    isMonitor = true;
+                    fastInterval();
                 }
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    private void fastInterval() throws Exception {
+        monitor.stop(DateUnit.SECOND.getMillis());
+        monitor = null;
+        monitor = new FileAlterationMonitor(DateUnit.SECOND.getMillis() * 3, observer);
+        monitor.start();
+        log.info("轮询间隔改为3秒钟");
+        isMonitor = true;
     }
 
     /**

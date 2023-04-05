@@ -4,9 +4,11 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.BucketInfo;
+import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -227,14 +229,24 @@ public class CaffeineUtil {
         return OSS_DIAMETER_PREFIX_CACHE.getIfPresent(path);
     }
 
+    public static void removeOssDiameterPrefixCache(String path) {
+        OSS_DIAMETER_PREFIX_CACHE.invalidate(path);
+    }
+
     /**
      * 获取oss path
      * @param path url path
      * @return oss path
      */
-    public static String getOssPath(String path) {
+    public static String getOssPath(Path path) {
+        String prePath;
+        if (path.getNameCount() >= 2) {
+            prePath = MyWebdavServlet.PATH_DELIMITER + path.subpath(0, 2);
+        } else {
+            return null;
+        }
         for (String prefixPath : OSS_DIAMETER_PREFIX_CACHE.asMap().keySet()) {
-            if (path.startsWith(prefixPath)){
+            if (prePath.equals(prefixPath)){
                 return prefixPath;
             }
         }

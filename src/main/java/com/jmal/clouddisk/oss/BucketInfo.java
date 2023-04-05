@@ -3,8 +3,6 @@ package com.jmal.clouddisk.oss;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import lombok.Data;
 
-import java.nio.file.Paths;
-
 /**
  * @author jmal
  * @Description OSS BucketInfo
@@ -18,7 +16,7 @@ public class BucketInfo {
     PlatformOSS platform;
 
     public String getWebPathPrefix() {
-        return MyWebdavServlet.PATH_DELIMITER + Paths.get(username, folderName);
+        return MyWebdavServlet.getPathDelimiter(username, folderName);
     }
 
 }

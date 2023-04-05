@@ -6,6 +6,8 @@ import org.apache.commons.io.monitor.FileAlterationObserver;
 import java.io.File;
 import java.io.FileFilter;
 import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -18,9 +20,9 @@ public class TempDirFilter implements FileFilter {
     private final String rootPath;
     private final String[] filterDirPath;
 
-    public TempDirFilter(String rootPath, String... filterDirPath){
+    public TempDirFilter(String rootPath, Set<String> filterDirPath){
         this.rootPath = rootPath;
-        this.filterDirPath = filterDirPath.clone();
+        this.filterDirPath = filterDirPath.toArray(new String[0]);
     }
 
     @Override
@@ -38,12 +40,12 @@ public class TempDirFilter implements FileFilter {
         // 轮询间隔 1 秒
         long interval = TimeUnit.SECONDS.toMillis(1);
         // 创建过滤器
-        TempDirFilter tempDirFilter = new TempDirFilter(rootDir,"temporary directory");
+        Set<String> filterSet = new HashSet<>();
+        filterSet.add("temporary directory");
+        TempDirFilter tempDirFilter = new TempDirFilter(rootDir, filterSet);
 
         // 使用过滤器
         FileAlterationObserver observer = new FileAlterationObserver(new File(rootDir), tempDirFilter);
-        // 不使用过滤器
-//        FileAlterationObserver observer = new FileAlterationObserver(new File(rootDir));
         observer.addListener(new FileListener());
         //创建文件变化监听器
         FileAlterationMonitor monitor = new FileAlterationMonitor(interval, observer);

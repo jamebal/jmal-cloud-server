@@ -118,8 +118,7 @@ public class MyWebdavServlet extends WebdavServlet {
         String uri = req.getRequestURI();
         Path uriPath = Paths.get(uri);
         if (uriPath.getNameCount() > 1) {
-            String path = PATH_DELIMITER + uriPath.subpath(1, uriPath.getNameCount());
-            String ossPath = CaffeineUtil.getOssPath(path);
+            String ossPath = CaffeineUtil.getOssPath(uriPath.subpath(1, uriPath.getNameCount()));
             if (ossPath != null && uri.endsWith(ossPath + PATH_DELIMITER)) {
                 // 禁止删除oss根目录
                 sendNotAllowed(req, resp);
@@ -129,5 +128,8 @@ public class MyWebdavServlet extends WebdavServlet {
         super.doDelete(req, resp);
     }
 
+    public static String getPathDelimiter(String username, String folderName) {
+        return MyWebdavServlet.PATH_DELIMITER + Paths.get(username, folderName);
+    }
 
 }

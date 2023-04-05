@@ -46,7 +46,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
         WebResourceRoot root = getRoot();
         File f;
         Path prePath = Paths.get(path);
-        String ossPath = CaffeineUtil.getOssPath(path);
+        String ossPath = CaffeineUtil.getOssPath(prePath);
         if (ossPath != null && prePath.getNameCount() > 2) {
             path = path.substring(ossPath.length() + 1);
             FileInfo fileInfo = getOssStorageService(ossPath).getFileInfo(path);
@@ -71,7 +71,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
 
     private IOssService getOssStorageService(String ossPath) {
         BucketInfo bucketInfo = CaffeineUtil.getOssDiameterPrefixCache(ossPath);
-        return OssConfigService.getOssServiceMap().get(bucketInfo.getPlatform().getKey());
+        return OssConfigService.getOssService(bucketInfo.getWebPathPrefix());
     }
 
     @Override
@@ -79,7 +79,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
         checkPath(path);
 
         File f;
-        String ossPath = CaffeineUtil.getOssPath(path);
+        String ossPath = CaffeineUtil.getOssPath(Paths.get(path));
         if (ossPath != null) {
             String name = getObjectName(path, ossPath);
             return getOssStorageService(ossPath).list(name);
@@ -107,7 +107,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
         }
 
         File f;
-        String ossPath = CaffeineUtil.getOssPath(path);
+        String ossPath = CaffeineUtil.getOssPath(Paths.get(path));
         if (ossPath != null) {
             String name = getObjectName(path, ossPath);
             return getOssStorageService(ossPath).mkdir(ossPath, name);
@@ -151,9 +151,9 @@ public class FileResourceSet extends AbstractFileResourceSet {
         }
 
         File dest;
-        String ossPath = CaffeineUtil.getOssPath(path);
+        Path prePath = Paths.get(path);
+        String ossPath = CaffeineUtil.getOssPath(prePath);
         if (ossPath != null) {
-            Path prePath = Paths.get(path);
             if (prePath.getNameCount() > 2) {
                 path = path.substring(ossPath.length() + 1);
             }

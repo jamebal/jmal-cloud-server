@@ -42,6 +42,8 @@ public class OssConfigDTO {
     private String userId;
     @Schema(hidden = true)
     private String username;
+    @Schema(hidden = true)
+    private String id;
 
     public OssConfigDO toOssConfigDO(String password) {
         OssConfigDO ossConfigDO = new OssConfigDO();

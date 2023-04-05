@@ -10,7 +10,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @Description 注解工具
@@ -32,7 +31,7 @@ public class AnnoManageUtil {
      */
     @PostConstruct
     public void getAllAuthorities() {
-        Reflections reflections = new Reflections("com.jmal.clouddisk.controller");
+        Reflections reflections = new Reflections("com.jmal.clouddisk.controller", "com.jmal.clouddisk.oss.web");
         Set<Class<?>> classesList = reflections.getTypesAnnotatedWith(RestController.class);
         List<String> arrayList = new ArrayList<>();
         for (Class classes : classesList) {
@@ -53,7 +52,7 @@ public class AnnoManageUtil {
                 arrayList.add(permission.value());
             }
         }
-        AUTHORITIES.addAll(arrayList.stream().sorted().collect(Collectors.toList()));
+        AUTHORITIES.addAll(arrayList.stream().sorted().toList());
     }
 
 }

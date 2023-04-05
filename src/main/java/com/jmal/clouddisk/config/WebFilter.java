@@ -1,4 +1,4 @@
-package com.jmal.clouddisk;
+package com.jmal.clouddisk.config;
 
 import com.jmal.clouddisk.util.CaffeineUtil;
 import jakarta.servlet.*;

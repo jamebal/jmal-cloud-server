@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.oss.web.model;
 
+import cn.hutool.core.util.DesensitizedUtil;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.PlatformOSS;
@@ -27,7 +28,7 @@ public class OssConfigDO {
     private String bucket;
     private String userId;
 
-    public OssConfigDTO toOssConfigDTO(UserServiceImpl userService, ConsumerDO consumer) {
+    public OssConfigDTO toOssConfigDTO(ConsumerDO consumerDO) {
         OssConfigDTO ossConfigDTO = new OssConfigDTO();
         ossConfigDTO.setEndpoint(this.endpoint);
         ossConfigDTO.setBucket(this.bucket);
@@ -35,8 +36,22 @@ public class OssConfigDO {
         ossConfigDTO.setPlatform(this.platform.name());
         ossConfigDTO.setRegion(this.region);
         ossConfigDTO.setUserId(this.userId);
-        ossConfigDTO.setAccessKey(userService.getDecryptStrByUser(this.accessKey, consumer));
-        ossConfigDTO.setSecretKey(userService.getDecryptStrByUser(this.secretKey, consumer));
+        ossConfigDTO.setAccessKey(UserServiceImpl.getDecryptStrByUser(this.accessKey, consumerDO));
+        ossConfigDTO.setSecretKey(UserServiceImpl.getDecryptStrByUser(this.secretKey, consumerDO));
+        return ossConfigDTO;
+    }
+
+    public OssConfigDTO toOssConfigDTO() {
+        OssConfigDTO ossConfigDTO = new OssConfigDTO();
+        ossConfigDTO.setId(this.id);
+        ossConfigDTO.setEndpoint(this.endpoint);
+        ossConfigDTO.setBucket(this.bucket);
+        ossConfigDTO.setFolderName(this.folderName);
+        ossConfigDTO.setPlatform(this.platform.getKey());
+        ossConfigDTO.setRegion(this.region);
+        ossConfigDTO.setUserId(this.userId);
+        ossConfigDTO.setAccessKey(DesensitizedUtil.password(this.accessKey));
+        ossConfigDTO.setSecretKey(DesensitizedUtil.password(this.secretKey));
         return ossConfigDTO;
     }
 }

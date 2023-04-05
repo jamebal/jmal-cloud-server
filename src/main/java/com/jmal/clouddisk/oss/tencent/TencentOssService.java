@@ -197,7 +197,12 @@ public class TencentOssService implements IOssService {
 
     @Override
     public boolean doesBucketExist() {
-        return this.cosClient.doesBucketExist(bucketName);
+        boolean exist;
+        exist = this.cosClient.doesBucketExist(bucketName);
+        if (exist) {
+            this.cosClient.getBucketAcl(bucketName);
+        }
+        return exist;
     }
 
     private COSObject getTencentObject(String objectName) {
