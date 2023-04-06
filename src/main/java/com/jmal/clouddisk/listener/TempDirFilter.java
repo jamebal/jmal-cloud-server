@@ -20,7 +20,7 @@ public class TempDirFilter implements FileFilter {
     private final String rootPath;
     private final String[] filterDirPath;
 
-    public TempDirFilter(String rootPath, Set<String> filterDirPath){
+    public TempDirFilter(String rootPath, Set<String> filterDirPath) {
         this.rootPath = rootPath;
         this.filterDirPath = filterDirPath.toArray(new String[0]);
     }
@@ -28,7 +28,7 @@ public class TempDirFilter implements FileFilter {
     @Override
     public boolean accept(File pathname) {
         for (String dirPath : filterDirPath) {
-            if(pathname.toPath().startsWith(Paths.get(rootPath,dirPath))){
+            if (pathname.toPath().startsWith(Paths.get(rootPath, dirPath))) {
                 return false;
             }
         }

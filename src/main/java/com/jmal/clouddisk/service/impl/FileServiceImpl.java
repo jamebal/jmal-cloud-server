@@ -24,6 +24,7 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
+import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import com.jmal.clouddisk.websocket.SocketManager;
 import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
@@ -322,7 +323,6 @@ public class FileServiceImpl implements IFileService {
     public ResponseResult<Object> searchFile(UploadApiParamDTO upload, String keyword) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
         Criteria criteria1 = Criteria.where("name").regex(keyword, "i");
-        Query query = new Query();
         return getCountResponseResult(upload, result, criteria1);
     }
 
@@ -852,6 +852,9 @@ public class FileServiceImpl implements IFileService {
             }
             if (file.isFile()) {
                 setFileConfig(file, fileName, suffix, contentType, relativePath, update);
+            } else {
+                // 检查目录是否为OSS目录
+                checkOSSPath(username, relativePath, fileName, update);
             }
 
             // 检查该文件的上级目录是否有已经分享的目录
@@ -868,6 +871,24 @@ public class FileServiceImpl implements IFileService {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return null;
+    }
+
+    /**
+     * 检查目录是否为OSS目录
+     * @param username username
+     * @param relativePath relativePath
+     * @param fileName fileName
+     * @param update Update
+     */
+    private static void checkOSSPath(String username, String relativePath, String fileName, Update update) {
+        if (!MyWebdavServlet.PATH_DELIMITER.equals(relativePath)) {
+            return;
+        }
+        Path prePath = Paths.get(username, relativePath, fileName);
+        String ossPath = CaffeineUtil.getOssPath(prePath);
+        if (ossPath != null) {
+            update.set("ossFolder", true);
+        }
     }
 
     private void checkShareBase(Update update, String relativePath) {

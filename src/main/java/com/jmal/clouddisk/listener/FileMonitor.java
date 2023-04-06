@@ -3,9 +3,11 @@ package com.jmal.clouddisk.listener;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.io.FileUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.MongodbIndex;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
@@ -27,6 +29,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class FileMonitor {
 
     final FileProperties fileProperties;
@@ -34,6 +37,8 @@ public class FileMonitor {
     final FileListener fileListener;
 
     final MongodbIndex mongodbIndex;
+
+    final IFileService fileService;
 
     private FileAlterationMonitor monitor;
 
@@ -45,12 +50,6 @@ public class FileMonitor {
      * 续要过滤掉的目录列表
      */
     private static final Set<String> FILTER_DIR_SET = new CopyOnWriteArraySet<>();
-
-    public FileMonitor(FileProperties fileProperties, FileListener fileListener, MongodbIndex mongodbIndex) {
-        this.fileProperties = fileProperties;
-        this.fileListener = fileListener;
-        this.mongodbIndex = mongodbIndex;
-    }
 
     @PostConstruct
     public void init() throws Exception {
@@ -100,6 +99,8 @@ public class FileMonitor {
      */
     public void addDirFilter(String path) {
         FILTER_DIR_SET.add(path);
+        String username = Paths.get(path).getParent().getFileName().toString();
+        fileService.createFile(username, Paths.get(fileProperties.getRootDir(), path).toFile());
         reloadObserver();
     }
 
@@ -110,6 +111,8 @@ public class FileMonitor {
     public void removeDirFilter(String path) {
         if (FILTER_DIR_SET.contains(path)) {
             FILTER_DIR_SET.remove(path);
+            String username = Paths.get(path).getParent().getFileName().toString();
+            fileService.deleteFile(username, Paths.get(fileProperties.getRootDir(), path).toFile());
             reloadObserver();
         }
     }

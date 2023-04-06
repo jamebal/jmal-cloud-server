@@ -41,7 +41,6 @@ public class FileResourceSet extends AbstractFileResourceSet {
 
     @Override
     public WebResource getResource(String path) {
-        log.info("getResource: {}", path);
         checkPath(path);
         WebResourceRoot root = getRoot();
         File f;

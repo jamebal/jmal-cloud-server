@@ -46,7 +46,7 @@ public class WebdavConfig {
         registration.setLoadOnStartup(1);
         registration.addInitParameter("listings", String.valueOf(true));
         registration.addInitParameter("readonly", String.valueOf(false));
-        registration.addInitParameter("debug", String.valueOf(1));
+        registration.addInitParameter("debug", String.valueOf(0));
         return registration;
     }
 

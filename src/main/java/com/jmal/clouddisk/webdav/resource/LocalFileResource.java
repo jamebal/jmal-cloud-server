@@ -156,7 +156,6 @@ public class LocalFileResource extends AbstractResource {
             }
         }
         try {
-            Console.log("FileInputStream", resource.getAbsolutePath());
             return new FileInputStream(resource);
         } catch (FileNotFoundException fnfe) {
             // Race condition (file has been deleted) - not an error
