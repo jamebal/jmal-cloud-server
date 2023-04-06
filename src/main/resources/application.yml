@@ -9,6 +9,8 @@ version: 2.4.1
 spring:
   application:
     name: jmalcloud
+  main:
+    allow-circular-references: true
   profiles:
     active: dev
   servlet:

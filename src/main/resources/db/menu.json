@@ -683,5 +683,61 @@
     "path": "/setting/log-operation",
     "sortNumber": 4,
     "updateTime": 1612858032483
+  },
+  {
+    "authority": "",
+    "component": "/setting/ossManager",
+    "createTime": 1680744481455,
+    "hide": false,
+    "icon": "file-db",
+    "id": "642e202195d19c039e02d4ff",
+    "menuType": 2,
+    "name": "OSS管理",
+    "parentId": "",
+    "path": "/setting/ossManager",
+    "sortNumber": 300,
+    "updateTime": 1680744481455
+  },
+  {
+    "authority": "cloud:oss:get",
+    "component": "",
+    "createTime": 1680744550330,
+    "hide": false,
+    "icon": "",
+    "id": "642e206695d19c039e02d502",
+    "menuType": 1,
+    "name": "读取oss配置",
+    "parentId": "642e202195d19c039e02d4ff",
+    "path": "",
+    "sortNumber": 301,
+    "updateTime": 1680744564271
+  },
+  {
+    "authority": "cloud:oss:put",
+    "component": "",
+    "createTime": 1680744584541,
+    "hide": false,
+    "icon": "",
+    "id": "642e208895d19c039e02d508",
+    "menuType": 1,
+    "name": "修改oss配置",
+    "parentId": "642e202195d19c039e02d4ff",
+    "path": "",
+    "sortNumber": 302,
+    "updateTime": 1680744584541
+  },
+  {
+    "authority": "cloud:oss:delete",
+    "component": "",
+    "createTime": 1680744601649,
+    "hide": false,
+    "icon": "",
+    "id": "642e209995d19c039e02d50b",
+    "menuType": 1,
+    "name": "删除oss配置",
+    "parentId": "642e202195d19c039e02d4ff",
+    "path": "",
+    "sortNumber": 303,
+    "updateTime": 1680744601649
   }
 ]

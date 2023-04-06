@@ -1,8 +1,10 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import com.alibaba.fastjson.JSONArray;
+import cn.hutool.core.thread.ThreadUtil;
+import com.alibaba.fastjson2.JSON;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.MenuDTO;
@@ -11,6 +13,8 @@ import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -23,15 +27,16 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @Description 菜单管理
- * @blame jmal
+ * &#064;blame  jmal
  * @Date 2021/1/7 7:45 下午
  */
 @Service
+@Slf4j
 public class MenuService {
 
     public static final String COLLECTION_NAME = "menu";
@@ -44,6 +49,25 @@ public class MenuService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
+
+    @PostConstruct
+    public void init() {
+        // 启动时更新菜单
+        ThreadUtil.execute(() -> {
+            TimeInterval timeInterval = new TimeInterval();
+            List<MenuDO> menuDOList = getMenuDOListByConfigJSON();
+            if (menuDOList.isEmpty()) return;
+            menuDOList.parallelStream().forEach(menuDO -> {
+                Query query = new Query();
+                query.addCriteria(Criteria.where("_id").is(menuDO.getId()));
+                boolean exists = mongoTemplate.exists(query, COLLECTION_NAME);
+                if (!exists) {
+                    mongoTemplate.insert(menuDO);
+                }
+            });
+            log.info("更新菜单， 耗时:{}ms", timeInterval.intervalMs());
+        });
+    }
 
     /***
      * 菜单树
@@ -78,7 +102,7 @@ public class MenuService {
             MenuDTO menuDTO = new MenuDTO();
             BeanUtils.copyProperties(menuDO, menuDTO);
             return menuDTO;
-        }).collect(Collectors.toList());
+        }).toList();
         return getSubMenu(null, menuDTOList);
     }
 
@@ -94,9 +118,9 @@ public class MenuService {
         List<MenuDTO> menuList;
         if (CharSequenceUtil.isBlank(parentId)) {
             menuList = menuDTOList.stream().filter(menuDTO ->
-                    CharSequenceUtil.isBlank(menuDTO.getParentId())).sorted().collect(Collectors.toList());
+                    CharSequenceUtil.isBlank(menuDTO.getParentId())).sorted().toList();
         } else {
-            menuList = menuDTOList.stream().filter(menuDTO -> parentId.equals(menuDTO.getParentId())).sorted().collect(Collectors.toList());
+            menuList = menuDTOList.stream().filter(menuDTO -> parentId.equals(menuDTO.getParentId())).sorted().toList();
         }
         menuList.forEach(subCategory -> {
             List<MenuDTO> subList = getSubMenu(subCategory.getId(), menuDTOList);
@@ -206,8 +230,8 @@ public class MenuService {
             query.addCriteria(Criteria.where("parentId").in(menuIdList));
             menuIds.addAll(menuIdList);
         }
-        List<String> menuIdList1 = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME).stream().map(MenuDO::getId).collect(Collectors.toList());
-        if (menuIdList1.size() > 0) {
+        List<String> menuIdList1 = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME).stream().map(MenuDO::getId).toList();
+        if (!menuIdList1.isEmpty()) {
             menuIds.addAll(findLoopMenu(false, menuIdList1));
         }
         return menuIds;
@@ -235,14 +259,22 @@ public class MenuService {
      * 初始化菜单数据
      */
     public void initMenus() {
-        InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("db/menu.json");
-        if(inputStream == null){
-            return;
-        }
-        String json = new String(IoUtil.readBytes(inputStream), StandardCharsets.UTF_8);
-        List<MenuDO> menuDOList = JSONArray.parseArray(json,MenuDO.class);
+        List<MenuDO> menuDOList = getMenuDOListByConfigJSON();
+        if (menuDOList.isEmpty()) return;
         mongoTemplate.dropCollection(COLLECTION_NAME);
         mongoTemplate.insertAll(menuDOList);
+    }
+
+    /**
+     * 从配置文件读取菜单数据
+     */
+    private static List<MenuDO> getMenuDOListByConfigJSON() {
+        InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("db/menu.json");
+        if(inputStream == null){
+            return Collections.emptyList();
+        }
+        String json = new String(IoUtil.readBytes(inputStream), StandardCharsets.UTF_8);
+        return JSON.parseArray(json,MenuDO.class);
     }
 
     /***
@@ -259,7 +291,7 @@ public class MenuService {
      */
     public List<String> getAllMenuIdList() {
         List<MenuDO> menuDOList = getAllMenus();
-        return menuDOList.stream().map(MenuDO::getId).collect(Collectors.toList());
+        return menuDOList.stream().map(MenuDO::getId).toList();
     }
 
     /***
