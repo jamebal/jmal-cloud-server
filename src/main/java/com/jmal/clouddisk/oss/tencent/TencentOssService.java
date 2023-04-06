@@ -60,24 +60,47 @@ public class TencentOssService implements IOssService {
 
     @Override
     public boolean delete(String objectName) {
-        boolean deleted;
-        baseOssService.deleteTempFileCache(objectName);
-        if (objectName.endsWith("/")) {
-            // 删除目录
-            deleted = deleteDir(objectName);
-        } else {
-            // 删除文件
-            deleted = deleteObject(objectName);
-        }
-        if (deleted) {
-            baseOssService.onDeleteSuccess(objectName);
-        }
-        return deleted;
+        return baseOssService.delete(objectName);
     }
 
+    @Override
+    public boolean mkdir(String objectName) {
+        return baseOssService.mkdir(objectName);
+    }
+
+    @Override
+    public boolean write(InputStream inputStream, String ossPath, String objectName) {
+        return baseOssService.writeTempFile(inputStream, ossPath, objectName);
+    }
+
+    @Override
+    public String[] list(String objectName) {
+        return baseOssService.getFileNameList(objectName).toArray(new String[0]);
+    }
+
+    @Override
+    public AbstractOssObject getObject(String objectName) {
+        return baseOssService.getObject(objectName);
+    }
+
+    @Override
+    public AbstractOssObject getAbstractOssObject(String objectName) {
+        COSObject ossObject = null;
+        try {
+            ossObject = this.cosClient.getObject(new GetObjectRequest(bucketName, objectName));
+        } catch (Exception e) {
+            log.warn(e.getMessage());
+        }
+        if (ossObject == null) {
+            return null;
+        }
+        return new TencentOssObject(ossObject);
+    }
+
+    @Override
     public boolean deleteObject(String objectName) {
         try {
-            printOperation(getPlatform().getKey(), "deleteObject", objectName);
+            baseOssService.printOperation(getPlatform().getKey(), "deleteObject", objectName);
             cosClient.deleteObject(bucketName, objectName);
         } catch (Exception e) {
             return false;
@@ -85,7 +108,8 @@ public class TencentOssService implements IOssService {
         return true;
     }
 
-    private boolean deleteDir(String objectName) {
+    @Override
+    public boolean deleteDir(String objectName) {
         try {
             ListObjectsRequest listObjectsRequest = new ListObjectsRequest();
             // 设置 bucket 名称
@@ -120,15 +144,10 @@ public class TencentOssService implements IOssService {
         return false;
     }
 
-    @Override
-    public String[] list(String objectName) {
-        return baseOssService.getFileNameList(objectName).toArray(new String[0]);
-    }
-
     public List<FileInfo> getFileInfoList(String objectName) {
         List<FileInfo> fileInfoList = new ArrayList<>();
         try {
-            printOperation(getPlatform().getKey(), "getFileInfoList", objectName);
+            baseOssService.printOperation(getPlatform().getKey(), "getFileInfoList", objectName);
             ListObjectsRequest listObjectsRequest = new ListObjectsRequest();
             // 设置 bucket 名称
             listObjectsRequest.setBucketName(bucketName);
@@ -140,26 +159,18 @@ public class TencentOssService implements IOssService {
             // 设置最大遍历出多少个对象, 一次 listobject 最大支持1000
             listObjectsRequest.setMaxKeys(1000);
             // 保存每次列出的结果
-            ObjectListing objectListing = null;
+            ObjectListing objectListing;
             do {
                 objectListing = cosClient.listObjects(listObjectsRequest);
-                // 这里保存列出来的子目录
-                List<String> commonPrefixes = objectListing.getCommonPrefixes();
-                for (String commonPrefix : commonPrefixes) {
-                    fileInfoList.add(baseOssService.newFileInfo(commonPrefix));
-                }
-                // 这里保存列出的对象列表
+                // 对象列表
                 List<COSObjectSummary> cosObjectSummaries = objectListing.getObjectSummaries();
-                for (COSObjectSummary cosObjectSummary : cosObjectSummaries) {
-                    if (!cosObjectSummary.getKey().equals(objectName)) {
-                        FileInfo fileInfo = getFileInfo(cosObjectSummary);
-                        fileInfoList.add(fileInfo);
-                    } else {
-                        FileInfo fileInfo = baseOssService.getFileInfoCache(objectName);
-                        if (fileInfo == null) {
-                            baseOssService.setFileInfoCache(objectName, baseOssService.newFileInfo(objectName));
-                        }
-                    }
+                for (COSObjectSummary objectSummary : cosObjectSummaries) {
+                    S3ObjectSummary s3ObjectSummary = new S3ObjectSummary(objectSummary.getSize(), objectSummary.getKey(), objectSummary.getETag(), objectSummary.getLastModified(), objectSummary.getBucketName());
+                    baseOssService.addFileInfoList(objectName, fileInfoList, s3ObjectSummary);
+                }
+                // 子目录
+                for (String commonPrefix : objectListing.getCommonPrefixes()) {
+                    fileInfoList.add(baseOssService.newFileInfo(commonPrefix));
                 }
                 // 标记下一次开始的位置
                 String nextMarker = objectListing.getNextMarker();
@@ -169,30 +180,6 @@ public class TencentOssService implements IOssService {
             printException(oe);
         }
         return fileInfoList;
-    }
-
-    private FileInfo getFileInfo(COSObjectSummary objectSummary) {
-        FileInfo fileInfo = new FileInfo();
-        fileInfo.setSize(objectSummary.getSize());
-        fileInfo.setKey(objectSummary.getKey());
-        fileInfo.setETag(objectSummary.getETag());
-        fileInfo.setLastModified(objectSummary.getLastModified());
-        fileInfo.setBucketName(bucketName);
-        return fileInfo;
-    }
-
-    @Override
-    public AbstractOssObject getObject(String objectName) {
-        Path path = baseOssService.getTempFileCache(objectName);
-        if (path != null) {
-            return new TempFileObject(path.toFile());
-        }
-        printOperation(getPlatform().getKey(), "getObject", objectName);
-        COSObject ossObject = getTencentObject(objectName);
-        if (ossObject == null) {
-            return null;
-        }
-        return new TencentOssObject(ossObject);
     }
 
     @Override
@@ -205,25 +192,9 @@ public class TencentOssService implements IOssService {
         return exist;
     }
 
-    private COSObject getTencentObject(String objectName) {
-        try {
-            return this.cosClient.getObject(new GetObjectRequest(bucketName, objectName));
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     @Override
-    public boolean mkdir(String ossPath, String objectName) {
-        FileInfo fileInfo = newFolder(objectName);
-        if (fileInfo != null) {
-            baseOssService.onMkdirSuccess(objectName, fileInfo);
-        }
-        return fileInfo != null;
-    }
-
-    private FileInfo newFolder(String objectName) {
-        printOperation(getPlatform().getKey(), "mkdir", objectName);
+    public FileInfo newFolder(String objectName) {
+        baseOssService.printOperation(getPlatform().getKey(), "mkdir", objectName);
         if (!objectName.endsWith("/")) {
             objectName = objectName + "/";
         }
@@ -242,11 +213,6 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
-    public boolean write(InputStream inputStream, String ossPath, String objectName) {
-        return baseOssService.writeTempFile(inputStream, ossPath, objectName);
-    }
-
-    @Override
     public void uploadFile(Path tempFileAbsolutePath, String objectName) {
         executeUpload(tempFileAbsolutePath, objectName);
     }
@@ -256,7 +222,7 @@ public class TencentOssService implements IOssService {
             if (!PathUtil.exists(tempFileAbsolutePath, false)) {
                 return;
             }
-            printOperation(getPlatform().getKey(), "upload", objectName);
+            baseOssService.printOperation(getPlatform().getKey(), "upload", objectName);
             // 创建PutObjectRequest对象。
             PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, tempFileAbsolutePath.toFile());
             // 创建PutObject请求。
@@ -273,10 +239,6 @@ public class TencentOssService implements IOssService {
 
     private void printException(Exception e) {
         log.error(getPlatform().getValue() + e.getMessage(), e);
-    }
-
-    private void printOperation(String platform, String operation, String objectName) {
-        log.info("{}, {}, {}", platform, operation, objectName);
     }
 
     @Override

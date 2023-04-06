@@ -13,7 +13,6 @@ import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
-import java.io.Closeable;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -21,7 +20,7 @@ import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 @Slf4j
-public class AliyunOssService implements IOssService, Closeable {
+public class AliyunOssService implements IOssService {
 
     private final String bucketName;
 
@@ -55,24 +54,48 @@ public class AliyunOssService implements IOssService, Closeable {
 
     @Override
     public boolean delete(String objectName) {
-        boolean deleted;
-        baseOssService.deleteTempFileCache(objectName);
-        if (objectName.endsWith("/")) {
-            // 删除目录
-            deleted = deleteDir(objectName);
-        } else {
-            // 删除文件
-            deleted = deleteObject(objectName);
-        }
-        if (deleted) {
-            baseOssService.onDeleteSuccess(objectName);
-        }
-        return deleted;
+        return baseOssService.delete(objectName);
     }
 
+    @Override
+    public boolean mkdir(String objectName) {
+        return baseOssService.mkdir(objectName);
+    }
+
+    @Override
+    public boolean write(InputStream inputStream, String ossPath, String objectName) {
+        return baseOssService.writeTempFile(inputStream, ossPath, objectName);
+    }
+
+    @Override
+    public String[] list(String objectName) {
+        return baseOssService.getFileNameList(objectName).toArray(new String[0]);
+    }
+
+    @Override
+    public AbstractOssObject getObject(String objectName) {
+        return baseOssService.getObject(objectName);
+    }
+
+    @Override
+    public AbstractOssObject getAbstractOssObject(String objectName) {
+        OSSObject ossObject = null;
+        try {
+            ossObject = this.ossClient.getObject(bucketName, objectName);
+        } catch (Exception e) {
+            log.warn(e.getMessage());
+        }
+        if (ossObject == null) {
+            return null;
+        }
+        return new AliyunOssObject(ossObject);
+    }
+
+
+    @Override
     public boolean deleteObject(String objectName) {
         try {
-            printOperation(getPlatform().getKey(), "deleteObject", objectName);
+            baseOssService.printOperation(getPlatform().getKey(), "deleteObject", objectName);
             ossClient.deleteObject(bucketName, objectName);
         } catch (Exception e) {
             return false;
@@ -80,9 +103,10 @@ public class AliyunOssService implements IOssService, Closeable {
         return true;
     }
 
-    private boolean deleteDir(String objectName) {
+    @Override
+    public boolean deleteDir(String objectName) {
         try {
-            printOperation(getPlatform().getKey(), "deleteDir", objectName);
+            baseOssService.printOperation(getPlatform().getKey(), "deleteDir", objectName);
             // 删除目录及目录下的所有文件。
             String nextMarker = null;
             ObjectListing objectListing;
@@ -111,11 +135,6 @@ public class AliyunOssService implements IOssService, Closeable {
         return false;
     }
 
-    @Override
-    public String[] list(String objectName) {
-        return baseOssService.getFileNameList(objectName).toArray(new String[0]);
-    }
-
     public List<FileInfo> getFileInfoList(String objectName) {
         List<FileInfo> fileInfoList = new ArrayList<>();
         try {
@@ -127,23 +146,15 @@ public class AliyunOssService implements IOssService, Closeable {
 
             // 列出fun目录下的所有文件和文件夹。
             listObjectsRequest.setPrefix(objectName);
-            printOperation(getPlatform().getKey(), "getFileInfoList", objectName);
+            baseOssService.printOperation(getPlatform().getKey(), "getFileInfoList", objectName);
             ObjectListing listing = ossClient.listObjects(listObjectsRequest);
 
-            // objectSummaries的列表中给出的是fun目录下的文件。
+            // 对象列表
             for (OSSObjectSummary objectSummary : listing.getObjectSummaries()) {
-                if (!objectSummary.getKey().equals(objectName)) {
-                    FileInfo fileInfo = getFileInfo(objectSummary);
-                    fileInfoList.add(fileInfo);
-                } else {
-                    FileInfo fileInfo = baseOssService.getFileInfoCache(objectName);
-                    if (fileInfo == null) {
-                        baseOssService.setFileInfoCache(objectName, baseOssService.newFileInfo(objectName));
-                    }
-                }
+                S3ObjectSummary s3ObjectSummary = new S3ObjectSummary(objectSummary.getSize(), objectSummary.getKey(), objectSummary.getETag(), objectSummary.getLastModified(), objectSummary.getBucketName());
+                baseOssService.addFileInfoList(objectName, fileInfoList, s3ObjectSummary);
             }
-
-            // commonPrefixs列表中显示的是fun目录下的所有子文件夹。由于fun/movie/001.avi和fun/movie/007.avi属于fun文件夹下的movie目录，因此这两个文件未在列表中。
+            // 子目录
             for (String commonPrefix : listing.getCommonPrefixes()) {
                 fileInfoList.add(baseOssService.newFileInfo(commonPrefix));
             }
@@ -153,31 +164,6 @@ public class AliyunOssService implements IOssService, Closeable {
             printClientException(ce);
         }
         return fileInfoList;
-    }
-
-    private FileInfo getFileInfo(OSSObjectSummary objectSummary) {
-        FileInfo fileInfo = new FileInfo();
-        fileInfo.setSize(objectSummary.getSize());
-        fileInfo.setKey(objectSummary.getKey());
-        fileInfo.setETag(objectSummary.getETag());
-        fileInfo.setLastModified(objectSummary.getLastModified());
-        fileInfo.setBucketName(bucketName);
-        return fileInfo;
-    }
-
-    @Override
-    public AbstractOssObject getObject(String objectName) {
-        Path path = baseOssService.getTempFileCache(objectName);
-        if (path != null) {
-            return new TempFileObject(path.toFile());
-        }
-        printOperation(getPlatform().getKey(), "getObject", objectName);
-        // 创建OSSClient实例。
-        com.aliyun.oss.model.OSSObject ossObject = getAliyunOssObject(objectName);
-        if (ossObject == null) {
-            return null;
-        }
-        return new AliyunOssObject(ossObject);
     }
 
     @Override
@@ -190,26 +176,9 @@ public class AliyunOssService implements IOssService, Closeable {
         return exist;
     }
 
-    private com.aliyun.oss.model.OSSObject getAliyunOssObject(String objectName) {
-        try {
-            // 创建OSSClient实例。
-            return this.ossClient.getObject(bucketName, objectName);
-        } catch (OSSException e) {
-            return null;
-        }
-    }
-
     @Override
-    public boolean mkdir(String ossPath, String objectName) {
-        FileInfo fileInfo = newFolder(objectName);
-        if (fileInfo != null) {
-            baseOssService.onMkdirSuccess(objectName, fileInfo);
-        }
-        return fileInfo != null;
-    }
-
-    private FileInfo newFolder(String objectName) {
-        printOperation(getPlatform().getKey(), "mkdir", objectName);
+    public FileInfo newFolder(String objectName) {
+        baseOssService.printOperation(getPlatform().getKey(), "mkdir", objectName);
         if (!objectName.endsWith("/")) {
             objectName = objectName + "/";
         }
@@ -229,11 +198,6 @@ public class AliyunOssService implements IOssService, Closeable {
     }
 
     @Override
-    public boolean write(InputStream inputStream, String ossPath, String objectName) {
-        return baseOssService.writeTempFile(inputStream, ossPath, objectName);
-    }
-
-    @Override
     public void uploadFile(Path tempFileAbsolutePath, String objectName) {
         executeUpload(tempFileAbsolutePath, objectName);
     }
@@ -243,7 +207,7 @@ public class AliyunOssService implements IOssService, Closeable {
             if (!PathUtil.exists(tempFileAbsolutePath, false)) {
                 return;
             }
-            printOperation(getPlatform().getKey(), "upload", objectName);
+            baseOssService.printOperation(getPlatform().getKey(), "upload", objectName);
             // 创建PutObjectRequest对象。
             PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, tempFileAbsolutePath.toFile());
             // 设置该属性可以返回response。如果不设置，则返回的response为空。
@@ -272,10 +236,6 @@ public class AliyunOssService implements IOssService, Closeable {
         log.error("Error Code:" + oe.getErrorCode());
         log.error("Request ID:" + oe.getRequestId());
         log.error("Host ID:" + oe.getHostId());
-    }
-
-    private void printOperation(String platform, String operation, String objectName) {
-        log.info("{}, {}, {}", platform, operation, objectName);
     }
 
     @Override

@@ -68,8 +68,8 @@ public class BaseOssService {
         this.bucketName = bucketName;
         this.fileProperties = fileProperties;
         scheduledThreadPoolExecutor.scheduleWithFixedDelay(this::checkUpload, 1, 1, TimeUnit.SECONDS);
-        this.fileInfoListCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(1024).expireAfterWrite(5, TimeUnit.SECONDS).build();
-        this.fileInfoCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(1024).expireAfterWrite(5, TimeUnit.SECONDS).build();
+        this.fileInfoListCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(1024).expireAfterWrite(5, TimeUnit.HOURS).build();
+        this.fileInfoCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(1024).expireAfterWrite(5, TimeUnit.HOURS).build();
         this.tempFileCache = Caffeine.newBuilder().build();
         this.tempFileListCache = Caffeine.newBuilder().build();
         this.waitingUploadCache = Caffeine.newBuilder().build();
@@ -94,11 +94,93 @@ public class BaseOssService {
         return fileInfo;
     }
 
+    public boolean delete(String objectName) {
+        boolean deleted;
+        deleteTempFileCache(objectName);
+        if (objectName.endsWith("/")) {
+            // 删除目录
+            deleted = ossService.deleteDir(objectName);
+        } else {
+            // 删除文件
+            deleted = ossService.deleteObject(objectName);
+        }
+        if (deleted) {
+            onDeleteSuccess(objectName);
+        }
+        return deleted;
+    }
+
+    public boolean mkdir(String objectName) {
+        FileInfo fileInfo = ossService.newFolder(objectName);
+        if (fileInfo != null) {
+            onMkdirSuccess(objectName, fileInfo);
+        }
+        return fileInfo != null;
+    }
+
+    /**
+     * 上传对象到临时文件
+     * @param inputStream 网络输入流
+     * @param ossPath     oss路径前缀, 例如：/username/aliyunoss
+     * @param objectName  objectName
+     * @return 写入临时文件是否成功
+     */
+    public boolean writeTempFile(InputStream inputStream, String ossPath, String objectName) {
+        // 临时文件绝对路径
+        Path tempFileAbsolutePath = Paths.get(fileProperties.getRootDir(), ossPath, objectName);
+        try {
+            if (tempFileAbsolutePath.getNameCount() > 1) {
+                Path parentPath = tempFileAbsolutePath.getParent();
+                if (!Files.exists(parentPath)) {
+                    PathUtil.mkdir(parentPath);
+                }
+            }
+            Files.copy(inputStream, tempFileAbsolutePath, StandardCopyOption.REPLACE_EXISTING);
+            setTempFileCache(objectName, tempFileAbsolutePath);
+            setWaitingUploadCache(objectName, tempFileAbsolutePath);
+            // 稍后执行真正的上传, 在 checkUpload 方法里
+            return true;
+        } catch (IOException e) {
+            log.warn(e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 获取文件名列表
+     * @param objectName objectName
+     * @return object下的文件名列表
+     */
+    public List<String> getFileNameList(String objectName) {
+        List<String> fileNameList = fileInfoListCache.get(objectName, key -> {
+            List<String> folderList = new ArrayList<>();
+            List<FileInfo> fileInfos = ossService.getFileInfoList(objectName);
+            if (fileInfos != null && !fileInfos.isEmpty()) {
+                for (FileInfo fileInfo : fileInfos) {
+                    setFileInfoCache(fileInfo.getKey(), fileInfo);
+                    folderList.add(fileInfo.getName());
+                }
+            }
+            return folderList;
+        });
+        fileNameList = getTmepFileNameList(objectName, fileNameList);
+        return fileNameList;
+    }
+
+    public AbstractOssObject getObject(String objectName) {
+        Path path = getTempFileCache(objectName);
+        if (path != null) {
+            return new TempFileObject(path.toFile());
+        }
+        printOperation(ossService.getPlatform().getKey(), "getObject", objectName);
+        return ossService.getAbstractOssObject(objectName);
+    }
+
     /**
      * 删除临时文件缓存
      * @param objectName objectName
      */
-    public void deleteTempFileCache(String objectName) {
+    private void deleteTempFileCache(String objectName) {
         Path path = getTempFileCache(objectName);
         if (path != null) {
             clearTempFileCache(objectName);
@@ -109,7 +191,7 @@ public class BaseOssService {
      * 删除oss文件成功后，要干的事
      * @param objectName objectName
      */
-    public void onDeleteSuccess(String objectName) {
+    private void onDeleteSuccess(String objectName) {
         log.info(objectName, "delete success");
         FileInfo fileInfo = getFileInfoCache(objectName);
         if (fileInfo != null) {
@@ -141,7 +223,7 @@ public class BaseOssService {
      * @param objectName objectName
      * @param fileInfo FileInfo
      */
-    public void onMkdirSuccess(String objectName, FileInfo fileInfo) {
+    private void onMkdirSuccess(String objectName, FileInfo fileInfo) {
         log.info(objectName, "mkdir success");
         setFileInfoCache(objectName, fileInfo);
         fileInfoListCache.invalidateAll();
@@ -164,33 +246,12 @@ public class BaseOssService {
     }
 
     /**
-     * 获取文件名列表
-     * @param objectName objectName
-     * @return object下的文件名列表
-     */
-    public List<String> getFileNameList(String objectName) {
-        List<String> fileNameList = fileInfoListCache.get(objectName, key -> {
-            List<String> folderList = new ArrayList<>();
-            List<FileInfo> fileInfos = ossService.getFileInfoList(objectName);
-            if (fileInfos != null && !fileInfos.isEmpty()) {
-                for (FileInfo fileInfo : fileInfos) {
-                    setFileInfoCache(fileInfo.getKey(), fileInfo);
-                    folderList.add(fileInfo.getName());
-                }
-            }
-            return folderList;
-        });
-        fileNameList = getTmepFileNameList(objectName, fileNameList);
-        return fileNameList;
-    }
-
-    /**
      * 获取临时文件名列表
      * @param objectName objectName
      * @param fileNameList object下的文件名列表
      * @return object下的文件名列表 + object下的临时文件名列表
      */
-    public List<String> getTmepFileNameList(String objectName, List<String> fileNameList) {
+    private List<String> getTmepFileNameList(String objectName, List<String> fileNameList) {
         if (fileNameList == null) {
             fileNameList = new ArrayList<>();
         }
@@ -203,34 +264,6 @@ public class BaseOssService {
             fileNameList.addAll(nameList);
         }
         return fileNameList;
-    }
-
-    /**
-     * 上传对象到临时文件
-     * @param inputStream 网络输入流
-     * @param ossPath     oss路径前缀, 例如：/username/aliyunoss
-     * @param objectName  objectName
-     * @return 写入临时文件是否成功
-     */
-    public boolean writeTempFile(InputStream inputStream, String ossPath, String objectName) {
-        // 临时文件绝对路径
-        Path tempFileAbsolutePath = Paths.get(fileProperties.getRootDir(), ossPath, objectName);
-        try {
-            if (tempFileAbsolutePath.getNameCount() > 1) {
-                Path parentPath = tempFileAbsolutePath.getParent();
-                if (!Files.exists(parentPath)) {
-                    PathUtil.mkdir(parentPath);
-                }
-            }
-            Files.copy(inputStream, tempFileAbsolutePath, StandardCopyOption.REPLACE_EXISTING);
-            setTempFileCache(objectName, tempFileAbsolutePath);
-            setWaitingUploadCache(objectName, tempFileAbsolutePath);
-            // 稍后执行真正的上传, 在 checkUpload 方法里
-        } catch (IOException e) {
-            log.warn(e.getMessage(), e);
-            return false;
-        }
-        return true;
     }
 
     /**
@@ -249,6 +282,28 @@ public class BaseOssService {
         });
     }
 
+    public void addFileInfoList(String objectName, List<FileInfo> fileInfoList, S3ObjectSummary s3ObjectSummary) {
+        if (!s3ObjectSummary.getKey().equals(objectName)) {
+            FileInfo fileInfo = getFileInfo(s3ObjectSummary);
+            fileInfoList.add(fileInfo);
+        } else {
+            FileInfo fileInfo = getFileInfoCache(objectName);
+            if (fileInfo == null) {
+                setFileInfoCache(objectName, newFileInfo(objectName));
+            }
+        }
+    }
+
+    private FileInfo getFileInfo(S3ObjectSummary objectSummary) {
+        FileInfo fileInfo = new FileInfo();
+        fileInfo.setSize(objectSummary.getSize());
+        fileInfo.setKey(objectSummary.getKey());
+        fileInfo.setETag(objectSummary.getETag());
+        fileInfo.setLastModified(objectSummary.getLastModified());
+        fileInfo.setBucketName(objectSummary.getBucketName());
+        return fileInfo;
+    }
+
     public FileInfo newFileInfo(String objectName) {
         FileInfo fileInfo = new FileInfo();
         fileInfo.setSize(0);
@@ -258,7 +313,7 @@ public class BaseOssService {
         return fileInfo;
     }
 
-    public FileInfo newFileInfo(String objectName, File file) {
+    private FileInfo newFileInfo(String objectName, File file) {
         FileInfo fileInfo = new FileInfo();
         fileInfo.setSize(file.length());
         fileInfo.setKey(objectName);
@@ -281,14 +336,14 @@ public class BaseOssService {
         return objectParentName;
     }
 
-    public void setFileInfoCache(String key, FileInfo fileInfo) {
+    private void setFileInfoCache(String key, FileInfo fileInfo) {
         if (key.length() > 1 && key.endsWith("/")) {
             key = key.substring(0, key.length() - 1);
         }
         fileInfoCache.put(key, fileInfo);
     }
 
-    public FileInfo getFileInfoCache(String key) {
+    private FileInfo getFileInfoCache(String key) {
         if (key.length() > 1 && key.endsWith("/")) {
             key = key.substring(0, key.length() - 1);
         }
@@ -302,12 +357,16 @@ public class BaseOssService {
         return fileInfo;
     }
 
+    public void printOperation(String platform, String operation, String objectName) {
+        log.info("{}, {}, {}", platform, operation, objectName);
+    }
+
     /**
      * 设置临时文件缓存
      * @param objectName objectName
      * @param tempFileAbsolutePath 临时文件绝对路径
      */
-    public void setTempFileCache(String objectName, Path tempFileAbsolutePath) {
+    private void setTempFileCache(String objectName, Path tempFileAbsolutePath) {
         tempFileCache.put(objectName, tempFileAbsolutePath);
         // setTempFileListCache
         String objectParentName = getObjectParentName(objectName);
@@ -324,7 +383,7 @@ public class BaseOssService {
      * 清理临时文件缓存
      * @param objectName objectName
      */
-    public void clearTempFileCache(String objectName) {
+    private void clearTempFileCache(String objectName) {
         Path path = getTempFileCache(objectName);
         if (path != null) {
             tempFileCache.invalidate(objectName);
@@ -349,27 +408,27 @@ public class BaseOssService {
         }
     }
 
-    public Set<String> getTempFileListCache(String objectParentName) {
+    private Set<String> getTempFileListCache(String objectParentName) {
         return tempFileListCache.getIfPresent(objectParentName);
     }
 
-    public void setTempFileListCache(String objectParentName, Set<String> fileNameList) {
+    private void setTempFileListCache(String objectParentName, Set<String> fileNameList) {
         tempFileListCache.put(objectParentName, fileNameList);
     }
 
-    public Path getTempFileCache(String objectName) {
+    private Path getTempFileCache(String objectName) {
         return tempFileCache.getIfPresent(objectName);
     }
 
-    public void setWaitingUploadCache(String objectName, Path tempFileAbsolutePath) {
+    private void setWaitingUploadCache(String objectName, Path tempFileAbsolutePath) {
         waitingUploadCache.put(objectName, tempFileAbsolutePath);
     }
 
-    public Map<String, Path> getWaitingUploadCacheMap() {
+    private Map<String, Path> getWaitingUploadCacheMap() {
         return waitingUploadCache.asMap();
     }
 
-    public void removeWaitingUploadCache(String objectName) {
+    private void removeWaitingUploadCache(String objectName) {
         waitingUploadCache.invalidate(objectName);
     }
 }
