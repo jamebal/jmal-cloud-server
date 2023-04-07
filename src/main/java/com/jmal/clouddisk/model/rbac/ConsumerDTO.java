@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model.rbac;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.service.Constants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -24,10 +25,10 @@ public class ConsumerDTO extends ConsumerBase {
     @Id
     String id;
     @NotNull(message = "用户账号不能为空")
-    @Schema(name = "username", title = "用户账号", example = "admin", required = true)
+    @Schema(name = "username", title = "用户账号", example = "admin", requiredMode = Schema.RequiredMode.REQUIRED)
     String username;
     @NotNull(message = "用户名不能为空")
-    @Schema(name = "showName", title = "用户名", example = "管理员1", required = true)
+    @Schema(name = "showName", title = "用户名", example = "管理员1", requiredMode = Schema.RequiredMode.REQUIRED)
     String showName;
     @Schema(name = "avatar", title = "头像")
     String avatar;
@@ -47,7 +48,7 @@ public class ConsumerDTO extends ConsumerBase {
     @Schema(name = "takeUpSpace", title = "已使用的空间")
     Long takeUpSpace;
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
-    @Schema(name = "createTime", title = "创建时间", hidden = true)
+    @Schema(name = Constants.CREATE_TIME, title = "创建时间", hidden = true)
     LocalDateTime createTime;
     @Schema(name = "netdiskLogo", title = "网盘logo文件名", hidden = true)
     String netdiskLogo;

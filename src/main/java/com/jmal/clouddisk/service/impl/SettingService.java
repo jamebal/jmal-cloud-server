@@ -12,6 +12,7 @@ import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.repository.IAuthDAO;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -338,7 +339,7 @@ public class SettingService {
         if ("descending".equals(order)) {
             direction = Sort.Direction.DESC;
         }
-        query.with(Sort.by(direction, "createTime"));
+        query.with(Sort.by(direction, Constants.CREATE_TIME));
         return ResultUtil.success(mongoTemplate.find(query, HeartwingsDO.class)).setCount(count);
     }
 
@@ -385,38 +386,4 @@ public class SettingService {
         roleService.initRoles();
     }
 
-    // /**
-    //  * 更新网盘设置
-    //  * @param cloudSettingDTO 网盘设置DTO
-    //  */
-    // public ResponseResult<Object> cloudUpdate(CloudSettingDTO cloudSettingDTO) {
-    //     MultipartFile multipartFile = cloudSettingDTO.getFile();
-    //     String fileName = "cloud-logo";
-    //     MimeTypes allTypes = MimeTypes.getDefaultMimeTypes();
-    //     MimeType mimeType = null;
-    //     try {
-    //         mimeType = allTypes.forName(multipartFile.getContentType());
-    //         fileName += mimeType.getExtension();
-    //     } catch (MimeTypeException e) {
-    //         log.error(e.getMessage(), e);
-    //     }
-    //     Path userImagePaths = Paths.get(fileProperties.getUserImgDir());
-    //     // userImagePaths 不存在则新建
-    //     upsertFolder(userImagePaths, username, userId);
-    //     File newFile;
-    //     try {
-    //         if (userService.getDisabledWebp(userId) || ("ico".equals(FileUtil.getSuffix(fileName)))) {
-    //             newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
-    //             FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
-    //         } else {
-    //             fileName = fileName + _SUFFIX_WEBP;
-    //             newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
-    //             BufferedImage image = ImageIO.read(multipartFile.getInputStream());
-    //             imageFileToWebp(newFile, image);
-    //         }
-    //     } catch (IOException e) {
-    //         throw new CommonException(2, "上传失败");
-    //     }
-    //     return createFile(username, newFile, userId, true);
-    // }
 }

@@ -1,8 +1,8 @@
 package com.jmal.clouddisk.model.rbac;
 
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -41,7 +41,7 @@ public class ConsumerDO extends ConsumerBase {
     Integer quota;
     @Schema(name = "takeUpSpace", title = "已使用的空间")
     Long takeUpSpace;
-    @Schema(name = "createTime", title = "创建时间")
+    @Schema(name = Constants.CREATE_TIME, title = "创建时间")
     LocalDateTime createTime;
     @Schema(name = "updateTime", title = "修改时间", hidden = true)
     LocalDateTime updateTime;

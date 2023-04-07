@@ -1,8 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.codec.Base64;
-import cn.hutool.core.convert.Convert;
-import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -12,8 +10,6 @@ import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
@@ -21,20 +17,12 @@ import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
-import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
-import com.jmal.clouddisk.webdav.MyWebdavServlet;
-import com.jmal.clouddisk.websocket.SocketManager;
-import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
-import com.mongodb.client.MongoCursor;
-import com.mongodb.client.result.UpdateResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import net.coobird.thumbnailator.Thumbnails;
-import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
 import org.apache.commons.compress.utils.Lists;
 import org.apache.tika.mime.MimeType;
 import org.apache.tika.mime.MimeTypeException;
@@ -45,39 +33,24 @@ import org.bson.conversions.Bson;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.socket.WebSocketSession;
 
-import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.FileImageOutputStream;
-import javax.validation.constraints.NotNull;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.net.URLEncoder;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.FileTime;
 import java.text.Collator;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Aggregates.group;
@@ -94,32 +67,10 @@ import static java.util.stream.Collectors.toList;
  */
 @Service
 @Slf4j
-public class FileServiceImpl implements IFileService {
+public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Autowired
-    private MongoTemplate mongoTemplate;
-
-    @Autowired
-    IUserService userService;
-
-    @Autowired
-    FileProperties fileProperties;
-
-    @Autowired
-    IShareService shareService;
-
-    @Autowired
-    UserLoginHolder userLoginHolder;
-
-    @Autowired
-    private SimpMessagingTemplate template;
-
-    public static final String COLLECTION_NAME = "fileDocument";
-    private static final String CONTENT_TYPE_IMAGE = "image";
-    public static final String CONTENT_TYPE_MARK_DOWN = "text/markdown";
-    public static final String CONTENT_TYPE_WEBP = "image/webp";
-    public static final String SUFFIX_WEBP = "webp";
-    public static final String POINT_SUFFIX_WEBP = ".webp";
+    MultipartUpload multipartUpload;
 
     /***
      * 前端文件夹树的第一级的文件Id
@@ -128,29 +79,6 @@ public class FileServiceImpl implements IFileService {
 
     private static final AES aes = SecureUtil.aes();
 
-    /***
-     * 断点恢复上传缓存(已上传的缓存)
-     */
-    private final Cache<String, CopyOnWriteArrayList<Integer>> resumeCache = CaffeineUtil.getResumeCache();
-    /***
-     * 上传大文件是需要分片上传，再合并
-     * 已写入(合并)的分片缓存
-     */
-    private final Cache<String, CopyOnWriteArrayList<Integer>> writtenCache = CaffeineUtil.getWrittenCache();
-    /***
-     * 未写入(合并)的分片缓存
-     */
-    private final Cache<String, CopyOnWriteArrayList<Integer>> unWrittenCache = CaffeineUtil.getUnWrittenCacheCache();
-    /***
-     * 合并文件的写入锁缓存
-     */
-    private final Cache<String, Lock> chunkWriteLockCache = CaffeineUtil.getChunkWriteLockCache();
-
-    /***
-     * 上传文件夹的写入锁缓存
-     */
-    private final Cache<String, Lock> uploadFolderLockCache = CaffeineUtil.getUploadFolderLockCache();
-
     @Override
     public ResponseResult<Object> listFiles(UploadApiParamDTO upload) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
@@ -158,35 +86,23 @@ public class FileServiceImpl implements IFileService {
         Criteria criteria;
         String queryFileType = upload.getQueryFileType();
         if (!CharSequenceUtil.isBlank(queryFileType)) {
-            switch (upload.getQueryFileType()) {
-                case "audio":
-                    criteria = Criteria.where("contentType").regex("^audio");
-                    break;
-                case "video":
-                    criteria = Criteria.where("contentType").regex("^video");
-                    break;
-                case CONTENT_TYPE_IMAGE:
-                    criteria = Criteria.where("contentType").regex("^image");
-                    break;
-                case "text":
-                    criteria = Criteria.where("suffix").in(Arrays.asList(fileProperties.getSimText()));
-                    break;
-                case "document":
-                    criteria = Criteria.where("suffix").in(Arrays.asList(fileProperties.getDocument()));
-                    break;
-                default:
-                    criteria = Criteria.where("path").is(currentDirectory);
-                    break;
-            }
+            criteria = switch (upload.getQueryFileType()) {
+                case Constants.AUDIO -> Criteria.where(Constants.CONTENT_TYPE).regex("^" + Constants.AUDIO);
+                case "video" -> Criteria.where(Constants.CONTENT_TYPE).regex("^video");
+                case Constants.CONTENT_TYPE_IMAGE -> Criteria.where(Constants.CONTENT_TYPE).regex("^image");
+                case "text" -> Criteria.where(Constants.SUFFIX).in(Arrays.asList(fileProperties.getSimText()));
+                case "document" -> Criteria.where(Constants.SUFFIX).in(Arrays.asList(fileProperties.getDocument()));
+                default -> Criteria.where("path").is(currentDirectory);
+            };
         } else {
             criteria = Criteria.where("path").is(currentDirectory);
             Boolean isFolder = upload.getIsFolder();
             if (isFolder != null) {
-                criteria = Criteria.where("isFolder").is(isFolder);
+                criteria = Criteria.where(Constants.IS_FOLDER).is(isFolder);
             }
             Boolean isFavorite = upload.getIsFavorite();
             if (isFavorite != null) {
-                criteria = Criteria.where("isFavorite").is(isFavorite);
+                criteria = Criteria.where(Constants.IS_FAVORITE).is(isFavorite);
             }
         }
         List<FileIntroVO> list = getFileDocuments(upload, criteria);
@@ -197,38 +113,18 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public long takeUpSpace(String userId) throws CommonException {
-        long space = 0;
-        List<Bson> list = Arrays.asList(
-                match(eq("userId", userId)),
-                group(new BsonNull(), sum("totalSize", "$size")));
-        AggregateIterable aggregateIterable = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
-        Document doc = (Document) aggregateIterable.first();
-        if (doc != null) {
-            space = Convert.toLong(doc.get("totalSize"), 0L);
-        }
-        ConsumerDO consumerDO = userService.userInfoById(userId);
-        if (consumerDO != null && consumerDO.getQuota() != null) {
-            if (space >= consumerDO.getQuota() * 1024L * 1024L * 1024L) {
-                // 空间已满
-                CaffeineUtil.setSpaceFull(userId);
-            } else {
-                if (CaffeineUtil.spaceFull(userId)) {
-                    CaffeineUtil.removeSpaceFull(userId);
-                }
-            }
-        }
-        return space;
+        return occupiedSpace(userId);
     }
 
     /***
      * 通过查询条件获取文件数
-     * @param upload
-     * @param criteriaList
-     * @return
+     * @param upload UploadApiParamDTO
+     * @param criteriaList criteriaList
+     * @return 文件数
      */
     private long getFileDocumentsCount(UploadApiParamDTO upload, Criteria... criteriaList) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(upload.getUserId()));
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(upload.getUserId()));
         for (Criteria criteria : criteriaList) {
             query.addCriteria(criteria);
         }
@@ -236,7 +132,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     private List<FileIntroVO> getFileDocuments(UploadApiParamDTO upload, Criteria... criteriaList) {
-        List<FileIntroVO> fileIntroVOList = new ArrayList<>();
+        List<FileIntroVO> fileIntroVOList;
         Query query = getQuery(upload, criteriaList);
         String order = listByPage(upload, query);
         if (!CharSequenceUtil.isBlank(order)) {
@@ -247,7 +143,7 @@ public class FileServiceImpl implements IFileService {
             }
             query.with(Sort.by(direction, sortableProp));
         } else {
-            query.with(Sort.by(Sort.Direction.DESC, "isFolder"));
+            query.with(Sort.by(Sort.Direction.DESC, Constants.IS_FOLDER));
         }
         query.fields().exclude("content").exclude("music.coverBase64");
         List<FileDocument> list = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
@@ -299,7 +195,7 @@ public class FileServiceImpl implements IFileService {
 
     private List<FileDocument> getDirDocuments(UploadApiParamDTO upload, Criteria... criteriaList) {
         Query query = getQuery(upload, criteriaList);
-        query.addCriteria(Criteria.where("isFolder").is(true));
+        query.addCriteria(Criteria.where(Constants.IS_FOLDER).is(true));
         List<FileDocument> list = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
         // 按文件名排序
         list.sort(this::compareByFileName);
@@ -309,10 +205,10 @@ public class FileServiceImpl implements IFileService {
     private Query getQuery(UploadApiParamDTO upload, Criteria[] criteriaList) {
         String userId = upload.getUserId();
         if (CharSequenceUtil.isBlank(userId)) {
-            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg() + "userId");
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg() + IUserService.USER_ID);
         }
         Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userId));
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
         for (Criteria criteria : criteriaList) {
             query.addCriteria(criteria);
         }
@@ -354,14 +250,14 @@ public class FileServiceImpl implements IFileService {
 
     /***
      * 通过文件Id获取文件的相对路径
-     * @param fileDocument
-     * @return
+     * @param fileDocument FileDocument
+     * @return 相对路径
      */
     private String getRelativePathByFileId(FileDocument fileDocument) {
         if (fileDocument == null) {
             return getUserDirectory(null);
         }
-        if (fileDocument.getIsFolder()) {
+        if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
             return getUserDirectory(fileDocument.getPath() + fileDocument.getName());
         }
         String currentDirectory = fileDocument.getPath() + fileDocument.getName();
@@ -370,11 +266,10 @@ public class FileServiceImpl implements IFileService {
 
     /***
      * 获取用户的绝对目录
-     * @param userName
-     * @return
+     * @param username username
      */
-    private String getUserDir(String userName) {
-        return fileProperties.getRootDir() + File.separator + userName;
+    private String getUserDir(String username) {
+        return Paths.get(fileProperties.getRootDir(), username).toString();
     }
 
 
@@ -398,11 +293,10 @@ public class FileServiceImpl implements IFileService {
         Path path = Paths.get(fileProperties.getRootDir(), username, filepath, fileName);
         try {
             File newFile = path.toFile();
-            Path parentPath = path.getParent();
             FileUtil.writeFromStream(file.getInputStream(), newFile);
             loopCreateDir(username, Paths.get(fileProperties.getRootDir(), username).getNameCount(), path);
             if (!userService.getDisabledWebp(userLoginHolder.getUserId()) && (!"ico".equals(FileUtil.getSuffix(newFile)))) {
-                fileName += POINT_SUFFIX_WEBP;
+                fileName += Constants.POINT_SUFFIX_WEBP;
             }
             return baseUrl + Paths.get("/file", username, filepath, fileName).toString();
         } catch (IOException e) {
@@ -412,8 +306,8 @@ public class FileServiceImpl implements IFileService {
 
     /***
      * 递归创建父级目录(数据库层面)
-     * @param username
-     * @param path
+     * @param username username
+     * @param path path
      */
     private void loopCreateDir(String username, int rootPathCount, Path path) {
         createFile(username, path.toFile(), userLoginHolder.getUserId(), true);
@@ -424,16 +318,15 @@ public class FileServiceImpl implements IFileService {
 
     /***
      * 根据文件名排序
-     * @param f1
-     * @param f2
-     * @return
+     * @param f1 f1
+     * @param f2 f2
      */
     private int compareByFileName(FileBase f1, FileBase f2) {
-        if (f1.getIsFolder() && !f2.getIsFolder()) {
+        if (Boolean.TRUE.equals(f1.getIsFolder()) && Boolean.TRUE.equals(!f2.getIsFolder())) {
             return -1;
         } else if (f1.getIsFolder() && f2.getIsFolder()) {
             return compareByName(f1, f2);
-        } else if (!f1.getIsFolder() && f2.getIsFolder()) {
+        } else if (Boolean.TRUE.equals(!f1.getIsFolder()) && Boolean.TRUE.equals(f2.getIsFolder())) {
             return 1;
         } else {
             return compareByName(f1, f2);
@@ -447,18 +340,17 @@ public class FileServiceImpl implements IFileService {
 
     /***
      * 统计文件夹的大小
-     * @return
      */
     private long getFolderSize(String userId, String path) {
         List<Bson> list = Arrays.asList(
-                match(and(eq("userId", userId),
-                        eq("isFolder", false), regex("path", "^" + ReUtil.escape(path)))),
-                group(new BsonNull(), sum("totalSize", "$size")));
+                match(and(eq(IUserService.USER_ID, userId),
+                        eq(Constants.IS_FOLDER, false), regex("path", "^" + ReUtil.escape(path)))),
+                group(new BsonNull(), sum(Constants.TOTAL_SIZE, "$size")));
         AggregateIterable<Document> aggregate = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
         long totalSize = 0;
         Document doc = aggregate.first();
         if (doc != null) {
-            Object object = doc.get("totalSize");
+            Object object = doc.get(Constants.TOTAL_SIZE);
             if (object != null) {
                 totalSize = Long.parseLong(object.toString());
             }
@@ -492,7 +384,7 @@ public class FileServiceImpl implements IFileService {
             return null;
         }
         Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userId));
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
         query.addCriteria(Criteria.where("name").is(name));
         query.addCriteria(Criteria.where("path").is(path));
         return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
@@ -587,15 +479,15 @@ public class FileServiceImpl implements IFileService {
         query.addCriteria(Criteria.where("_id").in(fileIdList));
         List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
         // 选中的文件
-        List<String> selectNameList = new ArrayList<>();
-        selectNameList = fileDocuments.stream().map(doc -> {
-            return doc.getName();
-        }).collect(toList());
+        List<String> selectNameList;
+        selectNameList = fileDocuments.stream().map(FileBase::getName).toList();
         List<String> finalSelectNameList = selectNameList;
         File[] excludeFiles = srcDir.toFile().listFiles(file -> !finalSelectNameList.contains(file.getName()));
         List<Path> excludeFilePathList = new ArrayList<>();
-        for (File excludeFile : excludeFiles) {
-            excludeFilePathList.add(excludeFile.toPath());
+        if (excludeFiles != null) {
+            for (File excludeFile : excludeFiles) {
+                excludeFilePathList.add(excludeFile.toPath());
+            }
         }
         // 压缩传输
         try {
@@ -607,33 +499,26 @@ public class FileServiceImpl implements IFileService {
 
     /***
      * 对下载的文件名转码 解决不同浏览器压缩包名字含有中文时乱码的问题
-     * @param request
-     * @param downloadName
-     * @return
-     * @throws UnsupportedEncodingException
+     * @param request HttpServletRequest
+     * @param downloadName downloadName
      */
-    private String setDownloadName(HttpServletRequest request, HttpServletResponse response, String downloadName) {
-        try {
-            //获取浏览器名（IE/Chrome/firefox）目前主流的四大浏览器内核Trident(IE)、Gecko(Firefox内核)、WebKit(Safari内核,Chrome内核原型,开源)以及Presto(Opera前内核) (已废弃)
-            String gecko = "Gecko", webKit = "WebKit";
-            String userAgent = request.getHeader("User-Agent");
-            if (userAgent.contains(gecko) || userAgent.contains(webKit)) {
-                downloadName = new String(downloadName.getBytes(StandardCharsets.UTF_8), "ISO8859-1");
-            } else {
-                downloadName = URLEncoder.encode(downloadName, "UTF-8");
-            }
-            response.setHeader("Content-Disposition", "attachment;fileName=\"" + downloadName + "\"");
-        } catch (UnsupportedEncodingException e) {
-            log.error(e.getMessage(), e);
+    private void setDownloadName(HttpServletRequest request, HttpServletResponse response, String downloadName) {
+        //获取浏览器名（IE/Chrome/firefox）目前主流的四大浏览器内核Trident(IE)、Gecko(Firefox内核)、WebKit(Safari内核,Chrome内核原型,开源)以及Presto(Opera前内核) (已废弃)
+        String gecko = "Gecko";
+        String webKit = "WebKit";
+        String userAgent = request.getHeader("User-Agent");
+        if (userAgent.contains(gecko) || userAgent.contains(webKit)) {
+            downloadName = new String(downloadName.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1);
+        } else {
+            downloadName = URLEncoder.encode(downloadName, StandardCharsets.UTF_8);
         }
-        return downloadName;
+        response.setHeader("Content-Disposition", "attachment;fileName=\"" + downloadName + "\"");
     }
 
     /***
      * 在nginx之前获取文件信息
-     * @param fileIds
-     * @param username
-     * @return
+     * @param fileIds fileIds
+     * @param username username
      */
     private FileDocument getFileInfoBeforeDownload(List<String> fileIds, String username) throws CommonException {
         Query query = new Query();
@@ -654,7 +539,7 @@ public class FileServiceImpl implements IFileService {
                 filename = "download";
             }
             String filePath = startPath + filename;
-            if (size == 1 && !fileDocument.getIsFolder()) {
+            if (size == 1 && Boolean.TRUE.equals(!fileDocument.getIsFolder())) {
                 // 单个文件
                 fileDocument.setPath(filePath);
             } else {
@@ -672,11 +557,11 @@ public class FileServiceImpl implements IFileService {
             String currentDirectory = getUserDirectory(fileDocument.getPath());
             String filePath = fileProperties.getRootDir() + File.separator + username + currentDirectory;
             File file = new File(filePath + fileDocument.getName());
-            if (fileDocument.getIsFolder()) {
+            if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
                 Query query = new Query();
                 String searchPath = currentDirectory + fileDocument.getName();
                 String newPath = currentDirectory + newFileName;
-                query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
+                query.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));
                 query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(searchPath)));
                 List<FileDocument> documentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
                 // 修改该文件夹下的所有文件的path
@@ -700,9 +585,9 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult move(UploadApiParamDTO upload, List<String> froms, String to) throws IOException {
+    public ResponseResult<Object> move(UploadApiParamDTO upload, List<String> froms, String to) throws IOException {
         // 复制
-        ResponseResult result = getCopyResult(upload, froms, to);
+        ResponseResult<Object> result = getCopyResult(upload, froms, to);
         if (result != null) {
             return result;
         }
@@ -710,9 +595,9 @@ public class FileServiceImpl implements IFileService {
         return delete(upload.getUsername(), froms);
     }
 
-    private ResponseResult getCopyResult(UploadApiParamDTO upload, List<String> froms, String to) throws IOException {
+    private ResponseResult<Object> getCopyResult(UploadApiParamDTO upload, List<String> froms, String to) {
         for (String from : froms) {
-            ResponseResult result = copy(upload, from, to);
+            ResponseResult<Object> result = copy(upload, from, to);
             if (result.getCode() != 0) {
                 return result;
             }
@@ -721,9 +606,9 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult copy(UploadApiParamDTO upload, List<String> froms, String to) throws IOException {
+    public ResponseResult<Object> copy(UploadApiParamDTO upload, List<String> froms, String to) throws IOException {
         // 复制
-        ResponseResult result = getCopyResult(upload, froms, to);
+        ResponseResult<Object> result = getCopyResult(upload, froms, to);
         if (result != null) {
             return result;
         }
@@ -753,7 +638,7 @@ public class FileServiceImpl implements IFileService {
                 newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
                 FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             } else {
-                fileName = fileName + POINT_SUFFIX_WEBP;
+                fileName = fileName + Constants.POINT_SUFFIX_WEBP;
                 newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
                 BufferedImage image = ImageIO.read(multipartFile.getInputStream());
                 imageFileToWebp(newFile, image);
@@ -769,330 +654,14 @@ public class FileServiceImpl implements IFileService {
         return getFileDocumentById(fileId);
     }
 
-    /***
-     * 创建文件索引
-     * @param username 用户名
-     * @param file File
-     * @param userId 用户Id
-     * @param isPublic 是否为公共文件
-     * @return
-     */
-    public String createFile(String username, File file, String userId, Boolean isPublic) {
-        if (CharSequenceUtil.isBlank(username)) {
-            return null;
-        }
-        if (CharSequenceUtil.isBlank(userId)) {
-            userId = userService.getUserIdByUserName(username);
-            if (CharSequenceUtil.isBlank(userId)) {
-                return null;
-            }
-        }
-        String fileName = file.getName();
-        String suffix = FileUtil.extName(fileName);
-        String contentType = FileContentTypeUtils.getContentType(suffix);
-        if (contentType.startsWith(CONTENT_TYPE_IMAGE)) {
-            // 换成webp格式的图片
-            file = replaceWebp(userId, file);
-        }
-        fileName = file.getName();
-        suffix = FileUtil.extName(fileName);
-        contentType = FileContentTypeUtils.getContentType(suffix);
-
-        String fileAbsolutePath = file.getAbsolutePath();
-        Lock lock = null;
-        if (file.isDirectory()) {
-            lock = uploadFolderLockCache.get(fileAbsolutePath, key -> new ReentrantLock());
-            lock.lock();
-        }
-        UpdateResult updateResult = null;
-        try {
-            int startIndex = fileProperties.getRootDir().length() + username.length() + 1;
-            int endIndex = fileAbsolutePath.length() - fileName.length();
-            if (startIndex >= endIndex) {
-                return null;
-            }
-            String relativePath = fileAbsolutePath.substring(startIndex, endIndex);
-            Query query = new Query();
-            query.addCriteria(Criteria.where("userId").is(userId));
-            query.addCriteria(Criteria.where("path").is(relativePath));
-            query.addCriteria(Criteria.where("name").is(fileName));
-            // 文件是否存在
-            FileDocument fileExists = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
-            if (fileExists != null) {
-                if (contentType.contains("audio") && fileExists.getMusic() == null) {
-                    Update update = new Update();
-                    Music music = AudioFileUtils.readAudio(file);
-                    update.set("music", music);
-                    mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
-                }
-                return fileExists.getId();
-            }
-            LocalDateTime uploadDateTime;
-            LocalDateTime updateDateTime;
-            try {
-                Map<String, Object> attributes = Files.readAttributes(file.toPath(), "lastModifiedTime,creationTime", LinkOption.NOFOLLOW_LINKS);
-                FileTime lastModifiedTime = (FileTime) attributes.get("lastModifiedTime");
-                FileTime creationTime = (FileTime) attributes.get("creationTime");
-                uploadDateTime = LocalDateTimeUtil.of(creationTime.toInstant());
-                updateDateTime = LocalDateTimeUtil.of(lastModifiedTime.toInstant());
-            } catch (IOException e) {
-                uploadDateTime = LocalDateTime.now(TimeUntils.ZONE_ID);
-                updateDateTime = uploadDateTime;
-            }
-            Update update = new Update();
-            update.set("userId", userId);
-            update.set("name", fileName);
-            update.set("path", relativePath);
-            update.set("isFolder", file.isDirectory());
-            update.set("uploadDate", uploadDateTime);
-            update.set("updateDate", updateDateTime);
-            update.set("isFavorite", false);
-            if (isPublic != null) {
-                update.set("isPublic", true);
-            }
-            if (file.isFile()) {
-                setFileConfig(file, fileName, suffix, contentType, relativePath, update);
-            } else {
-                // 检查目录是否为OSS目录
-                checkOSSPath(username, relativePath, fileName, update);
-            }
-
-            // 检查该文件的上级目录是否有已经分享的目录
-            checkShareBase(update, relativePath);
-
-            updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
-            pushMessage(username, update.getUpdateObject(), "createFile");
-        } finally {
-            if (lock != null) {
-                lock.unlock();
-            }
-        }
-        if (null != updateResult.getUpsertedId()) {
-            return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
-        }
-        return null;
-    }
-
-    /**
-     * 检查目录是否为OSS目录
-     * @param username username
-     * @param relativePath relativePath
-     * @param fileName fileName
-     * @param update Update
-     */
-    private static void checkOSSPath(String username, String relativePath, String fileName, Update update) {
-        if (!MyWebdavServlet.PATH_DELIMITER.equals(relativePath)) {
-            return;
-        }
-        Path prePath = Paths.get(username, relativePath, fileName);
-        String ossPath = CaffeineUtil.getOssPath(prePath);
-        if (ossPath != null) {
-            update.set("ossFolder", true);
-        }
-    }
-
-    private void checkShareBase(Update update, String relativePath) {
-        Path path = Paths.get(relativePath);
-        StringBuilder pathStr = new StringBuilder("/");
-        List<Document> documentList = new ArrayList<>(path.getNameCount());
-        for (int i = 0; i < path.getNameCount(); i++) {
-            String filename = path.getName(i).toString();
-            if (i > 0) {
-                pathStr.append("/");
-            }
-            Document document = new Document("path", pathStr.toString()).append("name", filename);
-            documentList.add(document);
-            pathStr.append(filename);
-        }
-        if (documentList.isEmpty()) {
-            return;
-        }
-        List<Document> list = Arrays.asList(new Document("$match", new Document("$or", documentList)), new Document("$match", new Document(Constants.SHARE_BASE, true)));
-        AggregateIterable<Document> result = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
-        Document shareDocument = null;
-        try (MongoCursor<Document> mongoCursor = result.iterator()) {
-            while (mongoCursor.hasNext()) {
-                shareDocument = mongoCursor.next();
-            }
-        }
-        if (shareDocument != null) {
-            Long expiresAt = Convert.toLong(shareDocument.get(Constants.EXPIRES_AT), null);
-            if (expiresAt == null) {
-                return;
-            }
-            String shareId = Convert.toStr(shareDocument.get(Constants.SHARE_ID), null);
-            if (shareId == null) {
-                return;
-            }
-            Boolean isPrivacy = Convert.toBool(shareDocument.get(Constants.IS_PRIVACY), null);
-            if (isPrivacy == null) {
-                return;
-            }
-            String extractionCode = Convert.toStr(shareDocument.get(Constants.EXTRACTION_CODE), null);
-            if (isPrivacy && extractionCode == null) {
-                return;
-            }
-            setShareAttribute(update, expiresAt, shareId, isPrivacy, null);
-        }
-    }
-
-    private void setFileConfig(File file, String fileName, String suffix, String contentType, String relativePath, Update update) {
-        long size = file.length();
-        update.set("size", size);
-        update.set("md5", size + relativePath + fileName);
-        update.set("contentType", contentType);
-        update.set("suffix", suffix);
-        if (contentType.contains("audio")) {
-            Music music = AudioFileUtils.readAudio(file);
-            update.set("music", music);
-        }
-        if (contentType.startsWith(CONTENT_TYPE_IMAGE)) {
-            // 生成缩略图
-            if (!"ico".equals(suffix) && !"svg".equals(suffix)) {
-                generateThumbnail(file, update);
-            }
-        }
-        if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
-            // 写入markdown内容
-            String markDownContent = FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file)));
-            update.set("contentText", markDownContent);
-        }
-    }
-
-    public static void main(String[] args) {
-        File file = new File("/Users/jmal/temp/filetest/rootpath/jmal/合并文件测试/mall-admin-web/node_modules/regjsparser/node_modules/jsesc/README.md");
-        String encode = MyFileUtils.getFileEncode(file);
-        System.out.println(CharsetUtil.charset(encode));
-    }
-
     @Override
     public String createFile(String username, File file) {
         return createFile(username, file, null, null);
     }
 
-    private File replaceWebp(String userId, File file) {
-        if (userService.getDisabledWebp(userId) || ("ico".equals(FileUtil.getSuffix(file)))) {
-            return file;
-        }
-        if (SUFFIX_WEBP.equals(FileUtil.getSuffix(file))) {
-            return file;
-        }
-        File outputFile = new File(file.getPath() + POINT_SUFFIX_WEBP);
-        // 从某处获取图像进行编码
-        BufferedImage image = null;
-        try {
-            image = ImageIO.read(file);
-            if (image == null) {
-                return file;
-            }
-            imageFileToWebp(outputFile, image);
-            FileUtil.del(file);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            return file;
-        }
-        return outputFile;
-    }
-
-    public void imageFileToWebp(File outputFile, BufferedImage image) throws IOException {
-        // 获取一个WebP ImageWriter实例
-        ImageWriter writer = ImageIO.getImageWritersByMIMEType(CONTENT_TYPE_WEBP).next();
-        // 配置编码参数
-        WebPWriteParam writeParam = new WebPWriteParam(writer.getLocale());
-        writeParam.setCompressionMode(ImageWriteParam.MODE_DEFAULT);
-        // 在ImageWriter上配置输出
-        writer.setOutput(new FileImageOutputStream(outputFile));
-        // 编码
-        writer.write(null, new IIOImage(image, null, null), writeParam);
-    }
-
-    /***
-     * 生成缩略图
-     * @param file
-     * @param update
-     */
-    private void generateThumbnail(File file, Update update) {
-        try(ByteArrayOutputStream out = new ByteArrayOutputStream();) {
-            Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(file);
-            thumbnail.size(256, 256);
-            thumbnail.toOutputStream(out);
-            FastImageInfo imageInfo = new FastImageInfo(file);
-            update.set("w", imageInfo.getWidth());
-            update.set("h", imageInfo.getHeight());
-            update.set("content", out.toByteArray());
-        } catch (UnsupportedFormatException e) {
-            log.warn(e.getMessage() + file.getAbsolutePath());
-        } catch (Exception | Error e) {
-            log.error(e.getMessage() + file.getAbsolutePath());
-        }
-    }
-
     @Override
     public String updateFile(String username, File file) {
-        String fileAbsolutePath = file.getAbsolutePath();
-        String fileName = file.getName();
-        String relativePath = fileAbsolutePath.substring(fileProperties.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
-        String userId = userService.getUserIdByUserName(username);
-        if (CharSequenceUtil.isBlank(userId)) {
-            return null;
-        }
-        Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userId));
-        query.addCriteria(Criteria.where("path").is(relativePath));
-        query.addCriteria(Criteria.where("name").is(fileName));
-
-        String suffix = FileUtil.extName(fileName);
-        String contentType = FileContentTypeUtils.getContentType(suffix);
-
-        // 文件是否存在
-        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
-        if (fileDocument != null) {
-            Update update = new Update();
-            update.set("size", file.length());
-            update.set("suffix", suffix);
-            update.set("contentType", contentType);
-            LocalDateTime updateDate = LocalDateTime.now(TimeUntils.ZONE_ID);
-            update.set("updateDate", updateDate);
-            UpdateResult updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
-            fileDocument.setSize(file.length());
-            fileDocument.setUpdateDate(updateDate);
-            if (contentType.contains(CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
-                // 写入markdown内容
-                String markDownContent = FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file)));
-                update.set("contentText", markDownContent);
-            }
-            pushMessage(username, fileDocument, "updateFile");
-            if (null != updateResult.getUpsertedId()) {
-                return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
-            }
-        }
-        return null;
-    }
-
-    /***
-     * 给用户推送消息
-     * @param username username
-     * @param message message
-     * @param url url
-     */
-    public void pushMessage(String username, Object message, String url) {
-        WebSocketSession webSocketSession = SocketManager.get(username);
-        if (webSocketSession != null) {
-            Map<String, Object> headers = new HashMap<>(4);
-            headers.put("url", url);
-            String userId = userLoginHolder.getUserId();
-            if (CharSequenceUtil.isBlank(userId)) {
-                userId = userService.getUserIdByUserName(username);
-            }
-            if (!CharSequenceUtil.isBlank(userId)) {
-                long takeUpSpace = takeUpSpace(userId);
-                headers.put("space", takeUpSpace);
-            }
-            if (message == null) {
-                message = new Document();
-            }
-            template.convertAndSendToUser(username, "/queue/update", message, headers);
-        }
+        return modifyFile(username, file);
     }
 
     @Override
@@ -1105,11 +674,8 @@ public class FileServiceImpl implements IFileService {
             return;
         }
         Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userId));
-        query.addCriteria(Criteria.where("path").is(relativePath));
-        query.addCriteria(Criteria.where("name").is(fileName));
         // 文件是否存在
-        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+        FileDocument fileDocument = getFileDocument(userId, fileName, relativePath, query);
         if (fileDocument != null) {
             mongoTemplate.remove(query, COLLECTION_NAME);
         }
@@ -1151,7 +717,7 @@ public class FileServiceImpl implements IFileService {
             }
 
             CompressUtils.decompress(filePath, destDir, isWrite);
-            return ResultUtil.success(listfile(username, destDir, !isWrite));
+            return ResultUtil.success(listFile(username, destDir, !isWrite));
         } catch (Exception e) {
             return ResultUtil.error("解压失败!");
         }
@@ -1165,7 +731,7 @@ public class FileServiceImpl implements IFileService {
         } else {
             dirPath = Paths.get(fileProperties.getRootDir(), username, path).toString();
         }
-        return ResultUtil.success(listfile(username, dirPath, tempDir));
+        return ResultUtil.success(listFile(username, dirPath, tempDir));
     }
 
     @Override
@@ -1174,7 +740,7 @@ public class FileServiceImpl implements IFileService {
         if (Paths.get(fileProperties.getRootDir()).toString().equals(upperLevel)) {
             upperLevel = Paths.get(fileProperties.getRootDir(), username).toString();
         }
-        return ResultUtil.success(listfile(username, upperLevel, false));
+        return ResultUtil.success(listFile(username, upperLevel, false));
     }
 
     @Override
@@ -1199,11 +765,7 @@ public class FileServiceImpl implements IFileService {
         String fileAbsolutePath = file.getAbsolutePath();
         String fileName = file.getName();
         String relativePath = fileAbsolutePath.substring(fileProperties.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
-        Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userId));
-        query.addCriteria(Criteria.where("path").is(relativePath));
-        query.addCriteria(Criteria.where("name").is(fileName));
-        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+        FileDocument fileDocument = getFileDocument(userId, fileName, relativePath);
         if (fileDocument == null) {
             return ResultUtil.error("修改失败！");
         }
@@ -1243,7 +805,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public String viewFile(String  shareKey, String fileId, String shareToken, String operation) {
+    public String viewFile(String shareKey, String fileId, String shareToken, String operation) {
         FileDocument fileDocument = getById(fileId);
         if (fileDocument == null) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND.getCode(), ExceptionType.FILE_NOT_FIND.getMsg());
@@ -1281,7 +843,7 @@ public class FileServiceImpl implements IFileService {
             String userId = user.getId();
             PathUtil.del(Paths.get(fileProperties.getRootDir(), username));
             Query query = new Query();
-            query.addCriteria(Criteria.where("userId").in(userId));
+            query.addCriteria(Criteria.where(IUserService.USER_ID).in(userId));
             mongoTemplate.remove(query, COLLECTION_NAME);
         });
     }
@@ -1294,7 +856,7 @@ public class FileServiceImpl implements IFileService {
         Query query = new Query();
         if (Boolean.TRUE.equals(file.getIsFolder())) {
             // 共享文件夹及其下的所有文件
-            query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
+            query.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));
             query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
             // 设置共享属性
             setShareAttribute(file, expiresAt, share, query);
@@ -1305,74 +867,15 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
-    /***
-     * 设置共享属性
-     * @param fileDocument FileDocument
-     * @param expiresAt 过期时间
-     * @param query 查询条件
-     */
-    private void setShareAttribute(FileDocument fileDocument, long expiresAt, ShareDO share, Query query) {
-        Update update = new Update();
-         setShareAttribute(update, expiresAt, share.getId(), share.getIsPrivacy(), share.getExtractionCode());
-        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
-        // 修改第一个文件/文件夹
-        updateShareFirst(fileDocument, update, true);
-    }
-
-    /**
-     * 设置共享属性
-     * @param expiresAt 过期时间
-     * @param shareId shareId
-     * @param isPrivacy isPrivacy
-     * @param extractionCode extractionCode
-     */
-    private static void setShareAttribute(Update update, long expiresAt, String shareId, Boolean isPrivacy, String extractionCode) {
-        update.set("isShare", true);
-        update.set(Constants.SHARE_ID, shareId);
-        update.set(Constants.EXPIRES_AT, expiresAt);
-        update.set(Constants.IS_PRIVACY, isPrivacy);
-        if (BooleanUtil.isTrue(isPrivacy)) {
-            update.set(Constants.EXTRACTION_CODE, extractionCode);
-        }
-    }
-
-    /***
-     * 解除共享属性
-     * @param fileDocument FileDocument
-     * @param query 查询条件
-     */
-    private void unsetShareAttribute(FileDocument fileDocument, Query query) {
-        Update update = new Update();
-        update.unset(Constants.SHARE_ID);
-        update.unset("isShare");
-        update.unset(Constants.EXPIRES_AT);
-        update.unset(Constants.IS_PRIVACY);
-        update.unset(Constants.EXTRACTION_CODE);
-        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
-        // 修改第一个文件/文件夹
-        updateShareFirst(fileDocument, update, false);
-    }
-
-    private void updateShareFirst(FileDocument fileDocument, Update update, boolean share) {
-        if (share) {
-            update.set(Constants.SHARE_BASE, true);
-        } else {
-            update.unset(Constants.SHARE_BASE);
-        }
-        Query query1 = new Query();
-        query1.addCriteria(Criteria.where("_id").is(fileDocument.getId()));
-        mongoTemplate.updateFirst(query1, update, COLLECTION_NAME);
-    }
-
     @Override
     public void unsetShareFile(FileDocument file) {
         if (file == null) {
             return;
         }
         Query query = new Query();
-        if (file.getIsFolder()) {
+        if (Boolean.TRUE.equals(file.getIsFolder())) {
             // 解除共享文件夹及其下的所有文件
-            query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
+            query.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));
             query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
             // 解除共享属性
             unsetShareAttribute(file, query);
@@ -1396,19 +899,18 @@ public class FileServiceImpl implements IFileService {
     public List<FileDocument> getAllDocFile() {
         Query query = new Query();
         query.addCriteria(Criteria.where("html").exists(true));
-        query.addCriteria(Criteria.where("release").is(true));
+        query.addCriteria(Criteria.where(Constants.RELEASE).is(true));
         query.fields().include("_id").include("name").include("html");
         return mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
     }
 
     /***
      * 获取目录下的文件
-     * @param username
-     * @param dirPath
-     * @param tempDir
-     * @return
+     * @param username username
+     * @param dirPath dirPath
+     * @param tempDir tempDir
      */
-    private List<FileDocument> listfile(String username, String dirPath, boolean tempDir) {
+    private List<FileDocument> listFile(String username, String dirPath, boolean tempDir) {
         File dir = new File(dirPath);
         if (!dir.exists()) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
@@ -1435,15 +937,13 @@ public class FileServiceImpl implements IFileService {
             }
             fileDocument.setPath(path);
             return fileDocument;
-        }).sorted(this::compareByFileName).collect(Collectors.toList());
+        }).sorted(this::compareByFileName).toList();
     }
 
     /***
      * 根据username 和 fileDocument 获取FilePath
-     * @param username
-     * @param fileDocument
-     * @return
-     * @throws CommonException
+     * @param username username
+     * @param fileDocument FileDocument
      */
     private String getFilePathByFileId(String username, FileDocument fileDocument) throws CommonException {
         StringBuilder sb = new StringBuilder();
@@ -1458,12 +958,11 @@ public class FileServiceImpl implements IFileService {
 
     /***
      * 复制文件
-     * @param upload
-     * @param from
-     * @param to
-     * @return
+     * @param upload UploadApiParamDTO
+     * @param from 来源文件id
+     * @param to 目标文件id
      */
-    private ResponseResult<Object> copy(UploadApiParamDTO upload, String from, String to) throws IOException {
+    private ResponseResult<Object> copy(UploadApiParamDTO upload, String from, String to) {
         FileDocument formFileDocument = getFileDocumentById(from);
         String fromPath = getRelativePathByFileId(formFileDocument);
         String fromFilePath = getUserDir(upload.getUsername()) + fromPath;
@@ -1472,30 +971,31 @@ public class FileServiceImpl implements IFileService {
         String toFilePath = getUserDir(upload.getUsername()) + toPath;
         if (formFileDocument != null) {
             FileUtil.copy(fromFilePath, toFilePath, true);
-            if (formFileDocument.getIsFolder()) {
+            FileDocument copyFileDocument = copyFileDocument(formFileDocument, toPath);
+            if (Boolean.TRUE.equals(formFileDocument.getIsFolder())) {
                 // 复制文件夹
                 // 复制其本身
-                FileDocument copyFileDocument = copyFileDocument(formFileDocument, toPath);
                 if (isExistsOfToCopy(copyFileDocument, toPath)) {
                     return ResultUtil.warning("所选目录已存在该文件夹!");
                 }
                 mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
                 // 复制其下的子文件或目录
                 Query query = new Query();
-                query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
+                query.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));
                 query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fromPath)));
                 List<FileDocument> formList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
-                formList = formList.stream().map(fileDocument -> {
+                List<FileDocument> list = new ArrayList<>();
+                for (FileDocument fileDocument : formList) {
                     String oldPath = fileDocument.getPath();
                     String newPath = toPath + oldPath.substring(1);
                     copyFileDocument(fileDocument, newPath);
-                    return fileDocument;
-                }).collect(Collectors.toList());
+                    list.add(fileDocument);
+                }
+                formList = list;
                 mongoTemplate.insert(formList, COLLECTION_NAME);
             } else {
                 // 复制文件
                 // 复制其本身
-                FileDocument copyFileDocument = copyFileDocument(formFileDocument, toPath);
                 if (isExistsOfToCopy(copyFileDocument, toPath)) {
                     return ResultUtil.warning("所选目录已存在该文件!");
                 }
@@ -1508,9 +1008,8 @@ public class FileServiceImpl implements IFileService {
 
     /***
      * 复制更新数据
-     * @param formFileDocument
-     * @param toPath
-     * @return
+     * @param formFileDocument FileDocument
+     * @param toPath toPath
      */
     private FileDocument copyFileDocument(FileDocument formFileDocument, String toPath) {
         formFileDocument.setId(null);
@@ -1521,13 +1020,12 @@ public class FileServiceImpl implements IFileService {
 
     /***
      * 目标目录是否存该文件
-     * @param formFileDocument
-     * @param toPath
-     * @return
+     * @param formFileDocument FileDocument
+     * @param toPath toPath
      */
     private boolean isExistsOfToCopy(FileDocument formFileDocument, String toPath) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));
         query.addCriteria(Criteria.where("path").is(toPath));
         query.addCriteria(Criteria.where("name").is(formFileDocument.getName()));
         return mongoTemplate.exists(query, COLLECTION_NAME);
@@ -1537,21 +1035,13 @@ public class FileServiceImpl implements IFileService {
         return replacement + str.substring(searchStr.length());
     }
 
-    /***
-     * 文件重命名
-     * @param newFileName
-     * @param id
-     * @param filePath
-     * @param file
-     * @return
-     */
-    private boolean renameFile(String newFileName, String id, String filePath, File file) {
+    private boolean renameFile(String newFileName, String fileId, String filePath, File file) {
         if (file.renameTo(new File(filePath + newFileName))) {
             Query query = new Query();
-            query.addCriteria(Criteria.where("_id").is(id));
+            query.addCriteria(Criteria.where("_id").is(fileId));
             Update update = new Update();
             update.set("name", newFileName);
-            update.set("suffix", FileUtil.extName(newFileName));
+            update.set(Constants.SUFFIX, FileUtil.extName(newFileName));
             update.set("updateDate", LocalDateTime.now(TimeUntils.ZONE_ID));
             mongoTemplate.upsert(query, update, COLLECTION_NAME);
         } else {
@@ -1560,10 +1050,10 @@ public class FileServiceImpl implements IFileService {
         return false;
     }
 
-    /***
-     * 保存文件(分片)
-     * @param upload
-     * @return
+    /**
+     * 上传文件
+     * @param upload UploadApiParamDTO
+     * @return ResponseResult
      */
     @Override
     public ResponseResult<Object> upload(UploadApiParamDTO upload) throws IOException {
@@ -1575,10 +1065,9 @@ public class FileServiceImpl implements IFileService {
         MultipartFile file = upload.getFile();
         //用户磁盘目录
         String userDirectoryFilePath = getUserDirectoryFilePath(upload);
-        LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
         if (currentChunkSize == totalSize) {
             // 没有分片,直接存
-            File chunkFile = new File(fileProperties.getRootDir() + File.separator + upload.getUsername() + userDirectoryFilePath);
+            File chunkFile = Paths.get(fileProperties.getRootDir(), upload.getUsername(), userDirectoryFilePath).toFile();
             // 保存文件信息
             upload.setInputStream(file.getInputStream());
             upload.setContentType(file.getContentType());
@@ -1587,115 +1076,15 @@ public class FileServiceImpl implements IFileService {
             createFile(upload.getUsername(), chunkFile);
             uploadResponse.setUpload(true);
         } else {
-            // 多个分片
-            // 落地保存文件
-            // 这时保存的每个块, 块先存好, 后续会调合并接口, 将所有块合成一个大文件
-            // 保存在用户的tmp目录下
-            StringBuilder sb = new StringBuilder();
-            sb.append(fileProperties.getRootDir()).append(File.separator)
-                    .append(fileProperties.getChunkFileDir()).append(File.separator)
-                    .append(upload.getUsername()).append(File.separatorChar)
-                    .append(md5).append(File.separatorChar).append(upload.getChunkNumber());
-            File chunkFile = new File(sb.toString());
-            FileUtil.writeFromStream(file.getInputStream(), chunkFile);
-            setResumeCache(upload);
-            uploadResponse.setUpload(true);
-            // 检测是否已经上传完了所有分片,上传完了则需要合并
-            if (checkIsNeedMerge(upload)) {
-                uploadResponse.setMerge(true);
-            }
-            // 追加分片
-            appendChunkFile(upload);
+            // 上传分片
+            multipartUpload.uploadChunkFile(upload, uploadResponse, md5, file);
         }
         return ResultUtil.success(uploadResponse);
     }
 
-    /***
-     * 合并文件追加分片
-     * @param upload
-     */
-    private void appendChunkFile(UploadApiParamDTO upload) {
-        int chunkNumber = upload.getChunkNumber();
-        String md5 = upload.getIdentifier();
-        // 未写入的分片
-        CopyOnWriteArrayList<Integer> unWrittenChunks = unWrittenCache.get(md5, key -> new CopyOnWriteArrayList<>());
-        if (unWrittenChunks != null && !unWrittenChunks.contains(chunkNumber)) {
-            unWrittenChunks.add(chunkNumber);
-            unWrittenCache.put(md5, unWrittenChunks);
-        }
-        // 已写入的分片
-        CopyOnWriteArrayList<Integer> writtenChunks = writtenCache.get(md5, key -> new CopyOnWriteArrayList<>());
-        Path filePath = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), upload.getFilename());
-        Lock lock = chunkWriteLockCache.get(md5, key -> new ReentrantLock());
-        lock.lock();
-        try {
-            if (Files.exists(filePath) && writtenChunks.size() > 0) {
-                // 继续追加
-                for (int unWrittenChunk : unWrittenChunks) {
-                    appenFile(upload, unWrittenChunks, writtenChunks);
-                }
-            } else {
-                // 首次写入
-                if (Files.exists(filePath)) {
-                    Files.delete(filePath);
-                }
-                appenFile(upload, unWrittenChunks, writtenChunks);
-            }
-        } catch (Exception e) {
-            throw new CommonException(ExceptionType.FAIL_MERGE_FILE);
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    /***
-     * 追加分片操作
-     * @param upload
-     * @param unWrittenChunks
-     * @param writtenChunks
-     */
-    private void appenFile(UploadApiParamDTO upload, CopyOnWriteArrayList<Integer> unWrittenChunks, CopyOnWriteArrayList<Integer> writtenChunks) {
-        // 需要继续追加分片索引
-        int chunk = 1;
-        if (writtenChunks.size() > 0) {
-            chunk = writtenChunks.get(writtenChunks.size() - 1) + 1;
-        }
-        if (!unWrittenChunks.contains(chunk)) {
-            return;
-        }
-        String md5 = upload.getIdentifier();
-        // 分片文件
-        File file = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), md5, chunk + "").toFile();
-        // 目标文件
-        File outputFile = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), upload.getFilename()).toFile();
-        long postion = outputFile.length();
-        try (FileOutputStream fileOutputStream = new FileOutputStream(outputFile, true);
-             FileChannel outChannel = fileOutputStream.getChannel()) {
-            try (FileInputStream fileInputStream = new FileInputStream(file);
-                 FileChannel inChannel = fileInputStream.getChannel()) {
-                ByteBuffer byteBuffer = ByteBuffer.wrap(FileUtil.readBytes(file));
-                outChannel.write(byteBuffer, postion);
-                writtenChunks.add(chunk);
-                writtenCache.put(md5, writtenChunks);
-                unWrittenChunks.remove(unWrittenChunks.indexOf(chunk));
-                unWrittenCache.put(md5, unWrittenChunks);
-            }
-        } catch (IOException e) {
-            throw new CommonException(ExceptionType.FAIL_MERGE_FILE);
-        }
-    }
-
     @Override
     public ResponseResult<Object> uploadFolder(UploadApiParamDTO upload) throws CommonException {
-        // 新建文件夹
-        String userDirectoryFilePath = getUserDirectoryFilePath(upload);
-        //没有分片,直接存
-        File dir = new File(fileProperties.getRootDir() + File.separator + upload.getUsername() + userDirectoryFilePath);
-        if (!dir.exists()) {
-            FileUtil.mkdir(dir);
-        }
-        // 保存文件夹信息
-        createFile(upload.getUsername(), dir);
+        createFolder(upload);
         return ResultUtil.success();
     }
 
@@ -1723,163 +1112,14 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success();
     }
 
-
-    /***
-     * 缓存已上传的分片
-     * @param upload
-     */
-    private void setResumeCache(UploadApiParamDTO upload) {
-        int chunkNumber = upload.getChunkNumber();
-        String md5 = upload.getIdentifier();
-        CopyOnWriteArrayList<Integer> chunks = resumeCache.get(md5, key -> createResumeCache(upload));
-        assert chunks != null;
-        if (!chunks.contains(chunkNumber)) {
-            chunks.add(chunkNumber);
-            resumeCache.put(md5, chunks);
-        }
-    }
-
-    /***
-     * 获取已经保存的分片索引
-     */
-    private CopyOnWriteArrayList<Integer> getSavedChunk(UploadApiParamDTO upload) {
-        String md5 = upload.getIdentifier();
-        return resumeCache.get(md5, key -> createResumeCache(upload));
-    }
-
-    /***
-     * 检测是否需要合并
-     */
-    private boolean checkIsNeedMerge(UploadApiParamDTO upload) {
-        int totalChunks = upload.getTotalChunks();
-        CopyOnWriteArrayList<Integer> chunkList = getSavedChunk(upload);
-        return totalChunks == chunkList.size();
-    }
-
-    /***
-     * 读取分片文件是否存在
-     * @return
-     */
-    private CopyOnWriteArrayList<Integer> createResumeCache(UploadApiParamDTO upload) {
-        CopyOnWriteArrayList<Integer> resumeList = new CopyOnWriteArrayList<>();
-        String md5 = upload.getIdentifier();
-        // 读取tmp分片目录所有文件
-        File f = new File(fileProperties.getRootDir() + File.separator + fileProperties.getChunkFileDir() + File.separator + upload.getUsername() + File.separator + md5);
-        if (f.exists()) {
-            // 排除目录，只要文件
-            File[] fileArray = f.listFiles(pathName -> !pathName.isDirectory());
-            if (fileArray != null) {
-                if (fileArray.length > 0) {
-                    for (File file : fileArray) {
-                        // 分片文件
-                        int resume = Integer.parseInt(file.getName());
-                        resumeList.add(resume);
-                    }
-                }
-            }
-        }
-        return resumeList;
-    }
-
     @Override
     public ResponseResult<Object> checkChunkUploaded(UploadApiParamDTO upload) throws IOException {
-        UploadResponse uploadResponse = new UploadResponse();
-        String md5 = upload.getIdentifier();
-        String path = getUserDirectory(upload.getCurrentDirectory());
-
-        String relativePath = upload.getRelativePath();
-        path += relativePath.substring(0, relativePath.length() - upload.getFilename().length());
-        FileDocument fileDocument = getByMd5(path, upload.getUserId(), md5);
-        if (fileDocument != null) {
-            // 文件已存在
-            uploadResponse.setPass(true);
-        } else {
-            int totalChunks = upload.getTotalChunks();
-            List<Integer> chunks = resumeCache.get(md5, key -> createResumeCache(upload));
-            // 返回已存在的分片
-            uploadResponse.setResume(chunks);
-            assert chunks != null;
-            if (totalChunks == chunks.size()) {
-                // 文件不存在,并且已经上传了所有的分片,则合并保存文件
-                merge(upload);
-            }
-        }
-        uploadResponse.setUpload(true);
-        return ResultUtil.success(uploadResponse);
+        return ResultUtil.success(multipartUpload.checkChunk(upload));
     }
 
     @Override
     public ResponseResult<Object> merge(UploadApiParamDTO upload) throws IOException {
-        UploadResponse uploadResponse = new UploadResponse();
-        String md5 = upload.getIdentifier();
-        Path file = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), upload.getFilename());
-        Path outputFile = Paths.get(fileProperties.getRootDir(), upload.getUsername(), getUserDirectoryFilePath(upload));
-        // 清除缓存
-        resumeCache.invalidate(md5);
-        writtenCache.invalidate(md5);
-        unWrittenCache.invalidate(md5);
-        chunkWriteLockCache.invalidate(md5);
-        Path chunkDir = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), md5);
-        PathUtil.del(chunkDir);
-        if (!Files.exists(outputFile)) {
-            Files.createFile(outputFile);
-        }
-        PathUtil.move(file, outputFile, true);
-        uploadResponse.setUpload(true);
-        createFile(upload.getUsername(), outputFile.toFile());
-        return ResultUtil.success(uploadResponse);
-    }
-
-    /***
-     * 用户磁盘目录
-     * @param upload
-     * @return String
-     */
-    private String getUserDirectoryFilePath(UploadApiParamDTO upload) {
-        String currentDirectory = upload.getCurrentDirectory();
-        if (CharSequenceUtil.isBlank(currentDirectory)) {
-            currentDirectory = fileProperties.getSeparator();
-        }
-        if (upload.getIsFolder()) {
-            if (upload.getFolderPath() != null) {
-                currentDirectory += fileProperties.getSeparator() + upload.getFolderPath();
-            } else {
-                currentDirectory += fileProperties.getSeparator() + upload.getFilename();
-            }
-        } else {
-            currentDirectory += fileProperties.getSeparator() + upload.getRelativePath();
-        }
-        currentDirectory = currentDirectory.replaceAll(fileProperties.getSeparator(), File.separator);
-        return currentDirectory;
-    }
-
-    /***
-     * 用户当前目录(跨平台)
-     * @param currentDirectory 当前目录
-     * @return
-     */
-    public String getUserDirectory(String currentDirectory) {
-        if (CharSequenceUtil.isBlank(currentDirectory)) {
-            currentDirectory = fileProperties.getSeparator();
-        } else {
-            if (!currentDirectory.endsWith(fileProperties.getSeparator())) {
-                currentDirectory += fileProperties.getSeparator();
-            }
-        }
-        currentDirectory = currentDirectory.replaceAll(fileProperties.getSeparator(), File.separator);
-        return currentDirectory;
-    }
-
-    /***
-     * 用户文件路径(相对路径)
-     * @param relativePath
-     * @return
-     */
-    private String getUserFilePath(String relativePath) {
-        if (!CharSequenceUtil.isBlank(relativePath)) {
-            relativePath = relativePath.replaceAll(fileProperties.getSeparator(), File.separator);
-        }
-        return relativePath;
+        return ResultUtil.success(multipartUpload.mergeFile(upload));
     }
 
     @Override
@@ -1887,7 +1127,7 @@ public class FileServiceImpl implements IFileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds));
         Update update = new Update();
-        update.set("isFavorite", true);
+        update.set(Constants.IS_FAVORITE, true);
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         return ResultUtil.success();
     }
@@ -1897,7 +1137,7 @@ public class FileServiceImpl implements IFileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds));
         Update update = new Update();
-        update.set("isFavorite", false);
+        update.set(Constants.IS_FAVORITE, false);
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         return ResultUtil.success();
     }
@@ -1913,10 +1153,10 @@ public class FileServiceImpl implements IFileService {
             String filePath = fileProperties.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName();
             File file = new File(filePath);
             isDel = FileUtil.del(file);
-            if (fileDocument.getIsFolder()) {
+            if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
                 // 删除文件夹及其下的所有文件
                 Query query1 = new Query();
-                query1.addCriteria(Criteria.where("userId").is(userLoginHolder.getUserId()));
+                query1.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));
                 query1.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName())));
                 mongoTemplate.remove(query1, COLLECTION_NAME);
                 isDel = true;
@@ -1930,43 +1170,4 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success();
     }
 
-    /***
-     * 是否存在该文件
-     * @param userId
-     * @param md5
-     * @return
-     */
-    private FileDocument getByMd5(String path, String userId, String md5) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userId));
-        query.addCriteria(Criteria.where("md5").is(md5));
-        query.addCriteria(Criteria.where("path").is(path));
-        return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
-    }
-
-    /***
-     * 如果文件夹不存在，则创建
-     * @param docPaths  文件夹path
-     * @param username username
-     * @param userId userId
-     */
-    public void upsertFolder(@NotNull Path docPaths, @NotNull String username, @NotNull String userId) {
-        File dir = Paths.get(fileProperties.getRootDir(), username, docPaths.toString()).toFile();
-        if (!dir.exists()) {
-            StringBuilder parentPath = new StringBuilder();
-            for (int i = 0; i < docPaths.getNameCount(); i++) {
-                String name = docPaths.getName(i).toString();
-                UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
-                uploadApiParamDTO.setIsFolder(true);
-                uploadApiParamDTO.setFilename(name);
-                uploadApiParamDTO.setUsername(username);
-                uploadApiParamDTO.setUserId(userId);
-                if (i > 0) {
-                    uploadApiParamDTO.setCurrentDirectory(parentPath.toString());
-                }
-                uploadFolder(uploadApiParamDTO);
-                parentPath.append("/").append(name);
-            }
-        }
-    }
 }

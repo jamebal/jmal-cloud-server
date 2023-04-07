@@ -1,8 +1,8 @@
 package com.jmal.clouddisk.model.rbac;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.service.Constants;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import lombok.Data;
 
 import javax.validation.Valid;
@@ -21,16 +21,16 @@ import java.util.List;
 public class RoleDTO {
     String id;
     @NotNull(message = "角色名称不能为空")
-    @Schema(name = "name", title = "角色名称", required = true)
+    @Schema(name = "name", title = "角色名称", requiredMode = Schema.RequiredMode.REQUIRED)
     String name;
     @NotNull(message = "角色标识不能为空")
-    @Schema(name = "code", title = "角色标识", required = true)
+    @Schema(name = "code", title = "角色标识", requiredMode = Schema.RequiredMode.REQUIRED)
     String code;
     @Schema(name = "remarks", title = "备注")
     String remarks;
     @Schema(name = "menuIds", title = "菜单id列表")
     List<String> menuIds;
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
-    @Schema(name = "createTime", title = "创建时间", hidden = true)
+    @Schema(name = Constants.CREATE_TIME, title = "创建时间", hidden = true)
     LocalDateTime createTime;
 }

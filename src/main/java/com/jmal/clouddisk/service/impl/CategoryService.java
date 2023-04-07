@@ -4,6 +4,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.model.CategoryDO;
 import com.jmal.clouddisk.model.CategoryDTO;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -76,7 +77,7 @@ public class CategoryService {
     private void getCategoryArticlesNum(CategoryDTO categoryDTO) {
         Query query = new Query();
         query.addCriteria(Criteria.where("categoryIds").is(categoryDTO.getId()));
-        query.addCriteria(Criteria.where("release").is(true));
+        query.addCriteria(Criteria.where(Constants.RELEASE).is(true));
         long count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
         categoryDTO.setArticleNum(Convert.toInt(count));
         categoryDTO.setValue(Convert.toInt(count));

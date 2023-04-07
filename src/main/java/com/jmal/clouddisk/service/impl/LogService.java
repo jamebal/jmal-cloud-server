@@ -8,6 +8,7 @@ import cn.hutool.http.useragent.UserAgentUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.LogOperationDTO;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
@@ -15,7 +16,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.connector.Response;
 import org.lionsoul.ip2region.xdb.Searcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -62,13 +62,13 @@ public class LogService {
         try {
             vIndex = Searcher.loadVectorIndexFromFile(ip2regionDbPath);
         } catch (Exception e) {
-            log.error("failed to load vector index from {}: {}\n", ip2regionDbPath, e);
+            log.error("failed to load vector index from {}\n", ip2regionDbPath, e);
             return;
         }
         try {
             ipSearcher = Searcher.newWithVectorIndex(ip2regionDbPath, vIndex);
         } catch (Exception e) {
-            log.error("failed to create vectorIndex cached searcher with {}: {}\n", ip2regionDbPath, e);
+            log.error("failed to create vectorIndex cached searcher with {}\n", ip2regionDbPath, e);
         }
     }
 
@@ -122,11 +122,9 @@ public class LogService {
 
     private String getIpAddress(HttpServletRequest request) {
         String ip = request.getHeader("x-forwarded-for");
-        if (!CharSequenceUtil.isBlank(ip)) {
+        if (!CharSequenceUtil.isBlank(ip) && (ip.contains(","))) {
             // 多次反向代理后会有多个ip值，第一个ip才是真实ip
-            if (ip.contains(",")) {
-                ip = ip.split(",")[0];
-            }
+            ip = ip.split(",")[0];
         }
         if (CharSequenceUtil.isBlank(ip)) {
             ip = request.getHeader("X-real-ip");
@@ -163,8 +161,8 @@ public class LogService {
                 if (!CharSequenceUtil.isBlank(region)) {
                     logOperation.setIpInfo(region2IpInfo(region));
                 }
-            } catch (Exception e) {
-                // log.error(e.getMessage());
+            } catch (Exception ignored) {
+                // log
             }
         }
     }
@@ -205,7 +203,7 @@ public class LogService {
             if (status >= HttpServletResponse.SC_BAD_REQUEST) {
                 logOperation.setStatus(-1);
             }
-            logOperation.setRemarks(status + "");
+            logOperation.setRemarks(String.valueOf(status));
         }
     }
 
@@ -259,7 +257,7 @@ public class LogService {
         if (startTime != null && endTime != null) {
             LocalDateTime s = TimeUntils.getLocalDateTime(startTime);
             LocalDateTime e = TimeUntils.getLocalDateTime(endTime);
-            query.addCriteria(Criteria.where("createTime").gte(s).lte(e));
+            query.addCriteria(Criteria.where(Constants.CREATE_TIME).gte(s).lte(e));
         }
         return query;
     }
@@ -271,7 +269,7 @@ public class LogService {
         String sortableProp = logOperationDTO.getSortProp();
         String order = logOperationDTO.getSortOrder();
         if (CharSequenceUtil.isBlank(sortableProp) || CharSequenceUtil.isBlank(order)) {
-            query.with(Sort.by(Sort.Direction.DESC, "createTime"));
+            query.with(Sort.by(Sort.Direction.DESC, Constants.CREATE_TIME));
             return;
         }
         Sort.Direction direction = Sort.Direction.ASC;
@@ -285,7 +283,8 @@ public class LogService {
      * 设置分页条件
      */
     public void setPage(LogOperationDTO logOperationDTO, Query query) {
-        Integer pageSize = logOperationDTO.getPageSize(), pageIndex = logOperationDTO.getPage();
+        Integer pageSize = logOperationDTO.getPageSize();
+        Integer pageIndex = logOperationDTO.getPage();
         if (pageSize == null) {
             pageSize = 10;
         }

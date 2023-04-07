@@ -86,6 +86,10 @@ public class FileDocument extends FileBase{
      * 是否收藏
      */
     private Boolean isFavorite;
+    /**
+     * 是否为oss目录
+     */
+    private Boolean ossFolder;
     /***
      * 是否公共文件
      */

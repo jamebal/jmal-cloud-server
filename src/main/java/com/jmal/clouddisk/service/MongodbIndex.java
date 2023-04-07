@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.service;
 
-import com.jmal.clouddisk.service.impl.FileServiceImpl;
+import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.mongodb.client.ListIndexesIterable;
 import com.mongodb.client.model.IndexModel;
 import lombok.extern.slf4j.Slf4j;
@@ -38,11 +38,11 @@ public class MongodbIndex {
     private void logIndex() {
         List<IndexModel> indexLogList = new ArrayList<>();
 
-        indexLogList.add(new IndexModel(new Document("createTime", 1)));
+        indexLogList.add(new IndexModel(new Document(Constants.CREATE_TIME, 1)));
 
         indexLogList.add(new IndexModel(new Document("time", 1)));
 
-        indexLogList.add(new IndexModel(new Document("username", 1)));
+        indexLogList.add(new IndexModel(new Document(IUserService.USERNAME, 1)));
 
         indexLogList.add(new IndexModel(new Document("showName", 1)));
 
@@ -65,21 +65,20 @@ public class MongodbIndex {
         indexLogList.add(new IndexModel(new Document("type", 1)));
 
         Document indexTypeCreateTime = new Document("type", 1);
-        indexTypeCreateTime.put("createTime", 1);
+        indexTypeCreateTime.put(Constants.CREATE_TIME, 1);
         indexLogList.add(new IndexModel(indexTypeCreateTime));
 
         Document indexTypeUsernameCreateTime = new Document("type", 1);
-        indexTypeUsernameCreateTime.put("createTime", 1);
-        indexTypeUsernameCreateTime.put("username", 1);
+        indexTypeUsernameCreateTime.put(Constants.CREATE_TIME, 1);
+        indexTypeUsernameCreateTime.put(IUserService.USERNAME, 1);
         indexLogList.add(new IndexModel(indexTypeUsernameCreateTime));
 
         Document indexTypeUsername = new Document("type", 1);
-        indexTypeUsername.put("username", 1);
+        indexTypeUsername.put(IUserService.USERNAME, 1);
         indexLogList.add(new IndexModel(indexTypeUsername));
 
-        ListIndexesIterable<Document> listIndexesIterable = mongoTemplate.getCollection("log").listIndexes();
         long indexCount = 0;
-        for (Document ignored : listIndexesIterable) {
+        for (var ignored : mongoTemplate.getCollection("log").listIndexes()) {
             indexCount++;
         }
 
@@ -102,46 +101,46 @@ public class MongodbIndex {
         indexPathName.put("name", 1);
         indexModelList.add(new IndexModel(indexPathName));
 
-        Document indexUserIdMdFivePath = new Document("userId", 1);
+        Document indexUserIdMdFivePath = new Document(IUserService.USER_ID, 1);
         indexUserIdMdFivePath.put("md5", 1);
         indexUserIdMdFivePath.put("path", 1);
         indexModelList.add(new IndexModel(indexUserIdMdFivePath));
 
-        Document indexUserIdPath = new Document("userId", 1);
+        Document indexUserIdPath = new Document(IUserService.USER_ID, 1);
         indexUserIdPath.put("path", 1);
         indexModelList.add(new IndexModel(indexUserIdPath));
 
-        Document indexUserIdIsFolderPath = new Document("userId", 1);
+        Document indexUserIdIsFolderPath = new Document(IUserService.USER_ID, 1);
         indexUserIdIsFolderPath.put("path", 1);
-        indexUserIdIsFolderPath.put("isFolder", 1);
+        indexUserIdIsFolderPath.put(Constants.IS_FOLDER, 1);
         indexModelList.add(new IndexModel(indexUserIdIsFolderPath));
 
-        Document indexUserIdIsFolderPathName = new Document("userId", 1);
+        Document indexUserIdIsFolderPathName = new Document(IUserService.USER_ID, 1);
         indexUserIdIsFolderPathName.put("path", 1);
-        indexUserIdIsFolderPathName.put("isFolder", 1);
+        indexUserIdIsFolderPathName.put(Constants.IS_FOLDER, 1);
         indexUserIdIsFolderPathName.put("name", 1);
         indexModelList.add(new IndexModel(indexUserIdIsFolderPathName));
 
-        Document indexUserIdIsFolder = new Document("userId", 1);
-        indexUserIdIsFolder.put("isFolder", 1);
+        Document indexUserIdIsFolder = new Document(IUserService.USER_ID, 1);
+        indexUserIdIsFolder.put(Constants.IS_FOLDER, 1);
         indexModelList.add(new IndexModel(indexUserIdIsFolder));
 
-        Document indexUserIdIsFavorite = new Document("userId", 1);
-        indexUserIdIsFavorite.put("isFavorite", 1);
+        Document indexUserIdIsFavorite = new Document(IUserService.USER_ID, 1);
+        indexUserIdIsFavorite.put(Constants.IS_FAVORITE, 1);
         indexModelList.add(new IndexModel(indexUserIdIsFavorite));
 
-        Document indexUserIdContentType = new Document("userId", 1);
-        indexUserIdContentType.put("contentType", 1);
+        Document indexUserIdContentType = new Document(IUserService.USER_ID, 1);
+        indexUserIdContentType.put(Constants.CONTENT_TYPE, 1);
         indexModelList.add(new IndexModel(indexUserIdContentType));
 
-        ListIndexesIterable<Document> listIndexesIterable = mongoTemplate.getCollection(FileServiceImpl.COLLECTION_NAME).listIndexes();
+        ListIndexesIterable<Document> listIndexesIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).listIndexes();
         long indexCount = 0;
-        for (Document ignored : listIndexesIterable) {
+        for (var ignored : listIndexesIterable) {
             indexCount++;
         }
 
         if (indexCount < 2) {
-            mongoTemplate.getCollection(FileServiceImpl.COLLECTION_NAME).createIndexes(indexModelList);
+            mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).createIndexes(indexModelList);
         }
 
     }

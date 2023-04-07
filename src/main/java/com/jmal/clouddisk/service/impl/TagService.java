@@ -3,6 +3,7 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.model.TagDO;
 import com.jmal.clouddisk.model.TagDTO;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -73,8 +74,8 @@ public class TagService {
     private void getTagArticlesNum(TagDTO tagDTO) {
         Query query = new Query();
         query.addCriteria(Criteria.where("tagIds").is(tagDTO.getId()));
-        query.addCriteria(Criteria.where("release").is(true));
-        tagDTO.setArticleNum(mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME));
+        query.addCriteria(Criteria.where(Constants.RELEASE).is(true));
+        tagDTO.setArticleNum(mongoTemplate.count(query, CommonFileService.COLLECTION_NAME));
     }
 
     /***

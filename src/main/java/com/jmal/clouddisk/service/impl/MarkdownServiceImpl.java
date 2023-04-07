@@ -3,6 +3,7 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.StrUtil;
@@ -18,6 +19,7 @@ import com.jmal.clouddisk.exception.Either;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
@@ -39,7 +41,6 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -52,7 +53,6 @@ import java.util.regex.Pattern;
 
 import static com.mongodb.client.model.Aggregates.limit;
 import static com.mongodb.client.model.Aggregates.skip;
-import static java.util.stream.Collectors.toList;
 
 /**
  * @author jmal
@@ -82,7 +82,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
     private TagService tagService;
 
     @Autowired
-    FileServiceImpl fileService;
+    CommonFileService commonFileService;
 
     private static final AES AES = SecureUtil.aes();
 
@@ -92,11 +92,11 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (CharSequenceUtil.isBlank(mark)) {
             return ResultUtil.success(new FileDocument());
         }
-        FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
+        FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, CommonFileService.COLLECTION_NAME);
         if (fileDocument != null) {
             String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
             fileDocument.setUsername(username);
-            String currentDirectory = fileService.getUserDirectory(fileDocument.getPath());
+            String currentDirectory = commonFileService.getUserDirectory(fileDocument.getPath());
             File file = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName()).toFile();
             String content = FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file)));
             fileDocument.setContentText(content);
@@ -171,9 +171,9 @@ public class MarkdownServiceImpl implements IMarkdownService {
         Query query = new Query();
         // 查询条件
         query.skip(0).limit(5000);
-        query.addCriteria(Criteria.where("suffix").is("md"));
-        query.addCriteria(Criteria.where("release").is(true));
-        return mongoTemplate.find(query, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
+        query.addCriteria(Criteria.where(Constants.SUFFIX).is("md"));
+        query.addCriteria(Criteria.where(Constants.RELEASE).is(true));
+        return mongoTemplate.find(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
     }
 
     @Override
@@ -242,11 +242,11 @@ public class MarkdownServiceImpl implements IMarkdownService {
             pagination = true;
         }
         Query query = new Query();
-        query.addCriteria(Criteria.where("release").is(true));
-        long count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
+        query.addCriteria(Criteria.where(Constants.RELEASE).is(true));
+        long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
         List<Bson> list = new ArrayList<>(Arrays.asList(new Document("$match",
-                        new Document("release", true)
-                                .append("alonePage",
+                        new Document(Constants.RELEASE, true)
+                                .append(Constants.ALONE_PAGE,
                                         new Document("$exists", false))),
                 new Document("$sort",
                         new Document("uploadDate", -1L)),
@@ -263,7 +263,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             list.add(limit(limit));
         }
         Map<String, List<ArchivesVO>> resultMap = new LinkedHashMap<>();
-        AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(FileServiceImpl.COLLECTION_NAME).aggregate(list);
+        AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(list);
         for (Document doc : aggregateIterable) {
             String day = doc.getString("day");
             List<ArchivesVO> aList;
@@ -300,9 +300,9 @@ public class MarkdownServiceImpl implements IMarkdownService {
         }
         Query query = new Query();
         query.addCriteria(Criteria.where("slug").is(slug));
-        fileDocument = mongoTemplate.findOne(query, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
+        fileDocument = mongoTemplate.findOne(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
         if (fileDocument == null) {
-            fileDocument = mongoTemplate.findById(slug, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
+            fileDocument = mongoTemplate.findById(slug, FileDocument.class, CommonFileService.COLLECTION_NAME);
         }
         if (fileDocument == null) {
             return null;
@@ -339,7 +339,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             query.addCriteria(Criteria.where("_id").is(doc.getId()));
             Update update = new Update();
             update.set("pageSort", doc.getPageSort());
-            mongoTemplate.updateFirst(query, update, FileServiceImpl.COLLECTION_NAME);
+            mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
         });
         return ResultUtil.success();
     }
@@ -350,7 +350,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
      */
     @Override
     public ResponseResult<List<MarkdownVO>> getMarkdownList(ArticleDTO articleDTO) {
-        int skip = 0, limit = 0;
+        int skip = 0;
+        int limit = 0;
         long count = 0;
         Integer pageIndex = articleDTO.getPageIndex();
         Integer pageSize = articleDTO.getPageSize();
@@ -361,34 +362,9 @@ public class MarkdownServiceImpl implements IMarkdownService {
         Query query = new Query();
         // 查询条件
         boolean isDraft = false;
-        query.addCriteria(Criteria.where("suffix").is("md"));
-        if (!CharSequenceUtil.isBlank(articleDTO.getUserId())) {
-            query.addCriteria(Criteria.where("userId").is(articleDTO.getUserId()));
-        }
-        if (articleDTO.getIsRelease() != null && articleDTO.getIsRelease()) {
-            query.addCriteria(Criteria.where("release").is(true));
-        }
-        if (articleDTO.getIsAlonePage() != null && articleDTO.getIsAlonePage()) {
-            query.addCriteria(Criteria.where("alonePage").exists(true));
-            query.with(Sort.by(Sort.Direction.ASC, "pageSort"));
-        } else {
-            query.addCriteria(Criteria.where("alonePage").exists(false));
-        }
-        if (articleDTO.getIsDraft() != null && articleDTO.getIsDraft()) {
-            isDraft = true;
-            query.addCriteria(Criteria.where("draft").exists(true));
-        }
-        if (articleDTO.getCategoryIds() != null && articleDTO.getCategoryIds().length > 0) {
-            query.addCriteria(Criteria.where("categoryIds").in((Object[]) articleDTO.getCategoryIds()));
-        }
-        if (articleDTO.getTagIds() != null && articleDTO.getTagIds().length > 0) {
-            query.addCriteria(Criteria.where("tagIds").in((Object[]) articleDTO.getTagIds()));
-        }
-        if (!CharSequenceUtil.isBlank(articleDTO.getKeyword())) {
-            query.addCriteria(Criteria.where("contentText").regex(articleDTO.getKeyword(), "i"));
-        }
+        isDraft = setProperty(articleDTO, query, isDraft);
         if (limit > 0) {
-            count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
+            count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
         }
         // 排序
         if (!CharSequenceUtil.isBlank(articleDTO.getSortableProp()) && !CharSequenceUtil.isBlank(articleDTO.getOrder())) {
@@ -404,13 +380,43 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (limit > 0) {
             query.limit(limit);
         }
-        List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
+        List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
         List<MarkdownVO> markdownVOList;
         boolean finalIsDraft = isDraft;
-        markdownVOList = fileDocumentList.parallelStream().map(Either.wrap(fileDocument -> getMarkdownVO(fileDocument, finalIsDraft))).collect(toList());
+        markdownVOList = fileDocumentList.parallelStream().map(Either.wrap(fileDocument -> getMarkdownVO(fileDocument, finalIsDraft))).toList();
         ResponseResult<List<MarkdownVO>> result = ResultUtil.success(markdownVOList);
         result.setCount(count);
         return result;
+    }
+
+    private static boolean setProperty(ArticleDTO articleDTO, Query query, boolean isDraft) {
+        query.addCriteria(Criteria.where(Constants.SUFFIX).is("md"));
+        if (!CharSequenceUtil.isBlank(articleDTO.getUserId())) {
+            query.addCriteria(Criteria.where(IUserService.USER_ID).is(articleDTO.getUserId()));
+        }
+        if (articleDTO.getIsRelease() != null && articleDTO.getIsRelease()) {
+            query.addCriteria(Criteria.where(Constants.RELEASE).is(true));
+        }
+        if (articleDTO.getIsAlonePage() != null && articleDTO.getIsAlonePage()) {
+            query.addCriteria(Criteria.where(Constants.ALONE_PAGE).exists(true));
+            query.with(Sort.by(Sort.Direction.ASC, "pageSort"));
+        } else {
+            query.addCriteria(Criteria.where(Constants.ALONE_PAGE).exists(false));
+        }
+        if (articleDTO.getIsDraft() != null && articleDTO.getIsDraft()) {
+            isDraft = true;
+            query.addCriteria(Criteria.where(Constants.DRAFT).exists(true));
+        }
+        if (articleDTO.getCategoryIds() != null && articleDTO.getCategoryIds().length > 0) {
+            query.addCriteria(Criteria.where("categoryIds").in((Object[]) articleDTO.getCategoryIds()));
+        }
+        if (articleDTO.getTagIds() != null && articleDTO.getTagIds().length > 0) {
+            query.addCriteria(Criteria.where("tagIds").in((Object[]) articleDTO.getTagIds()));
+        }
+        if (!CharSequenceUtil.isBlank(articleDTO.getKeyword())) {
+            query.addCriteria(Criteria.where("contentText").regex(articleDTO.getKeyword(), "i"));
+        }
+        return isDraft;
     }
 
     private MarkdownVO getMarkdownVO(FileDocument fileDocument, boolean isDraft) {
@@ -460,7 +466,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         Query query1 = new Query();
         query1.addCriteria(Criteria.where("_id").nin(upload.getFileId()));
         query1.addCriteria(Criteria.where("name").is(upload.getFilename()));
-        if (mongoTemplate.exists(query1, FileServiceImpl.COLLECTION_NAME)) {
+        if (mongoTemplate.exists(query1, CommonFileService.COLLECTION_NAME)) {
             return ResultUtil.warning("该标题已存在");
         }
         boolean isDraft = false;
@@ -476,7 +482,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             // 修改
             isUpdate = true;
             query.addCriteria(Criteria.where("_id").is(upload.getFileId()));
-            fileDocument = mongoTemplate.findById(upload.getFileId(), FileDocument.class, FileServiceImpl.COLLECTION_NAME);
+            fileDocument = mongoTemplate.findById(upload.getFileId(), FileDocument.class, CommonFileService.COLLECTION_NAME);
             if (fileDocument == null) {
                 return ResultUtil.warning("该文档不存在");
             }
@@ -489,7 +495,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         fileDocument.setUpdateDate(nowDate);
         fileDocument.setPath(currentDirectory);
         fileDocument.setSize(upload.getContentText().length());
-        fileDocument.setContentType(FileServiceImpl.CONTENT_TYPE_MARK_DOWN);
+        fileDocument.setContentType(Constants.CONTENT_TYPE_MARK_DOWN);
         fileDocument.setMd5(CalcMd5.getMd5(filename + upload.getContentText()));
         fileDocument.setUploadDate(uploadDate);
         fileDocument.setName(filename);
@@ -499,7 +505,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         fileDocument.setTagIds(tagService.getTagIdsByNames(upload.getTagNames()));
         fileDocument.setIsFolder(false);
         if (upload.getIsAlonePage() != null && upload.getIsAlonePage()) {
-            fileDocument.setAlonePage(upload.getIsAlonePage());
+            fileDocument.setAlonePage(true);
         }
         if (upload.getPageSort() != null) {
             fileDocument.setPageSort(upload.getPageSort());
@@ -522,18 +528,18 @@ public class MarkdownServiceImpl implements IMarkdownService {
             }
             fileDocument.setContentText(upload.getContentText());
             fileDocument.setDraft(null);
-            update.set("draft", JSON.toJSONStringWithDateFormat(fileDocument, "yyyy-MM-dd HH:mm:ss"));
+            update.set(Constants.DRAFT, JSON.toJSONStringWithDateFormat(fileDocument, "yyyy-MM-dd HH:mm:ss"));
         } else {
             if (upload.getFileId() != null) {
-                update.unset("draft");
+                update.unset(Constants.DRAFT);
             }
         }
         if (!isUpdate) {
-            FileDocument saved = mongoTemplate.save(fileDocument, FileServiceImpl.COLLECTION_NAME);
+            FileDocument saved = mongoTemplate.save(fileDocument, CommonFileService.COLLECTION_NAME);
             upload.setFileId(saved.getId());
             query.addCriteria(Criteria.where("_id").is(saved.getId()));
         }
-        mongoTemplate.upsert(query, update, FileServiceImpl.COLLECTION_NAME);
+        mongoTemplate.upsert(query, update, CommonFileService.COLLECTION_NAME);
         return ResultUtil.success(upload.getFileId());
     }
 
@@ -548,12 +554,12 @@ public class MarkdownServiceImpl implements IMarkdownService {
     private String syncDocFile(ArticleParamDTO upload, LocalDateTime uploadDate, FileDocument fileDocument, String filename) {
         String currentDirectory;
         if (!CharSequenceUtil.isBlank(upload.getCurrentDirectory())) {
-            currentDirectory = fileService.getUserDirectory(upload.getCurrentDirectory());
+            currentDirectory = commonFileService.getUserDirectory(upload.getCurrentDirectory());
         } else {
             Path docPaths = Paths.get(fileProperties.getDocumentDir(), TimeUntils.getFileTimeStrOfMonth(uploadDate));
             // docImagePaths 不存在则新建
-            fileService.upsertFolder(docPaths, upload.getUsername(), upload.getUserId());
-            currentDirectory = fileService.getUserDirectory(docPaths.toString());
+            commonFileService.upsertFolder(docPaths, upload.getUsername(), upload.getUserId());
+            currentDirectory = commonFileService.getUserDirectory(docPaths.toString());
         }
         // 文档为草稿时，文件名使用草稿的文件名
         if (Boolean.TRUE.equals(!StrUtil.isBlankIfStr(upload.getIsDraft()) && upload.getIsDraft()) && !CharSequenceUtil.isBlank(fileDocument.getName())) {
@@ -569,7 +575,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (isChangeFileName || isChangePath) {
             Path oldPath = Paths.get(fileProperties.getRootDir(), upload.getUsername(), fileDocument.getPath(), fileDocument.getName());
             if (Files.exists(oldPath)) {
-                FileUtil.del(oldPath);
+                PathUtil.del(oldPath);
             }
         }
         return currentDirectory;
@@ -579,7 +585,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
     public ResponseResult<Object> deleteDraft(String fileId, String username) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
-        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, FileServiceImpl.COLLECTION_NAME);
+        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
         if (fileDocument == null || fileDocument.getDraft() == null) {
             return ResultUtil.success();
         }
@@ -591,8 +597,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
         FileUtil.writeString(fileDocument.getContentText(), file, StandardCharsets.UTF_8);
 
         Update update = new Update();
-        update.unset("draft");
-        mongoTemplate.upsert(query, update, FileServiceImpl.COLLECTION_NAME);
+        update.unset(Constants.DRAFT);
+        mongoTemplate.upsert(query, update, CommonFileService.COLLECTION_NAME);
         return ResultUtil.success();
     }
 
@@ -607,7 +613,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             query.addCriteria(Criteria.where("_id").nin(fileId));
         }
         query.addCriteria(Criteria.where("slug").is(slug));
-        if (mongoTemplate.exists(query, FileServiceImpl.COLLECTION_NAME)) {
+        if (mongoTemplate.exists(query, CommonFileService.COLLECTION_NAME)) {
             return slug + "-1";
         }
         return slug;
@@ -620,7 +626,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
-        fileService.updateFile(upload.getUsername(), file);
+        commonFileService.modifyFile(upload.getUsername(), file);
         return ResultUtil.success();
     }
 
@@ -646,27 +652,26 @@ public class MarkdownServiceImpl implements IMarkdownService {
         String userId = upload.getUserId();
         Path docImagePaths = Paths.get(fileProperties.getDocumentImgDir(), TimeUntils.getFileTimeStrOfMonth());
         // docImagePaths 不存在则新建
-        fileService.upsertFolder(docImagePaths, username, userId);
+        commonFileService.upsertFolder(docImagePaths, username, userId);
         File newFile;
-        try {
-            HttpResponse response = HttpRequest.get(upload.getUrl()).setFollowRedirects(true).executeAsync();
+        try (HttpResponse response = HttpRequest.get(upload.getUrl()).setFollowRedirects(true).executeAsync()) {
             if (!response.isOk()) {
                 throw new HttpException("Server response error with status code: [{}]", response.getStatus());
             }
             File destFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString()).toFile();
             final File outFile = response.completeFileNameFromHeader(destFile);
-            if (!outFile.getName().endsWith(FileServiceImpl.POINT_SUFFIX_WEBP)) {
-                newFile = new File(outFile.getPath() + FileServiceImpl.POINT_SUFFIX_WEBP);
+            if (!outFile.getName().endsWith(Constants.POINT_SUFFIX_WEBP)) {
+                newFile = new File(outFile.getPath() + Constants.POINT_SUFFIX_WEBP);
             } else {
                 newFile = new File(outFile.getPath());
             }
             BufferedImage image = ImageIO.read(response.bodyStream());
-            fileService.imageFileToWebp(newFile, image);
+            commonFileService.imageFileToWebp(newFile, image);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new CommonException(2, "上传失败");
         }
-        String fileId = fileService.createFile(username, newFile, userId, true);
+        String fileId = commonFileService.createFile(username, newFile, userId, true);
         map.put("fileId", fileId);
         String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), newFile.getName()), StandardCharsets.UTF_8);
         map.put("url", filepath);
@@ -693,24 +698,24 @@ public class MarkdownServiceImpl implements IMarkdownService {
         String username = upload.getUsername();
         String userId = upload.getUserId();
         // docImagePaths 不存在则新建
-        fileService.upsertFolder(docImagePaths, username, userId);
+        commonFileService.upsertFolder(docImagePaths, username, userId);
         File newFile;
         try {
             if (userService.getDisabledWebp(userId) || ("ico".equals(FileUtil.getSuffix(fileName)))) {
                 newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
                 FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             } else {
-                if (!fileName.endsWith(FileServiceImpl.POINT_SUFFIX_WEBP)) {
-                    fileName = fileName + FileServiceImpl.POINT_SUFFIX_WEBP;
+                if (!fileName.endsWith(Constants.POINT_SUFFIX_WEBP)) {
+                    fileName = fileName + Constants.POINT_SUFFIX_WEBP;
                 }
                 newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
                 BufferedImage image = ImageIO.read(multipartFile.getInputStream());
-                fileService.imageFileToWebp(newFile, image);
+                commonFileService.imageFileToWebp(newFile, image);
             }
         } catch (IOException e) {
             throw new CommonException(2, "上传失败");
         }
-        String fileId = fileService.createFile(username, newFile, userId, true);
+        String fileId = commonFileService.createFile(username, newFile, userId, true);
         map.put("fileId", fileId);
         String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), fileName), StandardCharsets.UTF_8);
         map.put("filename", fileName);
@@ -730,17 +735,12 @@ public class MarkdownServiceImpl implements IMarkdownService {
         matcher.reset();
         boolean result = matcher.find();
         if (result) {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             do {
-                //"/public/view?relativePath="+path + oldSrc +"&userId="+userId;
                 String value = matcher.group(0);
                 if (value.matches("(?!([hH][tT]{2}[pP]:/*|[hH][tT]{2}[pP][sS]:/*|[fF][tT][pP]:/*)).*?$+") && !value.startsWith("/file/public/image")) {
                     String relativepath = AES.encryptBase64(path + value);
-                    try {
-                        relativepath = URLEncoder.encode(relativepath, "UTF-8");
-                    } catch (UnsupportedEncodingException e) {
-                        throw new CommonException(-1, e.getMessage());
-                    }
+                    relativepath = URLEncoder.encode(relativepath, StandardCharsets.UTF_8);
                     String replacement = "/api/public/view?relativePath=" + relativepath + "&userId=" + userId;
                     matcher.appendReplacement(sb, replacement);
                 }
