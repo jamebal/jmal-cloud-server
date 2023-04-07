@@ -88,6 +88,23 @@ public class OssConfigService {
         OSS_SERVICE_MAP.put(key, ossService);
     }
 
+    public static IOssService getOssStorageService(String ossPath) {
+        BucketInfo bucketInfo = CaffeineUtil.getOssDiameterPrefixCache(ossPath);
+        return OssConfigService.getOssService(bucketInfo.getWebPathPrefix());
+    }
+
+    public static String getObjectName(String path, String ossPath) {
+        Path prePath = Paths.get(path);
+        String name = "";
+        if (prePath.getNameCount() > 2) {
+            name = path.substring(ossPath.length() + 1);
+            if (!name.endsWith("/")) {
+                name = name + "/";
+            }
+        }
+        return name;
+    }
+
     public static IOssService getOssService(String key) {
         return OSS_SERVICE_MAP.get(key);
     }

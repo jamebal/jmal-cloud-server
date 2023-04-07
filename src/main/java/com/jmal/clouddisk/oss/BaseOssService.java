@@ -170,7 +170,7 @@ public class BaseOssService {
     public AbstractOssObject getObject(String objectName) {
         Path path = getTempFileCache(objectName);
         if (path != null) {
-            return new TempFileObject(path.toFile());
+            return new TempFileObject(path.toFile(), objectName, bucketName);
         }
         printOperation(ossService.getPlatform().getKey(), "getObject", objectName);
         return ossService.getAbstractOssObject(objectName);

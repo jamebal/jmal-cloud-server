@@ -37,11 +37,16 @@ public class FileIntroVO extends FileBase{
      * 是否分享
      */
     private Boolean isShare;
-
+    /**
+     * 是否为oss文件
+     */
+    private Boolean ossFile;
     /***
      * 是否为私密链接
      */
     private Boolean isPrivacy;
+
+    private String contentText;
 
     private Boolean shareBase;
     /***

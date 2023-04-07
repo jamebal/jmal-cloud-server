@@ -15,6 +15,7 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
@@ -72,6 +73,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     @Autowired
     MultipartUpload multipartUpload;
 
+    @Autowired
+    WebOssService webOssService;
+
     /***
      * 前端文件夹树的第一级的文件Id
      */
@@ -82,6 +86,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     @Override
     public ResponseResult<Object> listFiles(UploadApiParamDTO upload) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
+        Path path = Paths.get(upload.getUsername(), upload.getCurrentDirectory());
+        String ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null) {
+            return webOssService.searchFileAndOpenOssFolder(path);
+        }
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
         Criteria criteria;
         String queryFileType = upload.getQueryFileType();
@@ -234,7 +243,12 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         ResponseResult<Object> result = ResultUtil.genResult();
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument == null) {
-            return ResultUtil.success("文件不存在了");
+            // ossFolder
+            return webOssService.searchFileAndOpenOssFolder(Paths.get(upload.getUsername(), upload.getCurrentDirectory()));
+        }
+        if (Boolean.TRUE.equals(fileDocument.getOssFolder())) {
+            // ossFolder
+            return webOssService.searchFileAndOpenOssFolder(Paths.get(upload.getUsername(), fileDocument.getName()));
         }
         String currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
         Criteria criteria = Criteria.where("path").is(currentDirectory);
@@ -731,6 +745,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         } else {
             dirPath = Paths.get(fileProperties.getRootDir(), username, path).toString();
         }
+        Path prePth = Paths.get(username, path);
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            return webOssService.searchFileAndOpenOssFolder(prePth);
+        }
         return ResultUtil.success(listFile(username, dirPath, tempDir));
     }
 
@@ -910,7 +929,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
      * @param dirPath dirPath
      * @param tempDir tempDir
      */
-    private List<FileDocument> listFile(String username, String dirPath, boolean tempDir) {
+    private List<FileIntroVO> listFile(String username, String dirPath, boolean tempDir) {
         File dir = new File(dirPath);
         if (!dir.exists()) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
@@ -920,7 +939,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             return Lists.newArrayList();
         }
         return Arrays.stream(fileList).map(file -> {
-            FileDocument fileDocument = new FileDocument();
+            FileIntroVO fileDocument = new FileIntroVO();
             String filename = file.getName();
             String suffix = FileUtil.extName(filename);
             boolean isFolder = file.isDirectory();

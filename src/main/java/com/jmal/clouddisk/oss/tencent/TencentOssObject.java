@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.oss.tencent;
 
-import com.aliyun.oss.model.OSSObject;
 import com.jmal.clouddisk.oss.AbstractOssObject;
+import com.jmal.clouddisk.oss.FileInfo;
 import com.qcloud.cos.model.COSObject;
 
 import java.io.IOException;
@@ -33,6 +33,17 @@ public class TencentOssObject extends AbstractOssObject {
     @Override
     public String getKey() {
         return this.cosObject.getKey();
+    }
+
+    @Override
+    public FileInfo getFileInfo() {
+        FileInfo fileInfo = new FileInfo();
+        fileInfo.setSize(this.cosObject.getObjectMetadata().getContentLength());
+        fileInfo.setKey(this.cosObject.getKey());
+        fileInfo.setLastModified(this.cosObject.getObjectMetadata().getLastModified());
+        fileInfo.setETag(this.cosObject.getObjectMetadata().getETag());
+        fileInfo.setBucketName(this.cosObject.getBucketName());
+        return fileInfo;
     }
 
     @Override

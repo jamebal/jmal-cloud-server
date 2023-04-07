@@ -2,6 +2,7 @@ package com.jmal.clouddisk.oss.aliyun;
 
 import com.aliyun.oss.model.OSSObject;
 import com.jmal.clouddisk.oss.AbstractOssObject;
+import com.jmal.clouddisk.oss.FileInfo;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +33,17 @@ public class AliyunOssObject extends AbstractOssObject {
     @Override
     public String getKey() {
         return this.ossObject.getKey();
+    }
+
+    @Override
+    public FileInfo getFileInfo() {
+        FileInfo fileInfo = new FileInfo();
+        fileInfo.setSize(this.ossObject.getObjectMetadata().getContentLength());
+        fileInfo.setKey(this.ossObject.getKey());
+        fileInfo.setLastModified(this.ossObject.getObjectMetadata().getLastModified());
+        fileInfo.setETag(this.ossObject.getObjectMetadata().getETag());
+        fileInfo.setBucketName(this.ossObject.getBucketName());
+        return fileInfo;
     }
 
     @Override

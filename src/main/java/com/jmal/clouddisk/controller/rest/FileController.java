@@ -10,9 +10,11 @@ import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
+import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,6 +33,8 @@ import org.springframework.web.util.UriUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -49,6 +53,9 @@ public class FileController {
 
     @Autowired
     private IFileService fileService;
+
+    @Autowired
+    private WebOssService webOssService;
 
     @Autowired
     AuthInterceptor authInterceptor;
@@ -162,8 +169,12 @@ public class FileController {
     @GetMapping("/preview/text")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Optional<FileDocument>> previewText(@RequestParam String id, @RequestParam String username) {
-        ResultUtil.checkParamIsNull(id,username);
+    public ResponseResult<Object> previewText(@RequestParam String id, @RequestParam String username, @RequestParam String path, @RequestParam String fileName) {
+        Path prePth = Paths.get(username, path, fileName);
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            return ResultUtil.success(webOssService.readToText(ossPath, prePth));
+        }
         return ResultUtil.success(fileService.getById(id, username));
     }
 

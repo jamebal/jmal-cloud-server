@@ -1,8 +1,6 @@
 package com.jmal.clouddisk.webdav.resource;
 
-import com.jmal.clouddisk.oss.BucketInfo;
 import com.jmal.clouddisk.oss.FileInfo;
-import com.jmal.clouddisk.oss.IOssService;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -48,11 +46,11 @@ public class FileResourceSet extends AbstractFileResourceSet {
         String ossPath = CaffeineUtil.getOssPath(prePath);
         if (ossPath != null && prePath.getNameCount() > 2) {
             path = path.substring(ossPath.length() + 1);
-            FileInfo fileInfo = getOssStorageService(ossPath).getFileInfo(path);
+            FileInfo fileInfo = OssConfigService.getOssStorageService(ossPath).getFileInfo(path);
             if (fileInfo == null) {
                 return new EmptyResource(root, path);
             }
-            return new OssFileResource(root, path, fileInfo, isReadOnly(), getManifest(), getOssStorageService(ossPath));
+            return new OssFileResource(root, path, fileInfo, isReadOnly(), getManifest(), OssConfigService.getOssStorageService(ossPath));
         } else {
             f = file(path, false);
         }
@@ -68,11 +66,6 @@ public class FileResourceSet extends AbstractFileResourceSet {
         return new LocalFileResource(root, path, f, isReadOnly(), getManifest());
     }
 
-    private IOssService getOssStorageService(String ossPath) {
-        BucketInfo bucketInfo = CaffeineUtil.getOssDiameterPrefixCache(ossPath);
-        return OssConfigService.getOssService(bucketInfo.getWebPathPrefix());
-    }
-
     @Override
     public String[] list(String path) {
         checkPath(path);
@@ -80,8 +73,8 @@ public class FileResourceSet extends AbstractFileResourceSet {
         File f;
         String ossPath = CaffeineUtil.getOssPath(Paths.get(path));
         if (ossPath != null) {
-            String name = getObjectName(path, ossPath);
-            return getOssStorageService(ossPath).list(name);
+            String name = OssConfigService.getObjectName(path, ossPath);
+            return OssConfigService.getOssStorageService(ossPath).list(name);
         } else {
             f = file(path, true);
         }
@@ -108,8 +101,8 @@ public class FileResourceSet extends AbstractFileResourceSet {
         File f;
         String ossPath = CaffeineUtil.getOssPath(Paths.get(path));
         if (ossPath != null) {
-            String name = getObjectName(path, ossPath);
-            return getOssStorageService(ossPath).mkdir(name);
+            String name = OssConfigService.getObjectName(path, ossPath);
+            return OssConfigService.getOssStorageService(ossPath).mkdir(name);
         } else {
             f = file(path, false);
         }
@@ -118,18 +111,6 @@ public class FileResourceSet extends AbstractFileResourceSet {
             return false;
         }
         return f.mkdir();
-    }
-
-    private static String getObjectName(String path, String ossPath) {
-        Path prePath = Paths.get(path);
-        String name = "";
-        if (prePath.getNameCount() > 2) {
-            name = path.substring(ossPath.length() + 1);
-            if (!name.endsWith("/")) {
-                name = name + "/";
-            }
-        }
-        return name;
     }
 
     @Override
@@ -156,7 +137,7 @@ public class FileResourceSet extends AbstractFileResourceSet {
             if (prePath.getNameCount() > 2) {
                 path = path.substring(ossPath.length() + 1);
             }
-            return getOssStorageService(ossPath).write(is, ossPath, path);
+            return OssConfigService.getOssStorageService(ossPath).write(is, ossPath, path);
         } else {
             dest = file(path, false);
         }

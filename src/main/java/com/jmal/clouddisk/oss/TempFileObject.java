@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.oss;
 
 import java.io.*;
+import java.util.Date;
 
 /**
  * @author jmal
@@ -11,8 +12,14 @@ public class TempFileObject extends AbstractOssObject {
 
     private final File tempFile;
 
-    public TempFileObject(File file) {
+    private final String objectName;
+
+    private final String bucketName;
+
+    public TempFileObject(File file, String objectName, String bucketName) {
         this.tempFile = file;
+        this.objectName = objectName;
+        this.bucketName = bucketName;
     }
 
     @Override
@@ -23,6 +30,17 @@ public class TempFileObject extends AbstractOssObject {
     @Override
     public void closeObject() {
         // none
+    }
+
+    @Override
+    public FileInfo getFileInfo() {
+        FileInfo fileInfo = new FileInfo();
+        fileInfo.setSize(this.tempFile.length());
+        fileInfo.setKey(this.objectName);
+        fileInfo.setLastModified(new Date(tempFile.lastModified()));
+        fileInfo.setETag(String.valueOf(tempFile.hashCode()));
+        fileInfo.setBucketName(this.bucketName);
+        return fileInfo;
     }
 
     @Override
