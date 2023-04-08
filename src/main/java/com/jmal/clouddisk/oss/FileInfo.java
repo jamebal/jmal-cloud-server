@@ -34,7 +34,7 @@ public class FileInfo {
         FileIntroVO fileIntroVO = new FileIntroVO();
         String fileName = getName();
         fileIntroVO.setAgoTime(System.currentTimeMillis() - lastModified.getTime());
-        fileIntroVO.setId(new ObjectId().toHexString());
+        fileIntroVO.setId(isFolder() ? new ObjectId().toHexString() : eTag);
         fileIntroVO.setIsFavorite(false);
         fileIntroVO.setIsFolder(isFolder());
         fileIntroVO.setName(fileName);

@@ -1077,6 +1077,13 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     @Override
     public ResponseResult<Object> upload(UploadApiParamDTO upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
+
+        Path prePth = Paths.get(upload.getUsername(), upload.getCurrentDirectory(), upload.getFilename());
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            return ResultUtil.success(webOssService.upload(ossPath, prePth, upload));
+        }
+
         int currentChunkSize = upload.getCurrentChunkSize();
         long totalSize = upload.getTotalSize();
         String filename = upload.getFilename();

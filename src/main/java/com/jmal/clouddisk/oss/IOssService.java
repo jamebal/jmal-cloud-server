@@ -98,9 +98,69 @@ public interface IOssService {
     void uploadFile(Path tempFileAbsolutePath, String objectName);
 
     /**
+     * 上传文件到 OSS
+     * @param inputStream inputStream
+     * @param objectName object key
+     */
+    void uploadFile(InputStream inputStream, String objectName, Integer inputStreamLength);
+
+    /**
      * 检查Bucket是否存在，并且验证配置是否可用，用于创建OSS配置时使用
      */
     boolean doesBucketExist();
+
+    /**
+     * 判断对象是否存在
+     */
+    boolean doesObjectExist(String objectName);
+
+    /**
+     * 获取分片上传事件的唯一标识
+     * @param objectName objectName
+     * @return uploadId
+     */
+    String getUploadId(String objectName);
+
+    /**
+     * 初始化分片上传事件
+     * @param objectName objectName
+     * @return uploadId
+     */
+    String initiateMultipartUpload(String objectName);
+
+    /**
+     * 获取分片号列表
+     * @param objectName objectName
+     * @param uploadId uploadId
+     * @return 分片号列表
+     */
+    List<Integer> getListParts(String objectName, String uploadId);
+
+    /**
+     * 上传分片
+     * @param inputStream 输入流
+     * @param objectName objectName
+     * @param partSize   分片大小
+     * @param partNumber 分片编号
+     * @param uploadId   uploadId
+     * @return 分片是否上传成功
+     */
+    boolean uploadPart(InputStream inputStream, String objectName, int partSize, int partNumber, String uploadId);
+
+    /**
+     * 取消分片上传
+     * @param objectName objectName
+     * @param uploadId   uploadId
+     */
+    void abortMultipartUpload(String objectName, String uploadId);
+
+    /**
+     * 完成分片上传(合并分片)
+     * @param objectName objectName
+     * @param uploadId uploadId
+     * @return uploadId
+     */
+    String completeMultipartUpload(String objectName, String uploadId);
 
     /**
      * 关闭需要关闭的一切

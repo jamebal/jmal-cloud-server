@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -59,6 +60,8 @@ public class BaseOssService {
      */
     private final Cache<String, Path> waitingUploadCache;
 
+    private final Map<String, String> updateIdCache = new ConcurrentHashMap<>();
+
     private final String bucketName;
 
     private final IOssService ossService;
@@ -73,6 +76,21 @@ public class BaseOssService {
         this.tempFileCache = Caffeine.newBuilder().build();
         this.tempFileListCache = Caffeine.newBuilder().build();
         this.waitingUploadCache = Caffeine.newBuilder().build();
+    }
+
+    public String getUploadId(String objectName) {
+        String uploadId;
+        if (updateIdCache.containsKey(objectName)) {
+            uploadId = updateIdCache.get(objectName);
+        } else {
+            uploadId = ossService.initiateMultipartUpload(objectName);
+            updateIdCache.put(objectName, uploadId);
+        }
+        return uploadId;
+    }
+
+    public void setUpdateIdCache(String objectName, String uploadId) {
+        updateIdCache.put(objectName, uploadId);
     }
 
     /**

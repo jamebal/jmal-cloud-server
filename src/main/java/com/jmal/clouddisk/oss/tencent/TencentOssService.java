@@ -9,6 +9,7 @@ import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.auth.BasicCOSCredentials;
 import com.qcloud.cos.auth.COSCredentials;
+import com.qcloud.cos.exception.CosClientException;
 import com.qcloud.cos.exception.CosServiceException;
 import com.qcloud.cos.http.HttpProtocol;
 import com.qcloud.cos.model.*;
@@ -46,6 +47,7 @@ public class TencentOssService implements IOssService {
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor);
         log.info( "{}配置加载成功, bucket: {}, username: {}", getPlatform().getValue(), bucketName, ossConfigDTO.getUsername());
+        ThreadUtil.execute(this::getMultipartUploads);
     }
 
     @Override
@@ -193,6 +195,107 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
+    public boolean doesObjectExist(String objectName) {
+        return this.cosClient.doesObjectExist(bucketName, objectName);
+    }
+
+    @Override
+    public String getUploadId(String objectName) {
+        return baseOssService.getUploadId(objectName);
+    }
+
+    @Override
+    public String initiateMultipartUpload(String objectName) {
+        InitiateMultipartUploadRequest request = new InitiateMultipartUploadRequest(bucketName, objectName);
+        // 分块上传的过程中，仅能通过初始化分块指定文件上传之后的 metadata
+        // 需要的头部可以在这里指定
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        request.setObjectMetadata(objectMetadata);
+        InitiateMultipartUploadResult initResult = cosClient.initiateMultipartUpload(request);
+        // 获取 uploadId
+        return initResult.getUploadId();
+    }
+
+    private void getMultipartUploads() {
+        ListMultipartUploadsRequest listMultipartUploadsRequest = new ListMultipartUploadsRequest(bucketName);
+        // 每次请求最多列出多少个
+        listMultipartUploadsRequest.setMaxUploads(100);
+        MultipartUploadListing multipartUploadListing;
+        do {
+            multipartUploadListing = cosClient.listMultipartUploads(listMultipartUploadsRequest);
+            List<MultipartUpload> multipartUploads = multipartUploadListing.getMultipartUploads();
+            for (MultipartUpload mUpload : multipartUploads) {
+                baseOssService.setUpdateIdCache(mUpload.getKey(), mUpload.getUploadId());
+            }
+            listMultipartUploadsRequest.setKeyMarker(multipartUploadListing.getNextKeyMarker());
+            listMultipartUploadsRequest.setUploadIdMarker(multipartUploadListing.getNextUploadIdMarker());
+        } while (multipartUploadListing.isTruncated());
+    }
+
+    @Override
+    public List<Integer> getListParts(String objectName, String uploadId) {
+        return getPartETagList(objectName, uploadId).stream().map(PartETag::getPartNumber).toList();
+    }
+
+    private List<PartETag> getPartETagList(String objectName, String uploadId) {
+        List<PartETag> partETagList = new ArrayList<>();
+        try {
+            PartListing partListing;
+            ListPartsRequest listPartsRequest = new ListPartsRequest(bucketName, objectName, uploadId);
+            do {
+                partListing = cosClient.listParts(listPartsRequest);
+                for (PartSummary partSummary : partListing.getParts()) {
+                    partETagList.add(new PartETag(partSummary.getPartNumber(), partSummary.getETag()));
+                }
+                listPartsRequest.setPartNumberMarker(partListing.getNextPartNumberMarker());
+            } while (partListing.isTruncated());
+        } catch (CosClientException ce) {
+            printException(ce);
+        }
+        return partETagList;
+    }
+
+    @Override
+    public boolean uploadPart(InputStream inputStream, String objectName, int partSize, int partNumber, String uploadId) {
+        UploadPartRequest uploadPartRequest = new UploadPartRequest();
+        uploadPartRequest.setBucketName(bucketName);
+        uploadPartRequest.setKey(objectName);
+        uploadPartRequest.setUploadId(uploadId);
+        uploadPartRequest.setInputStream(inputStream);
+        // 设置分块的长度
+        uploadPartRequest.setPartSize(partSize);
+        // 设置要上传的分块编号
+        uploadPartRequest.setPartNumber(partNumber);
+        try {
+            this.cosClient.uploadPart(uploadPartRequest);
+            return true;
+        } catch (CosClientException e) {
+            printException(e);
+        }
+        return false;
+    }
+
+    @Override
+    public void abortMultipartUpload(String objectName, String uploadId) {
+        AbortMultipartUploadRequest abortMultipartUploadRequest = new AbortMultipartUploadRequest(bucketName, objectName, uploadId);
+        try {
+            cosClient.abortMultipartUpload(abortMultipartUploadRequest);
+        } catch (CosClientException e) {
+            printException(e);
+        }
+    }
+
+    public String completeMultipartUpload(String objectName, String uploadId) {
+        baseOssService.printOperation(getPlatform().getKey(), "completeMultipartUpload", objectName);
+        // 查询已上传的分片
+        List<PartETag> partETags = getPartETagList(objectName, uploadId);
+        // 完成分片上传
+        CompleteMultipartUploadRequest completeMultipartUploadRequest = new CompleteMultipartUploadRequest(bucketName, objectName, uploadId, partETags);
+        CompleteMultipartUploadResult completeResult = cosClient.completeMultipartUpload(completeMultipartUploadRequest);
+        return completeResult.getRequestId();
+    }
+
+    @Override
     public FileInfo newFolder(String objectName) {
         baseOssService.printOperation(getPlatform().getKey(), "mkdir", objectName);
         if (!objectName.endsWith("/")) {
@@ -236,6 +339,21 @@ public class TencentOssService implements IOssService {
         }
     }
 
+    @Override
+    public void uploadFile(InputStream inputStream, String objectName, Integer inputStreamLength) {
+        baseOssService.printOperation(getPlatform().getKey(), "uploadFile inputStream", objectName);
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        // 上传的流如果能够获取准确的流长度，则推荐一定填写 content-length
+        // 如果确实没办法获取到，则下面这行可以省略，但同时高级接口也没办法使用分块上传了
+        objectMetadata.setContentLength(inputStreamLength);
+        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream, objectMetadata);
+        putObjectRequest.setStorageClass(StorageClass.Standard);
+        try {
+            cosClient.putObject(putObjectRequest);
+        } catch (CosClientException e) {
+            printException(e);
+        }
+    }
 
     private void printException(Exception e) {
         log.error(getPlatform().getValue() + e.getMessage(), e);

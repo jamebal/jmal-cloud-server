@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.oss.aliyun;
 
 import cn.hutool.core.io.file.PathUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.aliyun.oss.ClientException;
 import com.aliyun.oss.OSS;
@@ -40,6 +41,7 @@ public class AliyunOssService implements IOssService {
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor);
         log.info("{}配置加载成功, bucket: {}, username: {}, {}", getPlatform().getValue(), bucketName, ossConfigDTO.getUsername(), this.hashCode());
+        ThreadUtil.execute(this::getMultipartUploads);
     }
 
     @Override
@@ -176,6 +178,124 @@ public class AliyunOssService implements IOssService {
         return exist;
     }
 
+    public String getUploadId(String objectName) {
+        return baseOssService.getUploadId(objectName);
+    }
+
+    @Override
+    public String initiateMultipartUpload(String objectName) {
+        // 创建InitiateMultipartUploadRequest对象。
+        InitiateMultipartUploadRequest request = new InitiateMultipartUploadRequest(bucketName, objectName);
+        // 初始化分片。
+        InitiateMultipartUploadResult uploadResult = ossClient.initiateMultipartUpload(request);
+        // 返回uploadId，它是分片上传事件的唯一标识。您可以根据该uploadId发起相关的操作，例如取消分片上传、查询分片上传等。
+        return uploadResult.getUploadId();
+    }
+
+    private void getMultipartUploads() {
+        try {
+            // 列举分片上传事件。
+            MultipartUploadListing multipartUploadListing;
+            ListMultipartUploadsRequest listMultipartUploadsRequest = new ListMultipartUploadsRequest(bucketName);
+            // 设置每页列举的分片上传事件个数。
+            listMultipartUploadsRequest.setMaxUploads(50);
+            do {
+                multipartUploadListing = ossClient.listMultipartUploads(listMultipartUploadsRequest);
+                for (MultipartUpload multipartUpload : multipartUploadListing.getMultipartUploads()) {
+                    log.info("列举分片上传事件: objectName: {}, uploadId: {}", multipartUpload.getKey(), multipartUpload.getUploadId());
+                    baseOssService.setUpdateIdCache(multipartUpload.getKey(), multipartUpload.getUploadId());
+                }
+                listMultipartUploadsRequest.setKeyMarker(multipartUploadListing.getNextKeyMarker());
+                listMultipartUploadsRequest.setUploadIdMarker(multipartUploadListing.getNextUploadIdMarker());
+            } while (multipartUploadListing.isTruncated());
+        } catch (OSSException oe) {
+            printOSSException(oe);
+        } catch (ClientException ce) {
+            printClientException(ce);
+        }
+    }
+
+    @Override
+    public boolean doesObjectExist(String objectName) {
+        return this.ossClient.doesObjectExist(bucketName, objectName);
+    }
+
+    @Override
+    public List<Integer> getListParts(String objectName, String uploadId) {
+        return getPartETagList(objectName, uploadId).stream().map(PartETag::getPartNumber).toList();
+    }
+
+    private List<PartETag> getPartETagList(String objectName, String uploadId) {
+        List<PartETag> listParts = new ArrayList<>();
+        try {
+            // 列举所有已上传的分片。
+            PartListing partListing;
+            ListPartsRequest listPartsRequest = new ListPartsRequest(bucketName, objectName, uploadId);
+            do {
+                partListing = ossClient.listParts(listPartsRequest);
+                for (PartSummary part : partListing.getParts()) {
+                    listParts.add(new PartETag(part.getPartNumber(), part.getETag()));
+                }
+                // 指定List的起始位置，只有分片号大于此参数值的分片会被列出。
+                listPartsRequest.setPartNumberMarker(partListing.getNextPartNumberMarker());
+            } while (partListing.isTruncated());
+        } catch (OSSException oe) {
+            printOSSException(oe);
+        } catch (ClientException ce) {
+            printClientException(ce);
+        }
+        return listParts;
+    }
+
+    @Override
+    public boolean uploadPart(InputStream inputStream, String objectName, int partSize, int partNumber, String uploadId) {
+        Console.log("objectName: ", objectName, ",partSize: ", partSize, ",partNumber: ", partNumber, ",uploadId: ", uploadId);
+        UploadPartRequest uploadPartRequest = new UploadPartRequest();
+        uploadPartRequest.setBucketName(bucketName);
+        uploadPartRequest.setKey(objectName);
+        uploadPartRequest.setUploadId(uploadId);
+        // 设置上传的分片流。
+        uploadPartRequest.setInputStream(inputStream);
+        // 设置分片大小。除了最后一个分片没有大小限制，其他的分片最小为100 KB。
+        uploadPartRequest.setPartSize(partSize);
+        // 设置分片号。每一个上传的分片都有一个分片号，取值范围是1~10000，如果超出此范围，OSS将返回InvalidArgument错误码。
+        uploadPartRequest.setPartNumber(partNumber);
+        // 每个分片不需要按顺序上传，甚至可以在不同客户端上传，OSS会按照分片号排序组成完整的文件。
+        try {
+            this.ossClient.uploadPart(uploadPartRequest);
+            return true;
+        } catch (ClientException ce) {
+            printClientException(ce);
+        }
+        return false;
+    }
+
+    @Override
+    public void abortMultipartUpload(String objectName, String uploadId) {
+        try {
+            // 取消分片上传。
+            AbortMultipartUploadRequest abortMultipartUploadRequest = new AbortMultipartUploadRequest(bucketName, objectName, uploadId);
+            ossClient.abortMultipartUpload(abortMultipartUploadRequest);
+        } catch (OSSException oe) {
+            printOSSException(oe);
+        } catch (ClientException ce) {
+            printClientException(ce);
+        }
+    }
+
+    @Override
+    public String completeMultipartUpload(String objectName, String uploadId) {
+        baseOssService.printOperation(getPlatform().getKey(), "completeMultipartUpload", objectName);
+        List<PartETag> partETags = getPartETagList(objectName, uploadId);
+        // 创建CompleteMultipartUploadRequest对象。
+        // 在执行完成分片上传操作时，需要提供所有有效的partETags。OSS收到提交的partETags后，会逐一验证每个分片的有效性。当所有的数据分片验证通过后，OSS将把这些分片组合成一个完整的文件。
+        CompleteMultipartUploadRequest completeMultipartUploadRequest =
+                new CompleteMultipartUploadRequest(bucketName, objectName, uploadId, partETags);
+        // 完成分片上传。
+        ossClient.completeMultipartUpload(completeMultipartUploadRequest);
+        return uploadId;
+    }
+
     @Override
     public FileInfo newFolder(String objectName) {
         baseOssService.printOperation(getPlatform().getKey(), "mkdir", objectName);
@@ -218,6 +338,23 @@ public class AliyunOssService implements IOssService {
                 // 上传成功
                 baseOssService.onUploadSuccess(objectName, tempFileAbsolutePath);
             }
+        } catch (OSSException oe) {
+            printOSSException(oe);
+        } catch (ClientException ce) {
+            printClientException(ce);
+        }
+    }
+
+    @Override
+    public void uploadFile(InputStream inputStream, String objectName, Integer inputStreamLength) {
+        try {
+            baseOssService.printOperation(getPlatform().getKey(), "uploadFile inputStream", objectName);
+            // 创建PutObjectRequest对象。
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setContentLength(inputStreamLength);
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream, objectMetadata);
+            // 创建PutObject请求。
+            ossClient.putObject(putObjectRequest);
         } catch (OSSException oe) {
             printOSSException(oe);
         } catch (ClientException ce) {

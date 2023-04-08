@@ -10,6 +10,7 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.UploadResponse;
+import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,9 @@ public class MultipartUpload {
 
     @Autowired
     private CommonFileService commonFileService;
+
+    @Autowired
+    private WebOssService webOssService;
 
     /***
      * 断点恢复上传缓存(已上传的缓存)
@@ -91,6 +95,13 @@ public class MultipartUpload {
      */
     public UploadResponse mergeFile(UploadApiParamDTO upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
+
+        Path prePth = Paths.get(upload.getUsername(), upload.getCurrentDirectory(), upload.getFilename());
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            return webOssService.mergeFile(ossPath, prePth, upload);
+        }
+
         String md5 = upload.getIdentifier();
         Path file = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), upload.getFilename());
         Path outputFile = Paths.get(fileProperties.getRootDir(), upload.getUsername(), commonFileService.getUserDirectoryFilePath(upload));
@@ -154,6 +165,13 @@ public class MultipartUpload {
     }
 
     public UploadResponse checkChunk(UploadApiParamDTO upload) throws IOException {
+
+        Path prePth = Paths.get(upload.getUsername(), upload.getCurrentDirectory(), upload.getFilename());
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            return webOssService.checkChunk(ossPath, prePth, upload);
+        }
+
         UploadResponse uploadResponse = new UploadResponse();
         String md5 = upload.getIdentifier();
         String path = commonFileService.getUserDirectory(upload.getCurrentDirectory());
