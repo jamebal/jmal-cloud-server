@@ -6,10 +6,10 @@ import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.ResponseResult;
-import org.springframework.web.multipart.MultipartFile;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -148,10 +148,11 @@ public interface IFileService {
     /***
      * 删除
      * @param username
+     * @param currentDirectory
      * @param fileIds
      * @return
      */
-    ResponseResult<Object> delete(String username, List<String> fileIds);
+    ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds);
 
     /***
      * 显示缩略图

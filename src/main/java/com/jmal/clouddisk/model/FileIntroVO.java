@@ -38,9 +38,9 @@ public class FileIntroVO extends FileBase{
      */
     private Boolean isShare;
     /**
-     * 是否为oss文件
+     * oss 根据目录名
      */
-    private Boolean ossFile;
+    private String ossFolder;
     /***
      * 是否为私密链接
      */

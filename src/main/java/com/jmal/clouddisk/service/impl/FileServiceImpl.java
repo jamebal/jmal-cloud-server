@@ -606,7 +606,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             return result;
         }
         // 删除
-        return delete(upload.getUsername(), froms);
+        return delete(upload.getUsername(), "/", froms);
     }
 
     private ResponseResult<Object> getCopyResult(UploadApiParamDTO upload, List<String> froms, String to) {
@@ -1169,14 +1169,22 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> delete(String username, List<String> fileIds) {
+    public ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds) {
+
+        Path prePth = Paths.get(username, currentDirectory);
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            webOssService.delete(ossPath, fileIds);
+            return ResultUtil.success();
+        }
+
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds));
         List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
         boolean isDel = false;
         for (FileDocument fileDocument : fileDocuments) {
-            String currentDirectory = getUserDirectory(fileDocument.getPath());
-            String filePath = fileProperties.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName();
+            String currentDirectory1 = getUserDirectory(fileDocument.getPath());
+            String filePath = fileProperties.getRootDir() + File.separator + username + currentDirectory1 + fileDocument.getName();
             File file = new File(filePath);
             isDel = FileUtil.del(file);
             if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {

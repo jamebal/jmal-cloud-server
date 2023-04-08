@@ -68,7 +68,7 @@ public class WebOssService {
         String objectName = getObjectName(prePth, ossPath, true);
         List<FileInfo> list = ossService.getFileInfoList(objectName);
         if (!list.isEmpty()) {
-            fileIntroVOList = list.stream().map(fileInfo -> fileInfo.toFileIntroVO(getOssRootFolderName(ossPath))).toList();
+            fileIntroVOList = list.stream().map(fileInfo -> fileInfo.toFileIntroVO(ossPath)).toList();
         }
         return fileIntroVOList;
     }
@@ -86,7 +86,7 @@ public class WebOssService {
             FileInfo fileInfo = abstractOssObject.getFileInfo();
             String context;
             if (fileInfo != null && inputStream != null) {
-                fileIntroVO = fileInfo.toFileIntroVO(getOssRootFolderName(ossPath));
+                fileIntroVO = fileInfo.toFileIntroVO(ossPath);
                 context = IoUtil.read(inputStream, StandardCharsets.UTF_8);
                 fileIntroVO.setContentText(context);
             }
@@ -177,5 +177,12 @@ public class WebOssService {
             path += filePath.getParent().toString() + MyWebdavServlet.PATH_DELIMITER;
         }
         return path;
+    }
+
+    public void delete(String ossPath, List<String> objectNameList) {
+        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+        for (String objectName : objectNameList) {
+            ossService.delete(objectName);
+        }
     }
 }
