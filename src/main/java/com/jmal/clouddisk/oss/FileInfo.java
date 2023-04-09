@@ -30,7 +30,7 @@ public class FileInfo {
         return key.endsWith("/");
     }
 
-    public FileIntroVO toFileIntroVO(String ossPath) {
+    public FileIntroVO toFileIntroVO(String ossPath, String userId) {
         BucketInfo bucketInfo = CaffeineUtil.getOssDiameterPrefixCache(ossPath);
         String username = Paths.get(ossPath).subpath(0, 1).toString();
         String rootName = bucketInfo.getFolderName();
@@ -38,6 +38,7 @@ public class FileInfo {
         String fileName = getName();
         fileIntroVO.setAgoTime(System.currentTimeMillis() - lastModified.getTime());
         fileIntroVO.setId(username + MyWebdavServlet.PATH_DELIMITER + rootName + MyWebdavServlet.PATH_DELIMITER + key);
+        fileIntroVO.setUsername(username);
         fileIntroVO.setIsFavorite(false);
         fileIntroVO.setIsFolder(isFolder());
         fileIntroVO.setName(fileName);
@@ -55,6 +56,7 @@ public class FileInfo {
         fileIntroVO.setContentType(FileContentTypeUtils.getContentType(suffix));
         fileIntroVO.setUploadDate(updateTime);
         fileIntroVO.setUpdateDate(updateTime);
+        fileIntroVO.setUserId(userId);
         return fileIntroVO;
     }
 }

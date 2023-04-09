@@ -8,13 +8,13 @@ import cn.hutool.core.util.URLUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.UploadResponse;
-import com.jmal.clouddisk.oss.AbstractOssObject;
-import com.jmal.clouddisk.oss.FileInfo;
-import com.jmal.clouddisk.oss.IOssService;
-import com.jmal.clouddisk.oss.OssConfigService;
+import com.jmal.clouddisk.oss.*;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
@@ -31,10 +31,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -51,6 +53,9 @@ public class WebOssService {
 
     @Autowired
     FileProperties fileProperties;
+
+    @Autowired
+    IUserService userService;
 
     /***
      * 断点恢复上传缓存(已上传的分片缓存)
@@ -90,7 +95,13 @@ public class WebOssService {
         String objectName = getObjectName(prePth, ossPath, true);
         List<FileInfo> list = ossService.getFileInfoListCache(objectName);
         if (!list.isEmpty()) {
-            fileIntroVOList = list.stream().map(fileInfo -> fileInfo.toFileIntroVO(ossPath)).toList();
+            String userId;
+            if (upload != null) {
+                userId = upload.getUserId();
+            } else {
+                userId = userService.getUserIdByUserName(Paths.get(ossPath).subpath(0, 1).toString());
+            }
+            fileIntroVOList = list.stream().map(fileInfo -> fileInfo.toFileIntroVO(ossPath, userId)).toList();
             // 排序
             fileIntroVOList = getSortFileList(upload, fileIntroVOList);
             // 分页
@@ -157,7 +168,8 @@ public class WebOssService {
             FileInfo fileInfo = abstractOssObject.getFileInfo();
             String context;
             if (fileInfo != null && inputStream != null) {
-                fileIntroVO = fileInfo.toFileIntroVO(ossPath);
+                String userId = userService.getUserIdByUserName(Paths.get(ossPath).subpath(0, 1).toString());
+                fileIntroVO = fileInfo.toFileIntroVO(ossPath, userId);
                 context = IoUtil.read(inputStream, StandardCharsets.UTF_8);
                 fileIntroVO.setContentText(context);
             }
@@ -224,7 +236,7 @@ public class WebOssService {
             CopyOnWriteArrayList<Integer> chunks = listPartsCache.get(uploadId, key -> ossService.getListParts(objectName, uploadId));
 
             // 上传本次的分片
-            ossService.uploadPart(file.getInputStream(), objectName,currentChunkSize, upload.getChunkNumber(), uploadId);
+            ossService.uploadPart(file.getInputStream(), objectName, currentChunkSize, upload.getChunkNumber(), uploadId);
 
             // 加入缓存
             if (chunks != null) {
@@ -238,6 +250,12 @@ public class WebOssService {
         }
         uploadResponse.setUpload(true);
         return uploadResponse;
+    }
+
+    public void mkdir(String ossPath, Path prePth) {
+        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+        String objectName = getObjectName(prePth, ossPath, true);
+        ossService.mkdir(objectName);
     }
 
     private void notifyCreateFile(String username, String objectName, String ossRootFolderName) {
@@ -286,5 +304,44 @@ public class WebOssService {
                 .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
                 .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
                 .body(FileUtil.readBytes(file));
+    }
+
+    public FileIntroVO addFile(String ossPath, Boolean isFolder, Path prePth) {
+        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+        String objectName = getObjectName(prePth, ossPath, isFolder);
+        Path tempFileAbsolutePath = Paths.get(fileProperties.getRootDir(), prePth.toString());
+        if (ossService.doesObjectExist(objectName)) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "该文件已存在");
+        }
+        FileInfo fileInfo;
+        BucketInfo bucketInfo = CaffeineUtil.getOssDiameterPrefixCache(ossPath);
+        Path path = Paths.get(ossPath);
+        try {
+            if (Boolean.TRUE.equals(isFolder)) {
+                ossService.mkdir(objectName);
+                fileInfo = BaseOssService.newFileInfo(objectName, bucketInfo.getBucketName());
+            } else {
+                if (!Files.exists(tempFileAbsolutePath.getParent())) {
+                    Files.createDirectory(tempFileAbsolutePath.getParent());
+                }
+                Files.createFile(tempFileAbsolutePath);
+                ossService.uploadFile(tempFileAbsolutePath, objectName);
+                fileInfo = BaseOssService.newFileInfo(objectName, bucketInfo.getBucketName(), tempFileAbsolutePath.toFile());
+                Files.delete(tempFileAbsolutePath);
+            }
+            notifyCreateFile(path.subpath(0, 1).toString(), objectName, bucketInfo.getFolderName());
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), "新建文件失败");
+        }
+        String userId = userService.getUserIdByUserName(path.subpath(0, 1).toString());
+        return fileInfo.toFileIntroVO(ossPath, userId);
+    }
+
+    public void putObjectText(String ossPath, Path prePth, String contentText) {
+        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+        String objectName = getObjectName(prePth, ossPath, false);
+        InputStream inputStream = new ByteArrayInputStream(CharSequenceUtil.bytes(contentText, StandardCharsets.UTF_8));
+        ossService.write(inputStream, ossPath, objectName);
     }
 }

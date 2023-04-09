@@ -8,6 +8,7 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.oss.web.WebOssService;
@@ -182,7 +183,12 @@ public class FileController {
     @GetMapping("/preview/path/text")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> previewTextByPath(@RequestParam String path,@RequestParam String username) {
+    public ResponseResult<Object> previewTextByPath(@RequestParam String path,@RequestParam String username, @RequestParam String fileName) {
+        Path prePth = Paths.get(username, path, fileName);
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            return ResultUtil.success(webOssService.readToText(ossPath, prePth));
+        }
         return fileService.previewTextByPath(URLUtil.decode(path), username);
     }
 
@@ -372,7 +378,7 @@ public class FileController {
     @PostMapping("/addfile")
     @LogOperatingFun
     @Permission("cloud:file:upload")
-    public ResponseResult<FileDocument> addFile(@RequestParam String fileName, @RequestParam Boolean isFolder, @RequestParam String username, @RequestParam String parentPath){
+    public ResponseResult<FileIntroVO> addFile(@RequestParam String fileName, @RequestParam Boolean isFolder, @RequestParam String username, @RequestParam String parentPath){
         return fileService.addFile(URLUtil.decode(fileName), isFolder, username, URLUtil.decode(parentPath));
     }
 }

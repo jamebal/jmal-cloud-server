@@ -4,8 +4,10 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,6 +18,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 /**
@@ -29,6 +33,9 @@ public class MarkDownController {
 
     @Autowired
     private IMarkdownService fileService;
+
+    @Autowired
+    private WebOssService webOssService;
 
     @Autowired
     IUserService service;
@@ -76,6 +83,12 @@ public class MarkDownController {
     @LogOperatingFun
     public ResponseResult<Object> editMarkdownByPath(@RequestBody UploadApiParamDTO upload) {
         ResultUtil.checkParamIsNull(upload.getUsername(), upload.getUserId(), upload.getRelativePath(), upload.getContentText());
+        Path prePth = Paths.get(upload.getUsername(), upload.getRelativePath());
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            webOssService.putObjectText(ossPath, prePth, upload.getContentText());
+            return ResultUtil.success();
+        }
         return fileService.editMarkdownByPath(upload);
     }
 

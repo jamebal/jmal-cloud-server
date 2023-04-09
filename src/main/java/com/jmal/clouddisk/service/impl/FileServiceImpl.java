@@ -759,7 +759,14 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public ResponseResult<FileDocument> addFile(String fileName, Boolean isFolder, String username, String parentPath) {
+    public ResponseResult<FileIntroVO> addFile(String fileName, Boolean isFolder, String username, String parentPath) {
+
+        Path prePth = Paths.get(username, parentPath, fileName);
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            return ResultUtil.success(webOssService.addFile(ossPath, isFolder, prePth));
+        }
+
         String userId = userService.getUserIdByUserName(username);
         if (CharSequenceUtil.isBlank(userId)) {
             return ResultUtil.error("不存在的用户");
@@ -779,15 +786,15 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             return ResultUtil.error("新建文件失败");
         }
         String resPath = path.subpath(Paths.get(fileProperties.getRootDir(), username).getNameCount(), path.getNameCount()).toString();
-        FileDocument fileDocument = new FileDocument();
-        fileDocument.setName(fileName);
-        fileDocument.setUserId(userId);
-        fileDocument.setPath(resPath);
-        fileDocument.setIsFolder(isFolder);
-        fileDocument.setSuffix(FileUtil.extName(fileName));
+        FileIntroVO fileIntroVO = new FileIntroVO();
+        fileIntroVO.setName(fileName);
+        fileIntroVO.setUserId(userId);
+        fileIntroVO.setPath(resPath);
+        fileIntroVO.setIsFolder(isFolder);
+        fileIntroVO.setSuffix(FileUtil.extName(fileName));
         String fileId = createFile(username, path.toFile());
-        fileDocument.setId(fileId);
-        return ResultUtil.success(fileDocument);
+        fileIntroVO.setId(fileId);
+        return ResultUtil.success(fileIntroVO);
     }
 
     @Override
@@ -1077,6 +1084,12 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public ResponseResult<Object> uploadFolder(UploadApiParamDTO upload) throws CommonException {
+        Path prePth = Paths.get(upload.getUsername(), upload.getCurrentDirectory(), upload.getFilename());
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            webOssService.mkdir(ossPath, prePth);
+            return ResultUtil.success();
+        }
         createFolder(upload);
         return ResultUtil.success();
     }

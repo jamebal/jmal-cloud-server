@@ -345,6 +345,10 @@ public class BaseOssService {
     }
 
     public FileInfo newFileInfo(String objectName) {
+        return newFileInfo(objectName, bucketName);
+    }
+
+    public static FileInfo newFileInfo(String objectName, String bucketName) {
         FileInfo fileInfo = new FileInfo();
         fileInfo.setSize(0);
         fileInfo.setKey(objectName);
@@ -353,7 +357,11 @@ public class BaseOssService {
         return fileInfo;
     }
 
-    private FileInfo newFileInfo(String objectName, File file) {
+    public FileInfo newFileInfo(String objectName, File file) {
+        return newFileInfo(objectName, bucketName, file);
+    }
+
+    public static FileInfo newFileInfo(String objectName, String bucketName, File file) {
         FileInfo fileInfo = new FileInfo();
         fileInfo.setSize(file.length());
         fileInfo.setKey(objectName);

@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service;
 
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -303,7 +304,7 @@ public interface IFileService {
      * @param parentPath
      * @return
      */
-    ResponseResult<FileDocument> addFile(String fileName, Boolean isFolder, String username, String parentPath);
+    ResponseResult<FileIntroVO> addFile(String fileName, Boolean isFolder, String username, String parentPath);
 
     /***
      * 下载、预览文件
