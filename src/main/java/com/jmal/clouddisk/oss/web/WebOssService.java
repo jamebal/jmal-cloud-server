@@ -21,7 +21,11 @@ import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.compress.utils.IOUtils;
+import org.apache.tomcat.util.http.parser.Ranges;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ContentDisposition;
@@ -31,10 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriUtils;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -343,5 +344,97 @@ public class WebOssService {
         String objectName = getObjectName(prePth, ossPath, false);
         InputStream inputStream = new ByteArrayInputStream(CharSequenceUtil.bytes(contentText, StandardCharsets.UTF_8));
         ossService.write(inputStream, ossPath, objectName);
+    }
+
+    public void download(String ossPath, Path prePth, HttpServletRequest request, HttpServletResponse response) {
+        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+        String objectName = getObjectName(prePth, ossPath, false);
+        try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName);
+            InputStream inputStream = abstractOssObject.getInputStream()) {
+            FileInfo fileInfo = ossService.getFileInfo(objectName);
+            String suffix = FileUtil.getSuffix(fileInfo.getName());
+            response.setHeader("Content-Disposition", "inline");
+            response.setContentType(FileContentTypeUtils.getContentType(suffix));
+            response.setContentLength((int) abstractOssObject.getContentLength());
+            IOUtils.copy(inputStream, response.getOutputStream());
+            response.flushBuffer();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    protected IOException copyRange(InputStream inputStream, OutputStream outputStream, long start, long end) {
+        long skipped;
+        try {
+            skipped = inputStream.skip(start);
+        } catch (IOException e) {
+            return e;
+        }
+        if (skipped < start) {
+            return new IOException("skip fail");
+        }
+
+        IOException exception = null;
+        long bytesToRead = end - start + 1;
+
+        byte[] buffer = new byte[1024];
+        int len;
+        while (bytesToRead > 0) {
+            try {
+                len = inputStream.read(buffer);
+                if (bytesToRead >= len) {
+                    outputStream.write(buffer, 0, len);
+                    bytesToRead -= len;
+                } else {
+                    outputStream.write(buffer, 0, (int) bytesToRead);
+                    bytesToRead = 0;
+                }
+            } catch (IOException e) {
+                exception = e;
+                len = -1;
+            }
+            if (len < buffer.length) {
+                break;
+            }
+        }
+        return exception;
+
+    }
+
+    private long rangeStart(HttpServletRequest request) {
+        String rangeHeader = request.getHeader("Range");
+        String[] ranges = rangeHeader.split("=");
+        String[] range = ranges[1].split("-");
+        return Long.parseLong(range[0]);
+    }
+
+    private long rangeEnd(HttpServletRequest request, long fileSize) {
+        String rangeHeader = request.getHeader("Range");
+        String[] ranges = rangeHeader.split("=");
+        String[] range = ranges[1].split("-");
+        return range.length > 1 ? Long.parseLong(range[1]) : fileSize - 1;
+    }
+
+    private static long getStart(Ranges.Entry range, long length) {
+        long start = range.getStart();
+        if (start == -1) {
+            long end = range.getEnd();
+            if (end >= length) {
+                return 0;
+            } else {
+                return length - end;
+            }
+        } else {
+            return start;
+        }
+    }
+
+    private static long getEnd(Ranges.Entry range, long length) {
+        long end = range.getEnd();
+        if (range.getStart() == -1 || end == -1 || end >= length) {
+            return length - 1;
+        } else {
+            return end;
+        }
     }
 }

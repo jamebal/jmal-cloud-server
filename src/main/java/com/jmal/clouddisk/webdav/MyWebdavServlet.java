@@ -5,15 +5,19 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.oss.AbstractOssObject;
+import com.jmal.clouddisk.oss.BucketInfo;
 import com.jmal.clouddisk.oss.OssInputStream;
+import com.jmal.clouddisk.oss.PlatformOSS;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.WebResource;
 import org.apache.catalina.connector.ClientAbortException;
 import org.apache.catalina.servlets.WebdavServlet;
+import org.apache.tomcat.util.http.parser.Ranges;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedInputStream;
@@ -41,7 +45,7 @@ public class MyWebdavServlet extends WebdavServlet {
         String method = request.getMethod();
         // 过滤掉mac Finder "._" 文件请求
         if (filterMac(request, response, method)) return;
-        // 过滤掉过于频繁的GET请求
+        // 过滤掉过于频繁的GET请求, 只针对 aliyun
         if (filterTooManyRequest(request, response, method)) return;
         super.service(request, response);
         // log.info("response: {}, uri: {} {}", response.getStatus(), method, URLUtil.decode(request.getRequestURI()));
@@ -64,9 +68,20 @@ public class MyWebdavServlet extends WebdavServlet {
 
     /**
      * 过滤掉过于频繁的GET请求, 同一文件1秒内相同GET的请求
+     * 目前只针对阿里云oss
      */
     private static boolean filterTooManyRequest(HttpServletRequest request, HttpServletResponse response, String method) throws IOException {
         String uri = request.getRequestURI();
+        Path uriPath = Paths.get(uri);
+        if (uriPath.getNameCount() > 1) {
+            String ossPath = CaffeineUtil.getOssPath(uriPath.subpath(1, uriPath.getNameCount()));
+            if (ossPath != null) {
+                BucketInfo bucketInfo = CaffeineUtil.getOssDiameterPrefixCache(ossPath);
+                if (!PlatformOSS.ALIYUN.equals(bucketInfo.getPlatform())) {
+                    return false;
+                }
+            }
+        }
         if (method.equals(WebdavMethod.GET.getCode())) {
             if (!CharSequenceUtil.isBlank(request.getHeader("If-Range")) || !CharSequenceUtil.isBlank(request.getHeader("Range"))) {
                 response.sendError(423);
@@ -110,6 +125,11 @@ public class MyWebdavServlet extends WebdavServlet {
         if (exception != null) {
             throw exception;
         }
+    }
+
+    @Override
+    protected void copy(WebResource resource, long length, ServletOutputStream ostream, Ranges.Entry range) throws IOException {
+        super.copy(resource, length, ostream, range);
     }
 
     @Override

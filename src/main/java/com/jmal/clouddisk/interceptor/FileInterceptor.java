@@ -8,15 +8,18 @@ import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareDO;
+import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
+import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.luciad.imageio.webp.WebPWriteParam;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
@@ -26,6 +29,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriUtils;
 
 import javax.imageio.IIOImage;
@@ -48,6 +52,7 @@ import java.nio.file.Paths;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class FileInterceptor implements HandlerInterceptor {
 
     /***
@@ -79,36 +84,33 @@ public class FileInterceptor implements HandlerInterceptor {
      */
     private static final int MIN_COUNT = 2;
 
-    private final
-    FileProperties fileProperties;
+    private final FileProperties fileProperties;
 
-    private final
-    IFileService fileService;
+    private final IFileService fileService;
 
-    private final
-    AuthInterceptor authInterceptor;
+    private final AuthInterceptor authInterceptor;
 
-    private final
-    IShareService shareService;
+    private final IShareService shareService;
 
-    public FileInterceptor(FileProperties fileProperties, IFileService fileService, AuthInterceptor authInterceptor, IShareService shareService) {
-        this.fileProperties = fileProperties;
-        this.fileService = fileService;
-        this.authInterceptor = authInterceptor;
-        this.shareService = shareService;
-    }
+    private final WebOssService webOssService;
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
         if (fileAuthError(request, response)) {
             return false;
         }
+        Path path = Paths.get(request.getRequestURI());
         String operation = request.getParameter(OPERATION);
         if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD -> {
-                    Path path = Paths.get(request.getRequestURI());
                     response.setHeader("Content-Disposition", "attachment; filename" + path.getFileName());
+                    Path prePth = path.subpath(1, path.getNameCount());
+                    String ossPath = CaffeineUtil.getOssPath(prePth);
+                    if (ossPath != null) {
+                        webOssService.download(ossPath, prePth, request, response);
+                        return false;
+                    }
                 }
                 case CROP -> handleCrop(request, response);
                 case THUMBNAIL -> thumbnail(request, response);
@@ -117,9 +119,21 @@ public class FileInterceptor implements HandlerInterceptor {
                     return true;
                 }
             }
+        } else {
+            Path prePth = path.subpath(1, path.getNameCount());
+            String ossPath = CaffeineUtil.getOssPath(prePth);
+            if (ossPath != null) {
+                webOssService.download(ossPath, prePth, request, response);
+                return false;
+            }
         }
         responseHeader(response, null, null);
         return true;
+    }
+
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        HandlerInterceptor.super.postHandle(request, response, handler, modelAndView);
     }
 
     /***
