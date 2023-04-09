@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.oss.aliyun;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
@@ -14,6 +15,7 @@ import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -291,7 +293,7 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
-    public String completeMultipartUpload(String objectName, String uploadId) {
+    public String completeMultipartUpload(String objectName, String uploadId, Long totalSize) {
         baseOssService.printOperation(getPlatform().getKey(), "completeMultipartUpload", objectName);
         List<PartETag> partETags = getPartETagList(objectName, uploadId);
         // 创建CompleteMultipartUploadRequest对象。
@@ -300,7 +302,25 @@ public class AliyunOssService implements IOssService {
                 new CompleteMultipartUploadRequest(bucketName, objectName, uploadId, partETags);
         // 完成分片上传。
         ossClient.completeMultipartUpload(completeMultipartUploadRequest);
+        baseOssService.onUploadSuccess(objectName, totalSize);
         return uploadId;
+    }
+
+    @Override
+    public void getThumbnail(String objectName, File file, int width) {
+        try {
+            // 将图片缩放为固定宽高100 px。
+            String style = "image/resize,m_mfit,w_" + width;
+            GetObjectRequest request = new GetObjectRequest(bucketName, objectName);
+            request.setProcess(style);
+            // 将处理后的图片命名为example-resize.jpg并保存到本地。
+            // 如果未指定本地路径只填写了本地文件名称（例如example-resize.jpg），则文件默认保存到示例程序所属项目对应本地路径中。
+            ossClient.getObject(request, file);
+        } catch (OSSException oe) {
+            printOSSException(oe);
+        } catch (ClientException ce) {
+            printClientException(ce);
+        }
     }
 
     @Override
@@ -357,11 +377,10 @@ public class AliyunOssService implements IOssService {
         try {
             baseOssService.printOperation(getPlatform().getKey(), "uploadFile inputStream", objectName);
             // 创建PutObjectRequest对象。
-            ObjectMetadata objectMetadata = new ObjectMetadata();
-            objectMetadata.setContentLength(inputStreamLength);
-            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream, objectMetadata);
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream);
             // 创建PutObject请求。
             ossClient.putObject(putObjectRequest);
+            baseOssService.onUploadSuccess(objectName, Convert.toLong(inputStreamLength));
         } catch (OSSException oe) {
             printOSSException(oe);
         } catch (ClientException ce) {

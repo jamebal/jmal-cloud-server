@@ -1,11 +1,13 @@
 package com.jmal.clouddisk.oss.web;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.URLUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.UploadResponse;
@@ -15,14 +17,21 @@ import com.jmal.clouddisk.oss.IOssService;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
+import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -39,6 +48,9 @@ public class WebOssService {
 
     @Autowired
     CommonFileService commonFileService;
+
+    @Autowired
+    FileProperties fileProperties;
 
     /***
      * 断点恢复上传缓存(已上传的分片缓存)
@@ -76,13 +88,13 @@ public class WebOssService {
         }
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, true);
-        List<FileInfo> list = ossService.getFileInfoList(objectName);
+        List<FileInfo> list = ossService.getFileInfoListCache(objectName);
         if (!list.isEmpty()) {
             fileIntroVOList = list.stream().map(fileInfo -> fileInfo.toFileIntroVO(ossPath)).toList();
             // 排序
             fileIntroVOList = getSortFileList(upload, fileIntroVOList);
             // 分页
-            if (upload.getPageIndex() != null && upload.getPageSize() != null) {
+            if (upload != null && upload.getPageIndex() != null && upload.getPageSize() != null) {
                 fileIntroVOList = getPageFileList(fileIntroVOList, upload.getPageSize(), upload.getPageIndex());
             }
         }
@@ -90,6 +102,9 @@ public class WebOssService {
     }
 
     private List<FileIntroVO> getSortFileList(UploadApiParamDTO upload, List<FileIntroVO> fileIntroVOList) {
+        if (upload == null) {
+            return fileIntroVOList;
+        }
         String order = upload.getOrder();
         if (!CharSequenceUtil.isBlank(order)) {
             String sortableProp = upload.getSortableProp();
@@ -169,7 +184,7 @@ public class WebOssService {
             assert chunks != null;
             if (upload.getTotalChunks() == chunks.size()) {
                 // 文件不存在,并且已经上传了所有的分片,则合并保存文件
-                ossService.completeMultipartUpload(objectName, uploadId);
+                ossService.completeMultipartUpload(objectName, uploadId, upload.getTotalSize());
                 notifyCreateFile(upload.getUsername(), objectName, getOssRootFolderName(ossPath));
             }
         }
@@ -182,7 +197,7 @@ public class WebOssService {
 
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, false);
-        ossService.completeMultipartUpload(objectName, ossService.getUploadId(objectName));
+        ossService.completeMultipartUpload(objectName, ossService.getUploadId(objectName), upload.getTotalSize());
         notifyCreateFile(upload.getUsername(), objectName, getOssRootFolderName(ossPath));
         uploadResponse.setUpload(true);
         return uploadResponse;
@@ -241,11 +256,35 @@ public class WebOssService {
         return path;
     }
 
-    public void delete(String ossPath, List<String> objectNameList) {
+    public void delete(String ossPath, List<String> pathNameList) {
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
-        for (String objectName : objectNameList) {
+        for (String pathName : pathNameList) {
+            String objectName = pathName.substring(ossPath.length());
             ossService.delete(objectName);
         }
     }
 
+    public ResponseEntity<Object> thumbnail(String ossPath, String pathName) {
+        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+        String objectName = pathName.substring(ossPath.length());
+        File tempFile = Paths.get(fileProperties.getRootDir(), pathName).toFile();
+        if (FileUtil.exist(tempFile)) {
+            return getResponseEntity(tempFile);
+        }
+        ossService.getThumbnail(objectName, tempFile, 256);
+        return getResponseEntity(tempFile);
+    }
+
+    @NotNull
+    private static ResponseEntity<Object> getResponseEntity(File file) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + ContentDisposition.builder("attachment")
+                        .filename(UriUtils.encode(file.getName(), StandardCharsets.UTF_8)))
+                .header(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(FileUtil.getSuffix(file)))
+                .header(HttpHeaders.CONNECTION, "close")
+                .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(file.length()))
+                .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
+                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
+                .body(FileUtil.readBytes(file));
+    }
 }

@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.oss.tencent;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.jmal.clouddisk.config.FileProperties;
@@ -17,6 +18,7 @@ import com.qcloud.cos.region.Region;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -47,7 +49,7 @@ public class TencentOssService implements IOssService {
         this.cosClient = new COSClient(cred, clientConfig);
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor);
-        log.info( "{}配置加载成功, bucket: {}, username: {}", getPlatform().getValue(), bucketName, ossConfigDTO.getUsername());
+        log.info("{}配置加载成功, bucket: {}, username: {}", getPlatform().getValue(), bucketName, ossConfigDTO.getUsername());
         ThreadUtil.execute(this::getMultipartUploads);
     }
 
@@ -292,14 +294,24 @@ public class TencentOssService implements IOssService {
         }
     }
 
-    public String completeMultipartUpload(String objectName, String uploadId) {
+    public String completeMultipartUpload(String objectName, String uploadId, Long totalSize) {
         baseOssService.printOperation(getPlatform().getKey(), "completeMultipartUpload", objectName);
         // 查询已上传的分片
         List<PartETag> partETags = getPartETagList(objectName, uploadId);
         // 完成分片上传
         CompleteMultipartUploadRequest completeMultipartUploadRequest = new CompleteMultipartUploadRequest(bucketName, objectName, uploadId, partETags);
         CompleteMultipartUploadResult completeResult = cosClient.completeMultipartUpload(completeMultipartUploadRequest);
+        baseOssService.onUploadSuccess(objectName, totalSize);
         return completeResult.getRequestId();
+    }
+
+    @Override
+    public void getThumbnail(String objectName, File file, int width) {
+        GetObjectRequest request = new GetObjectRequest(bucketName, objectName);
+        // 指定目标图片宽度为 Width，高度等比缩放
+        String rule = "imageMogr2/thumbnail/" + width + "x";
+        request.putCustomQueryParameter(rule, null);
+        cosClient.getObject(request, file);
     }
 
     @Override
@@ -357,6 +369,7 @@ public class TencentOssService implements IOssService {
         putObjectRequest.setStorageClass(StorageClass.Standard);
         try {
             cosClient.putObject(putObjectRequest);
+            baseOssService.onUploadSuccess(objectName, Convert.toLong(inputStreamLength));
         } catch (CosClientException e) {
             printException(e);
         }

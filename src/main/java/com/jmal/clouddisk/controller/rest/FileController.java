@@ -210,8 +210,11 @@ public class FileController {
     @GetMapping("/view/thumbnail")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> thumbnail(String id) {
-        ResultUtil.checkParamIsNull(id);
+    public ResponseEntity<Object> thumbnail(@RequestParam String id) {
+        String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
+        if (ossPath != null) {
+            return webOssService.thumbnail(ossPath, id);
+        }
         Optional<FileDocument> file = fileService.thumbnail(id, userLoginHolder.getUsername());
         return getObjectResponseEntity(file);
     }

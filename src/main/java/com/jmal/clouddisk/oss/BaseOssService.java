@@ -5,6 +5,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -18,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author jmal
@@ -171,7 +173,7 @@ public class BaseOssService {
      */
     public List<String> getFileNameList(String objectName) {
         List<FileInfo> fileInfoList = getFileInfoListCache(objectName);
-        List<String> fileNameList = fileInfoList.stream().map(FileInfo::getName).toList();
+        List<String> fileNameList = fileInfoList.stream().map(FileInfo::getName).collect(Collectors.toList());
         fileNameList = getTmepFileNameList(objectName, fileNameList);
         return fileNameList;
     }
@@ -217,13 +219,16 @@ public class BaseOssService {
         FileInfo fileInfo = getFileInfoCache(objectName);
         if (fileInfo != null) {
             fileInfoCache.invalidate(objectName);
-            String key;
-            if (fileInfo.isFolder()) {
-                key = objectName.substring(0, objectName.length() - fileInfo.getName().length() - 1);
-            } else {
-                key = objectName.substring(0, objectName.length() - fileInfo.getName().length());
-            }
-            fileInfoListCache.invalidate(key);
+            clearFileListCache(objectName);
+        }
+    }
+
+    private void clearFileListCache(String objectName) {
+        Path objectNamePath = Paths.get(objectName);
+        if (objectNamePath.getNameCount() > 1) {
+            fileInfoListCache.invalidate(objectNamePath.getParent().toString() + MyWebdavServlet.PATH_DELIMITER);
+        } else {
+            fileInfoListCache.invalidate("");
         }
     }
 
@@ -236,6 +241,20 @@ public class BaseOssService {
         log.info(objectName, "upload success");
         clearTempFileCache(objectName);
         setFileInfoCache(objectName, newFileInfo(objectName, tempFileAbsolutePath.toFile()));
+        clearFileListCache(objectName);
+        removeWaitingUploadCache(objectName);
+    }
+
+    /**
+     * 上传至oos成功后，要干的事
+     * @param objectName objectName
+     * @param fileSize 文件大小
+     */
+    public void onUploadSuccess(String objectName, Long fileSize) {
+        log.info(objectName, "upload success");
+        clearTempFileCache(objectName);
+        setFileInfoCache(objectName, newFileInfo(objectName, fileSize));
+        clearFileListCache(objectName);
         removeWaitingUploadCache(objectName);
     }
 
@@ -247,7 +266,7 @@ public class BaseOssService {
     private void onMkdirSuccess(String objectName, FileInfo fileInfo) {
         log.info(objectName, "mkdir success");
         setFileInfoCache(objectName, fileInfo);
-        fileInfoListCache.invalidateAll();
+        clearFileListCache(objectName);
     }
 
     /**
@@ -339,6 +358,15 @@ public class BaseOssService {
         fileInfo.setSize(file.length());
         fileInfo.setKey(objectName);
         fileInfo.setLastModified(new Date(file.lastModified()));
+        fileInfo.setBucketName(bucketName);
+        return fileInfo;
+    }
+
+    private FileInfo newFileInfo(String objectName, Long fileSize) {
+        FileInfo fileInfo = new FileInfo();
+        fileInfo.setSize(fileSize);
+        fileInfo.setKey(objectName);
+        fileInfo.setLastModified(new Date());
         fileInfo.setBucketName(bucketName);
         return fileInfo;
     }

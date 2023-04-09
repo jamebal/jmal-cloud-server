@@ -32,15 +32,16 @@ public class FileInfo {
 
     public FileIntroVO toFileIntroVO(String ossPath) {
         BucketInfo bucketInfo = CaffeineUtil.getOssDiameterPrefixCache(ossPath);
+        String username = Paths.get(ossPath).subpath(0, 1).toString();
+        String rootName = bucketInfo.getFolderName();
         FileIntroVO fileIntroVO = new FileIntroVO();
         String fileName = getName();
         fileIntroVO.setAgoTime(System.currentTimeMillis() - lastModified.getTime());
-        fileIntroVO.setId(key);
+        fileIntroVO.setId(username + MyWebdavServlet.PATH_DELIMITER + rootName + MyWebdavServlet.PATH_DELIMITER + key);
         fileIntroVO.setIsFavorite(false);
         fileIntroVO.setIsFolder(isFolder());
         fileIntroVO.setName(fileName);
         Path keyPath = Paths.get(key);
-        String rootName = bucketInfo.getFolderName();
         if (keyPath.getNameCount() > 1) {
             fileIntroVO.setPath(MyWebdavServlet.PATH_DELIMITER + Paths.get(rootName, key).getParent().toString() + MyWebdavServlet.PATH_DELIMITER);
         } else {

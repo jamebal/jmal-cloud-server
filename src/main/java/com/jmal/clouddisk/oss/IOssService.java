@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.oss;
 
+import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
@@ -164,11 +165,21 @@ public interface IOssService {
 
     /**
      * 完成分片上传(合并分片)
+     *
      * @param objectName objectName
-     * @param uploadId uploadId
+     * @param uploadId   uploadId
+     * @param fileTotalSize 文件总大小
      * @return uploadId
      */
-    String completeMultipartUpload(String objectName, String uploadId);
+    String completeMultipartUpload(String objectName, String uploadId, Long fileTotalSize);
+
+    /**
+     * 获取缩略图, 指定目标图片宽度为 Width，高度等比缩放
+     * @param objectName objectName
+     * @param file       临时文件
+     * @param width      图片宽度
+     */
+    void getThumbnail(String objectName, File file, int width);
 
     /**
      * 关闭需要关闭的一切
