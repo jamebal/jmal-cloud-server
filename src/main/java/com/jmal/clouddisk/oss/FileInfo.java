@@ -51,11 +51,9 @@ public class FileInfo {
         String suffix = FileUtil.extName(fileName);
         fileIntroVO.setSuffix(suffix);
         fileIntroVO.setMd5(eTag);
-        fileIntroVO.setOssFolder(rootName);
         fileIntroVO.setContentType(FileContentTypeUtils.getContentType(suffix));
         fileIntroVO.setUploadDate(updateTime);
         fileIntroVO.setUpdateDate(updateTime);
         return fileIntroVO;
     }
-
 }

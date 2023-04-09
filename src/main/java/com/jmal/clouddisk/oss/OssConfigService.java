@@ -90,7 +90,7 @@ public class OssConfigService {
 
     public static IOssService getOssStorageService(String ossPath) {
         BucketInfo bucketInfo = CaffeineUtil.getOssDiameterPrefixCache(ossPath);
-        return OssConfigService.getOssService(bucketInfo.getWebPathPrefix());
+        return OssConfigService.getOssServiceValue(bucketInfo.getWebPathPrefix());
     }
 
     public static String getObjectName(String path, String ossPath) {
@@ -105,7 +105,7 @@ public class OssConfigService {
         return name;
     }
 
-    public static IOssService getOssService(String key) {
+    private static IOssService getOssServiceValue(String key) {
         return OSS_SERVICE_MAP.get(key);
     }
 
@@ -129,7 +129,7 @@ public class OssConfigService {
         CaffeineUtil.removeOssDiameterPrefixCache(key);
         if (OSS_SERVICE_MAP.containsKey(key)) {
             // 销毁掉之前的IOssService
-            getOssService(key).close();
+            getOssServiceValue(key).close();
         }
         OSS_SERVICE_MAP.remove(key);
         // 移除webPathPrefix的文件夹的 过滤器

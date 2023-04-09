@@ -87,9 +87,13 @@ public class FileDocument extends FileBase{
      */
     private Boolean isFavorite;
     /**
-     * 是否为oss目录
+     * oss目录名称
      */
-    private Boolean ossFolder;
+    private String ossFolder;
+    /**
+     * oss平台类型
+     */
+    private String ossPlatform;
     /***
      * 是否公共文件
      */

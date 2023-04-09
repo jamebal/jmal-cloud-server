@@ -49,15 +49,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.Collator;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Aggregates.group;
 import static com.mongodb.client.model.Aggregates.match;
 import static com.mongodb.client.model.Filters.*;
-import static java.util.stream.Collectors.toList;
 
 
 /**
@@ -89,7 +90,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Path path = Paths.get(upload.getUsername(), upload.getCurrentDirectory());
         String ossPath = CaffeineUtil.getOssPath(path);
         if (ossPath != null) {
-            return webOssService.searchFileAndOpenOssFolder(path);
+            return webOssService.searchFileAndOpenOssFolder(path, upload);
         }
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
         Criteria criteria;
@@ -169,22 +170,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             FileIntroVO fileIntroVO = new FileIntroVO();
             BeanUtils.copyProperties(fileDocument, fileIntroVO);
             return fileIntroVO;
-        }).collect(toList());
-        // 按文件名排序
-        if (CharSequenceUtil.isBlank(order)) {
-            fileIntroVOList.sort(this::compareByFileName);
-        }
-        if (!CharSequenceUtil.isBlank(order) && "name".equals(upload.getSortableProp())) {
-            fileIntroVOList.sort(this::compareByFileName);
-            if ("descending".equals(order)) {
-                fileIntroVOList.sort(this::desc);
-            }
-        }
-        return fileIntroVOList;
-    }
-
-    private int desc(FileBase f1, FileBase f2) {
-        return -1;
+        }).toList();
+        return sortByFileName(upload, fileIntroVOList, order);
     }
 
     /***
@@ -241,14 +228,16 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     @Override
     public ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
+
+        Path path = Paths.get(upload.getUsername(), upload.getCurrentDirectory());
+        String ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null) {
+            return webOssService.searchFileAndOpenOssFolder(path, upload);
+        }
+
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument == null) {
-            // ossFolder
-            return webOssService.searchFileAndOpenOssFolder(Paths.get(upload.getUsername(), upload.getCurrentDirectory()));
-        }
-        if (Boolean.TRUE.equals(fileDocument.getOssFolder())) {
-            // ossFolder
-            return webOssService.searchFileAndOpenOssFolder(Paths.get(upload.getUsername(), fileDocument.getName()));
+            return ResultUtil.error(ExceptionType.FILE_NOT_FIND);
         }
         String currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
         Criteria criteria = Criteria.where("path").is(currentDirectory);
@@ -328,28 +317,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (path.getNameCount() > rootPathCount + 1) {
             loopCreateDir(username, rootPathCount, path.getParent());
         }
-    }
-
-    /***
-     * 根据文件名排序
-     * @param f1 f1
-     * @param f2 f2
-     */
-    private int compareByFileName(FileBase f1, FileBase f2) {
-        if (Boolean.TRUE.equals(f1.getIsFolder()) && Boolean.TRUE.equals(!f2.getIsFolder())) {
-            return -1;
-        } else if (f1.getIsFolder() && f2.getIsFolder()) {
-            return compareByName(f1, f2);
-        } else if (Boolean.TRUE.equals(!f1.getIsFolder()) && Boolean.TRUE.equals(f2.getIsFolder())) {
-            return 1;
-        } else {
-            return compareByName(f1, f2);
-        }
-    }
-
-    private int compareByName(FileBase f1, FileBase f2) {
-        Comparator<Object> cmp = Collator.getInstance(java.util.Locale.CHINA);
-        return cmp.compare(f1.getName(), f2.getName());
     }
 
     /***
@@ -748,7 +715,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Path prePth = Paths.get(username, path);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
-            return webOssService.searchFileAndOpenOssFolder(prePth);
+            return webOssService.searchFileAndOpenOssFolder(prePth, null);
         }
         return ResultUtil.success(listFile(username, dirPath, tempDir));
     }

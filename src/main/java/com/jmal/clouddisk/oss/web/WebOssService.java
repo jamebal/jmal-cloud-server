@@ -2,7 +2,10 @@ package com.jmal.clouddisk.oss.web;
 
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.URLUtil;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.UploadResponse;
@@ -27,8 +30,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 @Slf4j
@@ -36,6 +39,13 @@ public class WebOssService {
 
     @Autowired
     CommonFileService commonFileService;
+
+    /***
+     * 断点恢复上传缓存(已上传的分片缓存)
+     * key: uploadId
+     * value: 已上传的分片号列表
+     */
+    private static final Cache<String, CopyOnWriteArrayList<Integer>> listPartsCache = Caffeine.newBuilder().build();
 
 
     public static String getObjectName(Path prePath, String ossPath, boolean isFolder) {
@@ -50,15 +60,15 @@ public class WebOssService {
         return URLUtil.decode(name);
     }
 
-    public ResponseResult<Object> searchFileAndOpenOssFolder(Path prePth) {
-        List<FileIntroVO> fileIntroVOList = getOssFileList(prePth);
+    public ResponseResult<Object> searchFileAndOpenOssFolder(Path prePth, UploadApiParamDTO upload) {
+        List<FileIntroVO> fileIntroVOList = getOssFileList(prePth, upload);
         ResponseResult<Object> result = ResultUtil.genResult();
         result.setCount(fileIntroVOList.size());
         result.setData(fileIntroVOList);
         return result;
     }
 
-    public static List<FileIntroVO> getOssFileList(Path prePth) {
+    public List<FileIntroVO> getOssFileList(Path prePth, UploadApiParamDTO upload) {
         List<FileIntroVO> fileIntroVOList = new ArrayList<>();
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath == null) {
@@ -69,8 +79,54 @@ public class WebOssService {
         List<FileInfo> list = ossService.getFileInfoList(objectName);
         if (!list.isEmpty()) {
             fileIntroVOList = list.stream().map(fileInfo -> fileInfo.toFileIntroVO(ossPath)).toList();
+            // 排序
+            fileIntroVOList = getSortFileList(upload, fileIntroVOList);
+            // 分页
+            if (upload.getPageIndex() != null && upload.getPageSize() != null) {
+                fileIntroVOList = getPageFileList(fileIntroVOList, upload.getPageSize(), upload.getPageIndex());
+            }
         }
         return fileIntroVOList;
+    }
+
+    private List<FileIntroVO> getSortFileList(UploadApiParamDTO upload, List<FileIntroVO> fileIntroVOList) {
+        String order = upload.getOrder();
+        if (!CharSequenceUtil.isBlank(order)) {
+            String sortableProp = upload.getSortableProp();
+            // 按文件大小排序
+            if ("size".equals(sortableProp)) {
+                if ("descending".equals(order)) {
+                    // 倒序
+                    fileIntroVOList = fileIntroVOList.stream().sorted(commonFileService::compareBySizeDesc).toList();
+                } else {
+                    // 正序
+                    fileIntroVOList = fileIntroVOList.stream().sorted(commonFileService::compareBySize).toList();
+                }
+            }
+            // 按文件最近修改时间排序
+            if ("updateDate".equals(sortableProp)) {
+                if ("descending".equals(order)) {
+                    // 倒序
+                    fileIntroVOList = fileIntroVOList.stream().sorted(commonFileService::compareByUpdateDateDesc).toList();
+                } else {
+                    // 正序
+                    fileIntroVOList = fileIntroVOList.stream().sorted(commonFileService::compareByUpdateDate).toList();
+                }
+            }
+        }
+        // 默认按文件排序
+        fileIntroVOList = commonFileService.sortByFileName(upload, fileIntroVOList, order);
+        return fileIntroVOList;
+    }
+
+    public List<FileIntroVO> getPageFileList(List<FileIntroVO> fileIntroVOList, int pageSize, int pageIndex) {
+        List<FileIntroVO> pageList = new ArrayList<>();
+        int startIndex = (pageIndex - 1) * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, fileIntroVOList.size());
+        for (int i = startIndex; i < endIndex; i++) {
+            pageList.add(fileIntroVOList.get(i));
+        }
+        return pageList;
     }
 
     private static String getOssRootFolderName(String ossPath) {
@@ -106,7 +162,8 @@ public class WebOssService {
             uploadResponse.setPass(true);
         } else {
             String uploadId = ossService.getUploadId(objectName);
-            List<Integer> chunks = ossService.getListParts(objectName, uploadId);
+            // 已上传的分片号
+            List<Integer> chunks = listPartsCache.get(uploadId, key -> ossService.getListParts(objectName, uploadId));
             // 返回已存在的分片
             uploadResponse.setResume(chunks);
             assert chunks != null;
@@ -147,14 +204,19 @@ public class WebOssService {
         } else {
             // 上传分片
             String uploadId = ossService.getUploadId(objectName);
+
+            // 已上传的分片号列表
+            CopyOnWriteArrayList<Integer> chunks = listPartsCache.get(uploadId, key -> ossService.getListParts(objectName, uploadId));
+
+            // 上传本次的分片
             ossService.uploadPart(file.getInputStream(), objectName,currentChunkSize, upload.getChunkNumber(), uploadId);
 
-            // 检测是否已经上传完了所有分片,上传完了则需要合并
-            if (Objects.equals(upload.getChunkNumber(), upload.getTotalChunks())) {
-                List<Integer> chunks = ossService.getListParts(objectName, uploadId);
-                Console.log("已经上传完了所有分片?");
+            // 加入缓存
+            if (chunks != null) {
+                chunks.add(upload.getChunkNumber());
+                listPartsCache.put(uploadId, chunks);
+                // 检测是否已经上传完了所有分片,上传完了则需要合并
                 if (chunks.size() == upload.getTotalChunks()) {
-                    Console.log("已经上传完了所有分片");
                     uploadResponse.setMerge(true);
                 }
             }
@@ -185,4 +247,5 @@ public class WebOssService {
             ossService.delete(objectName);
         }
     }
+
 }

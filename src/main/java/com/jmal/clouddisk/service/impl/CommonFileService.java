@@ -8,11 +8,9 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.CharsetUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.Music;
-import com.jmal.clouddisk.model.ShareDO;
-import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
@@ -53,6 +51,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
+import java.text.Collator;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -463,7 +462,8 @@ public class CommonFileService {
         Path prePath = Paths.get(username, relativePath, fileName);
         String ossPath = CaffeineUtil.getOssPath(prePath);
         if (ossPath != null) {
-            update.set("ossFolder", true);
+            update.set("ossFolder", CaffeineUtil.getOssDiameterPrefixCache(ossPath).getFolderName());
+            update.set("ossPlatform", OssConfigService.getOssStorageService(ossPath).getPlatform().getValue());
         }
     }
 
@@ -611,6 +611,74 @@ public class CommonFileService {
             }
         }
         return null;
+    }
+
+    public List<FileIntroVO> sortByFileName(UploadApiParamDTO upload, List<FileIntroVO> fileIntroVOList, String order) {
+        // 按文件名排序
+        if (CharSequenceUtil.isBlank(order)) {
+            fileIntroVOList = fileIntroVOList.stream().sorted(this::compareByFileName).toList();
+        }
+        if (!CharSequenceUtil.isBlank(order) && "name".equals(upload.getSortableProp())) {
+            fileIntroVOList = fileIntroVOList.stream().sorted(this::compareByFileName).toList();
+            if ("descending".equals(order)) {
+                fileIntroVOList = fileIntroVOList.stream().sorted(this::desc).toList();
+            }
+        }
+        return fileIntroVOList;
+    }
+
+    public int desc(FileBase f1, FileBase f2) {
+        return -1;
+    }
+
+    /***
+     * 根据文件名排序
+     * @param f1 f1
+     * @param f2 f2
+     */
+    public int compareByFileName(FileBase f1, FileBase f2) {
+        if (Boolean.TRUE.equals(f1.getIsFolder()) && Boolean.TRUE.equals(!f2.getIsFolder())) {
+            return -1;
+        } else if (f1.getIsFolder() && f2.getIsFolder()) {
+            return compareByName(f1, f2);
+        } else if (Boolean.TRUE.equals(!f1.getIsFolder()) && Boolean.TRUE.equals(f2.getIsFolder())) {
+            return 1;
+        } else {
+            return compareByName(f1, f2);
+        }
+    }
+
+    public int compareByName(FileBase f1, FileBase f2) {
+        Comparator<Object> cmp = Collator.getInstance(java.util.Locale.CHINA);
+        return cmp.compare(f1.getName(), f2.getName());
+    }
+
+    /**
+     * 按文件大小倒叙排列
+     */
+    public int compareBySizeDesc(FileBase f1, FileBase f2) {
+        return f2.getSize() - f1.getSize() > 0 ? 1 : -1;
+    }
+
+    /**
+     * 按文件大小正叙排列
+     */
+    public int compareBySize(FileBase f1, FileBase f2) {
+        return f1.getSize() - f2.getSize() > 0 ? 1 : -1;
+    }
+
+    /**
+     * 按最近修改时间倒叙排列
+     */
+    public int compareByUpdateDateDesc(FileBase f1, FileBase f2) {
+        return f1.getUpdateDate().compareTo(f2.getUpdateDate());
+    }
+
+    /**
+     * 按最近修改时间正叙排列
+     */
+    public int compareByUpdateDate(FileBase f1, FileBase f2) {
+        return f2.getUpdateDate().compareTo(f1.getUpdateDate());
     }
 
 

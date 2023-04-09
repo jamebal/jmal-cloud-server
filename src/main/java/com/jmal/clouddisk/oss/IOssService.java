@@ -3,6 +3,7 @@ package com.jmal.clouddisk.oss;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @author jmal
@@ -78,6 +79,13 @@ public interface IOssService {
     boolean deleteDir(String objectName);
 
     /**
+     * 从缓存中获取objectName下的所有文件夹和文件
+     * @param objectName object key
+     * @return List<FileInfo>
+     */
+    List<FileInfo> getFileInfoListCache(String objectName);
+
+    /**
      * 获取objectName下的所有文件夹和文件
      * @param objectName object key
      * @return List<FileInfo>
@@ -134,7 +142,7 @@ public interface IOssService {
      * @param uploadId uploadId
      * @return 分片号列表
      */
-    List<Integer> getListParts(String objectName, String uploadId);
+    CopyOnWriteArrayList<Integer> getListParts(String objectName, String uploadId);
 
     /**
      * 上传分片

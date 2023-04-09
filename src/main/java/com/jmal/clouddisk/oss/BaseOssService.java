@@ -33,7 +33,7 @@ public class BaseOssService {
      * key: objectName </br>
      * value: object下的文件名列表 </br>
      */
-    private final Cache<String, List<String>> fileInfoListCache;
+    private final Cache<String, List<FileInfo>> fileInfoListCache;
     /**
      * object缓存 </br>
      * key: objectName </br>
@@ -170,19 +170,22 @@ public class BaseOssService {
      * @return object下的文件名列表
      */
     public List<String> getFileNameList(String objectName) {
-        List<String> fileNameList = fileInfoListCache.get(objectName, key -> {
-            List<String> folderList = new ArrayList<>();
+        List<FileInfo> fileInfoList = getFileInfoListCache(objectName);
+        List<String> fileNameList = fileInfoList.stream().map(FileInfo::getName).toList();
+        fileNameList = getTmepFileNameList(objectName, fileNameList);
+        return fileNameList;
+    }
+
+    public List<FileInfo> getFileInfoListCache(String objectName) {
+        return fileInfoListCache.get(objectName, key -> {
             List<FileInfo> fileInfos = ossService.getFileInfoList(objectName);
             if (fileInfos != null && !fileInfos.isEmpty()) {
                 for (FileInfo fileInfo : fileInfos) {
                     setFileInfoCache(fileInfo.getKey(), fileInfo);
-                    folderList.add(fileInfo.getName());
                 }
             }
-            return folderList;
+            return fileInfos;
         });
-        fileNameList = getTmepFileNameList(objectName, fileNameList);
-        return fileNameList;
     }
 
     public AbstractOssObject getObject(String objectName) {

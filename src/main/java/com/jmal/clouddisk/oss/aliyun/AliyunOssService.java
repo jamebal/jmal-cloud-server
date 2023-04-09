@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 @Slf4j
@@ -137,6 +138,7 @@ public class AliyunOssService implements IOssService {
         return false;
     }
 
+    @Override
     public List<FileInfo> getFileInfoList(String objectName) {
         List<FileInfo> fileInfoList = new ArrayList<>();
         try {
@@ -166,6 +168,11 @@ public class AliyunOssService implements IOssService {
             printClientException(ce);
         }
         return fileInfoList;
+    }
+
+    @Override
+    public List<FileInfo> getFileInfoListCache(String objectName) {
+        return baseOssService.getFileInfoListCache(objectName);
     }
 
     @Override
@@ -221,8 +228,8 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
-    public List<Integer> getListParts(String objectName, String uploadId) {
-        return getPartETagList(objectName, uploadId).stream().map(PartETag::getPartNumber).toList();
+    public CopyOnWriteArrayList<Integer> getListParts(String objectName, String uploadId) {
+        return new CopyOnWriteArrayList<>(getPartETagList(objectName, uploadId).stream().map(PartETag::getPartNumber).toList());
     }
 
     private List<PartETag> getPartETagList(String objectName, String uploadId) {
