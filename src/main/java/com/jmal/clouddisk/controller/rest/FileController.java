@@ -183,8 +183,8 @@ public class FileController {
     @GetMapping("/preview/path/text")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> previewTextByPath(@RequestParam String path,@RequestParam String username, @RequestParam String fileName) {
-        Path prePth = Paths.get(username, path, fileName);
+    public ResponseResult<Object> previewTextByPath(@RequestParam String path,@RequestParam String username) {
+        Path prePth = Paths.get(username, path);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
             return ResultUtil.success(webOssService.readToText(ossPath, prePth));

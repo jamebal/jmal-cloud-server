@@ -229,6 +229,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     public ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
 
+        // 判断是否为ossPath
         Path path = Paths.get(upload.getUsername(), upload.getCurrentDirectory());
         String ossPath = CaffeineUtil.getOssPath(path);
         if (ossPath != null) {
@@ -240,6 +241,14 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             return ResultUtil.error(ExceptionType.FILE_NOT_FIND);
         }
         String currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
+
+        // 判断是否为ossPath
+        path = Paths.get(upload.getUsername(), currentDirectory);
+        ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null) {
+            return webOssService.searchFileAndOpenOssFolder(path, upload);
+        }
+
         Criteria criteria = Criteria.where("path").is(currentDirectory);
         return getCountResponseResult(upload, result, criteria);
     }
@@ -278,10 +287,28 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public ResponseResult<Object> queryFileTree(UploadApiParamDTO upload, String fileId) {
+        upload.setJustShowFolder(true);
+        if (CharSequenceUtil.isNotBlank(fileId)) {
+            Path path = Paths.get(fileId);
+            String ossPath = CaffeineUtil.getOssPath(path);
+            if (ossPath != null) {
+                return webOssService.searchFileAndOpenOssFolder(path, upload);
+            }
+        }
+
         String currentDirectory = getUserDirectory(null);
         if (!CharSequenceUtil.isBlank(fileId)) {
             FileDocument fileDocument = mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
             assert fileDocument != null;
+
+            if (fileDocument.getOssFolder() != null) {
+                Path path = Paths.get(upload.getUsername(), fileDocument.getOssFolder());
+                String ossPath = CaffeineUtil.getOssPath(path);
+                if (ossPath != null) {
+                    return webOssService.searchFileAndOpenOssFolder(path, upload);
+                }
+            }
+
             currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
         }
         Criteria criteria = Criteria.where("path").is(currentDirectory);
@@ -632,11 +659,15 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public FileDocument getById(String fileId) {
+        FileDocument fileDocument = getFileDocumentById(fileId);
+        if (fileDocument != null) {
+            return fileDocument;
+        }
         String ossPath = CaffeineUtil.getOssPath(Paths.get(fileId));
         if (ossPath != null) {
             return webOssService.getFileDocument(ossPath, fileId);
         }
-        return getFileDocumentById(fileId);
+        return null;
     }
 
     @Override
@@ -670,6 +701,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     @Override
     public ResponseResult<Object> unzip(String fileId, String destFileId) throws CommonException {
         try {
+            String ossPath = CaffeineUtil.getOssPath(Paths.get(fileId));
+            if (ossPath != null) {
+                return ResultUtil.warning("暂不支持解压!");
+            }
             FileDocument fileDocument = getById(fileId);
             if (fileDocument == null) {
                 throw new CommonException(ExceptionType.FILE_NOT_FIND);
@@ -679,7 +714,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 throw new CommonException(ExceptionType.USER_NOT_FIND);
             }
             String filePath = getFilePathByFileId(username, fileDocument);
-
             String destDir;
             boolean isWrite = false;
             if (CharSequenceUtil.isBlank(destFileId)) {
@@ -704,22 +738,25 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             CompressUtils.decompress(filePath, destDir, isWrite);
             return ResultUtil.success(listFile(username, destDir, !isWrite));
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             return ResultUtil.error("解压失败!");
         }
     }
 
     @Override
     public ResponseResult<Object> listFiles(String path, String username, boolean tempDir) {
+        Path prePth = Paths.get(username, path);
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
+            uploadApiParamDTO.setPathAttachFileName(true);
+            return webOssService.searchFileAndOpenOssFolder(prePth, uploadApiParamDTO);
+        }
         String dirPath;
         if (tempDir) {
             dirPath = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, path).toString();
         } else {
             dirPath = Paths.get(fileProperties.getRootDir(), username, path).toString();
-        }
-        Path prePth = Paths.get(username, path);
-        String ossPath = CaffeineUtil.getOssPath(prePth);
-        if (ossPath != null) {
-            return webOssService.searchFileAndOpenOssFolder(prePth, null);
         }
         return ResultUtil.success(listFile(username, dirPath, tempDir));
     }
@@ -814,7 +851,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 .append(username)
                 .append(relativepath)
                 .append("?shareKey=")
-                .append(shareKey)
+                .append(org.apache.catalina.util.URLEncoder.DEFAULT.encode(shareKey, StandardCharsets.UTF_8))
                 .append("&o=")
                 .append(operation);
         if (!CharSequenceUtil.isBlank(shareToken)) {
@@ -870,6 +907,13 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             return;
         }
         Query query = new Query();
+        Path path = Paths.get(file.getId());
+        String ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null) {
+            query.addCriteria(Criteria.where("_id").is(file.getId()));
+            mongoTemplate.remove(query, COLLECTION_NAME);
+            return;
+        }
         if (Boolean.TRUE.equals(file.getIsFolder())) {
             // 解除共享文件夹及其下的所有文件
             query.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));

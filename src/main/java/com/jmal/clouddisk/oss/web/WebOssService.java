@@ -3,6 +3,7 @@ package com.jmal.clouddisk.oss.web;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.URLUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -93,18 +94,36 @@ public class WebOssService {
         String objectName = getObjectName(prePth, ossPath, true);
         List<FileInfo> list = ossService.getFileInfoListCache(objectName);
         if (!list.isEmpty()) {
-            String userId;
+            String userId = null;
             if (upload != null) {
                 userId = upload.getUserId();
-            } else {
+            }
+            if (CharSequenceUtil.isNotBlank(userId)) {
                 userId = userService.getUserIdByUserName(Paths.get(ossPath).subpath(0, 1).toString());
             }
-            fileIntroVOList = list.stream().map(fileInfo -> fileInfo.toFileIntroVO(ossPath, userId)).toList();
+            String finalUserId = userId;
+            fileIntroVOList = list.stream().map(fileInfo -> fileInfo.toFileIntroVO(ossPath, finalUserId)).toList();
             // 排序
             fileIntroVOList = getSortFileList(upload, fileIntroVOList);
             // 分页
             if (upload != null && upload.getPageIndex() != null && upload.getPageSize() != null) {
                 fileIntroVOList = getPageFileList(fileIntroVOList, upload.getPageSize(), upload.getPageIndex());
+            }
+            // 其他过滤条件
+            fileIntroVOList = filterOther(upload, fileIntroVOList);
+        }
+        return fileIntroVOList;
+    }
+
+    private static List<FileIntroVO> filterOther(UploadApiParamDTO upload, List<FileIntroVO> fileIntroVOList) {
+        if (upload != null) {
+            if (BooleanUtil.isTrue(upload.getJustShowFolder())) {
+                // 只显示文件夹
+                fileIntroVOList = fileIntroVOList.stream().filter(FileIntroVO::getIsFolder).toList();
+            }
+            if (BooleanUtil.isTrue(upload.getPathAttachFileName())) {
+                // path附加文件名
+                fileIntroVOList = fileIntroVOList.stream().peek(fileIntroVO -> fileIntroVO.setPath(fileIntroVO.getPath() + fileIntroVO.getName())).toList();
             }
         }
         return fileIntroVOList;

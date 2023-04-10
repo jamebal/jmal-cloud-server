@@ -59,6 +59,10 @@ public class FileInterceptor implements HandlerInterceptor {
      * 下载操作
      */
     private static final String DOWNLOAD = "download";
+    /**
+     * 预览
+     */
+    private static final String PREVIEW = "preview";
     /***
      * 剪裁图片
      */
@@ -113,6 +117,9 @@ public class FileInterceptor implements HandlerInterceptor {
                         return false;
                     }
                 }
+                case PREVIEW -> {
+                    if (previewOssFile(request, response, path, encodedFilename)) return false;
+                }
                 case CROP -> handleCrop(request, response);
                 case THUMBNAIL -> thumbnail(request, response);
                 case WEBP -> webp(request, response);
@@ -121,16 +128,24 @@ public class FileInterceptor implements HandlerInterceptor {
                 }
             }
         } else {
-            Path prePth = path.subpath(1, path.getNameCount());
-            String ossPath = CaffeineUtil.getOssPath(prePth);
-            if (CharSequenceUtil.isNotBlank(ossPath)) {
-                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "filename=" + encodedFilename);
-                webOssService.download(ossPath, prePth, request, response);
-                return false;
-            }
+            if (previewOssFile(request, response, path, encodedFilename)) return false;
         }
         responseHeader(response, null, null);
         return true;
+    }
+
+    /**
+     * 预览oss文件
+     */
+    private boolean previewOssFile(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, Path path, String encodedFilename) {
+        Path prePth = path.subpath(1, path.getNameCount());
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (CharSequenceUtil.isNotBlank(ossPath)) {
+            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "filename=" + encodedFilename);
+            webOssService.download(ossPath, prePth, request, response);
+            return true;
+        }
+        return false;
     }
 
     /***

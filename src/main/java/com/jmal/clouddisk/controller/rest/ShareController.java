@@ -7,16 +7,19 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.FileInterceptor;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +31,8 @@ import org.springframework.web.util.UriUtils;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -41,28 +46,20 @@ import java.util.Optional;
 @Tag(name = "文件分享")
 @RestController
 @Slf4j
+@RequiredArgsConstructor
 public class ShareController {
 
     public static final String SHARE_EXPIRED = "该分享已过期";
 
-    final
-    IShareService shareService;
+    private final IShareService shareService;
 
-    final
-    IFileService fileService;
+    private final IFileService fileService;
 
-    final
-    IUserService userService;
+    private final IUserService userService;
 
-    final
-    FileInterceptor fileInterceptor;
+    private final FileInterceptor fileInterceptor;
 
-    public ShareController(IShareService shareService, IFileService fileService, IUserService userService, FileInterceptor fileInterceptor) {
-        this.shareService = shareService;
-        this.fileService = fileService;
-        this.userService = userService;
-        this.fileInterceptor = fileInterceptor;
-    }
+    private final WebOssService webOssService;
 
     @Operation(summary = "该分享已失效")
     @GetMapping("/public/s/invalid")
@@ -137,6 +134,7 @@ public class ShareController {
         ShareDO shareDO = shareService.getShare(share);
         ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
         if (validSHare != null) return validSHare;
+
         return shareService.accessShareOpenDir(shareDO, fileId, pageIndex, pageSize);
     }
 
@@ -203,6 +201,11 @@ public class ShareController {
     @GetMapping("/public/s/preview/text")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> preview(HttpServletRequest request, @RequestParam String shareId, @RequestParam String fileId) {
+        Path prePth = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            return ResultUtil.success(webOssService.readToText(ossPath, prePth));
+        }
         ShareDO shareDO = shareService.getShare(shareId);
         ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
         if (validSHare != null) return validSHare;

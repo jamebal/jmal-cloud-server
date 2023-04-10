@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
@@ -42,18 +41,18 @@ public class FileViewController {
     }
 
     @Operation(summary = "分享：预览文件")
-    @GetMapping("/public/s/preview/{fileId}/{shareId}/{shareToken}")
+    @GetMapping("/public/s/preview")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public String publicPreview(@PathVariable String fileId, @PathVariable String shareId, @PathVariable String shareToken) {
+    public String publicPreview(@RequestParam String fileId, @RequestParam String shareId, @RequestParam String shareToken) {
         ResponseResult<Object> validSHare = shareService.validShare(shareToken, shareId);
         if (validSHare != null) return FORWARD_INVALID;
         return fileService.viewFile(fileId, fileId, shareToken, "preview");
     }
 
     @Operation(summary = "分享：下载单个文件")
-    @GetMapping("/public/s/download/{fileId}/{shareId}/{shareToken}")
+    @GetMapping("/public/s/download")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public String publicDownload(@PathVariable String fileId, @PathVariable String shareId, @PathVariable String shareToken) {
+    public String publicDownload(@RequestParam String fileId, @RequestParam String shareId, @RequestParam String shareToken) {
         ResponseResult<Object> validSHare = shareService.validShare(shareToken, shareId);
         if (validSHare != null) return FORWARD_INVALID;
         return fileService.viewFile(fileId, fileId, shareToken, "download");

@@ -10,10 +10,7 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
-import com.jmal.clouddisk.util.TimeUntils;
-import com.jmal.clouddisk.util.TokenUtil;
+import com.jmal.clouddisk.util.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -22,6 +19,8 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,12 +75,19 @@ public class ShareServiceImpl implements IShareService {
             updateShare(share, shareDO, file);
         }
         file.setShareBase(shareDO.getShareBase());
-        fileService.setShareFile(file, expireAt, share);
         ShareVO shareVO = new ShareVO();
         shareVO.setShareId(shareDO.getId());
         if (Boolean.TRUE.equals(share.getIsPrivacy())) {
             shareVO.setExtractionCode(share.getExtractionCode());
         }
+        // 判断要分享的文件是否为oss文件
+        Path path = Paths.get(share.getFileId());
+        String ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null) {
+            mongoTemplate.save(file);
+        }
+        // 设置文件的分享属性
+        fileService.setShareFile(file, expireAt, share);
         return ResultUtil.success(shareVO);
     }
 
@@ -158,6 +164,9 @@ public class ShareServiceImpl implements IShareService {
             }
             return ResultUtil.success(list);
         }
+        String username = userService.getUserNameById(shareDO.getUserId());
+        uploadApiParamDTO.setUsername(username);
+        uploadApiParamDTO.setCurrentDirectory("/");
         return fileService.searchFileAndOpenDir(uploadApiParamDTO, shareDO.getFileId());
     }
 
@@ -213,6 +222,14 @@ public class ShareServiceImpl implements IShareService {
         uploadApiParamDTO.setUserId(shareDO.getUserId());
         uploadApiParamDTO.setPageIndex(pageIndex);
         uploadApiParamDTO.setPageSize(pageSize);
+
+        // 判断是否为ossPath
+        Path path = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null) {
+            uploadApiParamDTO.setUsername(path.subpath(0, 1).toString());
+            uploadApiParamDTO.setCurrentDirectory(path.subpath(1, path.getNameCount()).toString());
+        }
         return fileService.searchFileAndOpenDir(uploadApiParamDTO, fileId);
     }
 
@@ -261,7 +278,10 @@ public class ShareServiceImpl implements IShareService {
         query.addCriteria(Criteria.where("_id").in((Object[]) shareId));
         List<ShareDO> shareDOList = mongoTemplate.findAllAndRemove(query, ShareDO.class, COLLECTION_NAME);
         if (!shareDOList.isEmpty()) {
-            shareDOList.forEach(shareDO -> fileService.unsetShareFile(fileService.getById(shareDO.getFileId())));
+            shareDOList.forEach(shareDO -> {
+                FileDocument fileDocument = fileService.getById(shareDO.getFileId());
+                fileService.unsetShareFile(fileDocument);
+            });
         }
         return ResultUtil.success();
     }

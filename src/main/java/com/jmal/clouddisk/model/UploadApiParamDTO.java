@@ -83,6 +83,14 @@ public class UploadApiParamDTO {
      * 是否是文件夹
      */
     Boolean isFolder;
+    /**
+     * 是否只显示文件夹
+     */
+    Boolean justShowFolder;
+    /**
+     * path后面是否加上文件名
+     */
+    Boolean pathAttachFileName;
     /***
      * 当isFolder=true时 生效,是否是根目录
      */
