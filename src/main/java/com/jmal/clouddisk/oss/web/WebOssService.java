@@ -33,6 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriUtils;
 
 import java.io.*;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -355,9 +356,11 @@ public class WebOssService {
         String objectName = getObjectName(prePth, ossPath, false);
         try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName);
              InputStream inputStream = abstractOssObject.getInputStream();
+             InputStream inStream = new BufferedInputStream(inputStream, 2048);
              OutputStream outputStream = response.getOutputStream()) {
             FileInfo fileInfo = ossService.getFileInfo(objectName);
-            String suffix = FileUtil.getSuffix(fileInfo.getName());
+            String encodedFilename = URLEncoder.encode(fileInfo.getName(), StandardCharsets.UTF_8);
+            String suffix = FileUtil.getSuffix(encodedFilename);
             // 设置响应头
             response.setContentType(FileContentTypeUtils.getContentType(suffix));
             long fileSize = abstractOssObject.getContentLength();
@@ -365,7 +368,7 @@ public class WebOssService {
             String range = request.getHeader("Range");
             long length = fileSize;
             if (CharSequenceUtil.isNotBlank(range)) {
-                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "inline;filename=" + fileInfo.getName());
+                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "inline;filename=" + encodedFilename);
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
                 long[] ranges = parseRange(range, length);
                 long start = ranges[0];
@@ -379,12 +382,7 @@ public class WebOssService {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentLengthLong(fileSize);
             }
-            byte[] buffer = new byte[1024 * 2];
-            int len;
-            while ((len = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, len);
-            }
-            response.flushBuffer();
+            IoUtil.copy(inStream, outputStream);
             abstractOssObject.closeObject();
         } catch (IOException e) {
             log.error(e.getMessage());

@@ -40,6 +40,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -99,11 +100,12 @@ public class FileInterceptor implements HandlerInterceptor {
             return false;
         }
         Path path = Paths.get(request.getRequestURI());
+        String encodedFilename = URLEncoder.encode(String.valueOf(path.getFileName()), StandardCharsets.UTF_8);
         String operation = request.getParameter(OPERATION);
         if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD -> {
-                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + path.getFileName());
+                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + encodedFilename);
                     Path prePth = path.subpath(1, path.getNameCount());
                     String ossPath = CaffeineUtil.getOssPath(prePth);
                     if (ossPath != null) {
@@ -122,7 +124,7 @@ public class FileInterceptor implements HandlerInterceptor {
             Path prePth = path.subpath(1, path.getNameCount());
             String ossPath = CaffeineUtil.getOssPath(prePth);
             if (CharSequenceUtil.isNotBlank(ossPath)) {
-                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "filename=" + path.getFileName());
+                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "filename=" + encodedFilename);
                 webOssService.download(ossPath, prePth, request, response);
                 return false;
             }
