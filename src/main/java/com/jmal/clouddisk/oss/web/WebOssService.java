@@ -9,6 +9,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.UploadResponse;
@@ -159,7 +160,7 @@ public class WebOssService {
     public Optional<FileIntroVO> readToText(String ossPath, Path prePth) {
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, false);
-        try (AbstractOssObject abstractOssObject = ossService.getObject(objectName);
+        try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName);
              InputStream inputStream = abstractOssObject.getInputStream()) {
             FileIntroVO fileIntroVO = new FileIntroVO();
             FileInfo fileInfo = abstractOssObject.getFileInfo();
@@ -408,5 +409,19 @@ public class WebOssService {
         } catch (NumberFormatException e) {
             return defaultValue;
         }
+    }
+
+    public FileDocument getFileDocument(String ossPath, String pathName) {
+        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+        String objectName = pathName.substring(ossPath.length());
+        try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName)) {
+            FileInfo fileInfo = abstractOssObject.getFileInfo();
+            String username = Paths.get(ossPath).subpath(0, 1).toString();
+            String userId = userService.getUserIdByUserName(username);
+            return fileInfo.toFileDocument(ossPath, userId);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+        return null;
     }
 }

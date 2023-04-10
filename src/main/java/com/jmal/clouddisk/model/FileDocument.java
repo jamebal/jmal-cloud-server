@@ -33,7 +33,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
         @CompoundIndex(name = "user_contentType", def = "{'userId': 1, 'contentType': 1}"),
         @CompoundIndex(name = "user_isFolder_path", def = "{'userId': 1, 'isFolder': 1, 'path': 1}"),
 })
-public class FileDocument extends FileBase{
+public class FileDocument extends FileBase {
     private String userId;
     private String username;
     /***

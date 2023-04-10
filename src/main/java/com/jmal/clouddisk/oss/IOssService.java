@@ -57,7 +57,7 @@ public interface IOssService {
      * @param objectName object key
      * @return AbstractOssObject
      */
-    AbstractOssObject getObject(String objectName);
+    AbstractOssObject getObjectCache(String objectName);
 
 
     /**

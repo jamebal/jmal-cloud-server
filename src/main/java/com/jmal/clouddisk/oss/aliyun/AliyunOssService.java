@@ -77,7 +77,7 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
-    public AbstractOssObject getObject(String objectName) {
+    public AbstractOssObject getObjectCache(String objectName) {
         return baseOssService.getObject(objectName);
     }
 

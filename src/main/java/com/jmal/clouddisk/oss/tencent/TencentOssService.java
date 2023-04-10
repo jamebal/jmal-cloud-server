@@ -84,7 +84,7 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
-    public AbstractOssObject getObject(String objectName) {
+    public AbstractOssObject getObjectCache(String objectName) {
         return baseOssService.getObject(objectName);
     }
 

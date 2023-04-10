@@ -2,6 +2,7 @@ package com.jmal.clouddisk.oss;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
+import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
@@ -58,5 +59,25 @@ public class FileInfo {
         fileIntroVO.setUpdateDate(updateTime);
         fileIntroVO.setUserId(userId);
         return fileIntroVO;
+    }
+
+    public FileDocument toFileDocument(String ossPath, String userId) {
+        FileDocument fileDocument = new FileDocument();
+        FileIntroVO fileIntroVO = toFileIntroVO(ossPath, userId);
+        fileDocument.setAgoTime(fileIntroVO.getAgoTime());
+        fileDocument.setId(fileIntroVO.getId());
+        fileDocument.setUsername(fileDocument.getUsername());
+        fileDocument.setIsFavorite(fileIntroVO.getIsFavorite());
+        fileDocument.setIsFolder(fileIntroVO.getIsFolder());
+        fileDocument.setName(fileIntroVO.getName());
+        fileDocument.setPath(fileIntroVO.getPath());
+        fileDocument.setSize(fileIntroVO.getSize());
+        fileDocument.setSuffix(fileIntroVO.getSuffix());
+        fileDocument.setMd5(fileIntroVO.getMd5());
+        fileDocument.setContentType(fileIntroVO.getContentType());
+        fileDocument.setUploadDate(fileIntroVO.getUploadDate());
+        fileDocument.setUpdateDate(fileIntroVO.getUpdateDate());
+        fileDocument.setUserId(userId);
+        return fileDocument;
     }
 }

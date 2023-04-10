@@ -632,6 +632,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public FileDocument getById(String fileId) {
+        String ossPath = CaffeineUtil.getOssPath(Paths.get(fileId));
+        if (ossPath != null) {
+            return webOssService.getFileDocument(ossPath, fileId);
+        }
         return getFileDocumentById(fileId);
     }
 

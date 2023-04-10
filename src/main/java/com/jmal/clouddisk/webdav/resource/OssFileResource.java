@@ -152,7 +152,7 @@ public class OssFileResource extends AbstractResource {
                 return new ByteArrayInputStream(content);
             }
         }
-        AbstractOssObject object = this.ossStorageService.getObject(resource.getKey());
+        AbstractOssObject object = this.ossStorageService.getObjectCache(resource.getKey());
         if (object == null) {
             return null;
         }
@@ -193,7 +193,7 @@ public class OssFileResource extends AbstractResource {
         byte[] result = new byte[size];
 
         int pos = 0;
-        try (AbstractOssObject object = this.ossStorageService.getObject(resource.getKey())) {
+        try (AbstractOssObject object = this.ossStorageService.getObjectCache(resource.getKey())) {
             if (object == null) {
                 return null;
             }
