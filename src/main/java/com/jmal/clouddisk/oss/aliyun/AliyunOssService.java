@@ -2,7 +2,6 @@ package com.jmal.clouddisk.oss.aliyun;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.file.PathUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.aliyun.oss.ClientException;
 import com.aliyun.oss.OSS;
@@ -258,7 +257,6 @@ public class AliyunOssService implements IOssService {
 
     @Override
     public boolean uploadPart(InputStream inputStream, String objectName, int partSize, int partNumber, String uploadId) {
-        Console.log("objectName: ", objectName, ",partSize: ", partSize, ",partNumber: ", partNumber, ",uploadId: ", uploadId);
         UploadPartRequest uploadPartRequest = new UploadPartRequest();
         uploadPartRequest.setBucketName(bucketName);
         uploadPartRequest.setKey(objectName);

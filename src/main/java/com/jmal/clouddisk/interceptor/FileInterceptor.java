@@ -29,7 +29,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
-import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriUtils;
 
 import javax.imageio.IIOImage;
@@ -104,7 +103,7 @@ public class FileInterceptor implements HandlerInterceptor {
         if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD -> {
-                    response.setHeader("Content-Disposition", "attachment; filename" + path.getFileName());
+                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + path.getFileName());
                     Path prePth = path.subpath(1, path.getNameCount());
                     String ossPath = CaffeineUtil.getOssPath(prePth);
                     if (ossPath != null) {
@@ -122,18 +121,14 @@ public class FileInterceptor implements HandlerInterceptor {
         } else {
             Path prePth = path.subpath(1, path.getNameCount());
             String ossPath = CaffeineUtil.getOssPath(prePth);
-            if (ossPath != null) {
+            if (CharSequenceUtil.isNotBlank(ossPath)) {
+                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "filename=" + path.getFileName());
                 webOssService.download(ossPath, prePth, request, response);
                 return false;
             }
         }
         responseHeader(response, null, null);
         return true;
-    }
-
-    @Override
-    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
-        HandlerInterceptor.super.postHandle(request, response, handler, modelAndView);
     }
 
     /***

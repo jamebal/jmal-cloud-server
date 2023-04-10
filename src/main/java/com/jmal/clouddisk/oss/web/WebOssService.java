@@ -2,7 +2,6 @@ package com.jmal.clouddisk.oss.web;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.URLUtil;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -23,11 +22,9 @@ import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.compress.utils.IOUtils;
-import org.apache.tomcat.util.http.parser.Ranges;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -47,16 +44,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class WebOssService {
 
-    @Autowired
-    CommonFileService commonFileService;
+    private final CommonFileService commonFileService;
 
-    @Autowired
-    FileProperties fileProperties;
+    private final FileProperties fileProperties;
 
-    @Autowired
-    IUserService userService;
+    private final IUserService userService;
 
     /***
      * 断点恢复上传缓存(已上传的分片缓存)
@@ -262,7 +257,6 @@ public class WebOssService {
     private void notifyCreateFile(String username, String objectName, String ossRootFolderName) {
         FileIntroVO fileIntroVO = new FileIntroVO();
         fileIntroVO.setPath(getPathByObjectName(ossRootFolderName, objectName));
-        Console.log("fileIntroVO", fileIntroVO);
         commonFileService.pushMessage(username, fileIntroVO, "createFile");
     }
 
@@ -279,7 +273,17 @@ public class WebOssService {
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         for (String pathName : pathNameList) {
             String objectName = pathName.substring(ossPath.length());
+            // 删除对象
             ossService.delete(objectName);
+            // 删除临时文件，如果有的话
+            Path tempFilePath = Paths.get(fileProperties.getRootDir(), ossPath, objectName);
+            if (Files.exists(tempFilePath)) {
+                try {
+                    Files.delete(tempFilePath);
+                } catch (IOException e) {
+                    log.warn(e.getMessage());
+                }
+            }
         }
     }
 
@@ -350,91 +354,61 @@ public class WebOssService {
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, false);
         try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName);
-            InputStream inputStream = abstractOssObject.getInputStream()) {
+             InputStream inputStream = abstractOssObject.getInputStream();
+             OutputStream outputStream = response.getOutputStream()) {
             FileInfo fileInfo = ossService.getFileInfo(objectName);
             String suffix = FileUtil.getSuffix(fileInfo.getName());
-            response.setHeader("Content-Disposition", "inline");
+            // 设置响应头
             response.setContentType(FileContentTypeUtils.getContentType(suffix));
-            response.setContentLength((int) abstractOssObject.getContentLength());
-            IOUtils.copy(inputStream, response.getOutputStream());
-            response.flushBuffer();
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-    }
-
-    protected IOException copyRange(InputStream inputStream, OutputStream outputStream, long start, long end) {
-        long skipped;
-        try {
-            skipped = inputStream.skip(start);
-        } catch (IOException e) {
-            return e;
-        }
-        if (skipped < start) {
-            return new IOException("skip fail");
-        }
-
-        IOException exception = null;
-        long bytesToRead = end - start + 1;
-
-        byte[] buffer = new byte[1024];
-        int len;
-        while (bytesToRead > 0) {
-            try {
-                len = inputStream.read(buffer);
-                if (bytesToRead >= len) {
-                    outputStream.write(buffer, 0, len);
-                    bytesToRead -= len;
-                } else {
-                    outputStream.write(buffer, 0, (int) bytesToRead);
-                    bytesToRead = 0;
-                }
-            } catch (IOException e) {
-                exception = e;
-                len = -1;
-            }
-            if (len < buffer.length) {
-                break;
-            }
-        }
-        return exception;
-
-    }
-
-    private long rangeStart(HttpServletRequest request) {
-        String rangeHeader = request.getHeader("Range");
-        String[] ranges = rangeHeader.split("=");
-        String[] range = ranges[1].split("-");
-        return Long.parseLong(range[0]);
-    }
-
-    private long rangeEnd(HttpServletRequest request, long fileSize) {
-        String rangeHeader = request.getHeader("Range");
-        String[] ranges = rangeHeader.split("=");
-        String[] range = ranges[1].split("-");
-        return range.length > 1 ? Long.parseLong(range[1]) : fileSize - 1;
-    }
-
-    private static long getStart(Ranges.Entry range, long length) {
-        long start = range.getStart();
-        if (start == -1) {
-            long end = range.getEnd();
-            if (end >= length) {
-                return 0;
+            long fileSize = abstractOssObject.getContentLength();
+            // 处理 Range 请求
+            String range = request.getHeader("Range");
+            long length = fileSize;
+            if (CharSequenceUtil.isNotBlank(range)) {
+                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "inline;filename=" + fileInfo.getName());
+                response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+                long[] ranges = parseRange(range, length);
+                long start = ranges[0];
+                long end = ranges[1] == -1 ? fileSize - 1 : ranges[1];
+                String contentRange = "bytes " + start + "-" + end + "/" + fileSize;
+                response.setHeader("Content-Range", contentRange);
+                length = end - start + 1;
+                response.setContentLengthLong(length);
+                inputStream.skip(start);
             } else {
-                return length - end;
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.setContentLengthLong(fileSize);
             }
-        } else {
-            return start;
+            byte[] buffer = new byte[1024 * 2];
+            int len;
+            while ((len = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, len);
+            }
+            response.flushBuffer();
+            abstractOssObject.closeObject();
+        } catch (IOException e) {
+            log.error(e.getMessage());
         }
     }
 
-    private static long getEnd(Ranges.Entry range, long length) {
-        long end = range.getEnd();
-        if (range.getStart() == -1 || end == -1 || end >= length) {
-            return length - 1;
-        } else {
-            return end;
+    private long[] parseRange(String range, long contentLength) {
+        String[] parts = range.substring("bytes=".length()).split("-");
+        long start = parseLong(parts[0], 0L);
+        long end = parseLong(parts.length > 1 ? parts[1] : "", contentLength - 1);
+        if (end < start) {
+            end = start;
+        }
+        return new long[]{start, end};
+    }
+
+    private long parseLong(String value, long defaultValue) {
+        if (value == null || value.isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            return defaultValue;
         }
     }
 }
