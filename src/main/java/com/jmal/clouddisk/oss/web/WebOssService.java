@@ -44,9 +44,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
@@ -68,6 +66,17 @@ public class WebOssService {
      * value: 已上传的分片号列表
      */
     private static final Cache<String, CopyOnWriteArrayList<Integer>> listPartsCache = Caffeine.newBuilder().build();
+
+    public List<Map<String, String>> getPlatformList() {
+        List<Map<String, String>> maps = new ArrayList<>(PlatformOSS.values().length);
+        for (PlatformOSS platformOSS : PlatformOSS.values()) {
+            Map<String, String> map = new HashMap<>(2);
+            map.put("value", platformOSS.getKey());
+            map.put("label", platformOSS.getValue());
+            maps.add(map);
+        }
+        return maps;
+    }
 
 
     public static String getObjectName(Path prePath, String ossPath, boolean isFolder) {

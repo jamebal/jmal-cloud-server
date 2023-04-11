@@ -9,6 +9,7 @@ import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -18,31 +19,18 @@ import java.util.Map;
 @RestController
 @RequestMapping("oss")
 @Tag(name = "oss Controller")
+@RequiredArgsConstructor
 public class OssController {
-
-    private final IOssWebService ossWebService;
 
     private final OssConfigService ossConfigService;
 
-
-    public OssController(IOssWebService ossWebService, OssConfigService ossConfigService) {
-        this.ossWebService = ossWebService;
-        this.ossConfigService = ossConfigService;
-    }
+    public final WebOssService webOssService;
 
     @Operation(summary = "获取支持的平台的列表")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     @GetMapping("getPlatformList")
     public ResponseResult<List<Map<String, String>>> getPlatformList() {
-        return ResultUtil.success(ossWebService.getPlatformList());
-    }
-
-    @Operation(summary = "获取appToken")
-    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    @GetMapping("getAppToken")
-    @Permission(value = "cloud:oss:get")
-    public ResponseResult<STSObjectVO> getAppToken(@RequestParam String platformKey) {
-        return ossWebService.getAppToken();
+        return ResultUtil.success(webOssService.getPlatformList());
     }
 
     @Operation(summary = "OSS配置列表")

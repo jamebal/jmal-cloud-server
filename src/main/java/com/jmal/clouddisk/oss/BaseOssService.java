@@ -227,9 +227,10 @@ public class BaseOssService {
         Path objectNamePath = Paths.get(objectName);
         if (objectNamePath.getNameCount() > 1) {
             String pathObjectName = objectNamePath.getParent().toString() + MyWebdavServlet.PATH_DELIMITER;
+            fileInfoListCache.invalidate(pathObjectName);
             for (String key : fileInfoListCache.asMap().keySet()) {
-                if (key.startsWith(pathObjectName)) {
-                    fileInfoListCache.invalidate(pathObjectName);
+                if (key.startsWith(objectName)) {
+                    fileInfoListCache.invalidate(key);
                 }
             }
         } else {

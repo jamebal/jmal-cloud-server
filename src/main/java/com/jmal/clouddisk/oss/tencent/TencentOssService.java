@@ -250,19 +250,23 @@ public class TencentOssService implements IOssService {
     }
 
     private void getMultipartUploads() {
-        ListMultipartUploadsRequest listMultipartUploadsRequest = new ListMultipartUploadsRequest(bucketName);
-        // 每次请求最多列出多少个
-        listMultipartUploadsRequest.setMaxUploads(100);
-        MultipartUploadListing multipartUploadListing;
-        do {
-            multipartUploadListing = cosClient.listMultipartUploads(listMultipartUploadsRequest);
-            List<MultipartUpload> multipartUploads = multipartUploadListing.getMultipartUploads();
-            for (MultipartUpload mUpload : multipartUploads) {
-                baseOssService.setUpdateIdCache(mUpload.getKey(), mUpload.getUploadId());
-            }
-            listMultipartUploadsRequest.setKeyMarker(multipartUploadListing.getNextKeyMarker());
-            listMultipartUploadsRequest.setUploadIdMarker(multipartUploadListing.getNextUploadIdMarker());
-        } while (multipartUploadListing.isTruncated());
+        try {
+            ListMultipartUploadsRequest listMultipartUploadsRequest = new ListMultipartUploadsRequest(bucketName);
+            // 每次请求最多列出多少个
+            listMultipartUploadsRequest.setMaxUploads(100);
+            MultipartUploadListing multipartUploadListing;
+            do {
+                multipartUploadListing = cosClient.listMultipartUploads(listMultipartUploadsRequest);
+                List<MultipartUpload> multipartUploads = multipartUploadListing.getMultipartUploads();
+                for (MultipartUpload mUpload : multipartUploads) {
+                    baseOssService.setUpdateIdCache(mUpload.getKey(), mUpload.getUploadId());
+                }
+                listMultipartUploadsRequest.setKeyMarker(multipartUploadListing.getNextKeyMarker());
+                listMultipartUploadsRequest.setUploadIdMarker(multipartUploadListing.getNextUploadIdMarker());
+            } while (multipartUploadListing.isTruncated());
+        } catch (CosClientException e) {
+            printException(e);
+        }
     }
 
     @Override
