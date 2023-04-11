@@ -169,9 +169,8 @@ public interface IOssService {
      * @param objectName objectName
      * @param uploadId   uploadId
      * @param fileTotalSize 文件总大小
-     * @return uploadId
      */
-    String completeMultipartUpload(String objectName, String uploadId, Long fileTotalSize);
+    void completeMultipartUpload(String objectName, String uploadId, Long fileTotalSize);
 
     /**
      * 获取缩略图, 指定目标图片宽度为 Width，高度等比缩放
@@ -180,6 +179,32 @@ public interface IOssService {
      * @param width      图片宽度
      */
     void getThumbnail(String objectName, File file, int width);
+
+    /**
+     * 重命名
+     * @param sourceObjectName 源objectName
+     * @param destinationObjectName 目标objectName
+     * @return 是否成功
+     */
+    boolean rename(String sourceObjectName, String destinationObjectName);
+
+    /**
+     * 拷贝对象(相同Bucket之间拷贝)
+     * @param sourceKey 源objectName
+     * @param destinationKey 目标objectName
+     * @return 是否成功
+     */
+    boolean copyObject(String sourceKey, String destinationKey);
+
+    /**
+     * 拷贝对象(不同Bucket之间拷贝)
+     * @param sourceBucketName 源Bucket
+     * @param sourceKey        源objectName
+     * @param destinationBucketName 目标Bucket
+     * @param destinationKey        目标objectName
+     * @return 是否成功
+     */
+    boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey);
 
     /**
      * 关闭需要关闭的一切

@@ -218,7 +218,7 @@ public class BaseOssService {
         log.info(objectName, "delete success");
         FileInfo fileInfo = getFileInfoCache(objectName);
         if (fileInfo != null) {
-            fileInfoCache.invalidate(objectName);
+            clearFileCache(objectName);
             clearFileListCache(objectName);
         }
     }
@@ -226,9 +226,27 @@ public class BaseOssService {
     private void clearFileListCache(String objectName) {
         Path objectNamePath = Paths.get(objectName);
         if (objectNamePath.getNameCount() > 1) {
-            fileInfoListCache.invalidate(objectNamePath.getParent().toString() + MyWebdavServlet.PATH_DELIMITER);
+            String pathObjectName = objectNamePath.getParent().toString() + MyWebdavServlet.PATH_DELIMITER;
+            for (String key : fileInfoListCache.asMap().keySet()) {
+                if (key.startsWith(pathObjectName)) {
+                    fileInfoListCache.invalidate(pathObjectName);
+                }
+            }
         } else {
             fileInfoListCache.invalidate("");
+        }
+    }
+
+    private void clearFileCache(String objectName) {
+        if (objectName.endsWith("/")) {
+            fileInfoCache.invalidate(objectName.substring(0,objectName.length() - 1));
+            for (String key : fileInfoCache.asMap().keySet()) {
+                if (key.startsWith(objectName)) {
+                    fileInfoCache.invalidate(key);
+                }
+            }
+        } else {
+            fileInfoCache.invalidate(objectName);
         }
     }
 

@@ -529,11 +529,24 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
      * @param username username
      */
     private FileDocument getFileInfoBeforeDownload(List<String> fileIds, String username) throws CommonException {
+        String fileId = fileIds.get(0);
+        // 判断是否为ossPath
+        Path path = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath == null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "暂不支持打包下载");
+        }
         Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(fileIds.get(0)));
+        query.addCriteria(Criteria.where("_id").in(fileId));
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
         if (fileDocument == null) {
             return null;
+        }
+        // 判断是否为ossPath
+        path = Paths.get(username, fileDocument.getPath(), fileDocument.getName());
+        ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "暂不支持打包下载");
         }
         if (CharSequenceUtil.isBlank(username)) {
             fileDocument.setUsername(userService.getUserNameById(fileDocument.getUserId()));
@@ -560,8 +573,23 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public ResponseResult<Object> rename(String newFileName, String username, String id) {
+
+        // 判断是否为ossPath
+        String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
+        if (ossPath != null) {
+            if (webOssService.rename(ossPath, id, newFileName)) {
+                return ResultUtil.success(true);
+            } else {
+                return ResultUtil.error("重命名失败");
+            }
+        }
+
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
+            // 判断是否为ossPath跟目录
+            if (fileDocument.getOssFolder() != null) {
+                throw new CommonException(ExceptionType.WARNING.getCode(), "请在oss管理中修改目录名称");
+            }
             String currentDirectory = getUserDirectory(fileDocument.getPath());
             String filePath = fileProperties.getRootDir() + File.separator + username + currentDirectory;
             File file = new File(filePath + fileDocument.getName());
@@ -1100,7 +1128,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     public ResponseResult<Object> upload(UploadApiParamDTO upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
 
-        Path prePth = Paths.get(upload.getUsername(), upload.getCurrentDirectory(), upload.getFilename());
+        Path prePth = Paths.get(upload.getUsername(), upload.getCurrentDirectory(), upload.getRelativePath());
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
             return ResultUtil.success(webOssService.upload(ossPath, prePth, upload));
@@ -1144,6 +1172,14 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public ResponseResult<Object> newFolder(UploadApiParamDTO upload) throws CommonException {
+
+        Path prePth = Paths.get(upload.getUsername(), upload.getCurrentDirectory(), upload.getFilename());
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            webOssService.mkdir(ossPath, prePth);
+            return ResultUtil.success();
+        }
+
         LocalDateTime date = LocalDateTime.now(TimeUntils.ZONE_ID);
         // 新建文件夹
         String userDirectoryFilePath = getUserDirectoryFilePath(upload);

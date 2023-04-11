@@ -15,6 +15,9 @@ import com.qcloud.cos.exception.CosServiceException;
 import com.qcloud.cos.http.HttpProtocol;
 import com.qcloud.cos.model.*;
 import com.qcloud.cos.region.Region;
+import com.qcloud.cos.transfer.Copy;
+import com.qcloud.cos.transfer.TransferManager;
+import com.qcloud.cos.transfer.TransferManagerConfiguration;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
@@ -35,22 +38,43 @@ public class TencentOssService implements IOssService {
 
     private final BaseOssService baseOssService;
 
+    private final Region region;
+
+    private final TransferManager transferManager;
+
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
     public TencentOssService(FileProperties fileProperties, OssConfigDTO ossConfigDTO) {
         // 创建COSClient实例。
         String accessKeyId = ossConfigDTO.getAccessKey();
         String accessKeySecret = ossConfigDTO.getSecretKey();
-        String region = ossConfigDTO.getRegion();
+        this.region = new Region(ossConfigDTO.getRegion());
         this.bucketName = ossConfigDTO.getBucket();
         COSCredentials cred = new BasicCOSCredentials(accessKeyId, accessKeySecret);
-        ClientConfig clientConfig = new ClientConfig(new Region(region));
+        ClientConfig clientConfig = new ClientConfig(region);
         clientConfig.setHttpProtocol(HttpProtocol.https);
         this.cosClient = new COSClient(cred, clientConfig);
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor);
         log.info("{}配置加载成功, bucket: {}, username: {}", getPlatform().getValue(), bucketName, ossConfigDTO.getUsername());
         ThreadUtil.execute(this::getMultipartUploads);
+        this.transferManager = new TransferManager(cosClient);
+        createTransferManager();
+    }
+
+    // 创建 TransferManager 实例，这个实例用来后续调用高级接口
+    private void createTransferManager() {
+        // 创建一个 COSClient 实例，这是访问 COS 服务的基础实例。
+        // 这里创建的 cosClient 是以复制的目的端信息为基础的
+        // 自定义线程池大小，建议在客户端与 COS 网络充足（例如使用腾讯云的 CVM，同地域上传 COS）的情况下，设置成16或32即可，可较充分的利用网络资源
+        // 对于使用公网传输且网络带宽质量不高的情况，建议减小该值，避免因网速过慢，造成请求超时。
+        // 传入一个 threadpool, 若不传入线程池，默认 TransferManager 中会生成一个单线程的线程池。
+        // 设置高级接口的配置项
+        // 分块复制阈值和分块大小分别为 5MB 和 1MB
+        TransferManagerConfiguration transferManagerConfiguration = new TransferManagerConfiguration();
+        transferManagerConfiguration.setMultipartCopyThreshold(5L * 1024L * 1024L);
+        transferManagerConfiguration.setMultipartCopyPartSize(1024L * 1024L);
+        this.transferManager.setConfiguration(transferManagerConfiguration);
     }
 
     @Override
@@ -294,15 +318,14 @@ public class TencentOssService implements IOssService {
         }
     }
 
-    public String completeMultipartUpload(String objectName, String uploadId, Long totalSize) {
+    public void completeMultipartUpload(String objectName, String uploadId, Long totalSize) {
         baseOssService.printOperation(getPlatform().getKey(), "completeMultipartUpload", objectName);
         // 查询已上传的分片
         List<PartETag> partETags = getPartETagList(objectName, uploadId);
         // 完成分片上传
         CompleteMultipartUploadRequest completeMultipartUploadRequest = new CompleteMultipartUploadRequest(bucketName, objectName, uploadId, partETags);
-        CompleteMultipartUploadResult completeResult = cosClient.completeMultipartUpload(completeMultipartUploadRequest);
+        cosClient.completeMultipartUpload(completeMultipartUploadRequest);
         baseOssService.onUploadSuccess(objectName, totalSize);
-        return completeResult.getRequestId();
     }
 
     @Override
@@ -312,6 +335,40 @@ public class TencentOssService implements IOssService {
         String rule = "imageMogr2/thumbnail/" + width + "x";
         request.putCustomQueryParameter(rule, null);
         cosClient.getObject(request, file);
+    }
+
+    @Override
+    public boolean rename(String sourceObjectName, String destinationObjectName) {
+        // 先复制再删除
+        if (copyObject(bucketName, sourceObjectName, bucketName, destinationObjectName)) {
+            return delete(sourceObjectName);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean copyObject(String sourceKey, String destinationKey) {
+        return copyObject(bucketName, sourceKey, bucketName, destinationKey);
+    }
+
+    @Override
+    public boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
+        CopyObjectRequest copyObjectRequest = new CopyObjectRequest(region, sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+        try {
+            baseOssService.printOperation(getPlatform().getKey(), "copyObject start" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
+            Copy copy = transferManager.copy(copyObjectRequest);
+            // 高级接口会返回一个异步结果 Copy
+            // 可同步的调用 waitForCopyResult 等待复制结束, 成功返回 CopyResult, 失败抛出异常
+            CopyResult copyResult = copy.waitForCopyResult();
+            if (copyResult != null) {
+                return true;
+            }
+        } catch (CosServiceException e) {
+            printException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return false;
     }
 
     @Override
