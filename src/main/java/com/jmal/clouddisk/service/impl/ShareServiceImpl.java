@@ -35,7 +35,7 @@ import static com.jmal.clouddisk.controller.rest.ShareController.SHARE_EXPIRED;
 @Service
 public class ShareServiceImpl implements IShareService {
 
-    private static final String COLLECTION_NAME = "share";
+    public static final String COLLECTION_NAME = "share";
 
     private final IFileService fileService;
 

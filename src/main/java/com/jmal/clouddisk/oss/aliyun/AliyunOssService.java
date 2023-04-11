@@ -387,9 +387,6 @@ public class AliyunOssService implements IOssService {
 
     public boolean rename(String sourceObjectName, String destinationObjectName) {
         try {
-            // baseOssService.printOperation(getPlatform().getKey(), "rename" + "destinationObjectName: " + destinationObjectName, sourceObjectName);
-            // ossClient.renameObject(bucketName, sourceObjectName, destinationObjectName);
-            // return true;
             // 先复制再删除
             if (copyObject(bucketName, sourceObjectName, bucketName, destinationObjectName)) {
                 return delete(sourceObjectName);
@@ -408,6 +405,37 @@ public class AliyunOssService implements IOssService {
 
     public boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
         try {
+            if (sourceKey.endsWith("/")) {
+                // 复制文件夹
+                // 列举所有包含指定前缀的文件并copy
+                String nextMarker = null;
+                ObjectListing objectListing;
+                do {
+                    ListObjectsRequest listObjectsRequest = new ListObjectsRequest(sourceBucketName).withPrefix(sourceKey).withMarker(nextMarker);
+                    objectListing = ossClient.listObjects(listObjectsRequest);
+                    if (!objectListing.getObjectSummaries().isEmpty()) {
+                        objectListing.getObjectSummaries().parallelStream().forEach(ossObjectSummary -> {
+                            String destKey = destinationKey + ossObjectSummary.getKey().substring(sourceKey.length());
+                            copyObjectFile(ossObjectSummary.getBucketName(), ossObjectSummary.getKey(), destinationBucketName, destKey);
+                        });
+                    }
+                    nextMarker = objectListing.getNextMarker();
+                } while (objectListing.isTruncated());
+            } else {
+                // 复制文件
+                copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+            }
+            return true;
+        } catch (OSSException oe) {
+            printOSSException(oe);
+        } catch (ClientException ce) {
+            printClientException(ce);
+        }
+        return false;
+    }
+
+    private void copyObjectFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
+        try {
             baseOssService.printOperation(getPlatform().getKey(), "copyObject start" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
             ObjectMetadata objectMetadata = ossClient.getObjectMetadata(sourceBucketName, sourceKey);
             // 获取被拷贝文件的大小。
@@ -416,7 +444,6 @@ public class AliyunOssService implements IOssService {
             if (contentLength < 1024 * 1024 * 10) {
                 // 小文件执行普通拷贝
                 ossClient.copyObject(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
-                return true;
             }
 
             // 设置分片大小为10 MB。单位为字节。
@@ -454,13 +481,11 @@ public class AliyunOssService implements IOssService {
                     destinationBucketName, destinationKey, uploadId, partETags);
             ossClient.completeMultipartUpload(completeMultipartUploadRequest);
             baseOssService.printOperation(getPlatform().getKey(), "copyObject complete" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
-            return true;
         } catch (OSSException oe) {
             printOSSException(oe);
         } catch (ClientException ce) {
             printClientException(ce);
         }
-        return false;
     }
 
     private static void printClientException(ClientException ce) {

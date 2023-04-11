@@ -1,8 +1,10 @@
 package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.service.impl.ShareServiceImpl;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
@@ -13,6 +15,7 @@ import java.time.LocalDateTime;
  * @Date 2020-03-17 16:28
  */
 @Data
+@Document(collection = ShareServiceImpl.COLLECTION_NAME)
 public class ShareDO {
     @Id
     private String id;

@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.URLUtil;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -11,10 +12,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.FileIntroVO;
-import com.jmal.clouddisk.model.UploadApiParamDTO;
-import com.jmal.clouddisk.model.UploadResponse;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.oss.*;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
@@ -312,28 +310,57 @@ public class WebOssService {
         success = ossService.rename(objectName, destinationObjectName);
 
         if (success) {
-            // 删除临时文件，如果有的话
-            deleteTemp(ossPath, objectName);
-            // 检查该目录是否有其他依赖的缓存等等。。
-            Query query = new Query();
-            query.addCriteria(Criteria.where("_id").regex("^" + pathName));
-            List<FileDocument> list = mongoTemplate.findAllAndRemove(query, FileDocument.class);
-            String newPathName = newFilePath.toString();
-            if (isFolder) {
-                newPathName += MyWebdavServlet.PATH_DELIMITER;
-            }
-            String finalNewPathName = newPathName;
-            List<FileDocument> newList = list.stream().peek(fileDocument -> {
-                String newId = CharSequenceUtil.replace(fileDocument.getId(), pathName, finalNewPathName);
-                String newPath = CharSequenceUtil.replace(fileDocument.getPath(), pathName, finalNewPathName);
-                fileDocument.setId(newId);
-                fileDocument.setPath(newPath);
-            }).toList();
-            if (!newList.isEmpty()) {
-                mongoTemplate.insertAll(newList);
-            }
+            notifyCreateFile(getUsernameByOssPath(ossPath), objectName, getOssRootFolderName(ossPath));
+            ThreadUtil.execute(() -> {
+                renameAfter(ossPath, pathName, isFolder, objectName, newFilePath);
+            });
         }
         return success;
+    }
+
+    private void renameAfter(String ossPath, String pathName, boolean isFolder, String objectName, Path newFilePath) {
+        // 删除临时文件，如果有的话
+        deleteTemp(ossPath, objectName);
+        // 检查该目录是否有其他依赖的缓存等等。。
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").regex("^" + pathName));
+        List<FileDocument> fileDocumentList = mongoTemplate.findAllAndRemove(query, FileDocument.class);
+        String newPathName = newFilePath.toString();
+        if (isFolder) {
+            newPathName += MyWebdavServlet.PATH_DELIMITER;
+        }
+        // 修改关联的分享文件
+        String finalNewPathName = newPathName;
+        String username = getUsernameByOssPath(ossPath);
+        String oldPath = pathName.substring(username.length());
+        List<FileDocument> newList = fileDocumentList.stream().peek(fileDocument -> {
+            String oldId = fileDocument.getId();
+            String newId = CharSequenceUtil.replace(oldId, pathName, finalNewPathName);
+            String newPath = CharSequenceUtil.replace(fileDocument.getPath(), oldPath, finalNewPathName);
+            fileDocument.setId(newId);
+            fileDocument.setPath(newPath);
+            if (pathName.endsWith(oldId)) {
+                fileDocument.setName(newFilePath.getFileName().toString());
+            }
+        }).toList();
+        if (!newList.isEmpty()) {
+            mongoTemplate.insertAll(newList);
+        }
+        // 修改关联的分享配置
+        Query shareQuery = new Query();
+        shareQuery.addCriteria(Criteria.where("fileId").regex("^" + pathName));
+        List<ShareDO> shareDOList = mongoTemplate.findAllAndRemove(shareQuery, ShareDO.class);
+        List<ShareDO> newShareDOList = shareDOList.stream().peek(shareDO -> {
+            String oldFileId = shareDO.getFileId();
+            String newFileId = CharSequenceUtil.replace(oldFileId, pathName, finalNewPathName);
+            shareDO.setFileId(newFileId);
+            if (pathName.endsWith(oldFileId)) {
+                shareDO.setFileName(newFilePath.getFileName().toString());
+            }
+        }).toList();
+        if (!newShareDOList.isEmpty()) {
+            mongoTemplate.insertAll(newShareDOList);
+        }
     }
 
     /**
@@ -374,7 +401,11 @@ public class WebOssService {
                 // 删除依赖，如果有的话
                 Query query = new Query();
                 query.addCriteria(Criteria.where("_id").regex("^" + pathName));
-                mongoTemplate.remove(query, FileDocument.class);
+                List<FileDocument> fileDocumentList = mongoTemplate.findAllAndRemove(query, FileDocument.class);
+                Query shareQuery = new Query();
+                List<String> fileIds = fileDocumentList.stream().map(FileBase::getId).toList();
+                shareQuery.addCriteria(Criteria.where("fileId").in(fileIds));
+                mongoTemplate.remove(shareQuery, ShareDO.class);
             }
         }
     }
@@ -505,6 +536,9 @@ public class WebOssService {
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = pathName.substring(ossPath.length());
         try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName)) {
+            if (abstractOssObject == null) {
+                return null;
+            }
             FileInfo fileInfo = abstractOssObject.getFileInfo();
             String username = getUsernameByOssPath(ossPath);
             String userId = userService.getUserIdByUserName(username);

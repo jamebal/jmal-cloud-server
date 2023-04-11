@@ -357,22 +357,55 @@ public class TencentOssService implements IOssService {
 
     @Override
     public boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
+        try {
+            if (sourceKey.endsWith("/")) {
+                // 复制文件夹
+                ListObjectsRequest listObjectsRequest = new ListObjectsRequest();
+                // 设置 bucket 名称
+                listObjectsRequest.setBucketName(bucketName);
+                // prefix 表示列出的对象名以 prefix 为前缀
+                // 这里填要列出的目录的相对 bucket 的路径
+                listObjectsRequest.setPrefix(sourceKey);
+                // 设置最大遍历出多少个对象, 一次 listobject 最大支持1000
+                listObjectsRequest.setMaxKeys(1000);
+                // 保存每次列出的结果
+                ObjectListing objectListing;
+                do {
+                    objectListing = cosClient.listObjects(listObjectsRequest);
+                    // 这里保存列出的对象列表
+                    List<COSObjectSummary> cosObjectSummaries = objectListing.getObjectSummaries();
+                    cosObjectSummaries.parallelStream().forEach(cosObjectSummary -> {
+                        String destKey = destinationKey + cosObjectSummary.getKey().substring(sourceKey.length());
+                        copyObjectFile(cosObjectSummary.getBucketName(), cosObjectSummary.getKey(), destinationBucketName, destKey);
+                    });
+                    // 标记下一次开始的位置
+                    String nextMarker = objectListing.getNextMarker();
+                    listObjectsRequest.setMarker(nextMarker);
+                } while (objectListing.isTruncated());
+            } else {
+                // 复制文件
+                copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+            }
+            return true;
+        } catch (CosServiceException e) {
+            printException(e);
+        }
+        return false;
+    }
+
+    public void copyObjectFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
         CopyObjectRequest copyObjectRequest = new CopyObjectRequest(region, sourceBucketName, sourceKey, destinationBucketName, destinationKey);
         try {
             baseOssService.printOperation(getPlatform().getKey(), "copyObject start" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
             Copy copy = transferManager.copy(copyObjectRequest);
             // 高级接口会返回一个异步结果 Copy
             // 可同步的调用 waitForCopyResult 等待复制结束, 成功返回 CopyResult, 失败抛出异常
-            CopyResult copyResult = copy.waitForCopyResult();
-            if (copyResult != null) {
-                return true;
-            }
+            copy.waitForCopyResult();
         } catch (CosServiceException e) {
             printException(e);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        return false;
     }
 
     @Override

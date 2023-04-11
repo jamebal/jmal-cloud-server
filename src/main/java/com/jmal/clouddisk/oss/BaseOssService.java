@@ -215,7 +215,7 @@ public class BaseOssService {
      * @param objectName objectName
      */
     private void onDeleteSuccess(String objectName) {
-        log.info(objectName, "delete success");
+        log.info("delete success: {}", objectName);
         FileInfo fileInfo = getFileInfoCache(objectName);
         if (fileInfo != null) {
             clearFileCache(objectName);
@@ -257,7 +257,7 @@ public class BaseOssService {
      * @param tempFileAbsolutePath 临时文件绝对路径
      */
     public void onUploadSuccess(String objectName, Path tempFileAbsolutePath) {
-        log.info(objectName, "upload success");
+        log.info("upload success: {}", objectName);
         clearTempFileCache(objectName);
         setFileInfoCache(objectName, newFileInfo(objectName, tempFileAbsolutePath.toFile()));
         clearFileListCache(objectName);
@@ -270,7 +270,7 @@ public class BaseOssService {
      * @param fileSize 文件大小
      */
     public void onUploadSuccess(String objectName, Long fileSize) {
-        log.info(objectName, "upload success");
+        log.info("upload success: {}", objectName);
         clearTempFileCache(objectName);
         setFileInfoCache(objectName, newFileInfo(objectName, fileSize));
         clearFileListCache(objectName);
@@ -283,7 +283,7 @@ public class BaseOssService {
      * @param fileInfo FileInfo
      */
     private void onMkdirSuccess(String objectName, FileInfo fileInfo) {
-        log.info(objectName, "mkdir success");
+        log.info("mkdir success: {}", objectName);
         setFileInfoCache(objectName, fileInfo);
         clearFileListCache(objectName);
     }
