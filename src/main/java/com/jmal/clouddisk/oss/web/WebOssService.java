@@ -25,6 +25,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.ClientAbortException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -44,6 +45,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @Slf4j
@@ -63,7 +67,9 @@ public class WebOssService {
      * key: uploadId
      * value: 已上传的分片号列表
      */
-    private static final Cache<String, CopyOnWriteArrayList<Integer>> listPartsCache = Caffeine.newBuilder().build();
+    private static final Cache<String, CopyOnWriteArrayList<Integer>> LIST_PARTS_CACHE = Caffeine.newBuilder().build();
+
+    private static final Cache<Path, ReentrantLock> LOCK_CACHE = Caffeine.newBuilder().build();
 
     public List<Map<String, String>> getPlatformList() {
         List<Map<String, String>> maps = new ArrayList<>(PlatformOSS.values().length);
@@ -220,7 +226,7 @@ public class WebOssService {
         } else {
             String uploadId = ossService.getUploadId(objectName);
             // 已上传的分片号
-            List<Integer> chunks = listPartsCache.get(uploadId, key -> ossService.getListParts(objectName, uploadId));
+            List<Integer> chunks = LIST_PARTS_CACHE.get(uploadId, key -> ossService.getListParts(objectName, uploadId));
             // 返回已存在的分片
             uploadResponse.setResume(chunks);
             assert chunks != null;
@@ -263,7 +269,7 @@ public class WebOssService {
             String uploadId = ossService.getUploadId(objectName);
 
             // 已上传的分片号列表
-            CopyOnWriteArrayList<Integer> chunks = listPartsCache.get(uploadId, key -> ossService.getListParts(objectName, uploadId));
+            CopyOnWriteArrayList<Integer> chunks = LIST_PARTS_CACHE.get(uploadId, key -> ossService.getListParts(objectName, uploadId));
 
             // 上传本次的分片
             boolean success = ossService.uploadPart(file.getInputStream(), objectName, currentChunkSize, upload.getChunkNumber(), uploadId);
@@ -276,7 +282,7 @@ public class WebOssService {
             // 加入缓存
             if (chunks != null) {
                 chunks.add(upload.getChunkNumber());
-                listPartsCache.put(uploadId, chunks);
+                LIST_PARTS_CACHE.put(uploadId, chunks);
                 // 检测是否已经上传完了所有分片,上传完了则需要合并
                 if (chunks.size() == upload.getTotalChunks()) {
                     uploadResponse.setMerge(true);
@@ -300,22 +306,23 @@ public class WebOssService {
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = pathName.substring(ossPath.length());
         Path newFilePath = Paths.get(Paths.get(pathName).getParent().toString(), newFileName);
-        boolean success;
         String destinationObjectName;
         if (!isFolder) {
             destinationObjectName = getObjectName(newFilePath, ossPath, false);
         } else {
             destinationObjectName = getObjectName(newFilePath, ossPath, true);
         }
-        success = ossService.rename(objectName, destinationObjectName);
-
-        if (success) {
-            notifyCreateFile(getUsernameByOssPath(ossPath), objectName, getOssRootFolderName(ossPath));
-            ThreadUtil.execute(() -> {
+        CountDownLatch countDownLatch = ossService.rename(objectName, destinationObjectName);
+        ThreadUtil.execute(() -> {
+            try {
+                countDownLatch.await();
+                notifyCreateFile(getUsernameByOssPath(ossPath), objectName, getOssRootFolderName(ossPath));
                 renameAfter(ossPath, pathName, isFolder, objectName, newFilePath);
-            });
-        }
-        return success;
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        return true;
     }
 
     private void renameAfter(String ossPath, String pathName, boolean isFolder, String objectName, Path newFilePath) {
@@ -416,6 +423,20 @@ public class WebOssService {
         File tempFile = Paths.get(fileProperties.getRootDir(), pathName).toFile();
         if (FileUtil.exist(tempFile)) {
             return getResponseEntity(tempFile);
+        } else {
+            Path tempFileFolderPath = tempFile.toPath().getParent();
+            Lock lock = LOCK_CACHE.get(tempFileFolderPath, key -> new ReentrantLock());
+            lock.lock();
+            try {
+                if (!Files.exists(tempFileFolderPath)) {
+                    Files.createDirectory(tempFileFolderPath);
+                }
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            } finally {
+                lock.unlock();
+                LOCK_CACHE.invalidate(tempFileFolderPath);
+            }
         }
         ossService.getThumbnail(objectName, tempFile, 256);
         return getResponseEntity(tempFile);
@@ -449,8 +470,18 @@ public class WebOssService {
                 ossService.mkdir(objectName);
                 fileInfo = BaseOssService.newFileInfo(objectName, bucketInfo.getBucketName());
             } else {
-                if (!Files.exists(tempFileAbsolutePath.getParent())) {
-                    Files.createDirectory(tempFileAbsolutePath.getParent());
+                Path tempFileAbsoluteFolderPath = tempFileAbsolutePath.getParent();
+                Lock lock = LOCK_CACHE.get(tempFileAbsoluteFolderPath, key -> new ReentrantLock());
+                lock.lock();
+                try {
+                    if (!Files.exists(tempFileAbsolutePath.getParent())) {
+                        Files.createDirectory(tempFileAbsolutePath.getParent());
+                    }
+                } catch (IOException e) {
+                    log.error(e.getMessage(), e);
+                } finally {
+                    lock.unlock();
+                    LOCK_CACHE.invalidate(tempFileAbsoluteFolderPath);
                 }
                 Files.createFile(tempFileAbsolutePath);
                 ossService.uploadFile(tempFileAbsolutePath, objectName);
@@ -506,6 +537,7 @@ public class WebOssService {
             }
             IoUtil.copy(inStream, outputStream);
             abstractOssObject.closeObject();
+        } catch (ClientAbortException ignored) {
         } catch (IOException e) {
             log.error(e.getMessage());
         }

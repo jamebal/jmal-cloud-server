@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @author jmal
@@ -186,25 +187,27 @@ public interface IOssService {
      * @param destinationObjectName 目标objectName
      * @return 是否成功
      */
-    boolean rename(String sourceObjectName, String destinationObjectName);
+    CountDownLatch rename(String sourceObjectName, String destinationObjectName);
 
     /**
      * 拷贝对象(相同Bucket之间拷贝)
-     * @param sourceKey 源objectName
+     *
+     * @param sourceKey      源objectName
      * @param destinationKey 目标objectName
      * @return 是否成功
      */
-    boolean copyObject(String sourceKey, String destinationKey);
+    CountDownLatch copyObject(String sourceKey, String destinationKey);
 
     /**
      * 拷贝对象(不同Bucket之间拷贝)
-     * @param sourceBucketName 源Bucket
-     * @param sourceKey        源objectName
+     *
+     * @param sourceBucketName      源Bucket
+     * @param sourceKey             源objectName
      * @param destinationBucketName 目标Bucket
      * @param destinationKey        目标objectName
-     * @return 是否成功
+     * @return CountDownLatch CountDownLatch为零则copy成功
      */
-    boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey);
+    CountDownLatch copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey);
 
     /**
      * 关闭需要关闭的一切

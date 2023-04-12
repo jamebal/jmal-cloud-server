@@ -5,6 +5,8 @@ import cn.hutool.core.thread.ThreadUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,9 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -63,6 +63,8 @@ public class BaseOssService {
     private final Cache<String, Path> waitingUploadCache;
 
     private final Map<String, String> updateIdCache = new ConcurrentHashMap<>();
+
+    private final Set<String> objectNameLock = new CopyOnWriteArraySet<>();
 
     private final String bucketName;
 
@@ -115,6 +117,9 @@ public class BaseOssService {
     }
 
     public boolean delete(String objectName) {
+        if (objectNameLock.contains(objectName)) {
+            throw new CommonException(ExceptionType.LOCKED_RESOURCES);
+        }
         boolean deleted;
         deleteTempFileCache(objectName);
         if (objectName.endsWith("/")) {
@@ -131,11 +136,32 @@ public class BaseOssService {
     }
 
     public boolean mkdir(String objectName) {
+        if (objectNameLock.contains(objectName)) {
+            throw new CommonException(ExceptionType.LOCKED_RESOURCES);
+        }
         FileInfo fileInfo = ossService.newFolder(objectName);
         if (fileInfo != null) {
             onMkdirSuccess(objectName, fileInfo);
         }
         return fileInfo != null;
+    }
+
+    public CountDownLatch rename(String sourceObjectName, String destinationObjectName) {
+        if (objectNameLock.contains(sourceObjectName)) {
+            throw new CommonException(ExceptionType.LOCKED_RESOURCES);
+        }
+        // 先复制后删除
+        CountDownLatch countDownLatch = ossService.copyObject(sourceObjectName, destinationObjectName);
+        ThreadUtil.execute(() -> {
+            try {
+                // 等待复制成功后再删除
+                countDownLatch.await();
+                delete(sourceObjectName);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        return countDownLatch;
     }
 
     /**
@@ -146,6 +172,9 @@ public class BaseOssService {
      * @return 写入临时文件是否成功
      */
     public boolean writeTempFile(InputStream inputStream, String ossPath, String objectName) {
+        if (objectNameLock.contains(objectName)) {
+            throw new CommonException(ExceptionType.LOCKED_RESOURCES);
+        }
         // 临时文件绝对路径
         Path tempFileAbsolutePath = Paths.get(fileProperties.getRootDir(), ossPath, objectName);
         try {
@@ -506,5 +535,13 @@ public class BaseOssService {
 
     private void removeWaitingUploadCache(String objectName) {
         waitingUploadCache.invalidate(objectName);
+    }
+
+    public void setObjectNameLock(String objectName) {
+        objectNameLock.add(objectName);
+    }
+
+    public void removeObjectNameLock(String objectName) {
+        objectNameLock.remove(objectName);
     }
 }

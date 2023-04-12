@@ -116,7 +116,12 @@ public enum ExceptionType {
     /***
      * 空间已满
      */
-    SPACE_FULL(20, "空间已满");
+    SPACE_FULL(20, "空间已满"),
+
+    /***
+     * 资源被锁定
+     */
+    LOCKED_RESOURCES(21, "该资源被锁定");
 
 
     public int getCode() {

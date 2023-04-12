@@ -11,7 +11,6 @@ import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.auth.BasicCOSCredentials;
 import com.qcloud.cos.auth.COSCredentials;
 import com.qcloud.cos.exception.CosClientException;
-import com.qcloud.cos.exception.CosServiceException;
 import com.qcloud.cos.http.HttpProtocol;
 import com.qcloud.cos.model.*;
 import com.qcloud.cos.region.Region;
@@ -27,6 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 @Slf4j
@@ -166,9 +166,8 @@ public class TencentOssService implements IOssService {
                 listObjectsRequest.setMarker(nextMarker);
             } while (objectListing.isTruncated());
             return true;
-        } catch (CosServiceException e) {
-            // 如果部分删除成功部分失败, 返回 MultiObjectDeleteException
-            printException(e);
+        } catch (CosClientException e) {
+            log.error(e.getMessage(), e);
         }
         return false;
     }
@@ -206,8 +205,8 @@ public class TencentOssService implements IOssService {
                 String nextMarker = objectListing.getNextMarker();
                 listObjectsRequest.setMarker(nextMarker);
             } while (objectListing.isTruncated());
-        } catch (Exception oe) {
-            printException(oe);
+        } catch (CosClientException e) {
+            log.error(e.getMessage(), e);
         }
         return fileInfoList;
     }
@@ -265,7 +264,7 @@ public class TencentOssService implements IOssService {
                 listMultipartUploadsRequest.setUploadIdMarker(multipartUploadListing.getNextUploadIdMarker());
             } while (multipartUploadListing.isTruncated());
         } catch (CosClientException e) {
-            printException(e);
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -286,8 +285,8 @@ public class TencentOssService implements IOssService {
                 }
                 listPartsRequest.setPartNumberMarker(partListing.getNextPartNumberMarker());
             } while (partListing.isTruncated());
-        } catch (CosClientException ce) {
-            printException(ce);
+        } catch (CosClientException e) {
+            log.error(e.getMessage(), e);
         }
         return partETagList;
     }
@@ -307,7 +306,7 @@ public class TencentOssService implements IOssService {
             this.cosClient.uploadPart(uploadPartRequest);
             return true;
         } catch (CosClientException e) {
-            printException(e);
+            log.error(e.getMessage(), e);
         }
         return false;
     }
@@ -318,7 +317,7 @@ public class TencentOssService implements IOssService {
         try {
             cosClient.abortMultipartUpload(abortMultipartUploadRequest);
         } catch (CosClientException e) {
-            printException(e);
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -342,55 +341,61 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
-    public boolean rename(String sourceObjectName, String destinationObjectName) {
-        // 先复制再删除
-        if (copyObject(bucketName, sourceObjectName, bucketName, destinationObjectName)) {
-            return delete(sourceObjectName);
-        }
-        return false;
+    public CountDownLatch rename(String sourceObjectName, String destinationObjectName) {
+        return baseOssService.rename(sourceObjectName, destinationObjectName);
     }
 
     @Override
-    public boolean copyObject(String sourceKey, String destinationKey) {
+    public CountDownLatch copyObject(String sourceKey, String destinationKey) {
         return copyObject(bucketName, sourceKey, bucketName, destinationKey);
     }
 
     @Override
-    public boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
-        try {
-            if (sourceKey.endsWith("/")) {
-                // 复制文件夹
-                ListObjectsRequest listObjectsRequest = new ListObjectsRequest();
-                // 设置 bucket 名称
-                listObjectsRequest.setBucketName(bucketName);
-                // prefix 表示列出的对象名以 prefix 为前缀
-                // 这里填要列出的目录的相对 bucket 的路径
-                listObjectsRequest.setPrefix(sourceKey);
-                // 设置最大遍历出多少个对象, 一次 listobject 最大支持1000
-                listObjectsRequest.setMaxKeys(1000);
-                // 保存每次列出的结果
-                ObjectListing objectListing;
-                do {
-                    objectListing = cosClient.listObjects(listObjectsRequest);
-                    // 这里保存列出的对象列表
-                    List<COSObjectSummary> cosObjectSummaries = objectListing.getObjectSummaries();
-                    cosObjectSummaries.parallelStream().forEach(cosObjectSummary -> {
-                        String destKey = destinationKey + cosObjectSummary.getKey().substring(sourceKey.length());
-                        copyObjectFile(cosObjectSummary.getBucketName(), cosObjectSummary.getKey(), destinationBucketName, destKey);
-                    });
-                    // 标记下一次开始的位置
-                    String nextMarker = objectListing.getNextMarker();
-                    listObjectsRequest.setMarker(nextMarker);
-                } while (objectListing.isTruncated());
-            } else {
-                // 复制文件
-                copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+    public CountDownLatch copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
+        baseOssService.setObjectNameLock(sourceBucketName);
+        baseOssService.setObjectNameLock(destinationBucketName);
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        ThreadUtil.execute(() -> {
+            try {
+                if (sourceKey.endsWith("/")) {
+                    // 复制文件夹
+                    ListObjectsRequest listObjectsRequest = new ListObjectsRequest();
+                    // 设置 bucket 名称
+                    listObjectsRequest.setBucketName(bucketName);
+                    // prefix 表示列出的对象名以 prefix 为前缀
+                    // 这里填要列出的目录的相对 bucket 的路径
+                    listObjectsRequest.setPrefix(sourceKey);
+                    // 设置最大遍历出多少个对象, 一次 listobject 最大支持1000
+                    listObjectsRequest.setMaxKeys(1000);
+                    // 保存每次列出的结果
+                    ObjectListing objectListing;
+                    do {
+                        objectListing = cosClient.listObjects(listObjectsRequest);
+                        // 这里保存列出的对象列表
+                        List<COSObjectSummary> cosObjectSummaries = objectListing.getObjectSummaries();
+                        cosObjectSummaries.parallelStream().forEach(cosObjectSummary -> {
+                            String destKey = destinationKey + cosObjectSummary.getKey().substring(sourceKey.length());
+                            copyObjectFile(cosObjectSummary.getBucketName(), cosObjectSummary.getKey(), destinationBucketName, destKey);
+                        });
+                        // 标记下一次开始的位置
+                        String nextMarker = objectListing.getNextMarker();
+                        listObjectsRequest.setMarker(nextMarker);
+                    } while (objectListing.isTruncated());
+                } else {
+                    // 复制文件
+                    copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+                }
+                countDownLatch.countDown();
+            } catch (CosClientException e) {
+                log.error(e.getMessage(), e);
+            } finally {
+                baseOssService.removeObjectNameLock(sourceBucketName);
+                baseOssService.removeObjectNameLock(destinationBucketName);
             }
-            return true;
-        } catch (CosServiceException e) {
-            printException(e);
-        }
-        return false;
+            baseOssService.removeObjectNameLock(sourceBucketName);
+            baseOssService.removeObjectNameLock(destinationBucketName);
+        });
+        return countDownLatch;
     }
 
     public void copyObjectFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
@@ -401,8 +406,8 @@ public class TencentOssService implements IOssService {
             // 高级接口会返回一个异步结果 Copy
             // 可同步的调用 waitForCopyResult 等待复制结束, 成功返回 CopyResult, 失败抛出异常
             copy.waitForCopyResult();
-        } catch (CosServiceException e) {
-            printException(e);
+        } catch (CosClientException e) {
+            log.error(e.getMessage(), e);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -422,8 +427,8 @@ public class TencentOssService implements IOssService {
             PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream, objectMetadata);
             cosClient.putObject(putObjectRequest);
             return baseOssService.newFileInfo(objectName);
-        } catch (Exception oe) {
-            printException(oe);
+        } catch (CosClientException e) {
+            log.error(e.getMessage(), e);
         }
         return null;
     }
@@ -447,8 +452,8 @@ public class TencentOssService implements IOssService {
                 // 上传成功
                 baseOssService.onUploadSuccess(objectName, tempFileAbsolutePath);
             }
-        } catch (Exception oe) {
-            printException(oe);
+        } catch (CosClientException e) {
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -465,12 +470,8 @@ public class TencentOssService implements IOssService {
             cosClient.putObject(putObjectRequest);
             baseOssService.onUploadSuccess(objectName, Convert.toLong(inputStreamLength));
         } catch (CosClientException e) {
-            printException(e);
+            log.error(e.getMessage(), e);
         }
-    }
-
-    private void printException(Exception e) {
-        log.error(getPlatform().getValue() + e.getMessage(), e);
     }
 
     @Override

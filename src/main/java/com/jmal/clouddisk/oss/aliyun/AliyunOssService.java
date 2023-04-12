@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 @Slf4j
@@ -132,9 +133,9 @@ public class AliyunOssService implements IOssService {
             } while (objectListing.isTruncated());
             return true;
         } catch (OSSException oe) {
-            printOSSException(oe);
+            log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
-            printClientException(ce);
+            log.error(ce.getMessage(), ce);
         }
         return false;
     }
@@ -164,9 +165,9 @@ public class AliyunOssService implements IOssService {
                 fileInfoList.add(baseOssService.newFileInfo(commonPrefix));
             }
         } catch (OSSException oe) {
-            printOSSException(oe);
+            log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
-            printClientException(ce);
+            log.error(ce.getMessage(), ce);
         }
         return fileInfoList;
     }
@@ -217,9 +218,9 @@ public class AliyunOssService implements IOssService {
                 listMultipartUploadsRequest.setUploadIdMarker(multipartUploadListing.getNextUploadIdMarker());
             } while (multipartUploadListing.isTruncated());
         } catch (OSSException oe) {
-            printOSSException(oe);
+            log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
-            printClientException(ce);
+            log.error(ce.getMessage(), ce);
         }
     }
 
@@ -248,9 +249,9 @@ public class AliyunOssService implements IOssService {
                 listPartsRequest.setPartNumberMarker(partListing.getNextPartNumberMarker());
             } while (partListing.isTruncated());
         } catch (OSSException oe) {
-            printOSSException(oe);
+            log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
-            printClientException(ce);
+            log.error(ce.getMessage(), ce);
         }
         return listParts;
     }
@@ -271,8 +272,10 @@ public class AliyunOssService implements IOssService {
         try {
             this.ossClient.uploadPart(uploadPartRequest);
             return true;
+        } catch (OSSException oe) {
+            log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
-            printClientException(ce);
+            log.error(ce.getMessage(), ce);
         }
         return false;
     }
@@ -284,9 +287,9 @@ public class AliyunOssService implements IOssService {
             AbortMultipartUploadRequest abortMultipartUploadRequest = new AbortMultipartUploadRequest(bucketName, objectName, uploadId);
             ossClient.abortMultipartUpload(abortMultipartUploadRequest);
         } catch (OSSException oe) {
-            printOSSException(oe);
+            log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
-            printClientException(ce);
+            log.error(ce.getMessage(), ce);
         }
     }
 
@@ -314,9 +317,9 @@ public class AliyunOssService implements IOssService {
             // 如果未指定本地路径只填写了本地文件名称（例如example-resize.jpg），则文件默认保存到示例程序所属项目对应本地路径中。
             ossClient.getObject(request, file);
         } catch (OSSException oe) {
-            printOSSException(oe);
+            log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
-            printClientException(ce);
+            log.error(ce.getMessage(), ce);
         }
     }
 
@@ -334,9 +337,9 @@ public class AliyunOssService implements IOssService {
             ossClient.putObject(putObjectRequest);
             return baseOssService.newFileInfo(objectName);
         } catch (OSSException oe) {
-            printOSSException(oe);
+            log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
-            printClientException(ce);
+            log.error(ce.getMessage(), ce);
         }
         return null;
     }
@@ -363,9 +366,9 @@ public class AliyunOssService implements IOssService {
                 baseOssService.onUploadSuccess(objectName, tempFileAbsolutePath);
             }
         } catch (OSSException oe) {
-            printOSSException(oe);
+            log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
-            printClientException(ce);
+            log.error(ce.getMessage(), ce);
         }
     }
 
@@ -379,59 +382,57 @@ public class AliyunOssService implements IOssService {
             ossClient.putObject(putObjectRequest);
             baseOssService.onUploadSuccess(objectName, Convert.toLong(inputStreamLength));
         } catch (OSSException oe) {
-            printOSSException(oe);
+            log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
-            printClientException(ce);
+            log.error(ce.getMessage(), ce);
         }
     }
 
-    public boolean rename(String sourceObjectName, String destinationObjectName) {
-        try {
-            // 先复制再删除
-            if (copyObject(bucketName, sourceObjectName, bucketName, destinationObjectName)) {
-                return delete(sourceObjectName);
-            }
-        } catch (OSSException oe) {
-            printOSSException(oe);
-        } catch (ClientException ce) {
-            printClientException(ce);
-        }
-        return false;
+    public CountDownLatch rename(String sourceObjectName, String destinationObjectName) {
+        return baseOssService.rename(sourceObjectName, destinationObjectName);
     }
 
-    public boolean copyObject(String sourceKey, String destinationKey) {
+    public CountDownLatch copyObject(String sourceKey, String destinationKey) {
         return copyObject(bucketName, sourceKey, bucketName, destinationKey);
     }
 
-    public boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
-        try {
-            if (sourceKey.endsWith("/")) {
-                // 复制文件夹
-                // 列举所有包含指定前缀的文件并copy
-                String nextMarker = null;
-                ObjectListing objectListing;
-                do {
-                    ListObjectsRequest listObjectsRequest = new ListObjectsRequest(sourceBucketName).withPrefix(sourceKey).withMarker(nextMarker);
-                    objectListing = ossClient.listObjects(listObjectsRequest);
-                    if (!objectListing.getObjectSummaries().isEmpty()) {
-                        objectListing.getObjectSummaries().parallelStream().forEach(ossObjectSummary -> {
-                            String destKey = destinationKey + ossObjectSummary.getKey().substring(sourceKey.length());
-                            copyObjectFile(ossObjectSummary.getBucketName(), ossObjectSummary.getKey(), destinationBucketName, destKey);
-                        });
-                    }
-                    nextMarker = objectListing.getNextMarker();
-                } while (objectListing.isTruncated());
-            } else {
-                // 复制文件
-                copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+    public CountDownLatch copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
+        baseOssService.setObjectNameLock(sourceBucketName);
+        baseOssService.setObjectNameLock(destinationBucketName);
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        ThreadUtil.execute(() -> {
+            try {
+                if (sourceKey.endsWith("/")) {
+                    // 复制文件夹
+                    // 列举所有包含指定前缀的文件并copy
+                    String nextMarker = null;
+                    ObjectListing objectListing;
+                    do {
+                        ListObjectsRequest listObjectsRequest = new ListObjectsRequest(sourceBucketName).withPrefix(sourceKey).withMarker(nextMarker);
+                        objectListing = ossClient.listObjects(listObjectsRequest);
+                        if (!objectListing.getObjectSummaries().isEmpty()) {
+                            objectListing.getObjectSummaries().parallelStream().forEach(ossObjectSummary -> {
+                                String destKey = destinationKey + ossObjectSummary.getKey().substring(sourceKey.length());
+                                copyObjectFile(ossObjectSummary.getBucketName(), ossObjectSummary.getKey(), destinationBucketName, destKey);
+                            });
+                        }
+                        nextMarker = objectListing.getNextMarker();
+                    } while (objectListing.isTruncated());
+                } else {
+                    // 复制文件
+                    copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+                }
+                countDownLatch.countDown();
+            } catch (OSSException oe) {
+                log.error(oe.getMessage(), oe);
+            } catch (ClientException ce) {
+                log.error(ce.getMessage(), ce);
+            } finally {
+                baseOssService.removeObjectNameLock(sourceBucketName);
+                baseOssService.removeObjectNameLock(destinationBucketName);
             }
-            return true;
-        } catch (OSSException oe) {
-            printOSSException(oe);
-        } catch (ClientException ce) {
-            printClientException(ce);
-        }
-        return false;
+        });
+        return countDownLatch;
     }
 
     private void copyObjectFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
@@ -482,23 +483,10 @@ public class AliyunOssService implements IOssService {
             ossClient.completeMultipartUpload(completeMultipartUploadRequest);
             baseOssService.printOperation(getPlatform().getKey(), "copyObject complete" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
         } catch (OSSException oe) {
-            printOSSException(oe);
+            log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
-            printClientException(ce);
+            log.error(ce.getMessage(), ce);
         }
-    }
-
-    private static void printClientException(ClientException ce) {
-        log.error("Caught an ClientException, which means the client encountered a serious internal problem while trying to communicate with OSS, such as not being able to access the network.");
-        log.error(ce.getMessage());
-    }
-
-    private static void printOSSException(OSSException oe) {
-        log.error("Caught an OSSException, which means your request made it to OSS, but was rejected with an error response for some reason.");
-        log.error("Error Message:" + oe.getErrorMessage());
-        log.error("Error Code:" + oe.getErrorCode());
-        log.error("Request ID:" + oe.getRequestId());
-        log.error("Host ID:" + oe.getHostId());
     }
 
     @Override
