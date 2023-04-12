@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.oss.aliyun;
 
-import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.aliyun.oss.ClientException;
@@ -373,14 +372,14 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
-    public void uploadFile(InputStream inputStream, String objectName, Integer inputStreamLength) {
+    public void uploadFile(InputStream inputStream, String objectName, long inputStreamLength) {
         try {
             baseOssService.printOperation(getPlatform().getKey(), "uploadFile inputStream", objectName);
             // 创建PutObjectRequest对象。
             PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream);
             // 创建PutObject请求。
             ossClient.putObject(putObjectRequest);
-            baseOssService.onUploadSuccess(objectName, Convert.toLong(inputStreamLength));
+            baseOssService.onUploadSuccess(objectName, inputStreamLength);
         } catch (OSSException oe) {
             log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
@@ -487,6 +486,16 @@ public class AliyunOssService implements IOssService {
         } catch (ClientException ce) {
             log.error(ce.getMessage(), ce);
         }
+    }
+
+    @Override
+    public void lock(String objectName) {
+        baseOssService.setObjectNameLock(objectName);
+    }
+
+    @Override
+    public void unlock(String objectName) {
+        baseOssService.removeObjectNameLock(objectName);
     }
 
     @Override

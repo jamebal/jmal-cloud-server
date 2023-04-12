@@ -3,6 +3,7 @@ package com.jmal.clouddisk.oss.web;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.io.file.PathUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
@@ -46,6 +47,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -372,7 +374,8 @@ public class WebOssService {
 
     /**
      * 删除临时文件，如果有的话
-     * @param ossPath ossPath
+     *
+     * @param ossPath    ossPath
      * @param objectName objectName
      */
     private void deleteTemp(String ossPath, String objectName) {
@@ -538,6 +541,7 @@ public class WebOssService {
             IoUtil.copy(inStream, outputStream);
             abstractOssObject.closeObject();
         } catch (ClientAbortException ignored) {
+            // ignored error
         } catch (IOException e) {
             log.error(e.getMessage());
         }
@@ -585,4 +589,285 @@ public class WebOssService {
         return Paths.get(ossPath).subpath(0, 1).toString();
     }
 
+    /**
+     * 从 oss 复制 到 oss
+     *
+     * @param ossPathFrom               源ossPath
+     * @param sourceObjectNamePath      源objectPath
+     * @param ossPathTo                 目标ossPath
+     * @param destinationObjectNamePath 目标objectPath
+     */
+    public ResponseResult<Object> copyOssToOss(String ossPathFrom, String sourceObjectNamePath, String ossPathTo, String destinationObjectNamePath) {
+
+        CountDownLatch countDownLatch = null;
+        IOssService ossServiceFrom = OssConfigService.getOssStorageService(ossPathFrom);
+        IOssService ossServiceTo = OssConfigService.getOssStorageService(ossPathTo);
+
+        BucketInfo bucketInfoFrom = CaffeineUtil.getOssDiameterPrefixCache(ossPathFrom);
+        BucketInfo bucketInfoTo = CaffeineUtil.getOssDiameterPrefixCache(ossPathTo);
+
+        String objectNameFrom = sourceObjectNamePath.substring(ossPathFrom.length());
+        boolean isFolder = objectNameFrom.endsWith("/");
+        String objectNameTo = destinationObjectNamePath.substring(ossPathTo.length()) + Paths.get(objectNameFrom).getFileName();
+        if (isFolder) {
+            objectNameTo += MyWebdavServlet.PATH_DELIMITER;
+        }
+        Console.log("objectNameFrom", objectNameFrom, "objectNameTo", objectNameTo);
+        if (ossServiceFrom.getPlatform() == ossServiceTo.getPlatform()) {
+            // 同平台间复制
+            countDownLatch = ossServiceFrom.copyObject(bucketInfoFrom.getBucketName(), objectNameFrom, bucketInfoTo.getBucketName(), objectNameTo);
+        } else {
+            try {
+                if (isFolder) {
+                    // 复制文件夹
+                    countDownLatch = copyDir(ossServiceFrom, ossServiceTo, objectNameFrom, objectNameTo);
+                } else {
+                    // 复制文件
+                    countDownLatch = copyFile(ossServiceFrom, ossServiceTo, objectNameFrom, objectNameTo);
+                }
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+        if (countDownLatch == null) {
+            return ResultUtil.error("复制失败");
+        }
+        CountDownLatch finalCountDownLatch = countDownLatch;
+        String finalObjectNameTo = objectNameTo;
+        ThreadUtil.execute(() -> {
+            try {
+                if (finalCountDownLatch.await(24, TimeUnit.HOURS)) {
+                    // 复制成功
+                    notifyCreateFile(getUsernameByOssPath(ossPathTo), finalObjectNameTo, getOssRootFolderName(ossPathTo));
+                }
+            } catch (InterruptedException e) {
+                log.error(e.getMessage(), e);
+            }
+        });
+        return ResultUtil.success("复制中, 请稍等...");
+    }
+
+    /**
+     * 不同oss平台间的文件夹复制
+     * 复制完成需要解锁 源objectName
+     *
+     * @param ossServiceFrom 源ossService
+     * @param ossServiceTo   目标ossService
+     * @param objectNameFrom 源objectName
+     * @param objectNameTo   目标objectName
+     * @return CountDownLatch countDownLatch为零表示复制成功
+     */
+    private CountDownLatch copyDir(IOssService ossServiceFrom, IOssService ossServiceTo, String objectNameFrom, String objectNameTo) {
+        CountDownLatch countDownLatch = null;
+        // 锁对象
+        ossServiceFrom.lock(objectNameFrom);
+        try {
+            // 首先在目标oss创建文件夹
+            if (ossServiceTo.mkdir(objectNameTo)) {
+                countDownLatch = new CountDownLatch(1);
+                CountDownLatch finalCountDownLatch = countDownLatch;
+                ThreadUtil.execute(() -> {
+                    // 列出源objectName下的所有文件/文件夹
+                    List<FileInfo> fileInfoList = ossServiceFrom.getFileInfoListCache(objectNameFrom);
+                    // 先创建文件夹
+                    fileInfoList.stream().filter(FileInfo::isFolder).parallel().forEach(fileInfo -> {
+                        String relativePath = fileInfo.getKey().substring(objectNameFrom.length());
+                        // 目标objectName
+                        String destObjectName = objectNameTo + relativePath;
+                        ossServiceTo.mkdir(destObjectName);
+                    });
+                    // 再复制文件
+                    fileInfoList.stream().filter(fileInfo -> !fileInfo.isFolder()).parallel().forEach(fileInfo -> {
+                        String relativePath = fileInfo.getKey().substring(objectNameFrom.length());
+                        // 目标objectName
+                        String destObjectName = objectNameTo + relativePath;
+                        try (AbstractOssObject abstractOssObject = ossServiceFrom.getAbstractOssObject(fileInfo.getKey());
+                             InputStream inputStream = abstractOssObject.getInputStream()) {
+                            // 上传文件
+                            ossServiceTo.uploadFile(inputStream, destObjectName, abstractOssObject.getContentLength());
+                        } catch (Exception e) {
+                            log.error(e.getMessage(), e);
+                        }
+                    });
+                    finalCountDownLatch.countDown();
+                });
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        } finally {
+            // 解锁对象
+            ossServiceFrom.unlock(objectNameFrom);
+        }
+        return countDownLatch;
+    }
+
+    /**
+     * 不同oss平台间的文件复制
+     * 复制完成需要解锁 源objectName
+     *
+     * @param ossServiceFrom 源ossService
+     * @param ossServiceTo   目标ossService
+     * @param objectNameFrom 源objectName
+     * @param objectNameTo   目标objectName
+     * @return CountDownLatch countDownLatch为零表示复制成功
+     */
+    private CountDownLatch copyFile(IOssService ossServiceFrom, IOssService ossServiceTo, String objectNameFrom, String objectNameTo) {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        ThreadUtil.execute(() -> {
+            // 锁对象
+            ossServiceFrom.lock(objectNameFrom);
+            try (AbstractOssObject abstractOssObject = ossServiceFrom.getAbstractOssObject(objectNameFrom);
+                 InputStream inputStream = abstractOssObject.getInputStream()) {
+                // 上传文件
+                ossServiceTo.uploadFile(inputStream, objectNameTo, abstractOssObject.getContentLength());
+                countDownLatch.countDown();
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            } finally {
+                // 解锁对象
+                ossServiceFrom.unlock(objectNameFrom);
+            }
+        });
+        return countDownLatch;
+    }
+
+    /**
+     * 从oss复制文件/夹到本地存储
+     * @param ossPathFrom               源ossPath
+     * @param sourceObjectNamePath      源objectPath
+     * @param fileId                    目标文件fileId
+     */
+    public ResponseResult<Object> copyOssToLocal(String ossPathFrom, String sourceObjectNamePath, String fileId) {
+        CountDownLatch countDownLatch = null;
+        IOssService ossServiceFrom = OssConfigService.getOssStorageService(ossPathFrom);
+        String objectNameFrom = sourceObjectNamePath.substring(ossPathFrom.length());
+        boolean isFolder = objectNameFrom.endsWith("/");
+
+        FileDocument destFileDocument = mongoTemplate.findById(fileId, FileDocument.class);
+        if (destFileDocument == null) {
+            throw new CommonException(ExceptionType.DIR_NOT_FIND);
+        }
+        destFileDocument.setUsername(getUsernameByOssPath(ossPathFrom));
+        Console.log("objectNameFrom", objectNameFrom, "localFileTo", destFileDocument.getPath() + destFileDocument.getName());
+        try {
+            if (isFolder) {
+                // 复制文件夹
+                countDownLatch = copyDir(ossServiceFrom, objectNameFrom, destFileDocument);
+            } else {
+                // 复制文件
+                countDownLatch = copyFile(ossServiceFrom, objectNameFrom, destFileDocument);
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+        if (countDownLatch == null) {
+            return ResultUtil.error("复制失败");
+        }
+        CountDownLatch finalCountDownLatch = countDownLatch;
+        ThreadUtil.execute(() -> {
+            try {
+                if (finalCountDownLatch.await(24, TimeUnit.HOURS)) {
+                    // 复制成功
+                    commonFileService.pushMessage(destFileDocument.getUsername(), destFileDocument, "createFile");
+                }
+            } catch (InterruptedException e) {
+                log.error(e.getMessage(), e);
+            }
+        });
+        return ResultUtil.success("复制中, 请稍等...");
+    }
+
+    private CountDownLatch copyDir(IOssService ossServiceFrom, String objectNameFrom, FileDocument destFileDocument) {
+        CountDownLatch countDownLatch = null;
+        // 锁对象
+        ossServiceFrom.lock(objectNameFrom);
+        try {
+            String destDir = Paths.get(fileProperties.getRootDir(), destFileDocument.getUsername(), destFileDocument.getPath(), destFileDocument.getName()).toString();
+            Path destDirPath = Paths.get(destDir, Paths.get(objectNameFrom).getFileName().toString());
+            // 首先创建文件夹
+            createDir(destDirPath);
+            countDownLatch = new CountDownLatch(1);
+            CountDownLatch finalCountDownLatch = countDownLatch;
+            ThreadUtil.execute(() -> {
+                try {
+                    // 列出源objectName下的所有文件/文件夹
+                    List<FileInfo> fileInfoList = ossServiceFrom.getFileInfoListCache(objectNameFrom);
+                    // 先创建文件夹
+                    fileInfoList.stream().filter(FileInfo::isFolder).parallel().forEach(fileInfo -> {
+                        String relativePath = fileInfo.getKey().substring(objectNameFrom.length());
+                        // 目标目录
+                        Path destPath = Paths.get(destDir, relativePath);
+                        createDir(destPath);
+                    });
+                    // 再复制文件
+                    fileInfoList.stream().filter(fileInfo -> !fileInfo.isFolder()).parallel().forEach(fileInfo -> {
+                        String relativePath = fileInfo.getKey().substring(objectNameFrom.length());
+                        // 目标objectName
+                        try (AbstractOssObject abstractOssObject = ossServiceFrom.getAbstractOssObject(fileInfo.getKey());
+                             InputStream inputStream = abstractOssObject.getInputStream()) {
+                            // 目标文件
+                            File destFile = Paths.get(destDir, relativePath).toFile();
+                            FileUtil.writeFromStream(inputStream, destFile);
+                        } catch (Exception e) {
+                            log.error(e.getMessage(), e);
+                        }
+                    });
+                    finalCountDownLatch.countDown();
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e);
+                }
+            });
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        } finally {
+            // 解锁对象
+            ossServiceFrom.unlock(objectNameFrom);
+        }
+        return countDownLatch;
+    }
+
+    /**
+     * 创建文件夹
+     * @param destPath 文件夹
+     */
+    private static void createDir(Path destPath) {
+        if (!Files.exists(destPath)) {
+            try {
+                Files.createDirectory(destPath);
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
+     * 从oss复制文件到本地
+     * @param ossServiceFrom 源ossService
+     * @param objectNameFrom 源objectName
+     * @param destFileDocument 目标fileDocument
+     * @return CountDownLatch countDownLatch为零表示复制成功
+     */
+    private CountDownLatch copyFile(IOssService ossServiceFrom, String objectNameFrom, FileDocument destFileDocument) {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        ThreadUtil.execute(() -> {
+            // 锁对象
+            ossServiceFrom.lock(objectNameFrom);
+            try (AbstractOssObject abstractOssObject = ossServiceFrom.getAbstractOssObject(objectNameFrom);
+                 InputStream inputStream = abstractOssObject.getInputStream()) {
+                // 上传文件
+                Path destPath = Paths.get(fileProperties.getRootDir(), destFileDocument.getUsername(), destFileDocument.getPath(), destFileDocument.getName());
+                createDir(destPath);
+                // 目标文件
+                File destFile = Paths.get(destPath.toString(), Paths.get(objectNameFrom).getFileName().toString()).toFile();
+                FileUtil.writeFromStream(inputStream, destFile);
+                countDownLatch.countDown();
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            } finally {
+                // 解锁对象
+                ossServiceFrom.unlock(objectNameFrom);
+            }
+        });
+        return countDownLatch;
+    }
 }

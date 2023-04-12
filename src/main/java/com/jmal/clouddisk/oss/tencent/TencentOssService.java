@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.oss.tencent;
 
-import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.jmal.clouddisk.config.FileProperties;
@@ -458,7 +457,7 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
-    public void uploadFile(InputStream inputStream, String objectName, Integer inputStreamLength) {
+    public void uploadFile(InputStream inputStream, String objectName, long inputStreamLength) {
         baseOssService.printOperation(getPlatform().getKey(), "uploadFile inputStream", objectName);
         ObjectMetadata objectMetadata = new ObjectMetadata();
         // 上传的流如果能够获取准确的流长度，则推荐一定填写 content-length
@@ -468,10 +467,20 @@ public class TencentOssService implements IOssService {
         putObjectRequest.setStorageClass(StorageClass.Standard);
         try {
             cosClient.putObject(putObjectRequest);
-            baseOssService.onUploadSuccess(objectName, Convert.toLong(inputStreamLength));
+            baseOssService.onUploadSuccess(objectName, inputStreamLength);
         } catch (CosClientException e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void lock(String objectName) {
+        baseOssService.setObjectNameLock(objectName);
+    }
+
+    @Override
+    public void unlock(String objectName) {
+        baseOssService.removeObjectNameLock(objectName);
     }
 
     @Override

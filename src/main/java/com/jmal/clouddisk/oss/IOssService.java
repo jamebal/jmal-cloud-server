@@ -112,7 +112,7 @@ public interface IOssService {
      * @param inputStream inputStream
      * @param objectName object key
      */
-    void uploadFile(InputStream inputStream, String objectName, Integer inputStreamLength);
+    void uploadFile(InputStream inputStream, String objectName, long inputStreamLength);
 
     /**
      * 检查Bucket是否存在，并且验证配置是否可用，用于创建OSS配置时使用
@@ -210,7 +210,20 @@ public interface IOssService {
     CountDownLatch copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey);
 
     /**
+     * 锁对象
+     * @param objectName objectName
+     */
+    void lock(String objectName);
+
+    /**
+     * 解锁对象
+     * @param objectName objectName
+     */
+    void unlock(String objectName);
+
+    /**
      * 关闭需要关闭的一切
      */
     void close();
+
 }

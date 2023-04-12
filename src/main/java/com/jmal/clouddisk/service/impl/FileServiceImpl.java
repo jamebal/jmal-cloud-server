@@ -633,6 +633,23 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     private ResponseResult<Object> getCopyResult(UploadApiParamDTO upload, List<String> froms, String to) {
         for (String from : froms) {
+            Path prePathFrom = Paths.get(from);
+            Path prePathTo = Paths.get(to);
+            String ossPathFrom = CaffeineUtil.getOssPath(prePathFrom);
+            String ossPathTo = CaffeineUtil.getOssPath(prePathTo);
+            if (ossPathFrom != null) {
+                if (ossPathTo != null) {
+                    // 从 oss 复制 到 oss
+                    return webOssService.copyOssToOss(ossPathFrom, from, ossPathTo, to);
+                } else {
+                    // 从 oss 复制到 本地存储
+                    return webOssService.copyOssToLocal(ossPathFrom, from, to);
+                }
+            } else {
+                if (ossPathTo != null) {
+                    // 从 本地存储 复制 到 oss
+                }
+            }
             ResponseResult<Object> result = copy(upload, from, to);
             if (result.getCode() != 0) {
                 return result;
