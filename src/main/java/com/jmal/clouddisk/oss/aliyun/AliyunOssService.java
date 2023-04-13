@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 @Slf4j
@@ -410,51 +409,44 @@ public class AliyunOssService implements IOssService {
         }
     }
 
-    public CountDownLatch rename(String sourceObjectName, String destinationObjectName) {
-        return baseOssService.rename(sourceObjectName, destinationObjectName);
-    }
-
-    public CountDownLatch copyObject(String sourceKey, String destinationKey) {
+    public boolean copyObject(String sourceKey, String destinationKey) {
         return copyObject(bucketName, sourceKey, bucketName, destinationKey);
     }
 
-    public CountDownLatch copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
+    public boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
         baseOssService.setObjectNameLock(sourceBucketName);
         baseOssService.setObjectNameLock(destinationBucketName);
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        ThreadUtil.execute(() -> {
-            try {
-                if (sourceKey.endsWith("/")) {
-                    // 复制文件夹
-                    // 列举所有包含指定前缀的文件并copy
-                    String nextMarker = null;
-                    ObjectListing objectListing;
-                    do {
-                        ListObjectsRequest listObjectsRequest = new ListObjectsRequest(sourceBucketName).withPrefix(sourceKey).withMarker(nextMarker);
-                        objectListing = ossClient.listObjects(listObjectsRequest);
-                        if (!objectListing.getObjectSummaries().isEmpty()) {
-                            objectListing.getObjectSummaries().parallelStream().forEach(ossObjectSummary -> {
-                                String destKey = destinationKey + ossObjectSummary.getKey().substring(sourceKey.length());
-                                copyObjectFile(ossObjectSummary.getBucketName(), ossObjectSummary.getKey(), destinationBucketName, destKey);
-                            });
-                        }
-                        nextMarker = objectListing.getNextMarker();
-                    } while (objectListing.isTruncated());
-                } else {
-                    // 复制文件
-                    copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
-                }
-                countDownLatch.countDown();
-            } catch (OSSException oe) {
-                log.error(oe.getMessage(), oe);
-            } catch (ClientException ce) {
-                log.error(ce.getMessage(), ce);
-            } finally {
-                baseOssService.removeObjectNameLock(sourceBucketName);
-                baseOssService.removeObjectNameLock(destinationBucketName);
+        try {
+            if (sourceKey.endsWith("/")) {
+                // 复制文件夹
+                // 列举所有包含指定前缀的文件并copy
+                String nextMarker = null;
+                ObjectListing objectListing;
+                do {
+                    ListObjectsRequest listObjectsRequest = new ListObjectsRequest(sourceBucketName).withPrefix(sourceKey).withMarker(nextMarker);
+                    objectListing = ossClient.listObjects(listObjectsRequest);
+                    if (!objectListing.getObjectSummaries().isEmpty()) {
+                        objectListing.getObjectSummaries().parallelStream().forEach(ossObjectSummary -> {
+                            String destKey = destinationKey + ossObjectSummary.getKey().substring(sourceKey.length());
+                            copyObjectFile(ossObjectSummary.getBucketName(), ossObjectSummary.getKey(), destinationBucketName, destKey);
+                        });
+                    }
+                    nextMarker = objectListing.getNextMarker();
+                } while (objectListing.isTruncated());
+            } else {
+                // 复制文件
+                copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
             }
-        });
-        return countDownLatch;
+            return true;
+        } catch (OSSException oe) {
+            log.error(oe.getMessage(), oe);
+        } catch (ClientException ce) {
+            log.error(ce.getMessage(), ce);
+        } finally {
+            baseOssService.removeObjectNameLock(sourceBucketName);
+            baseOssService.removeObjectNameLock(destinationBucketName);
+        }
+        return false;
     }
 
     private void copyObjectFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
@@ -464,13 +456,13 @@ public class AliyunOssService implements IOssService {
             // 获取被拷贝文件的大小。
             long contentLength = objectMetadata.getContentLength();
 
-            if (contentLength < 1024 * 1024 * 10) {
+            if (contentLength < 1024 * 1024 * 10L) {
                 // 小文件执行普通拷贝
                 ossClient.copyObject(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
             }
 
             // 设置分片大小为10 MB。单位为字节。
-            long partSize = 1024 * 1024 * 10;
+            long partSize = 1024 * 1024 * 10L;
 
             // 计算分片总数。
             int partCount = (int) (contentLength / partSize);

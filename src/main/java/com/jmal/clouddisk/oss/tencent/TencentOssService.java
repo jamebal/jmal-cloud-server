@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 @Slf4j
@@ -374,61 +373,51 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
-    public CountDownLatch rename(String sourceObjectName, String destinationObjectName) {
-        return baseOssService.rename(sourceObjectName, destinationObjectName);
-    }
-
-    @Override
-    public CountDownLatch copyObject(String sourceKey, String destinationKey) {
+    public boolean copyObject(String sourceKey, String destinationKey) {
         return copyObject(bucketName, sourceKey, bucketName, destinationKey);
     }
 
     @Override
-    public CountDownLatch copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
+    public boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
         baseOssService.setObjectNameLock(sourceBucketName);
         baseOssService.setObjectNameLock(destinationBucketName);
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        ThreadUtil.execute(() -> {
-            try {
-                if (sourceKey.endsWith("/")) {
-                    // 复制文件夹
-                    ListObjectsRequest listObjectsRequest = new ListObjectsRequest();
-                    // 设置 bucket 名称
-                    listObjectsRequest.setBucketName(bucketName);
-                    // prefix 表示列出的对象名以 prefix 为前缀
-                    // 这里填要列出的目录的相对 bucket 的路径
-                    listObjectsRequest.setPrefix(sourceKey);
-                    // 设置最大遍历出多少个对象, 一次 listobject 最大支持1000
-                    listObjectsRequest.setMaxKeys(1000);
-                    // 保存每次列出的结果
-                    ObjectListing objectListing;
-                    do {
-                        objectListing = cosClient.listObjects(listObjectsRequest);
-                        // 这里保存列出的对象列表
-                        List<COSObjectSummary> cosObjectSummaries = objectListing.getObjectSummaries();
-                        cosObjectSummaries.parallelStream().forEach(cosObjectSummary -> {
-                            String destKey = destinationKey + cosObjectSummary.getKey().substring(sourceKey.length());
-                            copyObjectFile(cosObjectSummary.getBucketName(), cosObjectSummary.getKey(), destinationBucketName, destKey);
-                        });
-                        // 标记下一次开始的位置
-                        String nextMarker = objectListing.getNextMarker();
-                        listObjectsRequest.setMarker(nextMarker);
-                    } while (objectListing.isTruncated());
-                } else {
-                    // 复制文件
-                    copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
-                }
-                countDownLatch.countDown();
-            } catch (CosClientException e) {
-                log.error(e.getMessage(), e);
-            } finally {
-                baseOssService.removeObjectNameLock(sourceBucketName);
-                baseOssService.removeObjectNameLock(destinationBucketName);
+        try {
+            if (sourceKey.endsWith("/")) {
+                // 复制文件夹
+                ListObjectsRequest listObjectsRequest = new ListObjectsRequest();
+                // 设置 bucket 名称
+                listObjectsRequest.setBucketName(bucketName);
+                // prefix 表示列出的对象名以 prefix 为前缀
+                // 这里填要列出的目录的相对 bucket 的路径
+                listObjectsRequest.setPrefix(sourceKey);
+                // 设置最大遍历出多少个对象, 一次 listobject 最大支持1000
+                listObjectsRequest.setMaxKeys(1000);
+                // 保存每次列出的结果
+                ObjectListing objectListing;
+                do {
+                    objectListing = cosClient.listObjects(listObjectsRequest);
+                    // 这里保存列出的对象列表
+                    List<COSObjectSummary> cosObjectSummaries = objectListing.getObjectSummaries();
+                    cosObjectSummaries.parallelStream().forEach(cosObjectSummary -> {
+                        String destKey = destinationKey + cosObjectSummary.getKey().substring(sourceKey.length());
+                        copyObjectFile(cosObjectSummary.getBucketName(), cosObjectSummary.getKey(), destinationBucketName, destKey);
+                    });
+                    // 标记下一次开始的位置
+                    String nextMarker = objectListing.getNextMarker();
+                    listObjectsRequest.setMarker(nextMarker);
+                } while (objectListing.isTruncated());
+            } else {
+                // 复制文件
+                copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
             }
+            return true;
+        } catch (CosClientException e) {
+            log.error(e.getMessage(), e);
+        } finally {
             baseOssService.removeObjectNameLock(sourceBucketName);
             baseOssService.removeObjectNameLock(destinationBucketName);
-        });
-        return countDownLatch;
+        }
+        return false;
     }
 
     public void copyObjectFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
@@ -442,7 +431,8 @@ public class TencentOssService implements IOssService {
         } catch (CosClientException e) {
             log.error(e.getMessage(), e);
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            log.error(e.getMessage(), e);
+            Thread.currentThread().interrupt();
         }
     }
 

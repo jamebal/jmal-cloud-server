@@ -18,7 +18,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -144,24 +147,6 @@ public class BaseOssService {
             onMkdirSuccess(objectName, fileInfo);
         }
         return fileInfo != null;
-    }
-
-    public CountDownLatch rename(String sourceObjectName, String destinationObjectName) {
-        if (objectNameLock.contains(sourceObjectName)) {
-            throw new CommonException(ExceptionType.LOCKED_RESOURCES);
-        }
-        // 先复制后删除
-        CountDownLatch countDownLatch = ossService.copyObject(sourceObjectName, destinationObjectName);
-        ThreadUtil.execute(() -> {
-            try {
-                // 等待复制成功后再删除
-                countDownLatch.await();
-                delete(sourceObjectName);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        return countDownLatch;
     }
 
     /**

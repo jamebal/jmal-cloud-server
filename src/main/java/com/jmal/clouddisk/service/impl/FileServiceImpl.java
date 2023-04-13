@@ -4,7 +4,6 @@ import cn.hutool.core.codec.Base64;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
-import cn.hutool.core.lang.UUID;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
@@ -37,7 +36,6 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -59,8 +57,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Aggregates.group;
@@ -77,9 +73,6 @@ import static com.mongodb.client.model.Filters.*;
 @Service
 @Slf4j
 public class FileServiceImpl extends CommonFileService implements IFileService {
-
-    @Autowired
-    private ApplicationEventPublisher publisher;
 
     @Autowired
     MultipartUpload multipartUpload;
@@ -583,24 +576,35 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public ResponseResult<Object> rename(String newFileName, String username, String id) {
-
         // 判断是否为ossPath
-        String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
-        if (ossPath != null) {
-            if (webOssService.rename(ossPath, id, newFileName)) {
-                return ResultUtil.success(true);
-            } else {
-                return ResultUtil.error("重命名失败");
+        ThreadUtil.execute(() -> {
+            try {
+                String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
+                if (ossPath != null) {
+                    // oss 重命名
+                    webOssService.rename(ossPath, id, newFileName);
+                    return;
+                }
+                renameFile(newFileName, username, id);
+            } catch (Exception e) {
+                pushMessageOperationFileError(username, Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR));
             }
-        }
+        });
+        return ResultUtil.success();
+    }
 
+    private void renameFile(String newFileName, String username, String id) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
+        Path fromPath = null;
+        Path toPath = null;
         if (fileDocument != null) {
-            // 判断是否为ossPath跟目录
+            // 判断是否为ossPath根目录
             if (fileDocument.getOssFolder() != null) {
-                throw new CommonException(ExceptionType.WARNING.getCode(), "请在oss管理中修改目录名称");
+                pushMessageOperationFileError(username, Convert.toStr("请在oss管理中修改目录名称", Constants.UNKNOWN_ERROR));
             }
             String currentDirectory = getUserDirectory(fileDocument.getPath());
+            fromPath = Paths.get(currentDirectory, fileDocument.getName());
+            toPath = Paths.get(currentDirectory, newFileName);
             String filePath = fileProperties.getRootDir() + File.separator + username + currentDirectory;
             File file = new File(filePath + fileDocument.getName());
             if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
@@ -622,55 +626,66 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 });
             }
             if (renameFile(newFileName, id, filePath, file)) {
-                return ResultUtil.error("重命名失败");
+                pushMessageOperationFileError(username, Convert.toStr("重命名失败", Constants.UNKNOWN_ERROR));
             }
-            return ResultUtil.success(true);
+            pushMessage(username, fileDocument, "createFile");
         } else {
-            return ResultUtil.error("数据库查询失败");
+            pushMessageOperationFileError(username, Convert.toStr("数据库查询失败", Constants.UNKNOWN_ERROR));
+        }
+        if (fromPath != null) {
+            pushMessageOperationFileSuccess(fromPath.toString(), toPath.toString(), username, "重命名");
         }
     }
 
     @Override
     public ResponseResult<Object> move(UploadApiParamDTO upload, List<String> froms, String to) throws IOException {
-        String eventId = UUID.fastUUID().toString();
         // 复制
-        CountDownLatch countDownLatch = getCopyResult(upload, froms, to, eventId);
         ThreadUtil.execute(() -> {
             try {
-                // 复制成功, 没有错误就删除
-                if (countDownLatch.await(24, TimeUnit.HOURS) && !EVENTE_RROR_MAP.containsKey(eventId)) {
-                    delete(upload.getUsername(), "/", froms);
-                }
-            } catch (InterruptedException e) {
-                log.error(e.getMessage(), e);
-            } finally {
-                EVENTE_RROR_MAP.remove(eventId);
+                // 复制成功
+                getCopyResult(upload, froms, to, true);
+                // 删除
+                delete(upload.getUsername(), "/", froms);
+            } catch (CommonException e) {
+                pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMsg(), Constants.UNKNOWN_ERROR));
+            } catch (Exception e) {
+                pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR));
             }
         });
         return ResultUtil.success();
     }
 
-    private CountDownLatch getCopyResult(UploadApiParamDTO upload, List<String> froms, String to, String eventId) {
-        CountDownLatch countDownLatch = new CountDownLatch(1);
+    private void getCopyResult(UploadApiParamDTO upload, List<String> froms, String to, boolean move) {
         String userId = userLoginHolder.getUserId();
         upload.setUserId(userId);
-        ThreadUtil.execute(() -> {
-            for (String from : froms) {
-                ResponseResult<Object> result = copy(upload, from, to);
-                if (result.getCode() != 0) {
-                    pushMessageCopyFileError(eventId, upload.getUsername(), Convert.toStr(result.getMessage(), "未知错误"));
-                }
+        for (String from : froms) {
+            ResponseResult<Object> result;
+            try {
+                result = copy(upload, from, to, move);
+            } catch (CommonException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new CommonException(ExceptionType.SYSTEM_ERROR);
             }
-            countDownLatch.countDown();
-        });
-        return countDownLatch;
+            if (result != null && result.getCode() != 0) {
+                throw new CommonException(ExceptionType.SYSTEM_ERROR);
+            }
+        }
     }
 
     @Override
     public ResponseResult<Object> copy(UploadApiParamDTO upload, List<String> froms, String to) throws IOException {
-        String eventId = UUID.fastUUID().toString();
         // 复制
-        getCopyResult(upload, froms, to, eventId);
+        ThreadUtil.execute(() -> {
+            try {
+                // 复制成功
+                getCopyResult(upload, froms, to, false);
+            } catch (CommonException e) {
+                pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMsg(), Constants.UNKNOWN_ERROR));
+            } catch (Exception e) {
+                pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR));
+            }
+        });
         return ResultUtil.success();
     }
 
@@ -681,7 +696,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         String userId = upload.getUserId();
         String fileName = upload.getFilename();
         MimeTypes allTypes = MimeTypes.getDefaultMimeTypes();
-        MimeType mimeType = null;
+        MimeType mimeType;
         try {
             mimeType = allTypes.forName(multipartFile.getContentType());
             fileName += mimeType.getExtension();
@@ -1054,13 +1069,12 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
      * @param from 来源文件id
      * @param to 目标文件id
      */
-    private ResponseResult<Object> copy(UploadApiParamDTO upload, String from, String to) {
+    private ResponseResult<Object> copy(UploadApiParamDTO upload, String from, String to, boolean move) {
         FileDocument formFileDocument = getFileDocumentById(from);
         String fromPath = getRelativePathByFileId(formFileDocument);
         String fromFilePath = getUserDir(upload.getUsername()) + fromPath;
         FileDocument toFileDocument = getFileDocumentById(to);
-
-        ResponseResult<Object> result = ossCopy(upload.getUsername(), formFileDocument, toFileDocument, from, to);
+        ResponseResult<Object> result = ossCopy(upload.getUsername(), formFileDocument, toFileDocument, from, to, move);
         if (result != null) {
             return result;
         }
@@ -1068,6 +1082,13 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         String toPath = getRelativePathByFileId(toFileDocument);
         String toFilePath = getUserDir(upload.getUsername()) + toPath;
         if (formFileDocument != null) {
+
+            Path pathFrom = Paths.get(formFileDocument.getPath(), formFileDocument.getName());
+            Path pathTo = Paths.get("/");
+            if (toFileDocument != null) {
+                pathTo = Paths.get(toFileDocument.getPath(), toFileDocument.getName());
+            }
+
             FileUtil.copy(fromFilePath, toFilePath, true);
             FileDocument copyFileDocument = copyFileDocument(formFileDocument, toPath);
             if (Boolean.TRUE.equals(formFileDocument.getIsFolder())) {
@@ -1082,12 +1103,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 }
                 mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
             }
+            String operation = move ? "移动" : "复制";
             // 复制成功
-            if (toFileDocument != null) {
-                Path pathFrom = Paths.get(formFileDocument.getPath(), formFileDocument.getName());
-                Path pathTo = Paths.get(toFileDocument.getPath(), toFileDocument.getName());
-                pushMessageCopyFileSuccess(pathFrom.toString(), pathTo.toString(), upload.getUsername());
-            }
+            pushMessageOperationFileSuccess(pathFrom.toString(), pathTo.toString(), upload.getUsername(), operation);
             return ResultUtil.success();
         }
         return ResultUtil.error("复制失败");
@@ -1116,7 +1134,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         return null;
     }
 
-    private ResponseResult<Object> ossCopy(String username, FileDocument fileDocumentFrom, FileDocument fileDocumentTo, String from, String to) {
+    private ResponseResult<Object> ossCopy(String username, FileDocument fileDocumentFrom, FileDocument fileDocumentTo, String from, String to, boolean isMove) {
         if (fileDocumentFrom != null && fileDocumentFrom.getOssFolder() != null) {
             from = username + MyWebdavServlet.PATH_DELIMITER + fileDocumentFrom.getOssFolder() + MyWebdavServlet.PATH_DELIMITER;
         }
@@ -1130,14 +1148,15 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (ossPathFrom != null) {
             if (ossPathTo != null) {
                 // 从 oss 复制 到 oss
-                return webOssService.copyOssToOss(ossPathFrom, from, ossPathTo, to);
+                return webOssService.copyOssToOss(ossPathFrom, from, ossPathTo, to, isMove);
             } else {
                 // 从 oss 复制到 本地存储
-                return webOssService.copyOssToLocal(ossPathFrom, from, to);
+                return webOssService.copyOssToLocal(ossPathFrom, from, to, isMove);
             }
         } else {
             if (ossPathTo != null) {
                 // 从 本地存储 复制 到 oss
+                return webOssService.copyLocalToOss(ossPathTo, from, to, isMove);
             }
         }
         return null;
@@ -1316,6 +1335,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
         boolean isDel = false;
         for (FileDocument fileDocument : fileDocuments) {
+            if (fileDocument.getOssFolder() != null) {
+                throw new CommonException("不能删除oss根目录");
+            }
             String currentDirectory1 = getUserDirectory(fileDocument.getPath());
             String filePath = fileProperties.getRootDir() + File.separator + username + currentDirectory1 + fileDocument.getName();
             File file = new File(filePath);

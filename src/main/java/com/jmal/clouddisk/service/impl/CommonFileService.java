@@ -55,7 +55,6 @@ import java.nio.file.attribute.FileTime;
 import java.text.Collator;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -97,8 +96,6 @@ public class CommonFileService {
      * 上传文件夹的写入锁缓存
      */
     private final Cache<String, Lock> uploadFolderLockCache = CaffeineUtil.getUploadFolderLockCache();
-
-    public static final Map<String, Boolean> EVENTE_RROR_MAP = new ConcurrentHashMap<>();
 
 
     /***
@@ -427,20 +424,20 @@ public class CommonFileService {
         }
     }
 
-    public void pushMessageCopyFileError(String eventId, String username, String message) {
-        EVENTE_RROR_MAP.put(eventId, true);
+    public void pushMessageOperationFileError(String username, String message) {
         JSONObject msg = new JSONObject();
         msg.put("code", -1);
         msg.put("msg", message);
-        pushMessage(username, msg, "copyFile");
+        pushMessage(username, msg, "operationFile");
     }
 
-    public void pushMessageCopyFileSuccess(String formPath, String toPath, String username) {
+    public void pushMessageOperationFileSuccess(String fromPath, String toPath, String username, String operation) {
         JSONObject msg = new JSONObject();
         msg.put("code", 0);
-        msg.put("from", formPath);
+        msg.put("from", fromPath);
         msg.put("to", toPath);
-        pushMessage(username, msg, "copyFile");
+        msg.put("operation", operation);
+        pushMessage(username, msg, "operationFile");
     }
 
     public long occupiedSpace(String userId) {

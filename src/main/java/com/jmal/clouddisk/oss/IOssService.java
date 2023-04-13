@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * @author jmal
@@ -189,21 +188,13 @@ public interface IOssService {
     void getThumbnail(String objectName, File file, int width);
 
     /**
-     * 重命名
-     * @param sourceObjectName 源objectName
-     * @param destinationObjectName 目标objectName
-     * @return 是否成功
-     */
-    CountDownLatch rename(String sourceObjectName, String destinationObjectName);
-
-    /**
      * 拷贝对象(相同Bucket之间拷贝)
      *
      * @param sourceKey      源objectName
      * @param destinationKey 目标objectName
      * @return 是否成功
      */
-    CountDownLatch copyObject(String sourceKey, String destinationKey);
+    boolean copyObject(String sourceKey, String destinationKey);
 
     /**
      * 拷贝对象(不同Bucket之间拷贝)
@@ -214,7 +205,7 @@ public interface IOssService {
      * @param destinationKey        目标objectName
      * @return CountDownLatch CountDownLatch为零则copy成功
      */
-    CountDownLatch copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey);
+    boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey);
 
     /**
      * 锁对象
