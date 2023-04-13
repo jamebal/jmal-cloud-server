@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.HexUtil;
@@ -32,9 +33,6 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -111,14 +109,7 @@ public class UserServiceImpl implements IUserService {
      */
     private void createUserDir(String username) {
         // 新建用户目录
-        Path path = Paths.get(fileProperties.getRootDir(), username);
-        try {
-            if (!Files.exists(path)) {
-                Files.createDirectory(path);
-            }
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-        }
+        PathUtil.mkdir(Paths.get(fileProperties.getRootDir(), username));
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.jmal.clouddisk.listener;
 
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.file.PathUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.MongodbIndex;
@@ -15,7 +16,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
@@ -58,9 +58,7 @@ public class FileMonitor {
             return;
         }
         Path rootDir = Paths.get(fileProperties.getRootDir());
-        if (!Files.exists(rootDir)) {
-            Files.createDirectories(rootDir);
-        }
+        PathUtil.mkdir(rootDir);
         // 轮询间隔(秒)
         long interval = TimeUnit.SECONDS.toMillis(fileProperties.getTimeInterval());
         FILTER_DIR_SET.add(fileProperties.getChunkFileDir());

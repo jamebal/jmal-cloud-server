@@ -109,7 +109,7 @@ public class FileInterceptor implements HandlerInterceptor {
         if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD -> {
-                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + encodedFilename);
+                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + path.getFileName());
                     Path prePth = path.subpath(1, path.getNameCount());
                     String ossPath = CaffeineUtil.getOssPath(prePth);
                     if (ossPath != null) {

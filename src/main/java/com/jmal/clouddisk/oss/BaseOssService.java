@@ -544,4 +544,9 @@ public class BaseOssService {
     public void removeObjectNameLock(String objectName) {
         objectNameLock.remove(objectName);
     }
+
+    public void clearCache(String objectName) {
+        clearFileCache(objectName);
+        clearFileListCache(objectName);
+    }
 }

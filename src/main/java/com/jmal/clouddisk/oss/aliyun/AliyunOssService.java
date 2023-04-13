@@ -172,6 +172,29 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
+    public List<FileInfo> getAllObjectsWithPrefix(String objectName) {
+        // 列举所有包含指定前缀的所有文件
+        String nextMarker = null;
+        ObjectListing objectListing;
+        List<FileInfo> fileInfoList = new ArrayList<>();
+        try {
+            do {
+                ListObjectsRequest listObjectsRequest = new ListObjectsRequest(bucketName).withPrefix(objectName).withMarker(nextMarker);
+                objectListing = ossClient.listObjects(listObjectsRequest);
+                if (!objectListing.getObjectSummaries().isEmpty()) {
+                    objectListing.getObjectSummaries().forEach(ossObjectSummary -> fileInfoList.add(new FileInfo(ossObjectSummary.getKey())));
+                }
+                nextMarker = objectListing.getNextMarker();
+            } while (objectListing.isTruncated());
+        } catch (OSSException oe) {
+            log.error(oe.getMessage(), oe);
+        } catch (ClientException ce) {
+            log.error(ce.getMessage(), ce);
+        }
+        return fileInfoList;
+    }
+
+    @Override
     public List<FileInfo> getFileInfoListCache(String objectName) {
         return baseOssService.getFileInfoListCache(objectName);
     }
@@ -486,6 +509,11 @@ public class AliyunOssService implements IOssService {
         } catch (ClientException ce) {
             log.error(ce.getMessage(), ce);
         }
+    }
+
+    @Override
+    public void clearCache(String objectName) {
+        baseOssService.clearCache(objectName);
     }
 
     @Override

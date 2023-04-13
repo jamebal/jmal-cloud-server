@@ -95,6 +95,13 @@ public interface IOssService {
     List<FileInfo> getFileInfoList(String objectName);
 
     /**
+     * 列举所有包含指定前缀的所有文件
+     * @param objectName objectName
+     * @return objectNameList
+     */
+    List<FileInfo> getAllObjectsWithPrefix(String objectName);
+
+    /**
      * 创建文件夹
      * @param objectName object key
      */
@@ -220,6 +227,12 @@ public interface IOssService {
      * @param objectName objectName
      */
     void unlock(String objectName);
+
+    /**
+     * 清除缓存 objectName 及以下的所有缓存
+     * @param objectName objectName
+     */
+    void clearCache(String objectName);
 
     /**
      * 关闭需要关闭的一切

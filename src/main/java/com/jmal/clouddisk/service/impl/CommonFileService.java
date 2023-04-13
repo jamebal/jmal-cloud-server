@@ -6,6 +6,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.CharsetUtil;
+import com.alibaba.fastjson2.JSONObject;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.*;
@@ -54,6 +55,7 @@ import java.nio.file.attribute.FileTime;
 import java.text.Collator;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -95,6 +97,8 @@ public class CommonFileService {
      * 上传文件夹的写入锁缓存
      */
     private final Cache<String, Lock> uploadFolderLockCache = CaffeineUtil.getUploadFolderLockCache();
+
+    public static final Map<String, Boolean> EVENTE_RROR_MAP = new ConcurrentHashMap<>();
 
 
     /***
@@ -421,6 +425,22 @@ public class CommonFileService {
             }
             template.convertAndSendToUser(username, "/queue/update", message, headers);
         }
+    }
+
+    public void pushMessageCopyFileError(String eventId, String username, String message) {
+        EVENTE_RROR_MAP.put(eventId, true);
+        JSONObject msg = new JSONObject();
+        msg.put("code", -1);
+        msg.put("msg", message);
+        pushMessage(username, msg, "copyFile");
+    }
+
+    public void pushMessageCopyFileSuccess(String formPath, String toPath, String username) {
+        JSONObject msg = new JSONObject();
+        msg.put("code", 0);
+        msg.put("from", formPath);
+        msg.put("to", toPath);
+        pushMessage(username, msg, "copyFile");
     }
 
     public long occupiedSpace(String userId) {

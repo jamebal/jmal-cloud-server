@@ -22,6 +22,14 @@ public class FileInfo {
     private long size;
     private Date lastModified;
 
+    public FileInfo() {
+        this.key = key;
+    }
+
+    public FileInfo(String key) {
+        this.key = key;
+    }
+
     public String getName() {
         Path path = Paths.get(key);
         return path.getFileName().toString();

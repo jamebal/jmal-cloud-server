@@ -2,6 +2,8 @@ package com.jmal.clouddisk.oss.tencent;
 
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import com.aliyun.oss.ClientException;
+import com.aliyun.oss.OSSException;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.oss.*;
 import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
@@ -206,6 +208,38 @@ public class TencentOssService implements IOssService {
             } while (objectListing.isTruncated());
         } catch (CosClientException e) {
             log.error(e.getMessage(), e);
+        }
+        return fileInfoList;
+    }
+
+    @Override
+    public List<FileInfo> getAllObjectsWithPrefix(String objectName) {
+        // 列举所有包含指定前缀的所有文件
+        List<FileInfo> fileInfoList = new ArrayList<>();
+        try {
+            ListObjectsRequest listObjectsRequest = new ListObjectsRequest();
+            // 设置 bucket 名称
+            listObjectsRequest.setBucketName(bucketName);
+            // prefix 表示列出的对象名以 prefix 为前缀
+            // 这里填要列出的目录的相对 bucket 的路径
+            listObjectsRequest.setPrefix(objectName);
+            // 设置最大遍历出多少个对象, 一次 listObject 最大支持1000
+            listObjectsRequest.setMaxKeys(1000);
+            // 保存每次列出的结果
+            ObjectListing objectListing;
+            do {
+                objectListing = cosClient.listObjects(listObjectsRequest);
+                // 这里保存列出的对象列表
+                List<COSObjectSummary> cosObjectSummaries = objectListing.getObjectSummaries();
+                cosObjectSummaries.parallelStream().forEach(cosObjectSummary -> fileInfoList.add(new FileInfo(cosObjectSummary.getKey())));
+                // 标记下一次开始的位置
+                String nextMarker = objectListing.getNextMarker();
+                listObjectsRequest.setMarker(nextMarker);
+            } while (objectListing.isTruncated());
+        } catch (OSSException oe) {
+            log.error(oe.getMessage(), oe);
+        } catch (ClientException ce) {
+            log.error(ce.getMessage(), ce);
         }
         return fileInfoList;
     }
@@ -471,6 +505,11 @@ public class TencentOssService implements IOssService {
         } catch (CosClientException e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void clearCache(String objectName) {
+        baseOssService.clearCache(objectName);
     }
 
     @Override

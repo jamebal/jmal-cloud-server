@@ -32,4 +32,7 @@ public class Constants {
     public static final String POINT_SUFFIX_WEBP = ".webp";
 
     public static final String CREATE_TIME = "createTime";
+
+    public static final String COPY_EXISTS_FILE = "所选目录已存在该文件/夹!";
+
 }
