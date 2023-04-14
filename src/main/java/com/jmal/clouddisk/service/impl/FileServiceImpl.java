@@ -17,6 +17,7 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.oss.web.WebOssCopyFileService;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
@@ -79,6 +80,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Autowired
     WebOssService webOssService;
+
+    @Autowired
+    WebOssCopyFileService webOssCopyFileService;
 
     /***
      * 前端文件夹树的第一级的文件Id
@@ -586,8 +590,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                     return;
                 }
                 renameFile(newFileName, username, id);
+            } catch (CommonException e) {
+                pushMessageOperationFileError(username, Convert.toStr(e.getMsg(), Constants.UNKNOWN_ERROR), "重命名");
             } catch (Exception e) {
-                pushMessageOperationFileError(username, Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR));
+                pushMessageOperationFileError(username, Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR), "重命名");
             }
         });
         return ResultUtil.success();
@@ -600,7 +606,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (fileDocument != null) {
             // 判断是否为ossPath根目录
             if (fileDocument.getOssFolder() != null) {
-                pushMessageOperationFileError(username, Convert.toStr("请在oss管理中修改目录名称", Constants.UNKNOWN_ERROR));
+                pushMessageOperationFileError(username, Convert.toStr("请在oss管理中修改目录名称", Constants.UNKNOWN_ERROR), "重命名");
+            }
+            if (CommonFileService.isLock(fileDocument)) {
+                throw new CommonException(ExceptionType.LOCKED_RESOURCES);
             }
             String currentDirectory = getUserDirectory(fileDocument.getPath());
             fromPath = Paths.get(currentDirectory, fileDocument.getName());
@@ -626,11 +635,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 });
             }
             if (renameFile(newFileName, id, filePath, file)) {
-                pushMessageOperationFileError(username, Convert.toStr("重命名失败", Constants.UNKNOWN_ERROR));
+                pushMessageOperationFileError(username, Convert.toStr("重命名失败", Constants.UNKNOWN_ERROR), "重命名");
             }
             pushMessage(username, fileDocument, "createFile");
         } else {
-            pushMessageOperationFileError(username, Convert.toStr("数据库查询失败", Constants.UNKNOWN_ERROR));
+            pushMessageOperationFileError(username, Convert.toStr("数据库查询失败", Constants.UNKNOWN_ERROR), "重命名");
         }
         if (fromPath != null) {
             pushMessageOperationFileSuccess(fromPath.toString(), toPath.toString(), username, "重命名");
@@ -647,9 +656,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 // 删除
                 delete(upload.getUsername(), "/", froms);
             } catch (CommonException e) {
-                pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMsg(), Constants.UNKNOWN_ERROR));
+                pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMsg(), Constants.UNKNOWN_ERROR), "移动");
             } catch (Exception e) {
-                pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR));
+                pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR), "移动");
             }
         });
         return ResultUtil.success();
@@ -668,7 +677,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 throw new CommonException(ExceptionType.SYSTEM_ERROR);
             }
             if (result != null && result.getCode() != 0) {
-                throw new CommonException(ExceptionType.SYSTEM_ERROR);
+                throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), Convert.toStr(result.getMessage(), Constants.UNKNOWN_ERROR));
             }
         }
     }
@@ -681,9 +690,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 // 复制成功
                 getCopyResult(upload, froms, to, false);
             } catch (CommonException e) {
-                pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMsg(), Constants.UNKNOWN_ERROR));
+                pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMsg(), Constants.UNKNOWN_ERROR), "复制");
             } catch (Exception e) {
-                pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR));
+                pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR), "复制");
             }
         });
         return ResultUtil.success();
@@ -839,6 +848,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     @Override
     public ResponseResult<Object> delFile(String path, String username) throws CommonException {
         Path p = Paths.get(fileProperties.getRootDir(), username, path);
+        if (CommonFileService.isLock(p.toFile(), fileProperties.getRootDir(), username)) {
+            throw new CommonException(ExceptionType.LOCKED_RESOURCES);
+        }
         PathUtil.del(p);
         deleteFile(username, p.toFile());
         return ResultUtil.success();
@@ -855,6 +867,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             return ResultUtil.error("修改失败,userId参数有误！");
         }
         File file = path1.toFile();
+
+        if (CommonFileService.isLock(file, fileProperties.getRootDir(), username)) {
+            throw new CommonException(ExceptionType.LOCKED_RESOURCES);
+        }
+
         String fileAbsolutePath = file.getAbsolutePath();
         String fileName = file.getName();
         String relativePath = fileAbsolutePath.substring(fileProperties.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
@@ -1082,27 +1099,16 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         String toPath = getRelativePathByFileId(toFileDocument);
         String toFilePath = getUserDir(upload.getUsername()) + toPath;
         if (formFileDocument != null) {
-
+            if (CommonFileService.isLock(formFileDocument)) {
+                throw new CommonException(ExceptionType.LOCKED_RESOURCES);
+            }
             Path pathFrom = Paths.get(formFileDocument.getPath(), formFileDocument.getName());
             Path pathTo = Paths.get("/");
             if (toFileDocument != null) {
                 pathTo = Paths.get(toFileDocument.getPath(), toFileDocument.getName());
             }
-
-            FileUtil.copy(fromFilePath, toFilePath, true);
-            FileDocument copyFileDocument = copyFileDocument(formFileDocument, toPath);
-            if (Boolean.TRUE.equals(formFileDocument.getIsFolder())) {
-                // 复制文件夹
-                ResponseResult<Object> responseResult = copyDir(fromPath, toPath, copyFileDocument);
-                if (responseResult != null) return responseResult;
-            } else {
-                // 复制文件
-                // 复制其本身
-                if (isExistsOfToCopy(copyFileDocument, toPath)) {
-                    return ResultUtil.warning(Constants.COPY_EXISTS_FILE);
-                }
-                mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
-            }
+            ResponseResult<Object> result1 = copyFile(formFileDocument, fromPath, fromFilePath, toPath, toFilePath);
+            if (result1 != null) return result1;
             String operation = move ? "移动" : "复制";
             // 复制成功
             pushMessageOperationFileSuccess(pathFrom.toString(), pathTo.toString(), upload.getUsername(), operation);
@@ -1111,26 +1117,38 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         return ResultUtil.error("复制失败");
     }
 
-    private ResponseResult<Object> copyDir(String fromPath, String toPath, FileDocument copyFileDocument) {
-        // 复制其本身
-        if (isExistsOfToCopy(copyFileDocument, toPath)) {
-            return ResultUtil.warning(Constants.COPY_EXISTS_FILE);
+    private ResponseResult<Object> copyFile(FileDocument formFileDocument, String fromPath, String fromFilePath, String toPath, String toFilePath) {
+        FileUtil.copy(fromFilePath, toFilePath, true);
+        FileDocument copyFileDocument = copyFileDocument(formFileDocument, toPath);
+        if (Boolean.TRUE.equals(formFileDocument.getIsFolder())) {
+            // 复制文件夹
+            // 复制其本身
+            if (isExistsOfToCopy(copyFileDocument, toPath)) {
+                return ResultUtil.warning(Constants.COPY_EXISTS_FILE);
+            }
+            mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
+            // 复制其下的子文件或目录
+            Query query = new Query();
+            query.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));
+            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fromPath)));
+            List<FileDocument> formList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+            List<FileDocument> list = new ArrayList<>();
+            for (FileDocument fileDocument : formList) {
+                String oldPath = fileDocument.getPath();
+                String newPath = toPath + oldPath.substring(1);
+                copyFileDocument(fileDocument, newPath);
+                list.add(fileDocument);
+            }
+            formList = list;
+            mongoTemplate.insert(formList, COLLECTION_NAME);
+        } else {
+            // 复制文件
+            // 复制其本身
+            if (isExistsOfToCopy(copyFileDocument, toPath)) {
+                return ResultUtil.warning(Constants.COPY_EXISTS_FILE);
+            }
+            mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
         }
-        mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
-        // 复制其下的子文件或目录
-        Query query = new Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));
-        query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fromPath)));
-        List<FileDocument> formList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
-        List<FileDocument> list = new ArrayList<>();
-        for (FileDocument fileDocument : formList) {
-            String oldPath = fileDocument.getPath();
-            String newPath = toPath + oldPath.substring(1);
-            copyFileDocument(fileDocument, newPath);
-            list.add(fileDocument);
-        }
-        formList = list;
-        mongoTemplate.insert(formList, COLLECTION_NAME);
         return null;
     }
 
@@ -1148,15 +1166,15 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (ossPathFrom != null) {
             if (ossPathTo != null) {
                 // 从 oss 复制 到 oss
-                return webOssService.copyOssToOss(ossPathFrom, from, ossPathTo, to, isMove);
+                return webOssCopyFileService.copyOssToOss(ossPathFrom, from, ossPathTo, to, isMove);
             } else {
                 // 从 oss 复制到 本地存储
-                return webOssService.copyOssToLocal(ossPathFrom, from, to, isMove);
+                return webOssCopyFileService.copyOssToLocal(ossPathFrom, from, to, isMove);
             }
         } else {
             if (ossPathTo != null) {
                 // 从 本地存储 复制 到 oss
-                return webOssService.copyLocalToOss(ossPathTo, from, to, isMove);
+                return webOssCopyFileService.copyLocalToOss(ossPathTo, from, to, isMove);
             }
         }
         return null;
@@ -1228,9 +1246,14 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         MultipartFile file = upload.getFile();
         //用户磁盘目录
         String userDirectoryFilePath = getUserDirectoryFilePath(upload);
+
+        File chunkFile = Paths.get(fileProperties.getRootDir(), upload.getUsername(), userDirectoryFilePath).toFile();
+        if (CommonFileService.isLock(chunkFile, fileProperties.getRootDir(), upload.getUsername())) {
+            throw new CommonException(ExceptionType.LOCKED_RESOURCES);
+        }
+
         if (currentChunkSize == totalSize) {
             // 没有分片,直接存
-            File chunkFile = Paths.get(fileProperties.getRootDir(), upload.getUsername(), userDirectoryFilePath).toFile();
             // 保存文件信息
             upload.setInputStream(file.getInputStream());
             upload.setContentType(file.getContentType());
@@ -1286,7 +1309,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         fileDocument.setUserId(upload.getUserId());
         fileDocument.setUploadDate(date);
         fileDocument.setUpdateDate(date);
-        FileUtil.mkdir(dir);
+        if (!dir.exists()) {
+            FileUtil.mkdir(dir);
+        }
         return ResultUtil.success(createFile(upload.getUsername(), dir));
     }
 
@@ -1337,6 +1362,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         for (FileDocument fileDocument : fileDocuments) {
             if (fileDocument.getOssFolder() != null) {
                 throw new CommonException("不能删除oss根目录");
+            }
+            if (CommonFileService.isLock(fileDocument)) {
+                throw new CommonException(ExceptionType.LOCKED_RESOURCES);
             }
             String currentDirectory1 = getUserDirectory(fileDocument.getPath());
             String filePath = fileProperties.getRootDir() + File.separator + username + currentDirectory1 + fileDocument.getName();

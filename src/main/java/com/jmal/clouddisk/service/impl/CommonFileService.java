@@ -55,6 +55,7 @@ import java.nio.file.attribute.FileTime;
 import java.text.Collator;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -96,6 +97,8 @@ public class CommonFileService {
      * 上传文件夹的写入锁缓存
      */
     private final Cache<String, Lock> uploadFolderLockCache = CaffeineUtil.getUploadFolderLockCache();
+
+    public static final Set<String> FILE_PATH_LOCK = new CopyOnWriteArraySet<>();
 
 
     /***
@@ -424,10 +427,11 @@ public class CommonFileService {
         }
     }
 
-    public void pushMessageOperationFileError(String username, String message) {
+    public void pushMessageOperationFileError(String username, String message, String operation) {
         JSONObject msg = new JSONObject();
         msg.put("code", -1);
         msg.put("msg", message);
+        msg.put("operation", operation);
         pushMessage(username, msg, "operationFile");
     }
 
@@ -696,6 +700,46 @@ public class CommonFileService {
      */
     public int compareByUpdateDate(FileBase f1, FileBase f2) {
         return f2.getUpdateDate().compareTo(f1.getUpdateDate());
+    }
+
+    public static boolean isLock(FileDocument fileDocument) {
+        String filePath = getLockFilePath(fileDocument);
+        // 完全匹配
+        return isLock(filePath);
+    }
+
+    public static boolean isLock(File file, String rootDir, String username) {
+        String filePath = getLockFilePath(file, rootDir, username);
+        return isLock(filePath);
+    }
+
+    public static void lockFile(FileDocument fileDocument) {
+        String filePath = getLockFilePath(fileDocument);
+        CommonFileService.FILE_PATH_LOCK.add(getLockFilePath(fileDocument));
+        log.info("lock file path: {}", filePath);
+    }
+
+    public static void unLockFile(FileDocument fileDocument) {
+        CommonFileService.FILE_PATH_LOCK.remove(getLockFilePath(fileDocument));
+    }
+
+    private static boolean isLock(String filePath) {
+        // 完全匹配
+        if (CommonFileService.FILE_PATH_LOCK.contains(filePath)) {
+            return true;
+        }
+        // 前缀匹配
+        return CommonFileService.FILE_PATH_LOCK.stream().anyMatch(filePath::startsWith);
+    }
+
+    private static String getLockFilePath(FileDocument fileDocument) {
+        return fileDocument.getPath() + fileDocument.getName() + (Boolean.TRUE.equals(fileDocument.getIsFolder()) ? MyWebdavServlet.PATH_DELIMITER : "");
+    }
+
+    private static String getLockFilePath(File file, String rooDir, String username) {
+        Path absolutePath = file.toPath();
+        Path relativePath = absolutePath.subpath(Paths.get(rooDir, username).getNameCount(), absolutePath.getNameCount());
+        return MyWebdavServlet.PATH_DELIMITER + relativePath + (Boolean.TRUE.equals(file.isDirectory()) ? MyWebdavServlet.PATH_DELIMITER : "");
     }
 
 

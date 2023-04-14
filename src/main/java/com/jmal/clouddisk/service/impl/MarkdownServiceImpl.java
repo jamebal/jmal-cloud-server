@@ -486,6 +486,9 @@ public class MarkdownServiceImpl implements IMarkdownService {
             if (fileDocument == null) {
                 return ResultUtil.warning("该文档不存在");
             }
+            if (CommonFileService.isLock(fileDocument)) {
+                throw new CommonException(ExceptionType.LOCKED_RESOURCES);
+            }
         }
         String filename = upload.getFilename();
         // 同步文档文件
@@ -624,6 +627,9 @@ public class MarkdownServiceImpl implements IMarkdownService {
         File file = new File(Paths.get(fileProperties.getRootDir(), upload.getUsername(), upload.getRelativePath()).toString());
         if (!file.exists()) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
+        if (CommonFileService.isLock(file, fileProperties.getRootDir(), upload.getUsername())) {
+            throw new CommonException(ExceptionType.LOCKED_RESOURCES);
         }
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
         commonFileService.modifyFile(upload.getUsername(), file);

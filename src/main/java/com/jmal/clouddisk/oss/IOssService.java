@@ -203,7 +203,7 @@ public interface IOssService {
      * @param sourceKey             源objectName
      * @param destinationBucketName 目标Bucket
      * @param destinationKey        目标objectName
-     * @return CountDownLatch CountDownLatch为零则copy成功
+     * @return 是否成功
      */
     boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey);
 

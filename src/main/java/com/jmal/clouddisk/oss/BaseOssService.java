@@ -120,7 +120,7 @@ public class BaseOssService {
     }
 
     public boolean delete(String objectName) {
-        if (objectNameLock.contains(objectName)) {
+        if (isLock(objectName)) {
             throw new CommonException(ExceptionType.LOCKED_RESOURCES);
         }
         boolean deleted;
@@ -139,7 +139,7 @@ public class BaseOssService {
     }
 
     public boolean mkdir(String objectName) {
-        if (objectNameLock.contains(objectName)) {
+        if (isLock(objectName)) {
             throw new CommonException(ExceptionType.LOCKED_RESOURCES);
         }
         FileInfo fileInfo = ossService.newFolder(objectName);
@@ -157,7 +157,7 @@ public class BaseOssService {
      * @return 写入临时文件是否成功
      */
     public boolean writeTempFile(InputStream inputStream, String ossPath, String objectName) {
-        if (objectNameLock.contains(objectName)) {
+        if (isLock(objectName)) {
             throw new CommonException(ExceptionType.LOCKED_RESOURCES);
         }
         // 临时文件绝对路径
@@ -528,6 +528,13 @@ public class BaseOssService {
 
     public void removeObjectNameLock(String objectName) {
         objectNameLock.remove(objectName);
+    }
+
+    public boolean isLock(String objectName) {
+        if (objectNameLock.contains(objectName)) {
+            return true;
+        }
+        return objectNameLock.stream().anyMatch(objectName::startsWith);
     }
 
     public void clearCache(String objectName) {
