@@ -606,7 +606,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (fileDocument != null) {
             // 判断是否为ossPath根目录
             if (fileDocument.getOssFolder() != null) {
-                pushMessageOperationFileError(username, Convert.toStr("请在oss管理中修改目录名称", Constants.UNKNOWN_ERROR), "重命名");
+                throw new CommonException(ExceptionType.LOCKED_RESOURCES.getCode(), "请在oss管理中修改目录名称");
             }
             if (CommonFileService.isLock(fileDocument)) {
                 throw new CommonException(ExceptionType.LOCKED_RESOURCES);

@@ -185,6 +185,10 @@ public class ShareController {
         if (fileInterceptor.isNotAllowAccess(file.orElse(null), request)) {
             return null;
         }
+        String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
+        if (ossPath != null) {
+            return webOssService.thumbnail(ossPath, id);
+        }
         return file.<ResponseEntity<Object>>map(fileDocument ->
                 ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + ContentDisposition.builder("attachment")
@@ -201,17 +205,17 @@ public class ShareController {
     @GetMapping("/public/s/preview/text")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> preview(HttpServletRequest request, @RequestParam String shareId, @RequestParam String fileId) {
-        Path prePth = Paths.get(fileId);
-        String ossPath = CaffeineUtil.getOssPath(prePth);
-        if (ossPath != null) {
-            return ResultUtil.success(webOssService.readToText(ossPath, prePth));
-        }
         ShareDO shareDO = shareService.getShare(shareId);
         ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
         if (validSHare != null) return validSHare;
         ConsumerDO consumer = userService.userInfoById(shareDO.getUserId());
         if (consumer == null) {
             return ResultUtil.warning(SHARE_EXPIRED);
+        }
+        Path prePth = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            return ResultUtil.success(webOssService.readToText(ossPath, prePth));
         }
         return ResultUtil.success(fileService.getById(fileId, consumer.getUsername()));
     }

@@ -10,6 +10,7 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.FileInfo;
 import com.jmal.clouddisk.oss.IOssService;
 import com.jmal.clouddisk.oss.OssConfigService;
+import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
@@ -81,25 +82,43 @@ public class ShareServiceImpl implements IShareService {
             shareVO.setExtractionCode(share.getExtractionCode());
         }
         // 判断要分享的文件是否为oss文件
-        Path path = Paths.get(share.getFileId());
-        String ossPath = CaffeineUtil.getOssPath(path);
-        if (ossPath != null) {
-            mongoTemplate.save(file);
-            String objectName = share.getFileId().substring(ossPath.length());
-            if (BooleanUtil.isTrue(file.getIsFolder())) {
-                // 共享其下的所有文件
-                IOssService ossService = OssConfigService.getOssStorageService(ossPath);
-                removeOssPathShareFile(share);
-
-                List<FileInfo> list = ossService.getAllObjectsWithPrefix(objectName);
-                List<FileDocument> fileDocumentList = list.parallelStream().map(fileInfo -> fileInfo.toFileDocument(ossPath, share.getUserId())).toList();
-                // 插入oss目录下的共享文件
-                mongoTemplate.insertAll(fileDocumentList);
-            }
-        }
+        checkOssPath(share, shareDO.getUserId(), file);
         // 设置文件的分享属性
         fileService.setShareFile(file, expireAt, share);
         return ResultUtil.success(shareVO);
+    }
+
+    private void checkOssPath(ShareDO share, String userId, FileDocument file) {
+        Path path = Paths.get(share.getFileId());
+        String ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null) {
+            // oss 文件 或 目录
+            mongoTemplate.save(file);
+            String objectName = share.getFileId().substring(ossPath.length());
+            shareOssPath(share, objectName, ossPath);
+        }
+        if (file.getOssFolder() != null) {
+            // oss 根目录
+            Path path1 = Paths.get(userService.getUserNameById(userId), file.getOssFolder());
+            String ossPath1 = CaffeineUtil.getOssPath(path1);
+            if (ossPath1 != null) {
+                String objectName = WebOssService.getObjectName(path1, ossPath1, true);
+                shareOssPath(share, objectName, ossPath1);
+            }
+        }
+    }
+
+    private void shareOssPath(ShareDO share, String objectName, String ossPath) {
+        if (objectName.endsWith("/") || objectName.equals("")) {
+            // 共享其下的所有文件
+            IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+            removeOssPathShareFile(share);
+
+            List<FileInfo> list = ossService.getAllObjectsWithPrefix(objectName);
+            List<FileDocument> fileDocumentList = list.parallelStream().map(fileInfo -> fileInfo.toFileDocument(ossPath, share.getUserId())).toList();
+            // 插入oss目录下的共享文件
+            mongoTemplate.insertAll(fileDocumentList);
+        }
     }
 
     private void removeOssPathShareFile(ShareDO share) {
