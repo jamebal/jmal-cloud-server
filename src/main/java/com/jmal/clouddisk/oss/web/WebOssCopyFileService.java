@@ -2,6 +2,7 @@ package com.jmal.clouddisk.oss.web;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
+import cn.hutool.core.lang.Console;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.FileDocument;
@@ -329,28 +330,35 @@ public class WebOssCopyFileService extends WebOssCommonService {
         // 锁文件
         CommonFileService.lockFile(fromFileDocument);
         Path fromPath = Paths.get(fileProperties.getRootDir(), fromFileDocument.getUsername(), fromFileDocument.getPath(), fromFileDocument.getName());
-        String prePath = Paths.get(fileProperties.getRootDir(), fromFileDocument.getUsername(), fromFileDocument.getPath()).toString();
         try {
-            PathUtil.walkFiles(fromPath, new SimplePathVisitor() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                    String objectName = objectNameTo + dir.toString().substring(prePath.length());
-                    ossServiceTo.mkdir(objectName);
-                    return super.preVisitDirectory(dir, attrs);
-                }
-
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    String objectName = objectNameTo + file.toString().substring(prePath.length());
-                    File fromFile = file.toFile();
-                    try (InputStream inputStream = new FileInputStream(fromFile)) {
-                        ossServiceTo.uploadFile(inputStream, objectName, fromFile.length());
-                    } catch (Exception e) {
-                        log.error(e.getMessage(), e);
+            Console.log(fromPath);
+            // 首先在目标oss创建文件夹
+            if (ossServiceTo.mkdir(objectNameTo)) {
+                // 遍历fromPath下的所有目录和文件上传至目标oss
+                PathUtil.walkFiles(fromPath, new SimplePathVisitor() {
+                    @Override
+                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                        if (!dir.equals(fromPath)) {
+                            Console.log("dir", dir);
+                            String objectName = objectNameTo + dir.toString().substring(fromPath.toString().length());
+                            ossServiceTo.mkdir(objectName);
+                        }
+                        return super.preVisitDirectory(dir, attrs);
                     }
-                    return super.visitFile(file, attrs);
-                }
-            });
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        Console.log("file", file);
+                        String objectName = objectNameTo + file.toString().substring(fromPath.toString().length());
+                        File fromFile = file.toFile();
+                        try (InputStream inputStream = new FileInputStream(fromFile)) {
+                            ossServiceTo.uploadFile(inputStream, objectName, fromFile.length());
+                        } catch (Exception e) {
+                            log.error(e.getMessage(), e);
+                        }
+                        return super.visitFile(file, attrs);
+                    }
+                });
+            }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         } finally {
