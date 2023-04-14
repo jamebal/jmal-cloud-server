@@ -375,6 +375,7 @@ public class WebOssService extends WebOssCommonService {
             String objectName = pathName.substring(ossPath.length());
             // 删除对象
             if (ossService.delete(objectName)) {
+                notifyDeleteFile(ossPath, objectName);
                 // 删除临时文件，如果有的话
                 deleteTemp(ossPath, objectName);
                 // 删除依赖，如果有的话

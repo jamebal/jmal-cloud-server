@@ -46,7 +46,7 @@ public class FileInfo {
         FileIntroVO fileIntroVO = new FileIntroVO();
         String fileName = getName();
         fileIntroVO.setAgoTime(System.currentTimeMillis() - lastModified.getTime());
-        fileIntroVO.setId(username + MyWebdavServlet.PATH_DELIMITER + rootName + MyWebdavServlet.PATH_DELIMITER + key);
+        fileIntroVO.setId(Paths.get(username, rootName, key) + (isFolder() ? MyWebdavServlet.PATH_DELIMITER : ""));
         fileIntroVO.setUsername(username);
         fileIntroVO.setIsFavorite(false);
         fileIntroVO.setIsFolder(isFolder());

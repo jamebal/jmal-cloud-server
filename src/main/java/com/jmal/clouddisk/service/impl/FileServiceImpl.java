@@ -653,8 +653,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             try {
                 // 复制成功
                 getCopyResult(upload, froms, to, true);
+                String currentDirectory = getOssFileCurrentDirectory(upload, froms);
                 // 删除
-                delete(upload.getUsername(), "/", froms);
+                delete(upload.getUsername(), currentDirectory, froms);
             } catch (CommonException e) {
                 pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMsg(), Constants.UNKNOWN_ERROR), "移动");
             } catch (Exception e) {
@@ -662,6 +663,20 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             }
         });
         return ResultUtil.success();
+    }
+
+    private String getOssFileCurrentDirectory(UploadApiParamDTO upload, List<String> froms) {
+        String currentDirectory = "/";
+        String from = froms.get(0);
+        FileDocument fileDocumentFrom = getFileDocumentById(from);
+        if (fileDocumentFrom != null && fileDocumentFrom.getOssFolder() != null) {
+            from = upload.getUsername() + MyWebdavServlet.PATH_DELIMITER + fileDocumentFrom.getOssFolder() + MyWebdavServlet.PATH_DELIMITER;
+        }
+        Path fromPath = Paths.get(from);
+        if (CaffeineUtil.getOssPath(fromPath) != null) {
+            currentDirectory = fromPath.toString().substring(upload.getUsername().length());
+        }
+        return currentDirectory;
     }
 
     private void getCopyResult(UploadApiParamDTO upload, List<String> froms, String to, boolean move) {
@@ -1154,6 +1169,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     private ResponseResult<Object> ossCopy(String username, FileDocument fileDocumentFrom, FileDocument fileDocumentTo, String from, String to, boolean isMove) {
         if (fileDocumentFrom != null && fileDocumentFrom.getOssFolder() != null) {
+            if (isMove) {
+                throw new CommonException("不能移动oss根目录");
+            }
             from = username + MyWebdavServlet.PATH_DELIMITER + fileDocumentFrom.getOssFolder() + MyWebdavServlet.PATH_DELIMITER;
         }
         if (fileDocumentTo != null && fileDocumentTo.getOssFolder() != null) {

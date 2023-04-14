@@ -41,6 +41,15 @@ public class WebOssCommonService {
         commonFileService.pushMessage(username, fileIntroVO, "createFile");
     }
 
+    public void notifyDeleteFile(String ossPath, String objectName) {
+        FileIntroVO fileIntroVO = new FileIntroVO();
+        String username = getUsernameByOssPath(ossPath);
+        String rootName = getOssRootFolderName(ossPath);
+        boolean isFolder = objectName.endsWith("/");
+        fileIntroVO.setId(Paths.get(username, rootName, objectName) + (isFolder ? MyWebdavServlet.PATH_DELIMITER : ""));
+        commonFileService.pushMessage(username, fileIntroVO, "deleteFile");
+    }
+
     public static String getPathByObjectName(String ossRootFolderName, String objectName) {
         String path = MyWebdavServlet.PATH_DELIMITER;
         Path filePath = Paths.get(ossRootFolderName, objectName);
