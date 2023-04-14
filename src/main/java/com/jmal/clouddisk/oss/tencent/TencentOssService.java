@@ -230,7 +230,7 @@ public class TencentOssService implements IOssService {
                 objectListing = cosClient.listObjects(listObjectsRequest);
                 // 这里保存列出的对象列表
                 List<COSObjectSummary> cosObjectSummaries = objectListing.getObjectSummaries();
-                cosObjectSummaries.parallelStream().forEach(cosObjectSummary -> fileInfoList.add(new FileInfo(cosObjectSummary.getKey())));
+                cosObjectSummaries.parallelStream().forEach(cosObjectSummary -> fileInfoList.add(new FileInfo(cosObjectSummary.getKey(), cosObjectSummary.getETag(), cosObjectSummary.getSize(), cosObjectSummary.getLastModified())));
                 // 标记下一次开始的位置
                 String nextMarker = objectListing.getNextMarker();
                 listObjectsRequest.setMarker(nextMarker);

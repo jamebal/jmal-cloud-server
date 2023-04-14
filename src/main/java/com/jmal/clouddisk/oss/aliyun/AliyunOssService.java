@@ -181,7 +181,7 @@ public class AliyunOssService implements IOssService {
                 ListObjectsRequest listObjectsRequest = new ListObjectsRequest(bucketName).withPrefix(objectName).withMarker(nextMarker);
                 objectListing = ossClient.listObjects(listObjectsRequest);
                 if (!objectListing.getObjectSummaries().isEmpty()) {
-                    objectListing.getObjectSummaries().forEach(ossObjectSummary -> fileInfoList.add(new FileInfo(ossObjectSummary.getKey())));
+                    objectListing.getObjectSummaries().forEach(ossObjectSummary -> fileInfoList.add(new FileInfo(ossObjectSummary.getKey(), ossObjectSummary.getETag(), ossObjectSummary.getSize(), ossObjectSummary.getLastModified())));
                 }
                 nextMarker = objectListing.getNextMarker();
             } while (objectListing.isTruncated());

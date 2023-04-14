@@ -4,13 +4,18 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.oss.FileInfo;
+import com.jmal.clouddisk.oss.IOssService;
+import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -33,6 +38,7 @@ import static com.jmal.clouddisk.controller.rest.ShareController.SHARE_EXPIRED;
  * @Date 2020-03-17 16:21
  */
 @Service
+@RequiredArgsConstructor
 public class ShareServiceImpl implements IShareService {
 
     public static final String COLLECTION_NAME = "share";
@@ -43,12 +49,6 @@ public class ShareServiceImpl implements IShareService {
 
     private final UserServiceImpl userService;
 
-
-    public ShareServiceImpl(IFileService fileService, MongoTemplate mongoTemplate, UserServiceImpl userService) {
-        this.fileService = fileService;
-        this.mongoTemplate = mongoTemplate;
-        this.userService = userService;
-    }
 
     @Override
     public ResponseResult<Object> generateLink(ShareDO share) {
@@ -85,10 +85,29 @@ public class ShareServiceImpl implements IShareService {
         String ossPath = CaffeineUtil.getOssPath(path);
         if (ossPath != null) {
             mongoTemplate.save(file);
+            String objectName = share.getFileId().substring(ossPath.length());
+            if (BooleanUtil.isTrue(file.getIsFolder())) {
+                // 共享其下的所有文件
+                IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+                removeOssPathShareFile(share);
+
+                List<FileInfo> list = ossService.getAllObjectsWithPrefix(objectName);
+                List<FileDocument> fileDocumentList = list.parallelStream().map(fileInfo -> fileInfo.toFileDocument(ossPath, share.getUserId())).toList();
+                // 插入oss目录下的共享文件
+                mongoTemplate.insertAll(fileDocumentList);
+            }
         }
         // 设置文件的分享属性
         fileService.setShareFile(file, expireAt, share);
         return ResultUtil.success(shareVO);
+    }
+
+    private void removeOssPathShareFile(ShareDO share) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(share.getUserId()));
+        query.addCriteria(Criteria.where("_id").regex("^" + ReUtil.escape(share.getFileId())));
+        // 先删除,避免重复插入
+        mongoTemplate.remove(query, FileDocument.class);
     }
 
     private void updateShare(ShareDO share, ShareDO shareDO, FileDocument file) {
@@ -279,8 +298,14 @@ public class ShareServiceImpl implements IShareService {
         List<ShareDO> shareDOList = mongoTemplate.findAllAndRemove(query, ShareDO.class, COLLECTION_NAME);
         if (!shareDOList.isEmpty()) {
             shareDOList.forEach(shareDO -> {
+                String fileId = shareDO.getFileId();
                 FileDocument fileDocument = fileService.getById(shareDO.getFileId());
                 fileService.unsetShareFile(fileDocument);
+                Path path = Paths.get(fileId);
+                String ossPath = CaffeineUtil.getOssPath(path);
+                if (ossPath != null) {
+                    removeOssPathShareFile(shareDO);
+                }
             });
         }
         return ResultUtil.success();

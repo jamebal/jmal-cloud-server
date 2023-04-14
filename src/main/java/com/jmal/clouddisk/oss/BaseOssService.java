@@ -248,6 +248,7 @@ public class BaseOssService {
                 }
             }
         } else {
+            fileInfoListCache.invalidate(objectName);
             fileInfoListCache.invalidate("");
         }
     }

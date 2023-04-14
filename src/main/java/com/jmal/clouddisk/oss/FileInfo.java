@@ -22,12 +22,13 @@ public class FileInfo {
     private long size;
     private Date lastModified;
 
-    public FileInfo() {
-        this.key = key;
-    }
+    public FileInfo() {}
 
-    public FileInfo(String key) {
+    public FileInfo(String key, String eTag, long size, Date lastModified) {
         this.key = key;
+        this.eTag = eTag;
+        this.size = size;
+        this.lastModified = lastModified;
     }
 
     public String getName() {
