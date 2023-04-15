@@ -12,6 +12,7 @@ import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.UploadResponse;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.util.CaffeineUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,6 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @date 2023/4/7 17:20
  */
 @Service
+@Slf4j
 public class MultipartUpload {
 
     @Autowired
@@ -214,17 +216,20 @@ public class MultipartUpload {
         }
         String md5 = upload.getIdentifier();
         // 分片文件
-        File file = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), md5, String.valueOf(chunk)).toFile();
+        File chunkFile = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), md5, String.valueOf(chunk)).toFile();
         // 目标文件
         File outputFile = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), upload.getFilename()).toFile();
         long position = outputFile.length();
         try (FileOutputStream fileOutputStream = new FileOutputStream(outputFile, true);
              FileChannel outChannel = fileOutputStream.getChannel()) {
-            ByteBuffer byteBuffer = ByteBuffer.wrap(FileUtil.readBytes(file));
-            outChannel.write(byteBuffer, position);
+            ByteBuffer byteBuffer = ByteBuffer.wrap(FileUtil.readBytes(chunkFile));
+            int writeLength = outChannel.write(byteBuffer, position);
+            if (writeLength != chunkFile.length()) {
+                log.error("writeLength: {}, chunkFileLength: {}", writeLength, chunkFile.length());
+            }
             writtenChunks.add(chunk);
             writtenCache.put(md5, writtenChunks);
-            unWrittenChunks.remove(chunk);
+            unWrittenChunks.remove((Integer) chunk);
             unWrittenCache.put(md5, unWrittenChunks);
         } catch (IOException e) {
             throw new CommonException(ExceptionType.FAIL_MERGE_FILE);
