@@ -17,6 +17,7 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.oss.web.WebOssCommonService;
 import com.jmal.clouddisk.oss.web.WebOssCopyFileService;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
@@ -1348,9 +1349,57 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds));
         Update update = new Update();
+        fileIds.forEach(fileId -> checkOssPath(fileId,  true));
         update.set(Constants.IS_FAVORITE, true);
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         return ResultUtil.success();
+    }
+
+    private void checkOssPath(String fileId, boolean favorite) {
+        Path path = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null) {
+            // oss 文件 或 目录
+
+            Query query = new Query();
+            query.addCriteria(Criteria.where("_id").is(fileId));
+            if (!mongoTemplate.exists(query, FileDocument.class)) {
+                FileDocument fileDocument = getById(fileId);
+                fileDocument.setIsFavorite(true);
+                mongoTemplate.save(fileDocument);
+            }
+
+            String objectName = fileId.substring(ossPath.length());
+            String username = WebOssCommonService.getUsernameByOssPath(ossPath);
+            String userId = userService.getUserIdByUserName(username);
+            if (favorite) {
+                // 设置 favorite 属性
+                webOssService.setOssPath(userId, fileId, objectName, ossPath, false);
+            } else {
+                // 移除 favorite 属性
+                List<FileDocument> fileDocumentList = webOssService.removeOssPathFile(userId, fileId, ossPath, true, false);
+                mongoTemplate.insertAll(fileDocumentList);
+            }
+            return;
+        }
+        FileDocument fileDocument = getFileDocumentById(fileId);
+        if (fileDocument != null && fileDocument.getOssFolder() != null) {
+            // oss根目录
+            String userId = fileDocument.getUserId();
+            Path path1 = Paths.get(userService.getUserNameById(userId), fileDocument.getOssFolder());
+            String ossPath1 = CaffeineUtil.getOssPath(path1);
+            if (ossPath1 != null) {
+                String objectName = WebOssService.getObjectName(path1, ossPath1, true);
+                if (favorite) {
+                    // 设置 favorite 属性
+                    webOssService.setOssPath(userId, null, objectName, ossPath1, true);
+                } else {
+                    // 移除 favorite 属性
+                    List<FileDocument> fileDocumentList = webOssService.removeOssPathFile(userId, null, ossPath1, true, false);
+                    mongoTemplate.insertAll(fileDocumentList);
+                }
+            }
+        }
     }
 
     @Override
@@ -1358,6 +1407,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds));
         Update update = new Update();
+        fileIds.forEach(fileId -> checkOssPath(fileId,  false));
         update.set(Constants.IS_FAVORITE, false);
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         return ResultUtil.success();

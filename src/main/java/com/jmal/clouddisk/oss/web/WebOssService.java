@@ -13,6 +13,7 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.oss.*;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -140,7 +141,7 @@ public class WebOssService extends WebOssCommonService {
             return new ArrayList<>();
         }
         Query query = new Query();
-        String path = getPath(objectName, getOssRootFolderName(ossPath)) + objectName;
+        String path = getPath(objectName, getOssRootFolderName(ossPath)) + Paths.get(objectName).getFileName() + MyWebdavServlet.PATH_DELIMITER;
         query.addCriteria(Criteria.where("path").is(path));
         return mongoTemplate.find(query, FileDocument.class);
     }
@@ -602,5 +603,66 @@ public class WebOssService extends WebOssCommonService {
             log.error(e.getMessage(), e);
         }
         return null;
+    }
+
+    /**
+     * 设置ossPath所关联的FileDocument
+     * @param userId userId
+     * @param fileId fileId 例如: jmal/tencent/新建文件夹/屏幕录制.2020-03-04 16_36_03.gif
+     * @param objectName objectName
+     * @param ossPath ossPath 例如: /jmal/tencent
+     * @param ossRootPath ossRootPath 例如: tencent
+     */
+    public void setOssPath(String userId, String fileId, String objectName, String ossPath, boolean ossRootPath) {
+        if (objectName.endsWith("/") || objectName.equals("")) {
+            // 设置其下的所有文件
+            IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+            List<FileDocument> fileDocumentListOld = removeOssPathFile(userId, fileId, ossPath, ossRootPath, false);
+
+            List<FileInfo> list = ossService.getAllObjectsWithPrefix(objectName);
+            List<FileDocument> fileDocumentList = list.parallelStream().map(fileInfo -> fileInfo.toFileDocument(ossPath, userId)).toList();
+            fileDocumentListOld.addAll(fileDocumentList);
+            List<FileDocument> newFileDocumentList = fileDocumentListOld.stream().distinct().toList();
+            // 插入oss目录下的共享文件
+            mongoTemplate.insertAll(newFileDocumentList);
+        }
+    }
+
+    /**
+     * 删除ossPath所关联的FileDocument
+     * @param userId userId
+     * @param fileId fileId 例如: jmal/tencent/新建文件夹/屏幕录制.2020-03-04 16_36_03.gif
+     * @param ossPath ossPath 例如: /jmal/tencent
+     * @param ossRootPath ossRootPath 例如: tencent
+     * @param unSetShare 移除 share 属性
+     */
+    public List<FileDocument> removeOssPathFile(String userId, String fileId, String ossPath, boolean ossRootPath, boolean unSetShare) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        String path;
+        if (ossRootPath) {
+            path = ossPath.substring(1);
+        } else {
+            path = fileId;
+        }
+        query.addCriteria(Criteria.where("_id").regex("^" + ReUtil.escape(path)));
+        List<FileDocument> fileDocumentList = mongoTemplate.findAllAndRemove(query, FileDocument.class);
+        List<FileDocument> list = new ArrayList<>();
+        for (FileDocument fileDocument : fileDocumentList) {
+            if (unSetShare) {
+                // 移除 share 属性
+                fileDocument.setIsShare(null);
+                fileDocument.setIsPrivacy(null);
+                fileDocument.setExpiresAt(null);
+                fileDocument.setExtractionCode(null);
+                fileDocument.setShareBase(null);
+            }
+            // 如果 favorite 和 share 属性都没有了就过滤掉
+            if (BooleanUtil.isFalse(fileDocument.getIsFavorite()) && fileDocument.getIsShare() == null) {
+                continue;
+            }
+            list.add(fileDocument);
+        }
+        return list;
     }
 }

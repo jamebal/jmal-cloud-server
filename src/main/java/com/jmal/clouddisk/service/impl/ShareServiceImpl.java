@@ -4,12 +4,8 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.RandomUtil;
-import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
-import com.jmal.clouddisk.oss.FileInfo;
-import com.jmal.clouddisk.oss.IOssService;
-import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
@@ -49,6 +45,8 @@ public class ShareServiceImpl implements IShareService {
     private final MongoTemplate mongoTemplate;
 
     private final UserServiceImpl userService;
+
+    private final WebOssService webOssService;
 
 
     @Override
@@ -93,9 +91,13 @@ public class ShareServiceImpl implements IShareService {
         String ossPath = CaffeineUtil.getOssPath(path);
         if (ossPath != null) {
             // oss 文件 或 目录
-            mongoTemplate.save(file);
+            Query query = new Query();
+            query.addCriteria(Criteria.where("_id").is(file.getId()));
+            if (!mongoTemplate.exists(query, FileDocument.class)) {
+                mongoTemplate.save(file);
+            }
             String objectName = share.getFileId().substring(ossPath.length());
-            shareOssPath(share, objectName, ossPath, false);
+            webOssService.setOssPath(share.getUserId(), share.getFileId(), objectName, ossPath, false);
         }
         if (file.getOssFolder() != null) {
             // oss 根目录
@@ -103,36 +105,9 @@ public class ShareServiceImpl implements IShareService {
             String ossPath1 = CaffeineUtil.getOssPath(path1);
             if (ossPath1 != null) {
                 String objectName = WebOssService.getObjectName(path1, ossPath1, true);
-                shareOssPath(share, objectName, ossPath1, true);
+                webOssService.setOssPath(share.getUserId(), null, objectName, ossPath1, true);
             }
         }
-    }
-
-    private void shareOssPath(ShareDO share, String objectName, String ossPath, boolean ossRootPath) {
-        if (objectName.endsWith("/") || objectName.equals("")) {
-            // 共享其下的所有文件
-            IOssService ossService = OssConfigService.getOssStorageService(ossPath);
-            removeOssPathShareFile(share, ossPath, ossRootPath);
-
-            List<FileInfo> list = ossService.getAllObjectsWithPrefix(objectName);
-            List<FileDocument> fileDocumentList = list.parallelStream().map(fileInfo -> fileInfo.toFileDocument(ossPath, share.getUserId())).toList();
-            // 插入oss目录下的共享文件
-            mongoTemplate.insertAll(fileDocumentList);
-        }
-    }
-
-    private void removeOssPathShareFile(ShareDO share, String ossPath, boolean ossRootPath) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(share.getUserId()));
-        String path;
-        if (ossRootPath) {
-            path = ossPath.substring(1);
-        } else {
-            path = share.getFileId();
-        }
-        query.addCriteria(Criteria.where("_id").regex("^" + ReUtil.escape(path)));
-        // 先删除,避免重复插入
-        mongoTemplate.remove(query, FileDocument.class);
     }
 
     private void updateShare(ShareDO share, ShareDO shareDO, FileDocument file) {
@@ -329,16 +304,19 @@ public class ShareServiceImpl implements IShareService {
                 Path path = Paths.get(fileId);
                 String ossPath = CaffeineUtil.getOssPath(path);
                 if (ossPath != null) {
-                    removeOssPathShareFile(shareDO, ossPath, false);
+                    // 设置 share 属性
+                    List<FileDocument> fileDocumentList = webOssService.removeOssPathFile(shareDO.getUserId(), shareDO.getFileId(), ossPath, false, true);
+                    mongoTemplate.insertAll(fileDocumentList);
                 }
                 if (fileDocument.getOssFolder() != null) {
                     // oss 根目录
                     Path path1 = Paths.get(userService.getUserNameById(shareDO.getUserId()), fileDocument.getOssFolder());
                     String ossPath1 = CaffeineUtil.getOssPath(path1);
                     if (ossPath1 != null) {
-                        removeOssPathShareFile(shareDO, ossPath1, true);
+                        // 移除 share 属性
+                        List<FileDocument> fileDocumentList = webOssService.removeOssPathFile(shareDO.getUserId(), shareDO.getFileId(), ossPath1, true, true);
+                        mongoTemplate.insertAll(fileDocumentList);
                     }
-
                 }
             });
         }

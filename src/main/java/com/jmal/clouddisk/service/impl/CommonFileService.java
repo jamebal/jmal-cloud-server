@@ -13,7 +13,6 @@ import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
@@ -72,9 +71,6 @@ import static com.mongodb.client.model.Filters.eq;
 @Service
 @Slf4j
 public class CommonFileService {
-
-    @Autowired
-    IShareService shareService;
 
     @Autowired
     UserLoginHolder userLoginHolder;

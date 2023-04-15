@@ -6,6 +6,7 @@ import com.jmal.clouddisk.util.TimeUntils;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.format.annotation.DateTimeFormat;
+
 import java.time.LocalDateTime;
 
 /**
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 public class FileBase {
 
     @Id
-    private String id;
+    String id;
     /***
      * 是否为文件夹
      */
@@ -68,4 +69,5 @@ public class FileBase {
     public String uploadTime(){
         return uploadDate.format(TimeUntils.UPLOAD_FORMAT_TIME);
     }
+
 }
