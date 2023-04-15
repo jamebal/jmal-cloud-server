@@ -62,7 +62,6 @@ public class WebOssService extends WebOssCommonService {
         return maps;
     }
 
-
     public static String getObjectName(Path prePath, String ossPath, boolean isFolder) {
         String name = "";
         int ossPathCount = Paths.get(ossPath).getNameCount();
@@ -76,19 +75,19 @@ public class WebOssService extends WebOssCommonService {
     }
 
     public ResponseResult<Object> searchFileAndOpenOssFolder(Path prePth, UploadApiParamDTO upload) {
-        List<FileIntroVO> fileIntroVOList = getOssFileList(prePth, upload);
         ResponseResult<Object> result = ResultUtil.genResult();
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath == null) {
+            return ResultUtil.success().setData(new ArrayList<>(0)).setCode(0);
+        }
+        List<FileIntroVO> fileIntroVOList = getOssFileList(ossPath, prePth, upload);
         result.setCount(fileIntroVOList.size());
         result.setData(fileIntroVOList);
         return result;
     }
 
-    public List<FileIntroVO> getOssFileList(Path prePth, UploadApiParamDTO upload) {
+    public List<FileIntroVO> getOssFileList(String ossPath, Path prePth, UploadApiParamDTO upload) {
         List<FileIntroVO> fileIntroVOList = new ArrayList<>();
-        String ossPath = CaffeineUtil.getOssPath(prePth);
-        if (ossPath == null) {
-            return fileIntroVOList;
-        }
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, true);
         List<FileInfo> list = ossService.getFileInfoListCache(objectName);
@@ -100,8 +99,22 @@ public class WebOssService extends WebOssCommonService {
             if (CharSequenceUtil.isNotBlank(userId)) {
                 userId = userService.getUserIdByUserName(getUsernameByOssPath(ossPath));
             }
+
+            List<FileDocument> fileDocumentList = getFileDocuments(ossPath, objectName);
+
             String finalUserId = userId;
-            fileIntroVOList = list.stream().map(fileInfo -> fileInfo.toFileIntroVO(ossPath, finalUserId)).toList();
+            fileIntroVOList = list.stream().map(fileInfo -> {
+                FileIntroVO fileIntroVO = fileInfo.toFileIntroVO(ossPath, finalUserId);
+                // 设置文件的额外属性:分享属性和收藏属性
+                FileDocument fileDocument = fileDocumentList.stream().filter(f -> f.getId().equals(fileIntroVO.getId())).findFirst().orElse(null);
+                if (fileDocument != null) {
+                    fileIntroVO.setIsFavorite(fileDocument.getIsFavorite());
+                    fileIntroVO.setShareBase(fileDocument.getShareBase());
+                    fileIntroVO.setExpiresAt(fileDocument.getExpiresAt());
+                    fileIntroVO.setIsShare(fileDocument.getIsShare());
+                }
+                return fileIntroVO;
+            }).toList();
             // 排序
             fileIntroVOList = getSortFileList(upload, fileIntroVOList);
             // 分页
@@ -112,6 +125,22 @@ public class WebOssService extends WebOssCommonService {
             fileIntroVOList = filterOther(upload, fileIntroVOList);
         }
         return fileIntroVOList;
+    }
+
+    /**
+     * 查询object目录下是否有额外属性,有就返回List<FileDocument>
+     * @param ossPath ossPath
+     * @param objectName objectName必须为目录
+     * @return List<FileDocument>
+     */
+    private List<FileDocument> getFileDocuments(String ossPath, String objectName) {
+        if (!objectName.endsWith("/")) {
+            return new ArrayList<>();
+        }
+        Query query = new Query();
+        String path = getPath(objectName, getOssRootFolderName(ossPath)) + objectName;
+        query.addCriteria(Criteria.where("path").is(path));
+        return mongoTemplate.find(query, FileDocument.class);
     }
 
     private static List<FileIntroVO> filterOther(UploadApiParamDTO upload, List<FileIntroVO> fileIntroVOList) {

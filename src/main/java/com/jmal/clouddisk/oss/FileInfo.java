@@ -4,6 +4,7 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.FileIntroVO;
+import com.jmal.clouddisk.oss.web.WebOssCommonService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
@@ -22,7 +23,8 @@ public class FileInfo {
     private long size;
     private Date lastModified;
 
-    public FileInfo() {}
+    public FileInfo() {
+    }
 
     public FileInfo(String key, String eTag, long size, Date lastModified) {
         this.key = key;
@@ -52,12 +54,7 @@ public class FileInfo {
         fileIntroVO.setIsFavorite(false);
         fileIntroVO.setIsFolder(isFolder());
         fileIntroVO.setName(fileName);
-        Path keyPath = Paths.get(key);
-        if (keyPath.getNameCount() > 1) {
-            fileIntroVO.setPath(MyWebdavServlet.PATH_DELIMITER + Paths.get(rootName, key).getParent().toString() + MyWebdavServlet.PATH_DELIMITER);
-        } else {
-            fileIntroVO.setPath(MyWebdavServlet.PATH_DELIMITER + rootName + MyWebdavServlet.PATH_DELIMITER);
-        }
+        fileIntroVO.setPath(WebOssCommonService.getPath(key, rootName));
         fileIntroVO.setSize(size);
         LocalDateTime updateTime = LocalDateTimeUtil.of(lastModified);
         String suffix = FileUtil.extName(fileName);

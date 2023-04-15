@@ -84,4 +84,15 @@ public class WebOssCommonService {
     public static String getOssRootFolderName(String ossPath) {
         return CaffeineUtil.getOssDiameterPrefixCache(ossPath).getFolderName();
     }
+
+    public static String getPath(String objectName, String rootName) {
+        String path;
+        Path keyPath = Paths.get(objectName);
+        if (keyPath.getNameCount() > 1) {
+            path = MyWebdavServlet.PATH_DELIMITER + Paths.get(rootName, objectName).getParent().toString() + MyWebdavServlet.PATH_DELIMITER;
+        } else {
+            path = MyWebdavServlet.PATH_DELIMITER + rootName + MyWebdavServlet.PATH_DELIMITER;
+        }
+        return path;
+    }
 }
