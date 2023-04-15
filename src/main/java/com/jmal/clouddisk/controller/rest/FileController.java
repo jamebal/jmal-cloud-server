@@ -68,10 +68,10 @@ public class FileController {
     IUserService service;
 
     @Operation(summary = "根据id获取文件信息")
-    @GetMapping("/file_info/{id}")
+    @GetMapping("/file_info")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<FileDocument> getFileById(@PathVariable String id) {
+    public ResponseResult<FileDocument> getFileById(@RequestParam String id) {
         return ResultUtil.success(fileService.getById(id));
     }
 

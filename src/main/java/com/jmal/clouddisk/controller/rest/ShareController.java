@@ -221,9 +221,9 @@ public class ShareController {
     }
 
     @Operation(summary = "根据id获取分享的文件信息")
-    @GetMapping("/public/file_info/{fileId}/{shareId}")
+    @GetMapping("/public/file_info")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> getFileById(HttpServletRequest request, @PathVariable String fileId, @PathVariable String shareId) {
+    public ResponseResult<Object> getFileById(HttpServletRequest request, @RequestParam String fileId, @RequestParam String shareId) {
         ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareId);
         if (validSHare != null) return validSHare;
         return ResultUtil.success(fileService.getById(fileId));
