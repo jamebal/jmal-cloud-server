@@ -7,7 +7,6 @@ import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
@@ -46,7 +45,7 @@ public class WebOssCommonService {
     public void notifyUpdateFile(String ossPath, String objectName, long size) {
         FileIntroVO fileIntroVO = new FileIntroVO();
         String username = getUsernameByOssPath(ossPath);
-        String id = getFileId(ossPath, objectName, username);
+        String id = getFileId(getOssRootFolderName(ossPath), objectName, username);
         fileIntroVO.setId(id);
         fileIntroVO.setSize(size);
         fileIntroVO.setUpdateDate(LocalDateTime.now());
@@ -56,14 +55,12 @@ public class WebOssCommonService {
     public void notifyDeleteFile(String ossPath, String objectName) {
         FileIntroVO fileIntroVO = new FileIntroVO();
         String username = getUsernameByOssPath(ossPath);
-        String id = getFileId(ossPath, objectName, username);
+        String id = getFileId(getOssRootFolderName(ossPath), objectName, username);
         fileIntroVO.setId(id);
         commonFileService.pushMessage(username, fileIntroVO, "deleteFile");
     }
 
-    @NotNull
-    private static String getFileId(String ossPath, String objectName, String username) {
-        String rootName = getOssRootFolderName(ossPath);
+    public static String getFileId(String rootName, String objectName, String username) {
         boolean isFolder = objectName.endsWith("/");
         return Paths.get(username, rootName, objectName) + (isFolder ? MyWebdavServlet.PATH_DELIMITER : "");
     }
@@ -77,7 +74,7 @@ public class WebOssCommonService {
         return path;
     }
 
-    public String getUsernameByOssPath(String ossPath) {
+    public static String getUsernameByOssPath(String ossPath) {
         return Paths.get(ossPath).subpath(0, 1).toString();
     }
 
@@ -95,4 +92,5 @@ public class WebOssCommonService {
         }
         return path;
     }
+
 }

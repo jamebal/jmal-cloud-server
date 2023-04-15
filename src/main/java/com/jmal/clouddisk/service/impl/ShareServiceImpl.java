@@ -95,7 +95,7 @@ public class ShareServiceImpl implements IShareService {
             // oss 文件 或 目录
             mongoTemplate.save(file);
             String objectName = share.getFileId().substring(ossPath.length());
-            shareOssPath(share, objectName, ossPath);
+            shareOssPath(share, objectName, ossPath, false);
         }
         if (file.getOssFolder() != null) {
             // oss 根目录
@@ -103,16 +103,16 @@ public class ShareServiceImpl implements IShareService {
             String ossPath1 = CaffeineUtil.getOssPath(path1);
             if (ossPath1 != null) {
                 String objectName = WebOssService.getObjectName(path1, ossPath1, true);
-                shareOssPath(share, objectName, ossPath1);
+                shareOssPath(share, objectName, ossPath1, true);
             }
         }
     }
 
-    private void shareOssPath(ShareDO share, String objectName, String ossPath) {
+    private void shareOssPath(ShareDO share, String objectName, String ossPath, boolean ossRootPath) {
         if (objectName.endsWith("/") || objectName.equals("")) {
             // 共享其下的所有文件
             IOssService ossService = OssConfigService.getOssStorageService(ossPath);
-            removeOssPathShareFile(share);
+            removeOssPathShareFile(share, ossPath, ossRootPath);
 
             List<FileInfo> list = ossService.getAllObjectsWithPrefix(objectName);
             List<FileDocument> fileDocumentList = list.parallelStream().map(fileInfo -> fileInfo.toFileDocument(ossPath, share.getUserId())).toList();
@@ -121,10 +121,16 @@ public class ShareServiceImpl implements IShareService {
         }
     }
 
-    private void removeOssPathShareFile(ShareDO share) {
+    private void removeOssPathShareFile(ShareDO share, String ossPath, boolean ossRootPath) {
         Query query = new Query();
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(share.getUserId()));
-        query.addCriteria(Criteria.where("_id").regex("^" + ReUtil.escape(share.getFileId())));
+        String path;
+        if (ossRootPath) {
+            path = ossPath.substring(1);
+        } else {
+            path = share.getFileId();
+        }
+        query.addCriteria(Criteria.where("_id").regex("^" + ReUtil.escape(path)));
         // 先删除,避免重复插入
         mongoTemplate.remove(query, FileDocument.class);
     }
@@ -323,7 +329,16 @@ public class ShareServiceImpl implements IShareService {
                 Path path = Paths.get(fileId);
                 String ossPath = CaffeineUtil.getOssPath(path);
                 if (ossPath != null) {
-                    removeOssPathShareFile(shareDO);
+                    removeOssPathShareFile(shareDO, ossPath, false);
+                }
+                if (fileDocument.getOssFolder() != null) {
+                    // oss 根目录
+                    Path path1 = Paths.get(userService.getUserNameById(shareDO.getUserId()), fileDocument.getOssFolder());
+                    String ossPath1 = CaffeineUtil.getOssPath(path1);
+                    if (ossPath1 != null) {
+                        removeOssPathShareFile(shareDO, ossPath1, true);
+                    }
+
                 }
             });
         }

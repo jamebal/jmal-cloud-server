@@ -98,7 +98,7 @@ public class CommonFileService {
      */
     private final Cache<String, Lock> uploadFolderLockCache = CaffeineUtil.getUploadFolderLockCache();
 
-    public static final Set<String> FILE_PATH_LOCK = new CopyOnWriteArraySet<>();
+    protected static final Set<String> FILE_PATH_LOCK = new CopyOnWriteArraySet<>();
 
 
     /***
@@ -488,7 +488,7 @@ public class CommonFileService {
         }
     }
 
-    private void checkShareBase(Update update, String relativePath) {
+    public void checkShareBase(Update update, String relativePath) {
         Path path = Paths.get(relativePath);
         StringBuilder pathStr = new StringBuilder("/");
         List<Document> documentList = new ArrayList<>(path.getNameCount());
@@ -529,7 +529,7 @@ public class CommonFileService {
             if (isPrivacy && extractionCode == null) {
                 return;
             }
-            setShareAttribute(update, expiresAt, shareId, isPrivacy, null);
+            setShareAttribute(update, expiresAt, shareId, isPrivacy, extractionCode);
         }
     }
 

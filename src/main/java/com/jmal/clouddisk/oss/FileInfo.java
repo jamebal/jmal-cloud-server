@@ -7,7 +7,6 @@ import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.oss.web.WebOssCommonService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
-import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import lombok.Data;
 
 import java.nio.file.Path;
@@ -49,7 +48,7 @@ public class FileInfo {
         FileIntroVO fileIntroVO = new FileIntroVO();
         String fileName = getName();
         fileIntroVO.setAgoTime(System.currentTimeMillis() - lastModified.getTime());
-        fileIntroVO.setId(Paths.get(username, rootName, key) + (isFolder() ? MyWebdavServlet.PATH_DELIMITER : ""));
+        fileIntroVO.setId(WebOssCommonService.getFileId(rootName, key, username));
         fileIntroVO.setUsername(username);
         fileIntroVO.setIsFavorite(false);
         fileIntroVO.setIsFolder(isFolder());

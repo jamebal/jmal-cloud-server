@@ -106,6 +106,7 @@ public class FileDocument extends FileBase {
      * 是否分享
      */
     private Boolean isPrivacy;
+    private String extractionCode;
     /***
      * shareId
      */
