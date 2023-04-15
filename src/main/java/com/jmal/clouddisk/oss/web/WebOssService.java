@@ -455,6 +455,7 @@ public class WebOssService extends WebOssCommonService {
         String objectName = getObjectName(prePth, ossPath, false);
         InputStream inputStream = new ByteArrayInputStream(CharSequenceUtil.bytes(contentText, StandardCharsets.UTF_8));
         ossService.write(inputStream, ossPath, objectName);
+        notifyUpdateFile(ossPath, objectName, contentText.length());
     }
 
     public void download(String ossPath, Path prePth, HttpServletRequest request, HttpServletResponse response) {

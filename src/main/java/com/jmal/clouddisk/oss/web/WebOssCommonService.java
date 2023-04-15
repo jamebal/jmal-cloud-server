@@ -7,12 +7,14 @@ import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 
 /**
  * @author jmal
@@ -41,13 +43,29 @@ public class WebOssCommonService {
         commonFileService.pushMessage(username, fileIntroVO, "createFile");
     }
 
+    public void notifyUpdateFile(String ossPath, String objectName, long size) {
+        FileIntroVO fileIntroVO = new FileIntroVO();
+        String username = getUsernameByOssPath(ossPath);
+        String id = getFileId(ossPath, objectName, username);
+        fileIntroVO.setId(id);
+        fileIntroVO.setSize(size);
+        fileIntroVO.setUpdateDate(LocalDateTime.now());
+        commonFileService.pushMessage(username, fileIntroVO, "updateFile");
+    }
+
     public void notifyDeleteFile(String ossPath, String objectName) {
         FileIntroVO fileIntroVO = new FileIntroVO();
         String username = getUsernameByOssPath(ossPath);
+        String id = getFileId(ossPath, objectName, username);
+        fileIntroVO.setId(id);
+        commonFileService.pushMessage(username, fileIntroVO, "deleteFile");
+    }
+
+    @NotNull
+    private static String getFileId(String ossPath, String objectName, String username) {
         String rootName = getOssRootFolderName(ossPath);
         boolean isFolder = objectName.endsWith("/");
-        fileIntroVO.setId(Paths.get(username, rootName, objectName) + (isFolder ? MyWebdavServlet.PATH_DELIMITER : ""));
-        commonFileService.pushMessage(username, fileIntroVO, "deleteFile");
+        return Paths.get(username, rootName, objectName) + (isFolder ? MyWebdavServlet.PATH_DELIMITER : "");
     }
 
     public static String getPathByObjectName(String ossRootFolderName, String objectName) {
