@@ -290,6 +290,7 @@ public class TencentOssService implements IOssService {
                 multipartUploadListing = cosClient.listMultipartUploads(listMultipartUploadsRequest);
                 List<MultipartUpload> multipartUploads = multipartUploadListing.getMultipartUploads();
                 for (MultipartUpload mUpload : multipartUploads) {
+                    log.info("{}, 碎片文件: objectName: {}, uploadId: {}", getPlatform().getValue(), mUpload.getKey(), mUpload.getUploadId());
                     baseOssService.setUpdateIdCache(mUpload.getKey(), mUpload.getUploadId());
                 }
                 listMultipartUploadsRequest.setKeyMarker(multipartUploadListing.getNextKeyMarker());

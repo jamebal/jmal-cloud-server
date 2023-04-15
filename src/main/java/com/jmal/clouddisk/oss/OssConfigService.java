@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.oss;
 
 import cn.hutool.core.io.file.PathUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -59,29 +60,31 @@ public class OssConfigService {
     @PostConstruct
     public void init() {
         // load config
-        List<OssConfigDO> ossConfigDOList = mongoTemplate.findAll(OssConfigDO.class);
-        for (OssConfigDO ossConfigDO : ossConfigDOList) {
-            String userId = ossConfigDO.getUserId();
-            ConsumerDO consumerDO = userService.userInfoById(userId);
-            if (consumerDO == null) {
-                continue;
-            }
-            OssConfigDTO ossConfigDTO = ossConfigDO.toOssConfigDTO(userService.userInfoById(userId));
-            ossConfigDTO.setUsername(consumerDO.getUsername());
-            IOssService ossService = null;
-            try {
-                ossService = newOssService(fileProperties, ossConfigDO.getPlatform(), ossConfigDTO);
-                if (ossService != null) {
-                    setBucketInfoCache(ossConfigDO.getPlatform(), ossConfigDTO, ossService);
+        ThreadUtil.execute(() -> {
+            List<OssConfigDO> ossConfigDOList = mongoTemplate.findAll(OssConfigDO.class);
+            for (OssConfigDO ossConfigDO : ossConfigDOList) {
+                String userId = ossConfigDO.getUserId();
+                ConsumerDO consumerDO = userService.userInfoById(userId);
+                if (consumerDO == null) {
+                    continue;
                 }
-            } catch (Exception e) {
-                log.error(ossConfigDO.getPlatform().getValue() + " 配置加载失败!");
-                log.error(e.getMessage(), e);
-                if (ossService != null) {
-                    ossService.close();
+                OssConfigDTO ossConfigDTO = ossConfigDO.toOssConfigDTO(userService.userInfoById(userId));
+                ossConfigDTO.setUsername(consumerDO.getUsername());
+                IOssService ossService = null;
+                try {
+                    ossService = newOssService(fileProperties, ossConfigDO.getPlatform(), ossConfigDTO);
+                    if (ossService != null) {
+                        setBucketInfoCache(ossConfigDO.getPlatform(), ossConfigDTO, ossService);
+                    }
+                } catch (Exception e) {
+                    log.error(ossConfigDO.getPlatform().getValue() + " 配置加载失败!");
+                    log.error(e.getMessage(), e);
+                    if (ossService != null) {
+                        ossService.close();
+                    }
                 }
             }
-        }
+        });
     }
 
     public void setOssServiceMap(String key, IOssService ossService) {

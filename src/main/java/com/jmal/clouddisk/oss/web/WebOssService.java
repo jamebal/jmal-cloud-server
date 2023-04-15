@@ -277,7 +277,9 @@ public class WebOssService extends WebOssCommonService {
         MultipartFile file = upload.getFile();
         if (currentChunkSize == totalSize) {
             // 没有分片,直接存
-            ossService.uploadFile(file.getInputStream(), objectName, currentChunkSize);
+            try(InputStream inputStream = file.getInputStream()) {
+                ossService.uploadFile(inputStream, objectName, currentChunkSize);
+            }
             notifyCreateFile(upload.getUsername(), objectName, getOssRootFolderName(ossPath));
             afterUploadComplete(objectName, ossPath, upload);
         } else {

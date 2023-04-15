@@ -232,7 +232,7 @@ public class AliyunOssService implements IOssService {
             do {
                 multipartUploadListing = ossClient.listMultipartUploads(listMultipartUploadsRequest);
                 for (MultipartUpload multipartUpload : multipartUploadListing.getMultipartUploads()) {
-                    log.info("列举分片上传事件: objectName: {}, uploadId: {}", multipartUpload.getKey(), multipartUpload.getUploadId());
+                    log.info("{}, 碎片文件: objectName: {}, uploadId: {}", getPlatform().getValue(), multipartUpload.getKey(), multipartUpload.getUploadId());
                     baseOssService.setUpdateIdCache(multipartUpload.getKey(), multipartUpload.getUploadId());
                 }
                 listMultipartUploadsRequest.setKeyMarker(multipartUploadListing.getNextKeyMarker());
@@ -397,8 +397,10 @@ public class AliyunOssService implements IOssService {
     public void uploadFile(InputStream inputStream, String objectName, long inputStreamLength) {
         try {
             baseOssService.printOperation(getPlatform().getKey(), "uploadFile inputStream", objectName);
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setContentLength(inputStreamLength);
             // 创建PutObjectRequest对象。
-            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream);
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream, objectMetadata );
             // 创建PutObject请求。
             ossClient.putObject(putObjectRequest);
             baseOssService.onUploadSuccess(objectName, inputStreamLength);
