@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.util;
 
+import cn.hutool.core.util.URLUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -9,6 +10,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -239,6 +241,7 @@ public class CaffeineUtil {
      * @return oss path
      */
     public static String getOssPath(Path path) {
+        path = Paths.get(URLUtil.decode(path.toString()));
         String prePath;
         if (path.getNameCount() >= 2) {
             prePath = MyWebdavServlet.PATH_DELIMITER + path.subpath(0, 2);
