@@ -248,6 +248,9 @@ public class ShareServiceImpl implements IShareService {
         if (ossPath != null) {
             uploadApiParamDTO.setUsername(path.subpath(0, 1).toString());
             uploadApiParamDTO.setCurrentDirectory(path.subpath(1, path.getNameCount()).toString());
+        } else {
+            String username = userService.getUserNameById(shareDO.getUserId());
+            uploadApiParamDTO.setUsername(username);
         }
         return fileService.searchFileAndOpenDir(uploadApiParamDTO, fileId);
     }
