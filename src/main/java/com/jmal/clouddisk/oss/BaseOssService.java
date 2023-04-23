@@ -368,7 +368,7 @@ public class BaseOssService {
         }
     }
 
-    private FileInfo getFileInfo(S3ObjectSummary objectSummary) {
+    public FileInfo getFileInfo(S3ObjectSummary objectSummary) {
         FileInfo fileInfo = new FileInfo();
         fileInfo.setSize(objectSummary.getSize());
         fileInfo.setKey(objectSummary.getKey());

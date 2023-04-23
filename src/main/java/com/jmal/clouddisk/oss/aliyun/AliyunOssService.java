@@ -101,6 +101,7 @@ public class AliyunOssService implements IOssService {
             baseOssService.printOperation(getPlatform().getKey(), "deleteObject", objectName);
             ossClient.deleteObject(bucketName, objectName);
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             return false;
         }
         return true;

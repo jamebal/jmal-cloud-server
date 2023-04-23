@@ -9,7 +9,8 @@ import lombok.Getter;
  */
 public enum PlatformOSS {
     ALIYUN("aliyun", "阿里云OSS"),
-    TENCENT("tencent", "腾讯云OSS");
+    TENCENT("tencent", "腾讯云OSS"),
+    MINIO("minio", "MinIO");
 
     @Getter
     private final String key;

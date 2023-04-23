@@ -132,6 +132,7 @@ public class TencentOssService implements IOssService {
             baseOssService.printOperation(getPlatform().getKey(), "deleteObject", objectName);
             cosClient.deleteObject(bucketName, objectName);
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             return false;
         }
         return true;
