@@ -47,7 +47,6 @@ public class FileInfo {
         String rootName = bucketInfo.getFolderName();
         FileIntroVO fileIntroVO = new FileIntroVO();
         String fileName = getName();
-        fileIntroVO.setAgoTime(System.currentTimeMillis() - lastModified.getTime());
         fileIntroVO.setId(WebOssCommonService.getFileId(rootName, key, username));
         fileIntroVO.setUsername(username);
         fileIntroVO.setIsFavorite(false);
@@ -55,13 +54,16 @@ public class FileInfo {
         fileIntroVO.setName(fileName);
         fileIntroVO.setPath(WebOssCommonService.getPath(key, rootName));
         fileIntroVO.setSize(size);
-        LocalDateTime updateTime = LocalDateTimeUtil.of(lastModified);
         String suffix = FileUtil.extName(fileName);
         fileIntroVO.setSuffix(suffix);
         fileIntroVO.setMd5(eTag);
         fileIntroVO.setContentType(FileContentTypeUtils.getContentType(suffix));
-        fileIntroVO.setUploadDate(updateTime);
-        fileIntroVO.setUpdateDate(updateTime);
+        if (lastModified != null) {
+            LocalDateTime updateTime = LocalDateTimeUtil.of(lastModified);
+            fileIntroVO.setAgoTime(System.currentTimeMillis() - lastModified.getTime());
+            fileIntroVO.setUploadDate(updateTime);
+            fileIntroVO.setUpdateDate(updateTime);
+        }
         fileIntroVO.setUserId(userId);
         return fileIntroVO;
     }

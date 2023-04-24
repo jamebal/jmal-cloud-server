@@ -1,12 +1,15 @@
 package com.jmal.clouddisk.oss;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -78,8 +81,8 @@ public class BaseOssService {
         this.bucketName = bucketName;
         this.fileProperties = fileProperties;
         scheduledThreadPoolExecutor.scheduleWithFixedDelay(this::checkUpload, 1, 1, TimeUnit.SECONDS);
-        this.fileInfoListCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(1024).expireAfterWrite(5, TimeUnit.HOURS).build();
-        this.fileInfoCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(1024).expireAfterWrite(5, TimeUnit.HOURS).build();
+        this.fileInfoListCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(1024).expireAfterWrite(5, TimeUnit.SECONDS).build();
+        this.fileInfoCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(1024).expireAfterWrite(5, TimeUnit.SECONDS).build();
         this.tempFileCache = Caffeine.newBuilder().build();
         this.tempFileListCache = Caffeine.newBuilder().build();
         this.waitingUploadCache = Caffeine.newBuilder().build();
@@ -536,6 +539,14 @@ public class BaseOssService {
             return true;
         }
         return objectNameLock.stream().anyMatch(objectName::startsWith);
+    }
+
+    public String getContentType(String objectName) {
+        String contentType = FileContentTypeUtils.getContentType(FileUtil.getSuffix(objectName));
+        if (CharSequenceUtil.isBlank(contentType)) {
+            contentType = "application/octet-stream";
+        }
+        return contentType;
     }
 
     public void clearCache(String objectName) {

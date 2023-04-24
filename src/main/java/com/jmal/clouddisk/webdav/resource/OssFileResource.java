@@ -75,7 +75,10 @@ public class OssFileResource extends AbstractResource {
 
     @Override
     public long getLastModified() {
-        return resource.getLastModified().getTime();
+        if (resource.getLastModified() != null) {
+            return resource.getLastModified().getTime();
+        }
+        return 0;
     }
 
     @Override
@@ -231,7 +234,7 @@ public class OssFileResource extends AbstractResource {
 
     @Override
     public long getCreation() {
-        return resource.getLastModified().getTime();
+        return getLastModified();
     }
 
     @Override

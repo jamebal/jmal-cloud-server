@@ -337,7 +337,7 @@ public class FileInterceptor implements HandlerInterceptor {
      * @param h       剪裁后的高度
      * @return 剪裁后的文件
      */
-    private byte[] imageCrop(File srcFile, String q, String w, String h) {
+    public static byte[] imageCrop(File srcFile, String q, String w, String h) {
         try {
             Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(srcFile);
             //获取图片信息
