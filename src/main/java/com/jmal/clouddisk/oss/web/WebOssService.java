@@ -246,6 +246,8 @@ public class WebOssService extends WebOssCommonService {
             if (upload.getTotalChunks() == chunks.size()) {
                 // 文件不存在,并且已经上传了所有的分片,则合并保存文件
                 ossService.completeMultipartUpload(objectName, uploadId, upload.getTotalSize());
+                // 清除缓存
+                removeListPartsCache(uploadId);
                 notifyCreateFile(upload.getUsername(), objectName, getOssRootFolderName(ossPath));
                 afterUploadComplete(objectName, ossPath, upload);
             }
@@ -259,11 +261,22 @@ public class WebOssService extends WebOssCommonService {
 
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, false);
+        String uploadId = ossService.getUploadId(objectName);
         ossService.completeMultipartUpload(objectName, ossService.getUploadId(objectName), upload.getTotalSize());
+        // 清除缓存
+        removeListPartsCache(uploadId);
         notifyCreateFile(upload.getUsername(), objectName, getOssRootFolderName(ossPath));
         afterUploadComplete(objectName, ossPath, upload);
         uploadResponse.setUpload(true);
         return uploadResponse;
+    }
+
+    /**
+     * 清除分片缓存
+     * @param uploadId uploadId
+     */
+    private static void removeListPartsCache(String uploadId) {
+        LIST_PARTS_CACHE.invalidate(uploadId);
     }
 
     public UploadResponse upload(String ossPath, Path prePth, UploadApiParamDTO upload) throws IOException {

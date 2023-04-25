@@ -383,13 +383,13 @@ public class MinIOService implements IOssService {
 
     @Override
     public CopyOnWriteArrayList<Integer> getListParts(String objectName, String uploadId) {
-        return new CopyOnWriteArrayList<>(getPartETagList(objectName, uploadId).stream().map(Part::partNumber).toList());
+        return new CopyOnWriteArrayList<>(getPartsList(objectName, uploadId).stream().map(Part::partNumber).toList());
     }
 
-    private List<Part> getPartETagList(String objectName, String uploadId) {
+    private List<Part> getPartsList(String objectName, String uploadId) {
         List<Part> listParts = new ArrayList<>();
         try {
-            ListPartsResponse partResult = this.minIoClient.listMultipart(bucketName, null, objectName, 10000, 0, uploadId);
+            ListPartsResponse partResult = this.minIoClient.listMultipart(bucketName, null, objectName, 1000, 0, uploadId);
             return partResult.result().partList();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -425,7 +425,7 @@ public class MinIOService implements IOssService {
     @Override
     public void completeMultipartUpload(String objectName, String uploadId, Long fileTotalSize) {
         try {
-            List<Part> partList = getPartETagList(objectName, uploadId);
+            List<Part> partList = getPartsList(objectName, uploadId);
             Part[] parts = partList.toArray(new Part[0]);
             this.minIoClient.mergeMultipartUpload(bucketName, null, objectName, uploadId, parts);
             baseOssService.onUploadSuccess(objectName, fileTotalSize);
@@ -438,9 +438,12 @@ public class MinIOService implements IOssService {
     public void getThumbnail(String objectName, File file, int width) {
         try {
             DownloadObjectArgs downloadObjectArgs = DownloadObjectArgs.builder().bucket(bucketName).object(objectName).filename(file.getAbsolutePath()).build();
-            this.minIoClient.downloadObject(downloadObjectArgs);
-            byte[] bytes = FileInterceptor.imageCrop(file, "50", "256", null);
+            this.minIoClient.downloadObject(downloadObjectArgs).get();
+            byte[] bytes = FileInterceptor.imageCrop(file, "50", String.valueOf(width), null);
             FileUtil.writeBytes(bytes, file);
+        } catch (InterruptedException e) {
+            log.error(e.getMessage(), e);
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
