@@ -9,6 +9,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import lombok.extern.slf4j.Slf4j;
@@ -76,7 +77,7 @@ public class BaseOssService {
 
     private final IOssService ossService;
 
-    public BaseOssService(IOssService ossService, String bucketName, FileProperties fileProperties, ScheduledThreadPoolExecutor scheduledThreadPoolExecutor) {
+    public BaseOssService(IOssService ossService, String bucketName, FileProperties fileProperties, ScheduledThreadPoolExecutor scheduledThreadPoolExecutor, OssConfigDTO ossConfigDTO) {
         this.ossService = ossService;
         this.bucketName = bucketName;
         this.fileProperties = fileProperties;
@@ -86,6 +87,7 @@ public class BaseOssService {
         this.tempFileCache = Caffeine.newBuilder().build();
         this.tempFileListCache = Caffeine.newBuilder().build();
         this.waitingUploadCache = Caffeine.newBuilder().build();
+        log.info("{}配置加载成功, bucket: {}, username: {}, {}", ossService.getPlatform().getValue(), bucketName, ossConfigDTO.getUsername(), ossService.hashCode());
     }
 
     public String getUploadId(String objectName) {
@@ -552,5 +554,9 @@ public class BaseOssService {
     public void clearCache(String objectName) {
         clearFileCache(objectName);
         clearFileListCache(objectName);
+    }
+
+    public void closePrint() {
+        log.info("platform: {}, bucketName: {} shutdown... {}", this.ossService.getPlatform().getValue(), bucketName, this.ossService.hashCode());
     }
 }

@@ -55,8 +55,7 @@ public class TencentOssService implements IOssService {
         clientConfig.setHttpProtocol(HttpProtocol.https);
         this.cosClient = new COSClient(cred, clientConfig);
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
-        this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor);
-        log.info("{}配置加载成功, bucket: {}, username: {}", getPlatform().getValue(), bucketName, ossConfigDTO.getUsername());
+        this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor, ossConfigDTO);
         ThreadUtil.execute(this::getMultipartUploads);
         this.transferManager = new TransferManager(cosClient);
         createTransferManager();
@@ -516,7 +515,7 @@ public class TencentOssService implements IOssService {
 
     @Override
     public void close() {
-        log.info("platform: {}, bucketName: {} shutdown...", getPlatform().getValue(), bucketName);
+        baseOssService.closePrint();
         if (this.cosClient != null) {
             this.cosClient.shutdown();
         }

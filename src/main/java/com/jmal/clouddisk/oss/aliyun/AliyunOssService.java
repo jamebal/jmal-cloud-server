@@ -40,8 +40,7 @@ public class AliyunOssService implements IOssService {
         // 创建OSSClient实例。
         this.ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
-        this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor);
-        log.info("{}配置加载成功, bucket: {}, username: {}, {}", getPlatform().getValue(), bucketName, ossConfigDTO.getUsername(), this.hashCode());
+        this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor, ossConfigDTO);
         ThreadUtil.execute(this::getMultipartUploads);
     }
 
@@ -523,7 +522,7 @@ public class AliyunOssService implements IOssService {
 
     @Override
     public void close() {
-        log.info("platform: {}, bucketName: {} shutdown... {}", getPlatform().getValue(), bucketName, this.hashCode());
+        baseOssService.closePrint();
         if (this.ossClient != null) {
             this.ossClient.shutdown();
         }
