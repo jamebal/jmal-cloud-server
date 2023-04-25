@@ -10,15 +10,13 @@ import com.jmal.clouddisk.interceptor.FileInterceptor;
 import com.jmal.clouddisk.oss.*;
 import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import io.minio.*;
-import io.minio.errors.InsufficientDataException;
-import io.minio.errors.InternalException;
-import io.minio.errors.XmlParserException;
+import io.minio.errors.*;
 import io.minio.messages.DeleteError;
 import io.minio.messages.DeleteObject;
 import io.minio.messages.Item;
 import io.minio.messages.Part;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -28,9 +26,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.stream.Collectors;
 
@@ -63,8 +59,7 @@ public class MinIOService implements IOssService {
                 .credentials(accessKeyId, accessKeySecret)
                 .build());
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
-        this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor);
-        log.info("{}配置加载成功, bucket: {}, username: {}, {}", getPlatform().getValue(), bucketName, ossConfigDTO.getUsername(), this.hashCode());
+        this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor, ossConfigDTO);
         ThreadUtil.execute(this::getMultipartUploads);
     }
 
@@ -107,22 +102,13 @@ public class MinIOService implements IOssService {
     public AbstractOssObject getAbstractOssObject(String objectName) {
         MinIOObject ossObject = null;
         try {
-            StatObjectResponse statObjectResponse = getStatObjectResponse(objectName).get();
-            GetObjectArgs objectArgs = GetObjectArgs.builder().bucket(bucketName).object(objectName).build();
-            GetObjectResponse getObjectResponse = this.minIoClient.getObject(objectArgs).get();
+            StatObjectResponse statObjectResponse = this.minIoClient.statObject(bucketName, objectName);
+            GetObjectResponse getObjectResponse = this.minIoClient.getObject(bucketName, objectName);
             ossObject = new MinIOObject(statObjectResponse, getObjectResponse);
-        } catch (InterruptedException e) {
-            log.error(e.getMessage());
-            Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error(e.getMessage());
         }
         return ossObject;
-    }
-
-    public CompletableFuture<StatObjectResponse> getStatObjectResponse(String objectName) throws InsufficientDataException, IOException, NoSuchAlgorithmException, InvalidKeyException, XmlParserException, InternalException {
-        StatObjectArgs statObjectArgs = StatObjectArgs.builder().bucket(bucketName).object(objectName).build();
-        return this.minIoClient.statObject(statObjectArgs);
     }
 
     @Override
@@ -137,9 +123,8 @@ public class MinIOService implements IOssService {
         return true;
     }
 
-    private void doDeleteObject(String objectName) throws InsufficientDataException, IOException, NoSuchAlgorithmException, InvalidKeyException, XmlParserException, InternalException {
-        RemoveObjectArgs removeObjectArgs = RemoveObjectArgs.builder().bucket(bucketName).object(objectName).build();
-        this.minIoClient.removeObject(removeObjectArgs);
+    private void doDeleteObject(String objectName) throws InsufficientDataException, IOException, NoSuchAlgorithmException, InvalidKeyException, XmlParserException, InternalException, ServerException, ErrorResponseException, InvalidResponseException {
+        this.minIoClient.removeObject(bucketName, objectName);
     }
 
     @Override
@@ -196,20 +181,26 @@ public class MinIOService implements IOssService {
                         fileInfoList.add(baseOssService.newFileInfo(key));
                     }
                 }
-                fileInfoList = fileInfoList.parallelStream().peek(fileInfo -> {
-                   if (fileInfo.getLastModified() == null) {
-                       try {
-                           Date date = getLastModified(fileInfo.getKey());
-                           fileInfo.setLastModified(date);
-                       } catch (Exception e) {
-                           log.error(e.getMessage(), e);
-                       }
-                   }
-                }).collect(Collectors.toList());
+                fileInfoList = setLastModified(fileInfoList);
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
+        return fileInfoList;
+    }
+
+    @NotNull
+    private List<FileInfo> setLastModified(List<FileInfo> fileInfoList) {
+        fileInfoList = fileInfoList.parallelStream().peek(fileInfo -> {
+            if (fileInfo.getLastModified() == null) {
+                try {
+                    Date date = getLastModified(fileInfo.getKey());
+                    fileInfo.setLastModified(date);
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e);
+                }
+            }
+        }).collect(Collectors.toList());
         return fileInfoList;
     }
 
@@ -234,17 +225,9 @@ public class MinIOService implements IOssService {
         return fileInfoList;
     }
 
-    @Nullable
-    private Date getLastModified(String objectName) throws InsufficientDataException, IOException, NoSuchAlgorithmException, InvalidKeyException, XmlParserException, InternalException {
-        try {
-            StatObjectResponse statObjectResponse = getStatObjectResponse(objectName).get();
-            return Date.from(statObjectResponse.lastModified().toInstant());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (ExecutionException e) {
-            log.error(e.getMessage(), e);
-        }
-        return null;
+    private Date getLastModified(String objectName) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        StatObjectResponse statObjectResponse = this.minIoClient.statObject(bucketName, objectName);
+        return Date.from(statObjectResponse.lastModified().toInstant());
     }
 
     @Override
@@ -255,13 +238,13 @@ public class MinIOService implements IOssService {
         }
         try {
             // 上传字符串
-            this.minIoClient.putObject(
+            this.minIoClient.putObject2(
                     PutObjectArgs.builder().bucket(bucketName).object(objectName).stream(
                                     new ByteArrayInputStream(new byte[]{}), 0, -1)
                             .build());
             return baseOssService.newFileInfo(objectName);
-        } catch (Exception oe) {
-            log.error(oe.getMessage(), oe);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
         }
         return null;
     }
@@ -277,14 +260,11 @@ public class MinIOService implements IOssService {
             ObjectWriteResponse objectWriteResponse;
             try (InputStream inputStream = new FileInputStream(file)) {
                 PutObjectArgs putObjectArgs = getPutObjectArgs(inputStream, objectName, tempFileAbsolutePath.toFile().length());
-                objectWriteResponse = this.minIoClient.putObject(putObjectArgs).get();
+                objectWriteResponse = this.minIoClient.putObject2(putObjectArgs);
             }
             if (objectWriteResponse != null && objectWriteResponse.etag() != null) {
                 baseOssService.onUploadSuccess(objectName, tempFileAbsolutePath);
             }
-        } catch (InterruptedException e) {
-            log.error(e.getMessage(), e);
-            Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -296,14 +276,11 @@ public class MinIOService implements IOssService {
             baseOssService.printOperation(getPlatform().getKey(), "uploadFile inputStream", objectName);
             ObjectWriteResponse objectWriteResponse;
             PutObjectArgs putObjectArgs = getPutObjectArgs(inputStream, objectName, inputStreamLength);
-            objectWriteResponse = this.minIoClient.putObject(putObjectArgs).get();
+            objectWriteResponse = this.minIoClient.putObject2(putObjectArgs);
             if (objectWriteResponse != null && objectWriteResponse.etag() != null) {
                 // 上传成功
                 baseOssService.onUploadSuccess(objectName, inputStreamLength);
             }
-        } catch (InterruptedException e) {
-            log.error(e.getMessage(), e);
-            Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -330,12 +307,8 @@ public class MinIOService implements IOssService {
     public boolean doesBucketExist() {
         boolean exist = false;
         try {
-            BucketExistsArgs bucketExistsArgs = BucketExistsArgs.builder().bucket(bucketName).build();
-            exist = this.minIoClient.bucketExists(bucketExistsArgs).get();
-        } catch (InterruptedException e) {
-            log.error(e.getMessage(), e);
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
+            exist = this.minIoClient.bucketExists(bucketName);
+        }catch (Exception e) {
             log.error(e.getMessage(), e);
         }
         return exist;
@@ -344,19 +317,14 @@ public class MinIOService implements IOssService {
     @Override
     public boolean doesObjectExist(String objectName) {
         try {
-            StatObjectResponse statObjectResponse = getStatObjectResponse(objectName).get();
+            StatObjectResponse statObjectResponse = this.minIoClient.statObject(bucketName, objectName);
             if (statObjectResponse == null) {
                 return false;
             }
             if (!statObjectResponse.deleteMarker()) {
                 return true;
             }
-        } catch (InterruptedException e) {
-            log.error(e.getMessage(), e);
-            Thread.currentThread().interrupt();
-        } catch (ExecutionException e) {
-            return false;
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
         return false;
@@ -437,13 +405,9 @@ public class MinIOService implements IOssService {
     @Override
     public void getThumbnail(String objectName, File file, int width) {
         try {
-            DownloadObjectArgs downloadObjectArgs = DownloadObjectArgs.builder().bucket(bucketName).object(objectName).filename(file.getAbsolutePath()).build();
-            this.minIoClient.downloadObject(downloadObjectArgs).get();
-            byte[] bytes = FileInterceptor.imageCrop(file, "50", String.valueOf(width), null);
+            this.minIoClient.downloadObject(bucketName, objectName, file);
+            byte[] bytes = FileInterceptor.imageCrop(file, "80", String.valueOf(width), null);
             FileUtil.writeBytes(bytes, file);
-        } catch (InterruptedException e) {
-            log.error(e.getMessage(), e);
-            Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -491,9 +455,12 @@ public class MinIOService implements IOssService {
                             .source(CopySource.builder()
                                     .bucket(sourceBucketName)
                                     .object(sourceKey)
-                                    .build()).build());
+                                    .build()).build()).get();
             baseOssService.printOperation(getPlatform().getKey(), "copyObject complete" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
-        } catch (Exception e) {
+        } catch (InterruptedException e) {
+            log.error(e.getMessage(), e);
+            Thread.currentThread().interrupt();
+        }  catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }
@@ -515,7 +482,7 @@ public class MinIOService implements IOssService {
 
     @Override
     public void close() {
-        log.info("platform: {}, bucketName: {} shutdown... {}", getPlatform().getValue(), bucketName, this.hashCode());
+        baseOssService.closePrint();
         if (scheduledThreadPoolExecutor != null) {
             scheduledThreadPoolExecutor.shutdown();
         }
