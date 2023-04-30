@@ -56,12 +56,28 @@ public class MinIoClient extends MinioAsyncClient {
         return null;
     }
 
-    public GetObjectResponse getObject(String bucketName, String objectName)
+    public GetObjectResponse getObject(String bucketName, String objectName, Long rangeStart, Long rangeEnd)
             throws ErrorResponseException, InsufficientDataException, InternalException,
             InvalidKeyException, InvalidResponseException, IOException, NoSuchAlgorithmException,
             ServerException, XmlParserException {
         try {
-            GetObjectArgs objectArgs = GetObjectArgs.builder().bucket(bucketName).object(objectName).build();
+            GetObjectArgs objectArgs;
+            if (rangeStart != null && rangeEnd != null) {
+                long contentLength = rangeEnd - rangeStart + 1;
+                objectArgs = GetObjectArgs
+                        .builder()
+                        .bucket(bucketName)
+                        .object(objectName)
+                        .offset(rangeStart)
+                        .length(contentLength)
+                        .build();
+            } else {
+                objectArgs = GetObjectArgs
+                        .builder()
+                        .bucket(bucketName)
+                        .object(objectName)
+                        .build();
+            }
             return super.getObject(objectArgs).get();
         } catch (InterruptedException e) {
             log.error(e.getMessage(), e);

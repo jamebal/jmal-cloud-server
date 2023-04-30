@@ -16,10 +16,13 @@ public class TempFileObject extends AbstractOssObject {
 
     private final String bucketName;
 
-    public TempFileObject(File file, String objectName, String bucketName) {
+    private final IOssService ossService;
+
+    public TempFileObject(File file, String objectName, String bucketName, IOssService ossService) {
         this.tempFile = file;
         this.objectName = objectName;
         this.bucketName = bucketName;
+        this.ossService = ossService;
     }
 
     @Override
@@ -30,6 +33,11 @@ public class TempFileObject extends AbstractOssObject {
     @Override
     public void closeObject() {
         // none
+    }
+
+    @Override
+    public IOssService getOssService() {
+        return this.ossService;
     }
 
     @Override

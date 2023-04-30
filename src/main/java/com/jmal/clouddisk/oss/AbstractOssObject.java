@@ -20,6 +20,8 @@ public abstract class AbstractOssObject implements Closeable {
         return "";
     }
 
+    public abstract IOssService getOssService();
+
     public abstract FileInfo getFileInfo();
 
     public abstract long getContentLength();

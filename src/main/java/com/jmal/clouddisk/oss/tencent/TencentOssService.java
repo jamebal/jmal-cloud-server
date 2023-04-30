@@ -113,16 +113,25 @@ public class TencentOssService implements IOssService {
 
     @Override
     public AbstractOssObject getAbstractOssObject(String objectName) {
+        return getAbstractOssObject(objectName, null, null);
+    }
+
+    @Override
+    public AbstractOssObject getAbstractOssObject(String objectName, Long rangeStart, Long rangeEnd) {
         COSObject ossObject = null;
         try {
-            ossObject = this.cosClient.getObject(new GetObjectRequest(bucketName, objectName));
+            GetObjectRequest getObjectRequest = new GetObjectRequest(bucketName, objectName);
+            if (rangeStart != null && rangeEnd != null) {
+                getObjectRequest.setRange(rangeStart, rangeEnd);
+            }
+            ossObject = this.cosClient.getObject(getObjectRequest);
         } catch (Exception e) {
             log.warn(e.getMessage());
         }
         if (ossObject == null) {
             return null;
         }
-        return new TencentOssObject(ossObject);
+        return new TencentOssObject(ossObject, this);
     }
 
     @Override

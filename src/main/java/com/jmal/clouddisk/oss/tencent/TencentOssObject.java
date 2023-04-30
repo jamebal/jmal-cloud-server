@@ -2,6 +2,7 @@ package com.jmal.clouddisk.oss.tencent;
 
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.FileInfo;
+import com.jmal.clouddisk.oss.IOssService;
 import com.qcloud.cos.model.COSObject;
 
 import java.io.IOException;
@@ -16,8 +17,11 @@ public class TencentOssObject extends AbstractOssObject {
 
     private final COSObject cosObject;
 
-    public TencentOssObject(COSObject cosObject) {
+    private final IOssService ossService;
+
+    public TencentOssObject(COSObject cosObject, IOssService ossService) {
         this.cosObject = cosObject;
+        this.ossService = ossService;
     }
 
     @Override
@@ -33,6 +37,11 @@ public class TencentOssObject extends AbstractOssObject {
     @Override
     public String getKey() {
         return this.cosObject.getKey();
+    }
+
+    @Override
+    public IOssService getOssService() {
+        return this.ossService;
     }
 
     @Override

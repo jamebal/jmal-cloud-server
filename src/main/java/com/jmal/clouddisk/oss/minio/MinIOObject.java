@@ -2,6 +2,7 @@ package com.jmal.clouddisk.oss.minio;
 
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.FileInfo;
+import com.jmal.clouddisk.oss.IOssService;
 import io.minio.GetObjectResponse;
 import io.minio.StatObjectResponse;
 
@@ -20,9 +21,12 @@ public class MinIOObject extends AbstractOssObject {
     private final StatObjectResponse statObjectResponse;
     private final GetObjectResponse getObjectResponse;
 
-    public MinIOObject(StatObjectResponse statObjectResponse, GetObjectResponse getObjectResponse) {
+    private final IOssService ossService;
+
+    public MinIOObject(StatObjectResponse statObjectResponse, GetObjectResponse getObjectResponse, IOssService ossService) {
         this.statObjectResponse = statObjectResponse;
         this.getObjectResponse = getObjectResponse;
+        this.ossService = ossService;
     }
 
     @Override
@@ -33,6 +37,11 @@ public class MinIOObject extends AbstractOssObject {
     @Override
     public void closeObject() throws IOException {
         this.getObjectResponse.close();
+    }
+
+    @Override
+    public IOssService getOssService() {
+        return this.ossService;
     }
 
     @Override

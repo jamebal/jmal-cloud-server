@@ -81,16 +81,25 @@ public class AliyunOssService implements IOssService {
 
     @Override
     public AbstractOssObject getAbstractOssObject(String objectName) {
+        return getAbstractOssObject(objectName, null, null);
+    }
+
+    @Override
+    public AbstractOssObject getAbstractOssObject(String objectName, Long rangeStart, Long rangeEnd) {
         OSSObject ossObject = null;
         try {
-            ossObject = this.ossClient.getObject(bucketName, objectName);
+            GetObjectRequest getObjectRequest = new GetObjectRequest(bucketName, objectName);
+            if (rangeStart != null && rangeEnd != null) {
+                getObjectRequest.setRange(rangeStart, rangeEnd);
+            }
+            ossObject = this.ossClient.getObject(getObjectRequest);
         } catch (Exception e) {
             log.warn(e.getMessage());
         }
         if (ossObject == null) {
             return null;
         }
-        return new AliyunOssObject(ossObject);
+        return new AliyunOssObject(ossObject, this);
     }
 
 

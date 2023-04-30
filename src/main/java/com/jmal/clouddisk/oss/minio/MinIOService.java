@@ -100,11 +100,16 @@ public class MinIOService implements IOssService {
 
     @Override
     public AbstractOssObject getAbstractOssObject(String objectName) {
+        return getAbstractOssObject(objectName, null, null);
+    }
+
+    @Override
+    public AbstractOssObject getAbstractOssObject(String objectName, Long rangeStart, Long rangeEnd) {
         MinIOObject ossObject = null;
         try {
             StatObjectResponse statObjectResponse = this.minIoClient.statObject(bucketName, objectName);
-            GetObjectResponse getObjectResponse = this.minIoClient.getObject(bucketName, objectName);
-            ossObject = new MinIOObject(statObjectResponse, getObjectResponse);
+            GetObjectResponse getObjectResponse = this.minIoClient.getObject(bucketName, objectName, rangeStart, rangeEnd);
+            ossObject = new MinIOObject(statObjectResponse, getObjectResponse, this);
         } catch (Exception e) {
             log.error(e.getMessage());
         }

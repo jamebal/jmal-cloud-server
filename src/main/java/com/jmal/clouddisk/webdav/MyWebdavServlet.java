@@ -5,6 +5,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.oss.AbstractOssObject;
+import com.jmal.clouddisk.oss.IOssService;
 import com.jmal.clouddisk.oss.OssInputStream;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import jakarta.servlet.ServletException;
@@ -12,8 +13,10 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.WebResource;
 import org.apache.catalina.connector.ClientAbortException;
 import org.apache.catalina.servlets.WebdavServlet;
+import org.apache.tomcat.util.http.parser.Ranges;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedInputStream;
@@ -90,13 +93,60 @@ public class MyWebdavServlet extends WebdavServlet {
     }
 
     @Override
-    protected void copy(InputStream is, ServletOutputStream outStream) throws IOException {
+    protected void copy(WebResource resource, long length, ServletOutputStream outStream, Ranges.Entry range) throws IOException {
         IOException exception;
+        InputStream resourceInputStream = resource.getInputStream();
+        AbstractOssObject ossObject = null;
+        if (resourceInputStream instanceof OssInputStream ossInputStream) {
+            ossObject = ossInputStream.getAbstractOssObject();
+        }
+        long rangeStart = getStart(range, length);
+        long rangeEnd = getEnd(range, length);
+
+        if (ossObject != null) {
+            IOssService ossService = ossObject.getOssService();
+            String objectName = ossObject.getKey();
+            ossObject.closeObject();
+            AbstractOssObject rangeObject = ossService.getAbstractOssObject(objectName, rangeStart, rangeEnd);
+            copy(outStream, rangeObject, rangeObject.getInputStream());
+        } else {
+            InputStream inputStream = new BufferedInputStream(resourceInputStream, this.input);
+            exception = this.copyRange(inputStream, outStream, rangeStart, rangeEnd);
+            inputStream.close();
+            if (exception != null) {
+                throw exception;
+            }
+        }
+
+    }
+
+    private static long getStart(Ranges.Entry range, long length) {
+        long start = range.getStart();
+        if (start == -1L) {
+            long end = range.getEnd();
+            return end >= length ? 0L : length - end;
+        } else {
+            return start;
+        }
+    }
+
+    private static long getEnd(Ranges.Entry range, long length) {
+        long end = range.getEnd();
+        return range.getStart() != -1L && end != -1L && end < length ? end : length - 1L;
+    }
+
+    @Override
+    protected void copy(InputStream is, ServletOutputStream outStream) throws IOException {
         AbstractOssObject abstractOssObject = null;
         if (is instanceof OssInputStream ossInputStream) {
             abstractOssObject = ossInputStream.getAbstractOssObject();
         }
         InputStream inStream = new BufferedInputStream(is, input);
+        copy(outStream, abstractOssObject, inStream);
+    }
+
+    private void copy(ServletOutputStream outStream, AbstractOssObject abstractOssObject, InputStream inStream) throws IOException {
+        IOException exception;
         exception = copyRange(inStream, outStream);
         if (abstractOssObject != null) {
             try {

@@ -68,6 +68,15 @@ public interface IOssService {
     AbstractOssObject getAbstractOssObject(String objectName);
 
     /**
+     * 获取 AbstractOssObject
+     * @param objectName object key
+     * @param rangeStart rangeStart 分段
+     * @param rangeEnd rangeEnd 分段
+     * @return AbstractOssObject
+     */
+    AbstractOssObject getAbstractOssObject(String objectName, Long rangeStart, Long rangeEnd);
+
+    /**
      * 删除文件
      * @param objectName object key
      */

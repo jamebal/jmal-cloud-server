@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.oss.web;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -132,7 +133,8 @@ public class WebOssService extends WebOssCommonService {
 
     /**
      * 查询object目录下是否有额外属性,有就返回List<FileDocument>
-     * @param ossPath ossPath
+     *
+     * @param ossPath    ossPath
      * @param objectName objectName必须为目录
      * @return List<FileDocument>
      */
@@ -273,6 +275,7 @@ public class WebOssService extends WebOssCommonService {
 
     /**
      * 清除分片缓存
+     *
      * @param uploadId uploadId
      */
     private static void removeListPartsCache(String uploadId) {
@@ -290,7 +293,7 @@ public class WebOssService extends WebOssCommonService {
         MultipartFile file = upload.getFile();
         if (currentChunkSize == totalSize) {
             // 没有分片,直接存
-            try(InputStream inputStream = file.getInputStream()) {
+            try (InputStream inputStream = file.getInputStream()) {
                 ossService.uploadFile(inputStream, objectName, currentChunkSize);
             }
             notifyCreateFile(upload.getUsername(), objectName, getOssRootFolderName(ossPath));
@@ -552,33 +555,49 @@ public class WebOssService extends WebOssCommonService {
             // 设置响应头
             response.setContentType(FileContentTypeUtils.getContentType(suffix));
             long fileSize = abstractOssObject.getContentLength();
-            // 处理 Range 请求
-            String range = request.getHeader("Range");
-            long length = fileSize;
+            String range = request.getHeader(HttpHeaders.RANGE);
             if (CharSequenceUtil.isNotBlank(range)) {
-                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "inline;filename=" + encodedFilename);
-                response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-                long[] ranges = parseRange(range, length);
-                long start = ranges[0];
-                long end = ranges[1] == -1 ? fileSize - 1 : ranges[1];
-                String contentRange = "bytes " + start + "-" + end + "/" + fileSize;
-                response.setHeader("Content-Range", contentRange);
-                length = end - start + 1;
-                response.setContentLengthLong(length);
-                long count = inputStream.skip(start);
-                if (count == start) {
-                    log.warn("error skip: {}, actual: {}", start, count);
-                }
+                // 处理 Range 请求
+                handlerRange(response, ossService, objectName, outputStream, encodedFilename, fileSize, range);
             } else {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentLengthLong(fileSize);
+                IoUtil.copy(inStream, outputStream);
             }
-            IoUtil.copy(inStream, outputStream);
-            abstractOssObject.closeObject();
         } catch (ClientAbortException ignored) {
             // ignored error
         } catch (IOException e) {
             log.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 处理 Range 请求
+     * @param response HttpServletResponse
+     * @param ossService IOssService
+     * @param objectName objectName
+     * @param outputStream response OutputStream
+     * @param encodedFilename 编码后的文件名
+     * @param fileSize        文件总大小
+     * @param range           header range 的 值
+     */
+    private void handlerRange(HttpServletResponse response, IOssService ossService, String objectName, OutputStream outputStream, String encodedFilename, long fileSize, String range) {
+        long[] ranges = parseRange(range, fileSize);
+        long start = ranges[0];
+        long end = ranges[1] == -1 ? fileSize - 1 : ranges[1];
+        try (AbstractOssObject rangeObject = ossService.getAbstractOssObject(objectName, start, end);
+             InputStream rangeIn = rangeObject.getInputStream()) {
+            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "inline;filename=" + encodedFilename);
+            response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+            String contentRange = "bytes " + start + "-" + end + "/" + fileSize;
+            response.setHeader(HttpHeaders.CONTENT_RANGE, contentRange);
+            long length = end - start + 1;
+            response.setContentLengthLong(length);
+            IoUtil.copy(rangeIn, outputStream);
+        } catch (ClientAbortException | IORuntimeException ignored) {
+            // ignored error
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -622,10 +641,11 @@ public class WebOssService extends WebOssCommonService {
 
     /**
      * 设置ossPath所关联的FileDocument
-     * @param userId userId
-     * @param fileId fileId 例如: jmal/tencent/新建文件夹/屏幕录制.2020-03-04 16_36_03.gif
-     * @param objectName objectName
-     * @param ossPath ossPath 例如: /jmal/tencent
+     *
+     * @param userId      userId
+     * @param fileId      fileId 例如: jmal/tencent/新建文件夹/屏幕录制.2020-03-04 16_36_03.gif
+     * @param objectName  objectName
+     * @param ossPath     ossPath 例如: /jmal/tencent
      * @param ossRootPath ossRootPath 例如: tencent
      */
     public void setOssPath(String userId, String fileId, String objectName, String ossPath, boolean ossRootPath) {
@@ -645,11 +665,12 @@ public class WebOssService extends WebOssCommonService {
 
     /**
      * 删除ossPath所关联的FileDocument
-     * @param userId userId
-     * @param fileId fileId 例如: jmal/tencent/新建文件夹/屏幕录制.2020-03-04 16_36_03.gif
-     * @param ossPath ossPath 例如: /jmal/tencent
+     *
+     * @param userId      userId
+     * @param fileId      fileId 例如: jmal/tencent/新建文件夹/屏幕录制.2020-03-04 16_36_03.gif
+     * @param ossPath     ossPath 例如: /jmal/tencent
      * @param ossRootPath ossRootPath 例如: tencent
-     * @param unSetShare 移除 share 属性
+     * @param unSetShare  移除 share 属性
      */
     public List<FileDocument> removeOssPathFile(String userId, String fileId, String ossPath, boolean ossRootPath, boolean unSetShare) {
         Query query = new Query();
