@@ -29,6 +29,10 @@ public class FileProperties {
      * 断点续传的临时文件目录名称 位于rootDir下,文件监控扫描忽略的目录
      */
     private String chunkFileDir = "chunkFileTemp";
+    /**
+     * 视频转码后的缓存目录, 位于 ${chunkFileDir}/${username}/${videoTranscodeCache}
+     */
+    private String videoTranscodeCache = "videoTranscodeCache";
     /***
      * 用户头像默认存储路径
      */

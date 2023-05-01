@@ -162,7 +162,11 @@ public class FileMonitor {
         for (File username : FileUtil.ls(tempPath.toString())) {
             if (username.isDirectory()) {
                 for (File file : FileUtil.ls(username.getAbsolutePath())) {
-                    if (file.lastModified() < (System.currentTimeMillis() - DateUnit.DAY.getMillis() * 7)) {
+                    // 是否为七天前的文件
+                    boolean sevenDayAgo = file.lastModified() < (System.currentTimeMillis() - DateUnit.DAY.getMillis() * 7);
+                    // 是否为视频转码缓存目录
+                    boolean videoCache = fileProperties.getVideoTranscodeCache().equals(file.getName());
+                    if (sevenDayAgo && !videoCache) {
                         FileUtil.del(file);
                     }
                 }
