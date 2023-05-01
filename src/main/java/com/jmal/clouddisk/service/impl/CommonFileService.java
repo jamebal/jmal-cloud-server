@@ -14,6 +14,7 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.video.VideoProcessService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import com.jmal.clouddisk.websocket.SocketManager;
@@ -88,6 +89,9 @@ public class CommonFileService {
 
     @Autowired
     private SimpMessagingTemplate template;
+
+    @Autowired
+    private VideoProcessService videoProcessService;
 
     /***
      * 上传文件夹的写入锁缓存
@@ -249,12 +253,7 @@ public class CommonFileService {
             Query query = new Query();
             FileDocument fileExists = getFileDocument(userId, fileName, relativePath, query);
             if (fileExists != null) {
-                if (contentType.contains(Constants.AUDIO) && fileExists.getMusic() == null) {
-                    Update update = new Update();
-                    Music music = AudioFileUtils.readAudio(file);
-                    update.set("music", music);
-                    mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
-                }
+                updateMediaProp(username, file, contentType, query, fileExists);
                 return fileExists.getId();
             }
             Update update = new Update();
@@ -269,7 +268,7 @@ public class CommonFileService {
                 update.set("isPublic", true);
             }
             if (file.isFile()) {
-                setFileConfig(file, fileName, suffix, contentType, relativePath, update);
+                setFileConfig(username, file, fileName, suffix, contentType, relativePath, update);
             } else {
                 // 检查目录是否为OSS目录
                 checkOSSPath(username, relativePath, fileName, update);
@@ -287,6 +286,23 @@ public class CommonFileService {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return null;
+    }
+
+    private void updateMediaProp(String username, File file, String contentType, Query query, FileDocument fileExists) {
+        try {
+            Update update = null;
+            if (contentType.contains(Constants.VIDEO)) {
+                setMediaCover(username, fileExists.getName(), fileExists.getPath(), update);
+            }
+            if (contentType.contains(Constants.AUDIO) && fileExists.getMusic() == null) {
+                setMusic(file, update);
+            }
+            if (update != null) {
+                mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
     private static void setDateTime(File file, Update update) {
@@ -356,15 +372,17 @@ public class CommonFileService {
         writer.write(null, new IIOImage(image, null, null), writeParam);
     }
 
-    private void setFileConfig(File file, String fileName, String suffix, String contentType, String relativePath, Update update) {
+    private void setFileConfig(String username, File file, String fileName, String suffix, String contentType, String relativePath, Update update) {
         long size = file.length();
         update.set("size", size);
         update.set("md5", size + relativePath + fileName);
         update.set(Constants.CONTENT_TYPE, contentType);
         update.set(Constants.SUFFIX, suffix);
         if (contentType.contains(Constants.AUDIO)) {
-            Music music = AudioFileUtils.readAudio(file);
-            update.set("music", music);
+            setMusic(file, update);
+        }
+        if (contentType.contains(Constants.VIDEO)) {
+            setMediaCover(username, fileName, relativePath, update);
         }
         if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE) && (!"ico".equals(suffix) && !"svg".equals(suffix))) {
                 generateThumbnail(file, update);
@@ -373,6 +391,26 @@ public class CommonFileService {
             // 写入markdown内容
             String markDownContent = FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file)));
             update.set("contentText", markDownContent);
+        }
+    }
+
+    private static void setMusic(File file, Update update) {
+        Music music = AudioFileUtils.readAudio(file);
+        if (update == null) {
+            update = new Update();
+        }
+        update.set("music", music);
+    }
+
+    private void setMediaCover(String username, String fileName, String relativePath, Update update) {
+        String imagePath = videoProcessService.getVideoCover(username, relativePath, fileName);
+        if (!CharSequenceUtil.isBlank(imagePath)) {
+            if (update == null) {
+                update = new Update();
+            } else {
+                videoProcessService.convertToM3U8(username, relativePath, fileName);
+            }
+            update.set("mediaCover", true);
         }
     }
 

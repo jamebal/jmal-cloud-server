@@ -58,6 +58,14 @@ public class FileIntroVO extends FileBase {
      */
     private Long expiresAt;
     private Music music;
+    /**
+     * 媒体封面
+     */
+    private String mediaCover;
+    /**
+     * m3u8文件路径(相对路径)
+     */
+    private String m3u8;
     /***
      * 图片的宽度
      */

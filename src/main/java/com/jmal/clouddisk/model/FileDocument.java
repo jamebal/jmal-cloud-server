@@ -125,6 +125,14 @@ public class FileDocument extends FileBase {
      * 音乐
      */
     private Music music;
+    /**
+     * 媒体封面
+     */
+    private String mediaCover;
+    /**
+     * m3u8文件路径(相对路径)
+     */
+    private String m3u8;
     /***
      * 是否发布，适用于文档类型
      */

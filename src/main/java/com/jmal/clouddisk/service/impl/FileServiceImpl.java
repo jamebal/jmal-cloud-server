@@ -23,6 +23,7 @@ import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.video.VideoProcessService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import com.mongodb.client.AggregateIterable;
@@ -42,8 +43,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -85,6 +91,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     @Autowired
     WebOssCopyFileService webOssCopyFileService;
 
+    @Autowired
+    VideoProcessService videoProcessService;
+
     /***
      * 前端文件夹树的第一级的文件Id
      */
@@ -106,7 +115,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (!CharSequenceUtil.isBlank(queryFileType)) {
             criteria = switch (upload.getQueryFileType()) {
                 case Constants.AUDIO -> Criteria.where(Constants.CONTENT_TYPE).regex("^" + Constants.AUDIO);
-                case "video" -> Criteria.where(Constants.CONTENT_TYPE).regex("^video");
+                case Constants.VIDEO -> Criteria.where(Constants.CONTENT_TYPE).regex("^" + Constants.VIDEO);
                 case Constants.CONTENT_TYPE_IMAGE -> Criteria.where(Constants.CONTENT_TYPE).regex("^image");
                 case "text" -> Criteria.where(Constants.SUFFIX).in(Arrays.asList(fileProperties.getSimText()));
                 case "document" -> Criteria.where(Constants.SUFFIX).in(Arrays.asList(fileProperties.getDocument()));
@@ -452,16 +461,40 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public Optional<FileDocument> coverOfMp3(String id) throws CommonException {
+    public Optional<FileDocument> coverOfMedia(String id, String username) throws CommonException {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument == null) {
             return Optional.empty();
         }
+        String contentType = fileDocument.getContentType();
+        if (contentType.contains(Constants.VIDEO)) {
+            // 视频文件
+            String imagePath = videoProcessService.getVideoCover(username, fileDocument.getPath(), fileDocument.getName());
+            if (!CharSequenceUtil.isBlank(imagePath)) {
+                fileDocument.setContent(FileUtil.readBytes(imagePath));
+            }
+        } else {
+            // 音频文件
+            String base64 = Optional.of(fileDocument).map(FileDocument::getMusic).map(Music::getCoverBase64).orElse("");
+            fileDocument.setContent(Base64.decode(base64));
+        }
         fileDocument.setContentType("image/png");
         fileDocument.setName("cover");
-        String base64 = Optional.of(fileDocument).map(FileDocument::getMusic).map(Music::getCoverBase64).orElse("");
-        fileDocument.setContent(Base64.decode(base64));
         return Optional.of(fileDocument);
+    }
+
+    @Override
+    public ResponseEntity<Object> getObjectResponseEntity(Optional<FileDocument> file) {
+        return file.<ResponseEntity<Object>>map(fileDocument ->
+                ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + ContentDisposition.builder("attachment")
+                                .filename(UriUtils.encode(fileDocument.getName(), StandardCharsets.UTF_8)))
+                        .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
+                        .header(HttpHeaders.CONNECTION, "close")
+                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent().length))
+                        .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
+                        .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
+                        .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
     }
 
     @Override
@@ -780,6 +813,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (CharSequenceUtil.isBlank(userId)) {
             return;
         }
+        videoProcessService.deleteVideoCache(username, relativePath, fileName);
         Query query = new Query();
         // 文件是否存在
         FileDocument fileDocument = getFileDocument(userId, fileName, relativePath, query);

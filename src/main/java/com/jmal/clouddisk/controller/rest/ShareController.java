@@ -179,6 +179,15 @@ public class ShareController {
         return thumbnail(id, request);
     }
 
+    @Operation(summary = "显示缩略图(媒体封面)")
+    @GetMapping("/public/s/view/cover")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseEntity<Object> coverOfMedia(String id, String name) {
+        ResultUtil.checkParamIsNull(id, name);
+        Optional<FileDocument> file = fileService.coverOfMedia(id, name);
+        return fileService.getObjectResponseEntity(file);
+    }
+
     private ResponseEntity<Object> thumbnail(String id, HttpServletRequest request) {
         ResultUtil.checkParamIsNull(id);
         Optional<FileDocument> file = fileService.thumbnail(id, null);

@@ -9,6 +9,7 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.ResponseResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -165,11 +166,14 @@ public interface IFileService {
     Optional<FileDocument> thumbnail(String id, String userName);
 
     /***
-     * 显示缩略图(mp3封面)
+     * 显示缩略图(媒体文件封面)
      * @param id fileId
+     * @param username username
      * @return FileDocument
      */
-    Optional<FileDocument> coverOfMp3(String id);
+    Optional<FileDocument> coverOfMedia(String id, String username);
+
+    ResponseEntity<Object> getObjectResponseEntity(Optional<FileDocument> file);
 
     /***
      * 分享里的打包下载

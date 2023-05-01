@@ -24,6 +24,7 @@ public class Constants {
     public static final String LINK_FAILED = "该链接已失效";
 
     public static final String AUDIO = "audio";
+    public static final String VIDEO = "video";
 
     public static final String CONTENT_TYPE_IMAGE = "image";
     public static final String CONTENT_TYPE_MARK_DOWN = "text/markdown";
