@@ -491,7 +491,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                                 .filename(UriUtils.encode(fileDocument.getName(), StandardCharsets.UTF_8)))
                         .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
                         .header(HttpHeaders.CONNECTION, "close")
-                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent().length))
+                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent() != null ? fileDocument.getContent().length : 0))
                         .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
                         .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
                         .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
