@@ -946,7 +946,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         String username = userService.getUserNameById(fileDocument.getUserId());
         String relativepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(fileDocument.getPath() + fileDocument.getName(), StandardCharsets.UTF_8);
         StringBuilder sb = StrUtil.builder()
-                .append("redirect:/file/")
+                .append("forward:/file/")
                 .append(username)
                 .append(relativepath)
                 .append("?shareKey=")
@@ -963,7 +963,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     public String publicViewFile(String relativePath, String userId) {
         String username = userService.getUserNameById(userId);
         String userDirectory = getUserFilePath(aes.decryptStr(relativePath));
-        return "redirect:/file/" + username + userDirectory;
+        return "forward:/file/" + username + userDirectory;
     }
 
     @Override

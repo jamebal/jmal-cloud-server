@@ -41,7 +41,7 @@ public class FileViewController {
     }
 
     @Operation(summary = "分享：预览文件")
-    @GetMapping("/public/s/preview")
+    @GetMapping("/public/s/preview/{filename}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public String publicPreview(@RequestParam String fileId, @RequestParam String shareId, @RequestParam String shareToken) {
         ResponseResult<Object> validSHare = shareService.validShare(shareToken, shareId);
@@ -50,7 +50,7 @@ public class FileViewController {
     }
 
     @Operation(summary = "分享：下载单个文件")
-    @GetMapping("/public/s/download")
+    @GetMapping("/public/s/download/{filename}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public String publicDownload(@RequestParam String fileId, @RequestParam String shareId, @RequestParam String shareToken) {
         ResponseResult<Object> validSHare = shareService.validShare(shareToken, shareId);
