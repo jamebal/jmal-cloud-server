@@ -77,7 +77,11 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public ResponseResult<Object> add(ConsumerDTO consumerDTO) {
-        ConsumerDO user1 = getUserInfoByName(consumerDTO.getUsername());
+        String username = consumerDTO.getUsername();
+        if (fileProperties.getChunkFileDir().equals(username)) {
+            return ResultUtil.warning("请使用其他用户名");
+        }
+        ConsumerDO user1 = getUserInfoByName(username);
         if (user1 == null) {
             if (consumerDTO.getQuota() == null) {
                 consumerDTO.setQuota(10);
@@ -143,6 +147,12 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public ResponseResult<Object> update(ConsumerDTO user, MultipartFile blobAvatar) {
+
+        String name = user.getUsername();
+        if (fileProperties.getChunkFileDir().equals(name)) {
+            return ResultUtil.warning("请使用其他用户名");
+        }
+
         Query query = new Query();
         String userId = user.getId();
         ConsumerDO consumerDO;
@@ -150,7 +160,6 @@ public class UserServiceImpl implements IUserService {
             query.addCriteria(Criteria.where("_id").is(userId));
             consumerDO = getUserInfoById(userId);
         } else {
-            String name = user.getUsername();
             if (!CharSequenceUtil.isBlank(name)) {
                 query.addCriteria(Criteria.where(USERNAME).is(name));
                 consumerDO = getUserInfoByName(name);
