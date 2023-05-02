@@ -1,6 +1,6 @@
 file:
   # 文件存储根目录 文件监控目录
-  rootDir: /Users/jmal/temp/filetest/rootpath
+  rootDir: D:\Users\jmal\temp\filetest
   # markdown默认存储的位置
   documentDir: /Document/
   # markdown里图片存储的位置
@@ -20,5 +20,5 @@ file:
   # webDAV协议前缀
   web-dav-prefix: webDAV
   # ip2region.xdb path
-  ip2region-db-path: /Users/jmal/studio/myProject/github/jmal-cloud-server/src/main/resources/db/ip2region.xdb
+  ip2region-db-path: D:\Users\jmal\studio\myProject\github\jmal-cloud-server\src\main\resources\db\ip2region.xdb
 

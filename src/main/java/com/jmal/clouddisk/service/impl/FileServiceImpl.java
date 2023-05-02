@@ -336,7 +336,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             if (!userService.getDisabledWebp(userLoginHolder.getUserId()) && (!"ico".equals(FileUtil.getSuffix(newFile)))) {
                 fileName += Constants.POINT_SUFFIX_WEBP;
             }
-            return baseUrl + Paths.get("/file", username, filepath, fileName).toString();
+            return baseUrl + Paths.get("/file", username, filepath, fileName);
         } catch (IOException e) {
             throw new CommonException(ExceptionType.FAIL_UPLOAD_FILE.getCode(), ExceptionType.FAIL_UPLOAD_FILE.getMsg());
         }
@@ -962,7 +962,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     @Override
     public String publicViewFile(String relativePath, String userId) {
         String username = userService.getUserNameById(userId);
-        String userDirectory = getUserFilePath(aes.decryptStr(relativePath));
+        String userDirectory = aes.decryptStr(relativePath);
         return "redirect:/file/" + username + userDirectory;
     }
 
