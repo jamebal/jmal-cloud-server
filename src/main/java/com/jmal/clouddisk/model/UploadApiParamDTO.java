@@ -169,6 +169,10 @@ public class UploadApiParamDTO {
     }
 
     public String getRelativePath() {
+        if (File.separator.equals("\\")) {
+            // Windows 系统
+            relativePath = relativePath.replace("/", "\\");
+        }
         return URLUtil.decode(relativePath);
     }
 
@@ -176,12 +180,20 @@ public class UploadApiParamDTO {
         if (currentDirectory == null || "undefined".equals(currentDirectory)) {
             return File.separator;
         }
+        if (File.separator.equals("\\")) {
+            // Windows 系统
+            currentDirectory = currentDirectory.replace("/", "\\");
+        }
         return URLUtil.decode(currentDirectory);
     }
 
     public String getFolderPath() {
         if (folderPath == null || "undefined".equals(folderPath)) {
             return null;
+        }
+        if (File.separator.equals("\\")) {
+            // Windows 系统
+            folderPath = folderPath.replace("/", "\\");
         }
         return URLUtil.decode(folderPath);
     }

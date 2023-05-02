@@ -114,7 +114,6 @@ public class CommonFileService {
                 currentDirectory += fileProperties.getSeparator();
             }
         }
-        currentDirectory = currentDirectory.replaceAll(fileProperties.getSeparator(), File.separator);
         return currentDirectory;
     }
 
@@ -137,20 +136,7 @@ public class CommonFileService {
         } else {
             currentDirectory += fileProperties.getSeparator() + upload.getRelativePath();
         }
-        currentDirectory = currentDirectory.replaceAll(fileProperties.getSeparator(), File.separator);
         return currentDirectory;
-    }
-
-    /***
-     * 用户文件路径(相对路径)
-     * @param relativePath 相对路径
-     * @return 用户文件路径
-     */
-    String getUserFilePath(String relativePath) {
-        if (!CharSequenceUtil.isBlank(relativePath)) {
-            relativePath = relativePath.replaceAll(fileProperties.getSeparator(), File.separator);
-        }
-        return relativePath;
     }
 
     /***
@@ -345,7 +331,7 @@ public class CommonFileService {
         }
         File outputFile = new File(file.getPath() + Constants.POINT_SUFFIX_WEBP);
         // 从某处获取图像进行编码
-        BufferedImage image = null;
+        BufferedImage image;
         try {
             image = ImageIO.read(file);
             if (image == null) {
@@ -419,7 +405,7 @@ public class CommonFileService {
      * @param update org.springframework.data.mongodb.core.query.UpdateDefinition
      */
     private void generateThumbnail(File file, Update update) {
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream();) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(file);
             thumbnail.size(256, 256);
             thumbnail.toOutputStream(out);
