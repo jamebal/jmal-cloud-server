@@ -4,6 +4,7 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.web.WebOssService;
@@ -12,6 +13,7 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Sort;
@@ -160,6 +162,28 @@ public class ShareServiceImpl implements IShareService {
     public ResponseResult<Object> validShare(String shareToken, String shareId) {
         ShareDO shareDO = getShare(shareId);
         return validShare(shareToken, shareDO);
+    }
+
+    @Override
+    public ResponseResult<Object>  validShare(HttpServletRequest request) {
+        String shareToken = request.getHeader(Constants.SHARE_TOKEN);
+        String shareId = request.getHeader(Constants.SHARE_ID);
+        if (CharSequenceUtil.isBlank(shareToken)) {
+            shareToken = request.getParameter(Constants.SHARE_TOKEN);
+        }
+        if (CharSequenceUtil.isBlank(shareId)) {
+            shareId = request.getParameter(Constants.SHARE_ID);
+        }
+        if (CharSequenceUtil.isBlank(shareToken)) {
+            shareToken = AuthInterceptor.getCookie(request, Constants.SHARE_TOKEN);
+        }
+        if (CharSequenceUtil.isBlank(shareId)) {
+            shareId = AuthInterceptor.getCookie(request, Constants.SHARE_ID);
+        }
+        if (CharSequenceUtil.isBlank(shareId) || CharSequenceUtil.isBlank(shareToken)) {
+            return ResultUtil.warning(Constants.LINK_FAILED);
+        }
+        return validShare(shareToken, shareId);
     }
 
     public ResponseResult<Object> validShare(String shareToken, ShareDO shareDO) {

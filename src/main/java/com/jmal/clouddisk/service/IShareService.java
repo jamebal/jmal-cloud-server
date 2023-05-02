@@ -5,6 +5,7 @@ import com.jmal.clouddisk.model.SharerDTO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.ResponseResult;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 
@@ -109,4 +110,6 @@ public interface IShareService {
     ResponseResult<Object> validShare(String shareToken, ShareDO shareDO);
 
     ResponseResult<Object> validShare(String shareToken, String shareId);
+
+    ResponseResult<Object> validShare(HttpServletRequest request);
 }

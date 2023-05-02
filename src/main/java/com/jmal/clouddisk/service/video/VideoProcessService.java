@@ -162,7 +162,7 @@ public class VideoProcessService {
             query.addCriteria(Criteria.where("path").is(relativePath));
             query.addCriteria(Criteria.where("name").is(fileName));
             Update update = new Update();
-            update.set("m3u8", Paths.get(username, fileProperties.getVideoTranscodeCache(), fileMd5, fileMd5 + ".m3u8").toString());
+            update.set("m3u8", Paths.get(username, fileMd5 + ".m3u8").toString());
             mongoTemplate.upsert(query, update, FileDocument.class);
         } else {
             printErrorInfo(processBuilder, process);

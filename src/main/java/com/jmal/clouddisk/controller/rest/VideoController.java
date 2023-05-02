@@ -1,10 +1,14 @@
 package com.jmal.clouddisk.controller.rest;
 
+import cn.hutool.core.convert.Convert;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.service.IShareService;
+import com.jmal.clouddisk.util.ResponseResult;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -19,39 +23,48 @@ import java.nio.file.Paths;
 @Tag(name = "视频播放")
 @Slf4j
 @RestController
+@RequiredArgsConstructor
 public class VideoController {
 
-    @Autowired
-    FileProperties fileProperties;
+    private final FileProperties fileProperties;
 
-    @GetMapping("/video/hls/{username}/{videoCacheDir}/{fileMd5}/{filename}.m3u8")
-    public ResponseEntity<UrlResource> m3u8(@PathVariable String username, @PathVariable String videoCacheDir, @PathVariable String fileMd5, @PathVariable String filename) throws IOException {
-        Path m3u8Path = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, videoCacheDir, fileMd5, filename + ".m3u8");
+    private final IShareService shareService;
+
+
+    @GetMapping("/video/hls/{username}/{fileMd5}.m3u8")
+    public ResponseEntity<UrlResource> m3u8(@PathVariable String username, @PathVariable String fileMd5) throws IOException {
+        Path m3u8Path = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, fileProperties.getVideoTranscodeCache(), fileMd5, fileMd5 + ".m3u8");
         UrlResource videoResource = new UrlResource(m3u8Path.toUri());
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, "application/vnd.apple.mpegurl")
                 .body(videoResource);
     }
 
-    @GetMapping("/video/hls/{username}/{videoCacheDir}/{fileMd5}/{filename}-{index}.ts")
-    public ResponseEntity<UrlResource> ts(@PathVariable String username, @PathVariable String videoCacheDir, @PathVariable String fileMd5, @PathVariable String filename, @PathVariable String index
-    ) throws IOException {
-        Path m3u8Path = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, videoCacheDir, fileMd5, filename + "-" + index + ".ts");
+    @GetMapping("/video/hls/{username}/{fileMd5}-{index}.ts")
+    public ResponseEntity<UrlResource> ts(@PathVariable String username, @PathVariable String fileMd5, @PathVariable String index) throws IOException {
+        Path m3u8Path = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, fileProperties.getVideoTranscodeCache(), fileMd5, fileMd5 + "-" + index + ".ts");
         UrlResource videoResource = new UrlResource(m3u8Path.toUri());
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, "application/vnd.apple.mpegurl")
                 .body(videoResource);
     }
 
-    @GetMapping("/public/video/hls/{username}/{videoCacheDir}/{fileMd5}/{filename}.m3u8")
-    public ResponseEntity<UrlResource> publicM3u8(@PathVariable String username, @PathVariable String videoCacheDir, @PathVariable String fileMd5, @PathVariable String filename, HttpServletRequest request) throws IOException {
-        return m3u8(username, videoCacheDir, fileMd5, filename);
+    @GetMapping("/public/video/hls/{username}/{fileMd5}.m3u8")
+    public ResponseEntity<UrlResource> publicM3u8(@PathVariable String username, @PathVariable String fileMd5, HttpServletRequest request) throws IOException {
+        ResponseResult<Object> result = shareService.validShare(request);
+        if (result != null) {
+            throw new CommonException(result.getCode(), Convert.toStr(result.getMessage()));
+        }
+        return m3u8(username, fileMd5);
     }
 
-    @GetMapping("/public/video/hls/{username}/{videoCacheDir}/{fileMd5}/{filename}-{index}.ts")
-    public ResponseEntity<UrlResource> publicTs(@PathVariable String username, @PathVariable String videoCacheDir, @PathVariable String fileMd5, @PathVariable String filename, @PathVariable String index
-            , HttpServletRequest request) throws IOException {
-        return ts(username, videoCacheDir, fileMd5, filename, index);
+    @GetMapping("/public/video/hls/{username}/{fileMd5}-{index}.ts")
+    public ResponseEntity<UrlResource> publicTs(@PathVariable String username, @PathVariable String fileMd5, @PathVariable String index, HttpServletRequest request) throws IOException {
+        ResponseResult<Object> result = shareService.validShare(request);
+        if (result != null) {
+            throw new CommonException(result.getCode(), Convert.toStr(result.getMessage()));
+        }
+        return ts(username, fileMd5, index);
     }
 
 }

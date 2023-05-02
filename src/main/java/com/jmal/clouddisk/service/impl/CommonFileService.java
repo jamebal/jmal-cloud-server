@@ -407,9 +407,8 @@ public class CommonFileService {
         if (!CharSequenceUtil.isBlank(imagePath)) {
             if (update == null) {
                 update = new Update();
-            } else {
-                videoProcessService.convertToM3U8(username, relativePath, fileName);
             }
+            videoProcessService.convertToM3U8(username, relativePath, fileName);
             update.set("mediaCover", true);
         }
     }
