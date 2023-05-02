@@ -6,7 +6,9 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.IOssService;
+import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.OssInputStream;
+import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
@@ -17,6 +19,7 @@ import org.apache.catalina.WebResource;
 import org.apache.catalina.connector.ClientAbortException;
 import org.apache.catalina.servlets.WebdavServlet;
 import org.apache.tomcat.util.http.parser.Ranges;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedInputStream;
@@ -66,7 +69,7 @@ public class MyWebdavServlet extends WebdavServlet {
 
     /**
      * 过滤掉过于频繁的GET请求, 同一文件1秒内相同GET的请求
-     * 目前只针对oss
+     * 目前只针对oss 和 mac
      */
     private static boolean filterTooManyRequest(HttpServletRequest request, HttpServletResponse response, String method) throws IOException {
         String uri = request.getRequestURI();
@@ -77,7 +80,9 @@ public class MyWebdavServlet extends WebdavServlet {
                 return false;
             }
         }
-        if (method.equals(WebdavMethod.GET.getCode())) {
+        // MAC & OSS & GET
+        String userAgent = request.getHeader(HttpHeaders.USER_AGENT);
+        if (!CharSequenceUtil.isBlank(userAgent) && userAgent.contains("Darwin") && method.equals(WebdavMethod.GET.getCode())) {
             if (!CharSequenceUtil.isBlank(request.getHeader("If-Range")) || !CharSequenceUtil.isBlank(request.getHeader("Range"))) {
                 response.sendError(423);
                 return true;
@@ -94,30 +99,18 @@ public class MyWebdavServlet extends WebdavServlet {
 
     @Override
     protected void copy(WebResource resource, long length, ServletOutputStream outStream, Ranges.Entry range) throws IOException {
-        IOException exception;
-        InputStream resourceInputStream = resource.getInputStream();
-        AbstractOssObject ossObject = null;
-        if (resourceInputStream instanceof OssInputStream ossInputStream) {
-            ossObject = ossInputStream.getAbstractOssObject();
-        }
-        long rangeStart = getStart(range, length);
-        long rangeEnd = getEnd(range, length);
-
-        if (ossObject != null) {
-            IOssService ossService = ossObject.getOssService();
-            String objectName = ossObject.getKey();
-            ossObject.closeObject();
+        Path prePath = Paths.get(resource.getWebappPath());
+        String ossPath = CaffeineUtil.getOssPath(prePath);
+        if (ossPath != null) {
+            long rangeStart = getStart(range, length);
+            long rangeEnd = getEnd(range, length);
+            IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+            String objectName = WebOssService.getObjectName(prePath, ossPath, false);
             AbstractOssObject rangeObject = ossService.getAbstractOssObject(objectName, rangeStart, rangeEnd);
-            copy(outStream, rangeObject, rangeObject.getInputStream());
+            super.copy(rangeObject.getInputStream(), outStream);
         } else {
-            InputStream inputStream = new BufferedInputStream(resourceInputStream, this.input);
-            exception = this.copyRange(inputStream, outStream, rangeStart, rangeEnd);
-            inputStream.close();
-            if (exception != null) {
-                throw exception;
-            }
+            super.copy(resource, length, outStream, range);
         }
-
     }
 
     private static long getStart(Ranges.Entry range, long length) {
@@ -137,16 +130,12 @@ public class MyWebdavServlet extends WebdavServlet {
 
     @Override
     protected void copy(InputStream is, ServletOutputStream outStream) throws IOException {
+        IOException exception;
         AbstractOssObject abstractOssObject = null;
         if (is instanceof OssInputStream ossInputStream) {
             abstractOssObject = ossInputStream.getAbstractOssObject();
         }
         InputStream inStream = new BufferedInputStream(is, input);
-        copy(outStream, abstractOssObject, inStream);
-    }
-
-    private void copy(ServletOutputStream outStream, AbstractOssObject abstractOssObject, InputStream inStream) throws IOException {
-        IOException exception;
         exception = copyRange(inStream, outStream);
         if (abstractOssObject != null) {
             try {
