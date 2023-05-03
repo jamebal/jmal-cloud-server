@@ -374,12 +374,18 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
-    public void getThumbnail(String objectName, File file, int width) {
-        GetObjectRequest request = new GetObjectRequest(bucketName, objectName);
-        // 指定目标图片宽度为 Width，高度等比缩放
-        String rule = "imageMogr2/thumbnail/" + width + "x";
-        request.putCustomQueryParameter(rule, null);
-        cosClient.getObject(request, file);
+    public FileInfo getThumbnail(String objectName, File file, int width) {
+        try {
+            GetObjectRequest request = new GetObjectRequest(bucketName, objectName);
+            // 指定目标图片宽度为 Width，高度等比缩放
+            String rule = "imageMogr2/thumbnail/" + width + "x";
+            request.putCustomQueryParameter(rule, null);
+            cosClient.getObject(request, file);
+            return getObjectCache(objectName).getFileInfo();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+        return null;
     }
 
     @Override

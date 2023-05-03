@@ -408,14 +408,16 @@ public class MinIOService implements IOssService {
     }
 
     @Override
-    public void getThumbnail(String objectName, File file, int width) {
+    public FileInfo getThumbnail(String objectName, File file, int width) {
         try {
             this.minIoClient.downloadObject(bucketName, objectName, file);
             byte[] bytes = FileInterceptor.imageCrop(file, "80", String.valueOf(width), null);
             FileUtil.writeBytes(bytes, file);
+            return getObjectCache(objectName).getFileInfo();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
+        return null;
     }
 
     @Override

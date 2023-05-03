@@ -8,6 +8,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.URLUtil;
+import cn.hutool.crypto.SecureUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.exception.CommonException;
@@ -475,17 +476,40 @@ public class WebOssService extends WebOssCommonService {
     }
 
     public ResponseEntity<Object> thumbnail(String ossPath, String pathName) {
-        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
-        String objectName = pathName.substring(ossPath.length());
-        File tempFile = Paths.get(fileProperties.getRootDir(), pathName).toFile();
-        if (FileUtil.exist(tempFile)) {
-            return getResponseEntity(tempFile);
+        Optional<FileDocument> file = Optional.empty();
+        FileDocument fileDocument = mongoTemplate.findById(pathName, FileDocument.class);
+        if (fileDocument != null && fileDocument.getContent() != null) {
+            file = Optional.of(fileDocument);
         } else {
-            Path tempFileFolderPath = tempFile.toPath().getParent();
-            PathUtil.mkdir(tempFileFolderPath);
+            IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+            String objectName = pathName.substring(ossPath.length());
+            String tempFileName = SecureUtil.md5(pathName) + Paths.get(pathName).getFileName();
+            File tempFile = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), tempFileName).toFile();
+            try {
+                FileInfo fileInfo = ossService.getThumbnail(objectName, tempFile, 256);
+                String username = getUsernameByOssPath(ossPath);
+                FileDocument thumbnailDoc = fileInfo.toFileDocument(ossPath, userService.getUserIdByUserName(username));
+                thumbnailDoc.setContent(FileUtil.readBytes(tempFile));
+                if (fileDocument != null) {
+                    Query query = new Query().addCriteria(Criteria.where("_id").is(pathName));
+                    Update update = new Update();
+                    update.set("content", thumbnailDoc.getContent());
+                    mongoTemplate.upsert(query, update, FileDocument.class);
+                } else {
+                    mongoTemplate.save(thumbnailDoc);
+                }
+                if (thumbnailDoc.getContent() != null) {
+                    file = Optional.of(thumbnailDoc);
+                }
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            } finally {
+                if (tempFile.exists()) {
+                    FileUtil.del(tempFile);
+                }
+            }
         }
-        ossService.getThumbnail(objectName, tempFile, 256);
-        return getResponseEntity(tempFile);
+        return commonFileService.getObjectResponseEntity(file);
     }
 
     @NotNull
@@ -573,10 +597,11 @@ public class WebOssService extends WebOssCommonService {
 
     /**
      * 处理 Range 请求
-     * @param response HttpServletResponse
-     * @param ossService IOssService
-     * @param objectName objectName
-     * @param outputStream response OutputStream
+     *
+     * @param response        HttpServletResponse
+     * @param ossService      IOssService
+     * @param objectName      objectName
+     * @param outputStream    response OutputStream
      * @param encodedFilename 编码后的文件名
      * @param fileSize        文件总大小
      * @param range           header range 的 值

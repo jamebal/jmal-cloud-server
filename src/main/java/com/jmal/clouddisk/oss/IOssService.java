@@ -194,7 +194,7 @@ public interface IOssService {
      * @param file       临时文件
      * @param width      图片宽度
      */
-    void getThumbnail(String objectName, File file, int width);
+    FileInfo getThumbnail(String objectName, File file, int width);
 
     /**
      * 拷贝对象(相同Bucket之间拷贝)

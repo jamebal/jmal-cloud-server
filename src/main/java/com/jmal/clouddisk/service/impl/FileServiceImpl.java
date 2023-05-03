@@ -42,13 +42,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.util.UriUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -476,16 +472,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public ResponseEntity<Object> getObjectResponseEntity(Optional<FileDocument> file) {
-        return file.<ResponseEntity<Object>>map(fileDocument ->
-                ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + ContentDisposition.builder("attachment")
-                                .filename(UriUtils.encode(fileDocument.getName(), StandardCharsets.UTF_8)))
-                        .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
-                        .header(HttpHeaders.CONNECTION, "close")
-                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent() != null ? fileDocument.getContent().length : 0))
-                        .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
-                        .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
-                        .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+        return super.getObjectResponseEntity(file);
     }
 
     @Override

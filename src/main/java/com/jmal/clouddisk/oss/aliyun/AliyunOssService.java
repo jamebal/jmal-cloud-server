@@ -337,7 +337,7 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
-    public void getThumbnail(String objectName, File file, int width) {
+    public FileInfo getThumbnail(String objectName, File file, int width) {
         try {
             // 将图片缩放为固定宽高100 px。
             String style = "image/resize,m_mfit,w_" + width;
@@ -346,11 +346,13 @@ public class AliyunOssService implements IOssService {
             // 将处理后的图片命名为example-resize.jpg并保存到本地。
             // 如果未指定本地路径只填写了本地文件名称（例如example-resize.jpg），则文件默认保存到示例程序所属项目对应本地路径中。
             ossClient.getObject(request, file);
+            return getObjectCache(objectName).getFileInfo();
         } catch (OSSException oe) {
             log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
             log.error(ce.getMessage(), ce);
         }
+        return null;
     }
 
     @Override
