@@ -413,7 +413,7 @@ public class MinIOService implements IOssService {
             this.minIoClient.downloadObject(bucketName, objectName, file);
             byte[] bytes = FileInterceptor.imageCrop(file, "80", String.valueOf(width), null);
             FileUtil.writeBytes(bytes, file);
-            return getObjectCache(objectName).getFileInfo();
+            return baseOssService.getFileInfo(objectName);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }

@@ -381,7 +381,7 @@ public class TencentOssService implements IOssService {
             String rule = "imageMogr2/thumbnail/" + width + "x";
             request.putCustomQueryParameter(rule, null);
             cosClient.getObject(request, file);
-            return getObjectCache(objectName).getFileInfo();
+            return baseOssService.getFileInfo(objectName);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }

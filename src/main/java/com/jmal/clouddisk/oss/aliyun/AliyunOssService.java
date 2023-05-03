@@ -346,7 +346,7 @@ public class AliyunOssService implements IOssService {
             // 将处理后的图片命名为example-resize.jpg并保存到本地。
             // 如果未指定本地路径只填写了本地文件名称（例如example-resize.jpg），则文件默认保存到示例程序所属项目对应本地路径中。
             ossClient.getObject(request, file);
-            return getObjectCache(objectName).getFileInfo();
+            return baseOssService.getFileInfo(objectName);
         } catch (OSSException oe) {
             log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
