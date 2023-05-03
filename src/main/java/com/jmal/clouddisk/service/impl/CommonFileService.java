@@ -5,7 +5,6 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.CharsetUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
@@ -375,7 +374,7 @@ public class CommonFileService {
         }
         if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
             // 写入markdown内容
-            String markDownContent = FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file)));
+            String markDownContent = FileUtil.readString(file, MyFileUtils.getFileCharset(file));
             update.set("contentText", markDownContent);
         }
     }
@@ -642,7 +641,7 @@ public class CommonFileService {
             fileDocument.setUpdateDate(updateDate);
             if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
                 // 写入markdown内容
-                String markDownContent = FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file)));
+                String markDownContent = FileUtil.readString(file, MyFileUtils.getFileCharset(file));
                 update.set("contentText", markDownContent);
             }
             pushMessage(username, fileDocument, "updateFile");

@@ -7,7 +7,6 @@ import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -391,11 +390,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             Path filepath = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName());
             if (Files.exists(filepath)) {
                 File file = filepath.toFile();
-                if (file.length() > 1024 * 1024 * 5) {
-                    fileDocument.setContentText(MyFileUtils.readLines(file, 1000));
-                } else {
-                    fileDocument.setContentText(FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file))));
-                }
+                fileDocument.setContentText(FileUtil.readString(file, MyFileUtils.getFileCharset(file)));
             }
             return Optional.of(fileDocument);
         }
@@ -423,11 +418,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         FileDocument fileDocument = new FileDocument();
-        if (file.length() > 1024 * 1024 * 5) {
-            fileDocument.setContentText(MyFileUtils.readLines(file, 1000));
-        } else {
-            fileDocument.setContentText(FileUtil.readString(file, CharsetUtil.charset(MyFileUtils.getFileEncode(file))));
-        }
+        fileDocument.setContentText(FileUtil.readString(file, MyFileUtils.getFileCharset(file)));
         Path path1 = path.subpath(0, path.getNameCount() - 1);
         int rootCount = Paths.get(fileProperties.getRootDir(), username).getNameCount();
         int path1Count = path1.getNameCount();
@@ -1279,6 +1270,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     /**
      * 上传文件
+     *
      * @param upload UploadApiParamDTO
      * @return ResponseResult
      */
@@ -1383,7 +1375,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds));
         Update update = new Update();
-        fileIds.forEach(fileId -> checkOssPath(fileId,  true));
+        fileIds.forEach(fileId -> checkOssPath(fileId, true));
         update.set(Constants.IS_FAVORITE, true);
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         return ResultUtil.success();
@@ -1441,7 +1433,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds));
         Update update = new Update();
-        fileIds.forEach(fileId -> checkOssPath(fileId,  false));
+        fileIds.forEach(fileId -> checkOssPath(fileId, false));
         update.set(Constants.IS_FAVORITE, false);
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         return ResultUtil.success();
