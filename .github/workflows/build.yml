@@ -40,7 +40,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: docker/Dockerfile
+          file: ./Dockerfile
           push: true
           tags: jmal/jmalcloud:${{ env.PROJECT_VERSION }},jmal/jmalcloud:${{ env.PROJECT_VERSION }}:latest
           platforms: linux/amd64,linux/arm64
