@@ -42,7 +42,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: jmal/jmalcloud:${{ env.PROJECT_VERSION }},jmal/jmalcloud:${{ env.PROJECT_VERSION }}:latest
+          tags: jmal/jmalcloud:${{ env.PROJECT_VERSION }},jmal/jmalcloud:latest
           platforms: linux/amd64,linux/arm64
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
