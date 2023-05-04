@@ -4,6 +4,8 @@ MAINTAINER zhushilun084@gmail.com
 
 ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
 
+ARG VERSION
+
 # 安装 ffmpeg
 RUN apt-get update && \
     apt-get install -y ffmpeg libavcodec-extra
@@ -12,7 +14,7 @@ RUN mkdir -p /jmalcloud/files
 
 ADD docker/ip2region.xdb /jmalcloud/
 
-ADD target/clouddisk-$VERSION-exec.jar /usr/local/
+ADD target/clouddisk-${VERSION}-exec.jar /usr/local/
 
 VOLUME /jmalcloud/
 
@@ -28,4 +30,4 @@ ENV DOCKER_DEFAULT_PLATFORM=linux/amd64,linux/arm64
 
 EXPOSE 8088
 
-CMD java --enable-preview -jar -Xms50m -Xmx512m /usr/local/clouddisk-$VERSION-exec.jar --logging.level.root=warn --spring.profiles.active=prod --spring.data.mongodb.uri=$MONGODB_URI --file.rootDir=/jmalcloud/files --file.ip2region-db-path=/jmalcloud/ip2region.xdb
+CMD java --enable-preview -jar -Xms50m -Xmx512m /usr/local/clouddisk-${VERSION}-exec.jar --logging.level.root=warn --spring.profiles.active=prod --spring.data.mongodb.uri=$MONGODB_URI --file.rootDir=/jmalcloud/files --file.ip2region-db-path=/jmalcloud/ip2region.xdb
