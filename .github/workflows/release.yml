@@ -2,9 +2,9 @@ name: Create Release with Jar
 
 on:
   workflow_dispatch:
-  release:
-    types: [published]
-    tags: [v*]
+#  release:
+#    types: [published]
+#    tags: [v*]
 
 jobs:
   build-and-release:
