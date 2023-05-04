@@ -33,7 +33,7 @@ jobs:
         run: |
           git fetch --prune --unshallow
           LATEST_TAG=$(git describe --tags --abbrev=0)
-          COMMIT_MSGS=$(git log $LATEST_TAG..HEAD --grep 'fix:' --grep 'perf:' --grep 'feat:' --pretty=format:"%h - %s%n")
+          COMMIT_MSGS=$(git log $LATEST_TAG..HEAD --grep 'fix:' --grep 'perf:' --grep 'feat:' --pretty=format:"%h - %s" | sed ':a;N;$!ba;s/\n/\\n/g')
           echo "RELEASE_NOTES=$COMMIT_MSGS" >> $GITHUB_ENV
 
       - name: Create Git tag
