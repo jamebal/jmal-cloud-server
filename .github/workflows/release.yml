@@ -33,14 +33,19 @@ jobs:
         run: |
           git fetch --prune --unshallow
           LATEST_TAG=$(git describe --tags --abbrev=0)
-          COMMIT_MSGS=$(git log $LATEST_TAG..HEAD --grep 'fix:' --grep 'perf:' --grep 'feat:' --pretty=format:"%h - %s" | sed ':a;N;$!ba;s/\n/\\n/g')
-          echo "RELEASE_NOTES=$COMMIT_MSGS" >> $GITHUB_ENV
+          FEAT_MSGS=$(git log $LATEST_TAG..HEAD --grep 'feat:' --pretty=format:"- %s%n")
+          FIX_MSGS=$(git log $LATEST_TAG..HEAD --grep 'fix:' --pretty=format:"- %s%n")
+          PERF_MSGS=$(git log $LATEST_TAG..HEAD --grep 'perf:' --pretty=format:"- %s%n")
+          RELEASE_NOTES="### Features\n${FEAT_MSGS}\n### Fixes\n${FIX_MSGS}\n### Performance Improvements\n${PERF_MSGS}"
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+          echo "$RELEASE_NOTES" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Create Git tag
         run: |
           git config user.name "GitHub Actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git tag -a v${{ env.PROJECT_VERSION }} -m "Release ${{ env.PROJECT_VERSION }}"
+          git tag -a v${{ env.PROJECT_VERSION }} -m "v${{ env.PROJECT_VERSION }}"
           git push origin v${{ env.PROJECT_VERSION }}
 
       - name: Create Release
@@ -50,7 +55,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         with:
           tag_name: v${{ env.PROJECT_VERSION }}
-          release_name: Release ${{ env.PROJECT_VERSION }}
+          release_name: v${{ env.PROJECT_VERSION }}
           body: |
             Changes in this release:
             ${{ env.RELEASE_NOTES }}
