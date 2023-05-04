@@ -28,13 +28,20 @@ jobs:
           VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
           echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV
 
+      - name: Create Git tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git tag -a v${{ env.PROJECT_VERSION }} -m "Release ${{ env.PROJECT_VERSION }}"
+          git push origin v${{ env.PROJECT_VERSION }}
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
-          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         with:
-          tag_name: ${{ env.PROJECT_VERSION }}
+          tag_name: v${{ env.PROJECT_VERSION }}
           release_name: Release ${{ env.PROJECT_VERSION }}
           body: |
             Changes in this release:
@@ -45,7 +52,7 @@ jobs:
       - name: Upload Jar to Release
         uses: actions/upload-release-asset@v1
         env:
-          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./target/clouddisk-${{ env.PROJECT_VERSION }}.jar
