@@ -28,6 +28,14 @@ jobs:
           VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
           echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV
 
+      - name: Generate Release Notes
+        id: generate_release_notes
+        run: |
+          git fetch --prune --unshallow
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          COMMIT_MSGS=$(git log $LATEST_TAG..HEAD --grep 'fix:' --grep 'perf:' --grep 'feat:' --pretty=format:"%h - %s%n")
+          echo "RELEASE_NOTES=$COMMIT_MSGS" >> $GITHUB_ENV
+
       - name: Create Git tag
         run: |
           git config user.name "GitHub Actions"
@@ -45,7 +53,7 @@ jobs:
           release_name: Release ${{ env.PROJECT_VERSION }}
           body: |
             Changes in this release:
-            ${{ github.event.head_commit.message }}
+            ${{ env.RELEASE_NOTES }}
           draft: false
           prerelease: false
 
@@ -55,6 +63,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./target/clouddisk-${{ env.PROJECT_VERSION }}.jar
-          asset_name: clouddisk-${{ env.PROJECT_VERSION }}.jar
+          asset_path: ./target/clouddisk-${{ env.PROJECT_VERSION }}-exec.jar
+          asset_name: clouddisk-${{ env.PROJECT_VERSION }}-exec.jar
           asset_content_type: application/java-archive
