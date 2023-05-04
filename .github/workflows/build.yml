@@ -44,5 +44,7 @@ jobs:
           push: true
           tags: jmal/jmalcloud:${{ env.PROJECT_VERSION }},jmal/jmalcloud:latest
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            VERSION=${{ env.PROJECT_VERSION }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
