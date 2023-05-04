@@ -1,9 +1,10 @@
 name: Build and Push Multi-Platform Docker Image
 
 on:
-  push:
-    branches:
-      - release
+  workflow_dispatch:
+  release:
+    types: [published]
+    tags: [v*]
 
 jobs:
   build-and-push:
