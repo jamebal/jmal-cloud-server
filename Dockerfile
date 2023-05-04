@@ -2,10 +2,6 @@ FROM eclipse-temurin:17-jre
 
 MAINTAINER zhushilun084@gmail.com
 
-ARG version=1.0.0
-
-ENV VERSION $version
-
 ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
 
 # 安装 ffmpeg
