@@ -37,9 +37,7 @@ jobs:
           FIX_MSGS=$(git log $LATEST_TAG..HEAD --grep 'fix:' --pretty=format:"- %s%n")
           PERF_MSGS=$(git log $LATEST_TAG..HEAD --grep 'perf:' --pretty=format:"- %s%n")
           RELEASE_NOTES="### Features\n${FEAT_MSGS}\n### Fixes\n${FIX_MSGS}\n### Performance Improvements\n${PERF_MSGS}"
-          echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
-          echo "$RELEASE_NOTES" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo -e "RELEASE_NOTES<<EOF\n$RELEASE_NOTES\nEOF" >> $GITHUB_ENV
 
       - name: Create Git tag
         run: |
