@@ -262,14 +262,6 @@
             <artifactId>cos_api</artifactId>
             <version>5.6.139</version>
         </dependency>
-        <!-- javacv -->
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>javacv-platform</artifactId>
-            <version>1.5.8</version>
-        </dependency>
-
-
         <!-- test-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
