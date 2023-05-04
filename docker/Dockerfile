@@ -8,6 +8,10 @@ ENV VERSION $version
 
 ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
 
+# 安装 ffmpeg
+RUN apt-get update && \
+    apt-get install -y ffmpeg libavcodec-extra
+
 RUN mkdir -p /jmalcloud/files
 
 ADD ip2region.xdb /jmalcloud/
