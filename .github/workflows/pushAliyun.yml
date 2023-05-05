@@ -9,6 +9,11 @@ on:
 jobs:
   build_and_push:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch:
+          - amd64
+          - arm64
 
     steps:
       - name: Checkout code
@@ -55,6 +60,8 @@ jobs:
           tags: |
             registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:latest
             registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:${{ env.PROJECT_VERSION }}
+            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:latest-${{ matrix.arch }}
+            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:${{ env.PROJECT_VERSION }}-${{ matrix.arch }}
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
           username: ${{ secrets.ALIYUN_DOCKER_USERNAME }}
