@@ -55,13 +55,11 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/${{ matrix.arch }}
           push: true
           tags: |
-            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:latest
-            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:${{ env.PROJECT_VERSION }}
-            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:latest-${{ matrix.arch }}
-            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:${{ env.PROJECT_VERSION }}-${{ matrix.arch }}
+            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:latest${{ matrix.arch == 'amd64' && '' || '-' + matrix.arch }}
+            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:${{ env.PROJECT_VERSION }}${{ matrix.arch == 'amd64' && '' || '-' + matrix.arch }}
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
           username: ${{ secrets.ALIYUN_DOCKER_USERNAME }}
