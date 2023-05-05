@@ -54,4 +54,8 @@ jobs:
           push: true
           tags: |
             ccr.ccs.tencentyun.com/jmal/jmalcloud:latest
-            ccr.ccs.tencentyun.com/jmal/jmalcloud:${{ PROJECT_VERSION }}
+            ccr.ccs.tencentyun.com/jmal/jmalcloud:${{ env.PROJECT_VERSION }}
+          build-args: |
+            VERSION=${{ env.PROJECT_VERSION }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
