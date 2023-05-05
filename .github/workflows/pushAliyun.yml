@@ -38,7 +38,10 @@ jobs:
       - name: Extract project version from pom.xml
         run: |
           VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-          echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV        
+          echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV       
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -58,8 +61,8 @@ jobs:
           platforms: linux/${{ matrix.arch }}
           push: true
           tags: |
-            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:latest${{ matrix.arch == 'amd64' && '' || '-' + matrix.arch }}
-            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:${{ env.PROJECT_VERSION }}${{ matrix.arch == 'amd64' && '' || '-' + matrix.arch }}
+            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:latest${{ format(matrix.arch == 'amd64' ? '' : '-{0}', matrix.arch) }}
+            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:${{ env.PROJECT_VERSION }}${{ format(matrix.arch == 'amd64' ? '' : '-{0}', matrix.arch) }}
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
           username: ${{ secrets.ALIYUN_DOCKER_USERNAME }}
