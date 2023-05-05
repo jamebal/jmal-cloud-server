@@ -61,8 +61,8 @@ jobs:
           platforms: linux/${{ matrix.arch }}
           push: true
           tags: |
-            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:latest${{ format(matrix.arch == 'amd64' ? '' : '-{0}', matrix.arch) }}
-            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:${{ env.PROJECT_VERSION }}${{ format(matrix.arch == 'amd64' ? '' : '-{0}', matrix.arch) }}
+            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:latest${{ join('', matrix.arch == 'amd64' && '' || '-', matrix.arch) }}
+            registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:${{ env.PROJECT_VERSION }}${{ join('', matrix.arch == 'amd64' && '' || '-', matrix.arch) }}
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
           username: ${{ secrets.ALIYUN_DOCKER_USERNAME }}
