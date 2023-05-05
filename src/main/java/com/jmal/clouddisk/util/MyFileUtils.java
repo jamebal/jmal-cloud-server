@@ -25,7 +25,8 @@ public class MyFileUtils {
      * @return 字符编码
      */
     public static Charset getFileCharset(File file) {
-        return CharsetDetector.detect(file, StandardCharsets.UTF_8);
+        Charset charset = CharsetDetector.detect(file, StandardCharsets.UTF_8);
+        return charset == null ? StandardCharsets.UTF_8 : charset;
     }
 }
 
