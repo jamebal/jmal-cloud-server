@@ -2,6 +2,7 @@
 package com.jmal.clouddisk.ftp;
 
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
+import com.jmal.clouddisk.util.PasswordHash;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.FtpServerConfigurationException;
 import org.apache.ftpserver.ftplet.*;
@@ -442,9 +443,9 @@ public class MyPropertiesUserManager extends AbstractUserManager {
                 password = "";
             }
 
-            String actualPassword = userService.getPasswordByUserName(user);
+            String hashPassword = userService.getHashPasswordUserName(user);
 
-            if (password.equals(actualPassword)) {
+            if (PasswordHash.validatePassword(password, hashPassword)) {
                 return getUserByName(user);
             } else {
                 throw new AuthenticationFailedException("Authentication failed");

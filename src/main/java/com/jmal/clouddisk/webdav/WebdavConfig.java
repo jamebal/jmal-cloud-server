@@ -75,7 +75,7 @@ public class WebdavConfig {
 
             // 设置登录配置
             LoginConfig loginConfig = new LoginConfig();
-            loginConfig.setAuthMethod("DIGEST");
+            loginConfig.setAuthMethod("BASIC");
             context.setLoginConfig(loginConfig);
 
         });

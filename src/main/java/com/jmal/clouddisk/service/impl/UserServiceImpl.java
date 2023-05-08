@@ -248,7 +248,6 @@ public class UserServiceImpl implements IUserService {
         BeanUtils.copyProperties(consumer, consumerDTO);
         consumerDTO.setTakeUpSpace(fileService.takeUpSpace(consumerDTO.getId()));
         consumerDTO.setPassword(null);
-        consumerDTO.setEncryptPwd(null);
         if (consumerDTO.getAvatar() == null) {
             consumerDTO.setAvatar("");
         }
@@ -326,7 +325,6 @@ public class UserServiceImpl implements IUserService {
         if (!CharSequenceUtil.isBlank(userId)) {
             String originalPwd = "jmalcloud";
             // password 1000:0b69ec810783195a102a73c12d4794c29d06904de2f95da1:37c6a397accb83909dc1d15824b8ffb6010649aad9567e99
-            // encryptPwd 919a454fd838b5f036b760537b10d14a
             updatePwd(userId, originalPwd);
             return ResultUtil.successMsg("重置密码成功!");
         }
@@ -341,16 +339,13 @@ public class UserServiceImpl implements IUserService {
         query.addCriteria(Criteria.where("_id").is(userId));
         Update update = new Update();
         String password = PasswordHash.createHash(originalPwd);
-        String encryptPwd = getEncryptPwd(originalPwd, password);
         LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
-        update.set("encryptPwd", encryptPwd);
         update.set("password", password);
         update.set("updateTime", now);
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
         // 更新用户缓存
         ConsumerDO consumerDO = getUserInfoById(userId);
         if (consumerDO != null) {
-            consumerDO.setEncryptPwd(encryptPwd);
             consumerDO.setPassword(password);
             consumerDO.setUpdateTime(now);
             CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
@@ -372,13 +367,6 @@ public class UserServiceImpl implements IUserService {
             return "";
         }
         return consumer.getShowName();
-    }
-
-    public String getPasswordByUserName(String username) {
-        ConsumerDO consumer = getUserInfoByName(username);
-        String key = getPwdKey(consumer);
-        if (key == null) return "";
-        return getAES(key).decryptStr(consumer.getEncryptPwd());
     }
 
     public static String getDecryptStrByUser(String secret, ConsumerDO consumer) {
@@ -451,8 +439,6 @@ public class UserServiceImpl implements IUserService {
      */
     private static void encryption(ConsumerBase user, String originalPwd) {
         String password = PasswordHash.createHash(originalPwd);
-        String encryptPwd = getEncryptPwd(originalPwd, password);
-        user.setEncryptPwd(encryptPwd);
         user.setPassword(password);
     }
 

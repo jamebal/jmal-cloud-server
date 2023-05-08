@@ -4,6 +4,7 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.config.WebFilter;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import com.jmal.clouddisk.util.CaffeineUtil;
+import com.jmal.clouddisk.util.PasswordHash;
 import org.apache.catalina.Context;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
@@ -52,12 +53,19 @@ public class MyRealm extends RealmBase {
 
     @Override
     protected String getPassword(String username) {
-        return userService.getPasswordByUserName(username);
+        return null;
     }
 
     @Override
     protected Principal getPrincipal(String username) {
         return new GenericPrincipal(username, DEFAULT_ROLES);
+    }
+
+    @Override
+    public Principal authenticate(String username, String password) {
+        String hashPassword = userService.getHashPasswordUserName(username);
+        boolean valid = PasswordHash.validatePassword(password, hashPassword);
+        return valid ? getPrincipal(username) : null;
     }
 
     @Override
