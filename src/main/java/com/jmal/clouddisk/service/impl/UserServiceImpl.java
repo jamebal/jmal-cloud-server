@@ -407,10 +407,12 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public ResponseResult<Object> initialization(ConsumerDO user) {
+    public ResponseResult<Object> initialization(ConsumerDTO consumerDTO) {
         Query query = new Query();
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         if (count < 1) {
+            ConsumerDO user = new ConsumerDO();
+            BeanUtils.copyProperties(consumerDTO, user);
             // 首先初始化菜单和角色
             menuService.initMenus();
             roleService.initRoles();

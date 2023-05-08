@@ -1,23 +1,30 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
+import com.jmal.clouddisk.model.LdapConfigDO;
+import com.jmal.clouddisk.model.LdapConfigDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.service.IAuthService;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.PasswordHash;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.core.LdapOperations;
+import org.springframework.ldap.query.LdapQuery;
+import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -29,16 +36,16 @@ import java.util.Map;
  * @Date 2020-01-25 18:52
  */
 @Service
+@RequiredArgsConstructor
 public class AuthServiceImpl implements IAuthService {
 
-    @Autowired
-    MongoTemplate mongoTemplate;
+    private final MongoTemplate mongoTemplate;
 
-    @Autowired
-    LdapTemplate ldapTemplate;
+    private final LdapOperations ldapTemplate;
 
-    @Autowired
-    UserLoginHolder userLoginHolder;
+    private final UserLoginHolder userLoginHolder;
+
+    private final IUserService userService;
 
     private static final String LOGIN_ERROR = "用户名或密码错误";
 
@@ -69,8 +76,9 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public ResponseResult<Object> ldapLogin(HttpServletResponse response, String username, String password) {
-        boolean auth = ldapTemplate.authenticate("ou=people", "uid=" + username, password);
-        Console.log(auth);
+        LdapQuery query = LdapQueryBuilder.query()
+                .where("uid").is(username);
+        ldapTemplate.authenticate(query, password);
         return null;
     }
 
@@ -87,8 +95,8 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
-    public ResponseResult<Object> validOldPass(String id, String password) {
-        ConsumerDO user = mongoTemplate.findById(id, ConsumerDO.class, UserServiceImpl.COLLECTION_NAME);
+    public ResponseResult<Object> validOldPass(String userId, String password) {
+        ConsumerDO user = mongoTemplate.findById(userId, ConsumerDO.class, UserServiceImpl.COLLECTION_NAME);
         if (user == null) {
             return ResultUtil.warning(LOGIN_ERROR);
         } else {
@@ -99,4 +107,23 @@ public class AuthServiceImpl implements IAuthService {
         }
         return ResultUtil.warning(LOGIN_ERROR);
     }
+
+    @Override
+    public ResponseResult<Object> ldapConfig(LdapConfigDTO ldapConfigDTO) {
+        // 判断操作用户是否为网盘创建者
+        String userId = userLoginHolder.getUserId();
+        ConsumerDO consumerDO = userService.userInfoById(userId);
+        if (BooleanUtil.isFalse(consumerDO.getCreator())) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
+        }
+        String id = "6458f8c5bb943e3cf1db5f29";
+        LdapConfigDO ldapConfigDO = new LdapConfigDO();
+        BeanUtils.copyProperties(ldapConfigDTO, ldapConfigDO);
+        ldapConfigDO.setId(id);
+        ldapConfigDO.setUserId(userId);
+        ldapConfigDO.setPassword(UserServiceImpl.getEncryptPwd(ldapConfigDTO.getPassword(), consumerDO.getPassword()));
+        mongoTemplate.save(ldapConfigDTO);
+        return ResultUtil.success();
+    }
+
 }

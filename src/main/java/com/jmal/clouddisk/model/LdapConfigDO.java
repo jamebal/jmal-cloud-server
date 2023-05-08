@@ -10,20 +10,28 @@ import org.springframework.data.mongodb.core.mapping.Document;
  */
 @Data
 @Document(collection = "ldapConfig")
-public class LdapDO {
-
+public class LdapConfigDO {
+    String id;
     /**
-     * 服务器host
+     * 是否启用
      */
-    String ldapHost;
+    Boolean enable;
+    /**
+     * ldap服务器
+     */
+    String ldapServer;
     /**
      * 端口号
      */
     String port;
     /**
-     * 用户组
+     * 管理账号
      */
-    String group;
+    String account;
+    /**
+     * 管理账号密码
+     */
+    String password;
     /**
      * baseDN
      */
@@ -33,4 +41,5 @@ public class LdapDO {
      */
     String loginName;
 
+    String userId;
 }

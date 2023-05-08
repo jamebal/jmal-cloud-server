@@ -3,8 +3,8 @@ package com.jmal.clouddisk.controller.rest;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
+import com.jmal.clouddisk.model.LdapConfigDTO;
 import com.jmal.clouddisk.model.LogOperation;
-import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
@@ -45,12 +45,26 @@ public class AuthController {
         return authService.ldapLogin(response, userDTO.getUsername(), userDTO.getPassword());
     }
 
+    @Operation(summary = "ldap登录")
+    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
+    @GetMapping("/login/ldap")
+    public ResponseResult<Object> loginLdap(@RequestParam String username, @RequestParam String password, HttpServletResponse response) {
+        return authService.ldapLogin(response, username, password);
+    }
+
+    @Operation(summary = "ldap配置")
+    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
+    @PutMapping("/ldap/config")
+    public ResponseResult<Object> ldapConfig(@RequestBody LdapConfigDTO ldapConfigDTO) {
+        return authService.ldapConfig(ldapConfigDTO);
+    }
+
     @Operation(summary = "校验旧密码")
     @PostMapping("/valid-old-pass")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     @Permission("sys:user:list")
-    public ResponseResult<Object> validOldPass(@RequestBody ConsumerDO user) {
-        return authService.validOldPass(user.getId(), user.getPassword());
+    public ResponseResult<Object> validOldPass(@RequestBody ConsumerDTO consumerDTO) {
+        return authService.validOldPass(consumerDTO.getId(), consumerDTO.getPassword());
     }
 
     @Operation(summary = "登出")
@@ -72,7 +86,7 @@ public class AuthController {
     @Operation(summary = "初始化创建管理员")
     @PostMapping("/public/initialization")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> initialization(ConsumerDO consumer) {
+    public ResponseResult<Object> initialization(ConsumerDTO consumer) {
         return userService.initialization(consumer);
     }
 }

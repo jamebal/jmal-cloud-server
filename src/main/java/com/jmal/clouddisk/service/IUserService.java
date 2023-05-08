@@ -95,10 +95,10 @@ public interface IUserService {
 
     /***
      * 初始化创建管理员
-     * @param consumer ConsumerDO
+     * @param consumer ConsumerDTO
      * @return ResponseResult
      */
-    ResponseResult<Object> initialization(ConsumerDO consumer);
+    ResponseResult<Object> initialization(ConsumerDTO consumer);
 
     /***
      * 获取用户名
