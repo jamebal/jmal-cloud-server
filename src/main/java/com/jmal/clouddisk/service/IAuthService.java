@@ -2,7 +2,6 @@ package com.jmal.clouddisk.service;
 
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.util.ResponseResult;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
@@ -17,7 +16,9 @@ public interface IAuthService {
      * @param userDTO ConsumerDTO
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> login(HttpServletRequest request, HttpServletResponse response, ConsumerDTO userDTO);
+    ResponseResult<Object> login(HttpServletResponse response, ConsumerDTO userDTO);
+
+    ResponseResult<Object> ldapLogin(HttpServletResponse response, String username, String password);
 
     /***
      * 登出
@@ -33,4 +34,6 @@ public interface IAuthService {
      * @return
      */
     ResponseResult<Object> validOldPass(String id, String password);
+
+
 }

@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
@@ -11,12 +12,12 @@ import com.jmal.clouddisk.util.PasswordHash;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -34,12 +35,15 @@ public class AuthServiceImpl implements IAuthService {
     MongoTemplate mongoTemplate;
 
     @Autowired
+    LdapTemplate ldapTemplate;
+
+    @Autowired
     UserLoginHolder userLoginHolder;
 
     private static final String LOGIN_ERROR = "用户名或密码错误";
 
     @Override
-    public ResponseResult<Object> login(HttpServletRequest request, HttpServletResponse response, ConsumerDTO userDTO) {
+    public ResponseResult<Object> login(HttpServletResponse response, ConsumerDTO userDTO) {
         String username = userDTO.getUsername();
         String password = userDTO.getPassword();
         Query query = new Query();
@@ -61,6 +65,13 @@ public class AuthServiceImpl implements IAuthService {
             }
         }
         return ResultUtil.error(LOGIN_ERROR);
+    }
+
+    @Override
+    public ResponseResult<Object> ldapLogin(HttpServletResponse response, String username, String password) {
+        boolean auth = ldapTemplate.authenticate("ou=people", "uid=" + username, password);
+        Console.log(auth);
+        return null;
     }
 
     @Override

@@ -14,10 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 登录、登出、验证
@@ -30,21 +27,29 @@ public class AuthController {
 
     @Autowired
     IAuthService authService;
+
     @Autowired
     IUserService userService;
 
     @Operation(summary = "登录")
     @LogOperatingFun(logType = LogOperation.Type.LOGIN)
     @PostMapping("/login")
-    public ResponseResult<Object> login(@RequestBody ConsumerDTO userDTO, HttpServletRequest request, HttpServletResponse response){
-        return authService.login(request, response, userDTO);
+    public ResponseResult<Object> login(@RequestBody ConsumerDTO userDTO, HttpServletResponse response) {
+        return authService.login(response, userDTO);
+    }
+
+    @Operation(summary = "ldap登录")
+    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
+    @PostMapping("/login/ldap")
+    public ResponseResult<Object> loginLdap(@RequestBody ConsumerDTO userDTO, HttpServletResponse response) {
+        return authService.ldapLogin(response, userDTO.getUsername(), userDTO.getPassword());
     }
 
     @Operation(summary = "校验旧密码")
     @PostMapping("/valid-old-pass")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     @Permission("sys:user:list")
-    public ResponseResult<Object> validOldPass(@RequestBody ConsumerDO user){
+    public ResponseResult<Object> validOldPass(@RequestBody ConsumerDO user) {
         return authService.validOldPass(user.getId(), user.getPassword());
     }
 
@@ -52,7 +57,7 @@ public class AuthController {
     @GetMapping("/logout")
     @LogOperatingFun
     @Permission("sys:user:list")
-    public ResponseResult<Object> logout(HttpServletRequest request, HttpServletResponse response){
+    public ResponseResult<Object> logout(HttpServletRequest request, HttpServletResponse response) {
         String token = request.getHeader(AuthInterceptor.JMAL_TOKEN);
         return authService.logout(token, response);
     }
@@ -60,14 +65,14 @@ public class AuthController {
     @Operation(summary = "是否有用户")
     @GetMapping("/public/has_user")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Boolean> hasUser(){
+    public ResponseResult<Boolean> hasUser() {
         return userService.hasUser();
     }
 
     @Operation(summary = "初始化创建管理员")
     @PostMapping("/public/initialization")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> initialization(ConsumerDO consumer){
+    public ResponseResult<Object> initialization(ConsumerDO consumer) {
         return userService.initialization(consumer);
     }
 }
