@@ -19,6 +19,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.ldap.core.AttributesMapper;
@@ -37,6 +38,7 @@ import java.util.Map;
  * @Date 2020-01-25 18:52
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AuthServiceImpl implements IAuthService {
 
@@ -176,6 +178,7 @@ public class AuthServiceImpl implements IAuthService {
                     (AttributesMapper<String>) attributes -> attributes.get("objectClass").get().toString());
             return ResultUtil.success();
         } catch (Exception e) {
+            log.warn(e.getMessage(), e);
             return ResultUtil.warning("配置有误");
         }
     }

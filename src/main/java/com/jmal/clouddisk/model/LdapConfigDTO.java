@@ -23,12 +23,8 @@ public class LdapConfigDTO {
     Boolean enable;
 
     @NotNull(message = "ldap服务器不能为空")
-    @Schema(name = "ldapServer", title = "ldap服务器", example = "ldap.test.com:389")
+    @Schema(name = "ldapServer", title = "ldap服务器", example = "localhost:8389")
     String ldapServer;
-
-    @NotNull(message = "管理账号不能为空")
-    @Schema(name = "account", title = "管理账号", example = "admin")
-    String account;
 
     @NotNull(message = "默认角色不能为空")
     @Schema(name = "defaultRoleList", title = "默认角色", example = "")
@@ -51,7 +47,6 @@ public class LdapConfigDTO {
         ldapConfigDO.setId("6458f8c5bb943e3cf1db5f29");
         ldapConfigDO.setEnable(this.enable);
         ldapConfigDO.setLdapServer(this.ldapServer);
-        ldapConfigDO.setAccount(this.account);
         ldapConfigDO.setDefaultRoleList(this.defaultRoleList);
         ldapConfigDO.setPassword(UserServiceImpl.getEncryptPwd(this.password, consumerDO.getPassword()));
         ldapConfigDO.setBaseDN(this.baseDN);
