@@ -1,10 +1,7 @@
 package com.jmal.clouddisk.controller.rest;
 
-import cn.hutool.core.convert.Convert;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.service.IShareService;
-import com.jmal.clouddisk.util.ResponseResult;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -51,19 +48,13 @@ public class VideoController {
 
     @GetMapping("/public/video/hls/{username}/{fileMd5}.m3u8")
     public ResponseEntity<UrlResource> publicM3u8(@PathVariable String username, @PathVariable String fileMd5, HttpServletRequest request) throws IOException {
-        ResponseResult<Object> result = shareService.validShare(request);
-        if (result != null) {
-            throw new CommonException(result.getCode(), Convert.toStr(result.getMessage()));
-        }
+        shareService.validShare(request);
         return m3u8(username, fileMd5);
     }
 
     @GetMapping("/public/video/hls/{username}/{fileMd5}-{index}.ts")
     public ResponseEntity<UrlResource> publicTs(@PathVariable String username, @PathVariable String fileMd5, @PathVariable String index, HttpServletRequest request) throws IOException {
-        ResponseResult<Object> result = shareService.validShare(request);
-        if (result != null) {
-            throw new CommonException(result.getCode(), Convert.toStr(result.getMessage()));
-        }
+        shareService.validShare(request);
         return ts(username, fileMd5, index);
     }
 

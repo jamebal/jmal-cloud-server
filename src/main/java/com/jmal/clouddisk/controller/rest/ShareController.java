@@ -26,10 +26,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.util.UriUtils;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -115,8 +114,7 @@ public class ShareController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> accessShare(HttpServletRequest request, @RequestParam String share, Integer pageIndex, Integer pageSize) {
         ShareDO shareDO = shareService.getShare(share);
-        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
-        if (validSHare != null) return validSHare;
+        shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
         return shareService.accessShare(shareDO, pageIndex, pageSize);
     }
 
@@ -132,9 +130,7 @@ public class ShareController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> accessShareOpenDir(HttpServletRequest request, @RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize) {
         ShareDO shareDO = shareService.getShare(share);
-        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
-        if (validSHare != null) return validSHare;
-
+        shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
         return shareService.accessShareOpenDir(shareDO, fileId, pageIndex, pageSize);
     }
 
@@ -142,11 +138,7 @@ public class ShareController {
     @GetMapping("/public/s/packageDownload")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public void publicPackageDownload(HttpServletRequest request, HttpServletResponse response, @RequestParam String shareId, @RequestParam String[] fileIds) {
-        ResponseResult<Object> validShare = shareService.validShare(request.getParameter(Constants.SHARE_TOKEN), shareId);
-        if (validShare != null) {
-            response(response, invalid());
-            return;
-        }
+        shareService.validShare(request.getParameter(Constants.SHARE_TOKEN), shareId);
         if (fileIds != null && fileIds.length > 0) {
             List<String> fileIdList = Arrays.asList(fileIds);
             fileService.publicPackageDownload(request, response, fileIdList);
@@ -154,16 +146,6 @@ public class ShareController {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }
     }
-
-    private void response(HttpServletResponse response, String msg) {
-        try (OutputStream out = response.getOutputStream()) {
-            out.write(msg.getBytes(StandardCharsets.UTF_8));
-            out.flush();
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-        }
-    }
-
 
     @Operation(summary = "显示缩略图")
     @GetMapping("/articles/s/view/thumbnail")
@@ -213,28 +195,47 @@ public class ShareController {
     @Operation(summary = "读取simText文件")
     @GetMapping("/public/s/preview/text")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> preview(HttpServletRequest request, @RequestParam String shareId, @RequestParam String fileId) {
-        ShareDO shareDO = shareService.getShare(shareId);
-        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
-        if (validSHare != null) return validSHare;
-        ConsumerDO consumer = userService.userInfoById(shareDO.getUserId());
-        if (consumer == null) {
-            return ResultUtil.warning(SHARE_EXPIRED);
-        }
+    public ResponseResult<Object> preview(HttpServletRequest request, @RequestParam String shareId, @RequestParam String fileId, Boolean content) {
+        ConsumerDO consumerDO = validShare(request, shareId);
         Path prePth = Paths.get(fileId);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
             return ResultUtil.success(webOssService.readToText(ossPath, prePth));
         }
-        return ResultUtil.success(fileService.getById(fileId, consumer.getUsername()));
+        return ResultUtil.success(fileService.getById(fileId, consumerDO.getUsername(), content));
+    }
+
+    @Operation(summary = "流式读取simText文件")
+    @GetMapping("/public/s/preview/text/stream")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseEntity<StreamingResponseBody> previewTextStream(HttpServletRequest request, @RequestParam String shareId, @RequestParam String fileId) {
+        ConsumerDO consumerDO = validShare(request, shareId);
+        Path prePth = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        StreamingResponseBody responseBody;
+        if (ossPath != null) {
+            responseBody = webOssService.readToTextStream(ossPath, prePth);
+        } else {
+            responseBody = fileService.getStreamById(fileId, consumerDO.getUsername());
+        }
+        return new ResponseEntity<>(responseBody, HttpStatus.OK);
+    }
+
+    private ConsumerDO validShare(HttpServletRequest request, String shareId) {
+        ShareDO shareDO = shareService.getShare(shareId);
+        shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
+        ConsumerDO consumer = userService.userInfoById(shareDO.getUserId());
+        if (consumer == null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), SHARE_EXPIRED);
+        }
+        return consumer;
     }
 
     @Operation(summary = "根据id获取分享的文件信息")
     @GetMapping("/public/file_info")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> getFileById(HttpServletRequest request, @RequestParam String fileId, @RequestParam String shareId) {
-        ResponseResult<Object> validSHare = shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareId);
-        if (validSHare != null) return validSHare;
+        shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareId);
         return ResultUtil.success(fileService.getById(fileId));
     }
 

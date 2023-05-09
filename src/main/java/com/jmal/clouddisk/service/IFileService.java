@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,12 +26,20 @@ import java.util.Optional;
 public interface IFileService {
 
     /***
-     * 在线显示文件
+     * 获取文件信息
      * @param id
      * @param username
      * @return
      */
-    Optional<FileDocument> getById(String id, String username);
+    Optional<FileDocument> getById(String id, String username, Boolean content);
+
+    /***
+     * 流式读取文本文件
+     * @param id
+     * @param username
+     * @return
+     */
+    StreamingResponseBody getStreamById(String id, String username);
 
     FileDocument getFileDocumentByPathAndName(String path, String name, String username);
 
@@ -42,6 +51,15 @@ public interface IFileService {
      * @throws CommonException
      */
     ResponseResult<Object> previewTextByPath(String path, String username);
+
+    /***
+     * 根据path流式读取simText文件
+     * @param path
+     * @param username
+     * @return
+     * @throws CommonException
+     */
+    StreamingResponseBody previewTextByPathStream(String path, String username);
 
     /***
      * 查找下级目录

@@ -29,6 +29,7 @@ import com.mongodb.client.AggregateIterable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.ClientAbortException;
 import org.apache.commons.compress.utils.Lists;
 import org.apache.tika.mime.MimeType;
 import org.apache.tika.mime.MimeTypeException;
@@ -36,6 +37,7 @@ import org.apache.tika.mime.MimeTypes;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -45,12 +47,13 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -379,18 +382,36 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public Optional<FileDocument> getById(String id, String username) {
+    public Optional<FileDocument> getById(String id, String username, Boolean content) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
             String currentDirectory = getUserDirectory(fileDocument.getPath());
             Path filepath = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName());
             if (Files.exists(filepath)) {
                 File file = filepath.toFile();
-                fileDocument.setContentText(FileUtil.readString(file, MyFileUtils.getFileCharset(file)));
+                Charset charset = MyFileUtils.getFileCharset(file);
+                fileDocument.setDecoder(charset.toString());
+                if (BooleanUtil.isTrue(content)) {
+                    fileDocument.setContentText(FileUtil.readString(file, charset));
+                }
             }
             return Optional.of(fileDocument);
         }
         return Optional.empty();
+    }
+
+    @Override
+    public StreamingResponseBody getStreamById(String id, String username) {
+        FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
+        if (fileDocument != null) {
+            String currentDirectory = getUserDirectory(fileDocument.getPath());
+            Path filepath = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName());
+            if (Files.exists(filepath)) {
+                File file = filepath.toFile();
+                return getStreamingResponseBody(file);
+            }
+        }
+        return outputStream -> {};
     }
 
     @Override
@@ -414,7 +435,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         FileDocument fileDocument = new FileDocument();
-        fileDocument.setContentText(FileUtil.readString(file, MyFileUtils.getFileCharset(file)));
+        fileDocument.setDecoder(MyFileUtils.getFileCharset(file).toString());
         Path path1 = path.subpath(0, path.getNameCount() - 1);
         int rootCount = Paths.get(fileProperties.getRootDir(), username).getNameCount();
         int path1Count = path1.getNameCount();
@@ -426,6 +447,37 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         fileDocument.setName(file.getName());
         fileDocument.setIsFolder(file.isDirectory());
         return ResultUtil.success(fileDocument);
+    }
+
+    @Override
+    public StreamingResponseBody previewTextByPathStream(String filePath, String username) {
+        Path path = Paths.get(fileProperties.getRootDir(), username, filePath);
+        File file = path.toFile();
+        if (!file.exists()) {
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
+        return getStreamingResponseBody(file);
+    }
+
+    @NotNull
+    private static StreamingResponseBody getStreamingResponseBody(File file) {
+        return outputStream -> {
+            Charset charset = MyFileUtils.getFileCharset(file);
+            try (InputStream inputStream = FileUtil.getInputStream(file);
+                 InputStreamReader inputStreamReader = new InputStreamReader(inputStream, charset);
+                 BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+                String line;
+                while ((line = bufferedReader.readLine()) != null) {
+                    outputStream.write(line.getBytes(charset));
+                    outputStream.write("\n".getBytes(charset));
+                    outputStream.flush();
+                }
+            } catch (ClientAbortException ignored) {
+                // ignored
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            }
+        };
     }
 
     @Override

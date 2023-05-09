@@ -14,7 +14,6 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
-import com.jmal.clouddisk.util.ResponseResult;
 import com.luciad.imageio.webp.WebPWriteParam;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -235,8 +234,8 @@ public class FileInterceptor implements HandlerInterceptor {
         if (CharSequenceUtil.isBlank(shareToken)) {
             shareToken = request.getParameter(Constants.SHARE_TOKEN);
         }
-        ResponseResult<Object> result = shareService.validShare(shareToken, shareDO.getId());
-        return result != null;
+        shareService.validShare(shareToken, shareDO.getId());
+        return true;
     }
 
     private void webp(HttpServletRequest request, HttpServletResponse response) {

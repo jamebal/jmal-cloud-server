@@ -24,9 +24,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -165,13 +167,29 @@ public class FileController {
     @GetMapping("/preview/text")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> previewText(@RequestParam String id, @RequestParam String username, @RequestParam String path, @RequestParam String fileName) {
+    public ResponseResult<Object> previewText(@RequestParam String id, @RequestParam String username, @RequestParam String path, @RequestParam String fileName, Boolean content) {
         Path prePth = Paths.get(username, path, fileName);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
             return ResultUtil.success(webOssService.readToText(ossPath, prePth));
         }
-        return ResultUtil.success(fileService.getById(id, username));
+        return ResultUtil.success(fileService.getById(id, username, content));
+    }
+
+    @Operation(summary = "流式读取simText文件")
+    @GetMapping("/preview/text/stream")
+    @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseEntity<StreamingResponseBody> previewTextStream(HttpServletRequest request, @RequestParam String id, @RequestParam String username, @RequestParam String path, @RequestParam String fileName) {
+        Path prePth = Paths.get(username, path, fileName);
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        StreamingResponseBody responseBody;
+        if (ossPath != null) {
+            responseBody = webOssService.readToTextStream(ossPath, prePth);
+        } else {
+            responseBody = fileService.getStreamById(id, username);
+        }
+        return new ResponseEntity<>(responseBody, HttpStatus.OK);
     }
 
     @Operation(summary = "根据path读取simText文件")
@@ -185,6 +203,22 @@ public class FileController {
             return ResultUtil.success(webOssService.readToText(ossPath, prePth));
         }
         return fileService.previewTextByPath(URLUtil.decode(path), username);
+    }
+
+    @Operation(summary = "根据path流式读取simText文件")
+    @GetMapping("/preview/path/text/stream")
+    @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseEntity<StreamingResponseBody> previewTextByPathStream(@RequestParam String path,@RequestParam String username) {
+        Path prePth = Paths.get(username, path);
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        StreamingResponseBody responseBody;
+        if (ossPath != null) {
+            responseBody = webOssService.readToTextStream(ossPath, prePth);
+        } else {
+            responseBody = fileService.previewTextByPathStream(URLUtil.decode(path), username);
+        }
+        return new ResponseEntity<>(responseBody, HttpStatus.OK);
     }
 
     @Operation(summary = "是否允许下载")

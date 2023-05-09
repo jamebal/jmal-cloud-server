@@ -4,6 +4,8 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -159,13 +161,16 @@ public class ShareServiceImpl implements IShareService {
         return ResultUtil.warning("提取码有误");
     }
 
-    public ResponseResult<Object> validShare(String shareToken, String shareId) {
+    public void validShare(String shareToken, String shareId) {
         ShareDO shareDO = getShare(shareId);
-        return validShare(shareToken, shareDO);
+        if (shareDO == null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), Constants.LINK_FAILED);
+        }
+        validShare(shareToken, shareDO);
     }
 
     @Override
-    public ResponseResult<Object>  validShare(HttpServletRequest request) {
+    public void validShare(HttpServletRequest request) {
         String shareToken = request.getHeader(Constants.SHARE_TOKEN);
         String shareId = request.getHeader(Constants.SHARE_ID);
         if (CharSequenceUtil.isBlank(shareToken)) {
@@ -181,16 +186,16 @@ public class ShareServiceImpl implements IShareService {
             shareId = AuthInterceptor.getCookie(request, Constants.SHARE_ID);
         }
         if (CharSequenceUtil.isBlank(shareId) || CharSequenceUtil.isBlank(shareToken)) {
-            return ResultUtil.warning(Constants.LINK_FAILED);
+            throw new CommonException(ExceptionType.WARNING.getCode(), Constants.LINK_FAILED);
         }
-        return validShare(shareToken, shareId);
+        validShare(shareToken, shareId);
     }
 
-    public ResponseResult<Object> validShare(String shareToken, ShareDO shareDO) {
+    public void validShare(String shareToken, ShareDO shareDO) {
         if (!checkWhetherExpired(shareDO)) {
-            return ResultUtil.warning(SHARE_EXPIRED);
+            throw new CommonException(ExceptionType.WARNING.getCode(), SHARE_EXPIRED);
         }
-        return validShareCode(shareToken, shareDO);
+        validShareCode(shareToken, shareDO);
     }
 
     @Override
@@ -214,9 +219,9 @@ public class ShareServiceImpl implements IShareService {
     }
 
     @Override
-    public ResponseResult<Object> validShareCode(String shareToken, ShareDO shareDO) {
+    public void validShareCode(String shareToken, ShareDO shareDO) {
         if (!checkWhetherExpired(shareDO)) {
-            return ResultUtil.success(Constants.LINK_FAILED);
+            throw new CommonException(ExceptionType.WARNING.getCode(), Constants.LINK_FAILED);
         }
         // 检查是否为私密链接
         if (BooleanUtil.isTrue(shareDO.getIsPrivacy())) {
@@ -225,15 +230,14 @@ public class ShareServiceImpl implements IShareService {
             shareVO.setExtractionCode(null);
             // 先检查有没有share-token
             if (CharSequenceUtil.isBlank(shareToken)) {
-                return ResultUtil.success(shareVO);
+                throw new CommonException(ExceptionType.ACCESS_FORBIDDEN);
             }
             // 再检查share-token是否正确
             if (!shareDO.getId().equals(TokenUtil.getTokenKey(shareToken))) {
                 // 验证失败
-                return ResultUtil.success(shareVO);
+                throw new CommonException(ExceptionType.ACCESS_FORBIDDEN);
             }
         }
-        return null;
     }
 
     @Override

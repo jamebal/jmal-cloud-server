@@ -72,6 +72,10 @@ public class FileDocument extends FileBase {
      * 文件内容
      */
     private String contentText;
+    /**
+     * 文件编码
+     */
+    private String decoder;
     /***
      * html内容
      */

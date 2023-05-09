@@ -35,6 +35,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.util.UriUtils;
 
 import java.io.*;
@@ -218,18 +219,35 @@ public class WebOssService extends WebOssCommonService {
              InputStream inputStream = abstractOssObject.getInputStream()) {
             FileIntroVO fileIntroVO = new FileIntroVO();
             FileInfo fileInfo = abstractOssObject.getFileInfo();
-            String context;
             if (fileInfo != null && inputStream != null) {
                 String userId = userService.getUserIdByUserName(getUsernameByOssPath(ossPath));
                 fileIntroVO = fileInfo.toFileIntroVO(ossPath, userId);
-                context = IoUtil.read(inputStream, StandardCharsets.UTF_8);
-                fileIntroVO.setContentText(context);
             }
             return Optional.of(fileIntroVO);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
         return Optional.empty();
+    }
+
+    public StreamingResponseBody readToTextStream(String ossPath, Path prePth) {
+        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+        String objectName = getObjectName(prePth, ossPath, false);
+        return outputStream -> {
+            try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName);
+                 InputStream inputStream = abstractOssObject.getInputStream();
+                 InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+                 BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+                String line;
+                while ((line = bufferedReader.readLine()) != null) {
+                    outputStream.write(line.getBytes(StandardCharsets.UTF_8));
+                    outputStream.write("\n".getBytes(StandardCharsets.UTF_8));
+                    outputStream.flush();
+                }
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            }
+        };
     }
 
     public UploadResponse checkChunk(String ossPath, Path prePth, UploadApiParamDTO upload) {

@@ -4,7 +4,6 @@ import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
-import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,8 +29,6 @@ public class FileViewController {
     @Autowired
     IShareService shareService;
 
-    private static final String FORWARD_INVALID = "forward:/public/s/invalid";
-
     @Operation(summary = "预览文档里的图片")
     @GetMapping("/public/view")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -44,8 +41,7 @@ public class FileViewController {
     @GetMapping("/public/s/preview/{filename}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public String publicPreview(@RequestParam String fileId, @RequestParam String shareId, @RequestParam String shareToken) {
-        ResponseResult<Object> validSHare = shareService.validShare(shareToken, shareId);
-        if (validSHare != null) return FORWARD_INVALID;
+        shareService.validShare(shareToken, shareId);
         return fileService.viewFile(fileId, fileId, shareToken, "preview");
     }
 
@@ -53,8 +49,7 @@ public class FileViewController {
     @GetMapping("/public/s/download/{filename}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public String publicDownload(@RequestParam String fileId, @RequestParam String shareId, @RequestParam String shareToken) {
-        ResponseResult<Object> validSHare = shareService.validShare(shareToken, shareId);
-        if (validSHare != null) return FORWARD_INVALID;
+        shareService.validShare(shareToken, shareId);
         return fileService.viewFile(fileId, fileId, shareToken, "download");
     }
 

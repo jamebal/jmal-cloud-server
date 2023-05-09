@@ -105,11 +105,11 @@ public interface IShareService {
      */
     ResponseResult<Object> validShareCode(String shareId, String shareCode);
 
-    ResponseResult<Object> validShareCode(String shareToken, ShareDO shareDO);
+    void validShareCode(String shareToken, ShareDO shareDO);
 
-    ResponseResult<Object> validShare(String shareToken, ShareDO shareDO);
+    void validShare(String shareToken, ShareDO shareDO);
 
-    ResponseResult<Object> validShare(String shareToken, String shareId);
+    void validShare(String shareToken, String shareId);
 
-    ResponseResult<Object> validShare(HttpServletRequest request);
+    void validShare(HttpServletRequest request);
 }
