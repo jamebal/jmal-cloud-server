@@ -171,7 +171,7 @@ public class FileController {
         Path prePth = Paths.get(username, path, fileName);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
-            return ResultUtil.success(webOssService.readToText(ossPath, prePth));
+            return ResultUtil.success(webOssService.readToText(ossPath, prePth, content));
         }
         return ResultUtil.success(fileService.getById(id, username, content));
     }
@@ -200,7 +200,7 @@ public class FileController {
         Path prePth = Paths.get(username, path);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
-            return ResultUtil.success(webOssService.readToText(ossPath, prePth));
+            return ResultUtil.success(webOssService.readToText(ossPath, prePth, false));
         }
         return fileService.previewTextByPath(URLUtil.decode(path), username);
     }

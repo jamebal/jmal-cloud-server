@@ -212,7 +212,7 @@ public class WebOssService extends WebOssCommonService {
         return pageList;
     }
 
-    public Optional<FileIntroVO> readToText(String ossPath, Path prePth) {
+    public Optional<FileIntroVO> readToText(String ossPath, Path prePth, Boolean content) {
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, false);
         try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName);
@@ -222,6 +222,10 @@ public class WebOssService extends WebOssCommonService {
             if (fileInfo != null && inputStream != null) {
                 String userId = userService.getUserIdByUserName(getUsernameByOssPath(ossPath));
                 fileIntroVO = fileInfo.toFileIntroVO(ossPath, userId);
+                if (BooleanUtil.isTrue(content)) {
+                    String context = IoUtil.read(inputStream, StandardCharsets.UTF_8);
+                    fileIntroVO.setContentText(context);
+                }
             }
             return Optional.of(fileIntroVO);
         } catch (IOException e) {

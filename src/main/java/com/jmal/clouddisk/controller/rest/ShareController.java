@@ -200,7 +200,7 @@ public class ShareController {
         Path prePth = Paths.get(fileId);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
-            return ResultUtil.success(webOssService.readToText(ossPath, prePth));
+            return ResultUtil.success(webOssService.readToText(ossPath, prePth, content));
         }
         return ResultUtil.success(fileService.getById(fileId, consumerDO.getUsername(), content));
     }
