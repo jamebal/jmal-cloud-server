@@ -1,7 +1,12 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.model.rbac.RoleDTO;
+import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.List;
 
 /**
  * @author jmal
@@ -21,13 +26,13 @@ public class LdapConfigDO {
      */
     String ldapServer;
     /**
-     * 端口号
-     */
-    String port;
-    /**
      * 管理账号
      */
     String account;
+    /**
+     * 默认角色
+     */
+    List<String> defaultRoleList;
     /**
      * 管理账号密码
      */
@@ -42,4 +47,16 @@ public class LdapConfigDO {
     String loginName;
 
     String userId;
+
+    public LdapConfigDTO toLdapConfigDTO(ConsumerDO consumerDO) {
+        LdapConfigDTO ldapConfigDTO = new LdapConfigDTO();
+        ldapConfigDTO.setEnable(this.enable);
+        ldapConfigDTO.setLdapServer(this.ldapServer);
+        ldapConfigDTO.setAccount(this.account);
+        ldapConfigDTO.setDefaultRoleList(this.defaultRoleList);
+        ldapConfigDTO.setPassword(UserServiceImpl.getDecryptStrByUser(this.password, consumerDO));
+        ldapConfigDTO.setBaseDN(this.baseDN);
+        ldapConfigDTO.setLoginName(this.loginName);
+        return ldapConfigDTO;
+    }
 }

@@ -22,7 +22,7 @@ public interface IUserService {
      * @param consumerDTO ConsumerDTO
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> add(ConsumerDTO consumerDTO);
+    ConsumerDO add(ConsumerDTO consumerDTO);
 
     /***
      * 删除用户
@@ -162,5 +162,17 @@ public interface IUserService {
      */
     String getUserIdByShowName(String showName);
 
+    /**
+     * 根据id获取用户信息
+     * @param userId userId
+     * @return 用户信息
+     */
     ConsumerDO getUserInfoById(String userId);
+
+    /**
+     * 根据username获取用户信息
+     * @param username username
+     * @return 用户信息
+     */
+    ConsumerDO getUserInfoByUsername(String username);
 }

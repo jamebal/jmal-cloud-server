@@ -76,34 +76,32 @@ public class UserServiceImpl implements IUserService {
     private UserLoginHolder userLoginHolder;
 
     @Override
-    public ResponseResult<Object> add(ConsumerDTO consumerDTO) {
+    public ConsumerDO add(ConsumerDTO consumerDTO) {
         String username = consumerDTO.getUsername();
         if (fileProperties.getChunkFileDir().equals(username)) {
-            return ResultUtil.warning("请使用其他用户名");
+            throw new CommonException(ExceptionType.WARNING.getCode(), "请使用其他用户名");
         }
+        ConsumerDO consumerDO;
         ConsumerDO user1 = getUserInfoByName(username);
         if (user1 == null) {
             if (consumerDTO.getQuota() == null) {
                 consumerDTO.setQuota(10);
             }
             String originalPwd = consumerDTO.getPassword();
-            if (originalPwd.length() < 8) {
-                return ResultUtil.warning("密码长度不能少于8位");
-            }
             encryption(consumerDTO, originalPwd);
-            ConsumerDO consumerDO = new ConsumerDO();
+            consumerDO = new ConsumerDO();
             BeanUtils.copyProperties(consumerDTO, consumerDO);
             consumerDO.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             consumerDO.setId(null);
             // 新建用户目录
             createUserDir(consumerDO.getUsername());
-            mongoTemplate.save(consumerDO, COLLECTION_NAME);
+            consumerDO = mongoTemplate.save(consumerDO, COLLECTION_NAME);
             // 更新用户缓存
             CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
         } else {
-            return ResultUtil.warning("该用户已存在");
+            throw new CommonException(ExceptionType.WARNING.getCode(), "该用户已存在");
         }
-        return ResultUtil.success();
+        return consumerDO;
     }
 
     /**
@@ -487,9 +485,7 @@ public class UserServiceImpl implements IUserService {
     private ConsumerDO getUserInfoByName(String name) {
         ConsumerDO consumer = CaffeineUtil.getConsumerByUsernameCache(name);
         if (consumer == null) {
-            Query query = new Query();
-            query.addCriteria(Criteria.where(USERNAME).is(name));
-            consumer = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
+            consumer = getUserInfoByUsername(name);
             if (consumer != null) {
                 CaffeineUtil.setConsumerByUsernameCache(name, consumer);
             }
@@ -499,6 +495,13 @@ public class UserServiceImpl implements IUserService {
 
     public ConsumerDO getUserInfoById(String userId) {
         return mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
+    }
+
+    @Override
+    public ConsumerDO getUserInfoByUsername(String username) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(USERNAME).is(username));
+        return mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
     }
 
     @Override

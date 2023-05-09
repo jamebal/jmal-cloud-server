@@ -15,14 +15,15 @@ import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.PasswordHash;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.BeanUtils;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.ldap.core.LdapOperations;
+import org.springframework.ldap.core.AttributesMapper;
+import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.ldap.query.LdapQuery;
 import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.stereotype.Service;
@@ -41,7 +42,9 @@ public class AuthServiceImpl implements IAuthService {
 
     private final MongoTemplate mongoTemplate;
 
-    private final LdapOperations ldapTemplate;
+    private LdapTemplate ldapTemplate;
+
+    private Boolean ldapEnable;
 
     private final UserLoginHolder userLoginHolder;
 
@@ -49,37 +52,78 @@ public class AuthServiceImpl implements IAuthService {
 
     private static final String LOGIN_ERROR = "用户名或密码错误";
 
+    @PostConstruct
+    private void init() {
+        LdapConfigDO ldapConfigDO = mongoTemplate.findOne(new Query(), LdapConfigDO.class);
+        if (ldapConfigDO != null && BooleanUtil.isTrue(ldapConfigDO.getEnable())) {
+            ConsumerDO consumerDO = userService.getUserInfoById(ldapConfigDO.getUserId());
+            LdapConfigDTO ldapConfigDTO = ldapConfigDO.toLdapConfigDTO(consumerDO);
+            LdapContextSource ldapContextSource = loadLdapConfig(ldapConfigDTO);
+            ldapTemplate = new LdapTemplate(ldapContextSource);
+            ldapEnable = true;
+        }
+    }
+
+    private static LdapContextSource loadLdapConfig(LdapConfigDTO ldapConfigDTO) {
+        LdapContextSource contextSource = new LdapContextSource();
+        contextSource.setUrl("ldap://" + ldapConfigDTO.getLdapServer());
+        contextSource.setUserDn(ldapConfigDTO.getBaseDN());
+        contextSource.setPassword(ldapConfigDTO.getPassword());
+        String[] base = ldapConfigDTO.getBaseDN().split(",");
+        if (base.length == 3) {
+            contextSource.setBase(base[1] + "," + base[2]);
+        }
+        return contextSource;
+    }
+
     @Override
-    public ResponseResult<Object> login(HttpServletResponse response, ConsumerDTO userDTO) {
-        String username = userDTO.getUsername();
-        String password = userDTO.getPassword();
-        Query query = new Query();
-        query.addCriteria(Criteria.where("username").is(username));
-        ConsumerDO user = mongoTemplate.findOne(query, ConsumerDO.class, UserServiceImpl.COLLECTION_NAME);
-        if (user == null) {
+    public ResponseResult<Object> login(HttpServletResponse response, ConsumerDTO consumerDTO) {
+        String password = consumerDTO.getPassword();
+        ConsumerDO consumerDO = userService.getUserInfoByUsername(consumerDTO.getUsername());
+        if (consumerDO == null) {
+            if (ldapTemplate != null && ldapEnable) {
+                // ldap登录
+                return ldapLogin(response, consumerDTO);
+            }
             return ResultUtil.error(LOGIN_ERROR);
         } else {
-            String hashPassword = user.getPassword();
+            String hashPassword = consumerDO.getPassword();
             if (!CharSequenceUtil.isBlank(password) && PasswordHash.validatePassword(password, hashPassword)) {
-                Map<String, String> map = new HashMap<>(3);
-                boolean rememberMe = BooleanUtil.isTrue(userDTO.getRememberMe());
-                String jmalToken = AuthInterceptor.generateJmalToken(hashPassword, username, rememberMe);
-                map.put("jmalToken", jmalToken);
-                map.put("username", username);
-                map.put("userId", user.getId());
-                AuthInterceptor.setRefreshCookie(response, hashPassword, username, rememberMe);
-                return ResultUtil.success(map);
+                return loginValidSuccess(response, consumerDTO, consumerDO);
             }
         }
         return ResultUtil.error(LOGIN_ERROR);
     }
 
-    @Override
-    public ResponseResult<Object> ldapLogin(HttpServletResponse response, String username, String password) {
-        LdapQuery query = LdapQueryBuilder.query()
-                .where("uid").is(username);
-        ldapTemplate.authenticate(query, password);
-        return null;
+    private static ResponseResult<Object> loginValidSuccess(HttpServletResponse response, ConsumerDTO userDTO, ConsumerDO consumerDO) {
+        Map<String, String> map = new HashMap<>(3);
+        String username = userDTO.getUsername();
+        String hashPassword = consumerDO.getPassword();
+        boolean rememberMe = BooleanUtil.isTrue(userDTO.getRememberMe());
+        String jmalToken = AuthInterceptor.generateJmalToken(hashPassword, username, rememberMe);
+        map.put("jmalToken", jmalToken);
+        map.put("username", username);
+        map.put("userId", consumerDO.getId());
+        AuthInterceptor.setRefreshCookie(response, hashPassword, username, rememberMe);
+        return ResultUtil.success(map);
+    }
+
+    private ResponseResult<Object> ldapLogin(HttpServletResponse response, ConsumerDTO consumerDTO) {
+        try {
+            LdapQuery query = LdapQueryBuilder.query()
+                    .where("uid").is(consumerDTO.getUsername());
+            ldapTemplate.authenticate(query, consumerDTO.getPassword());
+        } catch (Exception e) {
+            return ResultUtil.error(LOGIN_ERROR);
+        }
+        LdapConfigDO ldapConfigDO = mongoTemplate.findOne(new Query(), LdapConfigDO.class);
+        if (ldapConfigDO != null) {
+            // 创建账号
+            consumerDTO.setRoles(ldapConfigDO.getDefaultRoleList());
+            ConsumerDO consumerDO = userService.add(consumerDTO);
+            return loginValidSuccess(response, consumerDTO, consumerDO);
+        }
+        return ResultUtil.error(LOGIN_ERROR);
     }
 
     @Override
@@ -109,21 +153,64 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
-    public ResponseResult<Object> ldapConfig(LdapConfigDTO ldapConfigDTO) {
+    public ResponseResult<Object> updateLdapConfig(LdapConfigDTO ldapConfigDTO) {
         // 判断操作用户是否为网盘创建者
         String userId = userLoginHolder.getUserId();
         ConsumerDO consumerDO = userService.userInfoById(userId);
         if (BooleanUtil.isFalse(consumerDO.getCreator())) {
             throw new CommonException(ExceptionType.PERMISSION_DENIED);
         }
-        String id = "6458f8c5bb943e3cf1db5f29";
-        LdapConfigDO ldapConfigDO = new LdapConfigDO();
-        BeanUtils.copyProperties(ldapConfigDTO, ldapConfigDO);
-        ldapConfigDO.setId(id);
-        ldapConfigDO.setUserId(userId);
-        ldapConfigDO.setPassword(UserServiceImpl.getEncryptPwd(ldapConfigDTO.getPassword(), consumerDO.getPassword()));
-        mongoTemplate.save(ldapConfigDTO);
+        LdapConfigDO ldapConfigDO = ldapConfigDTO.toLdapConfigDO(consumerDO);
+        mongoTemplate.save(ldapConfigDO);
         return ResultUtil.success();
     }
 
+    @Override
+    public ResponseResult<Object> testLdapConfig(LdapConfigDTO ldapConfigDTO) {
+        LdapContextSource ldapContextSource = loadLdapConfig(ldapConfigDTO);
+        LdapTemplate testLdapTemplate = new LdapTemplate(ldapContextSource);
+        try {
+            // 使用基本查询，以检查LDAP服务器是否可用
+            testLdapTemplate.search(
+                    LdapQueryBuilder.query().where("objectClass").is("top"),
+                    (AttributesMapper<String>) attributes -> attributes.get("objectClass").get().toString());
+            return ResultUtil.success();
+        } catch (Exception e) {
+            return ResultUtil.warning("配置有误");
+        }
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

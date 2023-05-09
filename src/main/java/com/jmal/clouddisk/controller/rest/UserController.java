@@ -8,6 +8,7 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,8 @@ public class UserController {
     @Permission("sys:user:add")
     @LogOperatingFun
     public ResponseResult<Object> add(@Validated ConsumerDTO consumerDTO){
-        return service.add(consumerDTO);
+        service.add(consumerDTO);
+        return ResultUtil.success();
     }
 
     @Operation(summary = "删除用户")

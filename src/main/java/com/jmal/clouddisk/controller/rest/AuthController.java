@@ -38,25 +38,18 @@ public class AuthController {
         return authService.login(response, userDTO);
     }
 
-    @Operation(summary = "ldap登录")
-    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
-    @PostMapping("/login/ldap")
-    public ResponseResult<Object> loginLdap(@RequestBody ConsumerDTO userDTO, HttpServletResponse response) {
-        return authService.ldapLogin(response, userDTO.getUsername(), userDTO.getPassword());
-    }
-
-    @Operation(summary = "ldap登录")
-    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
-    @GetMapping("/login/ldap")
-    public ResponseResult<Object> loginLdap(@RequestParam String username, @RequestParam String password, HttpServletResponse response) {
-        return authService.ldapLogin(response, username, password);
-    }
-
     @Operation(summary = "ldap配置")
     @LogOperatingFun(logType = LogOperation.Type.LOGIN)
     @PutMapping("/ldap/config")
-    public ResponseResult<Object> ldapConfig(@RequestBody LdapConfigDTO ldapConfigDTO) {
-        return authService.ldapConfig(ldapConfigDTO);
+    public ResponseResult<Object> updateLdapConfig(@RequestBody LdapConfigDTO ldapConfigDTO) {
+        return authService.updateLdapConfig(ldapConfigDTO);
+    }
+
+    @Operation(summary = "测试ldap配置")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    @PutMapping("/ldap/test-config")
+    public ResponseResult<Object> testLdapConfig(@RequestBody LdapConfigDTO ldapConfigDTO) {
+        return authService.testLdapConfig(ldapConfigDTO);
     }
 
     @Operation(summary = "校验旧密码")

@@ -21,15 +21,6 @@ public interface IAuthService {
     ResponseResult<Object> login(HttpServletResponse response, ConsumerDTO userDTO);
 
     /**
-     * ldap登录
-     * @param response HttpServletResponse
-     * @param username username
-     * @param password password
-     * @return ResponseResult
-     */
-    ResponseResult<Object> ldapLogin(HttpServletResponse response, String username, String password);
-
-    /**
      * 登出
      * @param token token
      * @param response HttpServletResponse
@@ -46,9 +37,16 @@ public interface IAuthService {
     ResponseResult<Object> validOldPass(String userId, String password);
 
     /**
-     * 修改添加ldap配置
+     * 更新ldap配置
      * @param ldapConfigDTO ldapConfigDTO
      * @return ResponseResult
      */
-    ResponseResult<Object> ldapConfig(LdapConfigDTO ldapConfigDTO);
+    ResponseResult<Object> updateLdapConfig(LdapConfigDTO ldapConfigDTO);
+
+    /**
+     * 测试ldap连接配置
+     * @param ldapConfigDTO ldapConfigDTO
+     * @return ResponseResult
+     */
+    ResponseResult<Object> testLdapConfig(LdapConfigDTO ldapConfigDTO);
 }
