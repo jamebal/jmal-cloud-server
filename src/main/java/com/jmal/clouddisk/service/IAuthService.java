@@ -4,6 +4,7 @@ import com.jmal.clouddisk.model.LdapConfigDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.util.ResponseResult;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.ldap.core.LdapTemplate;
 
 /**
  * IAuthService
@@ -48,5 +49,11 @@ public interface IAuthService {
      * @param ldapConfigDTO ldapConfigDTO
      * @return ResponseResult
      */
-    ResponseResult<Object> testLdapConfig(LdapConfigDTO ldapConfigDTO);
+    LdapTemplate testLdapConfig(LdapConfigDTO ldapConfigDTO);
+
+    /**
+     * 获取ldap配置
+     * @return LdapConfigDTO
+     */
+    LdapConfigDTO loadLdapConfig();
 }

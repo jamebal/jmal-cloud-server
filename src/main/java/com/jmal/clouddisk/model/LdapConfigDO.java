@@ -53,4 +53,14 @@ public class LdapConfigDO {
         ldapConfigDTO.setLoginName(this.loginName);
         return ldapConfigDTO;
     }
+
+    public LdapConfigDTO toLdapConfigDTO() {
+        LdapConfigDTO ldapConfigDTO = new LdapConfigDTO();
+        ldapConfigDTO.setEnable(this.enable);
+        ldapConfigDTO.setLdapServer(this.ldapServer);
+        ldapConfigDTO.setDefaultRoleList(this.defaultRoleList);
+        ldapConfigDTO.setBaseDN(this.baseDN);
+        ldapConfigDTO.setLoginName(this.loginName);
+        return ldapConfigDTO;
+    }
 }

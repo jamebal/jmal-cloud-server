@@ -9,6 +9,7 @@ import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +39,13 @@ public class AuthController {
         return authService.login(response, userDTO);
     }
 
+    @Operation(summary = "加载ldap配置")
+    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
+    @GetMapping("/ldap/config")
+    public ResponseResult<Object> loadLdapConfig() {
+        return ResultUtil.success(authService.loadLdapConfig());
+    }
+
     @Operation(summary = "ldap配置")
     @LogOperatingFun(logType = LogOperation.Type.LOGIN)
     @PutMapping("/ldap/config")
@@ -49,7 +57,8 @@ public class AuthController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     @PutMapping("/ldap/test-config")
     public ResponseResult<Object> testLdapConfig(@RequestBody LdapConfigDTO ldapConfigDTO) {
-        return authService.testLdapConfig(ldapConfigDTO);
+        authService.testLdapConfig(ldapConfigDTO);
+        return ResultUtil.success();
     }
 
     @Operation(summary = "校验旧密码")

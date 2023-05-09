@@ -22,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.ldap.AuthenticationException;
+import org.springframework.ldap.CommunicationException;
 import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
@@ -75,6 +77,7 @@ public class AuthServiceImpl implements IAuthService {
         if (base.length == 3) {
             contextSource.setBase(base[1] + "," + base[2]);
         }
+        contextSource.afterPropertiesSet();
         return contextSource;
     }
 
@@ -156,6 +159,8 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public ResponseResult<Object> updateLdapConfig(LdapConfigDTO ldapConfigDTO) {
+        // 先测试连接
+        this.ldapTemplate = testLdapConfig(ldapConfigDTO);
         // 判断操作用户是否为网盘创建者
         String userId = userLoginHolder.getUserId();
         ConsumerDO consumerDO = userService.userInfoById(userId);
@@ -168,7 +173,7 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
-    public ResponseResult<Object> testLdapConfig(LdapConfigDTO ldapConfigDTO) {
+    public LdapTemplate testLdapConfig(LdapConfigDTO ldapConfigDTO) {
         LdapContextSource ldapContextSource = loadLdapConfig(ldapConfigDTO);
         LdapTemplate testLdapTemplate = new LdapTemplate(ldapContextSource);
         try {
@@ -176,11 +181,23 @@ public class AuthServiceImpl implements IAuthService {
             testLdapTemplate.search(
                     LdapQueryBuilder.query().where("objectClass").is("top"),
                     (AttributesMapper<String>) attributes -> attributes.get("objectClass").get().toString());
-            return ResultUtil.success();
+            return testLdapTemplate;
+        } catch (CommunicationException e) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "地址错误: 请检查LDAP服务器地址");
+        } catch (AuthenticationException e) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "认证失败: 请检查 Base DN 或 密码");
         } catch (Exception e) {
-            log.warn(e.getMessage(), e);
-            return ResultUtil.warning("配置有误");
+            throw new CommonException(ExceptionType.WARNING.getCode(), "配置有误: " + e.getMessage());
         }
+    }
+
+    @Override
+    public LdapConfigDTO loadLdapConfig() {
+        LdapConfigDO ldapConfigDO = mongoTemplate.findOne(new Query(), LdapConfigDO.class);
+        if (ldapConfigDO == null) {
+            return null;
+        }
+        return ldapConfigDO.toLdapConfigDTO();
     }
 }
 
