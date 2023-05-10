@@ -81,7 +81,7 @@ public class MarkDownController {
     @PostMapping("/markdown/edit1")
     @Permission("cloud:file:update")
     @LogOperatingFun
-    public ResponseResult<Object> editMarkdownByPath(@RequestBody UploadApiParamDTO upload) {
+    public ResponseResult<Object> editTextByPath(@RequestBody UploadApiParamDTO upload) {
         ResultUtil.checkParamIsNull(upload.getUsername(), upload.getUserId(), upload.getRelativePath(), upload.getContentText());
         Path prePth = Paths.get(upload.getUsername(), upload.getRelativePath());
         String ossPath = CaffeineUtil.getOssPath(prePth);
@@ -89,7 +89,7 @@ public class MarkDownController {
             webOssService.putObjectText(ossPath, prePth, upload.getContentText());
             return ResultUtil.success();
         }
-        return fileService.editMarkdownByPath(upload);
+        return fileService.editTextByPath(upload);
     }
 
     @Operation(summary = "上传文档里的图片")

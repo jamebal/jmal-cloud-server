@@ -3,7 +3,6 @@ package com.jmal.clouddisk.service;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.util.ResponseResult;
 
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
 /**
@@ -125,7 +124,7 @@ public interface IMarkdownService {
      * @param upload
      * @return
      */
-    ResponseResult<Object> editMarkdownByPath(UploadApiParamDTO upload);
+    ResponseResult<Object> editTextByPath(UploadApiParamDTO upload);
 
     /***
      * 上传文档里的图片

@@ -6,8 +6,6 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -23,11 +21,12 @@ import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import com.mongodb.client.AggregateIterable;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -40,15 +39,12 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.mongodb.client.model.Aggregates.limit;
 import static com.mongodb.client.model.Aggregates.skip;
@@ -60,30 +56,22 @@ import static com.mongodb.client.model.Aggregates.skip;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class MarkdownServiceImpl implements IMarkdownService {
 
-    @Autowired
-    private MongoTemplate mongoTemplate;
+    private final MongoTemplate mongoTemplate;
 
-    @Autowired
-    IUserService userService;
+    private final IUserService userService;
 
-    @Autowired
-    FileProperties fileProperties;
+    private final FileProperties fileProperties;
 
-    @Autowired
-    private CategoryService categoryService;
+    private final CategoryService categoryService;
 
-    @Autowired
-    private SettingService settingService;
+    private final SettingService settingService;
 
-    @Autowired
-    private TagService tagService;
+    private final TagService tagService;
 
-    @Autowired
-    CommonFileService commonFileService;
-
-    private static final AES AES = SecureUtil.aes();
+    private final CommonFileService commonFileService;
 
     @Override
     public ResponseResult<FileDocument> getMarkDownOne(ArticleDTO articleDTO) {
@@ -312,16 +300,19 @@ public class MarkdownServiceImpl implements IMarkdownService {
         fileDocument.setName(filename.substring(0, filename.length() - fileDocument.getSuffix().length() - 1));
         ArticleVO articleVO = new ArticleVO();
         BeanUtils.copyProperties(fileDocument, articleVO);
-
-        if (articleVO.getCategoryIds() != null) {
-            List<CategoryDO> categories = categoryService.getCategoryListByIds(articleVO.getCategoryIds());
-            articleVO.setCategories(categories);
-        }
-        if (articleVO.getTagIds() != null) {
-            List<TagDO> tags = tagService.getTagListByIds(articleVO.getTagIds());
-            articleVO.setTags(tags);
-        }
+        setOtherProperties(articleVO);
         return articleVO;
+    }
+
+    private void setOtherProperties(MarkdownBaseFile markdownBaseFile) {
+        if (markdownBaseFile.getCategoryIds() != null) {
+            List<CategoryDO> categories = categoryService.getCategoryListByIds(markdownBaseFile.getCategoryIds());
+            markdownBaseFile.setCategories(categories);
+        }
+        if (markdownBaseFile.getTagIds() != null) {
+            List<TagDO> tags = tagService.getTagListByIds(markdownBaseFile.getTagIds());
+            markdownBaseFile.setTags(tags);
+        }
     }
 
     @Override
@@ -360,8 +351,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
         }
         Query query = new Query();
         // 查询条件
-        boolean isDraft = false;
-        isDraft = setProperty(articleDTO, query, isDraft);
+        boolean isDraft;
+        isDraft = setProperty(articleDTO, query);
         if (limit > 0) {
             count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
         }
@@ -388,7 +379,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
         return result;
     }
 
-    private static boolean setProperty(ArticleDTO articleDTO, Query query, boolean isDraft) {
+    private static boolean setProperty(ArticleDTO articleDTO, Query query) {
+        boolean isDraft = false;
         query.addCriteria(Criteria.where(Constants.SUFFIX).is("md"));
         if (!CharSequenceUtil.isBlank(articleDTO.getUserId())) {
             query.addCriteria(Criteria.where(IUserService.USER_ID).is(articleDTO.getUserId()));
@@ -429,14 +421,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (!CharSequenceUtil.isBlank(fileDocument.getDraft())) {
             markdownVO.setDraft(true);
         }
-        if (markdownVO.getCategoryIds() != null) {
-            List<CategoryDO> categories = categoryService.getCategoryListByIds(markdownVO.getCategoryIds());
-            markdownVO.setCategories(categories);
-        }
-        if (markdownVO.getTagIds() != null) {
-            List<TagDO> tags = tagService.getTagListByIds(markdownVO.getTagIds());
-            markdownVO.setTags(tags);
-        }
+        setOtherProperties(markdownVO);
         String username = userService.userInfoById(fileDocument.getUserId()).getShowName();
         markdownVO.setUsername(username);
         return markdownVO;
@@ -506,6 +491,18 @@ public class MarkdownServiceImpl implements IMarkdownService {
         fileDocument.setCategoryIds(upload.getCategoryIds());
         fileDocument.setTagIds(tagService.getTagIdsByNames(upload.getTagNames()));
         fileDocument.setIsFolder(false);
+        Update update = getUpdate(upload, isDraft, isUpdate, fileDocument);
+        if (!isUpdate) {
+            FileDocument saved = mongoTemplate.save(fileDocument, CommonFileService.COLLECTION_NAME);
+            upload.setFileId(saved.getId());
+            query.addCriteria(Criteria.where("_id").is(saved.getId()));
+        }
+        mongoTemplate.upsert(query, update, CommonFileService.COLLECTION_NAME);
+        return ResultUtil.success(upload.getFileId());
+    }
+
+    @NotNull
+    private static Update getUpdate(ArticleParamDTO upload, boolean isDraft, boolean isUpdate, FileDocument fileDocument) {
         if (upload.getIsAlonePage() != null && upload.getIsAlonePage()) {
             fileDocument.setAlonePage(true);
         }
@@ -536,13 +533,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
                 update.unset(Constants.DRAFT);
             }
         }
-        if (!isUpdate) {
-            FileDocument saved = mongoTemplate.save(fileDocument, CommonFileService.COLLECTION_NAME);
-            upload.setFileId(saved.getId());
-            query.addCriteria(Criteria.where("_id").is(saved.getId()));
-        }
-        mongoTemplate.upsert(query, update, CommonFileService.COLLECTION_NAME);
-        return ResultUtil.success(upload.getFileId());
+        return update;
     }
 
     /***
@@ -622,7 +613,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
     }
 
     @Override
-    public ResponseResult<Object> editMarkdownByPath(UploadApiParamDTO upload) {
+    public ResponseResult<Object> editTextByPath(UploadApiParamDTO upload) {
         File file = new File(Paths.get(fileProperties.getRootDir(), upload.getUsername(), upload.getRelativePath()).toString());
         if (!file.exists()) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
@@ -630,6 +621,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (CommonFileService.isLock(file, fileProperties.getRootDir(), upload.getUsername())) {
             throw new CommonException(ExceptionType.LOCKED_RESOURCES);
         }
+        // 修改文件之前保存历史版本
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
         commonFileService.modifyFile(upload.getUsername(), file);
         return ResultUtil.success();
@@ -728,32 +720,4 @@ public class MarkdownServiceImpl implements IMarkdownService {
         return map;
     }
 
-    /***
-     * 替换markdown中的图片url
-     * @param input input
-     * @return String
-     */
-    public static String replaceAll(CharSequence input, String path, String userId) throws CommonException {
-        Pattern pattern = Pattern.compile("!\\[(.*)]\\((.*)\\)");
-        Pattern pattern1 = Pattern.compile("(?<=]\\()[^)]+");
-        Matcher matcher = pattern.matcher(input).usePattern(pattern1);
-        matcher.reset();
-        boolean result = matcher.find();
-        if (result) {
-            StringBuilder sb = new StringBuilder();
-            do {
-                String value = matcher.group(0);
-                if (value.matches("(?!([hH][tT]{2}[pP]:/*|[hH][tT]{2}[pP][sS]:/*|[fF][tT][pP]:/*)).*?$+") && !value.startsWith("/file/public/image")) {
-                    String relativepath = AES.encryptBase64(path + value);
-                    relativepath = URLEncoder.encode(relativepath, StandardCharsets.UTF_8);
-                    String replacement = "/api/public/view?relativePath=" + relativepath + "&userId=" + userId;
-                    matcher.appendReplacement(sb, replacement);
-                }
-                result = matcher.find();
-            } while (result);
-            matcher.appendTail(sb);
-            return sb.toString();
-        }
-        return input.toString();
-    }
 }

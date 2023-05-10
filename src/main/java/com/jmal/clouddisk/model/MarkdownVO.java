@@ -3,8 +3,6 @@ package com.jmal.clouddisk.model;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.List;
-
 /**
  * @Description 文档
  * @blame jmal
@@ -12,49 +10,16 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class MarkdownVO extends FileBase {
+public class MarkdownVO extends MarkdownBaseFile {
+
     private String userId;
-    private String username;
     /***
      * updateDate 距离现在的时间
      */
     private Long agoTime;
     /***
-     * 是否发布，适用于文档类型
-     */
-    private Boolean release;
-    /***
      * 是否有草稿
      */
     private Boolean draft;
-    /***
-     * 封面
-     */
-    private String cover;
-    /***
-     * 缩略名
-     */
-    private String slug;
-    /***
-     * 用户头像
-     */
-    private String avatar;
-    /***
-     * 分类Id集合
-     */
-    private String[] categoryIds;
-
-    /***
-     * 分类集合
-     */
-    private List<CategoryDO> categories;
-    /***
-     * 标签Id集合
-     */
-    private String[] tagIds;
-    /***
-     * 标签集合
-     */
-    private List<TagDO> tags;
 
 }
