@@ -38,4 +38,10 @@ public class Constants {
 
     public static final String UNKNOWN_ERROR = "未知错误";
 
+    public static final String FILE_PATH = "filepath";
+
+    public static final String FILENAME = "filename";
+
+    public static final String FILE_ID = "fileId";
+
 }

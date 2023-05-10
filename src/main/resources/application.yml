@@ -5,8 +5,6 @@ server:
       force: true
       charset: UTF-8
       enabled: true
-  tomcat:
-    connection-timeout: 15000
 version: 2.5.1
 spring:
   application:

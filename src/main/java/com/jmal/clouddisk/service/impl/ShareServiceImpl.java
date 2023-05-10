@@ -115,7 +115,7 @@ public class ShareServiceImpl implements IShareService {
     }
 
     private void updateShare(ShareDO share, ShareDO shareDO, FileDocument file) {
-        Query query = new Query().addCriteria(Criteria.where("fileId").is(share.getFileId()));
+        Query query = new Query().addCriteria(Criteria.where(Constants.FILE_ID).is(share.getFileId()));
         Update update = new Update();
         update.set("fileName", file.getName());
         if (share.getExpireDate() != null) {
@@ -303,7 +303,7 @@ public class ShareServiceImpl implements IShareService {
 
     private ShareDO findByFileId(String fileId) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("fileId").is(fileId));
+        query.addCriteria(Criteria.where(Constants.FILE_ID).is(fileId));
         return mongoTemplate.findOne(query, ShareDO.class, COLLECTION_NAME);
     }
 

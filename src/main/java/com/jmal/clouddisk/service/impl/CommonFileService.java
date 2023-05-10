@@ -171,6 +171,36 @@ public class CommonFileService {
         return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
     }
 
+    /**
+     * 获取文件信息
+     *
+     * @param path     文件的相对路径
+     * @param filename 文件名称
+     * @param userId   userId
+     * @return FileDocument
+     */
+    public FileDocument getFileDocumentByPath(String path, String filename, String userId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        query.addCriteria(Criteria.where("name").is(filename));
+        query.addCriteria(Criteria.where("path").is(path));
+        return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+    }
+
+    /**
+     * 获取文件路径(含用户名)获取文件信息
+     *
+     * @param filepath 文件的相对路径(以username开头)
+     * @param userId   userId
+     * @return FileDocument
+     */
+    public FileDocument getFileDocumentByPath(String filepath, String userId) {
+        Path relativePath = Paths.get(filepath);
+        String filename = relativePath.getFileName().toString();
+        String path = File.separator + relativePath.subpath(1, relativePath.getNameCount() - 1) + File.separator;
+        return getFileDocumentByPath(path, filename, userId);
+    }
+
     /***
      * 如果文件夹不存在，则创建
      * @param docPaths  文件夹path
@@ -389,7 +419,7 @@ public class CommonFileService {
             setMediaCover(username, fileName, relativePath, update);
         }
         if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE) && (!"ico".equals(suffix) && !"svg".equals(suffix))) {
-                generateThumbnail(file, update);
+            generateThumbnail(file, update);
         }
         if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
             // 写入markdown内容
@@ -779,5 +809,16 @@ public class CommonFileService {
         return MyWebdavServlet.PATH_DELIMITER + relativePath + (Boolean.TRUE.equals(file.isDirectory()) ? MyWebdavServlet.PATH_DELIMITER : "");
     }
 
+    public static void setPage(Integer pageSize, Integer pageIndex, Query query) {
+        if (pageSize == null) {
+            pageSize = 10;
+        }
+        if (pageIndex == null) {
+            pageIndex = 1;
+        }
+        long skip = (long) (pageIndex - 1) * pageSize;
+        query.skip(skip);
+        query.limit(pageSize);
+    }
 
 }

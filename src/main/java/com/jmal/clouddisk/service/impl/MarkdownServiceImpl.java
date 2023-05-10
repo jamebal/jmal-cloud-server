@@ -17,6 +17,7 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
@@ -72,6 +73,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
     private final TagService tagService;
 
     private final CommonFileService commonFileService;
+
+    private final IFileVersionService fileVersionService;
 
     @Override
     public ResponseResult<FileDocument> getMarkDownOne(ArticleDTO articleDTO) {
@@ -621,7 +624,9 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (CommonFileService.isLock(file, fileProperties.getRootDir(), upload.getUsername())) {
             throw new CommonException(ExceptionType.LOCKED_RESOURCES);
         }
+        String userId = upload.getUserId();
         // 修改文件之前保存历史版本
+        fileVersionService.saveFileVersion(upload.getUsername(), upload.getRelativePath(), userId);
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
         commonFileService.modifyFile(upload.getUsername(), file);
         return ResultUtil.success();
@@ -669,12 +674,12 @@ public class MarkdownServiceImpl implements IMarkdownService {
             throw new CommonException(2, "上传失败");
         }
         String fileId = commonFileService.createFile(username, newFile, userId, true);
-        map.put("fileId", fileId);
+        map.put(Constants.FILE_ID, fileId);
         String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), newFile.getName()), StandardCharsets.UTF_8);
         map.put("url", filepath);
         map.put("originalURL", upload.getUrl());
-        map.put("filename", newFile.getName());
-        map.put("filepath", filepath);
+        map.put(Constants.FILENAME, newFile.getName());
+        map.put(Constants.FILE_PATH, filepath);
         return ResultUtil.success(map);
     }
 
@@ -713,10 +718,10 @@ public class MarkdownServiceImpl implements IMarkdownService {
             throw new CommonException(2, "上传失败");
         }
         String fileId = commonFileService.createFile(username, newFile, userId, true);
-        map.put("fileId", fileId);
+        map.put(Constants.FILE_ID, fileId);
         String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), fileName), StandardCharsets.UTF_8);
-        map.put("filename", fileName);
-        map.put("filepath", filepath);
+        map.put(Constants.FILENAME, fileName);
+        map.put(Constants.FILE_PATH, filepath);
         return map;
     }
 

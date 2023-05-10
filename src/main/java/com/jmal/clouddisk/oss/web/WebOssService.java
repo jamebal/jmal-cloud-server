@@ -15,6 +15,7 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.oss.*;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
@@ -446,7 +447,7 @@ public class WebOssService extends WebOssCommonService {
         }
         // 修改关联的分享配置
         Query shareQuery = new Query();
-        shareQuery.addCriteria(Criteria.where("fileId").regex("^" + pathName));
+        shareQuery.addCriteria(Criteria.where(Constants.FILE_ID).regex("^" + pathName));
         List<ShareDO> shareDOList = mongoTemplate.findAllAndRemove(shareQuery, ShareDO.class);
         List<ShareDO> newShareDOList = new ArrayList<>();
         for (ShareDO shareDO : shareDOList) {
@@ -491,7 +492,7 @@ public class WebOssService extends WebOssCommonService {
                 List<FileDocument> fileDocumentList = mongoTemplate.findAllAndRemove(query, FileDocument.class);
                 Query shareQuery = new Query();
                 List<String> fileIds = fileDocumentList.stream().map(FileBase::getId).toList();
-                shareQuery.addCriteria(Criteria.where("fileId").in(fileIds));
+                shareQuery.addCriteria(Criteria.where(Constants.FILE_ID).in(fileIds));
                 mongoTemplate.remove(shareQuery, ShareDO.class);
             }
         }

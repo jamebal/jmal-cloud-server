@@ -12,6 +12,7 @@ import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.oss.web.WebOssService;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
@@ -112,7 +113,7 @@ public class FileController {
         if (file == null){
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "缺少文件参数, file");
         }
-        String filepath = request.getHeader("filepath");
+        String filepath = request.getHeader(Constants.FILE_PATH);
         if (CharSequenceUtil.isBlank(filepath)) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "headers里缺少参数, filepath: 远程目标文件夹, 例如: '/Image/Typora/Public/Images'");
         }

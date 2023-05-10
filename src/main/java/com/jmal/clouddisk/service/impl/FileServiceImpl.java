@@ -44,7 +44,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -411,7 +410,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 return getStreamingResponseBody(file);
             }
         }
-        return outputStream -> {};
+        return outputStream -> {
+        };
     }
 
     @Override
@@ -420,11 +420,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (userId == null) {
             return null;
         }
-        Query query = new Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        query.addCriteria(Criteria.where("name").is(name));
-        query.addCriteria(Criteria.where("path").is(path));
-        return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+        return getFileDocumentByPath(path, name, userId);
     }
 
     @Override
@@ -520,11 +516,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         fileDocument.setContentType("image/png");
         fileDocument.setName("cover");
         return Optional.of(fileDocument);
-    }
-
-    @Override
-    public ResponseEntity<Object> getObjectResponseEntity(Optional<FileDocument> file) {
-        return super.getObjectResponseEntity(file);
     }
 
     @Override

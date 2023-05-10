@@ -285,15 +285,7 @@ public class LogService {
     public void setPage(LogOperationDTO logOperationDTO, Query query) {
         Integer pageSize = logOperationDTO.getPageSize();
         Integer pageIndex = logOperationDTO.getPage();
-        if (pageSize == null) {
-            pageSize = 10;
-        }
-        if (pageIndex == null) {
-            pageIndex = 1;
-        }
-        long skip = (long) (pageIndex - 1) * pageSize;
-        query.skip(skip);
-        query.limit(pageSize);
+        CommonFileService.setPage(pageSize, pageIndex, query);
     }
 
     /***

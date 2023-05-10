@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.office.callbacks.CallbackHandler;
 import com.jmal.clouddisk.office.model.Track;
+import com.jmal.clouddisk.service.Constants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +30,7 @@ public class OfficeController {
     @Operation(summary = "office 回调")
     @PostMapping("/office/track")
     @Permission("cloud:file:list")
-    public String track(@RequestParam("fileId") String fileId, @RequestBody Track body){
+    public String track(@RequestParam(Constants.FILE_ID) String fileId, @RequestBody Track body){
         body.setFileId(fileId);
         log.info("callbackHandler, {}", JSON.toJSONString(body));
         int error = callbackHandler.handle(body);
