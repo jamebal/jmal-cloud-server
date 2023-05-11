@@ -45,6 +45,11 @@ public class MinIOObject extends AbstractOssObject {
     }
 
     @Override
+    public String getKey() {
+        return this.statObjectResponse.object();
+    }
+
+    @Override
     public FileInfo getFileInfo() {
         FileInfo fileInfo = new FileInfo();
         fileInfo.setSize(this.statObjectResponse.size());

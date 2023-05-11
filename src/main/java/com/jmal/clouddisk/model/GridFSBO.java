@@ -24,10 +24,4 @@ public class GridFSBO {
 
     Metadata metadata;
 
-    @Data
-    public class Metadata {
-        String filepath;
-        String filename;
-        String time;
-    }
 }

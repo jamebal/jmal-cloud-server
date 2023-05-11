@@ -16,9 +16,7 @@ public abstract class AbstractOssObject implements Closeable {
 
     public abstract void closeObject() throws IOException;
 
-    public String getKey() {
-        return "";
-    }
+    public abstract String getKey();
 
     public abstract IOssService getOssService();
 

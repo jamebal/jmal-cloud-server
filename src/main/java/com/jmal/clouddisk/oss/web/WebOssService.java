@@ -16,6 +16,7 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.oss.*;
 import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
@@ -24,20 +25,18 @@ import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
 import org.bson.Document;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-import org.springframework.web.util.UriUtils;
 
 import java.io.*;
 import java.net.URLEncoder;
@@ -50,7 +49,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class WebOssService extends WebOssCommonService {
+
+
+    private final IFileVersionService fileVersionService;
 
     /***
      * 断点恢复上传缓存(已上传的分片缓存)
@@ -407,6 +410,12 @@ public class WebOssService extends WebOssCommonService {
             // 删除
             ossService.delete(objectName);
         }
+        // 修改历史文件中的filename
+        String username = getUsernameByOssPath(ossPath);
+        String sourceFileId = getFileId(getOssRootFolderName(ossPath), objectName, username);
+        String destinationFileId = getFileId(getOssRootFolderName(ossPath), destinationObjectName, username);
+        fileVersionService.rename(sourceFileId, destinationFileId);
+        // 通知文件创建成功
         notifyCreateFile(getUsernameByOssPath(ossPath), objectName, getOssRootFolderName(ossPath));
         String rootFolderName = getOssRootFolderName(ossPath);
         Path fromPath = Paths.get(rootFolderName, objectName);
@@ -483,6 +492,8 @@ public class WebOssService extends WebOssCommonService {
             String objectName = pathName.substring(ossPath.length());
             // 删除对象
             if (ossService.delete(objectName)) {
+                // 删除文件历史版本，如果有的话
+                deleteHistory(ossPath, objectName);
                 notifyDeleteFile(ossPath, objectName);
                 // 删除临时文件，如果有的话
                 deleteTemp(ossPath, objectName);
@@ -496,6 +507,12 @@ public class WebOssService extends WebOssCommonService {
                 mongoTemplate.remove(shareQuery, ShareDO.class);
             }
         }
+    }
+
+    private void deleteHistory(String ossPath, String objectName) {
+        String username = getUsernameByOssPath(ossPath);
+        String fileId = getFileId(getOssRootFolderName(ossPath), objectName, username);
+        fileVersionService.delete(fileId);
     }
 
     public ResponseEntity<Object> thumbnail(String ossPath, String pathName) {
@@ -535,19 +552,6 @@ public class WebOssService extends WebOssCommonService {
         return commonFileService.getObjectResponseEntity(file);
     }
 
-    @NotNull
-    private static ResponseEntity<Object> getResponseEntity(File file) {
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + ContentDisposition.builder("attachment")
-                        .filename(UriUtils.encode(file.getName(), StandardCharsets.UTF_8)))
-                .header(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(FileUtil.getSuffix(file)))
-                .header(HttpHeaders.CONNECTION, "close")
-                .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(file.length()))
-                .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
-                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
-                .body(FileUtil.readBytes(file));
-    }
-
     public FileIntroVO addFile(String ossPath, Boolean isFolder, Path prePth) {
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, isFolder);
@@ -584,6 +588,16 @@ public class WebOssService extends WebOssCommonService {
     public void putObjectText(String ossPath, Path prePth, String contentText) {
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, false);
+
+        try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName);) {
+            // 修改文件之前保存历史版本
+            String username = getUsernameByOssPath(ossPath);
+            String fileId = getFileId(getOssRootFolderName(ossPath), objectName, username);
+            fileVersionService.saveFileVersion(abstractOssObject, fileId);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        }
+
         InputStream inputStream = new ByteArrayInputStream(CharSequenceUtil.bytes(contentText, StandardCharsets.UTF_8));
         ossService.write(inputStream, ossPath, objectName);
         notifyUpdateFile(ossPath, objectName, contentText.length());

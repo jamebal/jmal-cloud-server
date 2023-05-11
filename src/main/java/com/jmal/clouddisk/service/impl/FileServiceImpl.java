@@ -21,6 +21,7 @@ import com.jmal.clouddisk.oss.web.WebOssCopyFileService;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
+import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.video.VideoProcessService;
 import com.jmal.clouddisk.util.*;
@@ -90,6 +91,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Autowired
     VideoProcessService videoProcessService;
+
+    @Autowired
+    IFileVersionService fileVersionService;
 
     /***
      * 前端文件夹树的第一级的文件Id
@@ -1506,6 +1510,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         }
         if (isDel) {
             mongoTemplate.remove(query, COLLECTION_NAME);
+            fileVersionService.delete(fileIds);
         } else {
             throw new CommonException(-1, "删除失败");
         }

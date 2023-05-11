@@ -47,16 +47,16 @@ public class FileVersionController {
     @GetMapping("/preview/text")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> previewText(@RequestParam String fileId) {
-        return ResultUtil.success(fileVersionService.getFileById(fileId));
+    public ResponseResult<Object> previewText(@RequestParam String id) {
+        return ResultUtil.success(fileVersionService.getFileById(id));
     }
 
     @Operation(summary = "流式读取历史simText文件")
     @GetMapping("/preview/text/stream")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<StreamingResponseBody> previewTextStream(@RequestParam String fileId) {
-        return new ResponseEntity<>(fileVersionService.getStreamFileById(fileId), HttpStatus.OK);
+    public ResponseEntity<StreamingResponseBody> previewTextStream(@RequestParam String id) {
+        return new ResponseEntity<>(fileVersionService.getStreamFileById(id), HttpStatus.OK);
     }
 
 }

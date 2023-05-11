@@ -36,6 +36,11 @@ public class TempFileObject extends AbstractOssObject {
     }
 
     @Override
+    public String getKey() {
+        return this.objectName;
+    }
+
+    @Override
     public IOssService getOssService() {
         return this.ossService;
     }
