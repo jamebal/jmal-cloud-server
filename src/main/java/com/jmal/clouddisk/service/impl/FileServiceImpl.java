@@ -511,6 +511,12 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             String imagePath = videoProcessService.getVideoCover(username, fileDocument.getPath(), fileDocument.getName());
             if (!CharSequenceUtil.isBlank(imagePath)) {
                 fileDocument.setContent(FileUtil.readBytes(imagePath));
+            } else {
+                Query query = new Query();
+                query.addCriteria(Criteria.where("_id").is(id));
+                Update update = new Update();
+                update.set("mediaCover", false);
+                mongoTemplate.updateFirst(query, update, FileDocument.class);
             }
         } else {
             // 音频文件

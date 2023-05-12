@@ -4,14 +4,16 @@ import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.CommonFileService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,12 +32,16 @@ import java.util.concurrent.ExecutorService;
 @Service
 @Lazy
 @Slf4j
-@RequiredArgsConstructor
 public class VideoProcessService {
 
-    private final FileProperties fileProperties;
+    @Autowired
+    private FileProperties fileProperties;
 
-    private final IUserService userService;
+    @Autowired
+    private IUserService userService;
+
+    @Autowired
+    private CommonFileService commonFileService;
 
     @Resource
     MongoTemplate mongoTemplate;
@@ -43,7 +50,8 @@ public class VideoProcessService {
 
     @PostConstruct
     public void init() {
-        executorService = ThreadUtil.newFixedExecutor(4, 100, "videoTranscoding", false);
+        int processors = Runtime.getRuntime().availableProcessors() - 1;
+        executorService = ThreadUtil.newFixedExecutor(processors, 100, "videoTranscoding", false);
     }
 
     public void convertToM3U8(String username, String relativePath, String fileName) {
@@ -95,7 +103,7 @@ public class VideoProcessService {
                     return outputPath;
                 }
             } else {
-                printErrorInfo(processBuilder, process);
+                printErrorInfo(processBuilder);
             }
             return null;
         } catch (InterruptedException e) {
@@ -153,29 +161,58 @@ public class VideoProcessService {
         );
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
+        boolean pushMessage = false;
+        // 第一个ts文件
+        String firstTS = fileMd5 + "-003.ts";
+        try (InputStream inputStream = process.getInputStream();
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+            // 读取命令的输出信息
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // 处理命令的输出信息，例如打印到控制台
+                if (line.contains("Error")) {
+                    log.error(line);
+                }
+                if (line.contains(firstTS)) {
+                    // 开始转码
+                    log.info("开始转码: {}", fileName);
+                    startConvert(username, relativePath, fileName, fileMd5);
+                    pushMessage = true;
+                }
+            }
+        }
         int exitCode = process.waitFor();
         if (exitCode == 0) {
-            // 转码成功
-            Query query = new Query();
-            String userId = userService.getUserIdByUserName(username);
-            query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-            query.addCriteria(Criteria.where("path").is(relativePath));
-            query.addCriteria(Criteria.where("name").is(fileName));
-            Update update = new Update();
-            update.set("m3u8", Paths.get(username, fileMd5 + ".m3u8").toString());
-            mongoTemplate.upsert(query, update, FileDocument.class);
+            log.info("转码成功: {}", fileName);
+            if (BooleanUtil.isFalse(pushMessage)) {
+                startConvert(username, relativePath, fileName, fileMd5);
+            }
         } else {
-            printErrorInfo(processBuilder, process);
+            printErrorInfo(processBuilder);
         }
     }
 
-    private static void printErrorInfo(ProcessBuilder processBuilder, Process process) throws IOException {
-        processBuilder.command().forEach(command -> Console.log(command + " \\"));
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            log.error(line);
+    private void startConvert(String username, String relativePath, String fileName, String fileMd5) {
+        Query query = new Query();
+        String userId = userService.getUserIdByUserName(username);
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        query.addCriteria(Criteria.where("path").is(relativePath));
+        query.addCriteria(Criteria.where("name").is(fileName));
+        Update update = new Update();
+        String m3u8 = Paths.get(username, fileMd5 + ".m3u8").toString();
+        update.set("m3u8", m3u8);
+        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
+        if (fileDocument == null) {
+            return;
         }
+        mongoTemplate.upsert(query, update, FileDocument.class);
+        fileDocument.setM3u8(m3u8);
+        commonFileService.pushMessage(username, fileDocument, "updateFile");
+    }
+
+    private static void printErrorInfo(ProcessBuilder processBuilder) {
+        log.error("ffmpeg 执行失败");
+        processBuilder.command().forEach(command -> Console.log(command + " \\"));
     }
 
     public static boolean hasNoFFmpeg() {

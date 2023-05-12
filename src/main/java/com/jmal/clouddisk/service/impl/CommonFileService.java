@@ -444,6 +444,8 @@ public class CommonFileService {
             }
             videoProcessService.convertToM3U8(username, relativePath, fileName);
             update.set("mediaCover", true);
+        } else {
+            update.set("mediaCover", false);
         }
     }
 
