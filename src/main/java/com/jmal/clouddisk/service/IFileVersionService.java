@@ -81,4 +81,10 @@ public interface IFileVersionService {
      * @param destinationFileId 修改后的filename
      */
     void rename(String sourceFileId, String destinationFileId);
+
+    /**
+     * 恢复该历史版本
+     * @param gridFSId gridFSId
+     */
+    void recovery(String gridFSId);
 }

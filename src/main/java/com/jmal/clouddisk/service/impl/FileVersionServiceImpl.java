@@ -3,7 +3,11 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.CharsetDetector;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.GridFSBO;
 import com.jmal.clouddisk.model.Metadata;
@@ -19,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
 import org.apache.commons.io.IOUtils;
 import org.bson.Document;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -50,7 +55,7 @@ import java.util.zip.GZIPOutputStream;
 @Service
 public class FileVersionServiceImpl implements IFileVersionService {
 
-    private final String COLLECTIONNAME = "fs.files";
+    private static final String COLLECTION_NAME = "fs.files";
 
     private final CommonFileService commonFileService;
 
@@ -61,6 +66,8 @@ public class FileVersionServiceImpl implements IFileVersionService {
     private final FileProperties fileProperties;
 
     private final IFileService fileService;
+
+    private final UserLoginHolder userLoginHolder;
 
     @Override
     public void saveFileVersion(String username, String relativePath, String userId) {
@@ -136,22 +143,33 @@ public class FileVersionServiceImpl implements IFileVersionService {
 
     @Nullable
     private GridFSFile getGridFSFile(String gridFSId) {
+        Query query = getQueryOfId(gridFSId);
+        return gridFsTemplate.findOne(query);
+    }
+
+    @NotNull
+    private static Query getQueryOfId(String gridFSId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(gridFSId));
-        return gridFsTemplate.findOne(query);
+        return query;
+    }
+
+    private GridFSBO getGridFSBO(String gridFSId) {
+        Query query = getQueryOfId(gridFSId);
+        return mongoTemplate.findOne(query, GridFSBO.class, COLLECTION_NAME);
     }
 
     public ResponseResult<List<GridFSBO>> listFileVersion(String fileId, Integer pageSize, Integer pageIndex) {
         List<GridFSBO> gridFSBOList = new ArrayList<>();
         Query query = new Query();
         query.addCriteria(Criteria.where(Constants.FILENAME).is(fileId));
-        long count = mongoTemplate.count(query, COLLECTIONNAME);
+        long count = mongoTemplate.count(query, COLLECTION_NAME);
         if (count == 0) {
             return ResultUtil.success(gridFSBOList).setCount(0);
         }
         CommonFileService.setPage(pageSize, pageIndex, query);
         query.with(Sort.by(Sort.Direction.DESC, "uploadDate"));
-        gridFSBOList = mongoTemplate.find(query, GridFSBO.class, COLLECTIONNAME);
+        gridFSBOList = mongoTemplate.find(query, GridFSBO.class, COLLECTION_NAME);
         return ResultUtil.success(gridFSBOList).setCount(count);
     }
 
@@ -233,7 +251,37 @@ public class FileVersionServiceImpl implements IFileVersionService {
         query.addCriteria(Criteria.where(Constants.FILENAME).is(sourceFileId));
         Update update = new Update();
         update.set(Constants.FILENAME, destinationFileId);
-        mongoTemplate.updateMulti(query, update, COLLECTIONNAME);
+        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
+    }
+
+    @Override
+    public void recovery(String gridFSId) {
+        GridFSFile gridFSFile = getGridFSFile(gridFSId);
+        if (gridFSFile == null || gridFSFile.getMetadata() == null) {
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
+        String fileId = gridFSFile.getFilename();
+        String filename = gridFSFile.getMetadata().getString(Constants.FILENAME);
+        FileDocument fileDocument = fileService.getById(fileId);
+        if (fileDocument == null) {
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
+        String username = userLoginHolder.getUsername();
+        if (CharSequenceUtil.isBlank(username)) {
+            throw new CommonException(ExceptionType.LOGIN_EXCEPTION);
+        }
+        File file = Paths.get(fileProperties.getRootDir(), username, fileDocument.getPath(), filename).toFile();
+        if (!file.exists()) {
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
+        if (CommonFileService.isLock(file, fileProperties.getRootDir(), username)) {
+            throw new CommonException(ExceptionType.LOCKED_RESOURCES);
+        }
+        try (InputStream inputStream = getInputStream(gridFSFile)) {
+            FileUtil.writeFromStream(inputStream, file);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
     /**

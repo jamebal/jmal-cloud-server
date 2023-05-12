@@ -13,10 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.util.List;
@@ -49,6 +46,15 @@ public class FileVersionController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> previewText(@RequestParam String id) {
         return ResultUtil.success(fileVersionService.getFileById(id));
+    }
+
+    @Operation(summary = "恢复该历史版本")
+    @PutMapping("/recovery")
+    @Permission("cloud:file:update")
+    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
+    public ResponseResult<Object> recovery(@RequestParam String id) {
+        fileVersionService.recovery(id);
+        return ResultUtil.success();
     }
 
     @Operation(summary = "流式读取历史simText文件")

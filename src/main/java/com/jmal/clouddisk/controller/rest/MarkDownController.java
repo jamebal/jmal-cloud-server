@@ -56,7 +56,7 @@ public class MarkDownController {
     @Operation(summary = "编辑文档(根据fileId)")
     @PostMapping("/markdown/edit")
     @Permission("cloud:file:update")
-    @LogOperatingFun
+    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
     public ResponseResult<Object> editMarkdown(@RequestBody @Validated ArticleParamDTO upload) {
         return fileService.editMarkdown(upload);
     }
@@ -72,7 +72,7 @@ public class MarkDownController {
     @Operation(summary = "删除草稿")
     @DeleteMapping("/markdown/deleteDraft")
     @Permission("cloud:file:delete")
-    @LogOperatingFun
+    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
     public ResponseResult<Object> deleteDraft(@RequestParam String fileId, @RequestParam String username) {
         return fileService.deleteDraft(fileId, username);
     }
@@ -80,7 +80,7 @@ public class MarkDownController {
     @Operation(summary = "编辑文档(根据path)")
     @PostMapping("/markdown/edit1")
     @Permission("cloud:file:update")
-    @LogOperatingFun
+    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
     public ResponseResult<Object> editTextByPath(@RequestBody UploadApiParamDTO upload) {
         ResultUtil.checkParamIsNull(upload.getUsername(), upload.getUserId(), upload.getRelativePath(), upload.getContentText());
         Path prePth = Paths.get(upload.getUsername(), upload.getRelativePath());
@@ -95,7 +95,6 @@ public class MarkDownController {
     @Operation(summary = "上传文档里的图片")
     @PostMapping("/upload-markdown-image")
     @Permission("cloud:file:upload")
-    @LogOperatingFun
     public ResponseResult<Object> uploadMarkdownImage(UploadImageDTO upload) {
         if(CharSequenceUtil.isBlank(upload.getUserId()) || CharSequenceUtil.isBlank(upload.getUsername())) {
             return ResultUtil.warning("参数里缺少 userId 或 username");
