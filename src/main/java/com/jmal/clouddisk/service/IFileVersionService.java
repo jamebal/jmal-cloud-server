@@ -4,6 +4,8 @@ import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.GridFSBO;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.util.ResponseResult;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
@@ -50,6 +52,15 @@ public interface IFileVersionService {
     ResponseResult<List<GridFSBO>> listFileVersion(String fileId, Integer pageSize, Integer pageIndex);
 
     /**
+     * 列出文件的历史版本(根据filepath)
+     * @param path 文件相对路径
+     * @param pageSize 每页条数
+     * @param pageIndex 页数
+     * @return ResponseResult<List<GridFSBO>>
+     */
+    ResponseResult<List<GridFSBO>> listFileVersionByPath(String path, Integer pageSize, Integer pageIndex);
+
+    /**
      * 获取历史文件信息
      * @param gridFSId gridFSId
      * @return FileDocument
@@ -64,16 +75,22 @@ public interface IFileVersionService {
     StreamingResponseBody getStreamFileById(String gridFSId);
 
     /**
-     * 删除历史文件
+     * 删除fileId的所有历史文件
      * @param fileIds 文件id列表
      */
-    void delete(List<String> fileIds);
+    void deleteAll(List<String> fileIds);
 
     /**
-     * 删除历史文件
+     * 删除该文件的所有历史文件
      * @param fileId 文件id列表
      */
-    void delete(String fileId);
+    void deleteAll(String fileId);
+
+    /**
+     * 删除指定的历史文件
+     * @param id 历史文件id
+     */
+    void deleteOne(String id);
 
     /**
      * 重命名后的需要修改历史文件中 filename
@@ -84,7 +101,15 @@ public interface IFileVersionService {
 
     /**
      * 恢复该历史版本
+     *
      * @param gridFSId gridFSId
      */
-    void recovery(String gridFSId);
+    Long recovery(String gridFSId);
+
+    /**
+     * readHistoryFile
+     * @param id 历史文件id
+     * @return ResponseEntity<InputStream>
+     */
+    ResponseEntity<InputStreamResource> readHistoryFile(String id);
 }

@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,12 +33,28 @@ public class FileVersionController {
 
     private final IFileVersionService fileVersionService;
 
-    @Operation(summary = "历史文件列表")
+    @Operation(summary = "历史文件列表(根据fileId)")
     @GetMapping("/list")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<List<GridFSBO>> list(@RequestParam String fileId, @RequestParam Integer pageSize, @RequestParam Integer pageIndex) {
+    public ResponseResult<List<GridFSBO>> list(String fileId, @RequestParam Integer pageSize, @RequestParam Integer pageIndex) {
         return fileVersionService.listFileVersion(fileId, pageSize, pageIndex);
+    }
+
+    @Operation(summary = "历史文件列表(根据filepath)")
+    @GetMapping("/path/list")
+    @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseResult<List<GridFSBO>> listByPath(@RequestParam String path, @RequestParam Integer pageSize, @RequestParam Integer pageIndex) {
+        return fileVersionService.listFileVersionByPath(path, pageSize, pageIndex);
+    }
+
+    @Operation(summary = "读取历史文件")
+    @GetMapping("/preview/file")
+    @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseEntity<InputStreamResource> readHistoryFile(@RequestParam String id) {
+        return fileVersionService.readHistoryFile(id);
     }
 
     @Operation(summary = "读取历史simText文件")
@@ -52,8 +69,16 @@ public class FileVersionController {
     @PutMapping("/recovery")
     @Permission("cloud:file:update")
     @LogOperatingFun(logType = LogOperation.Type.OPERATION)
-    public ResponseResult<Object> recovery(@RequestParam String id) {
-        fileVersionService.recovery(id);
+    public ResponseResult<Long> recovery(@RequestParam String id) {
+        return ResultUtil.success(fileVersionService.recovery(id));
+    }
+
+    @Operation(summary = "删除该历史版本")
+    @DeleteMapping("/delete")
+    @Permission("cloud:file:delete")
+    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
+    public ResponseResult<Object> delete(@RequestParam String id) {
+        fileVersionService.deleteOne(id);
         return ResultUtil.success();
     }
 

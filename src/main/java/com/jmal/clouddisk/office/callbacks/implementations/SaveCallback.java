@@ -6,10 +6,13 @@ import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.office.callbacks.Callback;
 import com.jmal.clouddisk.office.callbacks.Status;
 import com.jmal.clouddisk.office.model.Track;
+import com.jmal.clouddisk.service.IFileVersionService;
+import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.FileServiceImpl;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.TimeUntils;
 import com.mongodb.client.result.UpdateResult;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -28,36 +31,33 @@ import java.time.LocalDateTime;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class SaveCallback implements Callback {
 
-    final
-    FileServiceImpl fileService;
+    private final FileServiceImpl fileService;
 
-    final
-    FileProperties fileProperties;
+    private final FileProperties fileProperties;
 
-    final
-    UserLoginHolder userLoginHolder;
+    private final UserLoginHolder userLoginHolder;
 
-    final
-    MongoTemplate mongoTemplate;
+    private final MongoTemplate mongoTemplate;
 
-    public SaveCallback(FileServiceImpl fileService, FileProperties fileProperties, UserLoginHolder userLoginHolder, MongoTemplate mongoTemplate) {
-        this.fileService = fileService;
-        this.fileProperties = fileProperties;
-        this.userLoginHolder = userLoginHolder;
-        this.mongoTemplate = mongoTemplate;
-    }
+    private final IFileVersionService fileVersionService;
 
     @Override
     public int handle(Track body) {
         int result = 0;
         try {
-            FileDocument fileDocument = mongoTemplate.findById(body.getFileId(), FileDocument.class, FileServiceImpl.COLLECTION_NAME);
+            FileDocument fileDocument = mongoTemplate.findById(body.getFileId(), FileDocument.class, CommonFileService.COLLECTION_NAME);
             if (fileDocument == null) {
                 return 1;
             }
             Path path = Paths.get(fileProperties.getRootDir(), userLoginHolder.getUsername(), fileDocument.getPath(), fileDocument.getName());
+
+            // 保存历史文件
+            String relativePath = Paths.get(fileDocument.getPath(), fileDocument.getName()).toString();
+            fileVersionService.saveFileVersion(userLoginHolder.getUsername(), relativePath, userLoginHolder.getUserId());
+
             // 下载最新的文件
             long size = HttpUtil.downloadFile(body.getUrl(), path.toString());
             String md5 = size + "/" + fileDocument.getName();
@@ -68,7 +68,7 @@ public class SaveCallback implements Callback {
             update.set("size", size);
             update.set("md5", md5);
             update.set("updateDate", updateDate);
-            UpdateResult updateResult = mongoTemplate.updateFirst(query, update, FileServiceImpl.COLLECTION_NAME);
+            UpdateResult updateResult = mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
             if (updateResult.getModifiedCount() != 1) {
                 result =  1;
             }

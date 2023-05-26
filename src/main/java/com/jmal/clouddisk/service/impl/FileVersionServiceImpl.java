@@ -1,10 +1,12 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.URLUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -12,9 +14,11 @@ import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.GridFSBO;
 import com.jmal.clouddisk.model.Metadata;
 import com.jmal.clouddisk.oss.AbstractOssObject;
+import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IFileVersionService;
+import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.mongodb.client.gridfs.model.GridFSFile;
@@ -25,6 +29,7 @@ import org.apache.commons.io.IOUtils;
 import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -32,13 +37,20 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.gridfs.GridFsResource;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import org.springframework.web.util.UriUtils;
 
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,7 +87,8 @@ public class FileVersionServiceImpl implements IFileVersionService {
         String filepath = Paths.get(username, relativePath).toString();
         FileDocument fileDocument = commonFileService.getFileDocumentByPath(filepath, userId);
         long size = file.length();
-        Metadata metadata = setMetadata(size, filepath, file.getName());
+        String updateDate = fileDocument.getUpdateDate().format(DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
+        Metadata metadata = setMetadata(size, filepath, file.getName(), updateDate);
         if (metadata == null) return;
         try (InputStream inputStream = new FileInputStream(file);
              InputStream gzipInputStream = gzipCompress(inputStream, metadata)) {
@@ -89,7 +102,8 @@ public class FileVersionServiceImpl implements IFileVersionService {
     public void saveFileVersion(AbstractOssObject abstractOssObject, String fileId) {
         long size = abstractOssObject.getContentLength();
         String filename = Paths.get(abstractOssObject.getKey()).getFileName().toString();
-        Metadata metadata = setMetadata(size, fileId, filename);
+        String updateDate = DateUtil.format(abstractOssObject.getFileInfo().getLastModified(), DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
+        Metadata metadata = setMetadata(size, fileId, filename, updateDate);
         if (metadata == null) return;
         try (InputStream inputStream = abstractOssObject.getInputStream();
              InputStream gzipInputStream = gzipCompress(inputStream, metadata)) {
@@ -102,15 +116,16 @@ public class FileVersionServiceImpl implements IFileVersionService {
     /**
      * 设置历史文件自定义元数据
      *
-     * @param size     文件大小
-     * @param filepath filepath(以username开头)
-     * @param filename filename
+     * @param size       文件大小
+     * @param filepath   filepath(以username开头)
+     * @param filename   filename
+     * @param updateDate 文件最后修改时间
      */
-    private static Metadata setMetadata(long size, String filepath, String filename) {
+    private static Metadata setMetadata(long size, String filepath, String filename, String updateDate) {
         Metadata metadata = new Metadata();
         metadata.setFilepath(filepath);
         metadata.setFilename(filename);
-        metadata.setTime(LocalDateTimeUtil.now().format(DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN)));
+        metadata.setTime(updateDate);
         metadata.setSize(size);
         if (size == 0) {
             // 无内容，不用存历史版本
@@ -154,11 +169,6 @@ public class FileVersionServiceImpl implements IFileVersionService {
         return query;
     }
 
-    private GridFSBO getGridFSBO(String gridFSId) {
-        Query query = getQueryOfId(gridFSId);
-        return mongoTemplate.findOne(query, GridFSBO.class, COLLECTION_NAME);
-    }
-
     public ResponseResult<List<GridFSBO>> listFileVersion(String fileId, Integer pageSize, Integer pageIndex) {
         List<GridFSBO> gridFSBOList = new ArrayList<>();
         Query query = new Query();
@@ -171,6 +181,29 @@ public class FileVersionServiceImpl implements IFileVersionService {
         query.with(Sort.by(Sort.Direction.DESC, "uploadDate"));
         gridFSBOList = mongoTemplate.find(query, GridFSBO.class, COLLECTION_NAME);
         return ResultUtil.success(gridFSBOList).setCount(count);
+    }
+
+    @Override
+    public ResponseResult<List<GridFSBO>> listFileVersionByPath(String path, Integer pageSize, Integer pageIndex) {
+        String fileId = null;
+        String username = userLoginHolder.getUsername();
+        Path prePth = Paths.get(username, path);
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            fileId = WebOssService.getObjectName(prePth, ossPath, false);
+        } else {
+            Path filePath = Paths.get(URLUtil.decode(path));
+            String relativePath = File.separator + filePath.subpath(0, filePath.getNameCount() - 1) + File.separator;
+            String userId = userLoginHolder.getUserId();
+            FileDocument fileDocument = commonFileService.getFileDocumentByPath(relativePath, filePath.getFileName().toString(), userId);
+            if (fileDocument != null && fileDocument.getId() != null) {
+                fileId = fileDocument.getId();
+            }
+        }
+        if (CharSequenceUtil.isBlank(fileId)) {
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
+        return listFileVersion(fileId, pageSize, pageIndex);
     }
 
     @Override
@@ -232,17 +265,28 @@ public class FileVersionServiceImpl implements IFileVersionService {
     }
 
     @Override
-    public void delete(List<String> fileIds) {
+    public void deleteAll(List<String> fileIds) {
         Query query = new Query();
         query.addCriteria(Criteria.where(Constants.FILENAME).in(fileIds));
         gridFsTemplate.delete(query);
     }
 
     @Override
-    public void delete(String fileId) {
+    public void deleteAll(String fileId) {
         Query query = new Query();
         query.addCriteria(Criteria.where(Constants.FILENAME).is(fileId));
         gridFsTemplate.delete(query);
+    }
+
+    @Override
+    public void deleteOne(String id) {
+        try {
+            Query query = new Query();
+            query.addCriteria(Criteria.where("_id").is(id));
+            gridFsTemplate.delete(query);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
     @Override
@@ -255,7 +299,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
     }
 
     @Override
-    public void recovery(String gridFSId) {
+    public Long recovery(String gridFSId) {
         GridFSFile gridFSFile = getGridFSFile(gridFSId);
         if (gridFSFile == null || gridFSFile.getMetadata() == null) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
@@ -277,11 +321,37 @@ public class FileVersionServiceImpl implements IFileVersionService {
         if (CommonFileService.isLock(file, fileProperties.getRootDir(), username)) {
             throw new CommonException(ExceptionType.LOCKED_RESOURCES);
         }
+        LocalDateTime time = LocalDateTimeUtil.now();
         try (InputStream inputStream = getInputStream(gridFSFile)) {
             FileUtil.writeFromStream(inputStream, file);
+            Query query = new Query().addCriteria(Criteria.where("_id").is(fileId));
+            Update update = new Update();
+            update.set("updateDate", time);
+            mongoTemplate.updateFirst(query, update, FileDocument.class);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
+        return time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+    }
+
+    @Override
+    public ResponseEntity<InputStreamResource> readHistoryFile(String gridFSId) {
+        GridFSFile gridFSFile = getGridFSFile(gridFSId);
+        if (gridFSFile == null || gridFSFile.getMetadata() == null) {
+            return ResponseEntity.notFound().build();
+        }
+        try (InputStream inputStream = getInputStream(gridFSFile)) {
+            String filename = gridFSFile.getMetadata().getString(Constants.FILENAME);
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + UriUtils.encode(filename, StandardCharsets.UTF_8));
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentType(MediaType.parseMediaType("application/octet-stream"))
+                    .body(new InputStreamResource(inputStream));
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        }
+        return ResponseEntity.notFound().build();
     }
 
     /**

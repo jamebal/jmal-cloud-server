@@ -50,7 +50,7 @@ public interface IFileService {
      * @return
      * @throws CommonException
      */
-    ResponseResult<Object> previewTextByPath(String path, String username);
+    FileDocument previewTextByPath(String path, String username);
 
     /***
      * 根据path流式读取simText文件

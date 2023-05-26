@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
@@ -51,6 +52,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -410,7 +412,7 @@ public class CommonFileService {
         long size = file.length();
         update.set("size", size);
         update.set("md5", size + relativePath + fileName);
-        update.set(Constants.CONTENT_TYPE, contentType);
+        update.set(Constants.CONTENT_TYPE, getContentType(file, contentType));
         update.set(Constants.SUFFIX, suffix);
         if (contentType.contains(Constants.AUDIO)) {
             setMusic(file, update);
@@ -426,6 +428,27 @@ public class CommonFileService {
             String markDownContent = FileUtil.readString(file, MyFileUtils.getFileCharset(file));
             update.set("contentText", markDownContent);
         }
+    }
+
+    public static String getContentType(File file, String contentType) {
+        try {
+            if (file == null) {
+                return contentType;
+            }
+            if (file.isDirectory()) {
+                return contentType;
+            }
+            if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN)) {
+                return contentType;
+            }
+            Charset charset = CharsetDetector.detect(file, null);
+            if (charset != null && "UTF-8".equals(charset.toString())) {
+                contentType = contentType + ";charset=utf-8";
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+        return contentType;
     }
 
     private static void setMusic(File file, Update update) {
@@ -684,7 +707,7 @@ public class CommonFileService {
             Update update = new Update();
             update.set("size", file.length());
             update.set(Constants.SUFFIX, suffix);
-            update.set(Constants.CONTENT_TYPE, contentType);
+            update.set(Constants.CONTENT_TYPE, getContentType(file, contentType));
             LocalDateTime updateDate = LocalDateTime.now(TimeUntils.ZONE_ID);
             update.set("updateDate", updateDate);
             UpdateResult updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);

@@ -22,7 +22,6 @@ import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IFileVersionService;
-import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.video.VideoProcessService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
@@ -64,6 +63,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static com.jmal.clouddisk.service.IUserService.USER_ID;
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Aggregates.group;
 import static com.mongodb.client.model.Aggregates.match;
@@ -152,7 +152,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
      */
     private long getFileDocumentsCount(UploadApiParamDTO upload, Criteria... criteriaList) {
         Query query = new Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(upload.getUserId()));
+        query.addCriteria(Criteria.where(USER_ID).is(upload.getUserId()));
         for (Criteria criteria : criteriaList) {
             query.addCriteria(criteria);
         }
@@ -219,10 +219,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     private Query getQuery(UploadApiParamDTO upload, Criteria[] criteriaList) {
         String userId = upload.getUserId();
         if (CharSequenceUtil.isBlank(userId)) {
-            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg() + IUserService.USER_ID);
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg() + USER_ID);
         }
         Query query = new Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        query.addCriteria(Criteria.where(USER_ID).is(userId));
         for (Criteria criteria : criteriaList) {
             query.addCriteria(criteria);
         }
@@ -369,7 +369,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
      */
     private long getFolderSize(String userId, String path) {
         List<Bson> list = Arrays.asList(
-                match(and(eq(IUserService.USER_ID, userId),
+                match(and(eq(USER_ID, userId),
                         eq(Constants.IS_FOLDER, false), regex("path", "^" + ReUtil.escape(path)))),
                 group(new BsonNull(), sum(Constants.TOTAL_SIZE, "$size")));
         AggregateIterable<Document> aggregate = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
@@ -428,7 +428,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> previewTextByPath(String filePath, String username) throws CommonException {
+    public FileDocument previewTextByPath(String filePath, String username) throws CommonException {
         Path path = Paths.get(fileProperties.getRootDir(), username, filePath);
         File file = path.toFile();
         if (!file.exists()) {
@@ -446,7 +446,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         fileDocument.setPath(resPath);
         fileDocument.setName(file.getName());
         fileDocument.setIsFolder(file.isDirectory());
-        return ResultUtil.success(fileDocument);
+        return fileDocument;
     }
 
     @Override
@@ -685,7 +685,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 Query query = new Query();
                 String searchPath = currentDirectory + fileDocument.getName();
                 String newPath = currentDirectory + newFileName;
-                query.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));
+                query.addCriteria(Criteria.where(USER_ID).is(userLoginHolder.getUserId()));
                 query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(searchPath)));
                 List<FileDocument> documentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
                 // 修改该文件夹下的所有文件的path
@@ -890,7 +890,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 }
                 isWrite = true;
             }
-
             CompressUtils.decompress(filePath, destDir, isWrite);
             return ResultUtil.success(listFile(username, destDir, !isWrite));
         } catch (Exception e) {
@@ -911,19 +910,35 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         String dirPath;
         if (tempDir) {
             dirPath = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, path).toString();
+            return ResultUtil.success(listFile(username, dirPath, true));
         } else {
-            dirPath = Paths.get(fileProperties.getRootDir(), username, path).toString();
+            return ResultUtil.success(listFile(path, userLoginHolder.getUserId()));
         }
-        return ResultUtil.success(listFile(username, dirPath, tempDir));
     }
 
     @Override
     public ResponseResult<Object> upperLevelList(String path, String username) {
-        String upperLevel = Paths.get(fileProperties.getRootDir(), username, path).getParent().toString();
-        if (Paths.get(fileProperties.getRootDir()).toString().equals(upperLevel)) {
-            upperLevel = Paths.get(fileProperties.getRootDir(), username).toString();
+        String upperLevel = Paths.get(path).getParent().toString();
+        return ResultUtil.success(listFile(upperLevel, userLoginHolder.getUserId()));
+    }
+
+    private List<FileIntroVO> listFile(String path, String userId) {
+        if (!path.endsWith(File.separator)) {
+            path += File.separator;
         }
-        return ResultUtil.success(listFile(username, upperLevel, false));
+        Query query = new Query();
+        query.addCriteria(Criteria.where("path").is(path));
+        query.addCriteria(Criteria.where(USER_ID).is(userId));
+        List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class);
+        return fileDocuments.stream().map(fileDocument -> {
+            FileIntroVO fileIntroVO = new FileIntroVO();
+            fileIntroVO.setName(fileDocument.getName());
+            fileIntroVO.setSuffix(fileDocument.getSuffix());
+            fileIntroVO.setContentType(fileDocument.getContentType());
+            fileIntroVO.setPath(Paths.get(fileDocument.getPath(), fileDocument.getName()).toString());
+            fileIntroVO.setIsFolder(fileDocument.getIsFolder());
+            return fileIntroVO;
+        }).sorted(this::compareByFileName).toList();
     }
 
     @Override
@@ -1041,7 +1056,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             String userId = user.getId();
             PathUtil.del(Paths.get(fileProperties.getRootDir(), username));
             Query query = new Query();
-            query.addCriteria(Criteria.where(IUserService.USER_ID).in(userId));
+            query.addCriteria(Criteria.where(USER_ID).in(userId));
             mongoTemplate.remove(query, COLLECTION_NAME);
         });
     }
@@ -1054,7 +1069,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Query query = new Query();
         if (Boolean.TRUE.equals(file.getIsFolder())) {
             // 共享文件夹及其下的所有文件
-            query.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));
+            query.addCriteria(Criteria.where(USER_ID).is(userLoginHolder.getUserId()));
             query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
             // 设置共享属性
             setShareAttribute(file, expiresAt, share, query);
@@ -1080,7 +1095,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         }
         if (Boolean.TRUE.equals(file.getIsFolder())) {
             // 解除共享文件夹及其下的所有文件
-            query.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));
+            query.addCriteria(Criteria.where(USER_ID).is(userLoginHolder.getUserId()));
             query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
             // 解除共享属性
             unsetShareAttribute(file, query);
@@ -1132,7 +1147,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             fileDocument.setName(filename);
             fileDocument.setIsFolder(isFolder);
             fileDocument.setSuffix(suffix);
-            fileDocument.setContentType(FileContentTypeUtils.getContentType(suffix));
+            String contentType = FileContentTypeUtils.getContentType(suffix);
+            fileDocument.setContentType(contentType);
             String path;
             Path dirPaths = Paths.get(file.getPath());
             if (tempDir) {
@@ -1210,7 +1226,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             mongoTemplate.save(copyFileDocument, COLLECTION_NAME);
             // 复制其下的子文件或目录
             Query query = new Query();
-            query.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));
+            query.addCriteria(Criteria.where(USER_ID).is(userLoginHolder.getUserId()));
             query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fromPath)));
             List<FileDocument> formList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
             List<FileDocument> list = new ArrayList<>();
@@ -1283,7 +1299,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
      */
     private boolean isExistsOfToCopy(FileDocument formFileDocument, String toPath) {
         Query query = new Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(formFileDocument.getUserId()));
+        query.addCriteria(Criteria.where(USER_ID).is(formFileDocument.getUserId()));
         query.addCriteria(Criteria.where("path").is(toPath));
         query.addCriteria(Criteria.where("name").is(formFileDocument.getName()));
         return mongoTemplate.exists(query, COLLECTION_NAME);
@@ -1507,7 +1523,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
                 // 删除文件夹及其下的所有文件
                 Query query1 = new Query();
-                query1.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));
+                query1.addCriteria(Criteria.where(USER_ID).is(userLoginHolder.getUserId()));
                 query1.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName())));
                 mongoTemplate.remove(query1, COLLECTION_NAME);
                 isDel = true;
@@ -1516,7 +1532,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         }
         if (isDel) {
             mongoTemplate.remove(query, COLLECTION_NAME);
-            fileVersionService.delete(fileIds);
+            fileVersionService.deleteAll(fileIds);
         } else {
             throw new CommonException(-1, "删除失败");
         }

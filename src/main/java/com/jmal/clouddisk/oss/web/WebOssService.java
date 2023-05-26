@@ -512,7 +512,7 @@ public class WebOssService extends WebOssCommonService {
     private void deleteHistory(String ossPath, String objectName) {
         String username = getUsernameByOssPath(ossPath);
         String fileId = getFileId(getOssRootFolderName(ossPath), objectName, username);
-        fileVersionService.delete(fileId);
+        fileVersionService.deleteAll(fileId);
     }
 
     public ResponseEntity<Object> thumbnail(String ossPath, String pathName) {

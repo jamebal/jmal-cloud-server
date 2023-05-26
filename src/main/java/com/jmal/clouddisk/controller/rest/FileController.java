@@ -40,10 +40,10 @@ import java.util.Optional;
 
 
 /**
+ * @author jmal
  * @Description 云文件管理控制器
  * @Author jmal
  * @Date 2020-01-27 12:59
- * @author jmal
  */
 @Tag(name = "文件管理")
 @Slf4j
@@ -86,7 +86,7 @@ public class FileController {
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> queryFileTree(UploadApiParamDTO upload, String fileId) {
-        return fileService.queryFileTree(upload,fileId);
+        return fileService.queryFileTree(upload, fileId);
     }
 
     @Operation(summary = "搜索文件")
@@ -110,7 +110,7 @@ public class FileController {
     @LogOperatingFun
     @Permission("cloud:file:upload")
     public String imgUpload(HttpServletRequest request, MultipartFile file) {
-        if (file == null){
+        if (file == null) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "缺少文件参数, file");
         }
         String filepath = request.getHeader(Constants.FILE_PATH);
@@ -181,7 +181,7 @@ public class FileController {
     @GetMapping("/preview/text/stream")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<StreamingResponseBody> previewTextStream(HttpServletRequest request, @RequestParam String id, @RequestParam String username, @RequestParam String path, @RequestParam String fileName) {
+    public ResponseEntity<StreamingResponseBody> previewTextStream(@RequestParam String id, @RequestParam String username, @RequestParam String path, @RequestParam String fileName) {
         Path prePth = Paths.get(username, path, fileName);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         StreamingResponseBody responseBody;
@@ -197,20 +197,20 @@ public class FileController {
     @GetMapping("/preview/path/text")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> previewTextByPath(@RequestParam String path,@RequestParam String username) {
+    public ResponseResult<Object> previewTextByPath(@RequestParam String path, @RequestParam String username) {
         Path prePth = Paths.get(username, path);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
             return ResultUtil.success(webOssService.readToText(ossPath, prePth, false));
         }
-        return fileService.previewTextByPath(URLUtil.decode(path), username);
+        return ResultUtil.success(fileService.previewTextByPath(URLUtil.decode(path), username));
     }
 
     @Operation(summary = "根据path流式读取simText文件")
     @GetMapping("/preview/path/text/stream")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<StreamingResponseBody> previewTextByPathStream(@RequestParam String path,@RequestParam String username) {
+    public ResponseEntity<StreamingResponseBody> previewTextByPathStream(@RequestParam String path, @RequestParam String username) {
         Path prePth = Paths.get(username, path);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         StreamingResponseBody responseBody;
@@ -304,7 +304,7 @@ public class FileController {
     @DeleteMapping("/delete")
     @LogOperatingFun
     @Permission("cloud:file:delete")
-    public ResponseResult<Object> delete(@RequestParam String username, @RequestParam  String[] fileIds, @RequestParam String currentDirectory) {
+    public ResponseResult<Object> delete(@RequestParam String username, @RequestParam String[] fileIds, @RequestParam String currentDirectory) {
         if (fileIds != null && fileIds.length > 0) {
             List<String> list = Arrays.asList(fileIds);
             return fileService.delete(username, currentDirectory, list);
@@ -361,7 +361,7 @@ public class FileController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> listFiles(@RequestParam String path, @RequestParam String username, Boolean tempDir) {
         Boolean dir = tempDir;
-        if(dir == null){
+        if (dir == null) {
             dir = false;
         }
         return fileService.listFiles(URLUtil.decode(path), username, dir);
@@ -387,7 +387,7 @@ public class FileController {
     @GetMapping("/rename/path")
     @LogOperatingFun
     @Permission("cloud:file:update")
-    public ResponseResult<Object> renameByPath(@RequestParam String newFileName,@RequestParam String username,@RequestParam String path) {
+    public ResponseResult<Object> renameByPath(@RequestParam String newFileName, @RequestParam String username, @RequestParam String path) {
         return fileService.renameByPath(URLUtil.decode(newFileName), username, URLUtil.decode(path));
     }
 
@@ -395,7 +395,7 @@ public class FileController {
     @PostMapping("/addfile")
     @LogOperatingFun
     @Permission("cloud:file:upload")
-    public ResponseResult<FileIntroVO> addFile(@RequestParam String fileName, @RequestParam Boolean isFolder, @RequestParam String username, @RequestParam String parentPath){
+    public ResponseResult<FileIntroVO> addFile(@RequestParam String fileName, @RequestParam Boolean isFolder, @RequestParam String username, @RequestParam String parentPath) {
         return fileService.addFile(URLUtil.decode(fileName), isFolder, username, URLUtil.decode(parentPath));
     }
 }
