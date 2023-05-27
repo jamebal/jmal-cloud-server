@@ -935,7 +935,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             fileIntroVO.setName(fileDocument.getName());
             fileIntroVO.setSuffix(fileDocument.getSuffix());
             fileIntroVO.setContentType(fileDocument.getContentType());
-            fileIntroVO.setPath(Paths.get(fileDocument.getPath(), fileDocument.getName()).toString());
+            if (fileDocument.getPath().equals(File.separator)) {
+                fileIntroVO.setPath(File.separator + fileDocument.getName());
+            } else {
+                fileIntroVO.setPath(Paths.get(fileDocument.getPath(), fileDocument.getName()).toString());
+            }
             fileIntroVO.setIsFolder(fileDocument.getIsFolder());
             return fileIntroVO;
         }).sorted(this::compareByFileName).toList();
