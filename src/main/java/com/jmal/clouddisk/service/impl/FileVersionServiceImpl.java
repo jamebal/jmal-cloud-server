@@ -193,7 +193,10 @@ public class FileVersionServiceImpl implements IFileVersionService {
             fileId = WebOssService.getObjectName(prePth, ossPath, false);
         } else {
             Path filePath = Paths.get(URLUtil.decode(path));
-            String relativePath = File.separator + filePath.subpath(0, filePath.getNameCount() - 1) + File.separator;
+            String relativePath = File.separator;
+            if (filePath.getNameCount() > 1) {
+                relativePath += filePath.subpath(0, filePath.getNameCount() - 1) + File.separator;
+            }
             String userId = userLoginHolder.getUserId();
             FileDocument fileDocument = commonFileService.getFileDocumentByPath(relativePath, filePath.getFileName().toString(), userId);
             if (fileDocument != null && fileDocument.getId() != null) {

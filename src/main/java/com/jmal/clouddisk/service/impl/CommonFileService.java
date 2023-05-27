@@ -199,7 +199,10 @@ public class CommonFileService {
     public FileDocument getFileDocumentByPath(String filepath, String userId) {
         Path relativePath = Paths.get(filepath);
         String filename = relativePath.getFileName().toString();
-        String path = File.separator + relativePath.subpath(1, relativePath.getNameCount() - 1) + File.separator;
+        String path = File.separator;
+        if (relativePath.getNameCount() > 2) {
+            path += relativePath.subpath(1, relativePath.getNameCount() - 1) + File.separator;
+        }
         return getFileDocumentByPath(path, filename, userId);
     }
 
