@@ -328,30 +328,39 @@ public class ShareServiceImpl implements IShareService {
         query.addCriteria(Criteria.where("_id").in((Object[]) shareId));
         List<ShareDO> shareDOList = mongoTemplate.findAllAndRemove(query, ShareDO.class, COLLECTION_NAME);
         if (!shareDOList.isEmpty()) {
-            shareDOList.forEach(shareDO -> {
-                String fileId = shareDO.getFileId();
-                FileDocument fileDocument = fileService.getById(shareDO.getFileId());
-                fileService.unsetShareFile(fileDocument);
-                Path path = Paths.get(fileId);
-                String ossPath = CaffeineUtil.getOssPath(path);
-                if (ossPath != null) {
-                    // 设置 share 属性
-                    List<FileDocument> fileDocumentList = webOssService.removeOssPathFile(shareDO.getUserId(), shareDO.getFileId(), ossPath, false, true);
-                    mongoTemplate.insertAll(fileDocumentList);
-                }
-                if (fileDocument.getOssFolder() != null) {
-                    // oss 根目录
-                    Path path1 = Paths.get(userService.getUserNameById(shareDO.getUserId()), fileDocument.getOssFolder());
-                    String ossPath1 = CaffeineUtil.getOssPath(path1);
-                    if (ossPath1 != null) {
-                        // 移除 share 属性
-                        List<FileDocument> fileDocumentList = webOssService.removeOssPathFile(shareDO.getUserId(), shareDO.getFileId(), ossPath1, true, true);
-                        mongoTemplate.insertAll(fileDocumentList);
-                    }
-                }
-            });
+            shareDOList.forEach(this::removeShareProperty);
         }
         return ResultUtil.success();
+    }
+
+    /**
+     * 移除share属性
+     * @param shareDO ShareDO
+     */
+    private void removeShareProperty(ShareDO shareDO) {
+        String fileId = shareDO.getFileId();
+        FileDocument fileDocument = fileService.getById(shareDO.getFileId());
+        if (fileDocument == null) {
+            return;
+        }
+        fileService.unsetShareFile(fileDocument);
+        Path path = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null) {
+            // 设置 share 属性
+            List<FileDocument> fileDocumentList = webOssService.removeOssPathFile(shareDO.getUserId(), shareDO.getFileId(), ossPath, false, true);
+            mongoTemplate.insertAll(fileDocumentList);
+        }
+        if (fileDocument.getOssFolder() != null) {
+            // oss 根目录
+            Path path1 = Paths.get(userService.getUserNameById(shareDO.getUserId()), fileDocument.getOssFolder());
+            String ossPath1 = CaffeineUtil.getOssPath(path1);
+            if (ossPath1 != null) {
+                // 移除 share 属性
+                List<FileDocument> fileDocumentList = webOssService.removeOssPathFile(shareDO.getUserId(), shareDO.getFileId(), ossPath1, true, true);
+                mongoTemplate.insertAll(fileDocumentList);
+            }
+        }
     }
 
     @Override

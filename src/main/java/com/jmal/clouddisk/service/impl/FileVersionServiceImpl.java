@@ -269,16 +269,24 @@ public class FileVersionServiceImpl implements IFileVersionService {
 
     @Override
     public void deleteAll(List<String> fileIds) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(Constants.FILENAME).in(fileIds));
-        gridFsTemplate.delete(query);
+        try {
+            Query query = new Query();
+            query.addCriteria(Criteria.where(Constants.FILENAME).in(fileIds));
+            gridFsTemplate.delete(query);
+        } catch (Exception e) {
+            // ignore
+        }
     }
 
     @Override
     public void deleteAll(String fileId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(Constants.FILENAME).is(fileId));
-        gridFsTemplate.delete(query);
+        try {
+            Query query = new Query();
+            query.addCriteria(Criteria.where(Constants.FILENAME).is(fileId));
+            gridFsTemplate.delete(query);
+        } catch (Exception e) {
+            // ignore
+        }
     }
 
     @Override
@@ -288,7 +296,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
             query.addCriteria(Criteria.where("_id").is(id));
             gridFsTemplate.delete(query);
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            // ignore
         }
     }
 

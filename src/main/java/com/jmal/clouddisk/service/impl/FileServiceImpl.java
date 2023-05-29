@@ -1536,7 +1536,12 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         }
         if (isDel) {
             mongoTemplate.remove(query, COLLECTION_NAME);
+            // delete history version
             fileVersionService.deleteAll(fileIds);
+            // delete share
+            Query shareQuery = new Query();
+            shareQuery.addCriteria(Criteria.where(Constants.FILE_ID).in(fileIds));
+            mongoTemplate.remove(shareQuery, ShareDO.class);
         } else {
             throw new CommonException(-1, "删除失败");
         }
