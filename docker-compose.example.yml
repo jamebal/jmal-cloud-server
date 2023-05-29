@@ -11,8 +11,6 @@ services:
       - ${RESOURCE_DB_PATH}/custom:/etc/mongo
       - ${RESOURCE_DB_PATH}/backup:/dump
     restart: unless-stopped
-    ports:
-      - "27018:27017"
     command: --wiredTigerCacheSizeGB 0.5
   jmalcloud:
     container_name: "${CONTAINER_NAME_PREFIX}_server"
