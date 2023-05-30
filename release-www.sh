@@ -7,6 +7,9 @@ else
   exit
 fi
 version=$1
+
+nvm use v16.15.1
+
 # jmal-cloud-view Directory location
 view_dir="/Users/jmal/studio/myProject/github/jmal-cloud-view"
 # jmal-cloud-server Directory location
