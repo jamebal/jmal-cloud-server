@@ -171,8 +171,8 @@ help() {
 }
 
 env_init() {
-  env_set OFFICE_IMAGE_VERSION = "7.3"
-  env_set DRAWIO_IMAGE_VERSION = "21.2.9"
+  env_set OFFICE_IMAGE_VERSION "7.3"
+  env_set DRAWIO_IMAGE_VERSION "21.2.9"
   if [[ "$(is_arm)" == "yes" ]]; then
     env_set DOCKER_ARCH "-arm64"
   else
