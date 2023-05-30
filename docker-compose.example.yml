@@ -41,13 +41,13 @@ services:
     restart: unless-stopped
   office:
     container_name: "${CONTAINER_NAME_PREFIX}_office"
-    image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/onlyoffice_documentserver:${OFFICE_IMAGE_VERSION}"
+    image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/onlyoffice_documentserver:${OFFICE_IMAGE_VERSION}${DOCKER_ARCH}"
     environment:
       TZ: "Asia/Shanghai"
     restart: always
   drawio-webapp:
     container_name: "${CONTAINER_NAME_PREFIX}_drawio"
-    image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/jgraph_drawio:16.6.1${DOCKER_ARCH}"
+    image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/jgraph_drawio:${DRAWIO_IMAGE_VERSION}${DOCKER_ARCH}"
     environment:
       TZ: "Asia/Shanghai"
     restart: always

@@ -171,11 +171,11 @@ help() {
 }
 
 env_init() {
+  env_set OFFICE_IMAGE_VERSION = "7.3"
+  env_set DRAWIO_IMAGE_VERSION = "21.2.9"
   if [[ "$(is_arm)" == "yes" ]]; then
-    env_set OFFICE_IMAGE_VERSION "latest-arm64"
     env_set DOCKER_ARCH "-arm64"
   else
-    env_set OFFICE_IMAGE_VERSION "7.0.0.132"
     env_set DOCKER_ARCH ""
   fi
   env_set APP_IPPR "10.$(rand 50 100).$(rand 100 200)"
