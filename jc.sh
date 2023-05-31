@@ -171,8 +171,8 @@ help() {
 }
 
 env_init() {
-  env_set OFFICE_IMAGE_VERSION "7.3"
-  env_set DRAWIO_IMAGE_VERSION "21.2.9"
+  env_set OFFICE_IMAGE_VERSION "7.0.0.132"
+  env_set DRAWIO_IMAGE_VERSION "20.2.3"
   if [[ "$(is_arm)" == "yes" ]]; then
     env_set DOCKER_ARCH "-arm64"
   else
@@ -264,9 +264,14 @@ pull() {
 }
 
 backup_and_install() {
-  run_mongo "dump"
-  run_exec nginx "nginx -s reload"
-  install
+  local container_mongodb="$(env_get CONTAINER_NAME_PREFIX)_mongodb"
+  if docker ps --format '{{.Names}}' | grep -q "$container_mongodb"; then
+    run_mongo "dump"
+    run_exec nginx "nginx -s reload"
+    install
+  else
+    install
+  fi
 }
 
 ########################################################################################################
@@ -282,7 +287,6 @@ if [ $# -gt 0 ]; then
     pull
   elif [[ "$1" == "update" ]]; then
     shift 1
-    pull
     backup_and_install
   elif [[ "$1" == "uninstall" ]]; then
     shift 1
