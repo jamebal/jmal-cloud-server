@@ -127,9 +127,8 @@ public class FileInterceptor implements HandlerInterceptor {
                 }
             }
         } else {
-            if (previewOssFile(request, response, path, encodedFilename)) return false;
+            return !previewOssFile(request, response, path, encodedFilename);
         }
-        responseHeader(response, null, null);
         return true;
     }
 
