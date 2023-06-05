@@ -288,6 +288,7 @@ public class OssConfigService {
             // 销毁IOssService
             String key = MyWebdavServlet.getPathDelimiter(userService.getUserNameById(ossConfigDO.getUserId()), ossConfigDO.getFolderName());
             destroyOssService(key);
+            PathUtil.del(Paths.get(fileProperties.getRootDir(), key));
         }
         return ResultUtil.success();
     }
