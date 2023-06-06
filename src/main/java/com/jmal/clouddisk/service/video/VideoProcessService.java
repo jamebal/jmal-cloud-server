@@ -8,8 +8,13 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.oss.IOssService;
+import com.jmal.clouddisk.oss.OssConfigService;
+import com.jmal.clouddisk.oss.web.WebOssService;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.util.CaffeineUtil;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +30,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
@@ -80,6 +86,8 @@ public class VideoProcessService {
         if (hasNoFFmpeg()) {
             return null;
         }
+        Path prePath = Paths.get(username, relativePath, fileName);
+        String ossPath = CaffeineUtil.getOssPath(prePath);
         Path fileAbsolutePath = Paths.get(fileProperties.getRootDir(), username, relativePath, fileName);
         String fileMd5 = SecureUtil.md5(fileAbsolutePath.toString());
         String videoCacheDir = getVideoCacheDir(username, fileMd5);
@@ -88,9 +96,19 @@ public class VideoProcessService {
             return outputPath;
         }
         try {
+            String videoPath = fileAbsolutePath.toString();
+            if (ossPath != null) {
+                IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+                String objectName = WebOssService.getObjectName(prePath, ossPath, false);
+                URL url = ossService.getPresignedObjectUrl(objectName, 60);
+                if (url == null) {
+                    return null;
+                }
+                videoPath = url.toString();
+            }
             ProcessBuilder processBuilder = new ProcessBuilder(
-                    "ffmpeg",
-                    "-i", fileAbsolutePath.toString(),
+                    Constants.FFMPEG,
+                    "-i", videoPath,
                     "-vf", "thumbnail,scale=320:180",
                     "-frames:v", "1",
                     outputPath
@@ -148,7 +166,7 @@ public class VideoProcessService {
             return;
         }
         ProcessBuilder processBuilder = new ProcessBuilder(
-                "ffmpeg",
+                Constants.FFMPEG,
                 "-i", fileAbsolutePath.toString(),
                 "-profile:v", "baseline",
                 "-level", "3.0",

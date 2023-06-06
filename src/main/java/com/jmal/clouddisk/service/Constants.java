@@ -26,6 +26,8 @@ public class Constants {
     public static final String AUDIO = "audio";
     public static final String VIDEO = "video";
 
+    public static final String FFMPEG = "ffmpeg";
+
     public static final String CONTENT_TYPE_IMAGE = "image";
     public static final String CONTENT_TYPE_MARK_DOWN = "text/markdown";
     public static final String CONTENT_TYPE_WEBP = "image/webp";

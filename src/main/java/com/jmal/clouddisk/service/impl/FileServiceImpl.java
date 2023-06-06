@@ -501,7 +501,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public Optional<FileDocument> coverOfMedia(String id, String username) throws CommonException {
-        FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
+        FileDocument fileDocument = getById(id);
         if (fileDocument == null) {
             return Optional.empty();
         }
