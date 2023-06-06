@@ -501,22 +501,58 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public Optional<FileDocument> coverOfMedia(String id, String username) throws CommonException {
-        FileDocument fileDocument = getById(id);
-        if (fileDocument == null) {
-            return Optional.empty();
+        FileDocument fileDocument = getFileDocumentById(id);
+        if (fileDocument != null && fileDocument.getContent() != null) {
+            return Optional.of(fileDocument);
         }
+        if (CaffeineUtil.hasThumbnailRequestCache(id)) {
+            return Optional.empty();
+        } else {
+            CaffeineUtil.setThumbnailRequestCache(id);
+        }
+        String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
+        if (ossPath != null) {
+            // S3存储
+            if (fileDocument == null) {
+                FileDocument ossFileDocument = webOssService.getFileDocument(ossPath, id);
+                setMediaCover(id, username, ossFileDocument, false);
+                fileDocument = ossFileDocument;
+            } else {
+                setMediaCover(id, username, fileDocument, true);
+            }
+        } else {
+            // 本地储存
+            if (fileDocument != null) {
+                setMediaCover(id, username, fileDocument, true);
+            } else {
+                return Optional.empty();
+            }
+        }
+        return Optional.of(fileDocument);
+    }
+
+    private void setMediaCover(String id, String username, FileDocument fileDocument, boolean hasOldFileDocument) {
         String contentType = fileDocument.getContentType();
         if (contentType.contains(Constants.VIDEO)) {
             // 视频文件
+            Query query = new Query().addCriteria(Criteria.where("_id").is(id));
             String imagePath = videoProcessService.getVideoCover(username, fileDocument.getPath(), fileDocument.getName());
             if (!CharSequenceUtil.isBlank(imagePath)) {
                 fileDocument.setContent(FileUtil.readBytes(imagePath));
+                if (hasOldFileDocument) {
+                    Update update = new Update();
+                    update.set("content", fileDocument.getContent());
+                    mongoTemplate.upsert(query, update, FileDocument.class);
+                } else {
+                    mongoTemplate.save(fileDocument);
+                }
             } else {
-                Query query = new Query();
-                query.addCriteria(Criteria.where("_id").is(id));
                 Update update = new Update();
                 update.set("mediaCover", false);
                 mongoTemplate.updateFirst(query, update, FileDocument.class);
+            }
+            if (imagePath != null && FileUtil.exist(imagePath)) {
+                FileUtil.del(imagePath);
             }
         } else {
             // 音频文件
@@ -525,7 +561,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         }
         fileDocument.setContentType("image/png");
         fileDocument.setName("cover");
-        return Optional.of(fileDocument);
     }
 
     @Override

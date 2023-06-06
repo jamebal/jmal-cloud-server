@@ -332,7 +332,7 @@ public class MinIOService implements IOssService {
                 return true;
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            // ignore
         }
         return false;
     }

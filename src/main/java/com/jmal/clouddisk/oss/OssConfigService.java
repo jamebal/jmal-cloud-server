@@ -2,10 +2,12 @@ package com.jmal.clouddisk.oss;
 
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.listener.FileMonitor;
+import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.aliyun.AliyunOssService;
 import com.jmal.clouddisk.oss.minio.MinIOService;
@@ -286,8 +288,13 @@ public class OssConfigService {
         OssConfigDO ossConfigDO = mongoTemplate.findAndRemove(query, OssConfigDO.class);
         if (ossConfigDO != null) {
             // 销毁IOssService
-            String key = MyWebdavServlet.getPathDelimiter(userService.getUserNameById(ossConfigDO.getUserId()), ossConfigDO.getFolderName());
+            String username = userService.getUserNameById(ossConfigDO.getUserId());
+            String key = MyWebdavServlet.getPathDelimiter(username, ossConfigDO.getFolderName());
             destroyOssService(key);
+            // 删除相关缓存
+            Query removeQuery = new Query();
+            removeQuery.addCriteria(Criteria.where("_id").regex("^" + ReUtil.escape(Paths.get(username, ossConfigDO.getFolderName()).toString())));
+            mongoTemplate.remove(removeQuery, FileDocument.class);
             PathUtil.del(Paths.get(fileProperties.getRootDir(), key));
         }
         return ResultUtil.success();

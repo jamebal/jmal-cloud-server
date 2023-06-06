@@ -4,6 +4,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.alibaba.fastjson2.JSONObject;
@@ -292,7 +293,6 @@ public class CommonFileService {
             Query query = new Query();
             FileDocument fileExists = getFileDocument(userId, fileName, relativePath, query);
             if (fileExists != null) {
-                updateMediaProp(username, file, contentType, query, fileExists);
                 return fileExists.getId();
             }
             Update update = new Update();
@@ -325,23 +325,6 @@ public class CommonFileService {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return null;
-    }
-
-    private void updateMediaProp(String username, File file, String contentType, Query query, FileDocument fileExists) {
-        try {
-            Update update = null;
-            if (contentType.contains(Constants.VIDEO)) {
-                setMediaCover(username, fileExists.getName(), fileExists.getPath(), update);
-            }
-            if (contentType.contains(Constants.AUDIO) && fileExists.getMusic() == null) {
-                setMusic(file, update);
-            }
-            if (update != null) {
-                mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
     }
 
     private static void setDateTime(File file, Update update) {
@@ -463,13 +446,15 @@ public class CommonFileService {
     }
 
     private void setMediaCover(String username, String fileName, String relativePath, Update update) {
-        String imagePath = videoProcessService.getVideoCover(username, relativePath, fileName);
-        if (!CharSequenceUtil.isBlank(imagePath)) {
+        String coverPath = videoProcessService.getVideoCover(username, relativePath, fileName);
+        if (!CharSequenceUtil.isBlank(coverPath)) {
             if (update == null) {
                 update = new Update();
             }
+            update.set("content", PathUtil.readBytes(Paths.get(coverPath)));
             videoProcessService.convertToM3U8(username, relativePath, fileName);
             update.set("mediaCover", true);
+            FileUtil.del(coverPath);
         } else {
             update.set("mediaCover", false);
         }

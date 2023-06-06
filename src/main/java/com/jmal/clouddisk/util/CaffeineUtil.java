@@ -25,6 +25,11 @@ import java.util.concurrent.locks.Lock;
 public class CaffeineUtil {
 
     /**
+     * 缩略图请求缓存
+     */
+    private static final Cache<String, Boolean> THUMBNAIL_REQUEST_CACHE = Caffeine.newBuilder().expireAfterWrite(60, TimeUnit.SECONDS).build();
+
+    /**
      * 用户oss存储路径前缀缓存
      * key: 路径前缀，例如：/jmal/aliyunStorage ,其中jmal为用户名,aliyunStorage 为oss存储的挂载文件夹名称，由用户自定义
      * value: BucketInfo
@@ -75,14 +80,14 @@ public class CaffeineUtil {
      * key: username
      * value: 权限标识列表
      */
-    private final static Cache<String, List<String>> AUTHORITIES_CACHE = Caffeine.newBuilder().build();
+    private static final Cache<String, List<String>> AUTHORITIES_CACHE = Caffeine.newBuilder().build();
 
     /***
      * 缓存userId
      * key: username
      * value: userId
      */
-    private final static Cache<String, String> USER_ID_CACHE = Caffeine.newBuilder().build();
+    private static final Cache<String, String> USER_ID_CACHE = Caffeine.newBuilder().build();
 
     public static List<String> getAuthoritiesCache(String username) {
         return AUTHORITIES_CACHE.getIfPresent(username);
@@ -254,5 +259,13 @@ public class CaffeineUtil {
             }
         }
         return null;
+    }
+
+    public static Boolean hasThumbnailRequestCache(String id) {
+        return THUMBNAIL_REQUEST_CACHE.get(id, key -> false);
+    }
+
+    public static void setThumbnailRequestCache(String id) {
+        THUMBNAIL_REQUEST_CACHE.put(id, true);
     }
 }

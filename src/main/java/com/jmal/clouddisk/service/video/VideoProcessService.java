@@ -90,7 +90,7 @@ public class VideoProcessService {
         String ossPath = CaffeineUtil.getOssPath(prePath);
         Path fileAbsolutePath = Paths.get(fileProperties.getRootDir(), username, relativePath, fileName);
         String fileMd5 = SecureUtil.md5(fileAbsolutePath.toString());
-        String videoCacheDir = getVideoCacheDir(username, fileMd5);
+        String videoCacheDir = getVideoCacheDir(username, "");
         String outputPath = Paths.get(videoCacheDir, fileMd5 + ".png").toString();
         if (FileUtil.exist(outputPath)) {
             return outputPath;
@@ -101,10 +101,9 @@ public class VideoProcessService {
                 IOssService ossService = OssConfigService.getOssStorageService(ossPath);
                 String objectName = WebOssService.getObjectName(prePath, ossPath, false);
                 URL url = ossService.getPresignedObjectUrl(objectName, 60);
-                if (url == null) {
-                    return null;
+                if (url != null) {
+                    videoPath = url.toString();
                 }
-                videoPath = url.toString();
             }
             ProcessBuilder processBuilder = new ProcessBuilder(
                     Constants.FFMPEG,
