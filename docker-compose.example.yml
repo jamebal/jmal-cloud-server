@@ -17,6 +17,8 @@ services:
     image: "jmal/jmalcloud:latest"
     environment:
       MONGODB_URI: "mongodb://mongo:27017/jmalcloud"
+      PUID: "1000"
+      PGID: "1000"
       TZ: "Asia/Shanghai"
     ports:
       - "${SERVER_PORT}:8088"
