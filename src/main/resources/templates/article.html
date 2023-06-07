@@ -116,6 +116,7 @@
                     theme: {
                         current: 'light'
                     },
+                    cdn: `${window.location.origin}/articles/vditor@3.9.3`,
                     transform(htmlStr) {
                         renderContents($(htmlStr))
                         return htmlStr;
@@ -501,8 +502,9 @@
             }
             function setContentTheme(){
                 const isDark = getThemeCSSName() === 'dark'
-                Vditor.setContentTheme(isDark ? 'dark': 'light', 'https://unpkg.com/vditor@3.9.3/dist/css/content-theme')
-                Vditor.setCodeTheme(isDark ? 'native': 'github', 'https://unpkg.com/vditor@3.9.3')
+                Vditor.setContentTheme(isDark ? 'dark': 'light', `${origin}/articles/vditor@3.9.3/dist/css/content-theme`)
+                Vditor.setCodeTheme(isDark ? 'native': 'github', `${origin}/articles/vditor@3.9.3`)
+                // Vditor.highlightRender({cnd: `${origin}/articles/vditor@3.9.3`})
             }
 
             // common.js

@@ -5,8 +5,6 @@ services:
     container_name: "${CONTAINER_NAME_PREFIX}_mongodb"
     image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/mongodb:4.4${DOCKER_ARCH}"
     environment:
-      PUID: "1000"
-      PGID: "1000"
       TZ: "Asia/Shanghai"
     volumes:
       - ${RESOURCE_DB_PATH}/data/db:/data/db
@@ -19,8 +17,6 @@ services:
     image: "jmal/jmalcloud:latest"
     environment:
       MONGODB_URI: "mongodb://mongo:27017/jmalcloud"
-      PUID: "1000"
-      PGID: "1000"
       TZ: "Asia/Shanghai"
     ports:
       - "${SERVER_PORT}:8088"
@@ -37,8 +33,6 @@ services:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./docker/www/dist:/var/www/public
     environment:
-      PUID: "1000"
-      PGID: "1000"
       TZ: "Asia/Shanghai"
     links:
       - jmalcloud
