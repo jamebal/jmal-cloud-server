@@ -40,6 +40,9 @@ public class CommonExceptionHandler {
     @ExceptionHandler(CommonException.class)
     @ResponseBody
     public ResponseResult<Object> exceptionHandler(CommonException e) {
+        if (e.getCode() == 0) {
+            return ResultUtil.success(e.getData());
+        }
         return ResultUtil.error(e.getCode(), e.getMsg());
     }
 

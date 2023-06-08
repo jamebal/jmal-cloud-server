@@ -230,12 +230,12 @@ public class ShareServiceImpl implements IShareService {
             shareVO.setExtractionCode(null);
             // 先检查有没有share-token
             if (CharSequenceUtil.isBlank(shareToken)) {
-                throw new CommonException(ExceptionType.ACCESS_FORBIDDEN);
+                throw new CommonException(ExceptionType.SYSTEM_SUCCESS, shareDO);
             }
             // 再检查share-token是否正确
             if (!shareDO.getId().equals(TokenUtil.getTokenKey(shareToken))) {
                 // 验证失败
-                throw new CommonException(ExceptionType.ACCESS_FORBIDDEN);
+                throw new CommonException(ExceptionType.SYSTEM_SUCCESS, shareDO);
             }
         }
     }

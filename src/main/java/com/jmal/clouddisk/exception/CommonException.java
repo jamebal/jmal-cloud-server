@@ -1,9 +1,8 @@
 package com.jmal.clouddisk.exception;
 
-import cn.hutool.core.util.StrUtil;
+import org.springframework.data.annotation.Transient;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
+import java.io.Serial;
 
 /**
  * @Description 通用异常处理类
@@ -16,23 +15,36 @@ public class CommonException extends RuntimeException {
     /**
 	 *
 	 */
-	private static final long serialVersionUID = 1L;
+	@Serial
+    private static final long serialVersionUID = 1L;
 	private final int code;
     private final String msg;
+
+    @Transient
+    private final Object data;
 
     public CommonException(int code, String msg) {
         this.code = code;
         this.msg = msg;
+        this.data = null;
+    }
+
+    public CommonException(ExceptionType type, Object data) {
+        this.code = type.getCode();
+        this.msg = type.getMsg();
+        this.data = data;
     }
 
     public CommonException(ExceptionType type) {
         this.code = type.getCode();
         this.msg = type.getMsg();
+        this.data = null;
     }
 
     public CommonException(String msg) {
         this.code = -1;
         this.msg = msg;
+        this.data = null;
     }
 
     public int getCode() {
@@ -43,54 +55,8 @@ public class CommonException extends RuntimeException {
         return msg;
     }
 
-    /***
-     * 主要用于获取CompletableFuture中的异常,有异常则抛出
-     * @param exception
-     * @throws CommonException
-     */
-    public static void futureException(CompletableFuture<CommonException> exception) throws CommonException {
-        if (exception.isDone()) {
-            CommonException e = exception.join();
-            if (e != null) {
-                throw e;
-            }
-        }
+    public Object getData() {
+        return data;
     }
-
-    @FunctionalInterface
-    public interface ThrowingReturnFunction<T, R, E extends CommonException> {
-        /***
-         * 在stream中抛出异常
-         * @param t
-         * @return
-         * @throws E
-         */
-        R apply(T t) throws E;
-
-    }
-
-    public static <T, R> Function<T, R> throwReturn(ThrowingReturnFunction<T, R, CommonException> throwingFunction) {
-        return i -> {
-            try {
-                return throwingFunction.apply(i);
-            } catch (CommonException e) {
-                throw new CommonException(e.getCode(),e.getMsg());
-            }
-        };
-    }
-
-    /***
-     * 检查参数
-     * @param params
-     * @throws CommonException
-     */
-    public static void checkParam(Object... params) throws CommonException {
-        for (Object param : params) {
-            if (StrUtil.isBlankIfStr(param)) {
-                throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
-            }
-        }
-    }
-
 
 }

@@ -234,7 +234,7 @@ public class FileInterceptor implements HandlerInterceptor {
             shareToken = request.getParameter(Constants.SHARE_TOKEN);
         }
         shareService.validShare(shareToken, shareDO.getId());
-        return true;
+        return false;
     }
 
     private void webp(HttpServletRequest request, HttpServletResponse response) {
