@@ -95,9 +95,9 @@ public class WebOssService extends WebOssCommonService {
 
     public ResponseResult<Object> getOssFileList(String ossPath, Path prePth, UploadApiParamDTO upload) {
         ResponseResult<Object> result = ResultUtil.genResult();
-        result.setData(Collections.EMPTY_LIST);
+        result.setData(Collections.emptyList());
         result.setCount(0);
-        List<FileIntroVO> fileIntroVOList = new ArrayList<>();
+        List<FileIntroVO> fileIntroVOList;
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, true);
         List<FileInfo> list = ossService.getFileInfoListCache(objectName);
@@ -583,7 +583,7 @@ public class WebOssService extends WebOssCommonService {
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, false);
 
-        try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName);) {
+        try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName)) {
             // 修改文件之前保存历史版本
             String username = getUsernameByOssPath(ossPath);
             String fileId = getFileId(getOssRootFolderName(ossPath), objectName, username);
