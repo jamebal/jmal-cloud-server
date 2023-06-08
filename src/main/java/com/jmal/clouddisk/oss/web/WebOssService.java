@@ -86,18 +86,17 @@ public class WebOssService extends WebOssCommonService {
     }
 
     public ResponseResult<Object> searchFileAndOpenOssFolder(Path prePth, UploadApiParamDTO upload) {
-        ResponseResult<Object> result = ResultUtil.genResult();
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath == null) {
             return ResultUtil.success().setData(new ArrayList<>(0)).setCode(0);
         }
-        List<FileIntroVO> fileIntroVOList = getOssFileList(ossPath, prePth, upload);
-        result.setCount(fileIntroVOList.size());
-        result.setData(fileIntroVOList);
-        return result;
+        return getOssFileList(ossPath, prePth, upload);
     }
 
-    public List<FileIntroVO> getOssFileList(String ossPath, Path prePth, UploadApiParamDTO upload) {
+    public ResponseResult<Object> getOssFileList(String ossPath, Path prePth, UploadApiParamDTO upload) {
+        ResponseResult<Object> result = ResultUtil.genResult();
+        result.setData(Collections.EMPTY_LIST);
+        result.setCount(0);
         List<FileIntroVO> fileIntroVOList = new ArrayList<>();
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, true);
@@ -113,8 +112,15 @@ public class WebOssService extends WebOssCommonService {
 
             List<FileDocument> fileDocumentList = getFileDocuments(ossPath, objectName);
             String finalUserId = userId;
+            //过滤条件
+            list = filterOther(upload, list);
+            result.setCount(list.size());
+            //配置属性
             fileIntroVOList = list.stream().map(fileInfo -> {
                 FileIntroVO fileIntroVO = fileInfo.toFileIntroVO(ossPath, finalUserId);
+                if (upload != null && BooleanUtil.isTrue(upload.getPathAttachFileName())) {
+                    fileIntroVO.setPath(fileIntroVO.getPath() + fileIntroVO.getName());
+                }
                 // 设置文件的额外属性:分享属性和收藏属性
                 FileDocument fileDocument = fileDocumentList.stream().filter(f -> f.getId().equals(fileIntroVO.getId())).findFirst().orElse(null);
                 if (fileDocument != null) {
@@ -131,10 +137,9 @@ public class WebOssService extends WebOssCommonService {
             if (upload != null && upload.getPageIndex() != null && upload.getPageSize() != null) {
                 fileIntroVOList = getPageFileList(fileIntroVOList, upload.getPageSize(), upload.getPageIndex());
             }
-            // 其他过滤条件
-            fileIntroVOList = filterOther(upload, fileIntroVOList);
+            result.setData(fileIntroVOList);
         }
-        return fileIntroVOList;
+        return result;
     }
 
     /**
@@ -154,23 +159,12 @@ public class WebOssService extends WebOssCommonService {
         return mongoTemplate.find(query, FileDocument.class);
     }
 
-    private static List<FileIntroVO> filterOther(UploadApiParamDTO upload, List<FileIntroVO> fileIntroVOList) {
-        if (upload != null) {
-            if (BooleanUtil.isTrue(upload.getJustShowFolder())) {
-                // 只显示文件夹
-                fileIntroVOList = fileIntroVOList.stream().filter(FileIntroVO::getIsFolder).toList();
-            }
-            if (BooleanUtil.isTrue(upload.getPathAttachFileName())) {
-                // path附加文件名
-                List<FileIntroVO> list = new ArrayList<>();
-                for (FileIntroVO fileIntroVO : fileIntroVOList) {
-                    fileIntroVO.setPath(fileIntroVO.getPath() + fileIntroVO.getName());
-                    list.add(fileIntroVO);
-                }
-                fileIntroVOList = list;
-            }
+    private static List<FileInfo> filterOther(UploadApiParamDTO upload, List<FileInfo> fileInfoList) {
+        if (upload != null && BooleanUtil.isTrue(upload.getJustShowFolder())) {
+            // 只显示文件夹
+            return fileInfoList.stream().filter(FileInfo::isFolder).toList();
         }
-        return fileIntroVOList;
+        return fileInfoList;
     }
 
     private List<FileIntroVO> getSortFileList(UploadApiParamDTO upload, List<FileIntroVO> fileIntroVOList) {
