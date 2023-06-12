@@ -953,7 +953,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public ResponseResult<Object> upperLevelList(String path, String username) {
-        String upperLevel = Paths.get(path).getParent().toString();
+        Path currentPath = Paths.get(path);
+        String upperLevel = path;
+        if (currentPath.getParent() != null) {
+            upperLevel = currentPath.getParent().toString();
+        }
         return ResultUtil.success(listFile(upperLevel, userLoginHolder.getUserId()));
     }
 
