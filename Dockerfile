@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jre
+FROM jmal/jdk17_ffmpeg:latest
 
 MAINTAINER zhushilun084@gmail.com
 
@@ -6,13 +6,9 @@ ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
 
 ARG VERSION
 
-# 安装 ffmpeg
-RUN apt-get update && \
-    apt-get install -y ffmpeg libavcodec-extra
-
 RUN mkdir -p /jmalcloud/files
 
-ADD docker/ip2region.xdb /jmalcloud/
+ADD src/main/resources/db/ip2region.xdb /jmalcloud/
 
 ADD target/clouddisk-${VERSION}-exec.jar /usr/local/
 
