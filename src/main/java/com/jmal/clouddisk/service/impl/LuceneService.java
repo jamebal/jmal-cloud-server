@@ -10,6 +10,7 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.StringUtil;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.Analyzer;
@@ -150,6 +151,7 @@ public class LuceneService {
 
     }
 
+    @PostConstruct
     public void synFileCreatIndex() throws IOException {
         IndexWriter.DocStats docStats = indexWriter.getDocStats();
         if (docStats.numDocs < 1) {
