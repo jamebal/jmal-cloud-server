@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.controller;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.model.*;
@@ -118,7 +119,7 @@ public class ArticlesController {
     private String articlePage(HttpServletRequest request, String slug, Model map) {
         boolean isPjax = pjaxMap(request, map, "article");
         ArticleVO articleVO = fileService.getMarkDownContentBySlug(slug);
-        if (articleVO == null) {
+        if (articleVO == null || !BooleanUtil.isTrue(articleVO.getRelease())) {
             return notFind(request, map);
         }
         Cookie[] cookies = request.getCookies();
@@ -137,6 +138,9 @@ public class ArticlesController {
     }
 
     private String setDescription(ArticleVO articleVO) {
+        if (articleVO == null || articleVO.getHtml() == null) {
+            return "";
+        }
         return articleVO.getHtml().substring(0, Math.min(articleVO.getHtml().length(), 500)).replaceAll("<[^>]*>","");
     }
 
