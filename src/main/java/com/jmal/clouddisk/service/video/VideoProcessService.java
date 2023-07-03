@@ -57,6 +57,9 @@ public class VideoProcessService {
     @PostConstruct
     public void init() {
         int processors = Runtime.getRuntime().availableProcessors() - 1;
+        if (processors < 1) {
+            processors = 1;
+        }
         executorService = ThreadUtil.newFixedExecutor(processors, 100, "videoTranscoding", false);
     }
 
