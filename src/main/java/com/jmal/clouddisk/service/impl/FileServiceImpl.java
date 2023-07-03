@@ -505,7 +505,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (fileDocument != null && fileDocument.getContent() != null) {
             return Optional.of(fileDocument);
         }
-        if (CaffeineUtil.hasThumbnailRequestCache(id)) {
+        if (Boolean.TRUE.equals(CaffeineUtil.hasThumbnailRequestCache(id))) {
             return Optional.empty();
         } else {
             CaffeineUtil.setThumbnailRequestCache(id);

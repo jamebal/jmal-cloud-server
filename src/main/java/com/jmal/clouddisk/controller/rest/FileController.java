@@ -255,6 +255,14 @@ public class FileController {
         return fileService.getObjectResponseEntity(file);
     }
 
+    @Operation(summary = "显示缩略图")
+    @GetMapping("/view/thumbnail/{filename}")
+    @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseEntity<Object> thumbnailName(@RequestParam String id) {
+        return thumbnail(id);
+    }
+
     @Operation(summary = "显示缩略图(媒体封面)")
     @GetMapping("/view/cover")
     @Permission("cloud:file:list")

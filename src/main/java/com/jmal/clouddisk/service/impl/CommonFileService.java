@@ -34,7 +34,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -111,8 +110,7 @@ public class CommonFileService {
     public ResponseEntity<Object> getObjectResponseEntity(Optional<FileDocument> file) {
         return file.<ResponseEntity<Object>>map(fileDocument ->
                 ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + ContentDisposition.builder("attachment")
-                                .filename(UriUtils.encode(fileDocument.getName(), StandardCharsets.UTF_8)))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + UriUtils.encode(fileDocument.getName(), StandardCharsets.UTF_8))
                         .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
                         .header(HttpHeaders.CONNECTION, "close")
                         .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent() != null ? fileDocument.getContent().length : 0))

@@ -161,6 +161,13 @@ public class ShareController {
         return thumbnail(id, request);
     }
 
+    @Operation(summary = "显示缩略图")
+    @GetMapping("/public/s/view/thumbnail/{filename}")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseEntity<Object> publicThumbnailName(String id, HttpServletRequest request) {
+        return publicThumbnail(id, request);
+    }
+
     @Operation(summary = "显示缩略图(媒体封面)")
     @GetMapping("/public/s/view/cover")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
