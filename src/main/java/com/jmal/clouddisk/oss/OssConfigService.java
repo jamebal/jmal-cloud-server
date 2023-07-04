@@ -208,6 +208,7 @@ public class OssConfigService {
      */
     private void destroyOldConfig(OssConfigDTO ossConfigDTO, String userId, ConsumerDO consumerDO, Query query) {
         query.addCriteria(Criteria.where("userId").is(userId));
+        query.addCriteria(Criteria.where("endpoint").is(ossConfigDTO.getEndpoint()));
         query.addCriteria(Criteria.where("bucket").is(ossConfigDTO.getBucket()));
         query.addCriteria(Criteria.where("platform").is(PlatformOSS.getPlatform(ossConfigDTO.getPlatform())));
         // 检查目录是否存在
