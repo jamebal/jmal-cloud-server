@@ -154,7 +154,11 @@ public class WebOssService extends WebOssCommonService {
             return new ArrayList<>();
         }
         Query query = new Query();
-        String path = getPath(objectName, getOssRootFolderName(ossPath)) + Paths.get(objectName).getFileName() + MyWebdavServlet.PATH_DELIMITER;
+        String parentName = Paths.get(objectName).getFileName().toString();
+        String path = getPath(objectName, getOssRootFolderName(ossPath));
+        if (parentName.length() > 0) {
+            path += parentName + MyWebdavServlet.PATH_DELIMITER;
+        }
         query.addCriteria(Criteria.where("path").is(path));
         return mongoTemplate.find(query, FileDocument.class);
     }
