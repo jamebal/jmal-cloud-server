@@ -216,16 +216,19 @@ public class OssConfigService {
         // 旧配置
         OssConfigDO oldOssConfigDO = mongoTemplate.findOne(query, OssConfigDO.class);
         if (oldOssConfigDO != null) {
+            String webPathPrefix = MyWebdavServlet.getPathDelimiter(ossConfigDTO.getUsername(), oldOssConfigDO.getFolderName());
             if (!oldOssConfigDO.getFolderName().equals(ossConfigDTO.getFolderName())) {
+                // 修改了目录名
                 // 修改了目录名
                 Path oldPath = Paths.get(fileProperties.getRootDir(), ossConfigDTO.getUsername(), oldOssConfigDO.getFolderName());
                 PathUtil.del(oldPath);
+                fileMonitor.removeDirFilter(webPathPrefix);
                 if (existFolder) {
                     throw new CommonException(ExceptionType.WARNING.getCode(), "目录已存在: " + ossConfigDTO.getFolderName());
                 }
             }
             // 销毁 old OssService
-            destroyOssService(MyWebdavServlet.getPathDelimiter(ossConfigDTO.getUsername(), oldOssConfigDO.getFolderName()));
+            destroyOssService(webPathPrefix);
             if (ossConfigDTO.getAccessKey().contains("*")) {
                 ossConfigDTO.setAccessKey(UserServiceImpl.getDecryptStrByUser(oldOssConfigDO.getAccessKey(), consumerDO));
             }

@@ -82,6 +82,9 @@ public class FileMonitor {
     }
 
     private void reloadObserver() {
+        if (monitor == null) {
+            return;
+        }
         try {
             newObserver();
             fastInterval();

@@ -885,6 +885,13 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         FileDocument fileDocument = getFileDocument(userId, fileName, relativePath, query);
         if (fileDocument != null) {
             mongoTemplate.remove(query, COLLECTION_NAME);
+            if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
+                // 删除文件夹及其下的所有文件
+                Query query1 = new Query();
+                query1.addCriteria(Criteria.where(USER_ID).is(userId));
+                query1.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName())));
+                mongoTemplate.remove(query1, COLLECTION_NAME);
+            }
         }
         pushMessage(username, fileDocument, "deleteFile");
     }
