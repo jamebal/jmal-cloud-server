@@ -861,13 +861,18 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
+    public List<FileDocument> listByIds(List<String> fileIdList) {
+        return mongoTemplate.find(Query.query(Criteria.where("_id").in(fileIdList)), FileDocument.class, COLLECTION_NAME);
+    }
+
+    @Override
     public String createFile(String username, File file) {
         return createFile(username, file, null, null);
     }
 
     @Override
-    public String updateFile(String username, File file) {
-        return modifyFile(username, file);
+    public void updateFile(String username, File file) {
+        modifyFile(username, file);
     }
 
     @Override

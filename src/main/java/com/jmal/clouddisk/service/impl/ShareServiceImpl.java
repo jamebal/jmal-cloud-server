@@ -298,7 +298,20 @@ public class ShareServiceImpl implements IShareService {
             }
             query.with(Sort.by(direction, sortableProp));
         }
-        return mongoTemplate.find(query, ShareDO.class, COLLECTION_NAME);
+        List<ShareDO> shareDOList = mongoTemplate.find(query, ShareDO.class, COLLECTION_NAME);
+        // 获取shareDOList中的fileId
+        List<String> fileIdList = shareDOList.stream().map(ShareDO::getFileId).toList();
+        // 查询fileIdList是否存在
+        List<FileDocument> fileDocumentList = fileService.listByIds(fileIdList);
+        // 找出shareDOList中的fileId不在fileDocumentList中的数据
+        List<String> notExistFileIdList = fileIdList.stream().filter(fileId -> !fileDocumentList.stream().map(FileDocument::getId).toList().contains(fileId)).toList();
+        if (notExistFileIdList.isEmpty()) {
+            return shareDOList;
+        }
+        // 删除shareDOList中的fileId不在fileDocumentList中的数据
+        mongoTemplate.remove(Query.query(Criteria.where(Constants.FILE_ID).in(notExistFileIdList)), COLLECTION_NAME);
+        shareDOList.removeIf(shareDO -> notExistFileIdList.contains(shareDO.getFileId()));
+        return shareDOList;
     }
 
     private ShareDO findByFileId(String fileId) {
