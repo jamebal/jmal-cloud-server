@@ -355,6 +355,14 @@ public class FileController {
         }
     }
 
+    @Operation(summary = "创建副本")
+    @GetMapping("/duplicate")
+    @LogOperatingFun
+    @Permission("cloud:file:update")
+    public ResponseResult<Object> duplicate(@RequestParam String fileId, @RequestParam String newFilename) throws IOException {
+        return fileService.duplicate(fileId, newFilename);
+    }
+
     @Operation(summary = "解压zip文件")
     @GetMapping("/unzip")
     @LogOperatingFun

@@ -278,12 +278,12 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         return mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
     }
 
-    /***
-     * 通过文件Id获取文件的相对路径
+    /**
+     * 获取文件的相对路径
      * @param fileDocument FileDocument
      * @return 相对路径
      */
-    private String getRelativePathByFileId(FileDocument fileDocument) {
+    private String getRelativePath(FileDocument fileDocument) {
         if (fileDocument == null) {
             return getUserDirectory(null);
         }
@@ -1232,6 +1232,33 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         return sb.toString();
     }
 
+    @Override
+    public ResponseResult<Object> duplicate(String fileId, String newFilename) {
+        FileDocument fileDocument = getFileDocumentById(fileId);
+        if (fileDocument == null) {
+            return ResultUtil.error("文件不存在");
+        }
+        if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
+            return ResultUtil.error("文件夹不支持创建副本");
+        }
+        Path prePth = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            // oss文件
+            String to = prePth.getParent().resolve(newFilename).toString();
+            return webOssCopyFileService.copyOssToOss(ossPath, fileId, ossPath, to, false);
+        }
+        String username = userService.getUserNameById(fileDocument.getUserId());
+        String path = getRelativePath(fileDocument);
+        Path fromFilePath = Paths.get(getUserDir(username), path);
+        Path toFilePath = Paths.get(getUserDir(username), Paths.get(path).getParent().toString(), newFilename);
+        // 复制文件
+        PathUtil.copyFile(fromFilePath, toFilePath);
+        // 保存文件信息
+        createFile(username, toFilePath.toFile());
+        return ResultUtil.success();
+    }
+
     /***
      * 复制文件
      * @param upload UploadApiParamDTO
@@ -1240,7 +1267,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
      */
     private ResponseResult<Object> copy(UploadApiParamDTO upload, String from, String to, boolean move) {
         FileDocument formFileDocument = getFileDocumentById(from);
-        String fromPath = getRelativePathByFileId(formFileDocument);
+        String fromPath = getRelativePath(formFileDocument);
         String fromFilePath = getUserDir(upload.getUsername()) + fromPath;
         FileDocument toFileDocument = getFileDocumentById(to);
         ResponseResult<Object> result = ossCopy(upload.getUsername(), formFileDocument, toFileDocument, from, to, move);
@@ -1248,7 +1275,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             return result;
         }
 
-        String toPath = getRelativePathByFileId(toFileDocument);
+        String toPath = getRelativePath(toFileDocument);
         String toFilePath = getUserDir(upload.getUsername()) + toPath;
         if (formFileDocument != null) {
             if (CommonFileService.isLock(formFileDocument)) {

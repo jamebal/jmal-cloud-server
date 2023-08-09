@@ -375,4 +375,12 @@ public interface IFileService {
      * @return 文件列表
      */
     List<FileDocument> listByIds(List<String> fileIdList);
+
+    /**
+     * 创建副本
+     * @param fileId 文件id
+     * @param newFilename 新文件名(包含后缀)
+     * @return ResponseResult<Object>
+     */
+    ResponseResult<Object> duplicate(String fileId, String newFilename);
 }

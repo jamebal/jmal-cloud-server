@@ -50,7 +50,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
         String objectNameFrom = sourceObjectNamePath.substring(ossPathFrom.length());
         boolean isFolder = objectNameFrom.endsWith("/");
         String objectNameTo = destinationObjectNamePath.substring(ossPathTo.length()) + Paths.get(objectNameFrom).getFileName();
-        if (objectNameFrom.length() < 1) {
+        if (objectNameFrom.isEmpty()) {
             isFolder = true;
             objectNameTo = destinationObjectNamePath.substring(ossPathTo.length()) + Paths.get(ossPathFrom).getFileName().toString();
         }
