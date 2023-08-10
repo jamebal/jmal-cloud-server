@@ -69,16 +69,21 @@ public class ShareServiceImpl implements IShareService {
         share.setFileName(file.getName());
         share.setContentType(file.getContentType());
         share.setIsPrivacy(BooleanUtil.isTrue(share.getIsPrivacy()));
+
+        ShareVO shareVO = new ShareVO();
+
         if (shareDO == null) {
             if (Boolean.TRUE.equals(share.getIsPrivacy())) {
                 share.setExtractionCode(generateExtractionCode());
             }
             shareDO = mongoTemplate.save(share, COLLECTION_NAME);
         } else {
+            shareVO.setOperationPermissionList(shareDO.getOperationPermissionList());
             updateShare(share, shareDO, file);
         }
         file.setShareBase(shareDO.getShareBase());
-        ShareVO shareVO = new ShareVO();
+
+
         shareVO.setShareId(shareDO.getId());
         if (Boolean.TRUE.equals(share.getIsPrivacy())) {
             shareVO.setExtractionCode(share.getExtractionCode());
