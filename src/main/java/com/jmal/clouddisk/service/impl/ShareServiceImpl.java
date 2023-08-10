@@ -227,7 +227,7 @@ public class ShareServiceImpl implements IShareService {
         if ("0".equals(upload.getFileId())) {
             //  挂载到根目录
             toFileDocument = new FileDocument();
-            toFileDocument.setPath(File.separator);
+            toFileDocument.setPath("");
             toFileDocument.setName("");
             toFileDocument.setIsFolder(true);
         } else {
@@ -251,8 +251,9 @@ public class ShareServiceImpl implements IShareService {
         fileDocument.setUploadDate(fromFileDocument.getUploadDate());
         fileDocument.setUpdateDate(fromFileDocument.getUpdateDate());
         fileDocument.setMountFileId(fromFileDocument.getId());
-        mongoTemplate.save(fileDocument);
-
+        Update update = MongoUtil.getUpdate(fileDocument);
+        Query query = CommonFileService.getQuery(fileDocument);
+        mongoTemplate.upsert(query, update, FileDocument.class);
     }
 
     public void validShare(String shareToken, ShareDO shareDO) {

@@ -181,11 +181,20 @@ public class CommonFileService {
      * @return FileDocument
      */
     public FileDocument getFileDocumentByPath(String path, String filename, String userId) {
+        Query query = getQuery(path, filename, userId);
+        return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+    }
+
+    public static Query getQuery(FileDocument fileDocument) {
+        return getQuery(fileDocument.getPath(), fileDocument.getName(), fileDocument.getUserId());
+    }
+
+    public static Query getQuery(String path, String name, String userId) {
         Query query = new Query();
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        query.addCriteria(Criteria.where("name").is(filename));
+        query.addCriteria(Criteria.where("name").is(name));
         query.addCriteria(Criteria.where("path").is(path));
-        return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+        return query;
     }
 
     /**
