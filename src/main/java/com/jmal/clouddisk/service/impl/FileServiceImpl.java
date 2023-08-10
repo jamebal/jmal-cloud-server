@@ -151,7 +151,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     private String getMountParam(UploadApiParamDTO upload, String currentDirectory) {
         if (!CharSequenceUtil.isBlank(currentDirectory)) {
             Path currentDirectoryPath = Paths.get(currentDirectory);
-            FileDocument doc = getFileDocument(upload.getUserId(), currentDirectoryPath.getFileName().toString(), getUserDirectory(currentDirectoryPath.getParent().toString()));
+            if (currentDirectoryPath.getFileName() == null) {
+                return currentDirectory;
+            }
+            FileDocument doc = getFileDocument(upload.getUserId(), String.valueOf(currentDirectoryPath.getFileName()), getUserDirectory(currentDirectoryPath.getParent().toString()));
             if (doc != null && doc.getMountFileId() != null) {
                 FileDocument fileDocument = getById(doc.getMountFileId());
                 if (fileDocument != null) {
