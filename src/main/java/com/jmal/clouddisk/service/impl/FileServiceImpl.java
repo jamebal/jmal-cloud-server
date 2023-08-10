@@ -481,14 +481,12 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public Optional<FileDocument> thumbnail(String id, String username) {
+    public Optional<FileDocument> thumbnail(String id) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
             if (fileDocument.getContent() == null) {
+                String username = userService.getUserNameById(fileDocument.getUserId());
                 String currentDirectory = getUserDirectory(fileDocument.getPath());
-                if (CharSequenceUtil.isBlank(username)) {
-                    username = userService.getUserNameById(fileDocument.getUserId());
-                }
                 File file = new File(fileProperties.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
                 if (file.exists()) {
                     fileDocument.setContent(FileUtil.readBytes(file));

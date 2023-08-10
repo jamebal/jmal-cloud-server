@@ -645,7 +645,7 @@ public class CommonFileService {
      * @param extractionCode extractionCode
      */
     private static void setShareAttribute(Update update, long expiresAt, String shareId, Boolean isPrivacy, String extractionCode) {
-        update.set("isShare", true);
+        update.set(Constants.IS_SHARE, true);
         update.set(Constants.SHARE_ID, shareId);
         update.set(Constants.EXPIRES_AT, expiresAt);
         update.set(Constants.IS_PRIVACY, isPrivacy);
@@ -662,7 +662,7 @@ public class CommonFileService {
     void unsetShareAttribute(FileDocument fileDocument, Query query) {
         Update update = new Update();
         update.unset(Constants.SHARE_ID);
-        update.unset("isShare");
+        update.unset(Constants.IS_SHARE);
         update.unset(Constants.EXPIRES_AT);
         update.unset(Constants.IS_PRIVACY);
         update.unset(Constants.EXTRACTION_CODE);

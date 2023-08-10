@@ -82,12 +82,19 @@ public class CaffeineUtil {
      */
     private static final Cache<String, List<String>> AUTHORITIES_CACHE = Caffeine.newBuilder().build();
 
-    /***
+    /**
      * 缓存userId
      * key: username
      * value: userId
      */
     private static final Cache<String, String> USER_ID_CACHE = Caffeine.newBuilder().build();
+
+    /**
+     * 缓存username
+     * key: userId
+     * value: username
+     */
+    private static final Cache<String, String> USERNAME_CACHE = Caffeine.newBuilder().build();
 
     public static List<String> getAuthoritiesCache(String username) {
         return AUTHORITIES_CACHE.getIfPresent(username);
@@ -267,5 +274,13 @@ public class CaffeineUtil {
 
     public static void setThumbnailRequestCache(String id) {
         THUMBNAIL_REQUEST_CACHE.put(id, true);
+    }
+
+    public static String getUsernameCache(String userId) {
+        return USERNAME_CACHE.getIfPresent(userId);
+    }
+
+    public static void setUsernameCache(String userId, String username) {
+        USERNAME_CACHE.put(userId, username);
     }
 }

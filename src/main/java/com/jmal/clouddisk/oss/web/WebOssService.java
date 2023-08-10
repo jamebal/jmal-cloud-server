@@ -364,20 +364,20 @@ public class WebOssService extends WebOssCommonService {
         Document updateObject = update.getUpdateObject();
         if (updateObject.get("$set") != null) {
             Document document = updateObject.get("$set", Document.class);
-            if (document.get("isShare") != null) {
-                fileDocument.setIsShare(document.getBoolean("isShare"));
+            if (document.get(Constants.IS_SHARE) != null) {
+                fileDocument.setIsShare(document.getBoolean(Constants.IS_SHARE));
             }
-            if (document.get("shareId") != null) {
-                fileDocument.setShareId(document.getString("shareId"));
+            if (document.get(Constants.SHARE_ID) != null) {
+                fileDocument.setShareId(document.getString(Constants.SHARE_ID));
             }
-            if (document.get("expiresAt") != null) {
-                fileDocument.setExpiresAt(document.getLong("expiresAt"));
+            if (document.get(Constants.EXPIRES_AT) != null) {
+                fileDocument.setExpiresAt(document.getLong(Constants.EXPIRES_AT));
             }
-            if (document.get("isPrivacy") != null) {
-                fileDocument.setIsPrivacy(document.getBoolean("isPrivacy"));
+            if (document.get(Constants.IS_PRIVACY) != null) {
+                fileDocument.setIsPrivacy(document.getBoolean(Constants.IS_PRIVACY));
             }
-            if (document.get("extractionCode") != null) {
-                fileDocument.setExtractionCode(document.getString("extractionCode"));
+            if (document.get(Constants.EXTRACTION_CODE) != null) {
+                fileDocument.setExtractionCode(document.getString(Constants.EXTRACTION_CODE));
             }
         }
         mongoTemplate.save(fileDocument);

@@ -179,7 +179,7 @@ public class ShareController {
 
     private ResponseEntity<Object> thumbnail(String id, HttpServletRequest request) {
         ResultUtil.checkParamIsNull(id);
-        Optional<FileDocument> file = fileService.thumbnail(id, null);
+        Optional<FileDocument> file = fileService.thumbnail(id);
         if (fileInterceptor.isNotAllowAccess(file.orElse(null), request)) {
             return null;
         }

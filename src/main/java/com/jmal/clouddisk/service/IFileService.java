@@ -173,10 +173,9 @@ public interface IFileService {
     /**
      * 显示缩略图
      * @param id fileId
-     * @param userName username
      * @return FileDocument
      */
-    Optional<FileDocument> thumbnail(String id, String userName);
+    Optional<FileDocument> thumbnail(String id);
 
     /**
      * 显示缩略图(媒体文件封面)

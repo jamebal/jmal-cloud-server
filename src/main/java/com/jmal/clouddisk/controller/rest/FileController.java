@@ -251,7 +251,7 @@ public class FileController {
         if (ossPath != null) {
             return webOssService.thumbnail(ossPath, id);
         }
-        Optional<FileDocument> file = fileService.thumbnail(id, userLoginHolder.getUsername());
+        Optional<FileDocument> file = fileService.thumbnail(id);
         return fileService.getObjectResponseEntity(file);
     }
 

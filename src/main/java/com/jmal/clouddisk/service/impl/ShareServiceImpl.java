@@ -123,6 +123,7 @@ public class ShareServiceImpl implements IShareService {
         } else {
             update.unset("expireDate");
         }
+        update.set("operationPermissionList", share.getOperationPermissionList());
         update.set(Constants.IS_PRIVACY, share.getIsPrivacy());
         if (Boolean.TRUE.equals(share.getIsPrivacy()) && shareDO.getExtractionCode() == null) {
             shareDO.setExtractionCode(generateExtractionCode());

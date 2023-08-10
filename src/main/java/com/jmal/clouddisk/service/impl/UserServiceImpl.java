@@ -454,12 +454,19 @@ public class UserServiceImpl implements IUserService {
     @Override
     public String getUserNameById(String userId) {
         if (!CharSequenceUtil.isBlank(userId)) {
-            ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
-            if (consumer != null) {
-                return consumer.getUsername();
+            String username = CaffeineUtil.getUsernameCache(userId);
+            if (CharSequenceUtil.isBlank(username)) {
+                ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
+                if (consumer != null) {
+                    username = consumer.getUsername();
+                    CaffeineUtil.setUsernameCache(userId, username);
+                    return username;
+                }
+            } else {
+                return username;
             }
         }
-        return null;
+        return "";
     }
 
     @Override
