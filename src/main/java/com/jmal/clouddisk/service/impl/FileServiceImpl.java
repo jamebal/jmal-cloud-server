@@ -628,8 +628,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         response.setHeader("Content-Disposition", "attachment;fileName=\"" + downloadName + "\"");
     }
 
-    /***
-     * 在nginx之前获取文件信息
+    /**
+     * 打包下载之前要干的事
      * @param fileIds fileIds
      * @param username username
      */
@@ -638,7 +638,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         // 判断是否为ossPath
         Path path = Paths.get(fileId);
         String ossPath = CaffeineUtil.getOssPath(path);
-        if (ossPath == null) {
+        if (ossPath != null) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "暂不支持打包下载");
         }
         Query query = new Query();
@@ -646,12 +646,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
         if (fileDocument == null) {
             return null;
-        }
-        // 判断是否为ossPath
-        path = Paths.get(username, fileDocument.getPath(), fileDocument.getName());
-        ossPath = CaffeineUtil.getOssPath(path);
-        if (ossPath != null) {
-            throw new CommonException(ExceptionType.WARNING.getCode(), "暂不支持打包下载");
         }
         if (CharSequenceUtil.isBlank(username)) {
             fileDocument.setUsername(userService.getUserNameById(fileDocument.getUserId()));
