@@ -1234,19 +1234,23 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public ResponseResult<Object> duplicate(String fileId, String newFilename) {
-        FileDocument fileDocument = getFileDocumentById(fileId);
-        if (fileDocument == null) {
-            return ResultUtil.error("文件不存在");
-        }
-        if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
-            return ResultUtil.error("文件夹不支持创建副本");
-        }
         Path prePth = Paths.get(fileId);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
             // oss文件
             String to = prePth.getParent().resolve(newFilename).toString();
+            String objectNameFrom = fileId.substring(ossPath.length());
+            if (objectNameFrom.endsWith("/")) {
+                return folderDuplicateDisallowed();
+            }
             return webOssCopyFileService.copyOssToOss(ossPath, fileId, ossPath, to, false);
+        }
+        FileDocument fileDocument = getFileDocumentById(fileId);
+        if (fileDocument == null) {
+            return ResultUtil.error("文件不存在");
+        }
+        if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
+            return folderDuplicateDisallowed();
         }
         String username = userService.getUserNameById(fileDocument.getUserId());
         String path = getRelativePath(fileDocument);
@@ -1257,6 +1261,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         // 保存文件信息
         createFile(username, toFilePath.toFile());
         return ResultUtil.success();
+    }
+
+    @NotNull
+    private static ResponseResult<Object> folderDuplicateDisallowed() {
+        return ResultUtil.error("文件夹不支持创建副本");
     }
 
     /***

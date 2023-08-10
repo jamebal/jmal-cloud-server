@@ -39,6 +39,7 @@ public class WebOssCommonService {
     public void notifyCreateFile(String username, String objectName, String ossRootFolderName) {
         FileIntroVO fileIntroVO = new FileIntroVO();
         fileIntroVO.setPath(getPathByObjectName(ossRootFolderName, objectName));
+        fileIntroVO.setName(Paths.get(objectName).getFileName().toString());
         commonFileService.pushMessage(username, fileIntroVO, "createFile");
     }
 

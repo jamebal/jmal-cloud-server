@@ -48,8 +48,19 @@ public class WebOssCopyFileService extends WebOssCommonService {
         BucketInfo bucketInfoTo = CaffeineUtil.getOssDiameterPrefixCache(ossPathTo);
 
         String objectNameFrom = sourceObjectNamePath.substring(ossPathFrom.length());
+
         boolean isFolder = objectNameFrom.endsWith("/");
-        String objectNameTo = destinationObjectNamePath.substring(ossPathTo.length()) + Paths.get(objectNameFrom).getFileName();
+        boolean duplicate = false;
+        String objectNameTo;
+        Path objectNameFromPath = Paths.get(objectNameFrom);
+        Path destinationPath = Paths.get(destinationObjectNamePath);
+        if (!isFolder && Paths.get(sourceObjectNamePath).getParent().equals(destinationPath.getParent())) {
+            // 创建副本
+            duplicate = true;
+            objectNameTo = Paths.get(objectNameFromPath.getParent().toString(), destinationPath.getFileName().toString()).toString();
+        } else {
+            objectNameTo = destinationObjectNamePath.substring(ossPathTo.length()) + objectNameFromPath.getFileName();
+        }
         if (objectNameFrom.isEmpty()) {
             isFolder = true;
             objectNameTo = destinationObjectNamePath.substring(ossPathTo.length()) + Paths.get(ossPathFrom).getFileName().toString();
@@ -81,8 +92,11 @@ public class WebOssCopyFileService extends WebOssCommonService {
         String finalObjectNameTo = objectNameTo;
         // 复制成功
         ossServiceTo.clearCache(finalObjectNameTo);
-        String operation = isMove ? "移动" : "复制";
         notifyCreateFile(getUsernameByOssPath(ossPathTo), finalObjectNameTo, getOssRootFolderName(ossPathTo));
+        if (duplicate) {
+            return ResultUtil.success();
+        }
+        String operation = isMove ? "移动" : "复制";
         Path fromPath = Paths.get(getOssRootFolderName(ossPathFrom), objectNameFrom);
         Path toPath = Paths.get(getOssRootFolderName(ossPathTo), finalObjectNameTo);
         commonFileService.pushMessageOperationFileSuccess(fromPath.toString(), toPath.toString(), getUsernameByOssPath(ossPathFrom), operation);
