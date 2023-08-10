@@ -111,6 +111,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             return webOssService.searchFileAndOpenOssFolder(path, upload);
         }
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
+
+        currentDirectory = getMountParam(upload, currentDirectory);
+
         Criteria criteria;
         String queryFileType = upload.getQueryFileType();
         if (!CharSequenceUtil.isBlank(queryFileType)) {
@@ -137,6 +140,29 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         result.setData(list);
         result.setCount(getFileDocumentsCount(upload, criteria));
         return result;
+    }
+
+    /**
+     * 查看是否有挂载文件
+     * @param upload 上传参数
+     * @param currentDirectory 当前目录
+     * @return 挂载文件的原始路径
+     */
+    private String getMountParam(UploadApiParamDTO upload, String currentDirectory) {
+        if (!CharSequenceUtil.isBlank(currentDirectory)) {
+            Path currentDirectoryPath = Paths.get(currentDirectory);
+            FileDocument doc = getFileDocument(upload.getUserId(), currentDirectoryPath.getFileName().toString(), getUserDirectory(currentDirectoryPath.getParent().toString()));
+            if (doc != null && doc.getMountFileId() != null) {
+                FileDocument fileDocument = getById(doc.getMountFileId());
+                if (fileDocument != null) {
+                    upload.setUserId(fileDocument.getUserId());
+                    upload.setUsername(userService.getUserNameById(fileDocument.getUserId()));
+                    upload.setCurrentDirectory(fileDocument.getPath() + fileDocument.getName());
+                    currentDirectory = getUserDirectory(getUserDirectory(upload.getCurrentDirectory()));
+                }
+            }
+        }
+        return currentDirectory;
     }
 
     @Override
@@ -268,6 +294,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         }
 
         Criteria criteria = Criteria.where("path").is(currentDirectory);
+        upload.setUserId(fileDocument.getUserId());
         return getCountResponseResult(upload, result, criteria);
     }
 
@@ -385,10 +412,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public Optional<FileDocument> getById(String id, String username, Boolean content) {
+    public Optional<FileDocument> getById(String id, Boolean content) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
             String currentDirectory = getUserDirectory(fileDocument.getPath());
+            String username = userService.getUserNameById(fileDocument.getUserId());
             Path filepath = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName());
             if (Files.exists(filepath)) {
                 File file = filepath.toFile();
@@ -404,10 +432,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public StreamingResponseBody getStreamById(String id, String username) {
+    public StreamingResponseBody getStreamById(String id) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
             String currentDirectory = getUserDirectory(fileDocument.getPath());
+            String username = userService.getUserNameById(fileDocument.getUserId());
             Path filepath = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName());
             if (Files.exists(filepath)) {
                 File file = filepath.toFile();

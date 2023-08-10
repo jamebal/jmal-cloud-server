@@ -69,6 +69,8 @@ public class UploadApiParamDTO {
     String username;
     String userId;
 
+    String shareId;
+
     /***
      * 当前目录,用户的网盘目录,如果为空则为"/"
      */

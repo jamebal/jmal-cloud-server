@@ -174,7 +174,7 @@ public class FileController {
         if (ossPath != null) {
             return ResultUtil.success(webOssService.readToText(ossPath, prePth, content));
         }
-        return ResultUtil.success(fileService.getById(id, username, content));
+        return ResultUtil.success(fileService.getById(id, content));
     }
 
     @Operation(summary = "流式读取simText文件")
@@ -188,7 +188,7 @@ public class FileController {
         if (ossPath != null) {
             responseBody = webOssService.readToTextStream(ossPath, prePth);
         } else {
-            responseBody = fileService.getStreamById(id, username);
+            responseBody = fileService.getStreamById(id);
         }
         return new ResponseEntity<>(responseBody, HttpStatus.OK);
     }

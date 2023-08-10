@@ -170,6 +170,11 @@ public class FileDocument extends FileBase {
      */
     private String[] tagIds;
 
+    /**
+     * 挂载的文件id
+     */
+    private String mountFileId;
+
     @Override
     public boolean equals(Object obj) {
         if (obj == null) {

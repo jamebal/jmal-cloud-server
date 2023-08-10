@@ -25,6 +25,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -199,8 +200,63 @@ public class ShareServiceImpl implements IShareService {
         validShare(shareToken, shareId);
     }
 
+    @Override
+    public void mountFile(UploadApiParamDTO upload) {
+        if (upload.getShareId() == null) {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "缺少参数 shareId");
+        }
+        if (upload.getUserId() == null) {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "缺少参数 userId");
+        }
+        if (upload.getFileId() == null) {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "缺少参数 fileId");
+        }
+        // 从shareId挂载到fileId
+        ShareDO shareDO = getShare(upload.getShareId());
+        if (shareDO == null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), Constants.LINK_FAILED);
+        }
+        FileDocument fromFileDocument = fileService.getById(shareDO.getFileId());
+        if (fromFileDocument == null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "分享文件不存在");
+        }
+        if (BooleanUtil.isFalse(fromFileDocument.getIsFolder())) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "该分享不是文件夹");
+        }
+        FileDocument toFileDocument;
+        if ("0".equals(upload.getFileId())) {
+            //  挂载到根目录
+            toFileDocument = new FileDocument();
+            toFileDocument.setPath(File.separator);
+            toFileDocument.setName("");
+            toFileDocument.setIsFolder(true);
+        } else {
+            toFileDocument = fileService.getById(upload.getFileId());
+        }
+
+        if (toFileDocument == null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "文件不存在");
+        }
+        if (BooleanUtil.isFalse(toFileDocument.getIsFolder())) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "只能挂载到文件夹下");
+        }
+
+        // 创建文件夹
+        FileDocument fileDocument = new FileDocument();
+        fileDocument.setIsFolder(true);
+        fileDocument.setName(fromFileDocument.getName());
+        fileDocument.setPath(toFileDocument.getPath() + toFileDocument.getName() + File.separator);
+        fileDocument.setUserId(upload.getUserId());
+        fileDocument.setIsFavorite(false);
+        fileDocument.setUploadDate(fromFileDocument.getUploadDate());
+        fileDocument.setUpdateDate(fromFileDocument.getUpdateDate());
+        fileDocument.setMountFileId(fromFileDocument.getId());
+        mongoTemplate.save(fileDocument);
+
+    }
+
     public void validShare(String shareToken, ShareDO shareDO) {
-        if (!checkWhetherExpired(shareDO)) {
+        if (checkWhetherExpired(shareDO)) {
             throw new CommonException(ExceptionType.WARNING.getCode(), SHARE_EXPIRED);
         }
         validShareCode(shareToken, shareDO);
@@ -228,7 +284,7 @@ public class ShareServiceImpl implements IShareService {
 
     @Override
     public void validShareCode(String shareToken, ShareDO shareDO) {
-        if (!checkWhetherExpired(shareDO)) {
+        if (checkWhetherExpired(shareDO)) {
             throw new CommonException(ExceptionType.WARNING.getCode(), Constants.LINK_FAILED);
         }
         // 检查是否为私密链接
@@ -253,22 +309,21 @@ public class ShareServiceImpl implements IShareService {
         return mongoTemplate.findById(shareId, ShareDO.class, COLLECTION_NAME);
     }
 
-    @Override
-    public boolean checkWhetherExpired(ShareDO shareDO) {
+    /**
+     * 检查是否过期
+     * @param shareDO 分享信息
+     * @return 是否过期 true:过期 false:未过期
+     */
+    private boolean checkWhetherExpired(ShareDO shareDO) {
         if (shareDO != null) {
             LocalDateTime expireDate = shareDO.getExpireDate();
             if (expireDate == null) {
-                return true;
+                return false;
             }
             LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
-            return expireDate.isAfter(now);
+            return !expireDate.isAfter(now);
         }
-        return false;
-    }
-
-    @Override
-    public boolean checkWhetherExpired(String share) {
-        return checkWhetherExpired(getShare(share));
+        return true;
     }
 
     @Override

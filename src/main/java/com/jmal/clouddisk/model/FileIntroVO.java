@@ -78,4 +78,8 @@ public class FileIntroVO extends FileBase {
      * 封面
      */
     private String cover;
+    /**
+     * 挂载的文件id
+     */
+    private String mountFileId;
 }

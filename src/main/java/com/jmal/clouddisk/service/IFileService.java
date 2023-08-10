@@ -28,18 +28,16 @@ public interface IFileService {
     /**
      * 获取文件信息
      * @param id 文件id
-     * @param username 用户名
      * @return FileDocument
      */
-    Optional<FileDocument> getById(String id, String username, Boolean content);
+    Optional<FileDocument> getById(String id, Boolean content);
 
     /**
      * 流式读取文本文件
      * @param id 文件id
-     * @param username 用户名
      * @return StreamingResponseBody
      */
-    StreamingResponseBody getStreamById(String id, String username);
+    StreamingResponseBody getStreamById(String id);
 
     FileDocument getFileDocumentByPathAndName(String path, String name, String username);
 
