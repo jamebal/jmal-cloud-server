@@ -616,7 +616,11 @@ public class CommonFileService {
             if (isPrivacy && extractionCode == null) {
                 return;
             }
-            setShareAttribute(update, expiresAt, shareId, isPrivacy, extractionCode);
+            List<OperationPermission> operationPermissionList = new ArrayList<>();
+            if (shareDocument.get(Constants.OPERATION_PERMISSION_LIST) != null) {
+                operationPermissionList = shareDocument.getList(Constants.OPERATION_PERMISSION_LIST, OperationPermission.class);
+            }
+            setShareAttribute(update, expiresAt, shareId, isPrivacy, extractionCode, operationPermissionList);
         }
     }
 
@@ -628,7 +632,7 @@ public class CommonFileService {
      */
     void setShareAttribute(FileDocument fileDocument, long expiresAt, ShareDO share, Query query) {
         Update update = new Update();
-        setShareAttribute(update, expiresAt, share.getId(), share.getIsPrivacy(), share.getExtractionCode());
+        setShareAttribute(update, expiresAt, share.getId(), share.getIsPrivacy(), share.getExtractionCode(), share.getOperationPermissionList());
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         // 修改第一个文件/文件夹
         updateShareFirst(fileDocument, update, true);
@@ -653,11 +657,14 @@ public class CommonFileService {
      * @param isPrivacy      isPrivacy
      * @param extractionCode extractionCode
      */
-    private static void setShareAttribute(Update update, long expiresAt, String shareId, Boolean isPrivacy, String extractionCode) {
+    private static void setShareAttribute(Update update, long expiresAt, String shareId, Boolean isPrivacy, String extractionCode, List<OperationPermission> operationPermissionListList) {
         update.set(Constants.IS_SHARE, true);
         update.set(Constants.SHARE_ID, shareId);
         update.set(Constants.EXPIRES_AT, expiresAt);
         update.set(Constants.IS_PRIVACY, isPrivacy);
+        if (operationPermissionListList != null) {
+            update.set(Constants.OPERATION_PERMISSION_LIST, operationPermissionListList);
+        }
         if (BooleanUtil.isTrue(isPrivacy)) {
             update.set(Constants.EXTRACTION_CODE, extractionCode);
         }
@@ -674,6 +681,7 @@ public class CommonFileService {
         update.unset(Constants.IS_SHARE);
         update.unset(Constants.EXPIRES_AT);
         update.unset(Constants.IS_PRIVACY);
+        update.unset(Constants.OPERATION_PERMISSION_LIST);
         update.unset(Constants.EXTRACTION_CODE);
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         // 修改第一个文件/文件夹

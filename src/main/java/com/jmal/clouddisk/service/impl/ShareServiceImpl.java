@@ -79,11 +79,15 @@ public class ShareServiceImpl implements IShareService {
             }
             shareDO = mongoTemplate.save(share, COLLECTION_NAME);
         } else {
-            shareVO.setOperationPermissionList(shareDO.getOperationPermissionList());
             updateShare(share, shareDO, file);
         }
         file.setShareBase(shareDO.getShareBase());
 
+        if (share.getOperationPermissionList() == null) {
+            shareVO.setOperationPermissionList(shareDO.getOperationPermissionList());
+        } else {
+            shareVO.setOperationPermissionList(share.getOperationPermissionList());
+        }
 
         shareVO.setShareId(shareDO.getId());
         if (Boolean.TRUE.equals(share.getIsPrivacy())) {
@@ -129,8 +133,8 @@ public class ShareServiceImpl implements IShareService {
         } else {
             update.unset("expireDate");
         }
-        if (share.getOperationPermissionList() != null && !share.getOperationPermissionList().isEmpty()) {
-            update.set("operationPermissionList", share.getOperationPermissionList());
+        if (share.getOperationPermissionList() != null) {
+            update.set(Constants.OPERATION_PERMISSION_LIST, share.getOperationPermissionList());
         }
         update.set(Constants.IS_PRIVACY, share.getIsPrivacy());
         if (Boolean.TRUE.equals(share.getIsPrivacy()) && shareDO.getExtractionCode() == null) {

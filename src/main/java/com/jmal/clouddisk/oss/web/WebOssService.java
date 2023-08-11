@@ -379,6 +379,9 @@ public class WebOssService extends WebOssCommonService {
             if (document.get(Constants.EXTRACTION_CODE) != null) {
                 fileDocument.setExtractionCode(document.getString(Constants.EXTRACTION_CODE));
             }
+            if (document.get(Constants.OPERATION_PERMISSION_LIST) != null) {
+                fileDocument.setOperationPermissionList(document.getList(Constants.OPERATION_PERMISSION_LIST, OperationPermission.class));
+            }
         }
         mongoTemplate.save(fileDocument);
     }

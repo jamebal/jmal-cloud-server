@@ -7,6 +7,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -174,6 +175,11 @@ public class FileDocument extends FileBase {
      * 挂载的文件id
      */
     private String mountFileId;
+
+    /**
+     * 操作权限
+     */
+    private List<OperationPermission> operationPermissionList;
 
     @Override
     public boolean equals(Object obj) {
