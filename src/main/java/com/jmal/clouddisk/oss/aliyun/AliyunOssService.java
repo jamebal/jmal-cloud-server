@@ -465,57 +465,51 @@ public class AliyunOssService implements IOssService {
     }
 
     private void copyObjectFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
-        try {
-            baseOssService.printOperation(getPlatform().getKey(), "copyObject start" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
-            ObjectMetadata objectMetadata = ossClient.getObjectMetadata(sourceBucketName, sourceKey);
-            // 获取被拷贝文件的大小。
-            long contentLength = objectMetadata.getContentLength();
+        baseOssService.printOperation(getPlatform().getKey(), "copyObject start" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
+        ObjectMetadata objectMetadata = ossClient.getObjectMetadata(sourceBucketName, sourceKey);
+        // 获取被拷贝文件的大小。
+        long contentLength = objectMetadata.getContentLength();
 
-            if (contentLength < 1024 * 1024 * 10L) {
-                // 小文件执行普通拷贝
-                ossClient.copyObject(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
-            }
-
-            // 设置分片大小为10 MB。单位为字节。
-            long partSize = 1024 * 1024 * 10L;
-
-            // 计算分片总数。
-            int partCount = (int) (contentLength / partSize);
-            if (contentLength % partSize != 0) {
-                partCount++;
-            }
-
-            // 初始化拷贝任务。可以通过InitiateMultipartUploadRequest指定目标文件元信息。
-            InitiateMultipartUploadRequest initiateMultipartUploadRequest = new InitiateMultipartUploadRequest(destinationBucketName, destinationKey);
-            InitiateMultipartUploadResult initiateMultipartUploadResult = ossClient.initiateMultipartUpload(initiateMultipartUploadRequest);
-            String uploadId = initiateMultipartUploadResult.getUploadId();
-
-            // 分片拷贝。
-            List<PartETag> partETags = new ArrayList<>();
-            for (int i = 0; i < partCount; i++) {
-                // 计算每个分片的大小。
-                long skipBytes = partSize * i;
-                long size = Math.min(partSize, contentLength - skipBytes);
-                // 创建UploadPartCopyRequest。可以通过UploadPartCopyRequest指定限定条件。
-                UploadPartCopyRequest uploadPartCopyRequest = new UploadPartCopyRequest(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
-                uploadPartCopyRequest.setUploadId(uploadId);
-                uploadPartCopyRequest.setPartSize(size);
-                uploadPartCopyRequest.setBeginIndex(skipBytes);
-                uploadPartCopyRequest.setPartNumber(i + 1);
-                UploadPartCopyResult uploadPartCopyResult = ossClient.uploadPartCopy(uploadPartCopyRequest);
-                // 将返回的分片ETag保存到partETags中。
-                partETags.add(uploadPartCopyResult.getPartETag());
-            }
-            // 提交分片拷贝任务。
-            CompleteMultipartUploadRequest completeMultipartUploadRequest = new CompleteMultipartUploadRequest(
-                    destinationBucketName, destinationKey, uploadId, partETags);
-            ossClient.completeMultipartUpload(completeMultipartUploadRequest);
-            baseOssService.printOperation(getPlatform().getKey(), "copyObject complete" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
-        } catch (OSSException oe) {
-            log.error(oe.getMessage(), oe);
-        } catch (ClientException ce) {
-            log.error(ce.getMessage(), ce);
+        if (contentLength < 1024 * 1024 * 10L) {
+            // 小文件执行普通拷贝
+            ossClient.copyObject(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
         }
+
+        // 设置分片大小为10 MB。单位为字节。
+        long partSize = 1024 * 1024 * 10L;
+
+        // 计算分片总数。
+        int partCount = (int) (contentLength / partSize);
+        if (contentLength % partSize != 0) {
+            partCount++;
+        }
+
+        // 初始化拷贝任务。可以通过InitiateMultipartUploadRequest指定目标文件元信息。
+        InitiateMultipartUploadRequest initiateMultipartUploadRequest = new InitiateMultipartUploadRequest(destinationBucketName, destinationKey);
+        InitiateMultipartUploadResult initiateMultipartUploadResult = ossClient.initiateMultipartUpload(initiateMultipartUploadRequest);
+        String uploadId = initiateMultipartUploadResult.getUploadId();
+
+        // 分片拷贝。
+        List<PartETag> partETags = new ArrayList<>();
+        for (int i = 0; i < partCount; i++) {
+            // 计算每个分片的大小。
+            long skipBytes = partSize * i;
+            long size = Math.min(partSize, contentLength - skipBytes);
+            // 创建UploadPartCopyRequest。可以通过UploadPartCopyRequest指定限定条件。
+            UploadPartCopyRequest uploadPartCopyRequest = new UploadPartCopyRequest(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+            uploadPartCopyRequest.setUploadId(uploadId);
+            uploadPartCopyRequest.setPartSize(size);
+            uploadPartCopyRequest.setBeginIndex(skipBytes);
+            uploadPartCopyRequest.setPartNumber(i + 1);
+            UploadPartCopyResult uploadPartCopyResult = ossClient.uploadPartCopy(uploadPartCopyRequest);
+            // 将返回的分片ETag保存到partETags中。
+            partETags.add(uploadPartCopyResult.getPartETag());
+        }
+        // 提交分片拷贝任务。
+        CompleteMultipartUploadRequest completeMultipartUploadRequest = new CompleteMultipartUploadRequest(
+                destinationBucketName, destinationKey, uploadId, partETags);
+        ossClient.completeMultipartUpload(completeMultipartUploadRequest);
+        baseOssService.printOperation(getPlatform().getKey(), "copyObject complete" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
     }
 
     @Override

@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.stream.Collectors;
 
@@ -438,13 +439,17 @@ public class MinIOService implements IOssService {
                 Iterable<Result<Item>> results1 = this.minIoClient.listObjects(listObjectsArgs);
                 for (Result<Item> result : results1) {
                     Item item = result.get();
-                    copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, item.objectName());
+                    String destKey = destinationKey + item.objectName().substring(sourceKey.length());
+                    copyObjectFile(sourceBucketName, item.objectName(), destinationBucketName, destKey);
                 }
             } else {
                 // 复制文件
                 copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
             }
             return true;
+        } catch (InterruptedException e) {
+            log.error(e.getMessage(), e);
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         } finally {
@@ -454,24 +459,17 @@ public class MinIOService implements IOssService {
         return false;
     }
 
-    private void copyObjectFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
-        try {
-            baseOssService.printOperation(getPlatform().getKey(), "copyObject start" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
-            this.minIoClient.copyObject(
-                    CopyObjectArgs.builder()
-                            .bucket(destinationBucketName)
-                            .object(destinationKey)
-                            .source(CopySource.builder()
-                                    .bucket(sourceBucketName)
-                                    .object(sourceKey)
-                                    .build()).build()).get();
-            baseOssService.printOperation(getPlatform().getKey(), "copyObject complete" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
-        } catch (InterruptedException e) {
-            log.error(e.getMessage(), e);
-            Thread.currentThread().interrupt();
-        }  catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
+    private void copyObjectFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws InsufficientDataException, IOException, NoSuchAlgorithmException, InvalidKeyException, XmlParserException, InternalException, ExecutionException, InterruptedException {
+        baseOssService.printOperation(getPlatform().getKey(), "copyObject start" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
+        this.minIoClient.copyObject(
+                CopyObjectArgs.builder()
+                        .bucket(destinationBucketName)
+                        .object(destinationKey)
+                        .source(CopySource.builder()
+                                .bucket(sourceBucketName)
+                                .object(sourceKey)
+                                .build()).build()).get();
+        baseOssService.printOperation(getPlatform().getKey(), "copyObject complete" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
     }
 
     @Override

@@ -18,6 +18,7 @@ import com.jmal.clouddisk.oss.*;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -54,6 +55,8 @@ public class WebOssService extends WebOssCommonService {
 
 
     private final IFileVersionService fileVersionService;
+
+    private final UserLoginHolder userLoginHolder;
 
     /***
      * 断点恢复上传缓存(已上传的分片缓存)
@@ -410,6 +413,8 @@ public class WebOssService extends WebOssCommonService {
         if (ossService.copyObject(objectName, destinationObjectName)) {
             // 删除
             ossService.delete(objectName);
+        } else {
+            throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), "重命名失败");
         }
         // 修改历史文件中的filename
         String username = getUsernameByOssPath(ossPath);
@@ -593,6 +598,9 @@ public class WebOssService extends WebOssCommonService {
         try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName)) {
             // 修改文件之前保存历史版本
             String username = getUsernameByOssPath(ossPath);
+            if (!username.equals(userLoginHolder.getUsername())) {
+                throw new CommonException(ExceptionType.PERMISSION_DENIED);
+            }
             String fileId = getFileId(getOssRootFolderName(ossPath), objectName, username);
             fileVersionService.saveFileVersion(abstractOssObject, fileId);
         } catch (IOException e) {

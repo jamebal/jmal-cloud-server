@@ -26,7 +26,9 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
@@ -417,7 +419,12 @@ public class TencentOssService implements IOssService {
                     List<COSObjectSummary> cosObjectSummaries = objectListing.getObjectSummaries();
                     cosObjectSummaries.parallelStream().forEach(cosObjectSummary -> {
                         String destKey = destinationKey + cosObjectSummary.getKey().substring(sourceKey.length());
-                        copyObjectFile(cosObjectSummary.getBucketName(), cosObjectSummary.getKey(), destinationBucketName, destKey);
+                        try {
+                            copyObjectFile(cosObjectSummary.getBucketName(), cosObjectSummary.getKey(), destinationBucketName, destKey);
+                        } catch (InterruptedException e) {
+                            log.error(e.getMessage(), e);
+                            Thread.currentThread().interrupt();
+                        }
                     });
                     // 标记下一次开始的位置
                     String nextMarker = objectListing.getNextMarker();
@@ -430,6 +437,9 @@ public class TencentOssService implements IOssService {
             return true;
         } catch (CosClientException e) {
             log.error(e.getMessage(), e);
+        } catch (InterruptedException e) {
+            log.error(e.getMessage(), e);
+            Thread.currentThread().interrupt();
         } finally {
             baseOssService.removeObjectNameLock(sourceBucketName);
             baseOssService.removeObjectNameLock(destinationBucketName);
@@ -437,20 +447,13 @@ public class TencentOssService implements IOssService {
         return false;
     }
 
-    public void copyObjectFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
+    public void copyObjectFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws InterruptedException {
         CopyObjectRequest copyObjectRequest = new CopyObjectRequest(region, sourceBucketName, sourceKey, destinationBucketName, destinationKey);
-        try {
-            baseOssService.printOperation(getPlatform().getKey(), "copyObject start" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
-            Copy copy = transferManager.copy(copyObjectRequest);
-            // 高级接口会返回一个异步结果 Copy
-            // 可同步的调用 waitForCopyResult 等待复制结束, 成功返回 CopyResult, 失败抛出异常
-            copy.waitForCopyResult();
-        } catch (CosClientException e) {
-            log.error(e.getMessage(), e);
-        } catch (InterruptedException e) {
-            log.error(e.getMessage(), e);
-            Thread.currentThread().interrupt();
-        }
+        baseOssService.printOperation(getPlatform().getKey(), "copyObject start" + "destinationKey: " + destinationKey, "sourceKey:" + sourceKey);
+        Copy copy = transferManager.copy(copyObjectRequest);
+        // 高级接口会返回一个异步结果 Copy
+        // 可同步的调用 waitForCopyResult 等待复制结束, 成功返回 CopyResult, 失败抛出异常
+        copy.waitForCopyResult();
     }
 
     @Override
