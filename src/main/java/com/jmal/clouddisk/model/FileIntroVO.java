@@ -3,6 +3,8 @@ package com.jmal.clouddisk.model;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.util.List;
+
 /**
  * @author jmal
  * @Description 文件简介
@@ -82,4 +84,8 @@ public class FileIntroVO extends FileBase {
      * 挂载的文件id
      */
     private String mountFileId;
+    /**
+     * 操作权限
+     */
+    private List<OperationPermission> operationPermissionList;
 }

@@ -424,14 +424,15 @@ public class MinIOService implements IOssService {
     }
 
     @Override
-    public boolean copyObject(String sourceKey, String destinationKey) {
+    public List<String> copyObject(String sourceKey, String destinationKey) {
         return copyObject(bucketName, sourceKey, bucketName, destinationKey);
     }
 
     @Override
-    public boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
+    public List<String> copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
         baseOssService.setObjectNameLock(sourceBucketName);
         baseOssService.setObjectNameLock(destinationBucketName);
+        List<String> copiedList = new ArrayList<>();
         try {
             if (sourceKey.endsWith("/")) {
                 // 复制文件夹
@@ -441,12 +442,14 @@ public class MinIOService implements IOssService {
                     Item item = result.get();
                     String destKey = destinationKey + item.objectName().substring(sourceKey.length());
                     copyObjectFile(sourceBucketName, item.objectName(), destinationBucketName, destKey);
+                    copiedList.add(destKey);
                 }
             } else {
                 // 复制文件
                 copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+                copiedList.add(destinationKey);
             }
-            return true;
+            return copiedList;
         } catch (InterruptedException e) {
             log.error(e.getMessage(), e);
             Thread.currentThread().interrupt();
@@ -456,7 +459,7 @@ public class MinIOService implements IOssService {
             baseOssService.removeObjectNameLock(sourceBucketName);
             baseOssService.removeObjectNameLock(destinationBucketName);
         }
-        return false;
+        return copiedList;
     }
 
     private void copyObjectFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws InsufficientDataException, IOException, NoSuchAlgorithmException, InvalidKeyException, XmlParserException, InternalException, ExecutionException, InterruptedException {

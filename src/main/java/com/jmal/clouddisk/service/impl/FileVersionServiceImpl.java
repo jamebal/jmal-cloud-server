@@ -88,7 +88,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
         FileDocument fileDocument = commonFileService.getFileDocumentByPath(filepath, userId);
         long size = file.length();
         String updateDate = fileDocument.getUpdateDate().format(DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
-        Metadata metadata = setMetadata(size, filepath, file.getName(), updateDate);
+        Metadata metadata = setMetadata(size, filepath, file.getName(), updateDate, userLoginHolder.getUsername());
         if (metadata == null) return;
         try (InputStream inputStream = new FileInputStream(file);
              InputStream gzipInputStream = gzipCompress(inputStream, metadata)) {
@@ -103,7 +103,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
         long size = abstractOssObject.getContentLength();
         String filename = Paths.get(abstractOssObject.getKey()).getFileName().toString();
         String updateDate = DateUtil.format(abstractOssObject.getFileInfo().getLastModified(), DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
-        Metadata metadata = setMetadata(size, fileId, filename, updateDate);
+        Metadata metadata = setMetadata(size, fileId, filename, updateDate, userLoginHolder.getUsername());
         if (metadata == null) return;
         try (InputStream inputStream = abstractOssObject.getInputStream();
              InputStream gzipInputStream = gzipCompress(inputStream, metadata)) {
@@ -121,12 +121,13 @@ public class FileVersionServiceImpl implements IFileVersionService {
      * @param filename   filename
      * @param updateDate 文件最后修改时间
      */
-    private static Metadata setMetadata(long size, String filepath, String filename, String updateDate) {
+    private static Metadata setMetadata(long size, String filepath, String filename, String updateDate, String username) {
         Metadata metadata = new Metadata();
         metadata.setFilepath(filepath);
         metadata.setFilename(filename);
         metadata.setTime(updateDate);
         metadata.setSize(size);
+        metadata.setOperator(username);
         if (size == 0) {
             // 无内容，不用存历史版本
             return null;
@@ -199,7 +200,10 @@ public class FileVersionServiceImpl implements IFileVersionService {
             }
             String userId = userLoginHolder.getUserId();
             FileDocument fileDocument = commonFileService.getFileDocumentByPath(relativePath, filePath.getFileName().toString(), userId);
-            if (fileDocument != null && fileDocument.getId() != null) {
+            if (fileDocument == null) {
+                return ResultUtil.success(new ArrayList<>());
+            }
+            if (fileDocument.getId() != null) {
                 fileId = fileDocument.getId();
             }
         }

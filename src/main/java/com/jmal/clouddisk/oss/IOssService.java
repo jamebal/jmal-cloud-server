@@ -211,9 +211,9 @@ public interface IOssService {
      *
      * @param sourceKey      源objectName
      * @param destinationKey 目标objectName
-     * @return 是否成功
+     * @return 复制成功的objectName列表
      */
-    boolean copyObject(String sourceKey, String destinationKey);
+    List<String> copyObject(String sourceKey, String destinationKey);
 
     /**
      * 拷贝对象(不同Bucket之间拷贝)
@@ -222,9 +222,9 @@ public interface IOssService {
      * @param sourceKey             源objectName
      * @param destinationBucketName 目标Bucket
      * @param destinationKey        目标objectName
-     * @return 是否成功
+     * @return 复制成功的objectName列表
      */
-    boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey);
+    List<String> copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey);
 
     /**
      * 锁对象

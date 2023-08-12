@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * @Description UploadApiParam
@@ -80,6 +81,11 @@ public class UploadApiParamDTO {
      * 目录fileId
      */
     String folder;
+
+    /**
+     * 文件id
+     */
+    String mountFileId;
 
     /***
      * 当前目录,用户的实际磁盘目录
@@ -166,6 +172,14 @@ public class UploadApiParamDTO {
      * 标签名称集合
      */
     String[] tagNames;
+    /**
+     * 操作权限
+     */
+    List<OperationPermission> operationPermissionList;
+    /**
+     * 隐藏挂载的文件
+     */
+    Boolean hideMountFile;
 
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")

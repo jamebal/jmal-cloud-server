@@ -392,14 +392,15 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
-    public boolean copyObject(String sourceKey, String destinationKey) {
+    public List<String> copyObject(String sourceKey, String destinationKey) {
         return copyObject(bucketName, sourceKey, bucketName, destinationKey);
     }
 
     @Override
-    public boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
+    public List<String> copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
         baseOssService.setObjectNameLock(sourceBucketName);
         baseOssService.setObjectNameLock(destinationBucketName);
+        List<String> copiedList = new ArrayList<>();
         try {
             if (sourceKey.endsWith("/")) {
                 // 复制文件夹
@@ -421,6 +422,7 @@ public class TencentOssService implements IOssService {
                         String destKey = destinationKey + cosObjectSummary.getKey().substring(sourceKey.length());
                         try {
                             copyObjectFile(cosObjectSummary.getBucketName(), cosObjectSummary.getKey(), destinationBucketName, destKey);
+                            copiedList.add(destKey);
                         } catch (InterruptedException e) {
                             log.error(e.getMessage(), e);
                             Thread.currentThread().interrupt();
@@ -433,8 +435,9 @@ public class TencentOssService implements IOssService {
             } else {
                 // 复制文件
                 copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+                copiedList.add(destinationKey);
             }
-            return true;
+            return copiedList;
         } catch (CosClientException e) {
             log.error(e.getMessage(), e);
         } catch (InterruptedException e) {
@@ -444,7 +447,7 @@ public class TencentOssService implements IOssService {
             baseOssService.removeObjectNameLock(sourceBucketName);
             baseOssService.removeObjectNameLock(destinationBucketName);
         }
-        return false;
+        return copiedList;
     }
 
     public void copyObjectFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws InterruptedException {

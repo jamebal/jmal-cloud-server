@@ -164,9 +164,10 @@ public interface IFileService {
      * @param username 用户名
      * @param currentDirectory 当前目录
      * @param fileIds 文件id
+     * @param operator 操作者
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds);
+    ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds, String operator);
 
     /**
      * 显示缩略图
@@ -206,9 +207,10 @@ public interface IFileService {
      * @param newFileName 新文件名
      * @param username 用户名
      * @param id     文件id
+     * folder 父级文件夹fileId
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> rename(String newFileName, String username, String id);
+    ResponseResult<Object> rename(String newFileName, String username, String id, String folder);
 
     /**
      * 移动文件/文件夹
@@ -313,9 +315,10 @@ public interface IFileService {
      * @param isFolder 是否为文件夹
      * @param username 用户名
      * @param parentPath 父目录路径
+     * @param folder 父级文件夹fileId
      * @return ResponseResult<FileIntroVO>
      */
-    ResponseResult<FileIntroVO> addFile(String fileName, Boolean isFolder, String username, String parentPath);
+    ResponseResult<FileIntroVO> addFile(String fileName, Boolean isFolder, String username, String parentPath, String folder);
 
     /**
      * 下载、预览文件

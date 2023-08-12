@@ -10,6 +10,8 @@ import cn.hutool.core.util.BooleanUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.OssConfigService;
@@ -618,7 +620,7 @@ public class CommonFileService {
             }
             List<OperationPermission> operationPermissionList = new ArrayList<>();
             if (shareDocument.get(Constants.OPERATION_PERMISSION_LIST) != null) {
-                operationPermissionList = shareDocument.getList(Constants.OPERATION_PERMISSION_LIST, OperationPermission.class);
+                operationPermissionList = Convert.toList(OperationPermission.class, shareDocument.get(Constants.OPERATION_PERMISSION_LIST));
             }
             setShareAttribute(update, expiresAt, shareId, isPrivacy, extractionCode, operationPermissionList);
         }
@@ -686,6 +688,28 @@ public class CommonFileService {
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         // 修改第一个文件/文件夹
         updateShareFirst(fileDocument, update, false);
+    }
+
+    public void checkPermissionUsername(String username, String currentUsername, List<OperationPermission> operationPermissionList, OperationPermission operationPermission) {
+        if (!username.equals(currentUsername) && noPermission(operationPermissionList, operationPermission)) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
+        }
+    }
+
+    public void checkPermissionUsername(String username, List<OperationPermission> operationPermissionList, OperationPermission operationPermission) {
+        if (!username.equals(userLoginHolder.getUsername()) && noPermission(operationPermissionList, operationPermission)) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
+        }
+    }
+
+    public void checkPermissionUserId(String userId, List<OperationPermission> operationPermissionList, OperationPermission operationPermission) {
+        if (!userId.equals(userLoginHolder.getUserId()) && noPermission(operationPermissionList, operationPermission)) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
+        }
+    }
+
+    private static boolean noPermission(List<OperationPermission> operationPermissionList, OperationPermission operationPermission) {
+        return operationPermissionList == null || !operationPermissionList.contains(operationPermission);
     }
 
     public String modifyFile(String username, File file) {

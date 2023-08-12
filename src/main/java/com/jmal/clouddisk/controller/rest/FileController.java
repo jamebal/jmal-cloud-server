@@ -11,6 +11,7 @@ import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.oss.web.WebOssCommonService;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
@@ -168,10 +169,10 @@ public class FileController {
     @GetMapping("/preview/text")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> previewText(@RequestParam String id, @RequestParam String username, @RequestParam String path, @RequestParam String fileName, Boolean content) {
-        Path prePth = Paths.get(username, path, fileName);
-        String ossPath = CaffeineUtil.getOssPath(prePth);
+    public ResponseResult<Object> previewText(@RequestParam String id, @RequestParam String path, @RequestParam String fileName, Boolean content) {
+        String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
         if (ossPath != null) {
+            Path prePth = Paths.get(WebOssCommonService.getUsernameByOssPath(ossPath), path, fileName);
             return ResultUtil.success(webOssService.readToText(ossPath, prePth, content));
         }
         return ResultUtil.success(fileService.getById(id, content));
@@ -181,11 +182,11 @@ public class FileController {
     @GetMapping("/preview/text/stream")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<StreamingResponseBody> previewTextStream(@RequestParam String id, @RequestParam String username, @RequestParam String path, @RequestParam String fileName) {
-        Path prePth = Paths.get(username, path, fileName);
-        String ossPath = CaffeineUtil.getOssPath(prePth);
+    public ResponseEntity<StreamingResponseBody> previewTextStream(@RequestParam String id, @RequestParam String path, @RequestParam String fileName) {
+        String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
         StreamingResponseBody responseBody;
         if (ossPath != null) {
+            Path prePth = Paths.get(WebOssCommonService.getUsernameByOssPath(ossPath), path, fileName);
             responseBody = webOssService.readToTextStream(ossPath, prePth);
         } else {
             responseBody = fileService.getStreamById(id);
@@ -315,7 +316,7 @@ public class FileController {
     public ResponseResult<Object> delete(@RequestParam String username, @RequestParam String[] fileIds, @RequestParam String currentDirectory) {
         if (fileIds != null && fileIds.length > 0) {
             List<String> list = Arrays.asList(fileIds);
-            return fileService.delete(username, currentDirectory, list);
+            return fileService.delete(username, currentDirectory, list, userLoginHolder.getUsername());
         } else {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }
@@ -325,8 +326,8 @@ public class FileController {
     @GetMapping("/rename")
     @LogOperatingFun
     @Permission("cloud:file:update")
-    public ResponseResult<Object> rename(String newFileName, String username, String id) {
-        return fileService.rename(URLUtil.decode(newFileName), username, id);
+    public ResponseResult<Object> rename(@RequestParam String newFileName, @RequestParam String username, @RequestParam String id, String folder) {
+        return fileService.rename(URLUtil.decode(newFileName), username, id, folder);
     }
 
     @Operation(summary = "移动文件/文件夹")
@@ -411,7 +412,7 @@ public class FileController {
     @PostMapping("/addfile")
     @LogOperatingFun
     @Permission("cloud:file:upload")
-    public ResponseResult<FileIntroVO> addFile(@RequestParam String fileName, @RequestParam Boolean isFolder, @RequestParam String username, @RequestParam String parentPath) {
-        return fileService.addFile(URLUtil.decode(fileName), isFolder, username, URLUtil.decode(parentPath));
+    public ResponseResult<FileIntroVO> addFile(@RequestParam String fileName, @RequestParam Boolean isFolder, @RequestParam String username, @RequestParam String parentPath, String folder) {
+        return fileService.addFile(URLUtil.decode(fileName), isFolder, username, URLUtil.decode(parentPath), folder);
     }
 }

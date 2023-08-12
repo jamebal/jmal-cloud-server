@@ -424,13 +424,14 @@ public class AliyunOssService implements IOssService {
         }
     }
 
-    public boolean copyObject(String sourceKey, String destinationKey) {
+    public List<String> copyObject(String sourceKey, String destinationKey) {
         return copyObject(bucketName, sourceKey, bucketName, destinationKey);
     }
 
-    public boolean copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
+    public List<String> copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
         baseOssService.setObjectNameLock(sourceBucketName);
         baseOssService.setObjectNameLock(destinationBucketName);
+        List<String> copiedList = new ArrayList<>();
         try {
             if (sourceKey.endsWith("/")) {
                 // 复制文件夹
@@ -444,6 +445,7 @@ public class AliyunOssService implements IOssService {
                         objectListing.getObjectSummaries().parallelStream().forEach(ossObjectSummary -> {
                             String destKey = destinationKey + ossObjectSummary.getKey().substring(sourceKey.length());
                             copyObjectFile(ossObjectSummary.getBucketName(), ossObjectSummary.getKey(), destinationBucketName, destKey);
+                            copiedList.add(destKey);
                         });
                     }
                     nextMarker = objectListing.getNextMarker();
@@ -451,8 +453,9 @@ public class AliyunOssService implements IOssService {
             } else {
                 // 复制文件
                 copyObjectFile(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+                copiedList.add(destinationKey);
             }
-            return true;
+            return copiedList;
         } catch (OSSException oe) {
             log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
@@ -461,7 +464,7 @@ public class AliyunOssService implements IOssService {
             baseOssService.removeObjectNameLock(sourceBucketName);
             baseOssService.removeObjectNameLock(destinationBucketName);
         }
-        return false;
+        return copiedList;
     }
 
     private void copyObjectFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
