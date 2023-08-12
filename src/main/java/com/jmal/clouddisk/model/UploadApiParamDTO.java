@@ -76,6 +76,11 @@ public class UploadApiParamDTO {
      */
     String currentDirectory;
 
+    /**
+     * 目录fileId
+     */
+    String folder;
+
     /***
      * 当前目录,用户的实际磁盘目录
      */

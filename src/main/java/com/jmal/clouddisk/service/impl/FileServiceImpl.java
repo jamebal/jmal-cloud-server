@@ -112,7 +112,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         }
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
 
-        currentDirectory = getMountParam(upload, currentDirectory);
+        if (!CharSequenceUtil.isBlank(upload.getFolder())) {
+            currentDirectory = getMountParam(upload, currentDirectory);
+        }
 
         Criteria criteria;
         String queryFileType = upload.getQueryFileType();
@@ -154,15 +156,13 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             if (currentDirectoryPath.getFileName() == null) {
                 return currentDirectory;
             }
-            FileDocument doc = getFileDocument(upload.getUserId(), String.valueOf(currentDirectoryPath.getFileName()), getUserDirectory(currentDirectoryPath.getParent().toString()));
-            if (doc != null && doc.getMountFileId() != null) {
-                FileDocument fileDocument = getById(doc.getMountFileId());
-                if (fileDocument != null) {
-                    upload.setUserId(fileDocument.getUserId());
-                    upload.setUsername(userService.getUserNameById(fileDocument.getUserId()));
-                    upload.setCurrentDirectory(fileDocument.getPath() + fileDocument.getName());
-                    currentDirectory = getUserDirectory(getUserDirectory(upload.getCurrentDirectory()));
-                }
+            String fileId = upload.getFolder();
+            FileDocument fileDocument = getById(fileId);
+            if (fileDocument != null) {
+                upload.setUserId(fileDocument.getUserId());
+                upload.setUsername(userService.getUserNameById(fileDocument.getUserId()));
+                upload.setCurrentDirectory(fileDocument.getPath() + fileDocument.getName());
+                currentDirectory = getUserDirectory(getUserDirectory(upload.getCurrentDirectory()));
             }
         }
         return currentDirectory;
