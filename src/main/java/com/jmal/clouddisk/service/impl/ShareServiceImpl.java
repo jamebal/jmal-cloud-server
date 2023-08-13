@@ -63,6 +63,9 @@ public class ShareServiceImpl implements IShareService {
         ShareDO shareDO = findByFileId(share.getFileId());
         share.setCreateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
         FileDocument file = fileService.getById(share.getFileId());
+        if (BooleanUtil.isTrue(file.getIsShare()) && !BooleanUtil.isTrue(file.getShareBase())) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "该文件已经分享过了");
+        }
         long expireAt = Long.MAX_VALUE;
         if (share.getExpireDate() != null) {
             expireAt = TimeUntils.getMilli(share.getExpireDate());
