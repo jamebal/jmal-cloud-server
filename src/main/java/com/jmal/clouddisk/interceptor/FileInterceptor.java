@@ -162,6 +162,9 @@ public class FileInterceptor implements HandlerInterceptor {
             return validShareFile(request, uriPath, shareKey);
         } else {
             String username = authInterceptor.getUserNameByHeader(request, response);
+            if (!CharSequenceUtil.isBlank(username)) {
+                authInterceptor.setAuthorities(username);
+            }
             int nameCount = uriPath.getNameCount();
             if (nameCount < MIN_COUNT) {
                 return true;

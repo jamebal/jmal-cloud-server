@@ -53,6 +53,10 @@ public class ShareServiceImpl implements IShareService {
 
     private final WebOssService webOssService;
 
+    private final UserLoginHolder userLoginHolder;
+
+    private final CommonFileService commonFileService;
+
 
     @Override
     public ResponseResult<Object> generateLink(ShareDO share) {
@@ -299,7 +303,13 @@ public class ShareServiceImpl implements IShareService {
             shareVO.setExtractionCode(null);
             // 先检查有没有share-token
             if (CharSequenceUtil.isBlank(shareToken)) {
-                throw new CommonException(ExceptionType.SYSTEM_SUCCESS, shareDO);
+                String userId = userLoginHolder.getUserId();
+                if (CharSequenceUtil.isBlank(userId)) {
+                    throw new CommonException(ExceptionType.SYSTEM_SUCCESS, shareDO);
+                }
+                if (existsMountFile(shareDO.getFileId(), userId)) {
+                    return;
+                }
             }
             // 再检查share-token是否正确
             if (!shareDO.getId().equals(TokenUtil.getTokenKey(shareToken))) {
@@ -307,6 +317,13 @@ public class ShareServiceImpl implements IShareService {
                 throw new CommonException(ExceptionType.SYSTEM_SUCCESS, shareDO);
             }
         }
+    }
+
+    private boolean existsMountFile(String fileId, String userId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("mountFileId").is(fileId));
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        return mongoTemplate.exists(query, FileDocument.class);
     }
 
     @Override

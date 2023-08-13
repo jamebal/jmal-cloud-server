@@ -97,7 +97,7 @@ public class AuthInterceptor implements HandlerInterceptor {
      * jmal-token 身份认证通过, 设置该身份的权限
      * @param username username
      */
-    private void setAuthorities(String username) {
+    public void setAuthorities(String username) {
         List<String> authorities = CaffeineUtil.getAuthoritiesCache(username);
         if (authorities == null || authorities.isEmpty()) {
             authorities = userService.getAuthorities(username);

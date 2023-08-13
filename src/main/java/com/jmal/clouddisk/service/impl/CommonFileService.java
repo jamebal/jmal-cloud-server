@@ -31,6 +31,7 @@ import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -578,6 +579,38 @@ public class CommonFileService {
     }
 
     public void checkShareBase(Update update, String relativePath) {
+        Document shareDocument = getShareBaseDocument(relativePath);
+        if (shareDocument == null) {
+            return;
+        }
+        Long expiresAt = Convert.toLong(shareDocument.get(Constants.EXPIRES_AT), null);
+        if (expiresAt == null) {
+            return;
+        }
+        String shareId = Convert.toStr(shareDocument.get(Constants.SHARE_ID), null);
+        if (shareId == null) {
+            return;
+        }
+        Boolean isPrivacy = Convert.toBool(shareDocument.get(Constants.IS_PRIVACY), null);
+        if (isPrivacy == null) {
+            return;
+        }
+        String extractionCode = Convert.toStr(shareDocument.get(Constants.EXTRACTION_CODE), null);
+        if (isPrivacy && extractionCode == null) {
+            return;
+        }
+        List<OperationPermission> operationPermissionList = new ArrayList<>();
+        if (shareDocument.get(Constants.OPERATION_PERMISSION_LIST) != null) {
+            operationPermissionList = Convert.toList(OperationPermission.class, shareDocument.get(Constants.OPERATION_PERMISSION_LIST));
+        }
+        setShareAttribute(update, expiresAt, shareId, isPrivacy, extractionCode, operationPermissionList);
+    }
+
+    @Nullable
+    public Document getShareBaseDocument(String relativePath) {
+        if (CharSequenceUtil.isBlank(relativePath)) {
+            return null;
+        }
         Path path = Paths.get(relativePath);
         StringBuilder pathStr = new StringBuilder("/");
         List<Document> documentList = new ArrayList<>(path.getNameCount());
@@ -591,7 +624,7 @@ public class CommonFileService {
             pathStr.append(filename);
         }
         if (documentList.isEmpty()) {
-            return;
+            return null;
         }
         List<Document> list = Arrays.asList(new Document("$match", new Document("$or", documentList)), new Document("$match", new Document(Constants.SHARE_BASE, true)));
         AggregateIterable<Document> result = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
@@ -601,29 +634,7 @@ public class CommonFileService {
                 shareDocument = mongoCursor.next();
             }
         }
-        if (shareDocument != null) {
-            Long expiresAt = Convert.toLong(shareDocument.get(Constants.EXPIRES_AT), null);
-            if (expiresAt == null) {
-                return;
-            }
-            String shareId = Convert.toStr(shareDocument.get(Constants.SHARE_ID), null);
-            if (shareId == null) {
-                return;
-            }
-            Boolean isPrivacy = Convert.toBool(shareDocument.get(Constants.IS_PRIVACY), null);
-            if (isPrivacy == null) {
-                return;
-            }
-            String extractionCode = Convert.toStr(shareDocument.get(Constants.EXTRACTION_CODE), null);
-            if (isPrivacy && extractionCode == null) {
-                return;
-            }
-            List<OperationPermission> operationPermissionList = new ArrayList<>();
-            if (shareDocument.get(Constants.OPERATION_PERMISSION_LIST) != null) {
-                operationPermissionList = Convert.toList(OperationPermission.class, shareDocument.get(Constants.OPERATION_PERMISSION_LIST));
-            }
-            setShareAttribute(update, expiresAt, shareId, isPrivacy, extractionCode, operationPermissionList);
-        }
+        return shareDocument;
     }
 
     /***
