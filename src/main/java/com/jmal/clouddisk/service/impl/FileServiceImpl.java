@@ -773,6 +773,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 pushMessageOperationFileError(operator, "重命名失败", "重命名");
                 return;
             }
+            fileDocument.setName(newFileName);
             pushMessage(operator, fileDocument, "createFile");
         } else {
             pushMessageOperationFileError(operator, "重命名失败", "重命名");
