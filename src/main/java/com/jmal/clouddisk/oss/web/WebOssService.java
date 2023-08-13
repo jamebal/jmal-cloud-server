@@ -127,6 +127,7 @@ public class WebOssService extends WebOssCommonService {
                 FileDocument fileDocument = fileDocumentList.stream().filter(f -> f.getId().equals(fileIntroVO.getId())).findFirst().orElse(null);
                 if (fileDocument != null) {
                     fileIntroVO.setIsFavorite(fileDocument.getIsFavorite());
+                    fileIntroVO.setIsPrivacy(fileDocument.getIsPrivacy());
                     fileIntroVO.setShareBase(fileDocument.getShareBase());
                     fileIntroVO.setExpiresAt(fileDocument.getExpiresAt());
                     fileIntroVO.setIsShare(fileDocument.getIsShare());
