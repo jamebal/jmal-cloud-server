@@ -779,6 +779,27 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             return;
         }
         pushMessageOperationFileSuccess(fromPath.toString(), toPath.toString(), operator, "重命名");
+        afterRenameFile(id, newFileName);
+    }
+
+    /**
+     * 重命名文件后修改关联配置
+     * @param fileId fileId
+     * @param newFileName newFileName
+     */
+    private void afterRenameFile(String fileId, String newFileName) {
+        // 修改关联的分享配置
+        Query shareQuery = new Query();
+        shareQuery.addCriteria(Criteria.where("fileId").is(fileId));
+        Update shareUpdate = new Update();
+        shareUpdate.set("fileName", newFileName);
+        mongoTemplate.updateMulti(shareQuery, shareUpdate, ShareDO.class);
+        // 修改关联的挂载配置
+        Query mountQuery = new Query();
+        mountQuery.addCriteria(Criteria.where("mountFileId").is(fileId));
+        Update mountUpdate = new Update();
+        mountUpdate.set("name", newFileName);
+        mongoTemplate.updateMulti(mountQuery, mountUpdate, FileDocument.class);
     }
 
     @Override

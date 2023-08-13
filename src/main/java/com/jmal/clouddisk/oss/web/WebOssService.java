@@ -453,6 +453,23 @@ public class WebOssService extends WebOssCommonService {
         if (!newShareDOList.isEmpty()) {
             mongoTemplate.insertAll(newShareDOList);
         }
+        // 修改关联的挂载文件
+        Query mountQuery = new Query();
+        mountQuery.addCriteria(Criteria.where("mountFileId").regex("^" + pathName));
+        List<FileDocument> mountFileDocumentList = mongoTemplate.findAllAndRemove(mountQuery, FileDocument.class);
+        List<FileDocument> newMountFileDocumentList = new ArrayList<>();
+        for (FileDocument fileDocument : mountFileDocumentList) {
+            String oldMountFileId = fileDocument.getMountFileId();
+            String newMountFileId = CharSequenceUtil.replace(oldMountFileId, pathName, newFullPathName);
+            fileDocument.setMountFileId(newMountFileId);
+            if (pathName.endsWith(oldMountFileId)) {
+                fileDocument.setName(newFilePath.getFileName().toString());
+            }
+            newMountFileDocumentList.add(fileDocument);
+        }
+        if (!newMountFileDocumentList.isEmpty()) {
+            mongoTemplate.insertAll(newMountFileDocumentList);
+        }
     }
 
     /**
