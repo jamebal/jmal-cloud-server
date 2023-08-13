@@ -48,9 +48,12 @@ public class WebOssCopyFileService extends WebOssCommonService {
         BucketInfo bucketInfoTo = CaffeineUtil.getOssDiameterPrefixCache(ossPathTo);
 
         String objectNameFrom = sourceObjectNamePath.substring(ossPathFrom.length());
+
         boolean isFolder = objectNameFrom.endsWith("/");
-        String objectNameTo = destinationObjectNamePath.substring(ossPathTo.length()) + Paths.get(objectNameFrom).getFileName();
-        if (objectNameFrom.length() < 1) {
+        String objectNameTo;
+        Path objectNameFromPath = Paths.get(objectNameFrom);
+        objectNameTo = destinationObjectNamePath.substring(ossPathTo.length()) + objectNameFromPath.getFileName();
+        if (objectNameFrom.isEmpty()) {
             isFolder = true;
             objectNameTo = destinationObjectNamePath.substring(ossPathTo.length()) + Paths.get(ossPathFrom).getFileName().toString();
         }
@@ -65,24 +68,27 @@ public class WebOssCopyFileService extends WebOssCommonService {
 
         if (ossServiceFrom.getPlatform() == ossServiceTo.getPlatform()) {
             // 同平台间复制
-            boolean copySuccess = ossServiceFrom.copyObject(bucketInfoFrom.getBucketName(), objectNameFrom, bucketInfoTo.getBucketName(), objectNameTo);
-            if (!copySuccess) {
+            List<String> copiedList = ossServiceFrom.copyObject(bucketInfoFrom.getBucketName(), objectNameFrom, bucketInfoTo.getBucketName(), objectNameTo);
+            for (String objectName : copiedList) {
+                afterUploadComplete(objectName, ossPathTo, null);
+            }
+            if (copiedList.isEmpty()) {
                 throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), "复制失败");
             }
         } else {
             if (isFolder) {
                 // 复制文件夹
-                copyDir(ossServiceFrom, ossServiceTo, objectNameFrom, objectNameTo);
+                copyDir(ossServiceFrom, ossServiceTo, objectNameFrom, objectNameTo, ossPathTo);
             } else {
                 // 复制文件
-                copyFile(ossServiceFrom, ossServiceTo, objectNameFrom, objectNameTo);
+                copyFile(ossServiceFrom, ossServiceTo, objectNameFrom, objectNameTo, ossPathTo);
             }
         }
         String finalObjectNameTo = objectNameTo;
         // 复制成功
         ossServiceTo.clearCache(finalObjectNameTo);
-        String operation = isMove ? "移动" : "复制";
         notifyCreateFile(getUsernameByOssPath(ossPathTo), finalObjectNameTo, getOssRootFolderName(ossPathTo));
+        String operation = isMove ? "移动" : "复制";
         Path fromPath = Paths.get(getOssRootFolderName(ossPathFrom), objectNameFrom);
         Path toPath = Paths.get(getOssRootFolderName(ossPathTo), finalObjectNameTo);
         commonFileService.pushMessageOperationFileSuccess(fromPath.toString(), toPath.toString(), getUsernameByOssPath(ossPathFrom), operation);
@@ -97,8 +103,9 @@ public class WebOssCopyFileService extends WebOssCommonService {
      * @param ossServiceTo   目标ossService
      * @param objectNameFrom 源objectName
      * @param objectNameTo   目标objectName
+     * @param ossPathTo      目标ossPath
      */
-    private void copyDir(IOssService ossServiceFrom, IOssService ossServiceTo, String objectNameFrom, String objectNameTo) {
+    private void copyDir(IOssService ossServiceFrom, IOssService ossServiceTo, String objectNameFrom, String objectNameTo, String ossPathTo) {
         // 锁对象
         ossServiceFrom.lock(objectNameFrom);
         try {
@@ -112,6 +119,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
                     // 目标objectName
                     String destObjectName = objectNameTo + relativePath;
                     ossServiceTo.mkdir(destObjectName);
+                    afterUploadComplete(destObjectName, ossPathTo, null);
                 });
                 // 再复制文件
                 fileInfoList.stream().filter(fileInfo -> !fileInfo.isFolder()).parallel().forEach(fileInfo -> {
@@ -122,6 +130,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
                          InputStream inputStream = abstractOssObject.getInputStream()) {
                         // 上传文件
                         ossServiceTo.uploadFile(inputStream, destObjectName, abstractOssObject.getContentLength());
+                        afterUploadComplete(destObjectName, ossPathTo, null);
                     } catch (Exception e) {
                         throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
                     }
@@ -143,14 +152,16 @@ public class WebOssCopyFileService extends WebOssCommonService {
      * @param ossServiceTo   目标ossService
      * @param objectNameFrom 源objectName
      * @param objectNameTo   目标objectName
+     * @param ossPathTo      目标ossPath
      */
-    private void copyFile(IOssService ossServiceFrom, IOssService ossServiceTo, String objectNameFrom, String objectNameTo) {
+    private void copyFile(IOssService ossServiceFrom, IOssService ossServiceTo, String objectNameFrom, String objectNameTo, String ossPathTo) {
         // 锁对象
         ossServiceFrom.lock(objectNameFrom);
         try (AbstractOssObject abstractOssObject = ossServiceFrom.getAbstractOssObject(objectNameFrom);
              InputStream inputStream = abstractOssObject.getInputStream()) {
             // 上传文件
             ossServiceTo.uploadFile(inputStream, objectNameTo, abstractOssObject.getContentLength());
+            afterUploadComplete(objectNameTo, ossPathTo, null);
         } catch (Exception e) {
             throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
         } finally {
@@ -225,6 +236,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
                 // 目标目录
                 Path destPath = Paths.get(destDirPath, relativePath);
                 PathUtil.mkdir(destPath);
+                commonFileService.createFile(destFileDocument.getUsername(), destPath.toFile(), null, null);
             });
             // 再复制文件
             fileInfoList.stream().filter(fileInfo -> !fileInfo.isFolder()).parallel().forEach(fileInfo -> {
@@ -235,6 +247,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
                     // 目标文件
                     File destFile = Paths.get(destDirPath, relativePath).toFile();
                     FileUtil.writeFromStream(inputStream, destFile);
+                    commonFileService.createFile(destFileDocument.getUsername(), destFile, null, null);
                 } catch (Exception e) {
                     throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
                 }
@@ -265,6 +278,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
             // 目标文件
             File destFile = Paths.get(destPath.toString(), Paths.get(objectNameFrom).getFileName().toString()).toFile();
             FileUtil.writeFromStream(inputStream, destFile);
+            commonFileService.createFile(destFileDocument.getUsername(), destFile, null, null);
         } catch (Exception e) {
             throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
         } finally {
@@ -297,10 +311,10 @@ public class WebOssCopyFileService extends WebOssCommonService {
         }
         if (isFolder) {
             // 复制文件夹
-            copyDir(fromFileDocument, ossServiceTo, objectNameTo);
+            copyDir(fromFileDocument, ossServiceTo, objectNameTo, ossPathTo);
         } else {
             // 复制文件
-            copyFile(fromFileDocument, ossServiceTo, objectNameTo);
+            copyFile(fromFileDocument, ossServiceTo, objectNameTo, ossPathTo);
         }
         notifyCreateFile(fromFileDocument.getUsername(), objectNameTo, getOssRootFolderName(ossPathTo));
         Path fromPath = Paths.get(fromFileDocument.getPath(), fromFileDocument.getName());
@@ -315,8 +329,9 @@ public class WebOssCopyFileService extends WebOssCommonService {
      * @param fromFileDocument 源FileDocument
      * @param ossServiceTo     目标ossService
      * @param objectNameTo     目标objectName
+     * @param ossPathTo        目标ossPath
      */
-    private void copyDir(FileDocument fromFileDocument, IOssService ossServiceTo, String objectNameTo) {
+    private void copyDir(FileDocument fromFileDocument, IOssService ossServiceTo, String objectNameTo, String ossPathTo) {
         // 锁文件
         CommonFileService.lockFile(fromFileDocument);
         Path fromPath = Paths.get(fileProperties.getRootDir(), fromFileDocument.getUsername(), fromFileDocument.getPath(), fromFileDocument.getName());
@@ -330,6 +345,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
                         if (!dir.equals(fromPath)) {
                             String objectName = objectNameTo + dir.toString().substring(fromPath.toString().length());
                             ossServiceTo.mkdir(objectName);
+                            afterUploadComplete(objectName, ossPathTo, null);
                         }
                         return super.preVisitDirectory(dir, attrs);
                     }
@@ -339,6 +355,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
                         File fromFile = file.toFile();
                         try (InputStream inputStream = new FileInputStream(fromFile)) {
                             ossServiceTo.uploadFile(inputStream, objectName, fromFile.length());
+                            afterUploadComplete(objectName, ossPathTo, null);
                         } catch (Exception e) {
                             throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
                         }
@@ -360,14 +377,16 @@ public class WebOssCopyFileService extends WebOssCommonService {
      * @param fromFileDocument 源FileDocument
      * @param ossServiceTo     目标ossService
      * @param objectNameTo     目标objectName
+     * @param ossPathTo        目标ossPath
      */
-    private void copyFile(FileDocument fromFileDocument, IOssService ossServiceTo, String objectNameTo) {
+    private void copyFile(FileDocument fromFileDocument, IOssService ossServiceTo, String objectNameTo, String ossPathTo) {
         // 锁文件
         CommonFileService.lockFile(fromFileDocument);
         // 上传文件
         File fromFile = Paths.get(fileProperties.getRootDir(), fromFileDocument.getUsername(), fromFileDocument.getPath(), fromFileDocument.getName()).toFile();
         try (InputStream intStream = new FileInputStream(fromFile)) {
             ossServiceTo.uploadFile(intStream, objectNameTo, fromFile.length());
+            afterUploadComplete(objectNameTo, ossPathTo, null);
         } catch (Exception e) {
             throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
         } finally {

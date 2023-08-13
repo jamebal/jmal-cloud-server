@@ -10,6 +10,8 @@ import cn.hutool.core.util.BooleanUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.OssConfigService;
@@ -29,6 +31,7 @@ import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -181,11 +184,20 @@ public class CommonFileService {
      * @return FileDocument
      */
     public FileDocument getFileDocumentByPath(String path, String filename, String userId) {
+        Query query = getQuery(path, filename, userId);
+        return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+    }
+
+    public static Query getQuery(FileDocument fileDocument) {
+        return getQuery(fileDocument.getPath(), fileDocument.getName(), fileDocument.getUserId());
+    }
+
+    public static Query getQuery(String path, String name, String userId) {
         Query query = new Query();
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        query.addCriteria(Criteria.where("name").is(filename));
+        query.addCriteria(Criteria.where("name").is(name));
         query.addCriteria(Criteria.where("path").is(path));
-        return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+        return query;
     }
 
     /**
@@ -567,6 +579,38 @@ public class CommonFileService {
     }
 
     public void checkShareBase(Update update, String relativePath) {
+        Document shareDocument = getShareBaseDocument(relativePath);
+        if (shareDocument == null) {
+            return;
+        }
+        Long expiresAt = Convert.toLong(shareDocument.get(Constants.EXPIRES_AT), null);
+        if (expiresAt == null) {
+            return;
+        }
+        String shareId = Convert.toStr(shareDocument.get(Constants.SHARE_ID), null);
+        if (shareId == null) {
+            return;
+        }
+        Boolean isPrivacy = Convert.toBool(shareDocument.get(Constants.IS_PRIVACY), null);
+        if (isPrivacy == null) {
+            return;
+        }
+        String extractionCode = Convert.toStr(shareDocument.get(Constants.EXTRACTION_CODE), null);
+        if (isPrivacy && extractionCode == null) {
+            return;
+        }
+        List<OperationPermission> operationPermissionList = new ArrayList<>();
+        if (shareDocument.get(Constants.OPERATION_PERMISSION_LIST) != null) {
+            operationPermissionList = Convert.toList(OperationPermission.class, shareDocument.get(Constants.OPERATION_PERMISSION_LIST));
+        }
+        setShareAttribute(update, expiresAt, shareId, isPrivacy, extractionCode, operationPermissionList);
+    }
+
+    @Nullable
+    public Document getShareBaseDocument(String relativePath) {
+        if (CharSequenceUtil.isBlank(relativePath)) {
+            return null;
+        }
         Path path = Paths.get(relativePath);
         StringBuilder pathStr = new StringBuilder("/");
         List<Document> documentList = new ArrayList<>(path.getNameCount());
@@ -580,7 +624,7 @@ public class CommonFileService {
             pathStr.append(filename);
         }
         if (documentList.isEmpty()) {
-            return;
+            return null;
         }
         List<Document> list = Arrays.asList(new Document("$match", new Document("$or", documentList)), new Document("$match", new Document(Constants.SHARE_BASE, true)));
         AggregateIterable<Document> result = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
@@ -590,25 +634,7 @@ public class CommonFileService {
                 shareDocument = mongoCursor.next();
             }
         }
-        if (shareDocument != null) {
-            Long expiresAt = Convert.toLong(shareDocument.get(Constants.EXPIRES_AT), null);
-            if (expiresAt == null) {
-                return;
-            }
-            String shareId = Convert.toStr(shareDocument.get(Constants.SHARE_ID), null);
-            if (shareId == null) {
-                return;
-            }
-            Boolean isPrivacy = Convert.toBool(shareDocument.get(Constants.IS_PRIVACY), null);
-            if (isPrivacy == null) {
-                return;
-            }
-            String extractionCode = Convert.toStr(shareDocument.get(Constants.EXTRACTION_CODE), null);
-            if (isPrivacy && extractionCode == null) {
-                return;
-            }
-            setShareAttribute(update, expiresAt, shareId, isPrivacy, extractionCode);
-        }
+        return shareDocument;
     }
 
     /***
@@ -619,7 +645,7 @@ public class CommonFileService {
      */
     void setShareAttribute(FileDocument fileDocument, long expiresAt, ShareDO share, Query query) {
         Update update = new Update();
-        setShareAttribute(update, expiresAt, share.getId(), share.getIsPrivacy(), share.getExtractionCode());
+        setShareAttribute(update, expiresAt, share.getId(), share.getIsPrivacy(), share.getExtractionCode(), share.getOperationPermissionList());
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         // 修改第一个文件/文件夹
         updateShareFirst(fileDocument, update, true);
@@ -644,11 +670,14 @@ public class CommonFileService {
      * @param isPrivacy      isPrivacy
      * @param extractionCode extractionCode
      */
-    private static void setShareAttribute(Update update, long expiresAt, String shareId, Boolean isPrivacy, String extractionCode) {
-        update.set("isShare", true);
+    private static void setShareAttribute(Update update, long expiresAt, String shareId, Boolean isPrivacy, String extractionCode, List<OperationPermission> operationPermissionListList) {
+        update.set(Constants.IS_SHARE, true);
         update.set(Constants.SHARE_ID, shareId);
         update.set(Constants.EXPIRES_AT, expiresAt);
         update.set(Constants.IS_PRIVACY, isPrivacy);
+        if (operationPermissionListList != null) {
+            update.set(Constants.OPERATION_PERMISSION_LIST, operationPermissionListList);
+        }
         if (BooleanUtil.isTrue(isPrivacy)) {
             update.set(Constants.EXTRACTION_CODE, extractionCode);
         }
@@ -662,13 +691,36 @@ public class CommonFileService {
     void unsetShareAttribute(FileDocument fileDocument, Query query) {
         Update update = new Update();
         update.unset(Constants.SHARE_ID);
-        update.unset("isShare");
+        update.unset(Constants.IS_SHARE);
         update.unset(Constants.EXPIRES_AT);
         update.unset(Constants.IS_PRIVACY);
+        update.unset(Constants.OPERATION_PERMISSION_LIST);
         update.unset(Constants.EXTRACTION_CODE);
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         // 修改第一个文件/文件夹
         updateShareFirst(fileDocument, update, false);
+    }
+
+    public void checkPermissionUsername(String username, String currentUsername, List<OperationPermission> operationPermissionList, OperationPermission operationPermission) {
+        if (!username.equals(currentUsername) && noPermission(operationPermissionList, operationPermission)) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
+        }
+    }
+
+    public void checkPermissionUsername(String username, List<OperationPermission> operationPermissionList, OperationPermission operationPermission) {
+        if (!username.equals(userLoginHolder.getUsername()) && noPermission(operationPermissionList, operationPermission)) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
+        }
+    }
+
+    public void checkPermissionUserId(String userId, List<OperationPermission> operationPermissionList, OperationPermission operationPermission) {
+        if (!userId.equals(userLoginHolder.getUserId()) && noPermission(operationPermissionList, operationPermission)) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
+        }
+    }
+
+    private static boolean noPermission(List<OperationPermission> operationPermissionList, OperationPermission operationPermission) {
+        return operationPermissionList == null || !operationPermissionList.contains(operationPermission);
     }
 
     public String modifyFile(String username, File file) {

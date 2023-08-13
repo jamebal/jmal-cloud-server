@@ -16,9 +16,7 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @Component
 public class MyRealm extends RealmBase {
@@ -97,7 +95,7 @@ public class MyRealm extends RealmBase {
      * 根据该用户拥有的权限获取允许访问的方法列表
      * @return 允许访问的方法列表
      */
-    public List<WebdavMethod> allowMethods(String username){
+    public List<WebdavMethod> allowMethods(String username) {
         int maxAuthority = maxAuthority(username);
         return switch (maxAuthority) {
             case 3 -> DELETES_METHODS;
@@ -114,31 +112,23 @@ public class MyRealm extends RealmBase {
      *     3   >   2    >   1    >   0
      * @return delete/update/upload/list
      */
-    public int maxAuthority(String username){
+    public int maxAuthority(String username) {
         List<String> authorities = CaffeineUtil.getAuthoritiesCache(username);
         if (authorities == null) {
             authorities = userService.getAuthorities(username);
         }
-        int maxAuthority = 0;
-        for (String authority : authorities) {
-            if (authority.startsWith("cloud:file:")) {
-                switch (authority) {
-                    case "cloud:file:delete" -> maxAuthority = 3;
-                    case "cloud:file:update" -> {
-                        if (maxAuthority < 2) {
-                            maxAuthority = 2;
-                        }
-                    }
-                    case "cloud:file:upload" -> {
-                        if (maxAuthority < 1) {
-                            maxAuthority = 1;
-                        }
-                    }
-                    case "cloud:file:list", "cloud:file:download", default -> {
-                    }
-                }
-            }
-        }
-        return maxAuthority;
+
+        Map<String, Integer> authorityMap = Map.of(
+                "cloud:file:delete", 3,
+                "cloud:file:update", 2,
+                "cloud:file:upload", 1
+        );
+
+        return authorities.stream()
+                .filter(authority -> authority.startsWith("cloud:file:"))
+                .map(authorityMap::get)
+                .filter(Objects::nonNull)
+                .max(Integer::compare)
+                .orElse(0);
     }
 }

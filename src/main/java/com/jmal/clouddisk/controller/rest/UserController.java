@@ -20,8 +20,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * @Description ConsumerController
  * @author jmal
+ * @Description ConsumerController
  */
 @RestController
 @RequestMapping("user")
@@ -35,7 +35,7 @@ public class UserController {
     @PostMapping("/add")
     @Permission("sys:user:add")
     @LogOperatingFun
-    public ResponseResult<Object> add(@Validated ConsumerDTO consumerDTO){
+    public ResponseResult<Object> add(@Validated ConsumerDTO consumerDTO) {
         service.add(consumerDTO);
         return ResultUtil.success();
     }
@@ -44,7 +44,7 @@ public class UserController {
     @DeleteMapping("/delete")
     @Permission("sys:user:delete")
     @LogOperatingFun
-    public ResponseResult<Object> delete(@RequestParam String[] ids){
+    public ResponseResult<Object> delete(@RequestParam String[] ids) {
         List<String> idList = Arrays.asList(ids);
         return service.delete(idList);
     }
@@ -53,7 +53,7 @@ public class UserController {
     @PutMapping("/update")
     @Permission("sys:user:update")
     @LogOperatingFun
-    public ResponseResult<Object> update(ConsumerDTO consumerDTO, MultipartFile blobAvatar){
+    public ResponseResult<Object> update(ConsumerDTO consumerDTO, MultipartFile blobAvatar) {
         return service.update(consumerDTO, blobAvatar);
     }
 
@@ -61,7 +61,7 @@ public class UserController {
     @PutMapping("/update-pass")
     @Permission("sys:user:update")
     @LogOperatingFun
-    public ResponseResult<Object> updatePass(ConsumerDO consumer){
+    public ResponseResult<Object> updatePass(ConsumerDO consumer) {
         return service.updatePass(consumer);
     }
 
@@ -69,23 +69,29 @@ public class UserController {
     @PutMapping("/reset-pass")
     @Permission(value = "sys:user:update")
     @LogOperatingFun
-    public ResponseResult<Object> resetPass(ConsumerDO consumer){
+    public ResponseResult<Object> resetPass(ConsumerDO consumer) {
         return service.resetPass(consumer);
     }
 
     @Operation(summary = "用户信息")
     @GetMapping("/userInfo")
     @Permission("sys:user:list")
-    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<ConsumerDTO> consumerInfo(@RequestParam String id){
+    public ResponseResult<ConsumerDTO> consumerInfo(@RequestParam String id) {
         return service.userInfo(id);
+    }
+
+    @Operation(summary = "获取用户名")
+    @GetMapping("/username")
+    @Permission("cloud:file:list")
+    public ResponseResult<String> getUsernameByUserId(@RequestParam String userId) {
+        return ResultUtil.success(service.getUserNameById(userId));
     }
 
     @Operation(summary = "用户信息列表")
     @GetMapping("/userList")
     @Permission("sys:user:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<List<ConsumerDTO>> consumerList(QueryUserDTO queryDTO){
+    public ResponseResult<List<ConsumerDTO>> consumerList(QueryUserDTO queryDTO) {
         return service.userList(queryDTO);
     }
 

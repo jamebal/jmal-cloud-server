@@ -25,17 +25,14 @@ public class CommonExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseBody
     public ResponseResult<Object> exceptionHandler(Exception e) {
-        switch (e) {
-            case AsyncRequestTimeoutException ignored:
-                break;
-            case ClientAbortException ignored:
-                break;
-            default:
-                log.error(e.getMessage(), e);
-                break;
+        if (e instanceof AsyncRequestTimeoutException || e instanceof ClientAbortException) {
+            // ignore
+        } else {
+            log.error(e.getMessage(), e);
         }
         return ResultUtil.error(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
     }
+
 
     @ExceptionHandler(CommonException.class)
     @ResponseBody

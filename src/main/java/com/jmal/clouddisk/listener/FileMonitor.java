@@ -82,6 +82,9 @@ public class FileMonitor {
     }
 
     private void reloadObserver() {
+        if (monitor == null) {
+            return;
+        }
         try {
             newObserver();
             fastInterval();
@@ -120,17 +123,13 @@ public class FileMonitor {
      */
     @Scheduled(fixedDelay = 1000, initialDelay = 5000)
     private void check() {
+        if (monitor == null) {
+            return;
+        }
         long diff = System.currentTimeMillis() - CaffeineUtil.getLastAccessTimeCache();
         try {
             if (diff > DateUnit.MINUTE.getMillis() * 5) {
-                if (isMonitor) {
-                    monitor.stop(DateUnit.SECOND.getMillis());
-                    monitor = null;
-                    monitor = new FileAlterationMonitor(DateUnit.MINUTE.getMillis() * 30, observer);
-                    monitor.start();
-                    log.info("轮询间隔改为30分钟");
-                    isMonitor = false;
-                }
+                slowlyInterval();
             } else {
                 if (!isMonitor) {
                     fastInterval();
@@ -141,7 +140,24 @@ public class FileMonitor {
         }
     }
 
+    private void slowlyInterval() throws Exception {
+        if (monitor == null) {
+            return;
+        }
+        if (isMonitor) {
+            monitor.stop(DateUnit.SECOND.getMillis());
+            monitor = null;
+            monitor = new FileAlterationMonitor(DateUnit.MINUTE.getMillis() * 30, observer);
+            monitor.start();
+            log.info("轮询间隔改为30分钟");
+            isMonitor = false;
+        }
+    }
+
     private void fastInterval() throws Exception {
+        if (monitor == null) {
+            return;
+        }
         monitor.stop(DateUnit.SECOND.getMillis());
         monitor = null;
         monitor = new FileAlterationMonitor(DateUnit.SECOND.getMillis() * 3, observer);

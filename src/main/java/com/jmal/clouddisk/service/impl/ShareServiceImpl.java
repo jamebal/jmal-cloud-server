@@ -25,6 +25,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -52,12 +53,19 @@ public class ShareServiceImpl implements IShareService {
 
     private final WebOssService webOssService;
 
+    private final UserLoginHolder userLoginHolder;
+
+    private final CommonFileService commonFileService;
+
 
     @Override
     public ResponseResult<Object> generateLink(ShareDO share) {
         ShareDO shareDO = findByFileId(share.getFileId());
         share.setCreateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
         FileDocument file = fileService.getById(share.getFileId());
+        if (BooleanUtil.isTrue(file.getIsShare()) && !BooleanUtil.isTrue(file.getShareBase())) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "该文件已经分享过了");
+        }
         long expireAt = Long.MAX_VALUE;
         if (share.getExpireDate() != null) {
             expireAt = TimeUntils.getMilli(share.getExpireDate());
@@ -69,6 +77,9 @@ public class ShareServiceImpl implements IShareService {
         share.setFileName(file.getName());
         share.setContentType(file.getContentType());
         share.setIsPrivacy(BooleanUtil.isTrue(share.getIsPrivacy()));
+
+        ShareVO shareVO = new ShareVO();
+
         if (shareDO == null) {
             if (Boolean.TRUE.equals(share.getIsPrivacy())) {
                 share.setExtractionCode(generateExtractionCode());
@@ -78,7 +89,13 @@ public class ShareServiceImpl implements IShareService {
             updateShare(share, shareDO, file);
         }
         file.setShareBase(shareDO.getShareBase());
-        ShareVO shareVO = new ShareVO();
+
+        if (share.getOperationPermissionList() == null) {
+            shareVO.setOperationPermissionList(shareDO.getOperationPermissionList());
+        } else {
+            shareVO.setOperationPermissionList(share.getOperationPermissionList());
+        }
+
         shareVO.setShareId(shareDO.getId());
         if (Boolean.TRUE.equals(share.getIsPrivacy())) {
             shareVO.setExtractionCode(share.getExtractionCode());
@@ -122,6 +139,9 @@ public class ShareServiceImpl implements IShareService {
             update.set("expireDate", share.getExpireDate());
         } else {
             update.unset("expireDate");
+        }
+        if (share.getOperationPermissionList() != null) {
+            update.set(Constants.OPERATION_PERMISSION_LIST, share.getOperationPermissionList());
         }
         update.set(Constants.IS_PRIVACY, share.getIsPrivacy());
         if (Boolean.TRUE.equals(share.getIsPrivacy()) && shareDO.getExtractionCode() == null) {
@@ -191,8 +211,64 @@ public class ShareServiceImpl implements IShareService {
         validShare(shareToken, shareId);
     }
 
+    @Override
+    public void mountFile(UploadApiParamDTO upload) {
+        if (upload.getShareId() == null) {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "缺少参数 shareId");
+        }
+        if (upload.getUserId() == null) {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "缺少参数 userId");
+        }
+        if (upload.getFileId() == null) {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "缺少参数 fileId");
+        }
+        // 从shareId挂载到fileId
+        ShareDO shareDO = getShare(upload.getShareId());
+        if (shareDO == null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), Constants.LINK_FAILED);
+        }
+        FileDocument fromFileDocument = fileService.getById(shareDO.getFileId());
+        if (fromFileDocument == null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "分享文件不存在");
+        }
+        if (BooleanUtil.isFalse(fromFileDocument.getIsFolder())) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "该分享不是文件夹");
+        }
+        FileDocument toFileDocument;
+        if ("0".equals(upload.getFileId())) {
+            //  挂载到根目录
+            toFileDocument = new FileDocument();
+            toFileDocument.setPath("");
+            toFileDocument.setName("");
+            toFileDocument.setIsFolder(true);
+        } else {
+            toFileDocument = fileService.getById(upload.getFileId());
+        }
+
+        if (toFileDocument == null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "文件不存在");
+        }
+        if (BooleanUtil.isFalse(toFileDocument.getIsFolder())) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "只能挂载到文件夹下");
+        }
+
+        // 创建文件夹
+        FileDocument fileDocument = new FileDocument();
+        fileDocument.setIsFolder(true);
+        fileDocument.setName(fromFileDocument.getName());
+        fileDocument.setPath(toFileDocument.getPath() + toFileDocument.getName() + File.separator);
+        fileDocument.setUserId(upload.getUserId());
+        fileDocument.setIsFavorite(false);
+        fileDocument.setUploadDate(fromFileDocument.getUploadDate());
+        fileDocument.setUpdateDate(fromFileDocument.getUpdateDate());
+        fileDocument.setMountFileId(fromFileDocument.getId());
+        Update update = MongoUtil.getUpdate(fileDocument);
+        Query query = CommonFileService.getQuery(fileDocument);
+        mongoTemplate.upsert(query, update, FileDocument.class);
+    }
+
     public void validShare(String shareToken, ShareDO shareDO) {
-        if (!checkWhetherExpired(shareDO)) {
+        if (checkWhetherExpired(shareDO)) {
             throw new CommonException(ExceptionType.WARNING.getCode(), SHARE_EXPIRED);
         }
         validShareCode(shareToken, shareDO);
@@ -220,7 +296,7 @@ public class ShareServiceImpl implements IShareService {
 
     @Override
     public void validShareCode(String shareToken, ShareDO shareDO) {
-        if (!checkWhetherExpired(shareDO)) {
+        if (checkWhetherExpired(shareDO)) {
             throw new CommonException(ExceptionType.WARNING.getCode(), Constants.LINK_FAILED);
         }
         // 检查是否为私密链接
@@ -230,7 +306,13 @@ public class ShareServiceImpl implements IShareService {
             shareVO.setExtractionCode(null);
             // 先检查有没有share-token
             if (CharSequenceUtil.isBlank(shareToken)) {
-                throw new CommonException(ExceptionType.SYSTEM_SUCCESS, shareDO);
+                String userId = userLoginHolder.getUserId();
+                if (CharSequenceUtil.isBlank(userId)) {
+                    throw new CommonException(ExceptionType.SYSTEM_SUCCESS, shareDO);
+                }
+                if (existsMountFile(shareDO.getFileId(), userId)) {
+                    return;
+                }
             }
             // 再检查share-token是否正确
             if (!shareDO.getId().equals(TokenUtil.getTokenKey(shareToken))) {
@@ -240,27 +322,33 @@ public class ShareServiceImpl implements IShareService {
         }
     }
 
+    private boolean existsMountFile(String fileId, String userId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("mountFileId").is(fileId));
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        return mongoTemplate.exists(query, FileDocument.class);
+    }
+
     @Override
     public ShareDO getShare(String shareId) {
         return mongoTemplate.findById(shareId, ShareDO.class, COLLECTION_NAME);
     }
 
-    @Override
-    public boolean checkWhetherExpired(ShareDO shareDO) {
+    /**
+     * 检查是否过期
+     * @param shareDO 分享信息
+     * @return 是否过期 true:过期 false:未过期
+     */
+    private boolean checkWhetherExpired(ShareDO shareDO) {
         if (shareDO != null) {
             LocalDateTime expireDate = shareDO.getExpireDate();
             if (expireDate == null) {
-                return true;
+                return false;
             }
             LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
-            return expireDate.isAfter(now);
+            return !expireDate.isAfter(now);
         }
-        return false;
-    }
-
-    @Override
-    public boolean checkWhetherExpired(String share) {
-        return checkWhetherExpired(getShare(share));
+        return true;
     }
 
     @Override
@@ -298,7 +386,20 @@ public class ShareServiceImpl implements IShareService {
             }
             query.with(Sort.by(direction, sortableProp));
         }
-        return mongoTemplate.find(query, ShareDO.class, COLLECTION_NAME);
+        List<ShareDO> shareDOList = mongoTemplate.find(query, ShareDO.class, COLLECTION_NAME);
+        // 获取shareDOList中的fileId
+        List<String> fileIdList = shareDOList.stream().map(ShareDO::getFileId).toList();
+        // 查询fileIdList是否存在
+        List<FileDocument> fileDocumentList = fileService.listByIds(fileIdList);
+        // 找出shareDOList中的fileId不在fileDocumentList中的数据
+        List<String> notExistFileIdList = fileIdList.stream().filter(fileId -> !fileDocumentList.stream().map(FileDocument::getId).toList().contains(fileId)).toList();
+        if (notExistFileIdList.isEmpty()) {
+            return shareDOList;
+        }
+        // 删除shareDOList中的fileId不在fileDocumentList中的数据
+        mongoTemplate.remove(Query.query(Criteria.where(Constants.FILE_ID).in(notExistFileIdList)), COLLECTION_NAME);
+        shareDOList.removeIf(shareDO -> notExistFileIdList.contains(shareDO.getFileId()));
+        return shareDOList;
     }
 
     private ShareDO findByFileId(String fileId) {

@@ -76,6 +76,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     private final IFileVersionService fileVersionService;
 
+    private final UserLoginHolder userLoginHolder;
+
     @Override
     public ResponseResult<FileDocument> getMarkDownOne(ArticleDTO articleDTO) {
         String mark = articleDTO.getMark();
@@ -625,6 +627,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             throw new CommonException(ExceptionType.LOCKED_RESOURCES);
         }
         String userId = upload.getUserId();
+        commonFileService.checkPermissionUserId(userId, upload.getOperationPermissionList(), OperationPermission.PUT);
         // 修改文件之前保存历史版本
         fileVersionService.saveFileVersion(upload.getUsername(), upload.getRelativePath(), userId);
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);

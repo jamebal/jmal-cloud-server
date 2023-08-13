@@ -8,5 +8,9 @@ public class Metadata {
     String filename;
     String time;
     String compression;
+    /**
+     * 操作人(username)
+     */
+    String operator;
     Long size;
 }

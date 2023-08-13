@@ -25,47 +25,44 @@ import java.util.Optional;
  */
 public interface IFileService {
 
-    /***
+    /**
      * 获取文件信息
-     * @param id
-     * @param username
-     * @return
+     * @param id 文件id
+     * @return FileDocument
      */
-    Optional<FileDocument> getById(String id, String username, Boolean content);
+    Optional<FileDocument> getById(String id, Boolean content);
 
-    /***
+    /**
      * 流式读取文本文件
-     * @param id
-     * @param username
-     * @return
+     * @param id 文件id
+     * @return StreamingResponseBody
      */
-    StreamingResponseBody getStreamById(String id, String username);
+    StreamingResponseBody getStreamById(String id);
 
     FileDocument getFileDocumentByPathAndName(String path, String name, String username);
 
-    /***
+    /**
      * 根据path读取simText文件
-     * @param path
-     * @param username
-     * @return
-     * @throws CommonException
+     * @param path 文件路径
+     * @param username 用户名
+     * @return FileDocument
+     *
      */
     FileDocument previewTextByPath(String path, String username);
 
-    /***
+    /**
      * 根据path流式读取simText文件
-     * @param path
-     * @param username
-     * @return
-     * @throws CommonException
+     * @param path 文件路径
+     * @param username 用户名
+     * @return StreamingResponseBody
      */
     StreamingResponseBody previewTextByPathStream(String path, String username);
 
-    /***
+    /**
      * 查找下级目录
-     * @param upload
-     * @param fileId
-     * @return
+     * @param upload 上传参数
+     * @param fileId 文件id
+     * @return ResponseResult<Object>
      */
     ResponseResult<Object> queryFileTree(UploadApiParamDTO upload, String fileId);
 
@@ -78,112 +75,108 @@ public interface IFileService {
      */
     String imgUpload(String baseUrl, String filepath, MultipartFile file);
 
-    /***
+    /**
      * 上传文件
-     * @param upload
-     * @return
-     * @throws IOException
+     * @param upload 上传参数
+     * @return ResponseResult<Object>
+     * @throws IOException IOException
      */
     ResponseResult<Object> upload(UploadApiParamDTO upload) throws IOException;
 
-    /***
+    /**
      * 上传文件夹
-     * @param upload
-     * @return
-     * @throws CommonException
+     * @param upload 上传参数
+     * @return ResponseResult<Object>
+     * @throws CommonException CommonException
      */
     ResponseResult<Object> uploadFolder(UploadApiParamDTO upload);
 
-    /***
+    /**
      * 新建文件夹
-     * @param upload
-     * @return
-     * @throws CommonException
+     * @param upload 上传参数
+     * @return ResponseResult<Object>
+     * @throws CommonException CommonException
      */
     ResponseResult<Object> newFolder(UploadApiParamDTO upload);
 
-    /***
+    /**
      * 检查文件/分片是否存在
-     * @param upload
-     * @return
-     * @throws IOException
+     * @param upload 上传参数
+     * @return ResponseResult<Object>
+     * @throws IOException IOException
      */
     ResponseResult<Object> checkChunkUploaded(UploadApiParamDTO upload) throws IOException;
 
-    /***
+    /**
      * 合并文件
-     * @param upload
-     * @return
-     * @throws IOException
+     * @param upload 上传参数
+     * @return ResponseResult<Object>
+     * @throws IOException IOException
      */
     ResponseResult<Object> merge(UploadApiParamDTO upload) throws IOException;
 
-    /***
+    /**
      * 文件列表
-     * @param upload
-     * @return
+     * @param upload 上传参数
+     * @return ResponseResult<Object>
      */
     ResponseResult<Object> listFiles(UploadApiParamDTO upload);
 
-    /***
+    /**
      * 用户占用空间
-     * @param userId
-     * @return
+     * @param userId 用户id
+     * @return long
      */
     long takeUpSpace(String userId);
 
-    /***
+    /**
      * 搜索文件
-     * @param upload
-     * @param keyword
-     * @return
-     * @throws CommonException
+     * @param upload 上传参数
+     * @param keyword 关键字
+     * @return ResponseResult<Object>
      */
     ResponseResult<Object> searchFile(UploadApiParamDTO upload, String keyword);
 
-    /***
+    /**
      * 搜索文件并打开文件夹
-     * @param upload
-     * @param id
-     * @return
-     * @throws CommonException
+     * @param upload 上传参数
+     * @param id 文件id
+     * @return ResponseResult<Object>
      */
     ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id);
 
-    /***
+    /**
      * 收藏文件或文件夹
-     * @param fileIds
-     * @return
-     * @throws CommonException
+     * @param fileIds 文件id
+     * @return ResponseResult<Object>
      */
     ResponseResult<Object> favorite(List<String> fileIds);
 
-    /***
+    /**
      * 取消收藏
-     * @param fileIds
-     * @return
+     * @param fileIds 文件id
+     * @return ResponseResult<Object>
      */
     ResponseResult<Object> unFavorite(List<String> fileIds);
 
-    /***
+    /**
      * 删除
-     * @param username
-     * @param currentDirectory
-     * @param fileIds
-     * @return
+     * @param username 用户名
+     * @param currentDirectory 当前目录
+     * @param fileIds 文件id
+     * @param operator 操作者
+     * @return ResponseResult<Object>
      */
-    ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds);
+    ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds, String operator);
 
-    /***
+    /**
      * 显示缩略图
-     * @param id
-     * @param userName
-     * @return
-     * @throws IOException
+     * @param id fileId
+     * @return FileDocument
      */
-    Optional<FileDocument> thumbnail(String id, String userName);
+    Optional<FileDocument> thumbnail(String id);
 
-    /***
+    /**
      * 显示缩略图(媒体文件封面)
      * @param id fileId
      * @param username username
@@ -193,161 +186,160 @@ public interface IFileService {
 
     ResponseEntity<Object> getObjectResponseEntity(Optional<FileDocument> file);
 
-    /***
+    /**
      * 分享里的打包下载
-     * @param request
-     * @param response
-     * @param fileIdList
+     * @param request 请求
+     * @param response 响应
+     * @param fileIdList 文件id列表
      */
     void publicPackageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList);
 
-    /***
+    /**
      * 打包下载
-     * @param request
-     * @param response
-     * @param fileIdList
+     * @param request 请求
+     * @param response 响应
+     * @param fileIdList 文件id列表
      */
     void packageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList);
 
-    /***
+    /**
      * 重名名
-     * @param newFileName
-     * @param username
-     * @param id
-     * @return
+     * @param newFileName 新文件名
+     * @param username 用户名
+     * @param id     文件id
+     * folder 父级文件夹fileId
+     * @return ResponseResult<Object>
      */
-    ResponseResult<Object> rename(String newFileName, String username, String id);
+    ResponseResult<Object> rename(String newFileName, String username, String id, String folder);
 
-    /***
+    /**
      * 移动文件/文件夹
-     * @param upload
-     * @param froms
-     * @param to
-     * @return
+     * @param upload 上传参数
+     * @param froms 从哪里移动
+     * @param to   移动到哪里
+     * @return ResponseResult<Object>
      */
     ResponseResult<Object> move(UploadApiParamDTO upload, List<String> froms, String to) throws IOException;
 
-    /***
+    /**
      * 复制文件/文件夹
-     * @param upload
-     * @param froms
-     * @param to
-     * @return
+     * @param upload 上传参数
+     * @param froms 从哪里复制
+     * @param to  复制到哪里
+     * @return ResponseResult<Object>
      */
     ResponseResult<Object> copy(UploadApiParamDTO upload, List<String> froms, String to) throws IOException;
 
-    /***
+    /**
      * 上传用户图片
-     * @param upload
-     * @return
-     * @throws CommonException
+     * @param upload 上传参数
+     * @return String
      */
     String uploadConsumerImage(UploadApiParamDTO upload);
 
-    /***
+    /**
      * 根据文件Id获取文件信息
-     * @param fileId
-     * @return
+     * @param fileId 文件Id
+     * @return FileDocument
      */
     FileDocument getById(String fileId);
 
-    /***
+    /**
      * 创建文件/文件夹(mongodb)
-     * @param username
-     * @param file
-     * @return
+     * @param username 用户名
+     * @param file 文件/文件夹
+     * @return 文件/文件夹id
      */
     String createFile(String username, File file);
 
-    /***
+    /**
      * 修改文件/文件夹
-     * @param username
-     * @param file
-     * @return
+     *
+     * @param username 用户名
+     * @param file     文件/文件夹
      */
-    String updateFile(String username, File file);
+    void updateFile(String username, File file);
 
-    /***
+    /**
      * 删除文件/文件夹(mongodb)
-     * @param username
-     * @param file
+     * @param username  用户名
+     * @param file 文件/文件夹
      */
     void deleteFile(String username, File file);
 
-    /***
+    /**
      * 解压zip文件
-     * @param fileId
-     * @param destFileId
-     * @return
-     * @throws CommonException
+     * @param fileId 文件id
+     * @param destFileId 目标文件id
+     * @return ResponseResult<Object>
      */
     ResponseResult<Object> unzip(String fileId, String destFileId);
 
-    /***
+    /**
      * 获取目录下的文件
      * @param path 文件目录路径
      * @param username 用户名
      * @param tempDir 是否为零时目录
-     * @return
-     * @throws CommonException
+     * @return ResponseResult<Object>
      */
     ResponseResult<Object> listFiles(String path, String username, boolean tempDir);
 
-    /***
+    /**
      * 获取上级文件列表
-     * @param path
-     * @param username
-     * @return
+     * @param path 文件目录路径
+     * @param username 用户名
+     * @return ResponseResult<Object>
      */
     ResponseResult<Object> upperLevelList(String path, String username);
 
-    /***
+    /**
      * 根据path删除文件/文件夹
-     * @param path
-     * @param username
-     * @return
+     * @param path 文件/文件夹路径
+     * @param username 用户名
+     * @return ResponseResult<Object>
      */
     ResponseResult<Object> delFile(String path, String username);
 
-    /***
+    /**
      * 根据path重命名
-     * @param newFileName
-     * @param username
-     * @param path
-     * @return
+     * @param newFileName 新文件名
+     * @param username 用户名
+     * @param path 文件/文件夹路径
+     * @return ResponseResult<Object>
      */
     ResponseResult<Object> renameByPath(String newFileName, String username, String path);
 
-    /***
+    /**
      * 根据path添加文件
-     * @param fileName
-     * @param isFolder
-     * @param username
-     * @param parentPath
-     * @return
+     * @param fileName 文件名
+     * @param isFolder 是否为文件夹
+     * @param username 用户名
+     * @param parentPath 父目录路径
+     * @param folder 父级文件夹fileId
+     * @return ResponseResult<FileIntroVO>
      */
-    ResponseResult<FileIntroVO> addFile(String fileName, Boolean isFolder, String username, String parentPath);
+    ResponseResult<FileIntroVO> addFile(String fileName, Boolean isFolder, String username, String parentPath, String folder);
 
-    /***
+    /**
      * 下载、预览文件
      * @param shareKey 分享文件id
      * @param fileId 当前文件Id
      * @param operation 操作(下载、预览等操作)
-     * @return
+     * @return forward路径
      */
     String viewFile(String shareKey, String fileId, String shareToken, String operation);
 
-    /***
+    /**
      * 预览文档里的图片
-     * @param relativePath
-     * @param userId
-     * @return
+     * @param relativePath 相对路径
+     * @param userId 用户id
+     * @return forward路径
      */
     String publicViewFile(String relativePath, String userId);
 
     /***
      * 删除用户的所有文件
-     * @param userList
+     * @param userList 用户列表
      */
     void deleteAllByUser(List<ConsumerDO> userList);
 
@@ -376,4 +368,19 @@ public interface IFileService {
      * 一般是已发布的博客文章, 不包含未发布或者私密的文章
      */
     List<FileDocument> getAllDocFile();
+
+    /**
+     * 根据文件Id列表获取文件列表
+     * @param fileIdList 文件Id列表
+     * @return 文件列表
+     */
+    List<FileDocument> listByIds(List<String> fileIdList);
+
+    /**
+     * 创建副本
+     * @param fileId 文件id
+     * @param newFilename 新文件名(包含后缀)
+     * @return ResponseResult<Object>
+     */
+    ResponseResult<Object> duplicate(String fileId, String newFilename);
 }

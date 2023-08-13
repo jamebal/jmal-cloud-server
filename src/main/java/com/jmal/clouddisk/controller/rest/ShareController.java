@@ -99,6 +99,14 @@ public class ShareController {
         return shareService.shareList(upload);
     }
 
+    @Operation(summary = "挂载文件夹")
+    @PutMapping("/share/mount-folder")
+    @Permission("cloud:file:upload")
+    public ResponseResult<Object> mountFile(@RequestBody UploadApiParamDTO upload) {
+        shareService.mountFile(upload);
+        return ResultUtil.success();
+    }
+
     @Operation(summary = "验证提取码")
     @PostMapping("/public/valid-share-code")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
@@ -179,7 +187,7 @@ public class ShareController {
 
     private ResponseEntity<Object> thumbnail(String id, HttpServletRequest request) {
         ResultUtil.checkParamIsNull(id);
-        Optional<FileDocument> file = fileService.thumbnail(id, null);
+        Optional<FileDocument> file = fileService.thumbnail(id);
         if (fileInterceptor.isNotAllowAccess(file.orElse(null), request)) {
             return null;
         }
@@ -203,39 +211,38 @@ public class ShareController {
     @GetMapping("/public/s/preview/text")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> preview(HttpServletRequest request, @RequestParam String shareId, @RequestParam String fileId, Boolean content) {
-        ConsumerDO consumerDO = validShare(request, shareId);
+        validShare(request, shareId);
         Path prePth = Paths.get(fileId);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
             return ResultUtil.success(webOssService.readToText(ossPath, prePth, content));
         }
-        return ResultUtil.success(fileService.getById(fileId, consumerDO.getUsername(), content));
+        return ResultUtil.success(fileService.getById(fileId, content));
     }
 
     @Operation(summary = "流式读取simText文件")
     @GetMapping("/public/s/preview/text/stream")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseEntity<StreamingResponseBody> previewTextStream(HttpServletRequest request, @RequestParam String shareId, @RequestParam String fileId) {
-        ConsumerDO consumerDO = validShare(request, shareId);
+        validShare(request, shareId);
         Path prePth = Paths.get(fileId);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         StreamingResponseBody responseBody;
         if (ossPath != null) {
             responseBody = webOssService.readToTextStream(ossPath, prePth);
         } else {
-            responseBody = fileService.getStreamById(fileId, consumerDO.getUsername());
+            responseBody = fileService.getStreamById(fileId);
         }
         return new ResponseEntity<>(responseBody, HttpStatus.OK);
     }
 
-    private ConsumerDO validShare(HttpServletRequest request, String shareId) {
+    private void validShare(HttpServletRequest request, String shareId) {
         ShareDO shareDO = shareService.getShare(shareId);
         shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
         ConsumerDO consumer = userService.userInfoById(shareDO.getUserId());
         if (consumer == null) {
             throw new CommonException(ExceptionType.WARNING.getCode(), SHARE_EXPIRED);
         }
-        return consumer;
     }
 
     @Operation(summary = "根据id获取分享的文件信息")

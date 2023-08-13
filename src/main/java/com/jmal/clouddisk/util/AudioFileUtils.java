@@ -3,6 +3,7 @@ package com.jmal.clouddisk.util;
 import cn.hutool.core.img.ImgUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.model.Music;
+import lombok.extern.slf4j.Slf4j;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.exceptions.CannotReadException;
@@ -15,7 +16,10 @@ import org.jaudiotagger.tag.datatype.Artwork;
 import org.jaudiotagger.tag.flac.FlacTag;
 import org.jaudiotagger.tag.id3.AbstractID3v2Frame;
 import org.jaudiotagger.tag.id3.ID3v23Tag;
-import org.jaudiotagger.tag.id3.framebody.*;
+import org.jaudiotagger.tag.id3.framebody.FrameBodyAPIC;
+import org.jaudiotagger.tag.id3.framebody.FrameBodyTALB;
+import org.jaudiotagger.tag.id3.framebody.FrameBodyTIT2;
+import org.jaudiotagger.tag.id3.framebody.FrameBodyTPE1;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,6 +28,7 @@ import java.io.IOException;
  * 读取音频文件信息工具
  * @author jmal
  */
+@Slf4j
 public class AudioFileUtils {
 
     private static final String SONGNAME_TAG = "TIT2";
@@ -91,7 +96,7 @@ public class AudioFileUtils {
                 }
             }
         } catch (CannotReadException | IOException | TagException | ReadOnlyFileException | InvalidAudioFrameException e) {
-            e.printStackTrace();
+            log.warn(e.getMessage());
         }
         return music;
     }
