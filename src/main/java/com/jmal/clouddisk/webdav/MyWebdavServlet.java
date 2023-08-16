@@ -43,9 +43,9 @@ import java.util.concurrent.TimeUnit;
 public class MyWebdavServlet extends WebdavServlet {
 
 
-    private final FileProperties fileProperties;
+    private final transient FileProperties fileProperties;
 
-    private final IFileService fileService;
+    private final transient IFileService fileService;
 
     public static final String PATH_DELIMITER = "/";
 
