@@ -2,19 +2,22 @@ package com.jmal.clouddisk.webdav;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.URLUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.IOssService;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.OssInputStream;
 import com.jmal.clouddisk.oss.web.WebOssService;
+import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.apache.catalina.WebResource;
 import org.apache.catalina.connector.ClientAbortException;
 import org.apache.catalina.servlets.WebdavServlet;
@@ -23,6 +26,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -35,8 +39,13 @@ import java.util.concurrent.TimeUnit;
  * @date 2023/3/27 09:35
  */
 @Component
-@Slf4j
+@RequiredArgsConstructor
 public class MyWebdavServlet extends WebdavServlet {
+
+
+    private final FileProperties fileProperties;
+
+    private final IFileService fileService;
 
     public static final String PATH_DELIMITER = "/";
 
@@ -171,6 +180,55 @@ public class MyWebdavServlet extends WebdavServlet {
             }
         }
         super.doDelete(req, resp);
+        deleteFile(req, resp);
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        super.doPut(req, resp);
+        createFile(req, resp);
+    }
+
+    private void deleteFile(HttpServletRequest req, HttpServletResponse resp) {
+        String uri = URLUtil.decode(req.getRequestURI());
+        Path uriPath = Paths.get(uri);
+        if (uriPath.getNameCount() > 1) {
+            String ossPath = CaffeineUtil.getOssPath(uriPath.subpath(1, uriPath.getNameCount()));
+            if (ossPath == null && resp.getStatus() == 204) {
+                // 普通文件 && 删除成功
+                String username = uriPath.getName(1).toString();
+                String path = uriPath.subpath(1, uriPath.getNameCount()).toString();
+                File file = Paths.get(fileProperties.getRootDir(), path).toFile();
+                fileService.deleteFile(username, file);
+            }
+        }
+    }
+
+    private void createFile(HttpServletRequest req, HttpServletResponse resp) {
+        String uri = URLUtil.decode(req.getRequestURI());
+        Path uriPath = Paths.get(uri);
+        if (uriPath.getNameCount() > 1) {
+            String ossPath = CaffeineUtil.getOssPath(uriPath.subpath(1, uriPath.getNameCount()));
+            if (ossPath == null && resp.getStatus() == 201) {
+                // 普通文件 && 上传成功
+                String username = uriPath.getName(1).toString();
+                String path = uriPath.subpath(1, uriPath.getNameCount()).toString();
+                File file = Paths.get(fileProperties.getRootDir(), path).toFile();
+                fileService.createFile(username, file);
+            }
+        }
+    }
+
+    @Override
+    protected void doMove(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        super.doMove(req, resp);
+        createFile(req, resp);
+    }
+
+    @Override
+    protected void doMkcol(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        super.doMkcol(req, resp);
+        createFile(req, resp);
     }
 
     public static String getPathDelimiter(String username, String folderName) {
