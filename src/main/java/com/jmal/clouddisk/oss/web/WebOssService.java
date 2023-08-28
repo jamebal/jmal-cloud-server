@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.oss.web;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.io.IoUtil;
@@ -29,6 +30,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
+import org.bson.Document;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -112,28 +115,13 @@ public class WebOssService extends WebOssCommonService {
                 userId = userService.getUserIdByUserName(getUsernameByOssPath(ossPath));
             }
 
-            List<FileDocument> fileDocumentList = getFileDocuments(ossPath, objectName);
-            String finalUserId = userId;
-            //过滤条件
+            // 过滤条件
             list = filterOther(upload, list);
             result.setCount(list.size());
-            //配置属性
-            fileIntroVOList = list.stream().map(fileInfo -> {
-                FileIntroVO fileIntroVO = fileInfo.toFileIntroVO(ossPath, finalUserId);
-                if (upload != null && BooleanUtil.isTrue(upload.getPathAttachFileName())) {
-                    fileIntroVO.setPath(fileIntroVO.getPath() + fileIntroVO.getName());
-                }
-                // 设置文件的额外属性:分享属性和收藏属性
-                FileDocument fileDocument = fileDocumentList.stream().filter(f -> f.getId().equals(fileIntroVO.getId())).findFirst().orElse(null);
-                if (fileDocument != null) {
-                    fileIntroVO.setIsFavorite(fileDocument.getIsFavorite());
-                    fileIntroVO.setIsPrivacy(fileDocument.getIsPrivacy());
-                    fileIntroVO.setShareBase(fileDocument.getShareBase());
-                    fileIntroVO.setExpiresAt(fileDocument.getExpiresAt());
-                    fileIntroVO.setIsShare(fileDocument.getIsShare());
-                }
-                return fileIntroVO;
-            }).toList();
+
+            // 设置附加属性
+            fileIntroVOList = setAdditionalAttributes(ossPath, upload, list, objectName, userId);
+
             // 排序
             fileIntroVOList = getSortFileList(upload, fileIntroVOList);
             // 分页
@@ -146,6 +134,80 @@ public class WebOssService extends WebOssCommonService {
     }
 
     /**
+     * 设置附加属性
+     * @param ossPath ossPath
+     * @param upload upload
+     * @param list   list
+     * @param objectName objectName
+     * @param finalUserId finalUserId
+     */
+    @NotNull
+    private List<FileIntroVO> setAdditionalAttributes(String ossPath, UploadApiParamDTO upload, List<FileInfo> list, String objectName, String finalUserId) {
+        List<FileIntroVO> fileIntroVOList;
+        // 检测上级目录是否有分享属性
+        Document shareBaseDocument = commonFileService.getShareBaseDocument(getPath(list.get(0).getKey(), getOssRootFolderName(ossPath)));
+
+        List<FileDocument> fileDocumentList = getFileDocuments(ossPath, objectName);
+
+        // 删除fileDocumentList里面有而fileIntroVOList没有的数据
+        List<String> fileDocumentIds = fileDocumentList.stream().map(fileDocument -> fileDocument.getId().substring(ossPath.length())).toList();
+        List<String> fileIntroVOIds = list.stream().map(FileInfo::getKey).toList();
+        List<String> deleteIds = fileDocumentIds.stream().filter(id -> !fileIntroVOIds.contains(id)).toList();
+        if (!deleteIds.isEmpty()) {
+            Query query = new Query();
+            query.addCriteria(Criteria.where("id").in(deleteIds));
+            mongoTemplate.remove(query, FileDocument.class);
+        }
+
+        // 添加fileIntroVOList里有而fileDocumentList里没有的列表
+        List<FileDocument> listToBeAdded = new ArrayList<>();
+
+        // 配置属性
+        fileIntroVOList = list.stream().map(fileInfo -> {
+            FileIntroVO fileIntroVO = fileInfo.toFileIntroVO(ossPath, finalUserId);
+            if (upload != null && BooleanUtil.isTrue(upload.getPathAttachFileName())) {
+                fileIntroVO.setPath(fileIntroVO.getPath() + fileIntroVO.getName());
+            }
+            // 设置文件的额外属性:分享属性和收藏属性
+            FileDocument fileDocument = fileDocumentList.stream().filter(f -> f.getId().equals(fileIntroVO.getId())).findFirst().orElse(null);
+            if (shareBaseDocument != null) {
+                fileIntroVO.setIsPrivacy(Convert.toBool(shareBaseDocument.get(Constants.IS_PRIVACY), null));
+                fileIntroVO.setExpiresAt(Convert.toLong(shareBaseDocument.get(Constants.EXPIRES_AT), null));
+                fileIntroVO.setIsShare(true);
+                if (shareBaseDocument.get(Constants.OPERATION_PERMISSION_LIST) != null) {
+                    List<OperationPermission> operationPermissionList = Convert.toList(OperationPermission.class, shareBaseDocument.get(Constants.OPERATION_PERMISSION_LIST));
+                    fileIntroVO.setOperationPermissionList(operationPermissionList);
+                }
+                if (fileDocument == null) {
+                    FileDocument fileDocumentToBeAdded = fileInfo.toFileDocument(ossPath, finalUserId);
+                    fileDocumentToBeAdded.setIsPrivacy(fileIntroVO.getIsPrivacy());
+                    fileDocumentToBeAdded.setExpiresAt(fileIntroVO.getExpiresAt());
+                    fileDocumentToBeAdded.setIsShare(fileIntroVO.getIsShare());
+                    fileDocumentToBeAdded.setOperationPermissionList(fileIntroVO.getOperationPermissionList());
+                    fileDocumentToBeAdded.setExtractionCode(Convert.toStr(shareBaseDocument.getString(Constants.EXTRACTION_CODE), null));
+                    fileDocumentToBeAdded.setShareId(Convert.toStr(shareBaseDocument.getString(Constants.SHARE_ID), null));
+                    listToBeAdded.add(fileDocumentToBeAdded);
+                }
+            }
+            if (fileDocument != null) {
+                fileIntroVO.setIsFavorite(fileDocument.getIsFavorite());
+                fileIntroVO.setIsPrivacy(fileDocument.getIsPrivacy());
+                fileIntroVO.setShareBase(fileDocument.getShareBase());
+                fileIntroVO.setExpiresAt(fileDocument.getExpiresAt());
+                fileIntroVO.setIsShare(fileDocument.getIsShare());
+                fileIntroVO.setOperationPermissionList(fileDocument.getOperationPermissionList());
+            }
+            return fileIntroVO;
+        }).toList();
+
+        // 添加fileIntroVOList里有而fileDocumentList里没有的列表
+        if (!listToBeAdded.isEmpty()) {
+            mongoTemplate.insertAll(listToBeAdded);
+        }
+        return fileIntroVOList;
+    }
+
+    /**
      * 查询object目录下是否有额外属性,有就返回List<FileDocument>
      *
      * @param ossPath    ossPath
@@ -153,13 +215,13 @@ public class WebOssService extends WebOssCommonService {
      * @return List<FileDocument>
      */
     private List<FileDocument> getFileDocuments(String ossPath, String objectName) {
-        if (objectName.length() > 0 && !objectName.endsWith("/")) {
+        if (!objectName.isEmpty() && !objectName.endsWith("/")) {
             return new ArrayList<>();
         }
         Query query = new Query();
         String parentName = Paths.get(objectName).getFileName().toString();
         String path = getPath(objectName, getOssRootFolderName(ossPath));
-        if (parentName.length() > 0) {
+        if (!parentName.isEmpty()) {
             path += parentName + MyWebdavServlet.PATH_DELIMITER;
         }
         query.addCriteria(Criteria.where("path").is(path));
@@ -279,7 +341,7 @@ public class WebOssService extends WebOssCommonService {
                 // 清除缓存
                 removeListPartsCache(uploadId);
                 notifyCreateFile(upload.getUsername(), objectName, getOssRootFolderName(ossPath));
-                FileDocument fileDocument = getFileDocument(ossPath, upload, objectName);
+                FileDocument fileDocument = getFileDocumentByOssPath(ossPath, upload, objectName);
                 afterUploadComplete(objectName, ossPath, fileDocument);
             }
         }
@@ -287,7 +349,7 @@ public class WebOssService extends WebOssCommonService {
         return uploadResponse;
     }
 
-    private static FileDocument getFileDocument(String ossPath, UploadApiParamDTO upload, String objectName) {
+    private static FileDocument getFileDocumentByOssPath(String ossPath, UploadApiParamDTO upload, String objectName) {
         FileInfo fileInfo = new FileInfo(objectName, upload.getIdentifier(), upload.getTotalSize(), new Date());
         return fileInfo.toFileDocument(ossPath, upload.getUserId());
     }
@@ -302,7 +364,7 @@ public class WebOssService extends WebOssCommonService {
         // 清除缓存
         removeListPartsCache(uploadId);
         notifyCreateFile(upload.getUsername(), objectName, getOssRootFolderName(ossPath));
-        FileDocument fileDocument = getFileDocument(ossPath, upload, objectName);
+        FileDocument fileDocument = getFileDocumentByOssPath(ossPath, upload, objectName);
         afterUploadComplete(objectName, ossPath, fileDocument);
         uploadResponse.setUpload(true);
         return uploadResponse;
@@ -332,7 +394,7 @@ public class WebOssService extends WebOssCommonService {
                 ossService.uploadFile(inputStream, objectName, currentChunkSize);
             }
             notifyCreateFile(upload.getUsername(), objectName, getOssRootFolderName(ossPath));
-            FileDocument fileDocument = getFileDocument(ossPath, upload, objectName);
+            FileDocument fileDocument = getFileDocumentByOssPath(ossPath, upload, objectName);
             afterUploadComplete(objectName, ossPath, fileDocument);
         } else {
             // 上传分片
@@ -689,7 +751,7 @@ public class WebOssService extends WebOssCommonService {
         }
     }
 
-    public FileDocument getFileDocument(String ossPath, String pathName) {
+    public FileDocument getFileDocumentByOssPath(String ossPath, String pathName) {
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = pathName.substring(ossPath.length());
         try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName)) {
@@ -716,7 +778,7 @@ public class WebOssService extends WebOssCommonService {
      * @param ossRootPath ossRootPath 例如: tencent
      */
     public void setOssPath(String userId, String fileId, String objectName, String ossPath, boolean ossRootPath) {
-        if (objectName.endsWith("/") || objectName.equals("")) {
+        if (objectName.endsWith("/") || objectName.isEmpty()) {
             // 设置其下的所有文件
             IOssService ossService = OssConfigService.getOssStorageService(ossPath);
             List<FileDocument> fileDocumentListOld = removeOssPathFile(userId, fileId, ossPath, ossRootPath, false);

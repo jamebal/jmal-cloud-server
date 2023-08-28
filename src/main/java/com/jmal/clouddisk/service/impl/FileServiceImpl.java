@@ -112,8 +112,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         }
         String currentDirectory = getUserDirectory(upload.getCurrentDirectory());
 
-        if (!CharSequenceUtil.isBlank(upload.getFolder())) {
-            currentDirectory = getMountParam(upload, currentDirectory);
+        if (!CharSequenceUtil.isBlank(upload.getFolder()) && checkMountParam(upload, currentDirectory)) {
+            return listFiles(upload);
         }
 
         Criteria criteria;
@@ -148,13 +148,13 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
      * 查看是否有挂载文件
      * @param upload 上传参数
      * @param currentDirectory 当前目录
-     * @return 挂载文件的原始路径
+     * @return 是否有挂载文件
      */
-    private String getMountParam(UploadApiParamDTO upload, String currentDirectory) {
+    private boolean checkMountParam(UploadApiParamDTO upload, String currentDirectory) {
         if (!CharSequenceUtil.isBlank(currentDirectory)) {
             Path currentDirectoryPath = Paths.get(currentDirectory);
             if (currentDirectoryPath.getFileName() == null) {
-                return currentDirectory;
+                return false;
             }
             String fileId = upload.getFolder();
             FileDocument fileDocument = getById(fileId);
@@ -162,10 +162,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 upload.setUserId(fileDocument.getUserId());
                 upload.setUsername(userService.getUserNameById(fileDocument.getUserId()));
                 upload.setCurrentDirectory(fileDocument.getPath() + fileDocument.getName());
-                currentDirectory = getUserDirectory(getUserDirectory(upload.getCurrentDirectory()));
+                upload.setFolder(null);
+                return true;
             }
         }
-        return currentDirectory;
+        return false;
     }
 
     @Override
@@ -273,8 +274,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id) throws CommonException {
+    public ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id, String folder) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();
+
+        setMountAttributes(upload, id, folder);
 
         // 判断是否为ossPath
         Path path = Paths.get(upload.getUsername(), upload.getCurrentDirectory());
@@ -299,6 +302,21 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Criteria criteria = Criteria.where("path").is(currentDirectory);
         upload.setUserId(fileDocument.getUserId());
         return getCountResponseResult(upload, result, criteria);
+    }
+
+    /**
+     * 设置挂载属性
+     */
+    private static void setMountAttributes(UploadApiParamDTO upload, String id, String folder) {
+        if (CharSequenceUtil.isNotBlank(folder)) {
+            Path path = Paths.get(folder);
+            String username = path.subpath(0, 1).toString();
+            String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
+            if (ossPath != null) {
+                upload.setCurrentDirectory(path.subpath(1, path.getNameCount()).toString());
+            }
+            upload.setUsername(username);
+        }
     }
 
     private FileDocument getFileDocumentById(String fileId) {
@@ -545,7 +563,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (ossPath != null) {
             // S3存储
             if (fileDocument == null) {
-                FileDocument ossFileDocument = webOssService.getFileDocument(ossPath, id);
+                FileDocument ossFileDocument = webOssService.getFileDocumentByOssPath(ossPath, id);
                 setMediaCover(id, username, ossFileDocument, false);
                 fileDocument = ossFileDocument;
             } else {
@@ -914,7 +932,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         }
         String ossPath = CaffeineUtil.getOssPath(Paths.get(fileId));
         if (ossPath != null) {
-            return webOssService.getFileDocument(ossPath, fileId);
+            return webOssService.getFileDocumentByOssPath(ossPath, fileId);
         }
         return null;
     }

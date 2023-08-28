@@ -141,9 +141,10 @@ public interface IFileService {
      * 搜索文件并打开文件夹
      * @param upload 上传参数
      * @param id 文件id
+     * @param folder 父级文件夹fileId
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id);
+    ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id, String folder);
 
     /**
      * 收藏文件或文件夹

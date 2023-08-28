@@ -102,8 +102,8 @@ public class FileController {
     @GetMapping("/search-file-open")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id) {
-        return fileService.searchFileAndOpenDir(upload, id);
+    public ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id, String folder) {
+        return fileService.searchFileAndOpenDir(upload, id, folder);
     }
 
     @Operation(summary = "图片上传(Typora自定义命令上传图片接口)")

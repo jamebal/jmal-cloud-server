@@ -291,7 +291,7 @@ public class ShareServiceImpl implements IShareService {
         String username = userService.getUserNameById(shareDO.getUserId());
         uploadApiParamDTO.setUsername(username);
         uploadApiParamDTO.setCurrentDirectory("/");
-        return fileService.searchFileAndOpenDir(uploadApiParamDTO, shareDO.getFileId());
+        return fileService.searchFileAndOpenDir(uploadApiParamDTO, shareDO.getFileId(), null);
     }
 
     @Override
@@ -368,7 +368,7 @@ public class ShareServiceImpl implements IShareService {
             String username = userService.getUserNameById(shareDO.getUserId());
             uploadApiParamDTO.setUsername(username);
         }
-        return fileService.searchFileAndOpenDir(uploadApiParamDTO, fileId);
+        return fileService.searchFileAndOpenDir(uploadApiParamDTO, fileId, null);
     }
 
     @Override
