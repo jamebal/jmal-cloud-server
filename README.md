@@ -4,4 +4,4 @@
 
 [MIT](https://github.com/jamebal/jmal-cloud-view/blob/master/LICENSE) license.
 
-Copyright (c) 2022-present jmal
+Copyright (c) 2023-present jmal
