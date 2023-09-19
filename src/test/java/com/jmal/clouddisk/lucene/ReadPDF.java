@@ -9,7 +9,7 @@ import java.io.IOException;
 public class ReadPDF {
     public static void main(String[] args) {
         try {
-            File file = new File("/Users/jmal/Downloads/未命名文件.pdf");
+            File file = new File("/Users/jmal/Downloads/PDF_副本.pdf");
             PDDocument document = PDDocument.load(file);
 
             PDFTextStripper pdfStripper = new PDFTextStripper();

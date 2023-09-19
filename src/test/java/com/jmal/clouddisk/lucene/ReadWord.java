@@ -10,7 +10,7 @@ import java.util.List;
 public class ReadWord {
     public static void main(String[] args) {
         try {
-            FileInputStream fis = new FileInputStream("/Users/jmal/Downloads/未命名文件.docx");
+            FileInputStream fis = new FileInputStream("/Users/jmal/Downloads/2023.4.17_副本.docx");
             XWPFDocument document = new XWPFDocument(fis);
             List<XWPFParagraph> paragraphs = document.getParagraphs();
 
