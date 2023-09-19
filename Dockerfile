@@ -8,7 +8,7 @@ ARG VERSION
 
 RUN mkdir -p /jmalcloud/files
 
-ADD src/main/resources/db/ip2region.xdb /jmalcloud/
+ADD docker/ip2region.xdb /jmalcloud/
 
 ADD target/clouddisk-${VERSION}-exec.jar /usr/local/
 

@@ -22,5 +22,5 @@ file:
   # webDAV协议前缀
   web-dav-prefix: webDAV
   # ip2region.xdb path
-  ip2region-db-path: /Users/jmal/studio/myProject/github/jmal-cloud-server/src/main/resources/db/ip2region.xdb
+  ip2region-db-path: /Users/jmal/studio/myProject/github/jmal-cloud-server/docker/ip2region.xdb
 

@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
  */
 @SpringBootTest
 public class Ip2regionTest {
-    private static final String dbPath = "/Users/jmal/studio/myProject/github/jmal-cloud-server/src/main/resources/db/ip2region.xdb";
+    private static final String dbPath = "/Users/jmal/studio/myProject/github/jmal-cloud-server/docker/ip2region.xdb";
 
     @Test
     public void searchFile() throws IOException {
