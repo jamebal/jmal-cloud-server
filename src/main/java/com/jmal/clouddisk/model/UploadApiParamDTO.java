@@ -210,7 +210,7 @@ public class UploadApiParamDTO {
 
     public String getFolderPath() {
         if (folderPath == null || "undefined".equals(folderPath)) {
-            return null;
+            return "";
         }
         if (File.separator.equals("\\")) {
             // Windows 系统

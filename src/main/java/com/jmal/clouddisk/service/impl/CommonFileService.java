@@ -149,16 +149,13 @@ public class CommonFileService {
         if (CharSequenceUtil.isBlank(currentDirectory)) {
             currentDirectory = fileProperties.getSeparator();
         }
+        Path path;
         if (Boolean.TRUE.equals(upload.getIsFolder())) {
-            if (upload.getFolderPath() != null) {
-                currentDirectory += fileProperties.getSeparator() + upload.getFolderPath();
-            } else {
-                currentDirectory += fileProperties.getSeparator() + upload.getFilename();
-            }
+            path = Paths.get(currentDirectory, upload.getFolderPath(), upload.getFilename());
         } else {
-            currentDirectory += fileProperties.getSeparator() + upload.getRelativePath();
+            path = Paths.get(currentDirectory, upload.getRelativePath());
         }
-        return currentDirectory;
+        return path.toString();
     }
 
     /***

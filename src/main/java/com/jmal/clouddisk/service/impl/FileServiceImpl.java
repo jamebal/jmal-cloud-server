@@ -1571,12 +1571,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     public ResponseResult<Object> uploadFolder(UploadApiParamDTO upload) throws CommonException {
         setMountInfo(upload);
         checkPermissionUsername(upload.getUsername(), upload.getOperationPermissionList(), OperationPermission.UPLOAD);
-        Path prePth;
-        if (upload.getFolderPath() != null) {
-            prePth = Paths.get(upload.getUsername(), upload.getCurrentDirectory(), upload.getFolderPath(), upload.getFilename());
-        } else {
-            prePth = Paths.get(upload.getUsername(), upload.getCurrentDirectory(), upload.getFilename());
-        }
+        Path prePth = Paths.get(upload.getUsername(), upload.getCurrentDirectory(), upload.getFolderPath(), upload.getFilename());
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
             webOssService.mkdir(ossPath, prePth);
