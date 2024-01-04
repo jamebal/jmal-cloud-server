@@ -167,6 +167,7 @@ help() {
     dump                 备份数据库
     restore              恢复数据库
     reinstall            卸载后再安装
+    reset-password       重置初始管理员的密码
 "
 }
 
@@ -296,6 +297,10 @@ if [ $# -gt 0 ]; then
     uninstall
     sleep 3
     install
+  elif [[ "$1" == "reset-password" ]]; then
+    shift 1
+    run_exec mongodb "mongo jmalcloud --eval \"db.getCollection('user').update({ 'creator': true }, {\\\$set: { 'password': '1000:c5b705ea13a1221f5e59110947ed806f8a978e955fbd2ed6:22508de12228c34a235454a0caf3bcaa5552858543258e56' }}, { 'multi': false, 'upsert': false })\" > /dev/null 2>&1"
+    echo -e "${OK} ${Green}重置成功，密码为：jmalcloud${Font}"
   elif [[ "$1" == "port" ]]; then
     shift 1
     env_set APP_PORT "$1"
