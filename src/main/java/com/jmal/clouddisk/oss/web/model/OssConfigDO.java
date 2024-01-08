@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.oss.web.model;
 
-import cn.hutool.core.util.DesensitizedUtil;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.PlatformOSS;
@@ -50,8 +49,6 @@ public class OssConfigDO {
         ossConfigDTO.setPlatform(this.platform.getKey());
         ossConfigDTO.setRegion(this.region);
         ossConfigDTO.setUserId(this.userId);
-        ossConfigDTO.setAccessKey(DesensitizedUtil.password(this.accessKey));
-        ossConfigDTO.setSecretKey(DesensitizedUtil.password(this.secretKey));
         return ossConfigDTO;
     }
 }
