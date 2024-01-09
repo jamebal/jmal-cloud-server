@@ -41,8 +41,7 @@ public class AudioFileUtils {
         try {
             AudioFile audioFile = AudioFileIO.read(file);
             Tag audioFileTag = audioFile.getTag();
-            if (audioFileTag instanceof FlacTag) {
-                FlacTag tag = (FlacTag) audioFileTag;
+            if (audioFileTag instanceof FlacTag tag) {
                 System.out.println(tag.getFirst(FieldKey.TITLE));
                 Artwork artwork = tag.getFirstArtwork();
                 if (artwork != null) {
@@ -50,8 +49,7 @@ public class AudioFileUtils {
                     music.setCoverBase64(Base64);
                 }
             }
-            if (audioFileTag instanceof ID3v23Tag) {
-                ID3v23Tag tag = (ID3v23Tag) audioFileTag;
+            if (audioFileTag instanceof ID3v23Tag tag) {
                 String songName = "";
                 String singer = "";
                 String album = "";

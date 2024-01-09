@@ -59,11 +59,6 @@ public class IndexFiles {
      * 为一个目录下的所有文本文件编制索引
      */
     public static void main(String[] args) {
-        String usage = "com.jmal.clouddisk.lucene.IndexFiles"
-                + " [-index INDEX_PATH] [-docs DOCS_PATH] [-update]\n\n"
-                + "这将对DOCS_PATH中的文档进行索引，在INDEX_PATH中创建一个Lucene索引，"
-                + "可以用SearchFiles进行搜索。";
-
         String indexPath = "index";
         String docsPath = null;
         boolean create = true;
