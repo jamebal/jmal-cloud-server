@@ -4,13 +4,11 @@ import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.LogOperationDTO;
-import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.impl.LogService;
 import com.jmal.clouddisk.util.ResponseResult;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

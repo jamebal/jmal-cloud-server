@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.websocket;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,7 +11,6 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @author jmal
  */
-@Slf4j
 public class SocketManager {
 
     private SocketManager() {

@@ -22,7 +22,6 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
-import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +43,6 @@ import java.util.List;
  * @Description UserServiceImpl
  */
 @Service
-@Slf4j
 public class UserServiceImpl implements IUserService {
 
     public static final String COLLECTION_NAME = "user";

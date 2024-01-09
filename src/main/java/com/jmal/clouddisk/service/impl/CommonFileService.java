@@ -434,7 +434,7 @@ public class CommonFileService {
             if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN)) {
                 return contentType;
             }
-            Charset charset = CharsetDetector.detect(file, null);
+            Charset charset = CharsetDetector.detect(file, new Charset[0]);
             if (charset != null && "UTF-8".equals(charset.toString())) {
                 contentType = contentType + ";charset=utf-8";
             }

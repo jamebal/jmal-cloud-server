@@ -76,7 +76,6 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     private final IFileVersionService fileVersionService;
 
-    private final UserLoginHolder userLoginHolder;
 
     @Override
     public ResponseResult<FileDocument> getMarkDownOne(ArticleDTO articleDTO) {
@@ -273,6 +272,12 @@ public class MarkdownServiceImpl implements IMarkdownService {
             archivesVO.setSlug(doc.getString("slug"));
             aList.add(archivesVO);
             resultMap.put(day, aList);
+        }
+        if (page == null) {
+            page = 1;
+        }
+        if (pageSize == null) {
+            pageSize = 10;
         }
         Page<Object> pageResult;
         if (pagination) {

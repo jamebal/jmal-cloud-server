@@ -1,7 +1,5 @@
 package com.jmal.clouddisk.oss;
 
-import cn.hutool.core.lang.Console;
-import com.alibaba.fastjson.JSON;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.auth.BasicCOSCredentials;
@@ -9,14 +7,12 @@ import com.qcloud.cos.auth.COSCredentials;
 import com.qcloud.cos.exception.CosClientException;
 import com.qcloud.cos.exception.CosServiceException;
 import com.qcloud.cos.http.HttpProtocol;
-import com.qcloud.cos.model.COSObjectSummary;
 import com.qcloud.cos.model.ListObjectsRequest;
 import com.qcloud.cos.model.ObjectListing;
 import com.qcloud.cos.region.Region;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.List;
 
 /**
  * @author jmal
@@ -66,22 +62,6 @@ class TencentOSSTest {
             } catch (CosClientException e) {
                 e.printStackTrace();
                 return;
-            }
-            // common prefix 表示表示被 delimiter 截断的路径, 如 delimter 设置为/, common prefix 则表示所有子目录的路径
-            List<String> commonPrefixs = objectListing.getCommonPrefixes();
-
-            // object summary 表示所有列出的 object 列表
-            List<COSObjectSummary> cosObjectSummaries = objectListing.getObjectSummaries();
-            for (COSObjectSummary cosObjectSummary : cosObjectSummaries) {
-                // 文件的路径 key
-                String key = cosObjectSummary.getKey();
-                // 文件的 etag
-                String etag = cosObjectSummary.getETag();
-                // 文件的长度
-                long fileSize = cosObjectSummary.getSize();
-                // 文件的存储类型
-                String storageClasses = cosObjectSummary.getStorageClass();
-                Console.log(JSON.toJSONString(cosObjectSummary));
             }
 
             String nextMarker = objectListing.getNextMarker();

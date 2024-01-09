@@ -2,12 +2,10 @@ package com.jmal.clouddisk.util;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.model.query.QueryBaseDTO;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.data.web.SortDefault;
 
 import java.util.Arrays;
 import java.util.List;

@@ -19,7 +19,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.ldap.AuthenticationException;
@@ -40,7 +39,6 @@ import java.util.Map;
  * @Date 2020-01-25 18:52
  */
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class AuthServiceImpl implements IAuthService {
 

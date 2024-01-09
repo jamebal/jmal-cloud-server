@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.acpect;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;

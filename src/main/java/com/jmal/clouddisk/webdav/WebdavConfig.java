@@ -31,7 +31,7 @@ public class WebdavConfig {
         this.myRealm = myRealm;
         this.webdavAuthenticator = webdavAuthenticator;
         this.myWebdavServlet = myWebdavServlet;
-        this.context = context;
+        WebdavConfig.context = context;
     }
 
     public static <T> T getBean(Class<T> requiredType) {

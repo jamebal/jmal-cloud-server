@@ -13,7 +13,6 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
-import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -30,7 +29,6 @@ import java.time.LocalDateTime;
  * @date 2023/4/14 10:22
  */
 @Service
-@Slf4j
 public class WebOssCommonService {
 
     @Autowired

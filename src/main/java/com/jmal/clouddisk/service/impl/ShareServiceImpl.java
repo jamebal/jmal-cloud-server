@@ -55,9 +55,6 @@ public class ShareServiceImpl implements IShareService {
 
     private final UserLoginHolder userLoginHolder;
 
-    private final CommonFileService commonFileService;
-
-
     @Override
     public ResponseResult<Object> generateLink(ShareDO share) {
         ShareDO shareDO = findByFileId(share.getFileId());

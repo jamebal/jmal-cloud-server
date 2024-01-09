@@ -7,7 +7,6 @@ import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestParam;
  * @Date 2020/10/19 3:55 下午
  */
 @Tag(name = "文件资源管理")
-@Slf4j
 @Controller
 public class FileViewController {
 

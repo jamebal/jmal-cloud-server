@@ -23,6 +23,7 @@ public class ReadPPTX {
             }
 
             fis.close();
+            ppt.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -2,7 +2,6 @@ package com.jmal.clouddisk.model;
 
 import lombok.Data;
 
-import java.util.List;
 
 /**
  * @author jmal

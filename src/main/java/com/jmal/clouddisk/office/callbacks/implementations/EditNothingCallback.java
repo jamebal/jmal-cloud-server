@@ -3,7 +3,6 @@ package com.jmal.clouddisk.office.callbacks.implementations;
 import com.jmal.clouddisk.office.callbacks.Callback;
 import com.jmal.clouddisk.office.callbacks.Status;
 import com.jmal.clouddisk.office.model.Track;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Component;
  * @date 2022/8/11 16:29
  */
 @Component
-@Slf4j
 public class EditNothingCallback implements Callback {
 
     @Override

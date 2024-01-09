@@ -34,7 +34,7 @@ public class AnnoManageUtil {
         Reflections reflections = new Reflections("com.jmal.clouddisk.controller", "com.jmal.clouddisk.oss.web");
         Set<Class<?>> classesList = reflections.getTypesAnnotatedWith(RestController.class);
         List<String> arrayList = new ArrayList<>();
-        for (Class classes : classesList) {
+        for (Class<?> classes : classesList) {
             //得到该类下面的所有方法
             Method[] methods = classes.getDeclaredMethods();
             for (Method method : methods) {

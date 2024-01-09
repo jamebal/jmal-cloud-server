@@ -18,7 +18,7 @@ class FileFinder {
         String fileName = "**";
         //	最多返回5个文件
         int countNumber = 5;
-        List<File> resultList = FileFinderUtil.findFiles(baseDIR,"audio", fileName, 10000);
+        List<File> resultList = FileFinderUtil.findFiles(baseDIR,"audio", fileName, countNumber);
         if (resultList.size() == 0) {
             System.out.println("No File Fount.");
         } else {

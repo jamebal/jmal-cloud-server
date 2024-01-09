@@ -5,7 +5,6 @@ import com.jmal.clouddisk.service.IShareService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +17,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Tag(name = "视频播放")
-@Slf4j
 @RestController
 @RequiredArgsConstructor
 public class VideoController {

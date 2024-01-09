@@ -2,7 +2,6 @@ package com.jmal.clouddisk.model;
 
 import com.jmal.clouddisk.service.impl.FileServiceImpl;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -15,7 +14,6 @@ import java.util.Objects;
  *
  * @author jmal
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
 @Document(collection = FileServiceImpl.COLLECTION_NAME)
 @CompoundIndexes({

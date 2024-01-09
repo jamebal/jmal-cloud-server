@@ -3,13 +3,13 @@ package com.jmal.clouddisk.service;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.mongodb.client.ListIndexesIterable;
 import com.mongodb.client.model.IndexModel;
-import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 /**
  * @author jmal
@@ -17,7 +17,6 @@ import java.util.List;
  * @date 2022/9/2 17:10
  */
 @Service
-@Slf4j
 public class MongodbIndex {
 
     private final MongoTemplate mongoTemplate;
@@ -77,10 +76,7 @@ public class MongodbIndex {
         indexTypeUsername.put(IUserService.USERNAME, 1);
         indexLogList.add(new IndexModel(indexTypeUsername));
 
-        long indexCount = 0;
-        for (var ignored : mongoTemplate.getCollection("log").listIndexes()) {
-            indexCount++;
-        }
+        long indexCount = mongoTemplate.getCollection("log").listIndexes().into(new ArrayList<>()).size();
 
         if (indexCount < 2) {
             mongoTemplate.getCollection("log").createIndexes(indexLogList);
@@ -134,10 +130,8 @@ public class MongodbIndex {
         indexModelList.add(new IndexModel(indexUserIdContentType));
 
         ListIndexesIterable<Document> listIndexesIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).listIndexes();
-        long indexCount = 0;
-        for (var ignored : listIndexesIterable) {
-            indexCount++;
-        }
+        long indexCount = StreamSupport.stream(listIndexesIterable.spliterator(), false).count();
+
 
         if (indexCount < 2) {
             mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).createIndexes(indexModelList);

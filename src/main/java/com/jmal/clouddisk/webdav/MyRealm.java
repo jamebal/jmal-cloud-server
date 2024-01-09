@@ -128,7 +128,7 @@ public class MyRealm extends RealmBase {
                 .filter(authority -> authority.startsWith("cloud:file:"))
                 .map(authorityMap::get)
                 .filter(Objects::nonNull)
-                .max(Integer::compare)
+                .max(Comparator.comparingInt(Integer::intValue))
                 .orElse(0);
     }
 }

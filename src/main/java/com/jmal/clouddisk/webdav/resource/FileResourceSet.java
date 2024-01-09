@@ -3,7 +3,6 @@ package com.jmal.clouddisk.webdav.resource;
 import com.jmal.clouddisk.oss.FileInfo;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.util.CaffeineUtil;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.WebResource;
 import org.apache.catalina.WebResourceRoot;
 import org.apache.catalina.util.ResourceSet;
@@ -25,7 +24,6 @@ import java.util.Set;
  * @Description FileResourceSet
  * @date 2023/3/27 11:47
  */
-@Slf4j
 public class FileResourceSet extends AbstractFileResourceSet {
 
 

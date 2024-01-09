@@ -148,7 +148,7 @@ public class LuceneService {
         }
         //6.关闭
         tokenStream.close();
-
+        analyzer.close();
     }
 
     @PostConstruct

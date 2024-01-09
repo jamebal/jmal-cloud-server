@@ -18,6 +18,7 @@ public class ReadWord {
                 System.out.println(para.getText());
             }
             fis.close();
+            document.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -3,7 +3,6 @@ package com.jmal.clouddisk.websocket;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -19,7 +18,6 @@ import java.util.Map;
  *
  * @author jmal
  */
-@Slf4j
 @Component
 public class PrincipalHandshakeHandler extends DefaultHandshakeHandler {
     @Override

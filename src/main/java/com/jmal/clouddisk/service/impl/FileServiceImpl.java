@@ -365,17 +365,16 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         String currentDirectory = getUserDirectory(null);
         if (!CharSequenceUtil.isBlank(fileId)) {
             FileDocument fileDocument = mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
-            assert fileDocument != null;
-
-            if (fileDocument.getOssFolder() != null && BooleanUtil.isFalse(upload.getHideMountFile())) {
-                Path path = Paths.get(upload.getUsername(), fileDocument.getOssFolder());
-                String ossPath = CaffeineUtil.getOssPath(path);
-                if (ossPath != null) {
-                    return webOssService.searchFileAndOpenOssFolder(path, upload);
+            if (fileDocument != null) {
+                if (fileDocument.getOssFolder() != null && BooleanUtil.isFalse(upload.getHideMountFile())) {
+                    Path path = Paths.get(upload.getUsername(), fileDocument.getOssFolder());
+                    String ossPath = CaffeineUtil.getOssPath(path);
+                    if (ossPath != null) {
+                        return webOssService.searchFileAndOpenOssFolder(path, upload);
+                    }
+                    currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
                 }
             }
-
-            currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
         }
         Criteria criteria = Criteria.where("path").is(currentDirectory);
         List<FileDocument> list = getDirDocuments(upload, criteria);

@@ -12,7 +12,6 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -26,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author jmal
  */
-@Slf4j
 @Component
 public class TokenUtil {
 

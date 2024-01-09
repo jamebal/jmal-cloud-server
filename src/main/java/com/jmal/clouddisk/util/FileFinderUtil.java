@@ -2,8 +2,6 @@ package com.jmal.clouddisk.util;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
-import jakarta.activation.MimetypesFileTypeMap;
 
 
 import java.io.File;

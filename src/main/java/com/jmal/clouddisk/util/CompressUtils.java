@@ -226,6 +226,7 @@ public class CompressUtils {
                 }
             }
         }
+        zipFile.close();
     }
 
     public static void decompressTarGz(File file, String outputDir, boolean isWrite) throws IOException {

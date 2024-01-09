@@ -23,11 +23,11 @@ public class Either<L, R> {
     }
 
     public static <L, R> Either<L, R> Left(L value) {
-        return new Either(value, null);
+        return new Either<L, R>(value, null);
     }
 
     public static <L, R> Either<L, R> Right(R value) {
-        return new Either(null, value);
+        return new Either<L, R>(null, value);
     }
 
     public Optional<L> getLeft() {

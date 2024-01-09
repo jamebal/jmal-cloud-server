@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.webdav.resource;
 
-import cn.hutool.core.lang.Console;
 import org.apache.catalina.WebResourceRoot;
 import org.apache.catalina.webresources.AbstractResource;
 import org.apache.juli.logging.Log;
