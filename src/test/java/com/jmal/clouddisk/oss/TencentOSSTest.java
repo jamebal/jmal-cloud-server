@@ -13,7 +13,7 @@ import com.qcloud.cos.model.COSObjectSummary;
 import com.qcloud.cos.model.ListObjectsRequest;
 import com.qcloud.cos.model.ObjectListing;
 import com.qcloud.cos.region.Region;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
@@ -24,10 +24,10 @@ import java.util.List;
  * @date 2023/3/27 17:50
  */
 @SpringBootTest
-public class TencentOSSTest {
+class TencentOSSTest {
 
     @Test
-    public void listFile() {
+    void listFile() {
 
         // 1 初始化用户身份信息（secretId, secretKey）。
         // SECRETID 和 SECRETKEY 请登录访问管理控制台 https://console.cloud.tencent.com/cam/capi 进行查看和管理

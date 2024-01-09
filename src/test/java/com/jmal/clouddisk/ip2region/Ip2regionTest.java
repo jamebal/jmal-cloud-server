@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.ip2region;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.lionsoul.ip2region.xdb.Searcher;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -13,11 +13,11 @@ import java.util.concurrent.TimeUnit;
  * @Date 2021/2/23 1:44 下午
  */
 @SpringBootTest
-public class Ip2regionTest {
+class Ip2regionTest {
     private static final String dbPath = "/Users/jmal/studio/myProject/github/jmal-cloud-server/docker/ip2region.xdb";
 
     @Test
-    public void searchFile() throws IOException {
+    void searchFile() throws IOException {
         Searcher searcher;
         try {
             searcher = Searcher.newWithFileOnly(dbPath);
@@ -45,7 +45,7 @@ public class Ip2regionTest {
     }
 
     @Test
-    public void vectorIndexTest() throws IOException {
+    void vectorIndexTest() throws IOException {
         // 1、从 dbPath 中预先加载 VectorIndex 缓存，并且把这个得到的数据作为全局变量，后续反复使用。
         byte[] vIndex;
         try {
@@ -78,7 +78,7 @@ public class Ip2regionTest {
     }
 
     @Test
-    public void cacheAllTest() throws IOException {
+    void cacheAllTest() throws IOException {
         // 1、从 dbPath 加载整个 xdb 到内存。
         byte[] cBuff;
         try {

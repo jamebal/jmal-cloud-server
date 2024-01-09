@@ -46,7 +46,7 @@ public class CommonExceptionHandler {
     @ExceptionHandler(MissingServletRequestParameterException.class)
     @ResponseBody
     public ResponseResult<Object> exceptionHandler(MissingServletRequestParameterException e) {
-        return ResultUtil.error(ExceptionType.MISSING_PARAMETERS.getCode(), String.format("缺少参数%s", e.getParameterName()));
+        return ResultUtil.error(ExceptionType.MISSING_PARAMETERS.getCode(), "缺少参数%s".formatted(e.getParameterName()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

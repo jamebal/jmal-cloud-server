@@ -8,11 +8,9 @@ import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.service.impl.MenuService;
 import com.jmal.clouddisk.service.impl.RoleService;
 import com.jmal.clouddisk.util.TimeUntils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -24,9 +22,8 @@ import java.util.List;
  * @Description 将系统管理数据库导出为json
  * @Date 2021/1/12 9:19 上午
  */
-@RunWith(SpringRunner.class)
 @SpringBootTest
-public class ExportSysDBText {
+class ExportSysDBText {
 
     @Autowired
     MenuService menuService;
@@ -38,7 +35,7 @@ public class ExportSysDBText {
      * 把菜单导出为json文件
      */
     @Test
-    public void exportMenu() {
+    void exportMenu() {
         String now = LocalDateTimeUtil.formatNormal(LocalDateTime.now(TimeUntils.ZONE_ID));
         File file = new File("/Users/jmal/Downloads/menu"+now+".json");
         List<MenuDO> menuDOList = menuService.getAllMenus();
@@ -51,7 +48,7 @@ public class ExportSysDBText {
      * 把角色导出为json文件
      */
     @Test
-    public void exportRole() {
+    void exportRole() {
         String now = LocalDateTimeUtil.formatNormal(LocalDateTime.now(TimeUntils.ZONE_ID));
         File file = new File("/Users/jmal/Downloads/role"+now+".json");
         List<RoleDO> roleDOList = roleService.getAllRoles();
