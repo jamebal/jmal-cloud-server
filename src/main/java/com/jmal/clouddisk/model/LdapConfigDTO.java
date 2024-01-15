@@ -38,6 +38,10 @@ public class LdapConfigDTO {
     @Schema(name = "baseDN", title = "Base DN", example = "dc=tes,dc=com")
     String baseDN;
 
+    @NotNull(message = "User DN不能为空")
+    @Schema(name = "userDN", title = "User DN", example = "cn=admin,dc=tes,dc=com")
+    String userDN;
+
     @NotNull(message = "登录名不能为空")
     @Schema(name = "loginName", title = "登录名", example = "uid")
     String loginName;
@@ -50,6 +54,7 @@ public class LdapConfigDTO {
         ldapConfigDO.setDefaultRoleList(this.defaultRoleList);
         ldapConfigDO.setPassword(UserServiceImpl.getEncryptPwd(this.password, consumerDO.getPassword()));
         ldapConfigDO.setBaseDN(this.baseDN);
+        ldapConfigDO.setUserDN(this.userDN);
         ldapConfigDO.setLoginName(this.loginName);
         ldapConfigDO.setUserId(consumerDO.getId());
         return ldapConfigDO;

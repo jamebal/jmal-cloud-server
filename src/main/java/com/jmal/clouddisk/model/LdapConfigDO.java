@@ -37,6 +37,10 @@ public class LdapConfigDO {
      */
     String baseDN;
     /**
+     * User DN
+     */
+    String userDN;
+    /**
      * LDAP服务器中对应个人用户名的字段
      */
     String loginName;
@@ -50,6 +54,7 @@ public class LdapConfigDO {
         ldapConfigDTO.setDefaultRoleList(this.defaultRoleList);
         ldapConfigDTO.setPassword(UserServiceImpl.getDecryptStrByUser(this.password, consumerDO));
         ldapConfigDTO.setBaseDN(this.baseDN);
+        ldapConfigDTO.setUserDN(this.userDN);
         ldapConfigDTO.setLoginName(this.loginName);
         return ldapConfigDTO;
     }
@@ -60,6 +65,7 @@ public class LdapConfigDO {
         ldapConfigDTO.setLdapServer(this.ldapServer);
         ldapConfigDTO.setDefaultRoleList(this.defaultRoleList);
         ldapConfigDTO.setBaseDN(this.baseDN);
+        ldapConfigDTO.setUserDN(this.userDN);
         ldapConfigDTO.setLoginName(this.loginName);
         return ldapConfigDTO;
     }

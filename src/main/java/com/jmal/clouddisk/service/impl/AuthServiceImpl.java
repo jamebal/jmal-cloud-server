@@ -46,7 +46,9 @@ public class AuthServiceImpl implements IAuthService {
 
     private LdapTemplate ldapTemplate;
 
-    private Boolean ldapEnable;
+    private Boolean ldapEnable = false;
+
+    private String ldapLoginName = "uid";
 
     private final UserLoginHolder userLoginHolder;
 
@@ -57,24 +59,28 @@ public class AuthServiceImpl implements IAuthService {
     @PostConstruct
     private void init() {
         LdapConfigDO ldapConfigDO = mongoTemplate.findOne(new Query(), LdapConfigDO.class);
-        if (ldapConfigDO != null && BooleanUtil.isTrue(ldapConfigDO.getEnable())) {
+        if (ldapConfigDO != null) {
             ConsumerDO consumerDO = userService.getUserInfoById(ldapConfigDO.getUserId());
             LdapConfigDTO ldapConfigDTO = ldapConfigDO.toLdapConfigDTO(consumerDO);
             LdapContextSource ldapContextSource = loadLdapConfig(ldapConfigDTO);
             ldapTemplate = new LdapTemplate(ldapContextSource);
-            ldapEnable = true;
+            ldapEnable = ldapConfigDTO.getEnable();
+            ldapLoginName = ldapConfigDO.getLoginName();
         }
     }
 
     private static LdapContextSource loadLdapConfig(LdapConfigDTO ldapConfigDTO) {
+        if (isNotValidBaseDn(ldapConfigDTO.getBaseDN())) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "BaseDN格式错误, 应为 dc=xxx,dc=xxx");
+        }
+        if (isNotValidBaseDn(ldapConfigDTO.getUserDN())) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "账号格式错误, 应为 cn=xxx,ou=xxx,dc=xxx");
+        }
         LdapContextSource contextSource = new LdapContextSource();
         contextSource.setUrl("ldap://" + ldapConfigDTO.getLdapServer());
-        contextSource.setUserDn(ldapConfigDTO.getBaseDN());
+        contextSource.setUserDn(ldapConfigDTO.getUserDN());
         contextSource.setPassword(ldapConfigDTO.getPassword());
-        String[] base = ldapConfigDTO.getBaseDN().split(",");
-        if (base.length == 3) {
-            contextSource.setBase(base[1] + "," + base[2]);
-        }
+        contextSource.setBase(ldapConfigDTO.getBaseDN());
         contextSource.afterPropertiesSet();
         return contextSource;
     }
@@ -84,7 +90,7 @@ public class AuthServiceImpl implements IAuthService {
         String password = consumerDTO.getPassword();
         ConsumerDO consumerDO = userService.getUserInfoByUsername(consumerDTO.getUsername());
         if (consumerDO == null) {
-            if (ldapTemplate != null && ldapEnable) {
+            if (ldapTemplate != null && BooleanUtil.isTrue(ldapEnable)) {
                 // ldap登录
                 return ldapLogin(response, consumerDTO);
             }
@@ -113,8 +119,7 @@ public class AuthServiceImpl implements IAuthService {
 
     private ResponseResult<Object> ldapLogin(HttpServletResponse response, ConsumerDTO consumerDTO) {
         try {
-            LdapQuery query = LdapQueryBuilder.query()
-                    .where("uid").is(consumerDTO.getUsername());
+            LdapQuery query = LdapQueryBuilder.query().where(ldapLoginName).is(consumerDTO.getUsername());
             ldapTemplate.authenticate(query, consumerDTO.getPassword());
         } catch (Exception e) {
             return ResultUtil.error(LOGIN_ERROR);
@@ -123,10 +128,23 @@ public class AuthServiceImpl implements IAuthService {
         if (ldapConfigDO != null) {
             // 创建账号
             consumerDTO.setRoles(ldapConfigDO.getDefaultRoleList());
+            consumerDTO.setShowName(consumerDTO.getUsername());
             ConsumerDO consumerDO = userService.add(consumerDTO);
             return loginValidSuccess(response, consumerDTO, consumerDO);
         }
         return ResultUtil.error(LOGIN_ERROR);
+    }
+
+    /**
+     * 验证LDAP BaseDN字符串是否有效。
+     *
+     * @param baseDn 要验证的BaseDN字符串。
+     * @return 如果BaseDN有效，则为true；否则为false。
+     */
+    public static boolean isNotValidBaseDn(String baseDn) {
+        // 正则表达式来校验BaseDN的格式
+        String regex = "((cn|dc|ou)=([^,]+))(,\\s*(cn|dc|ou)=([^,]+))*";
+        return baseDn == null || !baseDn.matches(regex);
     }
 
     @Override
@@ -167,6 +185,8 @@ public class AuthServiceImpl implements IAuthService {
         }
         LdapConfigDO ldapConfigDO = ldapConfigDTO.toLdapConfigDO(consumerDO);
         mongoTemplate.save(ldapConfigDO);
+        // 重新加载ldap配置
+        init();
         return ResultUtil.success();
     }
 
@@ -177,7 +197,7 @@ public class AuthServiceImpl implements IAuthService {
         try {
             // 使用基本查询，以检查LDAP服务器是否可用
             testLdapTemplate.search(
-                    LdapQueryBuilder.query().where("objectClass").is("top"),
+                    LdapQueryBuilder.query().where("objectClass").is("*"),
                     (AttributesMapper<String>) attributes -> attributes.get("objectClass").get().toString());
             return testLdapTemplate;
         } catch (CommunicationException e) {
