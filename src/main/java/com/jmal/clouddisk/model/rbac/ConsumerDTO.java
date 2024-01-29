@@ -58,4 +58,7 @@ public class ConsumerDTO extends ConsumerBase {
     @Schema(name = "rememberMe", title = "记住我", hidden = true)
     Boolean rememberMe;
 
+    @Schema(name = "newVersion", title = "新版本", hidden = true)
+    String newVersion;
+
 }

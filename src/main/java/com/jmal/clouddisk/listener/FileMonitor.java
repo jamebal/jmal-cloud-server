@@ -3,15 +3,18 @@ package com.jmal.clouddisk.listener;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.MongodbIndex;
 import com.jmal.clouddisk.util.CaffeineUtil;
+import com.jmal.clouddisk.util.SystemUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -46,6 +49,11 @@ public class FileMonitor {
 
     private boolean isMonitor = false;
 
+    @Value("${version}")
+    private String version;
+
+    private String newVersion = null;
+
     /**
      * 续要过滤掉的目录列表
      */
@@ -53,6 +61,8 @@ public class FileMonitor {
 
     @PostConstruct
     public void init() throws Exception {
+        // 检测新版本
+        newVersion = SystemUtil.getNewVersion();
         // 判断是否开启文件监控
         if (Boolean.FALSE.equals(fileProperties.getMonitor())) {
             return;
@@ -188,5 +198,24 @@ public class FileMonitor {
                 }
             }
         }
+    }
+
+    public String hasNewVersion() {
+        if (StrUtil.isBlank(newVersion)) {
+            return null;
+        }
+        // 判断是否有新版本, 比较newVersion和version
+        if (newVersion.compareTo("v" + version) > 0) {
+            return newVersion;
+        }
+        return null;
+    }
+
+    /**
+     * 每3小时检查一次版本
+     */
+    @Scheduled(cron = "0 0 0/3 * * ?")
+    private void getNewVersion() {
+        newVersion = SystemUtil.getNewVersion();
     }
 }

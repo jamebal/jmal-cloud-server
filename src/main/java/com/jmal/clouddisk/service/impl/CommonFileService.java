@@ -25,6 +25,7 @@ import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.result.UpdateResult;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
@@ -50,7 +51,6 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.FileImageOutputStream;
-import jakarta.validation.constraints.NotNull;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -485,6 +485,8 @@ public class CommonFileService {
             log.warn(e.getMessage() + file.getAbsolutePath());
         } catch (Exception e) {
             log.error(e.getMessage() + file.getAbsolutePath());
+        } catch (Throwable e) {
+            log.error(e.getMessage(), e);
         }
     }
 

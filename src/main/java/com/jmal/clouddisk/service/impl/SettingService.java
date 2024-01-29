@@ -17,6 +17,7 @@ import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import jakarta.annotation.PostConstruct;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -181,6 +182,7 @@ public class SettingService {
         private final String username;
         private final double totalCount;
 
+        @Getter
         private int percent = 0;
 
         private final AtomicLong processCount;
@@ -189,10 +191,6 @@ public class SettingService {
             this.username = username;
             this.totalCount = totalCount;
             this.processCount = new AtomicLong(0);
-        }
-
-        public int getPercent() {
-            return percent;
         }
 
         @Override
@@ -215,23 +213,23 @@ public class SettingService {
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            try {
-                synchronized (this) {
+            synchronized (this) {
+                try {
                     fileService.createFile(username, file.toFile());
-                }
-            } catch (Exception e) {
-                log.error(e.getMessage() + file, e);
-            } finally {
-                if (totalCount > 0) {
-                    if (processCount.get() <= 2) {
-                        fileService.pushMessage(username, 1, SYNCED);
+                } catch (Exception e) {
+                    log.error(e.getMessage() + file, e);
+                } finally {
+                    if (totalCount > 0) {
+                        if (processCount.get() <= 2) {
+                            fileService.pushMessage(username, 1, SYNCED);
+                        }
+                        processCount.addAndGet(1);
+                        int currentPercent = (int) (processCount.get()/totalCount * 100);
+                        if (currentPercent > percent) {
+                            fileService.pushMessage(username, currentPercent, SYNCED);
+                        }
+                        percent = currentPercent;
                     }
-                    processCount.addAndGet(1);
-                    int currentPercent = (int) (processCount.get()/totalCount * 100);
-                    if (currentPercent > percent) {
-                        fileService.pushMessage(username, currentPercent, SYNCED);
-                    }
-                    percent = currentPercent;
                 }
             }
             return super.visitFile(file, attrs);

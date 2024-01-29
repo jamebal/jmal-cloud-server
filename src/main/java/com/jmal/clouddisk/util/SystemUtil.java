@@ -3,8 +3,11 @@ package com.jmal.clouddisk.util;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
+import cn.hutool.http.HttpUtil;
 import cn.hutool.system.oshi.CpuInfo;
 import cn.hutool.system.oshi.OshiUtil;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import oshi.hardware.GlobalMemory;
 import oshi.hardware.HWDiskStore;
@@ -27,6 +30,7 @@ public class SystemUtil {
         for (HWDiskStore diskStore : OshiUtil.getHardware().getDiskStores()) {
             Console.log(diskStore.getName(), diskStore.getModel(), diskStore.getSize()/1024/1024/1024+"G", diskStore.getWrites(), diskStore.getReads(), diskStore.getReadBytes());
         }
+        log.info("最新版本号: {}", getNewVersion());
     }
 
     /**
@@ -77,5 +81,18 @@ public class SystemUtil {
             return freeSpace/1024/1024/1024;
         }
         return 0;
+    }
+
+    /**
+     * 获取最新版本号
+     * @return String
+     */
+    public static String getNewVersion() {
+        String result = HttpUtil.get("https://api.github.com/repos/jamebal/jmal-cloud-view/releases/latest");
+        if (result == null) {
+            return null;
+        }
+        JSONObject jsonObject = JSON.parseObject(result);
+        return Convert.toStr(jsonObject.get("tag_name"));
     }
 }

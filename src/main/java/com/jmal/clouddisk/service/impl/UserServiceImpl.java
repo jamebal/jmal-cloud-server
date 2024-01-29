@@ -5,12 +5,14 @@ import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.HexUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.crypto.symmetric.SymmetricCrypto;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.listener.FileMonitor;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
@@ -72,6 +74,9 @@ public class UserServiceImpl implements IUserService {
 
     @Autowired
     private UserLoginHolder userLoginHolder;
+
+    @Autowired
+    private FileMonitor fileMonitor;
 
     @Override
     public ConsumerDO add(ConsumerDTO consumerDTO) {
@@ -251,6 +256,10 @@ public class UserServiceImpl implements IUserService {
         if (websiteSettingDO != null) {
             consumerDTO.setNetdiskName(websiteSettingDO.getNetdiskName());
             consumerDTO.setNetdiskLogo(websiteSettingDO.getNetdiskLogo());
+        }
+        String newVersion = fileMonitor.hasNewVersion();
+        if (!StrUtil.isBlank(newVersion)) {
+            consumerDTO.setNewVersion(newVersion);
         }
         return ResultUtil.success(consumerDTO);
     }
