@@ -82,12 +82,12 @@ public class MultipartUpload {
         FileUtil.writeFromStream(file.getInputStream(), chunkFile);
         setResumeCache(upload);
         uploadResponse.setUpload(true);
+        // 追加分片
+        appendChunkFile(upload);
         // 检测是否已经上传完了所有分片,上传完了则需要合并
         if (checkIsNeedMerge(upload)) {
             uploadResponse.setMerge(true);
         }
-        // 追加分片
-        appendChunkFile(upload);
     }
 
     /**
