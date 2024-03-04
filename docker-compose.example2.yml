@@ -31,13 +31,13 @@ services:
       - office
       - drawio-webapp
     restart: unless-stopped
-  office:
+  office: # Optional
     container_name: jmalcloud_office
     image: onlyoffice/documentserver:7.0.0.132
     environment:
       TZ: Asia/Shanghai
     restart: unless-stopped
-  drawio-webapp:
+  drawio-webapp: # Optional
     container_name: jmalcloud_drawio
     image: jgraph/drawio:20.2.3
     environment:
