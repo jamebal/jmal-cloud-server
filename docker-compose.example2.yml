@@ -1,16 +1,5 @@
 version: "3"
 services:
-  mongo:
-    container_name: jmalcloud_mongodb
-    image: mongo:4.4
-    environment:
-      TZ: Asia/Shanghai
-    volumes:
-      - ./docker/jmalcloud/mongodb/data/db:/data/db
-      - ./docker/jmalcloud/mongodb/custom:/etc/mongo
-      - ./docker/jmalcloud/mongodb/backup:/dump
-    restart: unless-stopped
-    command: --wiredTigerCacheSizeGB 0.5
   jmalcloud:
     container_name: jmalcloud_server
     image: jmal/jmalcloud:latest
@@ -19,7 +8,16 @@ services:
       TZ: Asia/Shanghai
     volumes:
       - ./docker/jmalcloud/files:/jmalcloud/files/
-    restart: always
+    restart: unless-stopped
+  mongo:
+    container_name: jmalcloud_mongodb
+    image: mongo:4.4
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - ./docker/jmalcloud/mongodb/data/db:/data/db
+    restart: unless-stopped
+    command: --wiredTigerCacheSizeGB 0.5
   nginx:
     container_name: jmalcloud_nginx
     image: jmal/jmalcloud-nginx:latest
@@ -32,17 +30,16 @@ services:
       - jmalcloud
       - office
       - drawio-webapp
-    restart: always
+    restart: unless-stopped
   office:
     container_name: jmalcloud_office
     image: onlyoffice/documentserver:7.0.0.132
     environment:
       TZ: Asia/Shanghai
-    restart: always
+    restart: unless-stopped
   drawio-webapp:
     container_name: jmalcloud_drawio
     image: jgraph/drawio:20.2.3
     environment:
       TZ: Asia/Shanghai
-    restart: always
-networks: {}
+    restart: unless-stopped
