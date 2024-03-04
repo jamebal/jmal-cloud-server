@@ -104,15 +104,6 @@ env_set() {
   fi
 }
 
-is_arm() {
-  local get_arch=$(arch)
-  if [[ $get_arch =~ "aarch" ]] || [[ $get_arch =~ "arm" ]]; then
-    echo "yes"
-  else
-    echo "no"
-  fi
-}
-
 arg_get() {
   local find="n"
   local value=""
@@ -174,12 +165,6 @@ help() {
 env_init() {
   env_set OFFICE_IMAGE_VERSION "7.0.0.132"
   env_set DRAWIO_IMAGE_VERSION "20.2.3"
-  if [[ "$(is_arm)" == "yes" ]]; then
-    env_set DOCKER_ARCH "-arm64"
-  else
-    env_set DOCKER_ARCH ""
-  fi
-  env_set APP_IPPR "10.$(rand 50 100).$(rand 100 200)"
   env_set APP_PORT 7070
   env_set BLOG_PORT 7071
   env_set SERVER_PORT 7072
@@ -204,9 +189,6 @@ before_start() {
 }
 
 install() {
-  # 初始化文件
-  mkdir -p "${cur_path}/docker/www/"
-  tar -xzf "${cur_path}/www/releases/dist-latest.tar" -C "${cur_path}/docker/www/"
   # 启动容器
   before_start
   $COMPOSE up -d
@@ -227,9 +209,7 @@ uninstall() {
     ;;
   esac
   $COMPOSE down
-  rm -rf "./docker/mongodb/data"
-  rm -rf "./docker/mongodb/data"
-  rm -rf "./docker/jmalcloud"
+  rm -rf "./docker"
   echo -e "${OK} ${Green} 卸载完成 ${Font}"
 }
 

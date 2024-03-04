@@ -1,11 +1,12 @@
-version: '3'
-
+version: "3"
 services:
   mongo:
-    container_name: "${CONTAINER_NAME_PREFIX}_mongodb"
-    image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/mongodb:4.4${DOCKER_ARCH}"
+    container_name: ${CONTAINER_NAME_PREFIX}_mongodb
+    image: mongo:4.4
     environment:
-      TZ: "Asia/Shanghai"
+      TZ: Asia/Shanghai
+    ports:
+      - 27018:27017
     volumes:
       - ${RESOURCE_DB_PATH}/data/db:/data/db
       - ${RESOURCE_DB_PATH}/custom:/etc/mongo
@@ -13,44 +14,40 @@ services:
     restart: unless-stopped
     command: --wiredTigerCacheSizeGB 0.5
   jmalcloud:
-    container_name: "${CONTAINER_NAME_PREFIX}_server"
-    image: "jmal/jmalcloud:latest"
+    container_name: ${CONTAINER_NAME_PREFIX}_server
+    image: jmal/jmalcloud:latest
     environment:
-      MONGODB_URI: "mongodb://mongo:27017/jmalcloud"
-      PUID: "1000"
-      PGID: "1000"
-      TZ: "Asia/Shanghai"
+      MONGODB_URI: mongodb://mongo:27017/jmalcloud
+      TZ: Asia/Shanghai
     ports:
-      - "${SERVER_PORT}:8088"
-      - "${FTP_SERVER_PORT}:8089"
+      - ${SERVER_PORT}:8088
+      - ${FTP_SERVER_PORT}:8089
     volumes:
       - ${RESOURCE_FILE_PATH}:/jmalcloud/files/
-    restart: unless-stopped
+    restart: always
   nginx:
-    container_name: "${CONTAINER_NAME_PREFIX}_nginx"
-    image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/nginx:latest${DOCKER_ARCH}"
+    container_name: ${CONTAINER_NAME_PREFIX}_nginx
+    image: jmal/jmalcloud-nginx:latest
     ports:
-      - "${APP_PORT}:80"
-      - "${BLOG_PORT}:8089"
-    volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./docker/www/dist:/var/www/public
+      - ${APP_PORT}:80
+      - ${BLOG_PORT}:8089
     environment:
-      TZ: "Asia/Shanghai"
+      TZ: Asia/Shanghai
     links:
       - jmalcloud
       - office
       - drawio-webapp
-    restart: unless-stopped
+    restart: always
   office:
-    container_name: "${CONTAINER_NAME_PREFIX}_office"
-    image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/onlyoffice_documentserver:${OFFICE_IMAGE_VERSION}${DOCKER_ARCH}"
+    container_name: ${CONTAINER_NAME_PREFIX}_office
+    image: onlyoffice/documentserver:${OFFICE_IMAGE_VERSION}
     environment:
-      TZ: "Asia/Shanghai"
+      TZ: Asia/Shanghai
     restart: always
   drawio-webapp:
-    container_name: "${CONTAINER_NAME_PREFIX}_drawio"
-    image: "registry.cn-guangzhou.aliyuncs.com/jmalcloud/jgraph_drawio:${DRAWIO_IMAGE_VERSION}${DOCKER_ARCH}"
+    container_name: ${CONTAINER_NAME_PREFIX}_drawio
+    image: jgraph/drawio:${DRAWIO_IMAGE_VERSION}
     environment:
-      TZ: "Asia/Shanghai"
+      TZ: Asia/Shanghai
     restart: always
+networks: {}
