@@ -10,6 +10,8 @@ import cn.hutool.core.util.BooleanUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.controller.sse.Message;
+import com.jmal.clouddisk.controller.sse.SseController;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
@@ -20,7 +22,6 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.video.VideoProcessService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
-import com.jmal.clouddisk.websocket.SocketManager;
 import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCursor;
@@ -41,9 +42,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.util.UriUtils;
 
 import javax.imageio.IIOImage;
@@ -98,7 +97,7 @@ public class CommonFileService {
     FileProperties fileProperties;
 
     @Autowired
-    private SimpMessagingTemplate template;
+    private SseController sseController;
 
     @Autowired
     private VideoProcessService videoProcessService;
@@ -497,23 +496,22 @@ public class CommonFileService {
      * @param url url
      */
     public void pushMessage(String username, Object message, String url) {
-        WebSocketSession webSocketSession = SocketManager.get(username);
-        if (webSocketSession != null) {
-            Map<String, Object> headers = new HashMap<>(4);
-            headers.put("url", url);
-            String userId = userLoginHolder.getUserId();
-            if (CharSequenceUtil.isBlank(userId)) {
-                userId = userService.getUserIdByUserName(username);
-            }
-            if (!CharSequenceUtil.isBlank(userId)) {
-                long takeUpSpace = occupiedSpace(userId);
-                headers.put("space", takeUpSpace);
-            }
-            if (message == null) {
-                message = new Document();
-            }
-            template.convertAndSendToUser(username, "/queue/update", message, headers);
+        Message msg = new Message();
+        String userId = userLoginHolder.getUserId();
+        if (CharSequenceUtil.isBlank(userId)) {
+            userId = userService.getUserIdByUserName(username);
         }
+        if (!CharSequenceUtil.isBlank(userId)) {
+            long takeUpSpace = occupiedSpace(userId);
+            msg.setSpace(takeUpSpace);
+        }
+        if (message == null) {
+            message = new Document();
+        }
+        msg.setUrl(url);
+        msg.setUsername(username);
+        msg.setBody(message);
+        sseController.sendEvent(msg);
     }
 
     public void pushMessageOperationFileError(String username, String message, String operation) {

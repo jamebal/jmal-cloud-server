@@ -21,6 +21,9 @@ spring:
     type: caffeine
     caffeine:
       spec: initialCapacity=100,maximumSize=500,expireAfterWrite=3600s
+  mvc:
+    async:
+      request-timeout: 60000
 springdoc:
   packages-to-scan: com.jmal.clouddisk.controller,com.jmal.clouddisk.oss
   api-docs:
