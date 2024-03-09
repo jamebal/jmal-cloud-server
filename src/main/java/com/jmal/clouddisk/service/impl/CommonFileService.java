@@ -433,7 +433,7 @@ public class CommonFileService {
             if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN)) {
                 return contentType;
             }
-            Charset charset = CharsetDetector.detect(file, new Charset[0]);
+            Charset charset = CharsetDetector.detect(file);
             if (charset != null && "UTF-8".equals(charset.toString())) {
                 contentType = contentType + ";charset=utf-8";
             }
@@ -720,13 +720,13 @@ public class CommonFileService {
         return operationPermissionList == null || !operationPermissionList.contains(operationPermission);
     }
 
-    public String modifyFile(String username, File file) {
+    public void modifyFile(String username, File file) {
         String fileAbsolutePath = file.getAbsolutePath();
         String fileName = file.getName();
         String relativePath = fileAbsolutePath.substring(fileProperties.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
         String userId = userService.getUserIdByUserName(username);
         if (CharSequenceUtil.isBlank(userId)) {
-            return null;
+            return;
         }
         Query query = new Query();
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
@@ -755,10 +755,9 @@ public class CommonFileService {
             }
             pushMessage(username, fileDocument, "updateFile");
             if (null != updateResult.getUpsertedId()) {
-                return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
+                updateResult.getUpsertedId().asObjectId().getValue().toHexString();
             }
         }
-        return null;
     }
 
     public List<FileIntroVO> sortByFileName(UploadApiParamDTO upload, List<FileIntroVO> fileIntroVOList, String order) {

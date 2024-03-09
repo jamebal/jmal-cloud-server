@@ -28,7 +28,7 @@ public class SseController {
     }
 
     @ExceptionHandler(AsyncRequestTimeoutException.class)
-    public ResponseEntity<String> handleAsyncRequestTimeoutException(AsyncRequestTimeoutException ex) {
+    public ResponseEntity<String> handleAsyncRequestTimeoutException() {
         // 处理异步请求超时异常,例如记录日志或返回自定义响应
 
         // 设置响应头的 Content-Type 为 "text/event-stream"
