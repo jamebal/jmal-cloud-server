@@ -35,7 +35,6 @@ public class MenuController {
 
     @Operation(summary = "菜单树")
     @GetMapping("/tree")
-    @Permission("sys:user:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<List<MenuDTO>> tree(QueryMenuDTO queryDTO) {
         return ResultUtil.success(menuService.tree(queryDTO));

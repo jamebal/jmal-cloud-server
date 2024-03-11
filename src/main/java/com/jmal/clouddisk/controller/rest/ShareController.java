@@ -91,7 +91,6 @@ public class ShareController {
 
     @Operation(summary = "分享列表")
     @GetMapping("/share/list")
-    @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> shareList(UploadApiParamDTO upload) {
         return shareService.shareList(upload);

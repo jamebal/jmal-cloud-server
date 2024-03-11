@@ -73,6 +73,12 @@ public class UserController {
         return service.resetPass(consumer);
     }
 
+    @Operation(summary = "用户信息(自己)")
+    @GetMapping("/info")
+    public ResponseResult<ConsumerDTO> consumerInfo() {
+        return service.info();
+    }
+
     @Operation(summary = "用户信息")
     @GetMapping("/userInfo")
     @Permission("sys:user:list")

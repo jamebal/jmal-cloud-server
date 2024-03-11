@@ -79,7 +79,7 @@ public class UserServiceImpl implements IUserService {
     private FileMonitor fileMonitor;
 
     @Override
-    public ConsumerDO add(ConsumerDTO consumerDTO) {
+    public synchronized ConsumerDO add(ConsumerDTO consumerDTO) {
         String username = consumerDTO.getUsername();
         if (fileProperties.getChunkFileDir().equals(username)) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "请使用其他用户名");
@@ -262,6 +262,14 @@ public class UserServiceImpl implements IUserService {
             consumerDTO.setNewVersion(newVersion);
         }
         return ResultUtil.success(consumerDTO);
+    }
+
+    @Override
+    public ResponseResult<ConsumerDTO> info() {
+        if (StrUtil.isBlank(userLoginHolder.getUserId())) {
+            return ResultUtil.success(new ConsumerDTO());
+        }
+        return userInfo(userLoginHolder.getUserId());
     }
 
     @Override

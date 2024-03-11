@@ -72,7 +72,6 @@ public class AuthController {
     @Operation(summary = "登出")
     @GetMapping("/logout")
     @LogOperatingFun
-    @Permission("sys:user:list")
     public ResponseResult<Object> logout(HttpServletRequest request, HttpServletResponse response) {
         String token = request.getHeader(AuthInterceptor.JMAL_TOKEN);
         return authService.logout(token, response);

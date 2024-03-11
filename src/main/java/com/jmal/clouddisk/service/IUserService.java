@@ -41,10 +41,16 @@ public interface IUserService {
 
     /***
      * 用户信息
-     * @param token token
+     * @param userId userId
      * @return ResponseResult
      */
-    ResponseResult<ConsumerDTO> userInfo(String token);
+    ResponseResult<ConsumerDTO> userInfo(String userId);
+
+    /***
+     * 用户信息
+     * @return ResponseResult
+     */
+    ResponseResult<ConsumerDTO> info();
 
     /***
      * 用户信息
@@ -175,4 +181,5 @@ public interface IUserService {
      * @return 用户信息
      */
     ConsumerDO getUserInfoByUsername(String username);
+
 }

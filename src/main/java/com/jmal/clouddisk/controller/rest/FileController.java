@@ -74,7 +74,6 @@ public class FileController {
 
     @Operation(summary = "文件列表")
     @GetMapping("/list")
-    @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> list(UploadApiParamDTO upload) {
         return fileService.listFiles(upload);
@@ -82,7 +81,6 @@ public class FileController {
 
     @Operation(summary = "查找下级目录")
     @GetMapping("/query-file-tree")
-    @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> queryFileTree(UploadApiParamDTO upload, String fileId) {
         return fileService.queryFileTree(upload, fileId);
@@ -90,7 +88,6 @@ public class FileController {
 
     @Operation(summary = "搜索文件")
     @GetMapping("/search-file")
-    @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> searchFile(UploadApiParamDTO upload, String keyword) {
         return fileService.searchFile(upload, keyword);
@@ -98,7 +95,6 @@ public class FileController {
 
     @Operation(summary = "搜索文件并打开文件夹")
     @GetMapping("/search-file-open")
-    @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> searchFileAndOpenDir(UploadApiParamDTO upload, String id, String folder) {
         return fileService.searchFileAndOpenDir(upload, id, folder);
@@ -372,7 +368,6 @@ public class FileController {
 
     @Operation(summary = "获取目录下的文件")
     @GetMapping("/listfiles")
-    @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> listFiles(@RequestParam String path, @RequestParam String username, Boolean tempDir) {
         Boolean dir = tempDir;
@@ -384,7 +379,6 @@ public class FileController {
 
     @Operation(summary = "获取上级文件列表")
     @GetMapping("/upper-level-list")
-    @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> upperLevelList(@RequestParam String path, @RequestParam String username) {
         return fileService.upperLevelList(URLUtil.decode(path), username);
