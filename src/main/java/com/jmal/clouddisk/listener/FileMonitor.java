@@ -5,8 +5,10 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.HeartwingsDO;
+import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.IFileService;
-import com.jmal.clouddisk.service.MongodbIndex;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.SystemUtil;
 import jakarta.annotation.PostConstruct;
@@ -15,6 +17,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.data.mapping.context.MappingContext;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.index.IndexOperations;
+import org.springframework.data.mongodb.core.index.IndexResolver;
+import org.springframework.data.mongodb.core.index.MongoPersistentEntityIndexResolver;
+import org.springframework.data.mongodb.core.mapping.MongoPersistentEntity;
+import org.springframework.data.mongodb.core.mapping.MongoPersistentProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -39,7 +50,7 @@ public class FileMonitor {
 
     final FileListener fileListener;
 
-    final MongodbIndex mongodbIndex;
+    final MongoTemplate mongoTemplate;
 
     final IFileService fileService;
 
@@ -58,6 +69,25 @@ public class FileMonitor {
      * 续要过滤掉的目录列表
      */
     private static final Set<String> FILTER_DIR_SET = new CopyOnWriteArraySet<>();
+
+    @EventListener(ContextRefreshedEvent.class)
+    public void initIndicesAfterStartup() {
+
+        MappingContext<? extends MongoPersistentEntity<?>, MongoPersistentProperty> mappingContext = mongoTemplate
+                .getConverter().getMappingContext();
+
+        IndexResolver resolver = new MongoPersistentEntityIndexResolver(mappingContext);
+
+        // 创建fileDocument索引
+        IndexOperations fileDocument = mongoTemplate.indexOps(FileDocument.class);
+        resolver.resolveIndexFor(FileDocument.class).forEach(fileDocument::ensureIndex);
+        // 创建log索引
+        IndexOperations log = mongoTemplate.indexOps(LogOperation.class);
+        resolver.resolveIndexFor(LogOperation.class).forEach(log::ensureIndex);
+        // 创建heartwings索引
+        IndexOperations heartwings = mongoTemplate.indexOps(HeartwingsDO.class);
+        resolver.resolveIndexFor(HeartwingsDO.class).forEach(heartwings::ensureIndex);
+    }
 
     @PostConstruct
     public void init() throws Exception {
@@ -79,8 +109,6 @@ public class FileMonitor {
         monitor.start();
         isMonitor = true;
         log.info("\r\n文件监控服务已开启:\r\n轮询间隔:{}秒\n监控目录:{}\n忽略目录:{}", fileProperties.getTimeInterval(), rootDir, rootDir + File.separator + fileProperties.getChunkFileDir());
-        // 检测mongo索引
-        mongodbIndex.checkMongoIndex();
     }
 
     private void newObserver() {

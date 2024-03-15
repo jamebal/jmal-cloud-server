@@ -27,7 +27,6 @@ import java.time.LocalDateTime;
         @CompoundIndex(name = "operationFun_1", def = "{'operationFun': 1}"),
         @CompoundIndex(name = "deviceModel_1", def = "{'deviceModel': 1}"),
         @CompoundIndex(name = "operatingSystem_1", def = "{'operatingSystem': 1}"),
-        @CompoundIndex(name = "browser_1", def = "{'operatingSystem': 1}"),
         @CompoundIndex(name = "type_1", def = "{'type': 1}"),
         @CompoundIndex(name = "type_createTime_1", def = "{'type': 1, 'createTime': 1}"),
         @CompoundIndex(name = "type_username_1", def = "{'type': 1, 'username': 1}"),
