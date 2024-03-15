@@ -179,7 +179,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
             return ResultUtil.success(gridFSBOList).setCount(0);
         }
         CommonFileService.setPage(pageSize, pageIndex, query);
-        query.with(Sort.by(Sort.Direction.DESC, "uploadDate"));
+        query.with(Sort.by(Sort.Direction.DESC, Constants.UPLOAD_DATE));
         gridFSBOList = mongoTemplate.find(query, GridFSBO.class, COLLECTION_NAME);
         return ResultUtil.success(gridFSBOList).setCount(count);
     }

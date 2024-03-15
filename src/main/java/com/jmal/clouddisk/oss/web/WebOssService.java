@@ -254,7 +254,7 @@ public class WebOssService extends WebOssCommonService {
                 }
             }
             // 按文件最近修改时间排序
-            if ("updateDate".equals(sortableProp)) {
+            if (Constants.UPDATE_DATE.equals(sortableProp)) {
                 if ("descending".equals(order)) {
                     // 倒序
                     fileIntroVOList = fileIntroVOList.stream().sorted(commonFileService::compareByUpdateDateDesc).toList();

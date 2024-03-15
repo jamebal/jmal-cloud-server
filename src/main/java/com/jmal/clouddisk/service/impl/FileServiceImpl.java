@@ -95,6 +95,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     @Autowired
     IFileVersionService fileVersionService;
 
+    @Autowired
+    TagService tagService;
+
+
+
     /***
      * 前端文件夹树的第一级的文件Id
      */
@@ -1358,6 +1363,20 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         // 保存文件信息
         createFile(username, toFilePath.toFile());
         return ResultUtil.success();
+    }
+
+    @Override
+    public ResponseResult<Object> setTag(String[] fileIds, List<TagDTO> tagDTOList) {
+        List<String> fileIdList = Arrays.asList(fileIds);
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIdList));
+        Update update = new Update();
+        // 使用mongoTemplate.getConverter().convertToMongoType, 避免生成_class
+        update.set("tags", mongoTemplate.getConverter().convertToMongoType(tagService.getTagIdsByTagDTOList(tagDTOList, userLoginHolder.getUserId())));
+        update.set(Constants.UPDATE_DATE, LocalDateTime.now(TimeUntils.ZONE_ID));
+        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
+        return ResultUtil.success();
+
     }
 
     @NotNull

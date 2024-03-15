@@ -1,10 +1,7 @@
 package com.jmal.clouddisk.service;
 
 import com.jmal.clouddisk.exception.CommonException;
-import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.FileIntroVO;
-import com.jmal.clouddisk.model.ShareDO;
-import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.ResponseResult;
 import jakarta.servlet.http.HttpServletRequest;
@@ -384,4 +381,12 @@ public interface IFileService {
      * @return ResponseResult<Object>
      */
     ResponseResult<Object> duplicate(String fileId, String newFilename);
+
+    /**
+     * 设置标签
+     * @param fileIds 文件id数组
+     * @param tagDTOList 标签列表
+     * @return ResponseResult<Object>
+     */
+    ResponseResult<Object> setTag(String[] fileIds, List<TagDTO> tagDTOList);
 }

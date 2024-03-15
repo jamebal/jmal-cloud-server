@@ -6,6 +6,7 @@ import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.office.callbacks.Callback;
 import com.jmal.clouddisk.office.callbacks.Status;
 import com.jmal.clouddisk.office.model.Track;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.FileServiceImpl;
@@ -67,7 +68,7 @@ public class SaveCallback implements Callback {
             Update update = new Update();
             update.set("size", size);
             update.set("md5", md5);
-            update.set("updateDate", updateDate);
+            update.set(Constants.UPDATE_DATE, updateDate);
             UpdateResult updateResult = mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
             if (updateResult.getModifiedCount() != 1) {
                 result =  1;

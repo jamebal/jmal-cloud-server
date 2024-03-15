@@ -22,6 +22,10 @@ public class TagDO {
      * 标签缩略名，默认为name
      */
     private String slug;
+    /**
+     * 标签颜色,十六进制字符串,例如#00000000
+     */
+    private String color;
     /***
      * 标签背景图
      */

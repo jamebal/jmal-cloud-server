@@ -8,6 +8,7 @@ public class Constants {
     public static final String DRAFT = "draft";
     public static final String IS_FOLDER = "isFolder";
     public static final String IS_FAVORITE = "isFavorite";
+    public static final String TAG_IDS = "tagIds";
     public static final String TOTAL_SIZE = "totalSize"; //totalSize
 
     private Constants() { }
@@ -37,6 +38,9 @@ public class Constants {
     public static final String POINT_SUFFIX_WEBP = ".webp";
 
     public static final String CREATE_TIME = "createTime";
+    public static final String UPLOAD_DATE = "uploadDate";
+
+    public static final String UPDATE_DATE = "updateDate";
 
     public static final String COPY_EXISTS_FILE = "所选目录已存在该文件/夹!";
 

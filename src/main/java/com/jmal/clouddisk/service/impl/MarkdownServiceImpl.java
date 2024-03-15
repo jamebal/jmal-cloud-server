@@ -240,7 +240,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
                                 .append(Constants.ALONE_PAGE,
                                         new Document("$exists", false))),
                 new Document("$sort",
-                        new Document("uploadDate", -1L)),
+                        new Document(Constants.UPLOAD_DATE, -1L)),
                 new Document("$project",
                         new Document("date", "$uploadDate")
                                 .append("day",
@@ -374,7 +374,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
                 query.with(Sort.by(Sort.Direction.ASC, articleDTO.getSortableProp()));
             }
         } else {
-            query.with(Sort.by(Sort.Direction.DESC, "uploadDate"));
+            query.with(Sort.by(Sort.Direction.DESC, Constants.UPLOAD_DATE));
         }
         query.skip(skip);
         if (limit > 0) {
@@ -412,7 +412,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             query.addCriteria(Criteria.where("categoryIds").in((Object[]) articleDTO.getCategoryIds()));
         }
         if (articleDTO.getTagIds() != null && articleDTO.getTagIds().length > 0) {
-            query.addCriteria(Criteria.where("tagIds").in((Object[]) articleDTO.getTagIds()));
+            query.addCriteria(Criteria.where(Constants.TAG_IDS).in((Object[]) articleDTO.getTagIds()));
         }
         if (!CharSequenceUtil.isBlank(articleDTO.getKeyword())) {
             query.addCriteria(Criteria.where("contentText").regex(articleDTO.getKeyword(), "i"));

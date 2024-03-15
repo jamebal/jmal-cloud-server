@@ -68,6 +68,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.jmal.clouddisk.service.Constants.UPDATE_DATE;
+import static com.jmal.clouddisk.service.Constants.UPLOAD_DATE;
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Aggregates.group;
 import static com.mongodb.client.model.Aggregates.match;
@@ -346,8 +348,8 @@ public class CommonFileService {
             uploadDateTime = LocalDateTime.now(TimeUntils.ZONE_ID);
             updateDateTime = uploadDateTime;
         }
-        update.set("uploadDate", uploadDateTime);
-        update.set("updateDate", updateDateTime);
+        update.set(UPLOAD_DATE, uploadDateTime);
+        update.set(UPDATE_DATE, updateDateTime);
     }
 
     public FileDocument getFileDocument(String userId, String fileName, String relativePath, Query query) {

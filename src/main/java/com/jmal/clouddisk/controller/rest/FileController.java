@@ -7,10 +7,7 @@ import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
-import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.FileIntroVO;
-import com.jmal.clouddisk.model.LogOperation;
-import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.oss.web.WebOssCommonService;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
@@ -279,6 +276,17 @@ public class FileController {
         } else {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }
+    }
+
+    @Operation(summary = "设置文件标签")
+    @PostMapping("/setTag")
+    @LogOperatingFun
+    @Permission("cloud:file:update")
+    public ResponseResult<Object> setTag(@RequestParam String[] fileIds, @RequestBody List<TagDTO> tagDTOList) {
+        if (fileIds.length == 0) {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
+        }
+        return fileService.setTag(fileIds, tagDTOList);
     }
 
     @Operation(summary = "设为公共文件")

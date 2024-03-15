@@ -20,9 +20,6 @@ import java.util.Objects;
         @CompoundIndex(name = "name_1", def = "{'name': 1}"),
         @CompoundIndex(name = "size_1", def = "{'size': 1}"),
         @CompoundIndex(name = "updateDate_1", def = "{'updateDate': 1}"),
-        @CompoundIndex(name = "name_1", def = "{'name': 1}"),
-        @CompoundIndex(name = "size_1", def = "{'size': 1}"),
-        @CompoundIndex(name = "updateDate_1", def = "{'updateDate': 1}"),
         @CompoundIndex(name = "path_name", def = "{'path': 1, 'name': 1}"),
         @CompoundIndex(name = "user_md5_path", def = "{'userId': 1,'md5': 1, 'path': 1}"),
         @CompoundIndex(name = "user_path", def = "{'userId': 1, 'path': 1}"),
@@ -32,7 +29,7 @@ import java.util.Objects;
         @CompoundIndex(name = "user_isFolder", def = "{'userId': 1, 'isFolder': 1}"),
         @CompoundIndex(name = "user_isFavorite", def = "{'userId': 1, 'isFavorite': 1}"),
         @CompoundIndex(name = "user_contentType", def = "{'userId': 1, 'contentType': 1}"),
-        @CompoundIndex(name = "user_isFolder_path", def = "{'userId': 1, 'isFolder': 1, 'path': 1}"),
+        @CompoundIndex(name = "doc_tags", def = "{'tags.tagId': 1}"),
 })
 public class FileDocument extends FileBase {
     private String userId;
@@ -170,6 +167,11 @@ public class FileDocument extends FileBase {
     private String[] tagIds;
 
     /**
+     * 标签集合
+     */
+    private List<Tag> tags;
+
+    /**
      * 挂载的文件id
      */
     private String mountFileId;
@@ -197,5 +199,4 @@ public class FileDocument extends FileBase {
         hash = 89 * hash + (this.id != null ? this.id.hashCode() : 0);
         return hash;
     }
-
 }

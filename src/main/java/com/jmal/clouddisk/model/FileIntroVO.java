@@ -84,6 +84,7 @@ public class FileIntroVO extends FileBase {
      * 挂载的文件id
      */
     private String mountFileId;
+    private List<Tag> tags;
     /**
      * 操作权限
      */
