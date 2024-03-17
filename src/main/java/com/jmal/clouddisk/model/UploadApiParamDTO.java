@@ -156,6 +156,10 @@ public class UploadApiParamDTO {
      * 是否收藏
      */
     Boolean isFavorite;
+    /**
+     * tagId
+     */
+    String tagId;
     /***
      * 封面
      */

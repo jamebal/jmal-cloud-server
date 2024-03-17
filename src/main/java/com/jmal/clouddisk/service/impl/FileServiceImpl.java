@@ -142,6 +142,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             if (isFavorite != null) {
                 criteria = Criteria.where(Constants.IS_FAVORITE).is(isFavorite);
             }
+            String tagId = upload.getTagId();
+            if (StrUtil.isNotBlank(tagId)) {
+                criteria = Criteria.where("tags.tagId").is(tagId);
+            }
         }
         List<FileIntroVO> list = getFileDocuments(upload, criteria);
         result.setData(list);
