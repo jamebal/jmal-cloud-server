@@ -383,8 +383,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                     if (ossPath != null) {
                         return webOssService.searchFileAndOpenOssFolder(path, upload);
                     }
-                    currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
                 }
+                currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
             }
         }
         Criteria criteria = Criteria.where("path").is(currentDirectory);
