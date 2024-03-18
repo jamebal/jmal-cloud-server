@@ -134,17 +134,19 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             };
         } else {
             criteria = Criteria.where("path").is(currentDirectory);
-            Boolean isFolder = upload.getIsFolder();
-            if (isFolder != null) {
-                criteria = Criteria.where(Constants.IS_FOLDER).is(isFolder);
-            }
-            Boolean isFavorite = upload.getIsFavorite();
-            if (isFavorite != null) {
-                criteria = Criteria.where(Constants.IS_FAVORITE).is(isFavorite);
-            }
-            String tagId = upload.getTagId();
-            if (StrUtil.isNotBlank(tagId)) {
-                criteria = Criteria.where("tags.tagId").is(tagId);
+            if (currentDirectory.length() < 2) {
+                Boolean isFolder = upload.getIsFolder();
+                if (isFolder != null) {
+                    criteria = Criteria.where(Constants.IS_FOLDER).is(isFolder);
+                }
+                Boolean isFavorite = upload.getIsFavorite();
+                if (isFavorite != null) {
+                    criteria = Criteria.where(Constants.IS_FAVORITE).is(isFavorite);
+                }
+                String tagId = upload.getTagId();
+                if (StrUtil.isNotBlank(tagId)) {
+                    criteria = Criteria.where("tags.tagId").is(tagId);
+                }
             }
         }
         List<FileIntroVO> list = getFileDocuments(upload, criteria);
