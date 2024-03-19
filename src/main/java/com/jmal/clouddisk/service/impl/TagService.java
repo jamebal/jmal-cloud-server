@@ -10,6 +10,7 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -29,15 +30,17 @@ import java.util.stream.Collectors;
  * @Date 2020/10/26 5:51 下午
  */
 @Service
+@RequiredArgsConstructor
 public class TagService {
 
     private final MongoTemplate mongoTemplate;
 
+    private final CommonFileService commonFileService;
+
+    private final UserLoginHolder userLoginHolder;
+
     private static final String COLLECTION_NAME = "tag";
 
-    public TagService(MongoTemplate mongoTemplate) {
-        this.mongoTemplate = mongoTemplate;
-    }
 
     /***
      * 标签列表

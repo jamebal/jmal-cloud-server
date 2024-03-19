@@ -24,6 +24,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -282,11 +283,8 @@ public class FileController {
     @PostMapping("/setTag")
     @LogOperatingFun
     @Permission("cloud:file:update")
-    public ResponseResult<Object> setTag(@RequestParam String[] fileIds, @RequestBody List<TagDTO> tagDTOList) {
-        if (fileIds.length == 0) {
-            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
-        }
-        return fileService.setTag(fileIds, tagDTOList);
+    public ResponseResult<Object> setTag(@RequestBody @Validated EditTagDTO editTagDTO) {
+        return fileService.setTag(editTagDTO);
     }
 
     @Operation(summary = "设为公共文件")

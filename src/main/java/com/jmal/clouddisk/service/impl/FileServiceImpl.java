@@ -1372,17 +1372,44 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> setTag(String[] fileIds, List<TagDTO> tagDTOList) {
-        List<String> fileIdList = Arrays.asList(fileIds);
+    public ResponseResult<Object> setTag(EditTagDTO editTagDTO) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(fileIdList));
+        query.addCriteria(Criteria.where("_id").in(editTagDTO.getFileIds()));
         Update update = new Update();
         // 使用mongoTemplate.getConverter().convertToMongoType, 避免生成_class
-        update.set("tags", mongoTemplate.getConverter().convertToMongoType(tagService.getTagIdsByTagDTOList(tagDTOList, userLoginHolder.getUserId())));
+        update.set("tags", mongoTemplate.getConverter().convertToMongoType(tagService.getTagIdsByTagDTOList(editTagDTO.getTagList(), userLoginHolder.getUserId())));
         update.set(Constants.UPDATE_DATE, LocalDateTime.now(TimeUntils.ZONE_ID));
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
+        if (editTagDTO.getRemoveTagIds() == null || editTagDTO.getRemoveTagIds().isEmpty()) {
+            refreshTagList(userLoginHolder.getUserId(), userLoginHolder.getUsername());
+        } else {
+            // 删除标签并修改相关文件
+            deleteTgs(editTagDTO.getRemoveTagIds());
+        }
         return ResultUtil.success();
+    }
 
+    /**
+     * 删除标签并修改相关文件
+     * @param removeTagIds removeTagIds
+     */
+    private void deleteTgs(List<String> removeTagIds) {
+        tagService.delete(removeTagIds);
+        Query query = new Query();
+        query.addCriteria(Criteria.where("tags.tagId").in(removeTagIds));
+        List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+        fileDocumentList.parallelStream().forEach(fileDocument -> {
+            List<Tag> tagList = fileDocument.getTags();
+            tagList.removeIf(tagDTO -> removeTagIds.contains(tagDTO.getTagId()));
+            Update update = new Update();
+            update.set("tags", mongoTemplate.getConverter().convertToMongoType(tagList));
+            mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
+        });
+        refreshTagList(userLoginHolder.getUserId(), userLoginHolder.getUsername());
+    }
+
+    private void refreshTagList(String userId, String username) {
+        pushMessage(username, tagService.list(userId), "updateTags");
     }
 
     @NotNull

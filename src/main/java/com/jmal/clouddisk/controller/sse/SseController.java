@@ -23,7 +23,6 @@ public class SseController {
         SseEmitter emitter = new SseEmitter();
         emitters.put(username, emitter);
         emitter.onCompletion(() -> emitters.remove(username));
-        emitter.onTimeout(() -> emitters.remove(username));
         return emitter;
     }
 
@@ -48,7 +47,7 @@ public class SseController {
             try {
                 emitter.send(message);
             } catch (IOException e) {
-                emitters.remove(username);
+                log.error("Failed to send event to user: {}", username, e);
             }
         }
     }

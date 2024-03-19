@@ -384,9 +384,8 @@ public interface IFileService {
 
     /**
      * 设置标签
-     * @param fileIds 文件id数组
-     * @param tagDTOList 标签列表
+     * @param editTagDTO EditTagDTO
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> setTag(String[] fileIds, List<TagDTO> tagDTOList);
+    ResponseResult<Object> setTag(EditTagDTO editTagDTO);
 }
