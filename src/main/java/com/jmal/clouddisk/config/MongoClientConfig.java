@@ -10,7 +10,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
 
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 
 import static java.util.Collections.singletonList;
 
@@ -43,6 +45,19 @@ public class MongoClientConfig extends AbstractMongoClientConfiguration {
     return true;
   }
 
+  private String domainResolver(String domainName) {
+    if (StrUtil.isBlank(domainName)) {
+      return "localhost";
+    }
+    try {
+      InetAddress address = InetAddress.getByName(domainName);
+      return address.getHostAddress();
+    } catch (UnknownHostException e) {
+      log.error(e.getMessage(), e);
+    }
+    return "localhost";
+  }
+
   @Override
   protected void configureClientSettings(@NotNull MongoClientSettings.Builder builder) {
 
@@ -63,7 +78,8 @@ public class MongoClientConfig extends AbstractMongoClientConfiguration {
     String finalHost = host;
     builder.applyToClusterSettings(settings -> {
       settings.hosts(singletonList(
-              new ServerAddress(finalHost, Integer.parseInt(finalPort))));
+              new ServerAddress(domainResolver(finalHost), Integer.parseInt(finalPort))));
     });
   }
+
 }
