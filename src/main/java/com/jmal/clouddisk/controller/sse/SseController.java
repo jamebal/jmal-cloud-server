@@ -20,7 +20,7 @@ public class SseController {
 
     @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter events(@RequestParam String username) {
-        SseEmitter emitter = new SseEmitter();
+        SseEmitter emitter = new SseEmitter(30 * 60 * 1000L);
         emitters.put(username, emitter);
         emitter.onCompletion(() -> emitters.remove(username));
         return emitter;
