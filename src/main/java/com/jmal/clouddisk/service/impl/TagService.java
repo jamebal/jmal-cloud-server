@@ -35,10 +35,6 @@ public class TagService {
 
     private final MongoTemplate mongoTemplate;
 
-    private final CommonFileService commonFileService;
-
-    private final UserLoginHolder userLoginHolder;
-
     private static final String COLLECTION_NAME = "tag";
 
 
