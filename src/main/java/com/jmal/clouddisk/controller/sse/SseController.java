@@ -86,9 +86,7 @@ public class SseController {
      */
     @Scheduled(fixedRate = 5000)
     public void heartbeat() {
-        emitters.forEach((uuid, emitter) -> {
-            sendMessage("h", uuid);
-        });
+        emitters.forEach((uuid, emitter) -> sendMessage("h", uuid));
     }
 }
 
