@@ -5,24 +5,47 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @Slf4j
 public class SseController {
+
+    /**
+     * key: uuid
+     * value: SseEmitter
+     */
     private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 
+    /**
+     * key: username
+     * value: uuid list
+     */
+    private final Map<String, Set<String>> users = new ConcurrentHashMap<>();
+
     @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter events(@RequestParam String username) {
-        SseEmitter emitter = new SseEmitter(30 * 60 * 1000L);
-        emitters.put(username, emitter);
-        emitter.onCompletion(() -> emitters.remove(username));
+    public SseEmitter events(@RequestParam String username, @RequestParam String uuid) {
+        if (users.containsKey(username)) {
+            users.get(username).add(uuid);
+        } else {
+            Set<String> uuids = ConcurrentHashMap.newKeySet(32);
+            if (uuids.size() > 30) {
+                return null;
+            }
+            uuids.add(uuid);
+            users.put(username, uuids);
+        }
+        SseEmitter emitter = new SseEmitter(10 * 60 * 1000L);
+        emitters.put(uuid, emitter);
+        emitter.onCompletion(() -> emitters.remove(uuid));
         return emitter;
     }
 
@@ -42,14 +65,30 @@ public class SseController {
     @PostMapping("/send")
     public void sendEvent(@RequestBody Message message) {
         String username = message.getUsername();
-        SseEmitter emitter = emitters.get(username);
+        if (users.containsKey(username)) {
+            users.get(username).forEach(uuid -> sendMessage(message, uuid));
+        }
+    }
+
+    private void sendMessage(Object message, String uuid) {
+        SseEmitter emitter = emitters.get(uuid);
         if (emitter != null) {
             try {
                 emitter.send(message);
             } catch (IOException e) {
-                log.error("Failed to send event to user: {}", username, e);
+                log.error("Failed to send event to uuid: {}", uuid, e);
             }
         }
+    }
+
+    /**
+     * 每5秒发送一次心跳消息
+     */
+    @Scheduled(fixedRate = 5000)
+    public void heartbeat() {
+        emitters.forEach((uuid, emitter) -> {
+            sendMessage("h", uuid);
+        });
     }
 }
 
