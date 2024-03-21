@@ -43,7 +43,7 @@ public class SseController {
             uuids.add(uuid);
             users.put(username, uuids);
         }
-        SseEmitter emitter = new SseEmitter(10 * 60 * 1000L);
+        SseEmitter emitter = new SseEmitter(10 * 1000L);
         emitters.put(uuid, emitter);
         emitter.onCompletion(() -> emitters.remove(uuid));
         return emitter;
@@ -75,6 +75,10 @@ public class SseController {
         if (emitter != null) {
             try {
                 emitter.send(message);
+            } catch (IllegalStateException e) {
+                if (e.getMessage().contains("completed")) {
+                    emitters.remove(uuid);
+                }
             } catch (IOException e) {
                 log.error("Failed to send event to uuid: {}", uuid, e);
             }

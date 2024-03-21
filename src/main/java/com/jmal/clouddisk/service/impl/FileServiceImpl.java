@@ -595,7 +595,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (contentType.contains(Constants.VIDEO)) {
             // 视频文件
             Query query = new Query().addCriteria(Criteria.where("_id").is(id));
-            String imagePath = videoProcessService.getVideoCover(username, fileDocument.getPath(), fileDocument.getName());
+            String imagePath = videoProcessService.getVideoCover(id, username, fileDocument.getPath(), fileDocument.getName());
             if (!CharSequenceUtil.isBlank(imagePath)) {
                 fileDocument.setContent(FileUtil.readBytes(imagePath));
                 if (hasOldFileDocument) {
@@ -971,7 +971,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (CharSequenceUtil.isBlank(userId)) {
             return;
         }
-        videoProcessService.deleteVideoCache(username, relativePath, fileName);
+        videoProcessService.deleteVideoCache(username, fileAbsolutePath);
         Query query = new Query();
         // 文件是否存在
         FileDocument fileDocument = getFileDocument(userId, fileName, relativePath, query);
@@ -1787,6 +1787,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             String filePath = fileProperties.getRootDir() + File.separator + username + currentDirectory1 + fileDocument.getName();
             File file = new File(filePath);
             isDel = FileUtil.del(file);
+            videoProcessService.deleteVideoCacheById(username, fileDocument.getId());
             if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
                 // 删除文件夹及其下的所有文件
                 Query query1 = new Query();

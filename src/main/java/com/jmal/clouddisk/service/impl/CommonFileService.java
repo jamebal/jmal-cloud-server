@@ -33,6 +33,7 @@ import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -306,6 +307,9 @@ public class CommonFileService {
             Update update = new Update();
             // 设置创建时间和修改时间
             setDateTime(file, update);
+            ObjectId objectId = new ObjectId();
+            String fileId = objectId.toHexString();
+            update.set("_id", objectId);
             update.set(IUserService.USER_ID, userId);
             update.set("name", fileName);
             update.set("path", relativePath);
@@ -315,7 +319,7 @@ public class CommonFileService {
                 update.set("isPublic", true);
             }
             if (file.isFile()) {
-                setFileConfig(username, file, fileName, suffix, contentType, relativePath, update);
+                setFileConfig(fileId, username, file, fileName, suffix, contentType, relativePath, update);
             } else {
                 // 检查目录是否为OSS目录
                 checkOSSPath(username, relativePath, fileName, update);
@@ -360,6 +364,20 @@ public class CommonFileService {
         return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
     }
 
+    public FileDocument getFileDocument(String username, String fileAbsolutePath)  {
+        String userId = userService.getUserIdByUserName(username);
+        if (CharSequenceUtil.isBlank(userId)) {
+            return null;
+        }
+        File file = new File(fileAbsolutePath);
+        if (!file.exists()) {
+            return null;
+        }
+        String fileName = file.getName();
+        String relativePath = fileAbsolutePath.substring(fileProperties.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
+        return getFileDocument(userId, fileName, relativePath, new Query());
+    }
+
     public FileDocument getFileDocument(String userId, String fileName, String relativePath) {
         Query query = new Query();
         // 文件是否存在
@@ -402,7 +420,7 @@ public class CommonFileService {
         writer.write(null, new IIOImage(image, null, null), writeParam);
     }
 
-    private void setFileConfig(String username, File file, String fileName, String suffix, String contentType, String relativePath, Update update) {
+    private void setFileConfig(String fileId, String username, File file, String fileName, String suffix, String contentType, String relativePath, Update update) {
         long size = file.length();
         update.set("size", size);
         update.set("md5", size + relativePath + fileName);
@@ -412,7 +430,7 @@ public class CommonFileService {
             setMusic(file, update);
         }
         if (contentType.contains(Constants.VIDEO)) {
-            setMediaCover(username, fileName, relativePath, update);
+            setMediaCover(fileId, username, fileName, relativePath, update);
         }
         if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE) && (!"ico".equals(suffix) && !"svg".equals(suffix))) {
             generateThumbnail(file, update);
@@ -453,14 +471,14 @@ public class CommonFileService {
         update.set("music", music);
     }
 
-    private void setMediaCover(String username, String fileName, String relativePath, Update update) {
-        String coverPath = videoProcessService.getVideoCover(username, relativePath, fileName);
+    private void setMediaCover(String fileId, String username, String fileName, String relativePath, Update update) {
+        String coverPath = videoProcessService.getVideoCover(fileId, username, relativePath, fileName);
         if (!CharSequenceUtil.isBlank(coverPath)) {
             if (update == null) {
                 update = new Update();
             }
             update.set("content", PathUtil.readBytes(Paths.get(coverPath)));
-            videoProcessService.convertToM3U8(username, relativePath, fileName);
+            videoProcessService.convertToM3U8(fileId, username, relativePath, fileName);
             update.set("mediaCover", true);
             FileUtil.del(coverPath);
         } else {
