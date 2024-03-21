@@ -88,8 +88,14 @@ public class SystemUtil {
      * @return String
      */
     public static String getNewVersion() {
-        String result = HttpUtil.get("https://api.github.com/repos/jamebal/jmal-cloud-view/releases/latest");
-        if (result == null) {
+        String result;
+        try {
+            result = HttpUtil.get("https://api.github.com/repos/jamebal/jmal-cloud-view/releases/latest");
+            if (result == null) {
+                return null;
+            }
+        } catch (Exception e) {
+            log.warn(e.getMessage());
             return null;
         }
         JSONObject jsonObject = JSON.parseObject(result);
