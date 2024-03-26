@@ -21,7 +21,6 @@ import jakarta.annotation.Resource;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -59,6 +58,12 @@ public class VideoProcessService {
     MongoTemplate mongoTemplate;
 
     private ExecutorService executorService;
+
+
+    /**
+     * h5播放器支持的视频格式
+     */
+    private final String[] WEB_SUPPORTED_FORMATS = {"mp4", "webm", "ogg", "flv", "hls", "mkv"};
 
     @PostConstruct
     public void init() {
@@ -124,9 +129,8 @@ public class VideoProcessService {
                     videoPath = url.toString();
                 }
             }
-            VideoInfo videoInfo = getVideoInfo(videoPath);
             // 获取视频的宽高比列, 来作为缩放比列
-            ProcessBuilder processBuilder = getVideoCoverProcessBuilder(videoInfo, videoPath, outputPath);
+            ProcessBuilder processBuilder = getVideoCoverProcessBuilder(videoPath, outputPath);
             Process process = processBuilder.start();
             int exitCode = process.waitFor();
             if (exitCode == 0) {
@@ -146,15 +150,11 @@ public class VideoProcessService {
         return null;
     }
 
-    @NotNull
-    private static ProcessBuilder getVideoCoverProcessBuilder(VideoInfo videoInfo, String videoPath, String outputPath) {
-        double proportion = (double) videoInfo.getWidth() / videoInfo.getHeight();
-        int scaleWidth = Math.min(videoInfo.getWidth(), 320);
-        int scaleHeight = (int) (scaleWidth / proportion);
+    private static ProcessBuilder getVideoCoverProcessBuilder(String videoPath, String outputPath) {
         ProcessBuilder processBuilder = new ProcessBuilder(
                 Constants.FFMPEG,
                 "-i", videoPath,
-                "-vf", "thumbnail,scale="+ scaleWidth + ":" + scaleHeight,
+                "-vf", "scale='min(320,iw)':-1",
                 "-frames:v", "1",
                 outputPath
         );
@@ -195,16 +195,24 @@ public class VideoProcessService {
         if (!needTranscode(videoInfo)) {
             return;
         }
+        // 如果视频的码率小于2000kbps，则使用视频的原始码率
+        // 标清视频码率
+        int SD_VIDEO_BITRATE = 2000;
+        int bitrate = SD_VIDEO_BITRATE;
+        if (videoInfo.getBitrate() < SD_VIDEO_BITRATE && videoInfo.getBitrate() > 0) {
+            bitrate = videoInfo.getBitrate();
+        }
         ProcessBuilder processBuilder = new ProcessBuilder(
                 Constants.FFMPEG,
                 "-i", fileAbsolutePath.toString(),
                 "-profile:v", "main",
+                "-pix_fmt", "yuv420p",
                 "-level", "4.0",
                 "-start_number", "0",
                 "-hls_time", "10",
                 "-hls_list_size", "0",
                 "-vf", "scale=-2:" + 720,
-                "-b:v", "2500k",
+                "-b:v", bitrate + "k",
                 "-preset", "medium",
                 "-g", "48",
                 "-sc_threshold", "0",
@@ -265,10 +273,9 @@ public class VideoProcessService {
      */
     private boolean isSupportedFormat(String format) {
         // HTML5 Video Player支持的视频格式
-        String[] supportedFormats = {"mp4", "webm", "ogg", "flv", "hls", "mkv"};
         String[] formatList = format.split(",");
         for (String f : formatList) {
-            for (String supportedFormat : supportedFormats) {
+            for (String supportedFormat : WEB_SUPPORTED_FORMATS) {
                 if (f.trim().equalsIgnoreCase(supportedFormat)) {
                     return true;
                 }
