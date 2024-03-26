@@ -106,6 +106,10 @@ public class VideoProcessService {
         String ossPath = CaffeineUtil.getOssPath(prePath);
         Path fileAbsolutePath = Paths.get(fileProperties.getRootDir(), username, relativePath, fileName);
         String videoCacheDir = getVideoCacheDir(username, "");
+        // 判断fileId是否为path, 如果为path则取最后一个
+        if (fileId.contains("/")) {
+            fileId = fileId.substring(fileId.lastIndexOf("/") + 1);
+        }
         String outputPath = Paths.get(videoCacheDir, fileId + ".png").toString();
         if (FileUtil.exist(outputPath)) {
             return outputPath;
