@@ -36,6 +36,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -88,6 +89,10 @@ public class VideoProcessService {
         });
     }
 
+    public void deleteVideoCacheByIds(String username, List<String> fileIds) {
+        fileIds.forEach(fileId -> deleteVideoCacheById(username, fileId));
+    }
+
     public void deleteVideoCacheById(String username, String fileId) {
         String videoCacheDir = getVideoCacheDir(username, fileId);
         if (FileUtil.exist(videoCacheDir)) {
@@ -129,7 +134,6 @@ public class VideoProcessService {
                     videoPath = url.toString();
                 }
             }
-            // 获取视频的宽高比列, 来作为缩放比列
             ProcessBuilder processBuilder = getVideoCoverProcessBuilder(videoPath, outputPath);
             Process process = processBuilder.start();
             int exitCode = process.waitFor();

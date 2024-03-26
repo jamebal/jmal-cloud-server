@@ -62,6 +62,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.jmal.clouddisk.service.IUserService.USER_ID;
 import static com.mongodb.client.model.Accumulators.sum;
@@ -1787,29 +1788,42 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             String filePath = fileProperties.getRootDir() + File.separator + username + currentDirectory1 + fileDocument.getName();
             File file = new File(filePath);
             isDel = FileUtil.del(file);
-            videoProcessService.deleteVideoCacheById(username, fileDocument.getId());
             if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
                 // 删除文件夹及其下的所有文件
                 Query query1 = new Query();
                 query1.addCriteria(Criteria.where(USER_ID).is(userLoginHolder.getUserId()));
                 query1.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName())));
-                mongoTemplate.remove(query1, COLLECTION_NAME);
+                List<FileDocument> delFileDocumentList = mongoTemplate.findAllAndRemove(query1, FileDocument.class, COLLECTION_NAME);
+                // 提取出delFileDocumentList中文件id
+                List<String> delFileIds = delFileDocumentList.stream().map(FileDocument::getId).collect(Collectors.toList());
+                deleteDependencies(username, delFileIds);
                 isDel = true;
             }
             pushMessage(username, fileDocument, "deleteFile");
         }
         if (isDel) {
             mongoTemplate.remove(query, COLLECTION_NAME);
-            // delete history version
-            fileVersionService.deleteAll(fileIds);
-            // delete share
-            Query shareQuery = new Query();
-            shareQuery.addCriteria(Criteria.where(Constants.FILE_ID).in(fileIds));
-            mongoTemplate.remove(shareQuery, ShareDO.class);
+            deleteDependencies(username, fileIds);
         } else {
             throw new CommonException(-1, "删除失败");
         }
         return ResultUtil.success();
+    }
+
+    /**
+     * 删除文件所依赖的数据
+     * @param username username
+     * @param fileIds fileIds
+     */
+    private void deleteDependencies(String username, List<String> fileIds) {
+        // delete history version
+        fileVersionService.deleteAll(fileIds);
+        // delete video cache
+        videoProcessService.deleteVideoCacheByIds(username, fileIds);
+        // delete share
+        Query shareQuery = new Query();
+        shareQuery.addCriteria(Criteria.where(Constants.FILE_ID).in(fileIds));
+        mongoTemplate.remove(shareQuery, ShareDO.class);
     }
 
 }
