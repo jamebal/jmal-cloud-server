@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.service.video;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
@@ -134,7 +135,8 @@ public class VideoProcessService {
                     videoPath = url.toString();
                 }
             }
-            ProcessBuilder processBuilder = getVideoCoverProcessBuilder(videoPath, outputPath);
+            double videoDuration = getVideoInfo(videoPath).getDuration();
+            ProcessBuilder processBuilder = getVideoCoverProcessBuilder(videoPath, outputPath, videoDuration);
             Process process = processBuilder.start();
             int exitCode = process.waitFor();
             if (exitCode == 0) {
@@ -154,16 +156,27 @@ public class VideoProcessService {
         return null;
     }
 
-    private static ProcessBuilder getVideoCoverProcessBuilder(String videoPath, String outputPath) {
+    private static ProcessBuilder getVideoCoverProcessBuilder(String videoPath, String outputPath, double videoDuration) {
+        double targetTimestamp = videoDuration * 0.1;
+        String formattedTimestamp = formatTimestamp(targetTimestamp);
+        log.info("formattedTimestamp: {}", formattedTimestamp);
         ProcessBuilder processBuilder = new ProcessBuilder(
                 Constants.FFMPEG,
+                "-ss", formattedTimestamp,
                 "-i", videoPath,
-                "-vf", "thumbnail,scale='min(320,iw)':-1",
+                "-vf", "scale='min(320,iw)':-1",
                 "-frames:v", "1",
                 outputPath
         );
         processBuilder.redirectErrorStream(true);
         return processBuilder;
+    }
+
+    private static String formatTimestamp(double timestamp) {
+        int hours = (int) (timestamp / 3600);
+        int minutes = (int) ((timestamp % 3600) / 60);
+        double seconds = timestamp % 60;
+        return String.format("%02d:%02d:%.3f", hours, minutes, seconds);
     }
 
     /**
@@ -244,7 +257,7 @@ public class VideoProcessService {
                     startConvert(username, relativePath, fileName, fileId);
                     pushMessage = true;
                 }
-                transcodingProgress(fileAbsolutePath, line);
+                transcodingProgress(fileAbsolutePath, videoInfo.getDuration(), line);
             }
         }
         int exitCode = process.waitFor();
@@ -264,7 +277,7 @@ public class VideoProcessService {
      * @return 是否需要转码
      */
     private boolean needTranscode(VideoInfo videoInfo) {
-        if (videoInfo.getBitrate() <= 2500 || videoInfo.getHeight() <= 720) {
+        if ((videoInfo.getBitrate() > 0 && videoInfo.getBitrate() <= 2000) || videoInfo.getHeight() <= 720) {
             return !isSupportedFormat(videoInfo.getFormat());
         }
         return true;
@@ -290,11 +303,12 @@ public class VideoProcessService {
 
     /**
      * 解析转码进度 0
+     *
      * @param fileAbsolutePath 视频文件绝对路径
-     * @param line 命令输出信息
+     * @param videoDuration    视频时长
+     * @param line             命令输出信息
      */
-    private void transcodingProgress(Path fileAbsolutePath, String line) {
-        double videoDuration = getVideoDuration(fileAbsolutePath.toString());
+    private void transcodingProgress(Path fileAbsolutePath, double videoDuration, String line) {
         // 解析转码进度
         if (line.contains("time=")) {
             try {
@@ -338,37 +352,6 @@ public class VideoProcessService {
     }
 
     /**
-     * 获取视频时长
-     * @param videoPath 视频路径
-     * @return 视频时长(秒)
-     */
-    private double getVideoDuration(String videoPath) {
-        try {
-            ProcessBuilder processBuilder = new ProcessBuilder(
-                    "ffprobe", "-v", "error", "-show_entries", "format=duration", "-of",
-                    "default=noprint_wrappers=1:nokey=1", videoPath);
-            Process process = processBuilder.start();
-
-            try (InputStream inputStream = process.getInputStream();
-                 BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-                String durationStr = reader.readLine();
-                if (durationStr != null) {
-                    return Double.parseDouble(durationStr);
-                }
-            }
-
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                printErrorInfo(processBuilder);
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-        return 0.0;
-    }
-
-
-    /**
      * 获取视频的分辨率和码率信息
      * @param videoPath 视频路径
      * @return 视频信息
@@ -387,6 +370,9 @@ public class VideoProcessService {
                 JSONObject formatObject = jsonObject.getJSONObject("format");
                 String format = formatObject.getString("format_name");
 
+                // 获取视频时长
+                double duration = Convert.toDouble(formatObject.get("duration"), 0d);
+
                 // 获取视频流信息
                 JSONArray streamsArray = jsonObject.getJSONArray("streams");
                 if (!streamsArray.isEmpty()) {
@@ -394,7 +380,7 @@ public class VideoProcessService {
                     int width = streamObject.getIntValue("width");
                     int height = streamObject.getIntValue("height");
                     int bitrate = streamObject.getIntValue("bit_rate") / 1000; // 转换为 kbps
-                    return new VideoInfo(width, height, format, bitrate);
+                    return new VideoInfo(width, height, format, bitrate, duration);
                 }
             }
 
@@ -415,18 +401,21 @@ public class VideoProcessService {
         private int height;
         private int bitrate;
         private String format;
+        private double duration;
         public VideoInfo() {
             this.width = 1920;
             this.height = 1080;
             this.format = "mov,mp4,m4a,3gp,3g2,mj2";
             this.bitrate = 3000;
+            this.duration = 10d;
         }
-        public VideoInfo(int width, int height, String format, int bitrate) {
+        public VideoInfo(int width, int height, String format, int bitrate, double duration) {
             this.width = width;
             this.height = height;
             this.format = format;
             this.bitrate = bitrate;
-            log.info("width: {}, height: {}, format: {}, bitrate: {}", width, height, format, bitrate);
+            this.duration = duration;
+            log.info("width: {}, height: {}, format: {}, bitrate: {}, duration: {}", width, height, format, bitrate, duration);
         }
     }
 
