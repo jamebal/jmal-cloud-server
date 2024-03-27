@@ -158,7 +158,7 @@ public class VideoProcessService {
         ProcessBuilder processBuilder = new ProcessBuilder(
                 Constants.FFMPEG,
                 "-i", videoPath,
-                "-vf", "scale='min(320,iw)':-1",
+                "-vf", "thumbnail,scale='min(320,iw)':-1",
                 "-frames:v", "1",
                 outputPath
         );
