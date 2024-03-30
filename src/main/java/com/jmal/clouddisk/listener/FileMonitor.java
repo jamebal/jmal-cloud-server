@@ -219,7 +219,7 @@ public class FileMonitor {
                     // 是否为七天前的文件
                     boolean sevenDayAgo = file.lastModified() < (System.currentTimeMillis() - DateUnit.DAY.getMillis() * 7);
                     // 是否为视频转码缓存目录
-                    boolean videoCache = fileProperties.getVideoTranscodeCache().equals(file.getName());
+                    boolean videoCache = fileProperties.getVideoTranscodeCache().equals(file.getName()) || fileProperties.getLuceneIndexDir().equals(file.getParentFile().getName());
                     if (sevenDayAgo && !videoCache) {
                         FileUtil.del(file);
                     }

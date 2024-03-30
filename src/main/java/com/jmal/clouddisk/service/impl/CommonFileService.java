@@ -7,6 +7,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
@@ -30,6 +31,11 @@ import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -292,6 +298,8 @@ public class CommonFileService {
             }
         }
         UpdateResult updateResult;
+        ObjectId objectId = new ObjectId();
+        String fileId = objectId.toHexString();
         try {
             int startIndex = fileProperties.getRootDir().length() + username.length() + 1;
             int endIndex = fileAbsolutePath.length() - fileName.length();
@@ -307,8 +315,6 @@ public class CommonFileService {
             Update update = new Update();
             // 设置创建时间和修改时间
             setDateTime(file, update);
-            ObjectId objectId = new ObjectId();
-            String fileId = objectId.toHexString();
             update.set("_id", objectId);
             update.set(IUserService.USER_ID, userId);
             update.set("name", fileName);
@@ -336,7 +342,7 @@ public class CommonFileService {
         if (null != updateResult.getUpsertedId()) {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
-        return null;
+        return fileId;
     }
 
     private static void setDateTime(File file, Update update) {
@@ -362,6 +368,71 @@ public class CommonFileService {
         query.addCriteria(Criteria.where("name").is(fileName));
         // 文件是否存在
         return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+    }
+
+    public List<FileIntroVO> getFileDocuments(List<String> files) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(files));
+        // 排除显示某些字段
+        query.fields().exclude("contentText");
+        return mongoTemplate.find(query, FileIntroVO.class, COLLECTION_NAME);
+    }
+
+    public void createTagIndex(IndexWriter indexWriter) {
+        List<Document> list = Arrays.asList(new Document("$match",
+                        new Document("tags",
+                                new Document("$exists", true))),
+                new Document("$project",
+                        new Document("tags", 1L)));
+        AggregateIterable<Document> result = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
+        try (MongoCursor<Document> mongoCursor = result.iterator()) {
+            while (mongoCursor.hasNext()) {
+                Document doc = mongoCursor.next();
+                String fileId = doc.getObjectId("_id").toHexString();
+                List<Document> tags = doc.getList("tags", Document.class);
+                if (tags == null || tags.isEmpty()) {
+                    continue;
+                }
+                StringBuilder stringBuilder = new StringBuilder();
+                for (Document tag : tags) {
+                    stringBuilder.append(tag.getString("name")).append("\n");
+                }
+                updateIndexDocument(indexWriter, fileId, null, stringBuilder.toString(), null);
+               try {
+                   indexWriter.commit();
+               } catch (IOException e) {
+                   log.error(e.getMessage(), e);
+               }
+            }
+        }
+    }
+
+    /**
+     * 添加/更新索引
+     * @param indexWriter indexWriter
+     * @param fileId fileId
+     * @param fileName fileName
+     * @param tagName tagName
+     * @param content content
+     */
+    public void updateIndexDocument(IndexWriter indexWriter, String fileId, String fileName, String tagName, String content) {
+        try {
+            org.apache.lucene.document.Document newDocument = new org.apache.lucene.document.Document();
+            newDocument.add(new StringField("id", fileId, Field.Store.YES));
+            if (StrUtil.isNotBlank(fileName)) {
+                newDocument.add(new TextField("name", fileName, Field.Store.NO));
+            }
+            if (StrUtil.isNotBlank(tagName)) {
+                newDocument.add(new TextField("tag", tagName, Field.Store.NO));
+            }
+            if (StrUtil.isNotBlank(content)) {
+                newDocument.add(new TextField("content", content, Field.Store.NO));
+            }
+            indexWriter.updateDocument(new Term("id", fileId), newDocument);
+            log.info("添加索引成功, filepath: {}", fileName);
+        } catch (IOException e) {
+            log.error("更新索引失败, fileId: {}, {}", fileId, e.getMessage(), e);
+        }
     }
 
     public FileDocument getFileDocument(String username, String fileAbsolutePath)  {

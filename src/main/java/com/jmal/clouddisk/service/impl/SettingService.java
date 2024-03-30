@@ -51,7 +51,7 @@ public class SettingService {
     FileProperties fileProperties;
 
     @Autowired
-    FileServiceImpl fileService;
+    CommonFileService commonFileService;
 
     @Autowired
     private MongoTemplate mongoTemplate;
@@ -72,6 +72,9 @@ public class SettingService {
 
     @Autowired
     UserLoginHolder userLoginHolder;
+
+    @Autowired
+    LuceneService luceneService;
 
     private static final Map<String, SyncFileVisitor> syncFileVisitorMap = new ConcurrentHashMap<>(16);
 
@@ -106,13 +109,15 @@ public class SettingService {
                     SyncFileVisitor syncFileVisitor = new SyncFileVisitor(username, fileCountVisitor.getCount());
                     syncFileVisitorMap.put(username, syncFileVisitor);
                     Files.walkFileTree(path, syncFileVisitor);
+                    // 加入标签的索引
+                    // luceneService.createTagIndex(username);
                 } catch (IOException e) {
                     log.error(e.getMessage() + path, e);
                 } finally {
                     syncCache.remove(username);
                     syncFileVisitorMap.remove(username);
                     log.info("同步完成, 耗时: {}s", timeInterval.intervalSecond());
-                    fileService.pushMessage(username, 100, SYNCED);
+                    commonFileService.pushMessage(username, 100, SYNCED);
                 }
             });
             return "syncing";
@@ -201,38 +206,39 @@ public class SettingService {
 
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-            try {
-                fileService.createFile(username, dir.toFile());
-            } catch (Exception e) {
-                log.error(e.getMessage() + dir, e);
-            } finally {
-                processCount.addAndGet(1);
-            }
+            createFile(dir);
             return super.preVisitDirectory(dir, attrs);
         }
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            createFile(file);
+            return super.visitFile(file, attrs);
+        }
+
+        private void createFile(Path file) {
             synchronized (this) {
                 try {
-                    fileService.createFile(username, file.toFile());
+                    String fileId = commonFileService.createFile(username, file.toFile(), null, null);
+                    if (!CharSequenceUtil.isBlank(fileId)) {
+                        luceneService.pushRebuildIndexQueue(username, fileId, file.toFile());
+                    }
                 } catch (Exception e) {
                     log.error(e.getMessage() + file, e);
                 } finally {
                     if (totalCount > 0) {
                         if (processCount.get() <= 2) {
-                            fileService.pushMessage(username, 1, SYNCED);
+                            commonFileService.pushMessage(username, 1, SYNCED);
                         }
                         processCount.addAndGet(1);
                         int currentPercent = (int) (processCount.get()/totalCount * 100);
                         if (currentPercent > percent) {
-                            fileService.pushMessage(username, currentPercent, SYNCED);
+                            commonFileService.pushMessage(username, currentPercent, SYNCED);
                         }
                         percent = currentPercent;
                     }
                 }
             }
-            return super.visitFile(file, attrs);
         }
     }
 

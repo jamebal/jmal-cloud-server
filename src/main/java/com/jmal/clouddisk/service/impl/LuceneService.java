@@ -1,42 +1,40 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.date.TimeInterval;
+import cn.hutool.core.io.CharsetDetector;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.ReUtil;
-import cn.hutool.http.HtmlUtil;
-import com.jmal.clouddisk.model.FileDocument;
+import cn.hutool.core.util.StrUtil;
+import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.model.FileIndex;
+import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.query.SearchDTO;
-import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.StringUtil;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.SearcherManager;
-import org.apache.lucene.search.highlight.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.lucene.search.*;
+import org.apache.lucene.store.FSDirectory;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.charset.Charset;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author jmal
@@ -45,89 +43,262 @@ import java.util.Map;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class LuceneService {
 
-    @Autowired(required = false)
-    private IndexWriter indexWriter;
+    private final FileProperties fileProperties;
+    private final CommonFileService commonFileService;
+    private final Analyzer analyzer;
 
-    @Autowired
-    private Analyzer analyzer;
+    /**
+     * 每个用户的IndexWriter
+     * key: username
+     * value: IndexWriter
+     */
+    private final Map<String, IndexWriter> indexWriterMap = new ConcurrentHashMap<>();
+    /**
+     * 每个用户的SearcherManager
+     * key: username
+     * value: SearcherManager
+     */
+    private final Map<String, SearcherManager> searcherManagerMap = new ConcurrentHashMap<>();
 
-    @Autowired
-    private SearcherManager searcherManager;
+    /**
+     * 重建索引文件缓冲队列
+     * key: username
+     * value: ArrayBlockingQueue
+     */
+    private final static Map<String, ArrayBlockingQueue<FileIndex>> rebuildIndexQueueMap = new ConcurrentHashMap<>();
 
-    @Autowired
-    private IFileService fileService;
+    /**
+     * 重建索引文件缓冲队列大小
+     */
+    private final static int REBUILD_INDEX_QUEUE_SIZE = 256;
 
-    public void createFileIndex(List<FileDocument> fileList) throws IOException {
-        List<Document> docs = new ArrayList<>();
-        for (FileDocument file : fileList) {
-            Document doc = new Document();
-            doc.add(new StringField("id", file.getId(), Field.Store.YES));
-            doc.add(new TextField("name", file.getName(), Field.Store.YES));
-            if (file.getHtml() != null) {
-                doc.add(new TextField("html", ReUtil.delAll("\\n", HtmlUtil.cleanHtmlTag(file.getHtml())), Field.Store.YES));
-                docs.add(doc);
-            }
+    /**
+     * 每个用户的重建索引任务线程
+     * key: username
+     * value: Thread
+     */
+    private final static Map<String, Thread> rebuildIndexThreadMap = new ConcurrentHashMap<>();
+
+    // @PostConstruct
+    // public void optimizeIndex() {
+    //     try {
+    //         IndexWriter indexWriter = getIndexWriter("jmal");
+    //         indexWriter.forceMerge(1);
+    //         indexWriter.commit();
+    //         log.info("优化索引成功");
+    //     } catch (IOException e) {
+    //         log.error("优化索引失败", e);
+    //     }
+    // }
+
+
+    /**
+     * 获取Lucene索引目录
+     *
+     * @param username username
+     * @return Lucene索引目录
+     */
+    private String getLuceneIndexDir(String username) {
+        // 视频文件缓存目录
+        String luceneIndexDir = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, fileProperties.getLuceneIndexDir()).toString();
+        if (!FileUtil.exist(luceneIndexDir)) {
+            FileUtil.mkdir(luceneIndexDir);
         }
-        indexWriter.addDocuments(docs);
-        indexWriter.commit();
+        return luceneIndexDir;
     }
 
-    public ResponseResult<List<FileDocument>> searchFile(SearchDTO searchDTO) throws IOException, ParseException, InvalidTokenOffsetsException {
-        // 模糊匹配,匹配词
-        StringBuilder keyword = new StringBuilder(searchDTO.getKeyword());
-        if (CharSequenceUtil.isBlank(keyword.toString())) {
-            return ResultUtil.success();
+    private IndexWriter getIndexWriter(String username) throws IOException {
+        String luceneIndexDir = getLuceneIndexDir(username);
+        if (!indexWriterMap.containsKey(username)) {
+            IndexWriter indexWriter = new IndexWriter(FSDirectory.open(Paths.get(luceneIndexDir)), new IndexWriterConfig(analyzer));
+            this.indexWriterMap.put(username, indexWriter);
         }
+        return indexWriterMap.get(username);
+    }
+
+    private ArrayBlockingQueue<FileIndex> getIndexFileQueue(String username) {
+        if (!rebuildIndexQueueMap.containsKey(username)) {
+            ArrayBlockingQueue<FileIndex> indexFileQueue = new ArrayBlockingQueue<>(REBUILD_INDEX_QUEUE_SIZE);
+            rebuildIndexQueueMap.put(username, indexFileQueue);
+            rebuildIndexFileTask(username);
+        }
+        return rebuildIndexQueueMap.get(username);
+    }
+
+    private SearcherManager getSearcherManager(String username) throws IOException {
+        if (!searcherManagerMap.containsKey(username)) {
+            IndexWriter indexWriter = getIndexWriter(username);
+            SearcherManager searcherManager = new SearcherManager(indexWriter, false, false, new SearcherFactory());
+            // ControlledRealTimeReopenThread<IndexSearcher> cRTReopenThead = new ControlledRealTimeReopenThread<>(indexWriter, searcherManager,
+            //         5.0, 0.025);
+            // cRTReopenThead.setDaemon(true);
+            // //线程名称
+            // cRTReopenThead.setName("IndexReader-" + username);
+            // // 开启线程
+            // cRTReopenThead.start();
+            this.searcherManagerMap.put(username, searcherManager);
+        }
+        return searcherManagerMap.get(username);
+    }
+
+    /**
+     * 重建索引文件任务
+     * @param username username
+     */
+    private void rebuildIndexFileTask(String username) {
+        if (!rebuildIndexThreadMap.containsKey(username)) {
+            Thread thread = new Thread(() -> {
+                List<FileIndex> files = new ArrayList<>(REBUILD_INDEX_QUEUE_SIZE);
+                ArrayBlockingQueue<FileIndex> indexFileQueue = getIndexFileQueue(username);
+                while (true) {
+                    try {
+                        FileIndex f = indexFileQueue.take();
+                        if (files.size() < REBUILD_INDEX_QUEUE_SIZE) {
+                            files.add(f);
+                        } else {
+                            IndexWriter indexWriter = getIndexWriter(username);
+                            for (FileIndex fileIndex : files) {
+                                File file = fileIndex.getFile();
+                                String content = readFileContent(file);
+                                String documentId = fileIndex.getFileId();
+                                commonFileService.updateIndexDocument(indexWriter, documentId, file.getName(), null, content);
+                            }
+                            indexWriter.commit();
+                            files.clear();
+                        }
+                    } catch (Exception e) {
+                        log.error("创建索引失败", e);
+                    }
+                }
+            });
+            thread.start();
+            rebuildIndexThreadMap.put(username, thread);
+        }
+    }
+
+    /**
+     * 更新单个文件索引
+     * @param username username
+     * @param file file
+     */
+    public void updateOneFileIndex(String username, String fileId, File file) throws IOException {
+    }
+
+    /**
+     * 判断是否为非文本文件
+     * @param file file
+     * @return boolean
+     */
+    public static FileIndex getFileIndex(String fileId, File file) {
+        if (!FileUtil.exist(file) || StrUtil.isBlank(fileId)) {
+            return null;
+        }
+        FileIndex fileIndex = new FileIndex(file, fileId);
+        if (file.isFile()) {
+            Charset charset = CharsetDetector.detect(file);
+            if (charset == null) {
+                return fileIndex;
+            }
+            if ("UTF-8".equals(charset.toString())) {
+                fileIndex.setContent(true);
+            }
+        }
+        return fileIndex;
+    }
+
+    private String readFileContent(File file) {
+        if (!file.isFile()) {
+            return null;
+        }
+        Charset charset = CharsetDetector.detect(file);
+        if (charset == null) {
+            return null;
+        }
+        if ("UTF-8".equals(charset.toString())) {
+            return FileUtil.readUtf8String(file);
+        }
+        return null;
+    }
+
+    /**
+     * 推送至重建索引文件缓存队列
+     * @param username username
+     * @param fileId fileId
+     * @param file file
+     * @throws InterruptedException InterruptedException
+     */
+    public void pushRebuildIndexQueue(String username, String fileId, File file) throws InterruptedException {
+        FileIndex fileIndex = getFileIndex(fileId, file);
+        if (fileIndex == null) {
+            return;
+        }
+        ArrayBlockingQueue<FileIndex> indexFileQueue = getIndexFileQueue(username);
+        indexFileQueue.put(fileIndex);
+    }
+
+    public ResponseResult<List<FileIntroVO>> searchFile(String username, SearchDTO searchDTO) throws IOException, ParseException {
+        commonFileService.createTagIndex(getIndexWriter(username));
+        TimeInterval timeInterval = new TimeInterval();
+        String keyword = searchDTO.getKeyword();
+        if (keyword == null || keyword.trim().isEmpty() || username == null) {
+            return ResultUtil.success(Collections.emptyList());
+        }
+
+        int pageNum = searchDTO.getPage();
+        int pageSize = searchDTO.getPageSize();
+
+        SearcherManager searcherManager = getSearcherManager(username);
+
         searcherManager.maybeRefresh();
-        IndexSearcher indexSearcher = searcherManager.acquire();
-        List<FileDocument> fileList = new ArrayList<>();
-        String fieldName = "html";
+        List<String> seenIds = new ArrayList<>();
+
         try {
-            String[] fields = new String[]{fieldName, "name"};
-            Map<String, Float> boots = new HashMap<>(5);
-            boots.put(fieldName, 10.0f);
-            boots.put("name", 2.0f);
+            IndexSearcher indexSearcher = searcherManager.acquire();
 
-            MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, analyzer, boots);
+            String[] fields = {"name", "tag", "content"};
+            Map<String, Float> boosts = new HashMap<>();
+            boosts.put("name", 10.0f);
+            boosts.put("tag", 5.0f);
+            boosts.put("content", 2.0f);
+            MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, analyzer, boosts);
 
-            String[] keywords = StringUtil.escape(keyword.toString()).trim().replaceAll("\\s+", " ").split(" ");
-            keyword = new StringBuilder(keywords[0] + (StringUtil.isShortStr(keywords[0]) ? "*" : ""));
-            if (keywords.length > 1){
-                for (int i = 1; i < keywords.length; i++) {
-                    keyword.append(" OR ").append(keywords[i]).append(StringUtil.isShortStr(keywords[i]) ? "*" : "");
+            // String processedKeyword = Arrays.stream(keyword.trim().split("\\s+"))
+            //         .map(k -> StringUtil.escape(k) + (StringUtil.isShortStr(k) ? "*" : ""))
+            //         .collect(Collectors.joining(" OR "));
+            // 构建短语查询
+            String processedKeyword = "\"" + StringUtil.escape(keyword.trim()) + "\"";
+            Query query = parser.parse(processedKeyword);
+
+            ScoreDoc lastScoreDoc = null;
+            if (pageNum > 1) {
+                int totalHitsToSkip = (pageNum - 1) * pageSize;
+                TopDocs topDocs = indexSearcher.search(query, totalHitsToSkip);
+                if (topDocs.scoreDocs.length == totalHitsToSkip) {
+                    lastScoreDoc = topDocs.scoreDocs[totalHitsToSkip - 1];
                 }
             }
-            Query query = parser.parse(keyword.toString());
-            // 高亮格式，用<B>标签包裹
-            Highlighter highlighter = new Highlighter(new SimpleHTMLFormatter("<B>", "</B>"),
-                    new QueryScorer(query));
-            // 高亮后的段落范围在100字内
-            Fragmenter fragmenter = new SimpleFragmenter(100);
-            highlighter.setTextFragmenter(fragmenter);
-
-            ScoreDoc[] hits = indexSearcher.search(query, 50).scoreDocs;
-            for (ScoreDoc hit : hits) {
+            TopDocs topDocs = indexSearcher.searchAfter(lastScoreDoc, query, pageSize);
+            log.info("搜索耗时0: {}ms", timeInterval.intervalMs());
+            for (ScoreDoc hit : topDocs.scoreDocs) {
                 Document doc = indexSearcher.doc(hit.doc);
-                FileDocument fileDocument = new FileDocument();
-                fileDocument.setId(doc.get("id"));
-                String name = highlighter.getBestFragment(analyzer, fieldName, doc.get("name"));
-                if (CharSequenceUtil.isBlank(name)) {
-                    fileDocument.setName(doc.get("name"));
-                } else {
-                    fileDocument.setName(name);
-                }
-                String text = doc.get(fieldName);
-                if (text != null) {
-                    fileDocument.setContentText(highlighter.getBestFragment(analyzer, fieldName, text));
-                }
-                fileList.add(fileDocument);
+                String id = doc.get("id");
+                seenIds.add(id);
+                // if (!seenIds.contains(id)) {
+                //     seenIds.add(id);
+                // }
             }
-        } finally {
-            searcherManager.release(indexSearcher);
+            log.info("搜索耗时1: {}ms", timeInterval.intervalMs());
+            List<FileIntroVO> fileIntroVOList = commonFileService.getFileDocuments(seenIds);
+            log.info("搜索耗时2: {}ms", timeInterval.intervalMs());
+            return ResultUtil.success(fileIntroVOList).setCount(seenIds.size());
+        } catch (IOException e) {
+            log.error("搜索失败", e);
         }
-        return ResultUtil.success(fileList);
+
+        return ResultUtil.success(new ArrayList<>());
     }
 
     public static void main(String[] args) throws IOException {
@@ -151,22 +322,17 @@ public class LuceneService {
         analyzer.close();
     }
 
-    @PostConstruct
-    public void synFileCreatIndex() throws IOException {
-        IndexWriter.DocStats docStats = indexWriter.getDocStats();
-        if (docStats.numDocs < 1) {
-            log.info("同步Lucene索引... {}", docStats.numDocs);
-            long startTime = System.currentTimeMillis();
-            // 获取所有的file
-            List<FileDocument> allProduct = fileService.getAllDocFile();
-            // 再插入file
-            createFileIndex(allProduct);
-            log.info("同步Lucene索引耗时: {}ms", System.currentTimeMillis() - startTime);
+    @PreDestroy
+    public void destroy() throws IOException {
+        for (IndexWriter indexWriter : indexWriterMap.values()) {
+            indexWriter.close();
+        }
+        for (SearcherManager searcherManager : searcherManagerMap.values()) {
+            searcherManager.close();
+        }
+        for (Thread thread : rebuildIndexThreadMap.values()) {
+            thread.interrupt();
         }
     }
 
-    @PreDestroy
-    public void destroy() throws IOException {
-        searcherManager.close();
-    }
 }

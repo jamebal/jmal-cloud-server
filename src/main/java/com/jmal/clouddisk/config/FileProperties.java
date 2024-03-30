@@ -33,6 +33,10 @@ public class FileProperties {
      * 视频转码后的缓存目录, 位于 ${chunkFileDir}/${username}/${videoTranscodeCache}
      */
     private String videoTranscodeCache = "videoTranscodeCache";
+    /**
+     * lucene索引存储目录
+     */
+    private String luceneIndexDir = "luceneIndex";
     /***
      * 用户头像默认存储路径
      */

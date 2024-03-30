@@ -1,14 +1,15 @@
 package com.jmal.clouddisk.controller.rest;
 
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.impl.LuceneService;
+import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.ResponseResult;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,14 +25,16 @@ import java.util.List;
 @RestController
 @RequestMapping("/search")
 @Tag(name = "全文搜索")
+@RequiredArgsConstructor
 public class LuceneSearchController {
 
-    @Autowired
-    private LuceneService luceneService;
+    private final LuceneService luceneService;
+
+    private final UserLoginHolder userLoginHolder;
 
     @Operation(summary = "搜索")
     @GetMapping("/")
-    public ResponseResult<List<FileDocument>> list(SearchDTO searchDTO) throws IOException, ParseException, InvalidTokenOffsetsException {
-        return luceneService.searchFile(searchDTO);
+    public ResponseResult<List<FileIntroVO>> list(SearchDTO searchDTO) throws IOException, ParseException, InvalidTokenOffsetsException {
+        return luceneService.searchFile("jmal", searchDTO);
     }
 }

@@ -13,5 +13,8 @@ import lombok.EqualsAndHashCode;
 @Data
 @Schema
 public class SearchDTO extends QueryBaseDTO {
+    /**
+     * 要查询的关键字
+     */
     String keyword;
 }
