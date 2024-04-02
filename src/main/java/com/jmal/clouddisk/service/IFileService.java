@@ -182,7 +182,7 @@ public interface IFileService {
      */
     Optional<FileDocument> coverOfMedia(String id, String username);
 
-    ResponseEntity<Object> getObjectResponseEntity(Optional<FileDocument> file);
+    ResponseEntity<Object> getObjectResponseEntity(FileDocument fileDocument);
 
     /**
      * 分享里的打包下载
