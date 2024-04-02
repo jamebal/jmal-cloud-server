@@ -90,6 +90,15 @@ public class SettingService {
             menuService.initMenus();
             roleService.initRoles();
         }
+        // 启动时检测是否存在lucene索引，不存在则初始化
+        Path tempDir = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir());
+        List<String> usernames = userService.getAllUsernameList();
+        usernames.forEach(username -> {
+            Path path = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, fileProperties.getLuceneIndexDir());
+            if (!Files.exists(path)) {
+                sync(username);
+            }
+        });
     }
 
     /***
@@ -102,21 +111,23 @@ public class SettingService {
                 Path path = Paths.get(fileProperties.getRootDir(), username);
                 TimeInterval timeInterval = new TimeInterval();
                 try {
+                    // 先删除索引
+                    luceneService.deleteAllIndex(username);
                     FileCountVisitor fileCountVisitor = new FileCountVisitor();
                     PathUtil.walkFiles(path, fileCountVisitor);
-                    log.info("开始同步, 文件数: {}", fileCountVisitor.getCount());
+                    log.info("user: {}, 开始同步, 文件数: {}", username, fileCountVisitor.getCount());
                     timeInterval.start();
                     SyncFileVisitor syncFileVisitor = new SyncFileVisitor(username, fileCountVisitor.getCount());
                     syncFileVisitorMap.put(username, syncFileVisitor);
                     Files.walkFileTree(path, syncFileVisitor);
                     // 加入标签的索引
-                    // luceneService.createTagIndex(username);
+                    luceneService.createTagIndex(userService.getUserIdByUserName(username), username);
                 } catch (IOException e) {
                     log.error(e.getMessage() + path, e);
                 } finally {
                     syncCache.remove(username);
                     syncFileVisitorMap.remove(username);
-                    log.info("同步完成, 耗时: {}s", timeInterval.intervalSecond());
+                    log.info("user: {}, 同步完成, 耗时: {}s", username, timeInterval.intervalSecond());
                     commonFileService.pushMessage(username, 100, SYNCED);
                 }
             });
@@ -217,26 +228,21 @@ public class SettingService {
         }
 
         private void createFile(Path file) {
-            synchronized (this) {
-                try {
-                    String fileId = commonFileService.createFile(username, file.toFile(), null, null);
-                    if (!CharSequenceUtil.isBlank(fileId)) {
-                        luceneService.pushRebuildIndexQueue(username, fileId, file.toFile());
+            try {
+                commonFileService.createFile(username, file.toFile(), null, null);
+            } catch (Exception e) {
+                log.error(e.getMessage() + file, e);
+            } finally {
+                if (totalCount > 0) {
+                    if (processCount.get() <= 2) {
+                        commonFileService.pushMessage(username, 1, SYNCED);
                     }
-                } catch (Exception e) {
-                    log.error(e.getMessage() + file, e);
-                } finally {
-                    if (totalCount > 0) {
-                        if (processCount.get() <= 2) {
-                            commonFileService.pushMessage(username, 1, SYNCED);
-                        }
-                        processCount.addAndGet(1);
-                        int currentPercent = (int) (processCount.get()/totalCount * 100);
-                        if (currentPercent > percent) {
-                            commonFileService.pushMessage(username, currentPercent, SYNCED);
-                        }
-                        percent = currentPercent;
+                    processCount.addAndGet(1);
+                    int currentPercent = (int) (processCount.get()/totalCount * 100);
+                    if (currentPercent > percent) {
+                        commonFileService.pushMessage(username, currentPercent, SYNCED);
                     }
+                    percent = currentPercent;
                 }
             }
         }

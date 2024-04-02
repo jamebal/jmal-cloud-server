@@ -87,7 +87,7 @@ public class FileController {
     @Operation(summary = "搜索文件")
     @GetMapping("/search-file")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> searchFile(UploadApiParamDTO upload, String keyword) {
+    public ResponseResult<List<FileIntroVO>> searchFile(UploadApiParamDTO upload, String keyword) {
         return fileService.searchFile(upload, keyword);
     }
 

@@ -18,9 +18,9 @@ file:
   # FTP server 端口号
   ftpServerPort: 8089
   # 文本类型
-  simText: [txt,html,htm,asp,jsp,xml,json,properties,md,gitignore,java,py,c,cpp,sql,sh,bat,m,bas,prg,cmd]
+  simText: [ txt, html, htm, xhtml, css, less, sass, scss, js, ts, jsx, tsx, json, xml, csv, tsv, md, markdown, rst, yaml, yml, ini, toml, cfg, conf, log, bat, cmd, sh, bash, zsh, ps1, py, pyw, pyc, pyo, pyd, rb, erb, pl, pm, t, php, phtml, phps, java, jsp, jspx, jsf, jws, jsp, jtpl, scala, kt, kts, groovy, gvy, gy, gsh, swift, c, cc, cpp, cxx, h, hh, hpp, hxx, cs, csx, vb, fs, fsx, fsi, ml, mli, go, rs, rlib, d, asm, s, sql, pgsql, psql, plpgsql, pls, plb, plsql, sqlite, db, dbf, mdb, accdb, cbl, cob, cpy, tcl, tk, lua, hs, erl, hrl, ex, exs, clj, cljs, edn, lisp, lsp, scm, rkt, ss, sml, v, sv, svh, vhd, vhdl, ino, pde, bsv, f, f90, f95, f03, f08, for, f77, f18, vba, vb, bas, cls, frm, frx, tex, latex, ltx, bib, bbl, sty, cls, dtx, ins, rst, rest, org, asciidoc, adoc, asc, pod, pov, mmd, mn, muse, creole, wiki, dokuwiki, vimwiki, haddock, jsdoc, pydoc, rdoc, yard, doxygen, roxygen2, javadoc, xmldoc, html, xhtml, htm, shtm, shtml, mht, mhtml, hdml, tpl, tmpl, vue, ejs, hbs, haml, pug, jade, slim, mustache, handlebars, nunjucks, liquid, jinja2, jinja, jnj, j2, njk, twig, swig, poi, t4, tt, tt2, tpl, eta, ect, coffee, litcoffee, dart, diff, patch, hs, x, xi, xmi, xaml, kml, wsdl, plist, nfo, srt, sub, sbv, vtt, bml, mrl, irl, log, changelog, CHANGELOG, license, LICENCE, LICENSE, copying, COPYING, readme, README, todo, TODO, contributing, CONTRIBUTING, authors, AUTHORS, dockerfile, Dockerfile, code-workspace, jsconfig, tsconfig, jshintrc, jscsrc, eslintrc, eslintignore, babelrc, browserconfig, webmanifest, htaccess, gitlab-ci, travis, circleci, jenkinsfile, prettierrc, stylelintrc, lintstagedrc, commitlintrc ]
   # 文档类型
-  document: ["pdf", "doc", "docx", "xlsx", "xls", "xl", "md", "ppt", "pptx"]
+  document: [ "pdf", "doc", "docx", "xlsx", "xls", "xl", "md", "ppt", "pptx" ]
   # webDAV协议前缀
   web-dav-prefix: webDAV
   # ip2region.xdb path

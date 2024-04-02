@@ -15,6 +15,7 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.web.WebOssCommonService;
 import com.jmal.clouddisk.oss.web.WebOssCopyFileService;
@@ -98,8 +99,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Autowired
     TagService tagService;
-
-
 
     /***
      * 前端文件夹树的第一级的文件Id
@@ -272,10 +271,15 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> searchFile(UploadApiParamDTO upload, String keyword) throws CommonException {
-        ResponseResult<Object> result = ResultUtil.genResult();
-        Criteria criteria1 = Criteria.where("name").regex(keyword, "i");
-        return getCountResponseResult(upload, result, criteria1);
+    public ResponseResult<List<FileIntroVO>> searchFile(UploadApiParamDTO upload, String keyword) throws CommonException {
+        SearchDTO searchDTO = new SearchDTO();
+        searchDTO.setKeyword(keyword);
+        searchDTO.setPage(upload.getPageIndex());
+        searchDTO.setPageSize(upload.getPageSize());
+        return luceneService.searchFile(upload.getUsername(), searchDTO);
+        // ResponseResult<Object> result = ResultUtil.genResult();
+        // Criteria criteria1 = Criteria.where("name").regex(keyword, "i");
+        // return getCountResponseResult(upload, result, criteria1);
     }
 
     private ResponseResult<Object> getCountResponseResult(UploadApiParamDTO upload, ResponseResult<Object> result, Criteria... criteriaList) {
@@ -1824,6 +1828,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Query shareQuery = new Query();
         shareQuery.addCriteria(Criteria.where(Constants.FILE_ID).in(fileIds));
         mongoTemplate.remove(shareQuery, ShareDO.class);
+        // delete index
+        luceneService.deleteIndexDocuments(username, fileIds);
     }
 
 }

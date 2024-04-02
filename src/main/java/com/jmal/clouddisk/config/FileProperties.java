@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @Description 文件存储配置类
@@ -60,7 +62,7 @@ public class FileProperties {
     /***
      * 文本编辑器支持的文本类型
      */
-    private String[] simText = {"txt", "html", "htm", "asp", "jsp", "xml", "json", "properties", "md", "gitignore", "java", "py", "c", "cpp", "sql", "sh", "bat", "m", "bas", "prg", "cmd"};
+    private List<String> simText = new ArrayList<>();
     /***
      * 文档类型
      */

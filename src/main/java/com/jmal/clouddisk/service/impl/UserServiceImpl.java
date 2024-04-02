@@ -527,6 +527,14 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
+    public List<String> getAllUsernameList() {
+        Query query = new Query();
+        query.fields().include(USERNAME);
+        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
+        return userList.stream().map(ConsumerDO::getUsername).toList();
+    }
+
+    @Override
     public List<String> getAuthorities(String username) {
         List<String> authorities = new ArrayList<>();
         ConsumerDO consumerDO = getUserInfoByName(username);

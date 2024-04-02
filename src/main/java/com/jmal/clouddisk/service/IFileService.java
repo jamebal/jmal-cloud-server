@@ -132,7 +132,7 @@ public interface IFileService {
      * @param keyword 关键字
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> searchFile(UploadApiParamDTO upload, String keyword);
+    ResponseResult<List<FileIntroVO>> searchFile(UploadApiParamDTO upload, String keyword);
 
     /**
      * 搜索文件并打开文件夹

@@ -182,4 +182,10 @@ public interface IUserService {
      */
     ConsumerDO getUserInfoByUsername(String username);
 
+    /**
+     * 获取所有用户名列表
+     * @return 用户名列表
+     */
+    List<String> getAllUsernameList();
+
 }
