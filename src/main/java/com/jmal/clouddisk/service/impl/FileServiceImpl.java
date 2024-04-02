@@ -59,10 +59,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.jmal.clouddisk.service.IUserService.USER_ID;
@@ -128,7 +125,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 case Constants.AUDIO -> Criteria.where(Constants.CONTENT_TYPE).regex("^" + Constants.AUDIO);
                 case Constants.VIDEO -> Criteria.where(Constants.CONTENT_TYPE).regex("^" + Constants.VIDEO);
                 case Constants.CONTENT_TYPE_IMAGE -> Criteria.where(Constants.CONTENT_TYPE).regex("^image");
-                case "text" -> Criteria.where(Constants.SUFFIX).in(Arrays.asList(fileProperties.getSimText()));
+                case "text" -> Criteria.where(Constants.SUFFIX).in(Collections.singletonList(fileProperties.getSimText()));
                 case "document" -> Criteria.where(Constants.SUFFIX).in(Arrays.asList(fileProperties.getDocument()));
                 default -> Criteria.where("path").is(currentDirectory);
             };
@@ -1267,15 +1264,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Update update = new Update();
         update.set("isPublic", true);
         mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
-    }
-
-    @Override
-    public List<FileDocument> getAllDocFile() {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("html").exists(true));
-        query.addCriteria(Criteria.where(Constants.RELEASE).is(true));
-        query.fields().include("_id").include("name").include("html");
-        return mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
     }
 
     /***

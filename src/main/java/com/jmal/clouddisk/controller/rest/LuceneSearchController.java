@@ -4,7 +4,6 @@ import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.impl.LuceneService;
-import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.ResponseResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,8 +29,6 @@ import java.util.List;
 public class LuceneSearchController {
 
     private final LuceneService luceneService;
-
-    private final UserLoginHolder userLoginHolder;
 
     @Operation(summary = "搜索")
     @GetMapping("/")

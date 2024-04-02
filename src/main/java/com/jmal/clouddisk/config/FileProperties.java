@@ -95,20 +95,12 @@ public class FileProperties {
         this.ip2regionDbPath = path;
     }
 
-    public String getIp2regionDbPath() {
-        return ip2regionDbPath;
-    }
-
     public String getWebDavPrefixPath() {
         return "/" + webDavPrefix;
     }
 
     public String getRootDir() {
         return Paths.get(rootDir).toString();
-    }
-
-    public String getChunkFileDir() {
-        return chunkFileDir;
     }
 
     public String getUserImgDir() {

@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
@@ -333,7 +332,6 @@ public class LuceneService {
     }
 
     public ResponseResult<List<FileIntroVO>> searchFile(String username, SearchDTO searchDTO) {
-        TimeInterval timeInterval = new TimeInterval();
         String keyword = searchDTO.getKeyword();
         if (keyword == null || keyword.trim().isEmpty() || username == null) {
             return ResultUtil.success(Collections.emptyList());
