@@ -179,7 +179,7 @@ public class ShareController {
     public ResponseEntity<Object> coverOfMedia(String id, String name) {
         ResultUtil.checkParamIsNull(id, name);
         Optional<FileDocument> file = fileService.coverOfMedia(id, name);
-        return file.map(fileService::getObjectResponseEntity).orElse(ResponseEntity.notFound().build());
+        return file.map(fileService::getObjectResponseEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
     }
 
     private ResponseEntity<Object> thumbnail(String id, HttpServletRequest request) {

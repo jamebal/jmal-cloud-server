@@ -245,7 +245,7 @@ public class FileController {
             return webOssService.thumbnail(ossPath, id);
         }
         Optional<FileDocument> file = fileService.thumbnail(id);
-        return file.map(fileService::getObjectResponseEntity).orElse(ResponseEntity.notFound().build());
+        return file.map(fileService::getObjectResponseEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
     }
 
     @Operation(summary = "显示缩略图")
@@ -263,7 +263,7 @@ public class FileController {
     public ResponseEntity<Object> coverOfMedia(String id, String name) {
         ResultUtil.checkParamIsNull(id, name);
         Optional<FileDocument> file = fileService.coverOfMedia(id, name);
-        return file.map(fileService::getObjectResponseEntity).orElse(ResponseEntity.notFound().build());
+        return file.map(fileService::getObjectResponseEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
     }
 
     @Operation(summary = "收藏文件或文件夹")
