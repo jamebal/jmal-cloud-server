@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
@@ -416,11 +415,15 @@ public class UserServiceImpl implements IUserService {
     @Override
     public ResponseResult<Boolean> hasUser() {
         Query query = new Query();
-        return ResultUtil.success(true).setCount(Convert.toInt(mongoTemplate.count(query, COLLECTION_NAME)));
+        long count = mongoTemplate.count(query, COLLECTION_NAME);
+        if (count > 0) {
+            count = 1;
+        }
+        return ResultUtil.success(true).setCount(count);
     }
 
     @Override
-    public ResponseResult<Object> initialization(ConsumerDTO consumerDTO) {
+    public synchronized ResponseResult<Object> initialization(ConsumerDTO consumerDTO) {
         Query query = new Query();
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         if (count < 1) {
