@@ -18,6 +18,7 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
 import lombok.Getter;
 import lombok.Setter;
@@ -435,6 +436,13 @@ public class VideoProcessService {
             log.error(e.getMessage(), e);
         }
         return true;
+    }
+
+    @PreDestroy
+    private void destroy() {
+        if (executorService != null) {
+            executorService.shutdown();
+        }
     }
 
 }

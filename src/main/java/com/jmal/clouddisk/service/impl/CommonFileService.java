@@ -285,9 +285,6 @@ public class CommonFileService {
             // 换成webp格式的图片
             file = replaceWebp(userId, file);
         }
-        fileName = file.getName();
-        suffix = FileUtil.extName(fileName);
-        contentType = FileContentTypeUtils.getContentType(suffix);
 
         String fileAbsolutePath = file.getAbsolutePath();
         Lock lock = null;
@@ -311,7 +308,7 @@ public class CommonFileService {
             FileDocument fileExists = getFileDocument(userId, fileName, relativePath, query);
             if (fileExists != null) {
                 // 添加文件索引
-                luceneService.pushCreateIndexQueue(username, fileId, file);
+                luceneService.pushCreateIndexQueue(username, fileExists.getId(), file);
                 return fileExists.getId();
             }
             Update update = new Update();

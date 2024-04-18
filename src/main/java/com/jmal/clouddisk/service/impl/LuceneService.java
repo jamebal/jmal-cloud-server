@@ -9,10 +9,8 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileIndex;
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.query.SearchDTO;
-import com.jmal.clouddisk.util.FileContentUtil;
-import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
-import com.jmal.clouddisk.util.StringUtil;
+import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.util.*;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCursor;
 import jakarta.annotation.PreDestroy;
@@ -22,19 +20,16 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.FSDirectory;
+import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -43,7 +38,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 /**
  * @author jmal
@@ -124,7 +118,7 @@ public class LuceneService {
         if (!createIndexQueueMap.containsKey(username)) {
             ArrayBlockingQueue<FileIndex> indexFileQueue = new ArrayBlockingQueue<>(CREATE_INDEX_QUEUE_SIZE);
             createIndexQueueMap.put(username, indexFileQueue);
-            rebuildIndexFileTask(username);
+            createIndexFileTask(username);
         }
         return createIndexQueueMap.get(username);
     }
@@ -142,15 +136,15 @@ public class LuceneService {
      * 推送至新建索引文件缓存队列
      *
      * @param username username
-     * @param fileId   fileId
-     * @param file     file
+     * @param fileId  fileId
+     * @param file    File
      */
     public void pushCreateIndexQueue(String username, String fileId, File file) {
+        FileIndex fileIndex = getFileIndex(fileId, file);
+        if (fileIndex == null) {
+            return;
+        }
         try {
-            FileIndex fileIndex = getFileIndex(fileId, file);
-            if (fileIndex == null) {
-                return;
-            }
             ArrayBlockingQueue<FileIndex> indexFileQueue = getIndexFileQueue(username);
             indexFileQueue.put(fileIndex);
         } catch (InterruptedException e) {
@@ -163,7 +157,7 @@ public class LuceneService {
      *
      * @param username username
      */
-    private void rebuildIndexFileTask(String username) {
+    private void createIndexFileTask(String username) {
         if (!createIndexThreadMap.containsKey(username)) {
             ArrayBlockingQueue<FileIndex> indexFileQueue = getIndexFileQueue(username);
             ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -193,8 +187,7 @@ public class LuceneService {
         for (FileIndex fileIndex : fileIndexList) {
             File file = fileIndex.getFile();
             String content = readFileContent(file);
-            String documentId = fileIndex.getFileId();
-            updateIndexDocument(indexWriter, documentId, file.getName(), null, content);
+            updateIndexDocument(indexWriter, fileIndex, content);
             if (StrUtil.isNotBlank(content)) {
                 log.info("添加索引, filepath: {}", file.getAbsoluteFile());
             }
@@ -203,16 +196,21 @@ public class LuceneService {
     }
 
     /**
-     * 判断是否为非文本文件
+     * 构建FileIndex
      *
+     * @param fileId fileId
      * @param file file
      * @return boolean
      */
-    public static FileIndex getFileIndex(String fileId, File file) {
+    public FileIndex getFileIndex(String fileId, File file) {
         if (!FileUtil.exist(file) || StrUtil.isBlank(fileId)) {
             return null;
         }
         FileIndex fileIndex = new FileIndex(file, fileId);
+        fileIndex.setName(file.getName());
+        fileIndex.setModified(file.lastModified());
+        fileIndex.setSize(file.length());
+        setType(file, fileIndex);
         if (file.isFile()) {
             Charset charset = CharsetDetector.detect(file);
             if (charset == null) {
@@ -225,31 +223,58 @@ public class LuceneService {
         return fileIndex;
     }
 
+    private void setType(File file, FileIndex fileIndex) {
+        String fileName = file.getName();
+        String suffix = FileUtil.extName(fileName);
+        if (StrUtil.isBlank(suffix)) {
+            fileIndex.setType(Constants.OTHER);
+            return;
+        }
+        String contentType = FileContentTypeUtils.getContentType(suffix);
+        if (StrUtil.isBlank(suffix)) {
+            fileIndex.setType(Constants.OTHER);
+            return;
+        }
+        if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE)) {
+            fileIndex.setType(Constants.CONTENT_TYPE_IMAGE);
+        }
+        if (contentType.startsWith(Constants.VIDEO)) {
+            fileIndex.setType(Constants.VIDEO);
+        }
+        if (contentType.startsWith(Constants.AUDIO)) {
+            fileIndex.setType(Constants.AUDIO);
+        }
+        if (fileProperties.getDocument().contains(suffix)) {
+            fileIndex.setType(Constants.DOCUMENT);
+        }
+    }
+
     private String readFileContent(File file) {
-        if (!file.isFile()) {
-            return null;
-        }
-        String type = FileTypeUtil.getType(file);
-        if ("pdf".equals(type)) {
-            return FileContentUtil.readPdfContent(file);
-        }
-        // if ("xlsx".equals(type) || "xls".equals(type)) {
-        //     return FileContentUtil.readExcelContent(file);
-        // }
-        if ("ppt".equals(type) || "pptx".equals(type)) {
-            return FileContentUtil.readPPTContent(file);
-        }
-        if ("doc".equals(type) || "docx".equals(type)) {
-            return FileContentUtil.readWordContent(file);
-        }
-        Charset charset = CharsetDetector.detect(file);
-        if (charset == null) {
-            return null;
-        }
-        if ("UTF-8".equals(charset.toString())) {
-            if (fileProperties.getSimText().contains(type)) {
-                return FileUtil.readUtf8String(file);
+        try {
+            if (!file.isFile() || file.length() < 1) {
+                return null;
             }
+            String type = FileTypeUtil.getType(file);
+            if ("pdf".equals(type)) {
+                return FileContentUtil.readPdfContent(file);
+            }
+            if ("ppt".equals(type) || "pptx".equals(type)) {
+                return FileContentUtil.readPPTContent(file);
+            }
+            if ("doc".equals(type) || "docx".equals(type)) {
+                return FileContentUtil.readWordContent(file);
+            }
+            Charset charset = CharsetDetector.detect(file);
+            if (charset == null) {
+                return null;
+            }
+            if ("UTF-8".equals(charset.toString())) {
+                if (fileProperties.getSimText().contains(type)) {
+                    return FileUtil.readUtf8String(file);
+                }
+            }
+        } catch (Exception e) {
+            log.error("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
         }
         return null;
     }
@@ -276,11 +301,13 @@ public class LuceneService {
     }
 
     public void createTagIndex(String userId, IndexWriter indexWriter) {
-        List<org.bson.Document> list = List.of(new org.bson.Document("$match",
-                new org.bson.Document("tags",
-                        new org.bson.Document("$exists", true)
-                                .append("$ne", List.of()))
-                        .append("userId", userId)));
+        List<org.bson.Document> list = Arrays.asList(new org.bson.Document("$match",
+                        new org.bson.Document("tags",
+                                new org.bson.Document("$exists", true)
+                                        .append("$ne", List.of()))
+                                .append("userId", userId)),
+                new org.bson.Document("$project",
+                        new org.bson.Document("tags", 1L)));
         AggregateIterable<org.bson.Document> result = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(list);
         try (MongoCursor<org.bson.Document> mongoCursor = result.iterator()) {
             while (mongoCursor.hasNext()) {
@@ -294,7 +321,9 @@ public class LuceneService {
                 for (org.bson.Document tag : tags) {
                     stringBuilder.append(tag.getString("name")).append("\n");
                 }
-                updateIndexDocument(indexWriter, fileId, null, stringBuilder.toString(), null);
+                FileIndex fileIndex = new FileIndex(fileId);
+                fileIndex.setTagName(stringBuilder.toString());
+                updateIndexDocument(indexWriter, fileIndex, null);
                 try {
                     indexWriter.commit();
                 } catch (IOException e) {
@@ -307,23 +336,33 @@ public class LuceneService {
     /**
      * 添加/更新索引
      * @param indexWriter indexWriter
-     * @param fileId fileId
-     * @param fileName fileName
-     * @param tagName tagName
+     * @param fileIndex FileIndex
      * @param content content
      */
-    public void updateIndexDocument(IndexWriter indexWriter, String fileId, String fileName, String tagName, String content) {
+    public void updateIndexDocument(IndexWriter indexWriter, FileIndex fileIndex, String content) {
+        String fileId = fileIndex.getFileId();
         try {
+            String fileName = fileIndex.getName();
+            String tagName = fileIndex.getTagName();
             org.apache.lucene.document.Document newDocument = new org.apache.lucene.document.Document();
             newDocument.add(new StringField("id", fileId, Field.Store.YES));
+            if (fileIndex.getType() != null) {
+                newDocument.add(new StringField("type", fileIndex.getType(), Field.Store.NO));
+            }
             if (StrUtil.isNotBlank(fileName)) {
-                newDocument.add(new TextField("name", fileName, Field.Store.NO));
+                newDocument.add(new StringField("name", fileName, Field.Store.NO));
             }
             if (StrUtil.isNotBlank(tagName)) {
-                newDocument.add(new TextField("tag", tagName, Field.Store.NO));
+                newDocument.add(new StringField("tag", tagName, Field.Store.NO));
             }
             if (StrUtil.isNotBlank(content)) {
                 newDocument.add(new TextField("content", content, Field.Store.NO));
+            }
+            if (fileIndex.getModified() != null) {
+                newDocument.add(new NumericDocValuesField("modified", fileIndex.getModified()));
+            }
+            if (fileIndex.getSize() != null) {
+                newDocument.add(new NumericDocValuesField("size", fileIndex.getSize()));
             }
             indexWriter.updateDocument(new Term("id", fileId), newDocument);
         } catch (IOException e) {
@@ -344,22 +383,27 @@ public class LuceneService {
             List<String> seenIds = new ArrayList<>();
             IndexSearcher indexSearcher = searcherManager.acquire();
             Query query = getQuery(keyword);
+            Sort sort = getSort(searchDTO);
+            log.info("搜索关键字: {}", query.toString());
+            log.info("排序规则: {}", sort);
             ScoreDoc lastScoreDoc = null;
             if (pageNum > 1) {
                 int totalHitsToSkip = (pageNum - 1) * pageSize;
-                TopDocs topDocs = indexSearcher.search(query, totalHitsToSkip);
+                TopDocs topDocs = indexSearcher.search(query, totalHitsToSkip, sort);
                 if (topDocs.scoreDocs.length == totalHitsToSkip) {
                     lastScoreDoc = topDocs.scoreDocs[totalHitsToSkip - 1];
                 }
             }
-            TopDocs topDocs = indexSearcher.searchAfter(lastScoreDoc, query, pageSize);
+            int count = indexSearcher.count(query);
+            TopDocs topDocs = indexSearcher.searchAfter(lastScoreDoc, query, pageSize, sort);
             for (ScoreDoc hit : topDocs.scoreDocs) {
-                Document doc = indexSearcher.doc(hit.doc);
+                indexSearcher.storedFields().document(hit.doc);
+                Document doc = indexSearcher.storedFields().document(hit.doc);
                 String id = doc.get("id");
                 seenIds.add(id);
             }
             List<FileIntroVO> fileIntroVOList = getFileDocuments(seenIds);
-            return ResultUtil.success(fileIntroVOList).setCount(seenIds.size());
+            return ResultUtil.success(fileIntroVOList).setCount(count);
         } catch (IOException | ParseException e) {
             log.error("搜索失败", e);
         }
@@ -367,12 +411,28 @@ public class LuceneService {
         return ResultUtil.success(new ArrayList<>());
     }
 
-    public List<FileIntroVO> getFileDocuments(List<String> files) {
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where("_id").in(files));
-        // 排除显示某些字段
-        query.fields().exclude("contentText");
-        return mongoTemplate.find(query, FileIntroVO.class, CommonFileService.COLLECTION_NAME);
+    /**
+     * 获取排序规则
+     * @param searchDTO searchDTO
+     * @return Sort
+     */
+    private static Sort getSort(SearchDTO searchDTO) {
+        String sortProp = searchDTO.getSortProp();
+        String sortOrder = searchDTO.getSortOrder();
+        if (StrUtil.isBlank(sortProp) || StrUtil.isBlank(sortOrder)) {
+            return new Sort(SortField.FIELD_SCORE);
+        }
+        // 创建排序规则
+        SortField sortField;
+        if ("updateDate".equals(searchDTO.getSortProp())) {
+            sortField = new SortField("modified", SortField.Type.LONG, "descending".equalsIgnoreCase(searchDTO.getSortOrder()));
+        } else if ("size".equals(searchDTO.getSortProp())) {
+            sortField = new SortField("size", SortField.Type.LONG, "descending".equalsIgnoreCase(searchDTO.getSortOrder()));
+        } else {
+            // 默认按相关性得分排序
+            sortField = SortField.FIELD_SCORE;
+        }
+        return new Sort(sortField);
     }
 
     /**
@@ -385,21 +445,78 @@ public class LuceneService {
     private Query getQuery(String keyword) throws ParseException {
         String[] fields = {"name", "tag", "content"};
         Map<String, Float> boosts = new HashMap<>();
-        boosts.put("name", 10.0f);
-        boosts.put("tag", 5.0f);
-        boosts.put("content", 2.0f);
-        MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, analyzer, boosts);
-        String processedKeyword;
-        if (keyword.length() >= 4) {
-            processedKeyword = "\"" + StringUtil.escape(keyword.trim()) + "\"";
-        } else {
-            // 构建短语查询
-            processedKeyword = Arrays.stream(keyword.trim().split("\\s+"))
-                    .map(k -> StringUtil.escape(k) + (StringUtil.isShortStr(k) ? "*" : ""))
-                    .collect(Collectors.joining(" OR "));
+        boosts.put("name", 3.0f);
+        boosts.put("tag", 2.0f);
+        boosts.put("content", 1.0f);
+
+        BooleanQuery.Builder regexpQueryBuilder = new BooleanQuery.Builder();
+        for (String field : fields) {
+            if ("content".equals(field)) {
+                continue;
+            }
+            regexpQueryBuilder.add(new BoostQuery(new RegexpQuery(new Term(field, ".*" + keyword + ".*")), boosts.get(field)), BooleanClause.Occur.SHOULD);
         }
-        return parser.parse(processedKeyword);
+        Query regExpQuery = regexpQueryBuilder.build();
+        BoostQuery boostedRegExpQuery = new BoostQuery(regExpQuery, 10.0f);
+
+        BooleanQuery.Builder phraseQueryBuilder = new BooleanQuery.Builder();
+        for (String field : fields) {
+            PhraseQuery.Builder builder = new PhraseQuery.Builder();
+            builder.add(new Term(field, keyword.trim()));
+            Query phraseQuery = builder.build();
+            phraseQueryBuilder.add(new BoostQuery(phraseQuery, boosts.get(field)), BooleanClause.Occur.SHOULD);
+        }
+        Query phraseQuery = phraseQueryBuilder.build();
+
+        // 创建分词匹配查询
+        BooleanQuery.Builder tokensQueryBuilder = new BooleanQuery.Builder();
+        for (String field : fields) {
+            QueryParser parser = new QueryParser(field, analyzer);
+            parser.setDefaultOperator(QueryParser.Operator.OR);
+            Query query = parser.parse(keyword.trim());
+            tokensQueryBuilder.add(new BoostQuery(query, boosts.get(field)), BooleanClause.Occur.SHOULD);
+        }
+        Query tokensQuery = tokensQueryBuilder.build();
+        // 组合完全匹配查询和分词匹配查询
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        builder.add(boostedRegExpQuery, BooleanClause.Occur.SHOULD);
+        builder.add(phraseQuery, BooleanClause.Occur.SHOULD);
+        builder.add(tokensQuery, BooleanClause.Occur.SHOULD);
+
+        return builder.build();
+
     }
+
+    public List<FileIntroVO> getFileDocuments(List<String> files) {
+        List<ObjectId> objectIds = files.stream()
+                .filter(ObjectId::isValid)
+                .map(ObjectId::new)
+                .toList();
+        List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match",
+                        new org.bson.Document("_id",
+                                new org.bson.Document("$in", objectIds))),
+                new org.bson.Document("$addFields",
+                        new org.bson.Document("order",
+                                new org.bson.Document("$indexOfArray", Arrays.asList(objectIds, "$_id")))),
+                new org.bson.Document("$sort",
+                        new org.bson.Document("order", 1L)),
+                new org.bson.Document("$project",
+                        new org.bson.Document("order", 0L)
+                                .append("contentText", 0L)));
+
+        AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME)
+                .aggregate(pipeline)
+                .allowDiskUse(true);
+
+        List<FileIntroVO> results = new ArrayList<>();
+        for (org.bson.Document document : aggregateIterable) {
+            FileIntroVO fileIntroVO = mongoTemplate.getConverter().read(FileIntroVO.class, document);
+            results.add(fileIntroVO);
+        }
+
+        return results;
+    }
+
 
     public void deleteAllIndex(String username) {
         try {
@@ -414,8 +531,8 @@ public class LuceneService {
 
     public static void main(String[] args) throws IOException {
         File file = new File("/Users/jmal/temp/filetest/rootpath/jmal/未命名文未命名文件未命名文件未命名文件件.drawio");
-        String content = FileUtil.readUtf8String(file);
-        // String content = "re redis token to本地端通讯需要在";
+        // String content = FileUtil.readUtf8String(file);
+        String content = "缤缤广场";
         Console.log(StringUtil.isContainChinese(content));
         //1.创建一个Analyzer对象
         Analyzer analyzer = new SmartChineseAnalyzer();

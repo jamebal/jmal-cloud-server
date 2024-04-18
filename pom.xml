@@ -18,7 +18,7 @@
         <java.version>17</java.version>
         <maven-jar-plugin.version>3.0.0</maven-jar-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <lucene.version>8.11.2</lucene.version>
+        <lucene.version>9.10.0</lucene.version>
 
     </properties>
     <dependencies>
@@ -37,7 +37,7 @@
         <!--一般分词器，适用于英文分词-->
         <dependency>
             <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-analyzers-common</artifactId>
+            <artifactId>lucene-analysis-common</artifactId>
             <version>${lucene.version}</version>
         </dependency>
         <!--检索关键字高亮显示 -->
@@ -50,7 +50,7 @@
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-smartcn</artifactId>
-            <version>${lucene.version}</version>
+            <version>8.11.3</version>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
@@ -284,7 +284,7 @@
         <dependency>
             <groupId>com.qcloud</groupId>
             <artifactId>cos_api</artifactId>
-            <version>5.6.205</version>
+            <version>5.6.210</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>

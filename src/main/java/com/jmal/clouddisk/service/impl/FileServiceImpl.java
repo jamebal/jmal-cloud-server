@@ -126,7 +126,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 case Constants.VIDEO -> Criteria.where(Constants.CONTENT_TYPE).regex("^" + Constants.VIDEO);
                 case Constants.CONTENT_TYPE_IMAGE -> Criteria.where(Constants.CONTENT_TYPE).regex("^image");
                 case "text" -> Criteria.where(Constants.SUFFIX).in(Collections.singletonList(fileProperties.getSimText()));
-                case "document" -> Criteria.where(Constants.SUFFIX).in(Arrays.asList(fileProperties.getDocument()));
+                case Constants.DOCUMENT -> Criteria.where(Constants.SUFFIX).in(Collections.singletonList(fileProperties.getDocument()));
                 default -> Criteria.where("path").is(currentDirectory);
             };
         } else {
@@ -273,6 +273,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         searchDTO.setKeyword(keyword);
         searchDTO.setPage(upload.getPageIndex());
         searchDTO.setPageSize(upload.getPageSize());
+        searchDTO.setSortProp(upload.getSortableProp());
+        searchDTO.setSortOrder(upload.getOrder());
         return luceneService.searchFile(upload.getUsername(), searchDTO);
         // ResponseResult<Object> result = ResultUtil.genResult();
         // Criteria criteria1 = Criteria.where("name").regex(keyword, "i");

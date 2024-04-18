@@ -66,7 +66,7 @@ public class FileProperties {
     /***
      * 文档类型
      */
-    private String[] document = {"pdf", "doc", "docx", "xlsx", "xls", "xl", "md", "ppt", "pptx"};
+    private List<String> document = new ArrayList<>();
     /***
      * 是否开启文件监控(默认开启)
      * 开启文件监控会监控 ${rootDir} 目录下文件的变化
