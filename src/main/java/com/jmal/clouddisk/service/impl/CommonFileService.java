@@ -308,7 +308,8 @@ public class CommonFileService {
             FileDocument fileExists = getFileDocument(userId, fileName, relativePath, query);
             if (fileExists != null) {
                 // 添加文件索引
-                luceneService.pushCreateIndexQueue(username, fileExists.getId(), file);
+                // 获取tagName
+                luceneService.pushCreateIndexQueue(username, fileExists.getId(), file, getTagName(fileExists));
                 return fileExists.getId();
             }
             Update update = new Update();
@@ -334,7 +335,7 @@ public class CommonFileService {
             updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
             pushMessage(username, update.getUpdateObject(), "createFile");
             // 添加文件索引
-            luceneService.pushCreateIndexQueue(username, fileId, file);
+            luceneService.pushCreateIndexQueue(username, fileId, file, null);
         } finally {
             if (lock != null) {
                 lock.unlock();
@@ -344,6 +345,27 @@ public class CommonFileService {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return fileId;
+    }
+
+    private String getTagName(FileDocument fileDocument) {
+        if (fileDocument != null && fileDocument.getTags() != null && !fileDocument.getTags().isEmpty()) {
+            return fileDocument.getTags().stream().map(Tag::getName).reduce((a, b) -> a + " " + b).orElse("");
+        }
+        return null;
+    }
+
+    public String getTagNameByTagList(List<Tag> tagList) {
+        if (tagList != null && !tagList.isEmpty()) {
+            return tagList.stream().map(Tag::getName).reduce((a, b) -> a + " " + b).orElse("");
+        }
+        return null;
+    }
+
+    public String getTagNameByTagDTOList(List<TagDTO> tagDTOList) {
+        if (tagDTOList != null && !tagDTOList.isEmpty()) {
+            return tagDTOList.stream().map(TagDTO::getName).reduce((a, b) -> a + " " + b).orElse("");
+        }
+        return null;
     }
 
     private static void setDateTime(File file, Update update) {

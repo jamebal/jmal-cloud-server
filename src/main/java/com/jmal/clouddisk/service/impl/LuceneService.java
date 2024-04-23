@@ -139,10 +139,19 @@ public class LuceneService {
      * @param fileId  fileId
      * @param file    File
      */
-    public void pushCreateIndexQueue(String username, String fileId, File file) {
+    public void pushCreateIndexQueue(String username, String fileId, File file, String tagName) {
+        if (StrUtil.isBlank(fileId) || StrUtil.isBlank(username)) {
+            return;
+        }
         FileIndex fileIndex = getFileIndex(fileId, file);
+        if (file == null) {
+            fileIndex = new FileIndex(fileId);
+        }
         if (fileIndex == null) {
             return;
+        }
+        if (StrUtil.isNotBlank(tagName)) {
+            fileIndex.setTagName(tagName);
         }
         try {
             ArrayBlockingQueue<FileIndex> indexFileQueue = getIndexFileQueue(username);
@@ -150,6 +159,10 @@ public class LuceneService {
         } catch (InterruptedException e) {
             log.error("推送新建索引队列失败, fileId: {}, {}", fileId, e.getMessage(), e);
         }
+    }
+
+    public void pushCreateIndexQueue(String username, String fileId, String tagName) {
+        pushCreateIndexQueue(username, fileId, null, tagName);
     }
 
     /**

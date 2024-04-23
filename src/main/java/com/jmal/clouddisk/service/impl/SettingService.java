@@ -120,10 +120,8 @@ public class SettingService {
                     SyncFileVisitor syncFileVisitor = new SyncFileVisitor(username, fileCountVisitor.getCount());
                     syncFileVisitorMap.put(username, syncFileVisitor);
                     Files.walkFileTree(path, syncFileVisitor);
-                    // 加入标签的索引
-                    luceneService.createTagIndex(userService.getUserIdByUserName(username), username);
                 } catch (IOException e) {
-                    log.error(e.getMessage() + path, e);
+                    log.error("{}{}", e.getMessage(), path, e);
                 } finally {
                     syncCache.remove(username);
                     syncFileVisitorMap.remove(username);
@@ -231,7 +229,7 @@ public class SettingService {
             try {
                 commonFileService.createFile(username, file.toFile(), null, null);
             } catch (Exception e) {
-                log.error(e.getMessage() + file, e);
+                log.error("{}{}", e.getMessage(), file, e);
             } finally {
                 if (totalCount > 0) {
                     if (processCount.get() <= 2) {

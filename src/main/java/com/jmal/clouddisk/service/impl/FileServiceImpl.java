@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -96,6 +97,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Autowired
     TagService tagService;
+
+    @Autowired
+    LuceneService luceneService;
 
     /***
      * 前端文件夹树的第一级的文件Id
@@ -531,9 +535,16 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             try (InputStream inputStream = FileUtil.getInputStream(file);
                  InputStreamReader inputStreamReader = new InputStreamReader(inputStream, charset);
                  BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+                // 判断file是否为log文件
+                boolean logFile = FileTypeUtil.getType(file).equals("log");
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {
-                    outputStream.write(line.getBytes(charset));
+                    if (logFile) {
+                        String processedLine = removeAnsiCodes(line);
+                        outputStream.write(processedLine.getBytes(charset));
+                    } else {
+                        outputStream.write(line.getBytes(charset));
+                    }
                     outputStream.write("\n".getBytes(charset));
                     outputStream.flush();
                 }
@@ -543,6 +554,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 log.error(e.getMessage(), e);
             }
         };
+    }
+
+    private static String removeAnsiCodes(String text) {
+        return text.replaceAll("\\033\\[[;\\d]*[^\\x40-\\x7E]*[a-zA-Z]?", "");
     }
 
     @Override
@@ -1377,6 +1392,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         if (editTagDTO.getRemoveTagIds() == null || editTagDTO.getRemoveTagIds().isEmpty()) {
             refreshTagList(userLoginHolder.getUserId(), userLoginHolder.getUsername());
+            editTagDTO.getFileIds().forEach(fileId -> {
+                String tagName = getTagNameByTagDTOList(editTagDTO.getTagList());
+                luceneService.pushCreateIndexQueue(userLoginHolder.getUsername(), fileId, tagName);
+            });
         } else {
             // 删除标签并修改相关文件
             deleteTgs(editTagDTO.getRemoveTagIds());
@@ -1393,12 +1412,15 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("tags.tagId").in(removeTagIds));
         List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+        String username = userLoginHolder.getUsername();
         fileDocumentList.parallelStream().forEach(fileDocument -> {
             List<Tag> tagList = fileDocument.getTags();
             tagList.removeIf(tagDTO -> removeTagIds.contains(tagDTO.getTagId()));
             Update update = new Update();
             update.set("tags", mongoTemplate.getConverter().convertToMongoType(tagList));
             mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
+            String tagName = getTagNameByTagList(tagList);
+            luceneService.pushCreateIndexQueue(username, fileDocument.getId(), tagName);
         });
         refreshTagList(userLoginHolder.getUserId(), userLoginHolder.getUsername());
     }
