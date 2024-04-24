@@ -1,24 +1,25 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.FileIndex;
+import com.jmal.clouddisk.model.FileIntroVO;
+import com.jmal.clouddisk.model.Tag;
+import com.jmal.clouddisk.model.TagDO;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.util.*;
+import com.jmal.clouddisk.util.FileContentTypeUtils;
+import com.jmal.clouddisk.util.FileContentUtil;
+import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
 import com.mongodb.client.AggregateIterable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -305,7 +306,6 @@ public class LuceneService {
     }
 
     public ResponseResult<List<FileIntroVO>> searchFile(SearchDTO searchDTO) {
-        TimeInterval timeInterval = new TimeInterval();
         String keyword = searchDTO.getKeyword();
         if (keyword == null || keyword.trim().isEmpty() || searchDTO.getUserId() == null) {
             return ResultUtil.success(Collections.emptyList());
@@ -336,7 +336,6 @@ public class LuceneService {
                 String id = doc.get("id");
                 seenIds.add(id);
             }
-            //log.info("搜索耗时: {}ms", timeInterval.intervalMs());
             List<FileIntroVO> fileIntroVOList = getFileIntroVOs(seenIds);
             return ResultUtil.success(fileIntroVOList).setCount(count);
         } catch (IOException | ParseException e) {
@@ -519,29 +518,6 @@ public class LuceneService {
         Update update = new Update();
         update.set("delete", 1);
         mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
-    }
-
-    public static void main(String[] args) throws IOException {
-        File file = new File("/Users/jmal/temp/filetest/rootpath/jmal/未命名文未命名文件未命名文件未命名文件件.drawio");
-        // String content = FileUtil.readUtf8String(file);
-        String content = "选择合适的n-gram大小：n-gram的大小（即minGram和maxGram的值）对搜索的精确性和性能有重大影响。较小的n-grams可以增";
-        Console.log(StringUtil.isContainChinese(content));
-        //1.创建一个Analyzer对象
-        Analyzer analyzer = new SmartChineseAnalyzer();
-        //2.调用Analyzer对象的tokenStream方法获取TokenStream对象，此对象包含了所有的分词结果
-        TokenStream tokenStream = analyzer.tokenStream("", content);
-        //3.给tokenStream对象设置一个指针，指针在哪当前就在哪一个分词上
-        CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
-        //4.调用tokenStream对象的reset方法，重置指针，不调用会报错
-        tokenStream.reset();
-        //5.利用while循环，拿到分词列表的结果  incrementToken方法返回值如果为false代表读取完毕  true代表没有读取完毕
-        while (tokenStream.incrementToken()) {
-            String word = charTermAttribute.toString();
-            System.out.println(word);
-        }
-        //6.关闭
-        tokenStream.close();
-        analyzer.close();
     }
 
 }
