@@ -60,14 +60,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.jmal.clouddisk.service.IUserService.USER_ID;
-import static com.mongodb.client.model.Accumulators.sum;
-import static com.mongodb.client.model.Aggregates.group;
-import static com.mongodb.client.model.Aggregates.match;
-import static com.mongodb.client.model.Filters.*;
 
 
 /**
@@ -129,8 +128,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 case Constants.AUDIO -> Criteria.where(Constants.CONTENT_TYPE).regex("^" + Constants.AUDIO);
                 case Constants.VIDEO -> Criteria.where(Constants.CONTENT_TYPE).regex("^" + Constants.VIDEO);
                 case Constants.CONTENT_TYPE_IMAGE -> Criteria.where(Constants.CONTENT_TYPE).regex("^image");
-                case "text" -> Criteria.where(Constants.SUFFIX).in(Collections.singletonList(fileProperties.getSimText()));
-                case Constants.DOCUMENT -> Criteria.where(Constants.SUFFIX).in(Collections.singletonList(fileProperties.getDocument()));
+                case "text" -> Criteria.where(Constants.SUFFIX).in(fileProperties.getSimText());
+                case Constants.DOCUMENT -> Criteria.where(Constants.SUFFIX).in(fileProperties.getDocument());
                 default -> Criteria.where("path").is(currentDirectory);
             };
         } else {
@@ -222,11 +221,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             LocalDateTime updateDate = fileDocument.getUpdateDate();
             long update = TimeUntils.getMilli(updateDate);
             fileDocument.setAgoTime(now - update);
-            if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
-                String path = fileDocument.getPath() + fileDocument.getName() + File.separator;
-                long size = getFolderSize(fileDocument.getUserId(), path);
-                fileDocument.setSize(size);
-            }
+            // if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
+            //     String path = fileDocument.getPath() + fileDocument.getName() + File.separator;
+            //     long size = getFolderSize(fileDocument.getUserId(), path);
+            //     fileDocument.setSize(size);
+            // }
             FileIntroVO fileIntroVO = new FileIntroVO();
             BeanUtils.copyProperties(fileDocument, fileIntroVO);
             return fileIntroVO;
@@ -435,13 +434,18 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
      * 统计文件夹的大小
      */
     private long getFolderSize(String userId, String path) {
-        List<Bson> list = Arrays.asList(
-                match(and(eq(USER_ID, userId),
-                        eq(Constants.IS_FOLDER, false), regex("path", "^" + ReUtil.escape(path)))),
-                group(new BsonNull(), sum(Constants.TOTAL_SIZE, "$size")));
-        AggregateIterable<Document> aggregate = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
+        List<Bson> list = Arrays.asList(new Document("$match",
+                        new Document(USER_ID, userId)
+                                .append(Constants.IS_FOLDER, false)
+                                .append("path", new Document("$regex", "^" + ReUtil.escape(path)))),
+                new Document("$group",
+                        new Document("_id",
+                                new BsonNull())
+                                .append(Constants.TOTAL_SIZE,
+                                        new Document("$sum", "$size"))));
+        AggregateIterable<Document> result = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
         long totalSize = 0;
-        Document doc = aggregate.first();
+        Document doc = result.first();
         if (doc != null) {
             Object object = doc.get(Constants.TOTAL_SIZE);
             if (object != null) {
@@ -536,7 +540,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                  InputStreamReader inputStreamReader = new InputStreamReader(inputStream, charset);
                  BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
                 // 判断file是否为log文件
-                boolean logFile = FileTypeUtil.getType(file).equals("log");
+                boolean logFile = file.length() > 0 && FileTypeUtil.getType(file).equals("log");
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {
                     if (logFile) {
@@ -1386,15 +1390,16 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(editTagDTO.getFileIds()));
         Update update = new Update();
+        String userId = userLoginHolder.getUserId();
         // 使用mongoTemplate.getConverter().convertToMongoType, 避免生成_class
-        update.set("tags", mongoTemplate.getConverter().convertToMongoType(tagService.getTagIdsByTagDTOList(editTagDTO.getTagList(), userLoginHolder.getUserId())));
+        update.set("tags", mongoTemplate.getConverter().convertToMongoType(tagService.getTagIdsByTagDTOList(editTagDTO.getTagList(), userId)));
         update.set(Constants.UPDATE_DATE, LocalDateTime.now(TimeUntils.ZONE_ID));
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         if (editTagDTO.getRemoveTagIds() == null || editTagDTO.getRemoveTagIds().isEmpty()) {
-            refreshTagList(userLoginHolder.getUserId(), userLoginHolder.getUsername());
+            refreshTagList(userId, userLoginHolder.getUsername());
             editTagDTO.getFileIds().forEach(fileId -> {
                 String tagName = getTagNameByTagDTOList(editTagDTO.getTagList());
-                luceneService.pushCreateIndexQueue(userLoginHolder.getUsername(), fileId, tagName);
+                luceneService.pushCreateIndexQueue(userId, fileId, tagName);
             });
         } else {
             // 删除标签并修改相关文件
@@ -1412,7 +1417,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("tags.tagId").in(removeTagIds));
         List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
-        String username = userLoginHolder.getUsername();
+        String userId = userLoginHolder.getUserId();
         fileDocumentList.parallelStream().forEach(fileDocument -> {
             List<Tag> tagList = fileDocument.getTags();
             tagList.removeIf(tagDTO -> removeTagIds.contains(tagDTO.getTagId()));
@@ -1420,9 +1425,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             update.set("tags", mongoTemplate.getConverter().convertToMongoType(tagList));
             mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
             String tagName = getTagNameByTagList(tagList);
-            luceneService.pushCreateIndexQueue(username, fileDocument.getId(), tagName);
+            luceneService.pushCreateIndexQueue(userId, fileDocument.getId(), tagName);
         });
-        refreshTagList(userLoginHolder.getUserId(), userLoginHolder.getUsername());
+        refreshTagList(userId, userLoginHolder.getUsername());
     }
 
     private void refreshTagList(String userId, String username) {
@@ -1841,7 +1846,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         shareQuery.addCriteria(Criteria.where(Constants.FILE_ID).in(fileIds));
         mongoTemplate.remove(shareQuery, ShareDO.class);
         // delete index
-        luceneService.deleteIndexDocuments(username, fileIds);
+        luceneService.deleteIndexDocuments(fileIds);
     }
 
 }

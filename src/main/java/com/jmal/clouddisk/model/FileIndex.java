@@ -10,15 +10,19 @@ import java.io.File;
 @Data
 public class FileIndex {
 
-    public FileIndex(String fileId) {
+
+    public FileIndex(String userId, String fileId) {
+        this.userId = userId;
         this.fileId = fileId;
     }
 
-    public FileIndex(File file, String fileId) {
+    public FileIndex(String userId, File file, String fileId) {
+        this.userId = userId;
         this.file = file;
         this.fileId = fileId;
     }
 
+    public String userId;
     private File file;
     private String fileId;
     private String name;

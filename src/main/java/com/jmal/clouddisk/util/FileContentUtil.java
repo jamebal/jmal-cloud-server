@@ -23,7 +23,7 @@ public class FileContentUtil {
             PDFTextStripper pdfStripper = new PDFTextStripper();
             return pdfStripper.getText(document);
         } catch (IOException e) {
-            log.error("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
+            log.warn("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
         }
         return null;
     }
@@ -41,7 +41,7 @@ public class FileContentUtil {
             }
             return stringBuilder.toString();
         } catch (IOException e) {
-            log.error("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
+            log.warn("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
         }
         return null;
     }
@@ -56,7 +56,7 @@ public class FileContentUtil {
             }
             return stringBuilder.toString();
         } catch (IOException e) {
-            log.error("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
+            log.warn("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
         }
         return null;
     }

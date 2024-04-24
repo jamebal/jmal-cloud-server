@@ -309,7 +309,7 @@ public class CommonFileService {
             if (fileExists != null) {
                 // 添加文件索引
                 // 获取tagName
-                luceneService.pushCreateIndexQueue(username, fileExists.getId(), file, getTagName(fileExists));
+                luceneService.pushCreateIndexQueue(userId, fileExists.getId(), file, getTagName(fileExists));
                 return fileExists.getId();
             }
             Update update = new Update();
@@ -335,7 +335,7 @@ public class CommonFileService {
             updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
             pushMessage(username, update.getUpdateObject(), "createFile");
             // 添加文件索引
-            luceneService.pushCreateIndexQueue(username, fileId, file, null);
+            luceneService.pushCreateIndexQueue(userId, fileId, file, null);
         } finally {
             if (lock != null) {
                 lock.unlock();
@@ -929,4 +929,10 @@ public class CommonFileService {
         query.limit(pageSize);
     }
 
+    public void deleteDocByDeleteFlag(String username) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userService.getUserIdByUserName(username)));
+        query.addCriteria(Criteria.where("delete").is(1));
+        mongoTemplate.remove(query, COLLECTION_NAME);
+    }
 }

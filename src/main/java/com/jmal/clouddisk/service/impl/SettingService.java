@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -91,14 +92,10 @@ public class SettingService {
             roleService.initRoles();
         }
         // 启动时检测是否存在lucene索引，不存在则初始化
-        Path tempDir = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir());
-        List<String> usernames = userService.getAllUsernameList();
-        usernames.forEach(username -> {
-            Path path = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, fileProperties.getLuceneIndexDir());
-            if (!Files.exists(path)) {
-                sync(username);
-            }
-        });
+        if (!luceneService.checkIndexExists()) {
+            List<String> usernames = userService.getAllUsernameList();
+            usernames.forEach(this::sync);
+        }
     }
 
     /***
@@ -112,7 +109,7 @@ public class SettingService {
                 TimeInterval timeInterval = new TimeInterval();
                 try {
                     // 先删除索引
-                    luceneService.deleteAllIndex(username);
+                    luceneService.deleteAllIndex(userService.getUserIdByUserName(username));
                     FileCountVisitor fileCountVisitor = new FileCountVisitor();
                     PathUtil.walkFiles(path, fileCountVisitor);
                     log.info("user: {}, 开始同步, 文件数: {}", username, fileCountVisitor.getCount());
@@ -120,8 +117,13 @@ public class SettingService {
                     SyncFileVisitor syncFileVisitor = new SyncFileVisitor(username, fileCountVisitor.getCount());
                     syncFileVisitorMap.put(username, syncFileVisitor);
                     Files.walkFileTree(path, syncFileVisitor);
+                    TimeUnit.MINUTES.sleep(1);
+                    // 删除有删除标记的doc
+                    commonFileService.deleteDocByDeleteFlag(username);
                 } catch (IOException e) {
                     log.error("{}{}", e.getMessage(), path, e);
+                } catch (InterruptedException e) {
+                    log.error(e.getMessage(), e);
                 } finally {
                     syncCache.remove(username);
                     syncFileVisitorMap.remove(username);

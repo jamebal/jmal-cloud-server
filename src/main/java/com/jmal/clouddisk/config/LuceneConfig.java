@@ -1,5 +1,7 @@
 package com.jmal.clouddisk.config;
 
+import jakarta.annotation.PreDestroy;
+import lombok.RequiredArgsConstructor;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
 import org.apache.lucene.index.IndexWriter;
@@ -13,9 +15,8 @@ import org.apache.lucene.store.FSDirectory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import jakarta.annotation.PreDestroy;
-
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -24,11 +25,10 @@ import java.nio.file.Paths;
  * @Date 2021/4/27 4:09 下午
  */
 @Configuration
+@RequiredArgsConstructor
 public class LuceneConfig {
-    /**
-     * lucene索引,存放位置
-     */
-    private static final String LUCENE_INDEX_PATH = "luceneIndex/";
+
+    private final FileProperties fileProperties;
 
     private ControlledRealTimeReopenThread<IndexSearcher> cRTReopenThead;
 
@@ -40,16 +40,23 @@ public class LuceneConfig {
         return new SmartChineseAnalyzer();
     }
 
+    private Path getIndexDir() {
+        return Paths.get(fileProperties.getRootDir(), fileProperties.getLuceneIndexDir());
+    }
+
     /**
      * 索引位置
      */
     @Bean
     public Directory indexDir() throws IOException {
-        return FSDirectory.open(Paths.get(LUCENE_INDEX_PATH));
+        return FSDirectory.open(getIndexDir());
     }
 
     /**
      * 创建indexWriter
+     * 清空索引:
+     * indexWriter.deleteAll();
+     * indexWriter.commit();
      *
      * @param directory 索引位置
      * @param analyzer  Analyzer
@@ -58,12 +65,7 @@ public class LuceneConfig {
     @Bean
     public IndexWriter indexWriter(Directory directory, Analyzer analyzer) throws IOException {
         IndexWriterConfig indexWriterConfig = new IndexWriterConfig(analyzer);
-        IndexWriter indexWriter = new IndexWriter(directory, indexWriterConfig);
-
-        // 清空索引
-        // indexWriter.deleteAll();
-        // indexWriter.commit();
-        return indexWriter;
+        return new IndexWriter(directory, indexWriterConfig);
     }
 
     /**

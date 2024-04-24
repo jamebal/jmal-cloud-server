@@ -10,10 +10,9 @@ import com.jmal.clouddisk.model.FileIndex;
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import com.mongodb.client.AggregateIterable;
-import com.mongodb.client.MongoCursor;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.Analyzer;
@@ -22,22 +21,24 @@ import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
-import org.apache.lucene.store.FSDirectory;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author jmal
@@ -57,95 +58,31 @@ public class LuceneService {
     private final FileProperties fileProperties;
     private final Analyzer analyzer;
     private final MongoTemplate mongoTemplate;
-
-    /**
-     * 每个用户的IndexWriter
-     * key: username
-     * value: IndexWriter
-     */
-    private final Map<String, IndexWriter> indexWriterMap = new ConcurrentHashMap<>();
-    /**
-     * 每个用户的SearcherManager
-     * key: username
-     * value: SearcherManager
-     */
-    private final Map<String, SearcherManager> searcherManagerMap = new ConcurrentHashMap<>();
-
-    /**
-     * 新建索引文件缓冲队列
-     * key: username
-     * value: ArrayBlockingQueue
-     */
-    private final static Map<String, ArrayBlockingQueue<FileIndex>> createIndexQueueMap = new ConcurrentHashMap<>();
+    private final IndexWriter indexWriter;
+    private final SearcherManager searcherManager;
 
     /**
      * 新建索引文件缓冲队列大小
      */
     private final static int CREATE_INDEX_QUEUE_SIZE = 256;
+    private final UserLoginHolder userLoginHolder;
 
-    /**
-     * 每个用户的新建索引任务线程
-     * key: username
-     * value: Thread
-     */
-    private final static Map<String, ScheduledExecutorService> createIndexThreadMap = new ConcurrentHashMap<>();
-
-    /**
-     * 获取Lucene索引目录
-     *
-     * @param username username
-     * @return Lucene索引目录
-     */
-    private String getLuceneIndexDir(String username) {
-        // 视频文件缓存目录
-        String luceneIndexDir = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, fileProperties.getLuceneIndexDir()).toString();
-        if (!FileUtil.exist(luceneIndexDir)) {
-            FileUtil.mkdir(luceneIndexDir);
-        }
-        return luceneIndexDir;
-    }
-
-    private IndexWriter getIndexWriter(String username) throws IOException {
-        String luceneIndexDir = getLuceneIndexDir(username);
-        if (!indexWriterMap.containsKey(username)) {
-            IndexWriter indexWriter = new IndexWriter(FSDirectory.open(Paths.get(luceneIndexDir)), new IndexWriterConfig(analyzer));
-            this.indexWriterMap.put(username, indexWriter);
-        }
-        return indexWriterMap.get(username);
-    }
-
-    private ArrayBlockingQueue<FileIndex> getIndexFileQueue(String username) {
-        if (!createIndexQueueMap.containsKey(username)) {
-            ArrayBlockingQueue<FileIndex> indexFileQueue = new ArrayBlockingQueue<>(CREATE_INDEX_QUEUE_SIZE);
-            createIndexQueueMap.put(username, indexFileQueue);
-            createIndexFileTask(username);
-        }
-        return createIndexQueueMap.get(username);
-    }
-
-    private SearcherManager getSearcherManager(String username) throws IOException {
-        if (!searcherManagerMap.containsKey(username)) {
-            IndexWriter indexWriter = getIndexWriter(username);
-            SearcherManager searcherManager = new SearcherManager(indexWriter, false, false, new SearcherFactory());
-            this.searcherManagerMap.put(username, searcherManager);
-        }
-        return searcherManagerMap.get(username);
-    }
+    private ArrayBlockingQueue<FileIndex> indexFileQueue;
 
     /**
      * 推送至新建索引文件缓存队列
      *
-     * @param username username
+     * @param userId userId
      * @param fileId  fileId
      * @param file    File
      */
-    public void pushCreateIndexQueue(String username, String fileId, File file, String tagName) {
-        if (StrUtil.isBlank(fileId) || StrUtil.isBlank(username)) {
+    public void pushCreateIndexQueue(String userId, String fileId, File file, String tagName) {
+        if (StrUtil.isBlank(fileId) || StrUtil.isBlank(userId)) {
             return;
         }
-        FileIndex fileIndex = getFileIndex(fileId, file);
+        FileIndex fileIndex = getFileIndex(userId, fileId, file);
         if (file == null) {
-            fileIndex = new FileIndex(fileId);
+            fileIndex = new FileIndex(userId, fileId);
         }
         if (fileIndex == null) {
             return;
@@ -154,49 +91,57 @@ public class LuceneService {
             fileIndex.setTagName(tagName);
         }
         try {
-            ArrayBlockingQueue<FileIndex> indexFileQueue = getIndexFileQueue(username);
+            ArrayBlockingQueue<FileIndex> indexFileQueue = getIndexFileQueue();
             indexFileQueue.put(fileIndex);
         } catch (InterruptedException e) {
             log.error("推送新建索引队列失败, fileId: {}, {}", fileId, e.getMessage(), e);
         }
     }
 
-    public void pushCreateIndexQueue(String username, String fileId, String tagName) {
-        pushCreateIndexQueue(username, fileId, null, tagName);
+    private ArrayBlockingQueue<FileIndex> getIndexFileQueue() {
+        if (indexFileQueue == null) {
+            indexFileQueue = new ArrayBlockingQueue<>(CREATE_INDEX_QUEUE_SIZE);
+            createIndexFileTask();
+        }
+        return indexFileQueue;
+    }
+
+    /**
+     * 推送索引文件队列
+     * @param userId userId
+     * @param fileId fileId
+     * @param tagName tagName
+     */
+    public void pushCreateIndexQueue(String userId, String fileId, String tagName) {
+        pushCreateIndexQueue(userId, fileId, null, tagName);
     }
 
     /**
      * 新建索引文件任务
      *
-     * @param username username
      */
-    private void createIndexFileTask(String username) {
-        if (!createIndexThreadMap.containsKey(username)) {
-            ArrayBlockingQueue<FileIndex> indexFileQueue = getIndexFileQueue(username);
-            ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-            scheduler.scheduleAtFixedRate(() -> {
-                try {
-                    List<FileIndex> files = new ArrayList<>(indexFileQueue.size());
-                    indexFileQueue.drainTo(files);
-                    if (!files.isEmpty()) {
-                        createIndexFiles(username, files);
-                    }
-                } catch (Exception e) {
-                    log.error("创建索引失败", e);
+    private void createIndexFileTask() {
+        ArrayBlockingQueue<FileIndex> indexFileQueue = getIndexFileQueue();
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                List<FileIndex> fileIndexList = new ArrayList<>(indexFileQueue.size());
+                indexFileQueue.drainTo(fileIndexList);
+                if (!fileIndexList.isEmpty()) {
+                    createIndexFiles(fileIndexList);
                 }
-            }, 0, 1, TimeUnit.SECONDS);
-            createIndexThreadMap.put(username, scheduler);
-        }
+            } catch (Exception e) {
+                log.error("创建索引失败", e);
+            }
+        }, 0, 1, TimeUnit.SECONDS);
     }
 
     /**
      * 创建索引
-     * @param username username
      * @param fileIndexList List<FileIndex>
      * @throws IOException IOException
      */
-    private void createIndexFiles(String username, List<FileIndex> fileIndexList) throws IOException {
-        IndexWriter indexWriter = getIndexWriter(username);
+    private void createIndexFiles(List<FileIndex> fileIndexList) throws IOException {
         for (FileIndex fileIndex : fileIndexList) {
             File file = fileIndex.getFile();
             String content = readFileContent(file);
@@ -206,20 +151,33 @@ public class LuceneService {
             }
         }
         indexWriter.commit();
+        removeDeletedFlag(fileIndexList);
+    }
+
+    private void removeDeletedFlag(List<FileIndex> fileIndexList) {
+        // 提取出fileIdList
+        List<String> fileIdList = fileIndexList.stream().map(FileIndex::getFileId).toList();
+        // 移除删除标记
+        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+        query.addCriteria(Criteria.where("_id").in(fileIdList).and("delete").is(1));
+        Update update = new Update();
+        update.unset("delete");
+        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
     }
 
     /**
      * 构建FileIndex
      *
+     * @param userId userId
      * @param fileId fileId
      * @param file file
      * @return boolean
      */
-    public FileIndex getFileIndex(String fileId, File file) {
+    public FileIndex getFileIndex(String userId, String fileId, File file) {
         if (!FileUtil.exist(file) || StrUtil.isBlank(fileId)) {
             return null;
         }
-        FileIndex fileIndex = new FileIndex(file, fileId);
+        FileIndex fileIndex = new FileIndex(userId, file, fileId);
         fileIndex.setName(file.getName());
         fileIndex.setModified(file.lastModified());
         fileIndex.setSize(file.length());
@@ -264,6 +222,9 @@ public class LuceneService {
 
     private String readFileContent(File file) {
         try {
+            if (file == null) {
+                return null;
+            }
             if (!file.isFile() || file.length() < 1) {
                 return null;
             }
@@ -293,16 +254,8 @@ public class LuceneService {
     }
 
 
-    public void createTagIndex(String userId, String username) throws IOException {
-        log.info("user: {}, 创建标签索引...", username);
-        IndexWriter indexWriter = getIndexWriter(username);
-        createTagIndex(userId, indexWriter);
-        log.info("user: {}, 创建标签索引成功", username);
-    }
-
-    public void deleteIndexDocuments(String username, List<String> fileIds) {
+    public void deleteIndexDocuments(List<String> fileIds) {
         try {
-            IndexWriter indexWriter = getIndexWriter(username);
             for (String fileId : fileIds) {
                 Term term = new Term("id", fileId);
                 indexWriter.deleteDocuments(term);
@@ -310,39 +263,6 @@ public class LuceneService {
             indexWriter.commit();
         } catch (IOException e) {
             log.error("删除索引失败, fileIds: {}, {}", fileIds, e.getMessage(), e);
-        }
-    }
-
-    public void createTagIndex(String userId, IndexWriter indexWriter) {
-        List<org.bson.Document> list = Arrays.asList(new org.bson.Document("$match",
-                        new org.bson.Document("tags",
-                                new org.bson.Document("$exists", true)
-                                        .append("$ne", List.of()))
-                                .append("userId", userId)),
-                new org.bson.Document("$project",
-                        new org.bson.Document("tags", 1L)));
-        AggregateIterable<org.bson.Document> result = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(list);
-        try (MongoCursor<org.bson.Document> mongoCursor = result.iterator()) {
-            while (mongoCursor.hasNext()) {
-                org.bson.Document doc = mongoCursor.next();
-                String fileId = doc.getObjectId("_id").toHexString();
-                List<org.bson.Document> tags = doc.getList("tags", org.bson.Document.class);
-                if (tags == null || tags.isEmpty()) {
-                    continue;
-                }
-                StringBuilder stringBuilder = new StringBuilder();
-                for (org.bson.Document tag : tags) {
-                    stringBuilder.append(tag.getString("name")).append("\n");
-                }
-                FileIndex fileIndex = new FileIndex(fileId);
-                fileIndex.setTagName(stringBuilder.toString());
-                updateIndexDocument(indexWriter, fileIndex, null);
-                try {
-                    indexWriter.commit();
-                } catch (IOException e) {
-                    log.error(e.getMessage(), e);
-                }
-            }
         }
     }
 
@@ -359,14 +279,15 @@ public class LuceneService {
             String tagName = fileIndex.getTagName();
             org.apache.lucene.document.Document newDocument = new org.apache.lucene.document.Document();
             newDocument.add(new StringField("id", fileId, Field.Store.YES));
+            newDocument.add(new StringField("userId", fileIndex.getUserId(), Field.Store.NO));
             if (fileIndex.getType() != null) {
                 newDocument.add(new StringField("type", fileIndex.getType(), Field.Store.NO));
             }
             if (StrUtil.isNotBlank(fileName)) {
-                newDocument.add(new StringField("name", fileName, Field.Store.NO));
+                newDocument.add(new StringField("name", fileName.toLowerCase(), Field.Store.NO));
             }
             if (StrUtil.isNotBlank(tagName)) {
-                newDocument.add(new StringField("tag", tagName, Field.Store.NO));
+                newDocument.add(new StringField("tag", tagName.toLowerCase(), Field.Store.NO));
             }
             if (StrUtil.isNotBlank(content)) {
                 newDocument.add(new TextField("content", content, Field.Store.NO));
@@ -391,7 +312,6 @@ public class LuceneService {
         int pageNum = searchDTO.getPage();
         int pageSize = searchDTO.getPageSize();
         try {
-            SearcherManager searcherManager = getSearcherManager(username);
             searcherManager.maybeRefresh();
             List<String> seenIds = new ArrayList<>();
             IndexSearcher indexSearcher = searcherManager.acquire();
@@ -462,6 +382,9 @@ public class LuceneService {
         boosts.put("tag", 2.0f);
         boosts.put("content", 1.0f);
 
+        // 将关键字转为小写
+        keyword = keyword.toLowerCase();
+
         BooleanQuery.Builder regexpQueryBuilder = new BooleanQuery.Builder();
         for (String field : fields) {
             if ("content".equals(field)) {
@@ -490,11 +413,19 @@ public class LuceneService {
             tokensQueryBuilder.add(new BoostQuery(query, boosts.get(field)), BooleanClause.Occur.SHOULD);
         }
         Query tokensQuery = tokensQueryBuilder.build();
-        // 组合完全匹配查询和分词匹配查询
+
+
+        // 将正则表达式查询、短语查询和分词匹配查询组合成一个查询（OR关系）
+        BooleanQuery.Builder combinedQueryBuilder = new BooleanQuery.Builder();
+        combinedQueryBuilder.add(boostedRegExpQuery, BooleanClause.Occur.SHOULD);
+        combinedQueryBuilder.add(phraseQuery, BooleanClause.Occur.SHOULD);
+        combinedQueryBuilder.add(tokensQuery, BooleanClause.Occur.SHOULD);
+        Query combinedQuery = combinedQueryBuilder.build();
+
+        // 创建最终查询（AND关系）
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        builder.add(boostedRegExpQuery, BooleanClause.Occur.SHOULD);
-        builder.add(phraseQuery, BooleanClause.Occur.SHOULD);
-        builder.add(tokensQuery, BooleanClause.Occur.SHOULD);
+        builder.add(new TermQuery(new Term(IUserService.USER_ID, userLoginHolder.getUserId())), BooleanClause.Occur.MUST);
+        builder.add(combinedQuery, BooleanClause.Occur.MUST);
 
         return builder.build();
 
@@ -530,22 +461,45 @@ public class LuceneService {
         return results;
     }
 
+    public boolean checkIndexExists() {
+        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+        query.addCriteria(Criteria.where("ossFolder").exists(true));
+        long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
+        long indexCount = indexWriter.getDocStats().numDocs;
+        return indexCount > count;
+    }
 
-    public void deleteAllIndex(String username) {
+    public void deleteAllIndex(String userId) {
         try {
-            IndexWriter indexWriter = getIndexWriter(username);
-            indexWriter.deleteAll();
+            // 创建一个Term来指定userId字段和要删除的具体userId
+            Term term = new Term(IUserService.USER_ID, userId);
+            // 删除所有匹配此Term的文档
+            indexWriter.deleteDocuments(term);
+            // 提交更改
             indexWriter.commit();
-            log.info("user: {}, 删除索引成功", username);
+            addDeleteFlagOfDoc(userId);
+            log.info("所有userId为 {} 的索引已被删除", userId);
         } catch (IOException e) {
-            log.error("user: {}, 删除索引失败", username, e);
+            log.error("删除索引失败, userId: {}, {}", userId, e.getMessage(), e);
         }
+    }
+
+    /**
+     * 添加删除标记
+     * @param userId userId
+     */
+    private void addDeleteFlagOfDoc(String userId) {
+        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        Update update = new Update();
+        update.set("delete", 1);
+        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
     }
 
     public static void main(String[] args) throws IOException {
         File file = new File("/Users/jmal/temp/filetest/rootpath/jmal/未命名文未命名文件未命名文件未命名文件件.drawio");
         // String content = FileUtil.readUtf8String(file);
-        String content = "缤缤广场";
+        String content = "BetterDisplay-v2.2.6.dmg";
         Console.log(StringUtil.isContainChinese(content));
         //1.创建一个Analyzer对象
         Analyzer analyzer = new SmartChineseAnalyzer();
@@ -563,19 +517,6 @@ public class LuceneService {
         //6.关闭
         tokenStream.close();
         analyzer.close();
-    }
-
-    @PreDestroy
-    public void destroy() throws IOException {
-        for (IndexWriter indexWriter : indexWriterMap.values()) {
-            indexWriter.close();
-        }
-        for (SearcherManager searcherManager : searcherManagerMap.values()) {
-            searcherManager.close();
-        }
-        for (ScheduledExecutorService service : createIndexThreadMap.values()) {
-            service.shutdown();
-        }
     }
 
 }

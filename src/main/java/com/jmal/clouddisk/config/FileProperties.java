@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.config;
 
 import cn.hutool.core.io.file.PathUtil;
+import cn.hutool.core.util.StrUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -113,6 +114,24 @@ public class FileProperties {
 
     public String getDocumentDir() {
         return Paths.get(documentDir).toString();
+    }
+
+    /**
+     * 判断用户名是否不允许使用
+     * @param username 用户名
+     * @return true: 不允许使用
+     */
+    public boolean notAllowUsername(String username) {
+        if (StrUtil.isBlank(username)) {
+            return false;
+        }
+        if (getChunkFileDir().equals(username)) {
+            return true;
+        }
+        if (getLuceneIndexDir().equals(username)) {
+            return true;
+        }
+        return username.startsWith("log-");
     }
 
 

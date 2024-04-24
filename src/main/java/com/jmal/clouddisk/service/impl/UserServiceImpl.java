@@ -80,7 +80,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public synchronized ConsumerDO add(ConsumerDTO consumerDTO) {
         String username = consumerDTO.getUsername();
-        if (fileProperties.getChunkFileDir().equals(username)) {
+        if (fileProperties.notAllowUsername(username)) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "请使用其他用户名");
         }
         ConsumerDO consumerDO;
@@ -149,7 +149,7 @@ public class UserServiceImpl implements IUserService {
     public ResponseResult<Object> update(ConsumerDTO user, MultipartFile blobAvatar) {
 
         String name = user.getUsername();
-        if (fileProperties.getChunkFileDir().equals(name)) {
+        if (fileProperties.notAllowUsername(name)) {
             return ResultUtil.warning("请使用其他用户名");
         }
 
