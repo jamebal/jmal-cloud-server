@@ -309,7 +309,7 @@ public class CommonFileService {
             if (fileExists != null) {
                 // 添加文件索引
                 // 获取tagName
-                luceneService.pushCreateIndexQueue(fileId);
+                luceneService.pushCreateIndexQueue(fileExists.getId());
                 return fileExists.getId();
             }
             Update update = new Update();
