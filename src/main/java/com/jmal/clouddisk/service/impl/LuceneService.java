@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
@@ -65,36 +66,24 @@ public class LuceneService {
      * 新建索引文件缓冲队列大小
      */
     private final static int CREATE_INDEX_QUEUE_SIZE = 256;
-    private final UserLoginHolder userLoginHolder;
 
     private ArrayBlockingQueue<FileIndex> indexFileQueue;
 
     /**
      * 推送至新建索引文件缓存队列
      *
-     * @param userId userId
-     * @param fileId  fileId
-     * @param file    File
+     * @param fileIndex     fileIndex
      */
-    public void pushCreateIndexQueue(String userId, String fileId, File file, String tagName) {
-        if (StrUtil.isBlank(fileId) || StrUtil.isBlank(userId)) {
-            return;
-        }
-        FileIndex fileIndex = getFileIndex(userId, fileId, file);
-        if (file == null) {
-            fileIndex = new FileIndex(userId, fileId);
-        }
+    public void pushCreateIndexQueue(FileIndex fileIndex) {
         if (fileIndex == null) {
             return;
         }
-        if (StrUtil.isNotBlank(tagName)) {
-            fileIndex.setTagName(tagName);
-        }
+        setFileIndex(fileIndex);
         try {
             ArrayBlockingQueue<FileIndex> indexFileQueue = getIndexFileQueue();
             indexFileQueue.put(fileIndex);
         } catch (InterruptedException e) {
-            log.error("推送新建索引队列失败, fileId: {}, {}", fileId, e.getMessage(), e);
+            log.error("推送新建索引队列失败, fileId: {}, {}", fileIndex.getFileId(), e.getMessage(), e);
         }
     }
 
@@ -104,16 +93,6 @@ public class LuceneService {
             createIndexFileTask();
         }
         return indexFileQueue;
-    }
-
-    /**
-     * 推送索引文件队列
-     * @param userId userId
-     * @param fileId fileId
-     * @param tagName tagName
-     */
-    public void pushCreateIndexQueue(String userId, String fileId, String tagName) {
-        pushCreateIndexQueue(userId, fileId, null, tagName);
     }
 
     /**
@@ -168,30 +147,22 @@ public class LuceneService {
     /**
      * 构建FileIndex
      *
-     * @param userId userId
-     * @param fileId fileId
-     * @param file file
-     * @return boolean
+     * @param fileIndex FileIndex
      */
-    public FileIndex getFileIndex(String userId, String fileId, File file) {
-        if (!FileUtil.exist(file) || StrUtil.isBlank(fileId)) {
-            return null;
+    public void setFileIndex(FileIndex fileIndex) {
+        File file = fileIndex.getFile();
+        if (!FileUtil.exist(fileIndex.getFile())) {
+            return;
         }
-        FileIndex fileIndex = new FileIndex(userId, file, fileId);
+        fileIndex.setIsFolder(file.isDirectory());
         fileIndex.setName(file.getName());
-        fileIndex.setModified(file.lastModified());
+        try {
+            fileIndex.setModified(Files.getLastModifiedTime(file.toPath()).toMillis());
+        } catch (IOException e) {
+            log.error("获取文件修改时间失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
+        }
         fileIndex.setSize(file.length());
         setType(file, fileIndex);
-        if (file.isFile()) {
-            Charset charset = CharsetDetector.detect(file);
-            if (charset == null) {
-                return fileIndex;
-            }
-            if ("UTF-8".equals(charset.toString())) {
-                fileIndex.setContent(true);
-            }
-        }
-        return fileIndex;
     }
 
     private void setType(File file, FileIndex fileIndex) {
@@ -277,6 +248,9 @@ public class LuceneService {
         try {
             String fileName = fileIndex.getName();
             String tagName = fileIndex.getTagName();
+            Boolean isFolder = fileIndex.getIsFolder();
+            Boolean isFavorite = fileIndex.getIsFavorite();
+            String path = fileIndex.getPath();
             org.apache.lucene.document.Document newDocument = new org.apache.lucene.document.Document();
             newDocument.add(new StringField("id", fileId, Field.Store.YES));
             newDocument.add(new StringField("userId", fileIndex.getUserId(), Field.Store.NO));
@@ -285,6 +259,15 @@ public class LuceneService {
             }
             if (StrUtil.isNotBlank(fileName)) {
                 newDocument.add(new StringField("name", fileName.toLowerCase(), Field.Store.NO));
+            }
+            if (isFolder != null) {
+                newDocument.add(new IntPoint("isFolder", isFolder ? 1 : 0));
+            }
+            if (isFavorite != null) {
+                newDocument.add(new IntPoint("isFavorite", isFavorite ? 1 : 0));
+            }
+            if (path != null) {
+                newDocument.add(new StringField("path", path, Field.Store.NO));
             }
             if (StrUtil.isNotBlank(tagName)) {
                 newDocument.add(new StringField("tag", tagName.toLowerCase(), Field.Store.NO));
@@ -304,18 +287,18 @@ public class LuceneService {
         }
     }
 
-    public ResponseResult<List<FileIntroVO>> searchFile(String username, SearchDTO searchDTO) {
+    public ResponseResult<List<FileIntroVO>> searchFile(SearchDTO searchDTO) {
         String keyword = searchDTO.getKeyword();
-        if (keyword == null || keyword.trim().isEmpty() || username == null) {
+        if (keyword == null || keyword.trim().isEmpty() || searchDTO.getUserId() == null) {
             return ResultUtil.success(Collections.emptyList());
         }
-        int pageNum = searchDTO.getPage();
-        int pageSize = searchDTO.getPageSize();
         try {
+            int pageNum = searchDTO.getPage();
+            int pageSize = searchDTO.getPageSize();
             searcherManager.maybeRefresh();
             List<String> seenIds = new ArrayList<>();
             IndexSearcher indexSearcher = searcherManager.acquire();
-            Query query = getQuery(keyword);
+            Query query = getQuery(searchDTO);
             Sort sort = getSort(searchDTO);
             log.info("搜索关键字: {}", query.toString());
             log.info("排序规则: {}", sort);
@@ -371,11 +354,11 @@ public class LuceneService {
     /**
      * 构建查询器
      *
-     * @param keyword keyword
+     * @param searchDTO searchDTO
      * @return Query
      * @throws ParseException ParseException
      */
-    private Query getQuery(String keyword) throws ParseException {
+    private Query getQuery(SearchDTO searchDTO) throws ParseException {
         String[] fields = {"name", "tag", "content"};
         Map<String, Float> boosts = new HashMap<>();
         boosts.put("name", 3.0f);
@@ -383,7 +366,7 @@ public class LuceneService {
         boosts.put("content", 1.0f);
 
         // 将关键字转为小写
-        keyword = keyword.toLowerCase();
+        String keyword = searchDTO.getKeyword().toLowerCase();
 
         BooleanQuery.Builder regexpQueryBuilder = new BooleanQuery.Builder();
         for (String field : fields) {
@@ -424,7 +407,21 @@ public class LuceneService {
 
         // 创建最终查询（AND关系）
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        builder.add(new TermQuery(new Term(IUserService.USER_ID, userLoginHolder.getUserId())), BooleanClause.Occur.MUST);
+        builder.add(new TermQuery(new Term(IUserService.USER_ID, searchDTO.getUserId())), BooleanClause.Occur.MUST);
+        if (StrUtil.isNotBlank(searchDTO.getType())) {
+            builder.add(new TermQuery(new Term("type", searchDTO.getType())), BooleanClause.Occur.MUST);
+        }
+        if (StrUtil.isNotBlank(searchDTO.getCurrentDirectory())) {
+            Term prefixTerm = new Term("path", searchDTO.getCurrentDirectory());
+            PrefixQuery prefixQuery = new PrefixQuery(prefixTerm);
+            builder.add(prefixQuery, BooleanClause.Occur.MUST);
+        }
+        if (searchDTO.getIsFolder() != null) {
+            builder.add(IntPoint.newExactQuery("isFolder", searchDTO.getIsFolder() ? 1 : 0), BooleanClause.Occur.MUST);
+        }
+        if (searchDTO.getIsFavorite() != null) {
+            builder.add(IntPoint.newExactQuery("isFavorite", searchDTO.getIsFavorite() ? 1 : 0), BooleanClause.Occur.MUST);
+        }
         builder.add(combinedQuery, BooleanClause.Occur.MUST);
 
         return builder.build();

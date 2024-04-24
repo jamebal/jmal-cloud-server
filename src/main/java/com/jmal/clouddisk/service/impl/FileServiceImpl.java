@@ -278,7 +278,12 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         searchDTO.setPageSize(upload.getPageSize());
         searchDTO.setSortProp(upload.getSortableProp());
         searchDTO.setSortOrder(upload.getOrder());
-        return luceneService.searchFile(upload.getUsername(), searchDTO);
+        searchDTO.setUserId(userLoginHolder.getUserId());
+        searchDTO.setCurrentDirectory(upload.getCurrentDirectory());
+        searchDTO.setIsFolder(upload.getIsFolder());
+        searchDTO.setType(upload.getQueryFileType());
+        searchDTO.setIsFavorite(upload.getIsFavorite());
+        return luceneService.searchFile(searchDTO);
         // ResponseResult<Object> result = ResultUtil.genResult();
         // Criteria criteria1 = Criteria.where("name").regex(keyword, "i");
         // return getCountResponseResult(upload, result, criteria1);
@@ -1399,7 +1404,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             refreshTagList(userId, userLoginHolder.getUsername());
             editTagDTO.getFileIds().forEach(fileId -> {
                 String tagName = getTagNameByTagDTOList(editTagDTO.getTagList());
-                luceneService.pushCreateIndexQueue(userId, fileId, tagName);
+                FileIndex fileIndex = new FileIndex(userId, fileId).setTagName(tagName);
+                luceneService.pushCreateIndexQueue(fileIndex);
             });
         } else {
             // 删除标签并修改相关文件
@@ -1425,7 +1431,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             update.set("tags", mongoTemplate.getConverter().convertToMongoType(tagList));
             mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
             String tagName = getTagNameByTagList(tagList);
-            luceneService.pushCreateIndexQueue(userId, fileDocument.getId(), tagName);
+            FileIndex fileIndex = new FileIndex(userId, fileDocument.getId()).setTagName(tagName);
+            luceneService.pushCreateIndexQueue(fileIndex);
         });
         refreshTagList(userId, userLoginHolder.getUsername());
     }

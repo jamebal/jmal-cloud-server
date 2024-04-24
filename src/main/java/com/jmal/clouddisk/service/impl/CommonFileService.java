@@ -309,7 +309,8 @@ public class CommonFileService {
             if (fileExists != null) {
                 // 添加文件索引
                 // 获取tagName
-                luceneService.pushCreateIndexQueue(userId, fileExists.getId(), file, getTagName(fileExists));
+                FileIndex fileIndex = new FileIndex(file, fileExists).setTagName(getTagName(fileExists));
+                luceneService.pushCreateIndexQueue(fileIndex);
                 return fileExists.getId();
             }
             Update update = new Update();
@@ -335,7 +336,9 @@ public class CommonFileService {
             updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
             pushMessage(username, update.getUpdateObject(), "createFile");
             // 添加文件索引
-            luceneService.pushCreateIndexQueue(userId, fileId, file, null);
+            FileIndex fileIndex = new FileIndex(file, userId, fileId)
+                    .setPath(relativePath);
+            luceneService.pushCreateIndexQueue(fileIndex);
         } finally {
             if (lock != null) {
                 lock.unlock();

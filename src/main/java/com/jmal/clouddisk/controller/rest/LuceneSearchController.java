@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.controller.rest;
 
-import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.impl.LuceneService;
@@ -32,7 +31,7 @@ public class LuceneSearchController {
 
     @Operation(summary = "搜索")
     @GetMapping("/")
-    public ResponseResult<List<FileIntroVO>> list(String username, SearchDTO searchDTO) throws IOException, ParseException, InvalidTokenOffsetsException {
-        return luceneService.searchFile(StrUtil.isBlank(username) ? "jmal" : username, searchDTO);
+    public ResponseResult<List<FileIntroVO>> list(SearchDTO searchDTO) throws IOException, ParseException, InvalidTokenOffsetsException {
+        return luceneService.searchFile(searchDTO);
     }
 }

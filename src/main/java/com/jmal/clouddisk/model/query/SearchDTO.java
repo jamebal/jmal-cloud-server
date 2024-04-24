@@ -13,8 +13,25 @@ import lombok.EqualsAndHashCode;
 @Data
 @Schema
 public class SearchDTO extends QueryBaseDTO {
+    String userId;
     /**
      * 要查询的关键字
      */
     String keyword;
+    /**
+     * 要查询的文件类型
+     */
+    String type;
+    /**
+     * 当前目录
+     */
+    String currentDirectory;
+    /**
+     * 是否是文件夹
+     */
+    Boolean isFolder;
+    /**
+     * 是否是收藏
+     */
+    Boolean isFavorite;
 }
