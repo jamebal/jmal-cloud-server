@@ -12,38 +12,18 @@ import java.io.File;
 @Accessors(chain = true)
 public class FileIndex {
 
-    /**
-     * 创建文件索引
-     * @param userId 用户id
-     * @param fileId 文件id
-     */
-    public FileIndex(String userId, String fileId) {
-        this.userId = userId;
-        this.fileId = fileId;
-    }
-
-    public FileIndex(File file, FileDocument fileDocument) {
+    public FileIndex(File file, FileIntroVO fileIntroVO) {
         this.file = file;
-        this.userId = fileDocument.getUserId();
-        this.fileId = fileDocument.getId();
-        this.path = fileDocument.getPath();
-        this.isFolder = fileDocument.getIsFolder();
-        this.isFavorite = fileDocument.getIsFavorite();
+        this.userId = fileIntroVO.getUserId();
+        this.fileId = fileIntroVO.getId();
+        this.path = fileIntroVO.getPath();
+        this.isFolder = fileIntroVO.getIsFolder();
+        this.isFavorite = fileIntroVO.getIsFavorite();
     }
 
-    /**
-     * 创建文件索引
-     * @param file 文件
-     * @param userId 用户id
-     * @param fileId 文件id
-     */
-    public FileIndex(File file, String userId, String fileId) {
-        this.file = file;
-        this.userId = userId;
-        this.fileId = fileId;
-    }
 
-    public String userId;
+    private String userId;
+    private String username;
     private File file;
     private String fileId;
     private String name;

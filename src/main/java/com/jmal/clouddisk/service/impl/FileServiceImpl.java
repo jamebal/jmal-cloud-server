@@ -60,10 +60,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.jmal.clouddisk.service.IUserService.USER_ID;
@@ -283,6 +280,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         searchDTO.setIsFolder(upload.getIsFolder());
         searchDTO.setType(upload.getQueryFileType());
         searchDTO.setIsFavorite(upload.getIsFavorite());
+        searchDTO.setTagId(upload.getTagId());
         return luceneService.searchFile(searchDTO);
         // ResponseResult<Object> result = ResultUtil.genResult();
         // Criteria criteria1 = Criteria.where("name").regex(keyword, "i");
@@ -417,6 +415,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             if (!userService.getDisabledWebp(userLoginHolder.getUserId()) && (!"ico".equals(FileUtil.getSuffix(newFile)))) {
                 fileName += Constants.POINT_SUFFIX_WEBP;
             }
+            createFile(username, newFile);
             return baseUrl + Paths.get("/file", username, filepath, fileName);
         } catch (IOException e) {
             throw new CommonException(ExceptionType.FAIL_UPLOAD_FILE.getCode(), ExceptionType.FAIL_UPLOAD_FILE.getMsg());
@@ -823,6 +822,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                     Query query1 = new Query();
                     query1.addCriteria(Criteria.where("_id").is(rep.getId()));
                     mongoTemplate.upsert(query1, update, COLLECTION_NAME);
+                    luceneService.pushCreateIndexQueue(rep.getId());
                 });
             }
             if (renameFileError(newFileName, id, filePath, file)) {
@@ -857,6 +857,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Update mountUpdate = new Update();
         mountUpdate.set("name", newFileName);
         mongoTemplate.updateMulti(mountQuery, mountUpdate, FileDocument.class);
+        luceneService.pushCreateIndexQueue(fileId);
     }
 
     @Override
@@ -1010,7 +1011,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 Query query1 = new Query();
                 query1.addCriteria(Criteria.where(USER_ID).is(userId));
                 query1.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName())));
-                mongoTemplate.remove(query1, COLLECTION_NAME);
+                mongoTemplate.remove(query1, FileDocument.class);
+                luceneService.deleteIndexDocuments(Collections.singletonList(fileDocument.getId()));
             }
         }
         pushMessage(username, fileDocument, "deleteFile");
@@ -1396,21 +1398,22 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         query.addCriteria(Criteria.where("_id").in(editTagDTO.getFileIds()));
         Update update = new Update();
         String userId = userLoginHolder.getUserId();
-        // 使用mongoTemplate.getConverter().convertToMongoType, 避免生成_class
-        update.set("tags", mongoTemplate.getConverter().convertToMongoType(tagService.getTagIdsByTagDTOList(editTagDTO.getTagList(), userId)));
-        update.set(Constants.UPDATE_DATE, LocalDateTime.now(TimeUntils.ZONE_ID));
-        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         if (editTagDTO.getRemoveTagIds() == null || editTagDTO.getRemoveTagIds().isEmpty()) {
-            refreshTagList(userId, userLoginHolder.getUsername());
-            editTagDTO.getFileIds().forEach(fileId -> {
-                String tagName = getTagNameByTagDTOList(editTagDTO.getTagList());
-                FileIndex fileIndex = new FileIndex(userId, fileId).setTagName(tagName);
-                luceneService.pushCreateIndexQueue(fileIndex);
-            });
+            log.info("修改标签, fileIds: {}, tagList: {}", editTagDTO.getFileIds(), editTagDTO.getTagList());
+            editTagDTO.getFileIds().forEach(fileId -> luceneService.pushCreateIndexQueue(fileId));
         } else {
             // 删除标签并修改相关文件
             deleteTgs(editTagDTO.getRemoveTagIds());
         }
+
+        // 使用mongoTemplate.getConverter().convertToMongoType, 避免生成_class
+        update.set("tags", mongoTemplate.getConverter().convertToMongoType(tagService.getTagIdsByTagDTOList(editTagDTO.getTagList(), userId)));
+        update.set(Constants.UPDATE_DATE, LocalDateTime.now(TimeUntils.ZONE_ID));
+        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
+
+        // 推送消息
+        pushMessage(userLoginHolder.getUsername(), tagService.list(userId), "updateTags");
+
         return ResultUtil.success();
     }
 
@@ -1423,22 +1426,14 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("tags.tagId").in(removeTagIds));
         List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
-        String userId = userLoginHolder.getUserId();
         fileDocumentList.parallelStream().forEach(fileDocument -> {
             List<Tag> tagList = fileDocument.getTags();
             tagList.removeIf(tagDTO -> removeTagIds.contains(tagDTO.getTagId()));
             Update update = new Update();
             update.set("tags", mongoTemplate.getConverter().convertToMongoType(tagList));
             mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
-            String tagName = getTagNameByTagList(tagList);
-            FileIndex fileIndex = new FileIndex(userId, fileDocument.getId()).setTagName(tagName);
-            luceneService.pushCreateIndexQueue(fileIndex);
+            luceneService.pushCreateIndexQueue(fileDocument.getId());
         });
-        refreshTagList(userId, userLoginHolder.getUsername());
-    }
-
-    private void refreshTagList(String userId, String username) {
-        pushMessage(username, tagService.list(userId), "updateTags");
     }
 
     @NotNull
@@ -1723,6 +1718,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         fileIds.forEach(fileId -> checkOssPath(fileId, true));
         update.set(Constants.IS_FAVORITE, true);
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
+        fileIds.forEach(fileId -> luceneService.pushCreateIndexQueue(fileId));
         return ResultUtil.success();
     }
 
@@ -1781,6 +1777,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         fileIds.forEach(fileId -> checkOssPath(fileId, false));
         update.set(Constants.IS_FAVORITE, false);
         mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
+        fileIds.forEach(fileId -> luceneService.pushCreateIndexQueue(fileId));
         return ResultUtil.success();
     }
 

@@ -34,4 +34,8 @@ public class SearchDTO extends QueryBaseDTO {
      * 是否是收藏
      */
     Boolean isFavorite;
+    /**
+     * tagId
+     */
+    String tagId;
 }

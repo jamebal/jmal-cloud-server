@@ -76,6 +76,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     private final IFileVersionService fileVersionService;
 
+    private final LuceneService luceneService;
+
 
     @Override
     public ResponseResult<FileDocument> getMarkDownOne(ArticleDTO articleDTO) {
@@ -502,12 +504,15 @@ public class MarkdownServiceImpl implements IMarkdownService {
         fileDocument.setTagIds(tagService.getTagIdsByNames(upload.getTagNames()));
         fileDocument.setIsFolder(false);
         Update update = getUpdate(upload, isDraft, isUpdate, fileDocument);
+        String fileId = upload.getFileId();
         if (!isUpdate) {
             FileDocument saved = mongoTemplate.save(fileDocument, CommonFileService.COLLECTION_NAME);
             upload.setFileId(saved.getId());
             query.addCriteria(Criteria.where("_id").is(saved.getId()));
+            fileId = saved.getId();
         }
         mongoTemplate.upsert(query, update, CommonFileService.COLLECTION_NAME);
+        luceneService.pushCreateIndexQueue(fileId);
         return ResultUtil.success(upload.getFileId());
     }
 

@@ -81,6 +81,8 @@ public class FileVersionServiceImpl implements IFileVersionService {
 
     private final UserLoginHolder userLoginHolder;
 
+    private final LuceneService luceneService;
+
     @Override
     public void saveFileVersion(String username, String relativePath, String userId) {
         File file = new File(Paths.get(fileProperties.getRootDir(), username, relativePath).toString());
@@ -343,6 +345,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
             Update update = new Update();
             update.set("updateDate", time);
             mongoTemplate.updateFirst(query, update, FileDocument.class);
+            luceneService.pushCreateIndexQueue(fileId);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }

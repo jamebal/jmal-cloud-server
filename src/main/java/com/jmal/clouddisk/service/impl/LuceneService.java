@@ -1,13 +1,13 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.model.FileIndex;
-import com.jmal.clouddisk.model.FileIntroVO;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
@@ -61,33 +62,37 @@ public class LuceneService {
     private final MongoTemplate mongoTemplate;
     private final IndexWriter indexWriter;
     private final SearcherManager searcherManager;
+    private final IUserService userService;
+    private final TagService tagService;
 
     /**
      * 新建索引文件缓冲队列大小
      */
     private final static int CREATE_INDEX_QUEUE_SIZE = 256;
 
-    private ArrayBlockingQueue<FileIndex> indexFileQueue;
+    /**
+     * 新建索引文件缓冲队列
+     */
+    private ArrayBlockingQueue<String> indexFileQueue;
 
     /**
      * 推送至新建索引文件缓存队列
      *
-     * @param fileIndex     fileIndex
+     * @param fileId fileId
      */
-    public void pushCreateIndexQueue(FileIndex fileIndex) {
-        if (fileIndex == null) {
+    public void pushCreateIndexQueue(String fileId) {
+        if (StrUtil.isBlank(fileId)) {
             return;
         }
-        setFileIndex(fileIndex);
         try {
-            ArrayBlockingQueue<FileIndex> indexFileQueue = getIndexFileQueue();
-            indexFileQueue.put(fileIndex);
+            ArrayBlockingQueue<String> indexFileQueue = getIndexFileQueue();
+            indexFileQueue.put(fileId);
         } catch (InterruptedException e) {
-            log.error("推送新建索引队列失败, fileId: {}, {}", fileIndex.getFileId(), e.getMessage(), e);
+            log.error("推送新建索引队列失败, fileId: {}, {}", fileId, e.getMessage(), e);
         }
     }
 
-    private ArrayBlockingQueue<FileIndex> getIndexFileQueue() {
+    private ArrayBlockingQueue<String> getIndexFileQueue() {
         if (indexFileQueue == null) {
             indexFileQueue = new ArrayBlockingQueue<>(CREATE_INDEX_QUEUE_SIZE);
             createIndexFileTask();
@@ -100,14 +105,14 @@ public class LuceneService {
      *
      */
     private void createIndexFileTask() {
-        ArrayBlockingQueue<FileIndex> indexFileQueue = getIndexFileQueue();
+        ArrayBlockingQueue<String> indexFileQueue = getIndexFileQueue();
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(() -> {
             try {
-                List<FileIndex> fileIndexList = new ArrayList<>(indexFileQueue.size());
-                indexFileQueue.drainTo(fileIndexList);
-                if (!fileIndexList.isEmpty()) {
-                    createIndexFiles(fileIndexList);
+                List<String> fileIdList = new ArrayList<>(indexFileQueue.size());
+                indexFileQueue.drainTo(fileIdList);
+                if (!fileIdList.isEmpty()) {
+                    createIndexFiles(fileIdList);
                 }
             } catch (Exception e) {
                 log.error("创建索引失败", e);
@@ -117,12 +122,18 @@ public class LuceneService {
 
     /**
      * 创建索引
-     * @param fileIndexList List<FileIndex>
+     * @param fileIdList fileIdList
      * @throws IOException IOException
      */
-    private void createIndexFiles(List<FileIndex> fileIndexList) throws IOException {
-        for (FileIndex fileIndex : fileIndexList) {
-            File file = fileIndex.getFile();
+    private void createIndexFiles(List<String> fileIdList) throws IOException {
+        // 提取出fileIdList
+        List<FileIntroVO> fileIntroVOList = getFileIntroVOs(fileIdList);
+        for (FileIntroVO fileIntroVO : fileIntroVOList) {
+            String username = userService.getUserNameById(fileIntroVO.getUserId());
+            File file = Paths.get(fileProperties.getRootDir(), username, fileIntroVO.getPath(), fileIntroVO.getName()).toFile();
+            FileIndex fileIndex = new FileIndex(file, fileIntroVO);
+            fileIndex.setTagName(getTagName(fileIntroVO));
+            setFileIndex(fileIndex);
             String content = readFileContent(file);
             updateIndexDocument(indexWriter, fileIndex, content);
             if (StrUtil.isNotBlank(content)) {
@@ -130,12 +141,17 @@ public class LuceneService {
             }
         }
         indexWriter.commit();
-        removeDeletedFlag(fileIndexList);
+        removeDeletedFlag(fileIdList);
     }
 
-    private void removeDeletedFlag(List<FileIndex> fileIndexList) {
-        // 提取出fileIdList
-        List<String> fileIdList = fileIndexList.stream().map(FileIndex::getFileId).toList();
+    private String getTagName(FileIntroVO fileDocument) {
+        if (fileDocument != null && fileDocument.getTags() != null && !fileDocument.getTags().isEmpty()) {
+            return fileDocument.getTags().stream().map(Tag::getName).reduce((a, b) -> a + " " + b).orElse("");
+        }
+        return null;
+    }
+
+    private void removeDeletedFlag(List<String> fileIdList) {
         // 移除删除标记
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where("_id").in(fileIdList).and("delete").is(1));
@@ -168,12 +184,13 @@ public class LuceneService {
     private void setType(File file, FileIndex fileIndex) {
         String fileName = file.getName();
         String suffix = FileUtil.extName(fileName);
+        fileIndex.setType(Constants.OTHER);
         if (StrUtil.isBlank(suffix)) {
             fileIndex.setType(Constants.OTHER);
             return;
         }
         String contentType = FileContentTypeUtils.getContentType(suffix);
-        if (StrUtil.isBlank(suffix)) {
+        if (StrUtil.isBlank(contentType)) {
             fileIndex.setType(Constants.OTHER);
             return;
         }
@@ -288,6 +305,7 @@ public class LuceneService {
     }
 
     public ResponseResult<List<FileIntroVO>> searchFile(SearchDTO searchDTO) {
+        TimeInterval timeInterval = new TimeInterval();
         String keyword = searchDTO.getKeyword();
         if (keyword == null || keyword.trim().isEmpty() || searchDTO.getUserId() == null) {
             return ResultUtil.success(Collections.emptyList());
@@ -318,7 +336,8 @@ public class LuceneService {
                 String id = doc.get("id");
                 seenIds.add(id);
             }
-            List<FileIntroVO> fileIntroVOList = getFileDocuments(seenIds);
+            //log.info("搜索耗时: {}ms", timeInterval.intervalMs());
+            List<FileIntroVO> fileIntroVOList = getFileIntroVOs(seenIds);
             return ResultUtil.success(fileIntroVOList).setCount(count);
         } catch (IOException | ParseException e) {
             log.error("搜索失败", e);
@@ -374,6 +393,7 @@ public class LuceneService {
                 continue;
             }
             regexpQueryBuilder.add(new BoostQuery(new RegexpQuery(new Term(field, ".*" + keyword + ".*")), boosts.get(field)), BooleanClause.Occur.SHOULD);
+            // regexpQueryBuilder.add(new BoostQuery(new WildcardQuery(new Term("field", "*" + keyword + "*")), boosts.get(field)), BooleanClause.Occur.SHOULD);
         }
         Query regExpQuery = regexpQueryBuilder.build();
         BoostQuery boostedRegExpQuery = new BoostQuery(regExpQuery, 10.0f);
@@ -396,22 +416,35 @@ public class LuceneService {
             tokensQueryBuilder.add(new BoostQuery(query, boosts.get(field)), BooleanClause.Occur.SHOULD);
         }
         Query tokensQuery = tokensQueryBuilder.build();
-
-
         // 将正则表达式查询、短语查询和分词匹配查询组合成一个查询（OR关系）
         BooleanQuery.Builder combinedQueryBuilder = new BooleanQuery.Builder();
         combinedQueryBuilder.add(boostedRegExpQuery, BooleanClause.Occur.SHOULD);
         combinedQueryBuilder.add(phraseQuery, BooleanClause.Occur.SHOULD);
         combinedQueryBuilder.add(tokensQuery, BooleanClause.Occur.SHOULD);
         Query combinedQuery = combinedQueryBuilder.build();
-
         // 创建最终查询（AND关系）
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         builder.add(new TermQuery(new Term(IUserService.USER_ID, searchDTO.getUserId())), BooleanClause.Occur.MUST);
+        // 添加其他查询条件
+        otherQueryParams(searchDTO, builder);
+        // 添加组合查询
+        builder.add(combinedQuery, BooleanClause.Occur.MUST);
+
+        return builder.build();
+
+    }
+
+    private void otherQueryParams(SearchDTO searchDTO, BooleanQuery.Builder builder) {
         if (StrUtil.isNotBlank(searchDTO.getType())) {
             builder.add(new TermQuery(new Term("type", searchDTO.getType())), BooleanClause.Occur.MUST);
         }
-        if (StrUtil.isNotBlank(searchDTO.getCurrentDirectory())) {
+        if (searchDTO.getTagId() != null) {
+            TagDO tagDO = tagService.getTagInfo(searchDTO.getTagId());
+            if (tagDO != null) {
+                builder.add(new TermQuery(new Term("tag", tagDO.getName())), BooleanClause.Occur.MUST);
+            }
+        }
+        if (StrUtil.isNotBlank(searchDTO.getCurrentDirectory()) && searchDTO.getCurrentDirectory().length() > 1) {
             Term prefixTerm = new Term("path", searchDTO.getCurrentDirectory());
             PrefixQuery prefixQuery = new PrefixQuery(prefixTerm);
             builder.add(prefixQuery, BooleanClause.Occur.MUST);
@@ -422,14 +455,10 @@ public class LuceneService {
         if (searchDTO.getIsFavorite() != null) {
             builder.add(IntPoint.newExactQuery("isFavorite", searchDTO.getIsFavorite() ? 1 : 0), BooleanClause.Occur.MUST);
         }
-        builder.add(combinedQuery, BooleanClause.Occur.MUST);
-
-        return builder.build();
-
     }
 
-    public List<FileIntroVO> getFileDocuments(List<String> files) {
-        List<ObjectId> objectIds = files.stream()
+    public List<FileIntroVO> getFileIntroVOs(List<String> fileIdList) {
+        List<ObjectId> objectIds = fileIdList.stream()
                 .filter(ObjectId::isValid)
                 .map(ObjectId::new)
                 .toList();
@@ -454,7 +483,6 @@ public class LuceneService {
             FileIntroVO fileIntroVO = mongoTemplate.getConverter().read(FileIntroVO.class, document);
             results.add(fileIntroVO);
         }
-
         return results;
     }
 
@@ -496,7 +524,7 @@ public class LuceneService {
     public static void main(String[] args) throws IOException {
         File file = new File("/Users/jmal/temp/filetest/rootpath/jmal/未命名文未命名文件未命名文件未命名文件件.drawio");
         // String content = FileUtil.readUtf8String(file);
-        String content = "BetterDisplay-v2.2.6.dmg";
+        String content = "选择合适的n-gram大小：n-gram的大小（即minGram和maxGram的值）对搜索的精确性和性能有重大影响。较小的n-grams可以增";
         Console.log(StringUtil.isContainChinese(content));
         //1.创建一个Analyzer对象
         Analyzer analyzer = new SmartChineseAnalyzer();
