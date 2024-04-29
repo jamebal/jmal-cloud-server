@@ -1,12 +1,12 @@
 FROM nvidia/cuda:11.3.1-base-ubuntu20.04 AS base
 
-# 安装 ffmpeg
 RUN apt-get update && \
+    apt-get install -y locales && \
+    locale-gen en_US.UTF-8 && \
     apt-get install -y ffmpeg libavcodec-extra
-
-# 安装 locales 并生成 UTF-8 locale
-RUN apt-get update && apt-get install -y locales && \
-    locale-gen en_US.UTF-8
+ENV LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
 
 # 设置环境变量
 ENV LANG=en_US.UTF-8 \
