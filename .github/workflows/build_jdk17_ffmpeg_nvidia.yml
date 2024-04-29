@@ -1,4 +1,4 @@
-name: Build and Push Multi-Platform Docker Image
+name: Build jdk17_ffmpeg_nvidia
 
 on:
   workflow_dispatch:
