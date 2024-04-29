@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.3.1-base-ubuntu20.04 AS base
+FROM nvidia/cuda:11.7.1-base-ubuntu22.04 AS base
 
 RUN apt-get update && \
     apt-get install -y locales ffmpeg libavcodec-extra && \
