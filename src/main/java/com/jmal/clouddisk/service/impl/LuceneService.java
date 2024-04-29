@@ -12,10 +12,7 @@ import com.jmal.clouddisk.model.TagDO;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.util.FileContentTypeUtils;
-import com.jmal.clouddisk.util.FileContentUtil;
-import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.*;
 import com.mongodb.client.AggregateIterable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +34,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
@@ -337,6 +335,12 @@ public class LuceneService {
                 seenIds.add(id);
             }
             List<FileIntroVO> fileIntroVOList = getFileIntroVOs(seenIds);
+            long now = System.currentTimeMillis();
+            fileIntroVOList = fileIntroVOList.parallelStream().peek(fileIntroVO -> {
+                LocalDateTime updateDate = fileIntroVO.getUpdateDate();
+                long update = TimeUntils.getMilli(updateDate);
+                fileIntroVO.setAgoTime(now - update);
+            }).toList();
             return ResultUtil.success(fileIntroVOList).setCount(count);
         } catch (IOException | ParseException e) {
             log.error("搜索失败", e);
@@ -384,7 +388,7 @@ public class LuceneService {
         boosts.put("content", 1.0f);
 
         // 将关键字转为小写
-        String keyword = searchDTO.getKeyword().toLowerCase();
+        String keyword = searchDTO.getKeyword().toLowerCase().trim();
 
         BooleanQuery.Builder regexpQueryBuilder = new BooleanQuery.Builder();
         for (String field : fields) {
@@ -400,6 +404,8 @@ public class LuceneService {
         BooleanQuery.Builder phraseQueryBuilder = new BooleanQuery.Builder();
         for (String field : fields) {
             PhraseQuery.Builder builder = new PhraseQuery.Builder();
+            // 去掉关键字中的空格和特殊字符
+            keyword = keyword.replaceAll("[\\s\\p{Punct}]+", " ");
             builder.add(new Term(field, keyword.trim()));
             Query phraseQuery = builder.build();
             phraseQueryBuilder.add(new BoostQuery(phraseQuery, boosts.get(field)), BooleanClause.Occur.SHOULD);
@@ -411,6 +417,8 @@ public class LuceneService {
         for (String field : fields) {
             QueryParser parser = new QueryParser(field, analyzer);
             parser.setDefaultOperator(QueryParser.Operator.OR);
+            // 去掉关键字中的空格和特殊字符
+            keyword = keyword.replaceAll("[\\s\\p{Punct}]+", " ");
             Query query = parser.parse(keyword.trim());
             tokensQueryBuilder.add(new BoostQuery(query, boosts.get(field)), BooleanClause.Occur.SHOULD);
         }
