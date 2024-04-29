@@ -1,6 +1,4 @@
-FROM jmal/jdk17_ffmpeg:latest
-
-MAINTAINER zhushilun084@gmail.com
+FROM jmal/jdk17_ffmpeg_nvidia:latest
 
 ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
 
