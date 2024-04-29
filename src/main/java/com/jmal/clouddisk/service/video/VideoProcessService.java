@@ -238,6 +238,12 @@ public class VideoProcessService {
                 "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
                 outputPath
         );
+        // 检测是硬件加速
+        processBuilder = checkHardwareAcceleration(fileId, processBuilder, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
+
+        // 打印ffmpeg命令
+        processBuilder.command().forEach(command -> System.out.println(command + " \\"));
+
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
         boolean pushMessage = false;
@@ -270,6 +276,71 @@ public class VideoProcessService {
         } else {
             printErrorInfo(processBuilder);
         }
+    }
+
+    private ProcessBuilder checkHardwareAcceleration(String fileId, ProcessBuilder processBuilder, Path fileAbsolutePath, int bitrate, String videoCacheDir, String outputPath) {
+        if (checkCUDA() && checkNVENC()) {
+            // 使用CUDA硬件加速和NVENC编码器
+            processBuilder = new ProcessBuilder(
+                    Constants.FFMPEG,
+                    "-hwaccel", "cuda",
+                    "-hwaccel_output_format", "cuda",
+                    "-i", fileAbsolutePath.toString(),
+                    "-vf", "scale_cuda=-2:" + 720,
+                    "-c:v", "h264_nvenc",
+                    "-b:v", bitrate + "k",
+                    "-preset", "medium",
+                    "-profile:v", "main",
+                    "-level", "4.0",
+                    "-start_number", "0",
+                    "-hls_time", "10",
+                    "-hls_list_size", "0",
+                    "-g", "48",
+                    "-sc_threshold", "0",
+                    "-f", "hls",
+                    "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
+                    outputPath
+            );
+        }
+        return processBuilder;
+    }
+
+    /**
+     * 检测是否支持cuda硬件加速
+     */
+    private boolean checkCUDA() {
+        try {
+            Process process = Runtime.getRuntime().exec("ffmpeg -hwaccels");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("cuda")) {
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        }
+        return false;
+    }
+
+    /**
+     * 检测是否支持nvenc编码器
+     */
+    private boolean checkNVENC() {
+        try {
+            Process process = Runtime.getRuntime().exec("ffmpeg -hide_banner -encoders | grep nvenc");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("nvenc")) {
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        }
+        return false;
     }
 
     /**
