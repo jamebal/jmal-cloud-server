@@ -1,10 +1,7 @@
 FROM eclipse-temurin:17-jre
 
-# 安装 FFmpeg
+# 安装 ffmpeg
 RUN apt-get update && \
-    apt-get install -y software-properties-common && \
-    add-apt-repository ppa:jonathonf/ffmpeg-5 && \
-    apt-get update && \
     apt-get install -y ffmpeg libavcodec-extra
 
 # 环境变量
