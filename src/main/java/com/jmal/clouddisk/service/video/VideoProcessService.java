@@ -2,7 +2,6 @@ package com.jmal.clouddisk.service.video;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.alibaba.fastjson2.JSON;
@@ -241,9 +240,6 @@ public class VideoProcessService {
         // 检测是硬件加速
         processBuilder = checkHardwareAcceleration(fileId, processBuilder, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
 
-        // 打印ffmpeg命令
-        processBuilder.command().forEach(command -> System.out.println(command + " \\"));
-
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
         boolean pushMessage = false;
@@ -419,8 +415,9 @@ public class VideoProcessService {
     }
 
     private static void printErrorInfo(ProcessBuilder processBuilder) {
-        log.error("ffmpeg 执行失败");
-        processBuilder.command().forEach(command -> Console.log(command + " \\"));
+        // 打印命令 用空格连接
+        String command = String.join(" ", processBuilder.command());
+        log.error("ffmpeg 执行失败, command: \r\n {}", command);
     }
 
     /**
