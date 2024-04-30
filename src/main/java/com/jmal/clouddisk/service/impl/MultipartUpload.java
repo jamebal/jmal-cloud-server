@@ -97,7 +97,7 @@ public class MultipartUpload {
      */
     public UploadResponse mergeFile(UploadApiParamDTO upload) throws IOException {
         UploadResponse uploadResponse = new UploadResponse();
-
+        log.info("合并文件1: {}", upload.getFilename());
         Path prePth = Paths.get(upload.getUsername(), upload.getCurrentDirectory(), upload.getFilename());
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
@@ -119,7 +119,9 @@ public class MultipartUpload {
         }
         PathUtil.move(file, outputFile, true);
         uploadResponse.setUpload(true);
+        log.info("合并文件2: {}", outputFile);
         commonFileService.createFile(upload.getUsername(), outputFile.toFile(), null, null);
+        log.info("合并文件3: {}", upload.getFilename());
         return uploadResponse;
     }
 
