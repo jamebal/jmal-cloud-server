@@ -159,7 +159,7 @@ public class VideoProcessService {
     private static ProcessBuilder getVideoCoverProcessBuilder(String videoPath, String outputPath, double videoDuration) {
         double targetTimestamp = videoDuration * 0.1;
         String formattedTimestamp = formatTimestamp(targetTimestamp);
-        log.info("formattedTimestamp: {}", formattedTimestamp);
+        log.info("\r\n videoPath: {}, formattedTimestamp: {}", videoPath, formattedTimestamp);
         ProcessBuilder processBuilder = new ProcessBuilder(
                 Constants.FFMPEG,
                 "-ss", formattedTimestamp,
@@ -183,7 +183,7 @@ public class VideoProcessService {
      * 获取视频文件缓存目录
      *
      * @param username username
-     * @param fileId  fileId
+     * @param fileId   fileId
      * @return 视频文件缓存目录
      */
     private String getVideoCacheDir(String username, String fileId) {
@@ -341,6 +341,7 @@ public class VideoProcessService {
 
     /**
      * 判断是否需要转码
+     *
      * @param videoInfo 视频信息
      * @return 是否需要转码
      */
@@ -353,6 +354,7 @@ public class VideoProcessService {
 
     /**
      * 判断视频格式是否为HTML5 Video Player支持的格式
+     *
      * @param format 视频格式
      * @return 是否支持
      */
@@ -422,6 +424,7 @@ public class VideoProcessService {
 
     /**
      * 获取视频的分辨率和码率信息
+     *
      * @param videoPath 视频路径
      * @return 视频信息
      */
@@ -449,7 +452,7 @@ public class VideoProcessService {
                     int width = streamObject.getIntValue("width");
                     int height = streamObject.getIntValue("height");
                     int bitrate = streamObject.getIntValue("bit_rate") / 1000; // 转换为 kbps
-                    return new VideoInfo(width, height, format, bitrate, duration);
+                    return new VideoInfo(videoPath, width, height, format, bitrate, duration);
                 }
             }
 
@@ -471,6 +474,7 @@ public class VideoProcessService {
         private int bitrate;
         private String format;
         private double duration;
+
         public VideoInfo() {
             this.width = 1920;
             this.height = 1080;
@@ -478,13 +482,14 @@ public class VideoProcessService {
             this.bitrate = 3000;
             this.duration = 10d;
         }
-        public VideoInfo(int width, int height, String format, int bitrate, double duration) {
+
+        public VideoInfo(String videoPath, int width, int height, String format, int bitrate, double duration) {
             this.width = width;
             this.height = height;
             this.format = format;
             this.bitrate = bitrate;
             this.duration = duration;
-            log.info("width: {}, height: {}, format: {}, bitrate: {}, duration: {}", width, height, format, bitrate, duration);
+            log.info("\r\n videoPath: {}, width: {}, height: {}, format: {}, bitrate: {}, duration: {}", videoPath, width, height, format, bitrate, duration);
         }
     }
 
