@@ -174,6 +174,7 @@ public class VideoProcessService {
         log.info("\r\n videoPath: {}, formattedTimestamp: {}", videoPath, formattedTimestamp);
         ProcessBuilder processBuilder = new ProcessBuilder(
                 Constants.FFMPEG,
+                "-y",
                 "-ss", formattedTimestamp,
                 "-i", videoPath,
                 "-vf", "scale='min(320,iw)':-1",
@@ -282,7 +283,7 @@ public class VideoProcessService {
                 startConvert(username, relativePath, fileName, fileId);
             }
         } else {
-            printErrorInfo(processBuilder);
+            printErrorInfo(processBuilder, process);
         }
     }
 
@@ -482,7 +483,7 @@ public class VideoProcessService {
 
             int exitCode = process.waitFor();
             if (exitCode != 0) {
-                printErrorInfo(processBuilder);
+                printErrorInfo(processBuilder, process);
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
