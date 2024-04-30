@@ -1,6 +1,7 @@
 FROM jmal/jdk17_ffmpeg_nvidia:latest
 
 ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
+ENV ENVIRONMENT=prod
 
 ARG VERSION
 
@@ -25,4 +26,4 @@ ENV DOCKER_DEFAULT_PLATFORM=linux/amd64,linux/arm64
 
 EXPOSE 8088
 
-CMD java -jar -Xms50m -Xmx512m /usr/local/clouddisk-$VERSION-exec.jar --logging.level.root=warn --spring.profiles.active=prod --spring.data.mongodb.uri=$MONGODB_URI --file.monitor=false --file.rootDir=/jmalcloud/files --file.ip2region-db-path=/jmalcloud/ip2region.xdb
+CMD java -jar -Xms50m -Xmx512m /usr/local/clouddisk-$VERSION-exec.jar --spring.profiles.active=$ENVIRONMENT --spring.data.mongodb.uri=$MONGODB_URI --file.monitor=false --file.rootDir=/jmalcloud/files --file.ip2region-db-path=/jmalcloud/ip2region.xdb
