@@ -80,7 +80,7 @@ public class SseController {
                     emitters.remove(uuid);
                 }
             } catch (IOException e) {
-                log.error("Failed to send event to uuid: {}", uuid, e);
+                emitters.remove(uuid);
             }
         }
     }
