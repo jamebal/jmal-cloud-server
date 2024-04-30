@@ -138,13 +138,25 @@ public class VideoProcessService {
             double videoDuration = getVideoInfo(videoPath).getDuration();
             ProcessBuilder processBuilder = getVideoCoverProcessBuilder(videoPath, outputPath, videoDuration);
             Process process = processBuilder.start();
-            int exitCode = process.waitFor();
-            if (exitCode == 0) {
+
+            boolean finished = process.waitFor(10, TimeUnit.SECONDS);
+            if (finished && process.exitValue() == 0) {
                 if (FileUtil.exist(outputPath)) {
                     return outputPath;
+                } else {
+                    log.error("处理完成后输出文件不存在。");
                 }
             } else {
-                printErrorInfo(processBuilder);
+                if (!finished) {
+                    // 超时后处理
+                    process.destroy(); // 尝试正常终止
+                    process.destroyForcibly(); // 强制终止
+                    log.error("进程超时并被终止。");
+                    printErrorInfo(processBuilder);
+                } else {
+                    // 进程结束但退出码非0
+                    printErrorInfo(processBuilder, process);
+                }
             }
             return null;
         } catch (InterruptedException e) {
@@ -414,6 +426,18 @@ public class VideoProcessService {
         mongoTemplate.upsert(query, update, FileDocument.class);
         fileDocument.setM3u8(m3u8);
         commonFileService.pushMessage(username, fileDocument, "updateFile");
+    }
+
+    private static void printErrorInfo(ProcessBuilder processBuilder, Process process) throws IOException {
+        printErrorInfo(processBuilder);
+        // 打印process的错误输出
+        try (InputStream inputStream = process.getErrorStream();
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                log.error(line);
+            }
+        }
     }
 
     private static void printErrorInfo(ProcessBuilder processBuilder) {
