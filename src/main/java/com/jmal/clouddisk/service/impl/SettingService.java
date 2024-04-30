@@ -32,9 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -108,15 +106,19 @@ public class SettingService {
                 Path path = Paths.get(fileProperties.getRootDir(), username);
                 TimeInterval timeInterval = new TimeInterval();
                 try {
+
+                    Set<FileVisitOption> fileVisitOptions = EnumSet.noneOf(FileVisitOption.class);
+                    fileVisitOptions.add(FileVisitOption.FOLLOW_LINKS);
+
                     // 先删除索引
                     luceneService.deleteAllIndex(userService.getUserIdByUserName(username));
                     FileCountVisitor fileCountVisitor = new FileCountVisitor();
-                    PathUtil.walkFiles(path, fileCountVisitor);
+                    Files.walkFileTree(path, fileVisitOptions, Integer.MAX_VALUE, fileCountVisitor);
                     log.info("user: {}, 开始同步, 文件数: {}", username, fileCountVisitor.getCount());
                     timeInterval.start();
                     SyncFileVisitor syncFileVisitor = new SyncFileVisitor(username, fileCountVisitor.getCount());
                     syncFileVisitorMap.put(username, syncFileVisitor);
-                    Files.walkFileTree(path, syncFileVisitor);
+                    Files.walkFileTree(path, fileVisitOptions, Integer.MAX_VALUE, syncFileVisitor);
                     TimeUnit.MINUTES.sleep(1);
                     // 删除有删除标记的doc
                     commonFileService.deleteDocByDeleteFlag(username);
