@@ -3,13 +3,14 @@ package com.jmal.clouddisk.office.callbacks.implementations;
 import cn.hutool.http.HttpUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.OperationPermission;
 import com.jmal.clouddisk.office.callbacks.Callback;
 import com.jmal.clouddisk.office.callbacks.Status;
 import com.jmal.clouddisk.office.model.Track;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
-import com.jmal.clouddisk.service.impl.FileServiceImpl;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.TimeUntils;
 import com.mongodb.client.result.UpdateResult;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * @author jmal
@@ -35,13 +37,15 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class SaveCallback implements Callback {
 
-    private final FileServiceImpl fileService;
-
     private final FileProperties fileProperties;
 
     private final UserLoginHolder userLoginHolder;
 
     private final MongoTemplate mongoTemplate;
+
+    private final CommonFileService commonFileService;
+
+    private final IUserService userService;
 
     private final IFileVersionService fileVersionService;
 
@@ -49,10 +53,17 @@ public class SaveCallback implements Callback {
     public int handle(Track body) {
         int result = 0;
         try {
+
             FileDocument fileDocument = mongoTemplate.findById(body.getFileId(), FileDocument.class, CommonFileService.COLLECTION_NAME);
             if (fileDocument == null) {
                 return 1;
             }
+
+            // 检查权限
+            String userId = fileDocument.getUserId();
+            List<OperationPermission> operationPermissionList = fileDocument.getOperationPermissionList();
+            commonFileService.checkPermissionUserId(userId, operationPermissionList, OperationPermission.PUT);
+
             Path path = Paths.get(fileProperties.getRootDir(), userLoginHolder.getUsername(), fileDocument.getPath(), fileDocument.getName());
 
             // 保存历史文件
@@ -77,7 +88,7 @@ public class SaveCallback implements Callback {
             fileDocument.setSize(size);
             fileDocument.setUpdateDate(updateDate);
             fileDocument.setMd5(md5);
-            fileService.pushMessage(userLoginHolder.getUsername(), fileDocument, "updateFile");
+            commonFileService.pushMessage(userLoginHolder.getUsername(), fileDocument, "updateFile");
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
