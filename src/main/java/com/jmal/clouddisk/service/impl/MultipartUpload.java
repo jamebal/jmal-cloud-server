@@ -68,10 +68,11 @@ public class MultipartUpload {
 
     /**
      * 上传分片文件
-     * @param upload UploadApiParamDTO
+     *
+     * @param upload         UploadApiParamDTO
      * @param uploadResponse UploadResponse
-     * @param md5 md5
-     * @param file MultipartFile
+     * @param md5            md5
+     * @param file           MultipartFile
      */
     public void uploadChunkFile(UploadApiParamDTO upload, UploadResponse uploadResponse, String md5, MultipartFile file) throws IOException {
         // 多个分片
@@ -167,31 +168,53 @@ public class MultipartUpload {
 
     public UploadResponse checkChunk(UploadApiParamDTO upload) throws IOException {
 
-        Path prePth = Paths.get(upload.getUsername(), upload.getCurrentDirectory(), upload.getFilename());
-        String ossPath = CaffeineUtil.getOssPath(prePth);
-        if (ossPath != null) {
-            return webOssService.checkChunk(ossPath, prePth, upload);
-        }
-
-        UploadResponse uploadResponse = new UploadResponse();
-        String md5 = upload.getIdentifier();
-        String path = commonFileService.getUserDirectory(upload.getCurrentDirectory());
-
-        String relativePath = upload.getRelativePath();
-        path += relativePath.substring(0, relativePath.length() - upload.getFilename().length());
-        FileDocument fileDocument = commonFileService.getByMd5(path, upload.getUserId(), md5);
-        if (fileDocument != null) {
-            // 文件已存在
-            uploadResponse.setPass(true);
+        boolean checkExist = upload.getFilenames() != null && !upload.getFilenames().isEmpty();
+        if (checkExist) {
+            for (String filename : upload.getFilenames()) {
+                Path prePth = Paths.get(upload.getUsername(), upload.getCurrentDirectory(), filename);
+                String ossPath = CaffeineUtil.getOssPath(prePth);
+                if (ossPath != null) {
+                    return webOssService.checkExist(ossPath, prePth);
+                }
+            }
         } else {
-            int totalChunks = upload.getTotalChunks();
-            List<Integer> chunks = resumeCache.get(md5, key -> createResumeCache(upload));
-            // 返回已存在的分片
-            uploadResponse.setResume(chunks);
-            assert chunks != null;
-            if (totalChunks == chunks.size()) {
-                // 文件不存在,并且已经上传了所有的分片,则合并保存文件
-                mergeFile(upload);
+            Path prePth = Paths.get(upload.getUsername(), upload.getCurrentDirectory(), upload.getFilename());
+            String ossPath = CaffeineUtil.getOssPath(prePth);
+            if (ossPath != null) {
+                return webOssService.checkChunk(ossPath, prePth, upload);
+            }
+        }
+        UploadResponse uploadResponse = new UploadResponse();
+
+        String path = commonFileService.getUserDirectory(upload.getCurrentDirectory());
+        if (checkExist) {
+            // 将upload.getFiles()中的filename提取出来
+            FileDocument fileDocument = commonFileService.exist(path, upload.getUserId(), upload.getFilenames());
+            if (fileDocument != null) {
+                // 文件已存在
+                uploadResponse.setPass(true);
+                uploadResponse.setExist(true);
+                return uploadResponse;
+            }
+        } else {
+            String md5 = upload.getIdentifier();
+            String relativePath = upload.getRelativePath();
+            path += relativePath.substring(0, relativePath.length() - upload.getFilename().length());
+
+            FileDocument fileDocument = commonFileService.getByMd5(path, upload.getUserId(), md5);
+            if (fileDocument != null) {
+                // 文件已存在
+                uploadResponse.setPass(true);
+            } else {
+                int totalChunks = upload.getTotalChunks();
+                List<Integer> chunks = resumeCache.get(md5, key -> createResumeCache(upload));
+                // 返回已存在的分片
+                uploadResponse.setResume(chunks);
+                assert chunks != null;
+                if (totalChunks == chunks.size()) {
+                    // 文件不存在,并且已经上传了所有的分片,则合并保存文件
+                    mergeFile(upload);
+                }
             }
         }
         uploadResponse.setUpload(true);

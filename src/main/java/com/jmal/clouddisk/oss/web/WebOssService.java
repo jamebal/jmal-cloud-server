@@ -322,29 +322,37 @@ public class WebOssService extends WebOssCommonService {
         };
     }
 
-    public UploadResponse checkChunk(String ossPath, Path prePth, UploadApiParamDTO upload) {
+    public UploadResponse checkExist(String ossPath, Path prePth) {
         UploadResponse uploadResponse = new UploadResponse();
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, false);
         if (ossService.doesObjectExist(objectName)) {
             // 对象已存在
             uploadResponse.setPass(true);
-        } else {
-            String uploadId = ossService.getUploadId(objectName);
-            // 已上传的分片号
-            List<Integer> chunks = LIST_PARTS_CACHE.get(uploadId, key -> ossService.getListParts(objectName, uploadId));
-            // 返回已存在的分片
-            uploadResponse.setResume(chunks);
-            assert chunks != null;
-            if (upload.getTotalChunks() == chunks.size()) {
-                // 文件不存在,并且已经上传了所有的分片,则合并保存文件
-                ossService.completeMultipartUpload(objectName, uploadId, upload.getTotalSize());
-                // 清除缓存
-                removeListPartsCache(uploadId);
-                notifyCreateFile(upload.getUsername(), objectName, getOssRootFolderName(ossPath));
-                FileDocument fileDocument = getFileDocumentByOssPath(ossPath, upload, objectName);
-                afterUploadComplete(objectName, ossPath, fileDocument);
-            }
+            uploadResponse.setExist(true);
+            return uploadResponse;
+        }
+        return uploadResponse;
+    }
+
+    public UploadResponse checkChunk(String ossPath, Path prePth, UploadApiParamDTO upload) {
+        UploadResponse uploadResponse = new UploadResponse();
+        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+        String objectName = getObjectName(prePth, ossPath, false);
+        String uploadId = ossService.getUploadId(objectName);
+        // 已上传的分片号
+        List<Integer> chunks = LIST_PARTS_CACHE.get(uploadId, key -> ossService.getListParts(objectName, uploadId));
+        // 返回已存在的分片
+        uploadResponse.setResume(chunks);
+        assert chunks != null;
+        if (upload.getTotalChunks() == chunks.size()) {
+            // 文件不存在,并且已经上传了所有的分片,则合并保存文件
+            ossService.completeMultipartUpload(objectName, uploadId, upload.getTotalSize());
+            // 清除缓存
+            removeListPartsCache(uploadId);
+            notifyCreateFile(upload.getUsername(), objectName, getOssRootFolderName(ossPath));
+            FileDocument fileDocument = getFileDocumentByOssPath(ossPath, upload, objectName);
+            afterUploadComplete(objectName, ossPath, fileDocument);
         }
         uploadResponse.setUpload(true);
         return uploadResponse;

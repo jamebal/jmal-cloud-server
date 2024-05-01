@@ -57,6 +57,8 @@ public class UploadApiParamDTO {
     Integer totalChunks;
     MultipartFile file;
 
+    List<String> filenames;
+
     InputStream inputStream;
 
     /***

@@ -149,6 +149,14 @@ public class FileController {
         return fileService.checkChunkUploaded(upload);
     }
 
+    @Operation(summary = "检查文件是否存在")
+    @PostMapping("checkExist")
+    @LogOperatingFun
+    @Permission("cloud:file:upload")
+    public ResponseResult<Object> checkFileExist(UploadApiParamDTO upload) throws IOException {
+        return fileService.checkFileExist(upload);
+    }
+
     @Operation(summary = "合并文件")
     @PostMapping("merge")
     @LogOperatingFun

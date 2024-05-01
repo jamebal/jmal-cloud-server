@@ -1705,6 +1705,12 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
+    public ResponseResult<Object> checkFileExist(UploadApiParamDTO upload) throws IOException {
+        setMountInfo(upload);
+        return ResultUtil.success(multipartUpload.checkChunk(upload));
+    }
+
+    @Override
     public ResponseResult<Object> merge(UploadApiParamDTO upload) throws IOException {
         setMountInfo(upload);
         return ResultUtil.success(multipartUpload.mergeFile(upload));

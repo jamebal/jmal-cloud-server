@@ -166,8 +166,24 @@ public class CommonFileService {
         return path.toString();
     }
 
-    /***
+    /**
      * 是否存在该文件
+     * @param path 文件的相对路径
+     * @param userId userId 用户Id
+     * @param filenames 文件名列表
+     * @return FileDocument
+     */
+    FileDocument exist(String path, String userId, List<String> filenames) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        query.addCriteria(Criteria.where("path").is(path));
+        query.addCriteria(Criteria.where("name").in(filenames));
+        return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+    }
+
+    /**
+     * 是否存在该文件
+     * @param path 文件的相对路径
      * @param userId userId
      * @param md5 md5
      * @return FileDocument

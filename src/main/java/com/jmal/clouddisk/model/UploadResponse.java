@@ -18,6 +18,10 @@ public class UploadResponse {
      * 服务是否已经存在该文件,通过文件的md5校验
      */
     boolean pass;
+    /**
+     * 已存在
+     */
+    boolean exist;
     /***
      * 代表这些分片是已经上传过的了
      */
