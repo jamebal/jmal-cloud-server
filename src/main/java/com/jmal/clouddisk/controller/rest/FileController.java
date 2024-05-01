@@ -368,7 +368,7 @@ public class FileController {
     @GetMapping("/duplicate")
     @LogOperatingFun
     @Permission("cloud:file:update")
-    public ResponseResult<Object> duplicate(@RequestParam String fileId, @RequestParam String newFilename) throws IOException {
+    public ResponseResult<Object> duplicate(@RequestParam String fileId, @RequestParam String newFilename) {
         return fileService.duplicate(fileId, newFilename);
     }
 

@@ -9,7 +9,6 @@ import com.jmal.clouddisk.office.callbacks.Status;
 import com.jmal.clouddisk.office.model.Track;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
-import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.TimeUntils;
@@ -44,8 +43,6 @@ public class SaveCallback implements Callback {
     private final MongoTemplate mongoTemplate;
 
     private final CommonFileService commonFileService;
-
-    private final IUserService userService;
 
     private final IFileVersionService fileVersionService;
 
