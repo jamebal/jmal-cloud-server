@@ -3,19 +3,17 @@ package com.jmal.clouddisk.acpect;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.model.LogOperation;
-import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.service.impl.LogService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -28,13 +26,12 @@ import java.lang.reflect.Method;
  **/
 @Aspect
 @Component
+@RequiredArgsConstructor
 public class LogOperatingAspect {
 
-    @Autowired
-    private UserLoginHolder userLoginHolder;
+    private final UserLoginHolder userLoginHolder;
 
-    @Autowired
-    LogService logService;
+    private final LogService logService;
 
     /**
      * 切入点
@@ -95,13 +92,13 @@ public class LogOperatingAspect {
         if(LogOperation.Type.LOGIN.name().equals(logType)){
             // 登录日志
             for (Object arg : joinPoint.getArgs()) {
-                if (arg instanceof ConsumerDO consumerDO) {
-                    logOperation.setUsername(consumerDO.getUsername());
+                if (arg instanceof ConsumerDTO consumerDTO) {
+                    logOperation.setUsername(consumerDTO.getUsername());
                     break;
                 }
             }
         }
         // 添加日志
-        logService.addLogBefore(logOperation, result, (HttpServletRequest) attributes.getRequest(), (HttpServletResponse) attributes.getResponse());
+        logService.addLogBefore(logOperation, result, attributes.getRequest(), attributes.getResponse());
     }
 }
