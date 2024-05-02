@@ -41,7 +41,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
-          context: docker/jmalcloud-nvidia
+          context: .
           file: docker/jmalcloud-nvidia/Dockerfile
           push: true
           tags: jmal/jmalcloud-nvidia:${{ env.PROJECT_VERSION }},jmal/jmalcloud-nvidia:latest
