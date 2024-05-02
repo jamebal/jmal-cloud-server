@@ -1,10 +1,9 @@
-name: Build jmalcloud-nvidia Docker Image
+name: Build nightly (nvidia)
 
 on:
+  push:
+    branches: [ master ]
   workflow_dispatch:
-  release:
-    types: [published]
-    tags: [v*]
 
 jobs:
   build-and-push:
@@ -44,7 +43,7 @@ jobs:
           context: docker/jmalcloud-nvidia
           file: docker/jmalcloud-nvidia/Dockerfile
           push: true
-          tags: jmal/jmalcloud-nvidia:${{ env.PROJECT_VERSION }},jmal/jmalcloud-nvidia:latest
+          tags: jmal/jmalcloud-nvidia:nightly
           platforms: linux/amd64,linux/arm64
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
