@@ -1,4 +1,4 @@
-FROM jmal/jdk17_ffmpeg:latest
+FROM jmal/jdk17_ffmpeg_nvidia:latest
 
 ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
 ENV RUN_ENVIRONMENT=prod
@@ -7,9 +7,9 @@ ARG VERSION
 
 RUN mkdir -p /jmalcloud/files
 
-ADD docker/ip2region.xdb /jmalcloud/
+ADD ../ip2region.xdb /jmalcloud/
 
-ADD target/clouddisk-${VERSION}-exec.jar /usr/local/
+ADD ../../target/clouddisk-${VERSION}-exec.jar /usr/local/
 
 VOLUME /jmalcloud/
 
