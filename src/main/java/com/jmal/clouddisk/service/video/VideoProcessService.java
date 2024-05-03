@@ -80,7 +80,7 @@ public class VideoProcessService {
         executorService.execute(() -> {
             try {
                 TimeUnit.SECONDS.sleep(3);
-                videoToM3U8(fileId, username, relativePath, fileName);
+                videoToM3U8(fileId, username, relativePath, fileName, false);
             } catch (InterruptedException e) {
                 log.error(e.getMessage(), e);
                 Thread.currentThread().interrupt();
@@ -215,7 +215,7 @@ public class VideoProcessService {
         return videoCacheDir;
     }
 
-    private void videoToM3U8(String fileId, String username, String relativePath, String fileName) throws IOException, InterruptedException {
+    private void videoToM3U8(String fileId, String username, String relativePath, String fileName, boolean onlyCPU) throws IOException, InterruptedException {
         Path fileAbsolutePath = Paths.get(fileProperties.getRootDir(), username, relativePath, fileName);
         // 视频文件缓存目录
         String videoCacheDir = getVideoCacheDir(username, fileId);
@@ -239,27 +239,11 @@ public class VideoProcessService {
         if (videoInfo.getBitrate() < SD_VIDEO_BITRATE && videoInfo.getBitrate() > 0) {
             bitrate = videoInfo.getBitrate();
         }
-        ProcessBuilder processBuilder = new ProcessBuilder(
-                Constants.FFMPEG,
-                "-i", fileAbsolutePath.toString(),
-                "-profile:v", "main",
-                "-pix_fmt", "yuv420p",
-                "-level", "4.0",
-                "-start_number", "0",
-                "-hls_time", "10",
-                "-hls_list_size", "0",
-                "-vf", "scale=-2:" + 720,
-                "-b:v", bitrate + "k",
-                "-preset", "medium",
-                "-g", "48",
-                "-sc_threshold", "0",
-                "-f", "hls",
-                "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
-                outputPath
-        );
-        // 检测是硬件加速
-        processBuilder = checkHardwareAcceleration(fileId, processBuilder, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
-
+        ProcessBuilder processBuilder = cpuTranscoding(fileId, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
+        if (!onlyCPU) {
+            // 检测是硬件加速
+            processBuilder = checkHardwareAcceleration(fileId, processBuilder, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
+        }
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
         boolean pushMessage = false;
@@ -285,17 +269,41 @@ public class VideoProcessService {
         }
         int exitCode = process.waitFor();
         if (exitCode == 0) {
-            log.info("转码成功: {}", fileName);
+            log.info("转码成功: {}, onlyCPU: {}", fileName, onlyCPU);
             if (BooleanUtil.isFalse(pushMessage)) {
                 startConvert(username, relativePath, fileName, fileId);
             }
         } else {
+            if (!onlyCPU) {
+                videoToM3U8(fileId, username, relativePath, fileName, true);
+            }
             printErrorInfo(processBuilder, process);
         }
     }
 
+    private static ProcessBuilder cpuTranscoding(String fileId, Path fileAbsolutePath, int bitrate, String videoCacheDir, String outputPath) {
+        return new ProcessBuilder(
+                Constants.FFMPEG,
+                "-i", fileAbsolutePath.toString(),
+                "-profile:v", "main",
+                "-pix_fmt", "yuv420p",
+                "-level", "4.0",
+                "-start_number", "0",
+                "-hls_time", "10",
+                "-hls_list_size", "0",
+                "-vf", "scale=-2:" + 720,
+                "-b:v", bitrate + "k",
+                "-preset", "medium",
+                "-g", "48",
+                "-sc_threshold", "0",
+                "-f", "hls",
+                "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
+                outputPath
+        );
+    }
+
     private ProcessBuilder checkHardwareAcceleration(String fileId, ProcessBuilder processBuilder, Path fileAbsolutePath, int bitrate, String videoCacheDir, String outputPath) {
-        if (checkCUDA() && checkNVENC()) {
+        if (checkNvidiaDrive()) {
             // 使用CUDA硬件加速和NVENC编码器
             processBuilder = new ProcessBuilder(
                     Constants.FFMPEG,
@@ -322,34 +330,15 @@ public class VideoProcessService {
     }
 
     /**
-     * 检测是否支持cuda硬件加速
+     * 检测是否装有NVIDIA显卡驱动
      */
-    private boolean checkCUDA() {
+    private boolean checkNvidiaDrive() {
         try {
-            Process process = Runtime.getRuntime().exec("ffmpeg -hwaccels");
+            Process process = Runtime.getRuntime().exec("nvidia-smi");
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
             while ((line = reader.readLine()) != null) {
-                if (line.contains("cuda")) {
-                    return true;
-                }
-            }
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-        }
-        return false;
-    }
-
-    /**
-     * 检测是否支持nvenc编码器
-     */
-    private boolean checkNVENC() {
-        try {
-            Process process = Runtime.getRuntime().exec("ffmpeg -hide_banner -encoders | grep nvenc");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.contains("nvenc")) {
+                if (line.contains("Version")) {
                     return true;
                 }
             }
