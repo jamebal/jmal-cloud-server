@@ -175,7 +175,7 @@ public class VideoProcessService {
             return null;
         } catch (InterruptedException e) {
             log.error(e.getMessage(), e);
-            Thread.currentThread().interrupt();
+            return null;
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
