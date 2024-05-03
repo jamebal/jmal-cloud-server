@@ -38,7 +38,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
-          context: docker/nvidia
+          context: .
           file: docker/nvidia/Dockerfile
           push: true
           tags: jmal/jdk17_ffmpeg_nvidia:latest
