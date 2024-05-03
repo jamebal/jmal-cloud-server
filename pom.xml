@@ -13,6 +13,7 @@
     <version>2.8.0</version>
     <name>clouddisk</name>
     <description>Cloud Disk</description>
+    <packaging>jar</packaging>
 
     <properties>
         <java.version>17</java.version>
@@ -306,50 +307,40 @@
     </dependencies>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-                <excludes>
-                    <exclude>static/**</exclude>
-                </excludes>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>false</filtering>
-                <includes>
-                    <include>static/**</include>
-                </includes>
-            </resource>
-            <resource>
-                <directory>libs</directory>
-                <targetPath>BOOT-INF/lib/</targetPath>
-                <includes>
-                    <include>**/*.jar</include>
-                </includes>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
-                <targetPath>BOOT-INF/classes/</targetPath>
-            </resource>
-        </resources>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>3.1.0</version>
-            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <!--maven插件打包时会打两个jar包，一个是普通的jar包，一个是可执行的jar包，默认的名字会一样的，可执行jar包会覆盖掉普通jar包-->
-                <!--加了这个配置，打包的时候，可执行的jar包的名字和普通jar包的名字不一样，可执行jar包就不会覆盖普通jar包了-->
-                <version>${project.parent.version}</version>
                 <configuration>
-                    <classifier>exec</classifier>
+                    <mainClass>com.jmal.clouddisk.ClouddiskApplication</mainClass>
+                    <executable>true</executable>
+                    <layout>ZIP</layout>
+                    <includes>
+                        <include>
+                            <groupId>nothing</groupId>
+                            <artifactId>nothing</artifactId>
+                        </include>
+                    </includes>
                 </configuration>
+            </plugin>
+            <!-- 将第三方包拷贝到lib目录 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration><outputDirectory>${project.build.directory}/lib</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
+
 
 </project>

@@ -102,10 +102,13 @@ public class VideoProcessService {
     }
 
     public void deleteVideoCache(String username, String fileAbsolutePath) {
-        String fileId = commonFileService.getFileDocument(username, fileAbsolutePath).getId();
-        String videoCacheDir = getVideoCacheDir(username, fileId);
-        if (FileUtil.exist(videoCacheDir)) {
-            FileUtil.del(videoCacheDir);
+        FileDocument fileDocument = commonFileService.getFileDocument(username, fileAbsolutePath);
+        if (fileDocument != null) {
+            String fileId = fileDocument.getId();
+            String videoCacheDir = getVideoCacheDir(username, fileId);
+            if (FileUtil.exist(videoCacheDir)) {
+                FileUtil.del(videoCacheDir);
+            }
         }
     }
 
@@ -177,7 +180,7 @@ public class VideoProcessService {
                 "-y",
                 "-ss", formattedTimestamp,
                 "-i", videoPath,
-                "-vf", "scale='min(320,iw)':-1",
+                "-vf", "\"scale='min(320,iw)':-1\"",
                 "-frames:v", "1",
                 outputPath
         );
