@@ -11,7 +11,7 @@ ADD docker/ip2region.xdb /jmalcloud/
 
 ADD target/lib /usr/local/clouddisk-lib
 
-ADD target/clouddisk-${VERSION}-exec.jar /usr/local/
+ADD target/clouddisk-${VERSION}.jar /usr/local/
 
 VOLUME /jmalcloud/
 
@@ -28,4 +28,4 @@ ENV DOCKER_DEFAULT_PLATFORM=linux/amd64,linux/arm64
 
 EXPOSE 8088
 
-CMD java -Dloader.path=/usr/local/clouddisk-lib -jar -Xms50m -Xmx512m /usr/local/clouddisk-$VERSION-exec.jar --spring.profiles.active=$RUN_ENVIRONMENT --spring.data.mongodb.uri=$MONGODB_URI --file.monitor=false --file.rootDir=/jmalcloud/files --file.ip2region-db-path=/jmalcloud/ip2region.xdb
+CMD java -Dloader.path=/usr/local/clouddisk-lib -jar -Xms50m -Xmx512m /usr/local/clouddisk-$VERSION.jar --spring.profiles.active=$RUN_ENVIRONMENT --spring.data.mongodb.uri=$MONGODB_URI --file.monitor=false --file.rootDir=/jmalcloud/files --file.ip2region-db-path=/jmalcloud/ip2region.xdb
