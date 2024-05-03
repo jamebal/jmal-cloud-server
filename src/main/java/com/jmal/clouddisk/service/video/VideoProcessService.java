@@ -143,15 +143,30 @@ public class VideoProcessService {
             }
             double videoDuration = getVideoInfo(videoPath).getDuration();
             ProcessBuilder processBuilder = getVideoCoverProcessBuilder(videoPath, outputPath, videoDuration);
+            printSuccessInfo(processBuilder);
             Process process = processBuilder.start();
-            int exitCode = process.waitFor();
-            if (exitCode == 0) {
-                printSuccessInfo(processBuilder);
+            boolean finished = process.waitFor(10, TimeUnit.SECONDS);
+            log.info("finished: {}, result code: {}", finished, process.exitValue());
+            if (finished && process.exitValue() == 0) {
                 if (FileUtil.exist(outputPath)) {
                     return outputPath;
+                } else {
+                    log.error("处理完成后输出文件不存在。");
                 }
             } else {
-                printErrorInfo(processBuilder, process);
+                if (!finished) {
+                    // 超时后处理
+                    process.destroy(); // 尝试正常终止
+                    process.destroyForcibly(); // 强制终止
+                    log.error("进程超时并被终止。");
+                    printErrorInfo(processBuilder);
+                } else {
+                    // 进程结束但退出码非0
+                    printErrorInfo(processBuilder, process);
+                }
+            }
+            if (FileUtil.exist(outputPath)) {
+                return outputPath;
             }
             return null;
         } catch (InterruptedException e) {
@@ -231,7 +246,7 @@ public class VideoProcessService {
         if (!onlyCPU && checkNvidiaDrive()) {
             // 检测是硬件加速
             log.info("use NVENC hardware acceleration");
-            processBuilder = checkHardwareAcceleration(fileId, processBuilder, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
+            processBuilder = checkHardwareAcceleration(fileId, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
         }
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
@@ -292,9 +307,9 @@ public class VideoProcessService {
         );
     }
 
-    private ProcessBuilder checkHardwareAcceleration(String fileId, ProcessBuilder processBuilder, Path fileAbsolutePath, int bitrate, String videoCacheDir, String outputPath) {
+    private ProcessBuilder checkHardwareAcceleration(String fileId, Path fileAbsolutePath, int bitrate, String videoCacheDir, String outputPath) {
         // 使用CUDA硬件加速和NVENC编码器
-        processBuilder = new ProcessBuilder(
+        return new ProcessBuilder(
                 Constants.FFMPEG,
                 "-hwaccel", "cuda",
                 "-hwaccel_output_format", "cuda",
@@ -314,7 +329,6 @@ public class VideoProcessService {
                 "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
                 outputPath
         );
-        return processBuilder;
     }
 
     /**
