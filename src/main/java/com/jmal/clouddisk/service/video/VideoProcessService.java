@@ -184,7 +184,7 @@ public class VideoProcessService {
                 "-y",
                 "-ss", formattedTimestamp,
                 "-i", videoPath,
-                "-vf", "\"scale='min(320,iw)':-1\"",
+                "-vf", "scale='min(320,iw)':-1",
                 "-frames:v", "1",
                 outputPath
         );
