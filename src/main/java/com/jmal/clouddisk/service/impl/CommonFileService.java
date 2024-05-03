@@ -497,6 +497,7 @@ public class CommonFileService {
 
     private void setMediaCover(String fileId, String username, String fileName, String relativePath, Update update) {
         String coverPath = videoProcessService.getVideoCover(fileId, username, relativePath, fileName);
+        log.info("\r\ncoverPath:{}", coverPath);
         if (!CharSequenceUtil.isBlank(coverPath)) {
             if (update == null) {
                 update = new Update();

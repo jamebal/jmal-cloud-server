@@ -146,6 +146,7 @@ public class VideoProcessService {
             Process process = processBuilder.start();
             int exitCode = process.waitFor();
             if (exitCode == 0) {
+                printSuccessInfo(processBuilder);
                 if (FileUtil.exist(outputPath)) {
                     return outputPath;
                 }
@@ -165,7 +166,7 @@ public class VideoProcessService {
     private static ProcessBuilder getVideoCoverProcessBuilder(String videoPath, String outputPath, double videoDuration) {
         double targetTimestamp = videoDuration * 0.1;
         String formattedTimestamp = formatTimestamp(targetTimestamp);
-        log.info("\r\n videoPath: {}, formattedTimestamp: {}", videoPath, formattedTimestamp);
+        log.info("\r\nvideoPath: {}, formattedTimestamp: {}", videoPath, formattedTimestamp);
         ProcessBuilder processBuilder = new ProcessBuilder(
                 Constants.FFMPEG,
                 "-y",
@@ -227,8 +228,9 @@ public class VideoProcessService {
             bitrate = videoInfo.getBitrate();
         }
         ProcessBuilder processBuilder = cpuTranscoding(fileId, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
-        if (!onlyCPU) {
+        if (!onlyCPU && checkNvidiaDrive()) {
             // 检测是硬件加速
+            log.info("use NVENC hardware acceleration");
             processBuilder = checkHardwareAcceleration(fileId, processBuilder, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
         }
         processBuilder.redirectErrorStream(true);
@@ -256,6 +258,7 @@ public class VideoProcessService {
         }
         int exitCode = process.waitFor();
         if (exitCode == 0) {
+            printSuccessInfo(processBuilder);
             log.info("转码成功: {}, onlyCPU: {}", fileName, onlyCPU);
             if (BooleanUtil.isFalse(pushMessage)) {
                 startConvert(username, relativePath, fileName, fileId);
@@ -290,29 +293,27 @@ public class VideoProcessService {
     }
 
     private ProcessBuilder checkHardwareAcceleration(String fileId, ProcessBuilder processBuilder, Path fileAbsolutePath, int bitrate, String videoCacheDir, String outputPath) {
-        if (checkNvidiaDrive()) {
-            // 使用CUDA硬件加速和NVENC编码器
-            processBuilder = new ProcessBuilder(
-                    Constants.FFMPEG,
-                    "-hwaccel", "cuda",
-                    "-hwaccel_output_format", "cuda",
-                    "-i", fileAbsolutePath.toString(),
-                    "-vf", "scale_cuda=-2:" + 720,
-                    "-c:v", "h264_nvenc",
-                    "-b:v", bitrate + "k",
-                    "-preset", "medium",
-                    "-profile:v", "main",
-                    "-level", "4.0",
-                    "-start_number", "0",
-                    "-hls_time", "10",
-                    "-hls_list_size", "0",
-                    "-g", "48",
-                    "-sc_threshold", "0",
-                    "-f", "hls",
-                    "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
-                    outputPath
-            );
-        }
+        // 使用CUDA硬件加速和NVENC编码器
+        processBuilder = new ProcessBuilder(
+                Constants.FFMPEG,
+                "-hwaccel", "cuda",
+                "-hwaccel_output_format", "cuda",
+                "-i", fileAbsolutePath.toString(),
+                "-vf", "scale_cuda=-2:" + 720,
+                "-c:v", "h264_nvenc",
+                "-b:v", bitrate + "k",
+                "-preset", "medium",
+                "-profile:v", "main",
+                "-level", "4.0",
+                "-start_number", "0",
+                "-hls_time", "10",
+                "-hls_list_size", "0",
+                "-g", "48",
+                "-sc_threshold", "0",
+                "-f", "hls",
+                "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
+                outputPath
+        );
         return processBuilder;
     }
 
@@ -330,7 +331,7 @@ public class VideoProcessService {
                 }
             }
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            return false;
         }
         return false;
     }
@@ -427,7 +428,13 @@ public class VideoProcessService {
     private static void printErrorInfo(ProcessBuilder processBuilder) {
         // 打印命令 用空格连接
         String command = String.join(" ", processBuilder.command());
-        log.error("ffmpeg 执行失败, command: \r\n {}", command);
+        log.error("ffmpeg 执行失败, command: \r\n{}", command);
+    }
+
+    private static void printSuccessInfo(ProcessBuilder processBuilder) {
+        // 打印命令 用空格连接
+        String command = String.join(" ", processBuilder.command());
+        log.info("ffmpeg 执行成功, command: \r\n{}", command);
     }
 
     /**
@@ -497,7 +504,7 @@ public class VideoProcessService {
             this.format = format;
             this.bitrate = bitrate;
             this.duration = duration;
-            log.info("\r\n videoPath: {}, width: {}, height: {}, format: {}, bitrate: {}, duration: {}", videoPath, width, height, format, bitrate, duration);
+            log.info("\r\nvideoPath: {}, width: {}, height: {}, format: {}, bitrate: {}, duration: {}", videoPath, width, height, format, bitrate, duration);
         }
     }
 
