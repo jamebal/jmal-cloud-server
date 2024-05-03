@@ -143,6 +143,7 @@ public class VideoProcessService {
             Process process = processBuilder.start();
 
             boolean finished = process.waitFor(10, TimeUnit.SECONDS);
+            log.info("finished: {}, result code: {}", finished, process.exitValue());
             if (finished && process.exitValue() == 0) {
                 if (FileUtil.exist(outputPath)) {
                     return outputPath;
@@ -160,6 +161,9 @@ public class VideoProcessService {
                     // 进程结束但退出码非0
                     printErrorInfo(processBuilder, process);
                 }
+            }
+            if (FileUtil.exist(outputPath)) {
+                return outputPath;
             }
             return null;
         } catch (InterruptedException e) {
