@@ -145,7 +145,7 @@ public class VideoProcessService {
             ProcessBuilder processBuilder = getVideoCoverProcessBuilder(videoPath, outputPath, videoDuration);
             printSuccessInfo(processBuilder);
             Process process = processBuilder.start();
-            boolean finished = process.waitFor(10, TimeUnit.SECONDS);
+            boolean finished = process.waitFor(5, TimeUnit.SECONDS);
             try {
                 log.info("finished: {}", finished);
                 log.info("exitValue: {}", process.exitValue());
@@ -164,6 +164,7 @@ public class VideoProcessService {
                 process.destroy(); // 尝试正常终止
                 process.destroyForcibly(); // 强制终止
                 log.error("进程超时并被终止。");
+                TimeUnit.SECONDS.sleep(2);
                 printErrorInfo(processBuilder);
             } else {
                 // 进程结束但退出码非0
