@@ -23,6 +23,15 @@ FROM eclipse-temurin:17-jre AS java-base
 FROM base AS final
 COPY --from=java-base /opt/java/openjdk /opt/java/openjdk
 
+# 设置时区
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+RUN mkdir -p /jmalcloud/files
+
+ADD docker/ip2region.xdb /jmalcloud/
+
+ADD target/lib /usr/local/clouddisk-lib
+
 # 更新 PATH 和 LD_LIBRARY_PATH
 ENV PATH="/opt/java/openjdk/bin:${PATH}"
 

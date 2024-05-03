@@ -5,12 +5,6 @@ ENV RUN_ENVIRONMENT=prod
 
 ARG VERSION
 
-RUN mkdir -p /jmalcloud/files
-
-ADD docker/ip2region.xdb /jmalcloud/
-
-ADD target/lib /usr/local/clouddisk-lib
-
 ADD target/clouddisk-${VERSION}.jar /usr/local/
 
 VOLUME /jmalcloud/
