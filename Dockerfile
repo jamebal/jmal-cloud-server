@@ -1,7 +1,7 @@
 FROM jmal/jdk17_ffmpeg:latest
 
 ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
-ENV RUN_ENVIRONMENT=prod
+ENV RUN_ENVIRONMENT prod
 
 ARG VERSION
 

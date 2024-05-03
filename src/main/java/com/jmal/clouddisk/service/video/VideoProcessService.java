@@ -164,7 +164,7 @@ public class VideoProcessService {
                 process.destroy(); // 尝试正常终止
                 process.destroyForcibly(); // 强制终止
                 log.error("进程超时并被终止。");
-                printErrorInfo(processBuilder);
+                printErrorInfo(processBuilder, process);
             } else {
                 // 进程结束但退出码非0
                 printErrorInfo(processBuilder, process);
