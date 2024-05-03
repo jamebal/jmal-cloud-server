@@ -138,32 +138,19 @@ public class VideoProcessService {
                     videoPath = url.toString();
                 }
             }
+            if (FileUtil.exist(outputPath)) {
+                return outputPath;
+            }
             double videoDuration = getVideoInfo(videoPath).getDuration();
             ProcessBuilder processBuilder = getVideoCoverProcessBuilder(videoPath, outputPath, videoDuration);
             Process process = processBuilder.start();
-
-            boolean finished = process.waitFor(10, TimeUnit.SECONDS);
-            log.info("finished: {}, result code: {}", finished, process.exitValue());
-            if (finished && process.exitValue() == 0) {
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
                 if (FileUtil.exist(outputPath)) {
                     return outputPath;
-                } else {
-                    log.error("处理完成后输出文件不存在。");
                 }
             } else {
-                if (!finished) {
-                    // 超时后处理
-                    process.destroy(); // 尝试正常终止
-                    process.destroyForcibly(); // 强制终止
-                    log.error("进程超时并被终止。");
-                    printErrorInfo(processBuilder);
-                } else {
-                    // 进程结束但退出码非0
-                    printErrorInfo(processBuilder, process);
-                }
-            }
-            if (FileUtil.exist(outputPath)) {
-                return outputPath;
+                printErrorInfo(processBuilder, process);
             }
             return null;
         } catch (InterruptedException e) {
