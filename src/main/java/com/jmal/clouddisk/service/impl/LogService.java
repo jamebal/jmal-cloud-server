@@ -237,10 +237,10 @@ public class LogService {
     private Query getQuery(LogOperationDTO logOperationDTO) {
         Query query = new Query();
         String excludeUsername = logOperationDTO.getExcludeUsername();
-        if (!CharSequenceUtil.isBlank(excludeUsername)) {
+        String username = logOperationDTO.getUsername();
+        if (!CharSequenceUtil.isBlank(excludeUsername) && CharSequenceUtil.isBlank(username)) {
             query.addCriteria(Criteria.where("username").nin(userLoginHolder.getUsername()));
         }
-        String username = logOperationDTO.getUsername();
         if (!CharSequenceUtil.isBlank(username)) {
             query.addCriteria(Criteria.where("username").is(username));
         }

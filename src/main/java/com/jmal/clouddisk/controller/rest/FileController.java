@@ -119,7 +119,6 @@ public class FileController {
 
     @Operation(summary = "文件上传")
     @PostMapping("upload")
-    @LogOperatingFun
     @Permission("cloud:file:upload")
     public ResponseResult<Object> uploadPost(UploadApiParamDTO upload) throws IOException {
         return fileService.upload(upload);
@@ -143,7 +142,7 @@ public class FileController {
 
     @Operation(summary = "检查文件/分片是否存在")
     @GetMapping("upload")
-    @LogOperatingFun
+    @LogOperatingFun(value = "文件上传")
     @Permission("cloud:file:upload")
     public ResponseResult<Object> checkUpload(UploadApiParamDTO upload) throws IOException {
         return fileService.checkChunkUploaded(upload);
@@ -151,7 +150,7 @@ public class FileController {
 
     @Operation(summary = "检查文件是否存在")
     @PostMapping("checkExist")
-    @LogOperatingFun
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     @Permission("cloud:file:upload")
     public ResponseResult<Object> checkFileExist(UploadApiParamDTO upload) throws IOException {
         return fileService.checkFileExist(upload);

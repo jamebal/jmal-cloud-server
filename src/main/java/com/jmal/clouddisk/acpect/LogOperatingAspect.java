@@ -89,6 +89,10 @@ public class LogOperatingAspect {
         logOperation.setOperationFun(operationFun);
         String logType = logOperatingFun.logType().name();
         logOperation.setType(logType);
+        // 不记录浏览日志
+        if(LogOperation.Type.BROWSE.name().equals(logType)){
+            return;
+        }
         if(LogOperation.Type.LOGIN.name().equals(logType)){
             // 登录日志
             for (Object arg : joinPoint.getArgs()) {
