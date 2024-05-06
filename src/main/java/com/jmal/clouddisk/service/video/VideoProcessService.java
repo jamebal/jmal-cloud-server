@@ -145,7 +145,7 @@ public class VideoProcessService {
             ProcessBuilder processBuilder = getVideoCoverProcessBuilder(videoPath, outputPath, videoDuration);
             printSuccessInfo(processBuilder);
             Process process = processBuilder.start();
-            boolean finished = process.waitFor(5, TimeUnit.SECONDS);
+            boolean finished = process.waitFor(12, TimeUnit.SECONDS);
             try {
                 log.info("finished: {}", finished);
                 log.info("exitValue: {}", process.exitValue());
