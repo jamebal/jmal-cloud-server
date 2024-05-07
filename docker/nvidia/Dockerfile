@@ -3,15 +3,15 @@ FROM nvidia/cuda:11.7.1-base-ubuntu22.04 AS base
 # 设置环境变量，防止在安装过程中出现对话框干扰
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 启用 Universe 存储库以获取所有 FFmpeg 依赖项
-RUN add-apt-repository universe
-
 # 安装必要的软件包和依赖项
 RUN apt-get update && \
     apt-get install -y \
     wget \
     gnupg \
     software-properties-common
+
+# 启用 Universe 存储库以获取所有 FFmpeg 依赖项
+RUN add-apt-repository universe
 
 # 添加 Jellyfin 的官方 GPG 密钥
 RUN wget -O - https://repo.jellyfin.org/ubuntu/jellyfin_team.gpg.key | gpg --dearmor -o /usr/share/keyrings/jellyfin-archive-keyring.gpg
