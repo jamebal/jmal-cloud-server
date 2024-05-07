@@ -3,61 +3,22 @@ FROM nvidia/cuda:11.7.1-base-ubuntu22.04 AS base
 # 设置非交互式安装，避免 tzdata 等包的配置暂停
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 安装依赖
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    yasm \
-    cmake \
-    git \
-    pkg-config \
-    libtool \
-    g++ \
-    make \
-    wget \
-    curl \
-    libssl-dev \
-    libx264-dev \
-    libx265-dev \
-    libnuma-dev \
-    libvpx-dev \
-    libfdk-aac-dev \
-    libmp3lame-dev \
-    libopus-dev \
-    libsdl2-dev
+# 安装wget
+RUN apt-get update && apt-get install -y wget
 
-# 获取 FFmpeg 源代码
-RUN mkdir -p ~/ffmpeg_sources && cd ~/ffmpeg_sources && \
-    git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
-    cd ffmpeg
+ARG ARCH=amd64
 
-# 编译 FFmpeg
-RUN cd ~/ffmpeg_sources/ffmpeg && \
-    ./configure \
-    --enable-gpl \
-    --enable-libx264 \
-    --enable-libx265 \
-    --enable-libvpx \
-    --enable-libfdk-aac \
-    --enable-libmp3lame \
-    --enable-libopus \
-    --enable-nonfree \
-    --enable-cuda-nvcc \
-    --enable-libnpp \
-    --enable-nvenc \
-    --enable-cuvid \
-    --enable-hwaccel=h264_nvenc \
-    --enable-hwaccel=hevc_nvenc \
-    --enable-hwaccel=h264_cuvid \
-    --enable-hwaccel=hevc_cuvid \
-    --extra-cflags=-I/usr/local/cuda/include \
-    --extra-ldflags=-L/usr/local/cuda/lib64 && \
-    make -j$(nproc) && \
-    make install
+# 下载jellyfin-ffmpeg.deb
+RUN wget https://repo.jellyfin.org/files/ffmpeg/ubuntu/latest-5.x/${ARCH}/jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb
 
-# 清理
-RUN apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -rf ~/ffmpeg_sources
+# 安装下载的 jellyfin-ffmpeg.deb
+RUN dpkg -i jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb || apt-get install -fy
+
+# 卸载 wget 并清理
+RUN apt-get remove -y wget && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 清除安装文件
+RUN rm -rf jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb
 
 # 环境变量
 ENV LANG=en_US.UTF-8 \
