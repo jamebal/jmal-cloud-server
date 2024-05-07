@@ -25,8 +25,7 @@ RUN apt-get update && \
 ENV PATH="/usr/lib/jellyfin-ffmpeg:$PATH"
 
 # 清理安装后的无用文件，减小镜像体积
-RUN apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # 环境变量
 ENV LANG=en_US.UTF-8 \
