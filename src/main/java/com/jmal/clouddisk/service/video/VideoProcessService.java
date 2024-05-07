@@ -192,7 +192,7 @@ public class VideoProcessService {
                 "-y",
                 "-ss", formattedTimestamp,
                 "-i", videoPath,
-                "-vf", "scale='min(320,iw)':-1",
+                "-vf", "scale=320:-2",
                 "-frames:v", "1",
                 outputPath
         );
@@ -240,9 +240,9 @@ public class VideoProcessService {
         if (!needTranscode(videoInfo)) {
             return;
         }
-        // 如果视频的码率小于2000kbps，则使用视频的原始码率
+        // 如果视频的码率小于2500kbps，则使用视频的原始码率
         // 标清视频码率
-        int SD_VIDEO_BITRATE = 2000;
+        int SD_VIDEO_BITRATE = 2500 * 1000;
         int bitrate = SD_VIDEO_BITRATE;
         if (videoInfo.getBitrate() < SD_VIDEO_BITRATE && videoInfo.getBitrate() > 0) {
             bitrate = videoInfo.getBitrate();
@@ -301,8 +301,8 @@ public class VideoProcessService {
                 "-start_number", "0",
                 "-hls_time", "10",
                 "-hls_list_size", "0",
-                "-vf", "scale=-2:" + 720,
-                "-b:v", bitrate + "k",
+                "-vf", "scale=-2:720",
+                "-b:v", Convert.toStr(bitrate),
                 "-preset", "medium",
                 "-g", "48",
                 "-sc_threshold", "0",
@@ -316,22 +316,41 @@ public class VideoProcessService {
         // 使用CUDA硬件加速和NVENC编码器
         return new ProcessBuilder(
                 Constants.FFMPEG,
+                "-init_hw_device", "cuda=cu:0",
+                "-filter_hw_device", "cu",
                 "-hwaccel", "cuda",
                 "-hwaccel_output_format", "cuda",
+                "-threads", "1",
+                "-autorotate", "0",
                 "-i", fileAbsolutePath.toString(),
-                "-vf", "scale_cuda=-2:" + 720,
-                "-c:v", "h264_nvenc",
-                "-b:v", bitrate + "k",
-                "-preset", "medium",
-                "-profile:v", "main",
-                "-level", "4.0",
-                "-start_number", "0",
-                "-hls_time", "10",
-                "-hls_list_size", "0",
-                "-g", "48",
-                "-sc_threshold", "0",
+                "-autoscale", "0",
+                "-map_metadata", "-1",
+                "-map_chapters", "-1",
+                "-threads", "0",
+                "-map", "0:0",
+                "-map", "0:1",
+                "-map", "-0:s",
+                "-codec:v:0", "h264_nvenc",
+                "-preset", "p1",
+                "-b:v", Convert.toStr(bitrate),
+                "-maxrate", Convert.toStr(bitrate),
+                "-bufsize", "5643118",
+                "-g:v:0", "180",
+                "-keyint_min:v:0", "180",
+                "-vf", "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale_cuda=-2:720:format=yuv420p",
+                "-codec:a:0", "copy",
+                "-copyts",
+                "-avoid_negative_ts", "disabled",
+                "-max_muxing_queue_size", "2048",
                 "-f", "hls",
+                "-max_delay", "5000000",
+                "-hls_time", "3",
+                "-hls_segment_type", "mpegts",
+                "-start_number", "0",
+                "-y",
                 "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
+                "-hls_playlist_type", "vod",
+                "-hls_list_size", "0",
                 outputPath
         );
     }
@@ -485,7 +504,7 @@ public class VideoProcessService {
                     JSONObject streamObject = streamsArray.getJSONObject(0);
                     int width = streamObject.getIntValue("width");
                     int height = streamObject.getIntValue("height");
-                    int bitrate = streamObject.getIntValue("bit_rate") / 1000; // 转换为 kbps
+                    int bitrate = streamObject.getIntValue("bit_rate"); // bps
                     return new VideoInfo(videoPath, width, height, format, bitrate, duration);
                 }
             }
