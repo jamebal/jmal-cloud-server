@@ -20,6 +20,9 @@ RUN apt-get remove -y wget && apt-get clean && rm -rf /var/lib/apt/lists/*
 # 清除安装文件
 RUN rm -rf jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb
 
+# 将/usr/lib/jellyfin-ffmpeg添加到PATH
+ENV PATH=/usr/lib/jellyfin-ffmpeg:$PATH
+
 # 环境变量
 ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US:en \
