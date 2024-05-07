@@ -1,35 +1,63 @@
 FROM nvidia/cuda:11.7.1-base-ubuntu22.04 AS base
 
-# 设置环境变量，防止在安装过程中出现对话框干扰
+# 设置非交互式安装，避免 tzdata 等包的配置暂停
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 安装必要的软件包和依赖项
-RUN apt-get update && \
-    apt-get install -y \
+# 安装依赖
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    yasm \
+    cmake \
+    git \
+    pkg-config \
+    libtool \
+    g++ \
+    make \
     wget \
-    gnupg \
-    software-properties-common
+    curl \
+    libssl-dev \
+    libx264-dev \
+    libx265-dev \
+    libnuma-dev \
+    libvpx-dev \
+    libfdk-aac-dev \
+    libmp3lame-dev \
+    libopus-dev \
+    libsdl2-dev
 
-# 启用 Universe 存储库以获取所有 FFmpeg 依赖项
-RUN add-apt-repository universe
+# 获取 FFmpeg 源代码
+RUN mkdir -p ~/ffmpeg_sources && cd ~/ffmpeg_sources && \
+    git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
+    cd ffmpeg
 
-# 添加 Jellyfin 的官方 GPG 密钥
-RUN wget -O - https://repo.jellyfin.org/ubuntu/jellyfin_team.gpg.key | gpg --dearmor -o /usr/share/keyrings/jellyfin-archive-keyring.gpg
+# 编译 FFmpeg
+RUN cd ~/ffmpeg_sources/ffmpeg && \
+    ./configure \
+    --enable-gpl \
+    --enable-libx264 \
+    --enable-libx265 \
+    --enable-libvpx \
+    --enable-libfdk-aac \
+    --enable-libmp3lame \
+    --enable-libopus \
+    --enable-nonfree \
+    --enable-cuda-nvcc \
+    --enable-libnpp \
+    --enable-nvenc \
+    --enable-cuvid \
+    --enable-hwaccel=h264_nvenc \
+    --enable-hwaccel=hevc_nvenc \
+    --enable-hwaccel=h264_cuvid \
+    --enable-hwaccel=hevc_cuvid \
+    --extra-cflags=-I/usr/local/cuda/include \
+    --extra-ldflags=-L/usr/local/cuda/lib64 && \
+    make -j$(nproc) && \
+    make install
 
-# 添加 Jellyfin 的官方 APT 仓库
-RUN echo "deb [signed-by=/usr/share/keyrings/jellyfin-archive-keyring.gpg] https://repo.jellyfin.org/ubuntu focal main" > /etc/apt/sources.list.d/jellyfin.list
-
-# 更新软件包列表并安装jellyfin-ffmpeg
-RUN apt-get update && \
-    apt-get install -y libvpx6 libwebp6 libx264-155 libx265-179
-
-RUN apt-get install -y jellyfin-ffmpeg5
-
-# 设置 ffmpeg 环境变量，使用 Jellyfin 的 ffmpeg
-ENV PATH="/usr/lib/jellyfin-ffmpeg:$PATH"
-
-# 清理安装后的无用文件，减小镜像体积
-RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# 清理
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf ~/ffmpeg_sources
 
 # 环境变量
 ENV LANG=en_US.UTF-8 \
