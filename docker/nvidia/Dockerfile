@@ -22,7 +22,7 @@ RUN echo "deb [signed-by=/usr/share/keyrings/jellyfin-archive-keyring.gpg] https
 # 更新软件包列表并安装jellyfin-ffmpeg
 RUN apt-get update && \
     apt-get install -y \
-    jellyfin-ffmpeg
+    jellyfin-ffmpeg5
 
 # 设置 ffmpeg 环境变量，使用 Jellyfin 的 ffmpeg
 ENV PATH="/usr/lib/jellyfin-ffmpeg:$PATH"
