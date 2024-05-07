@@ -3,6 +3,9 @@ FROM nvidia/cuda:11.7.1-base-ubuntu22.04 AS base
 # 设置环境变量，防止在安装过程中出现对话框干扰
 ENV DEBIAN_FRONTEND=noninteractive
 
+# 启用 Universe 存储库以获取所有 FFmpeg 依赖项
+RUN add-apt-repository universe
+
 # 安装必要的软件包和依赖项
 RUN apt-get update && \
     apt-get install -y \
@@ -19,7 +22,7 @@ RUN echo "deb [signed-by=/usr/share/keyrings/jellyfin-archive-keyring.gpg] https
 # 更新软件包列表并安装jellyfin-ffmpeg
 RUN apt-get update && \
     apt-get install -y \
-    jellyfin-ffmpeg5
+    jellyfin-ffmpeg
 
 # 设置 ffmpeg 环境变量，使用 Jellyfin 的 ffmpeg
 ENV PATH="/usr/lib/jellyfin-ffmpeg:$PATH"
