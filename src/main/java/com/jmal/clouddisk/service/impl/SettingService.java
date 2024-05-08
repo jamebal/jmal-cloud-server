@@ -122,7 +122,7 @@ public class SettingService {
                     Files.walkFileTree(path, fileVisitOptions, Integer.MAX_VALUE, syncFileVisitor);
                     TimeUnit.MINUTES.sleep(1);
                     // 删除有删除标记的doc
-                    commonFileService.deleteDocByDeleteFlag(username);
+                    //commonFileService.deleteDocByDeleteFlag(username);
                 } catch (IOException e) {
                     log.error("{}{}", e.getMessage(), path, e);
                 } catch (InterruptedException e) {
