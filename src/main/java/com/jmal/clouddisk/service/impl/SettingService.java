@@ -23,6 +23,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
@@ -234,6 +235,11 @@ public class SettingService {
                 commonFileService.createFile(username, file.toFile(), null, null);
             } catch (Exception e) {
                 log.error("{}{}", e.getMessage(), file, e);
+                FileDocument fileDocument = commonFileService.getFileDocument(username, file.toFile().getAbsolutePath());
+                if (fileDocument != null) {
+                    // 需要移除删除标记
+                    removeDeleteFlagOfDoc(fileDocument.getId());
+                }
             } finally {
                 if (totalCount > 0) {
                     if (processCount.get() <= 2) {
@@ -248,6 +254,18 @@ public class SettingService {
                 }
             }
         }
+    }
+
+    /**
+     * 移除删除标记
+     * @param fileId fileId
+     */
+    public void removeDeleteFlagOfDoc(String fileId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        Update update = new Update();
+        update.unset("delete");
+        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
     }
 
     private static class FileCountVisitor extends SimpleFileVisitor<Path> {
