@@ -102,13 +102,14 @@ public class FileMonitor {
         // 轮询间隔(秒)
         long interval = TimeUnit.SECONDS.toMillis(fileProperties.getTimeInterval());
         FILTER_DIR_SET.add(fileProperties.getChunkFileDir());
+        FILTER_DIR_SET.add(fileProperties.getLuceneIndexDir());
         newObserver();
         //创建文件变化监听器
         monitor = new FileAlterationMonitor(interval, observer);
         // 开始监控
         monitor.start();
         isMonitor = true;
-        log.info("\r\n文件监控服务已开启:\r\n轮询间隔:{}秒\n监控目录:{}\n忽略目录:{}", fileProperties.getTimeInterval(), rootDir, rootDir + File.separator + fileProperties.getChunkFileDir());
+        log.info("\r\n文件监控服务已开启:\r\n轮询间隔:{}秒\n监控目录:{}\n忽略目录:{}", fileProperties.getTimeInterval(), rootDir, FILTER_DIR_SET);
     }
 
     private void newObserver() {
@@ -126,7 +127,7 @@ public class FileMonitor {
         try {
             newObserver();
             fastInterval();
-            log.info("reload FileMonitor, filterDir: {}", FILTER_DIR_SET);
+            log.info("reload FileMonitor, ignoreDir: {}", FILTER_DIR_SET);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -187,7 +188,7 @@ public class FileMonitor {
             monitor = null;
             monitor = new FileAlterationMonitor(DateUnit.MINUTE.getMillis() * 30, observer);
             monitor.start();
-            log.info("轮询间隔改为30分钟");
+            log.info("轮询间隔改为3分钟");
             isMonitor = false;
         }
     }
