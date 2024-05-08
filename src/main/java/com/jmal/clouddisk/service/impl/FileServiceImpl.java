@@ -218,11 +218,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             LocalDateTime updateDate = fileDocument.getUpdateDate();
             long update = TimeUntils.getMilli(updateDate);
             fileDocument.setAgoTime(now - update);
-            // if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
-            //     String path = fileDocument.getPath() + fileDocument.getName() + File.separator;
-            //     long size = getFolderSize(fileDocument.getUserId(), path);
-            //     fileDocument.setSize(size);
-            // }
+            if (BooleanUtil.isTrue(fileDocument.getIsFolder()) && BooleanUtil.isTrue(upload.getShowFolderSize())) {
+                String path = fileDocument.getPath() + fileDocument.getName() + File.separator;
+                long size = getFolderSize(fileDocument.getUserId(), path);
+                fileDocument.setSize(size);
+            }
             FileIntroVO fileIntroVO = new FileIntroVO();
             BeanUtils.copyProperties(fileDocument, fileIntroVO);
             return fileIntroVO;

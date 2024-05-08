@@ -146,6 +146,10 @@ public class UploadApiParamDTO {
      * 要查询的排序顺序
      */
     String order;
+    /**
+     * 是否显示文件夹大小
+     */
+    Boolean showFolderSize;
     /***
      * 是否为草稿
      */
