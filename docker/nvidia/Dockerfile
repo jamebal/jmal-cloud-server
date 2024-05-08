@@ -4,7 +4,9 @@ FROM nvidia/cuda:11.7.1-base-ubuntu22.04 AS base
 ENV DEBIAN_FRONTEND=noninteractive
 
 # 安装wget
-RUN apt-get update && apt-get install -y wget
+RUN apt-get update && apt-get install -y wget && apt-get install -y locales && \
+                                                  locale-gen en_US.UTF-8 && \
+                                                  update-locale LANG=en_US.UTF-8
 
 ARG ARCH=amd64
 
