@@ -136,7 +136,7 @@ public class LuceneService {
             String content = readFileContent(file);
             updateIndexDocument(indexWriter, fileIndex, content);
             if (StrUtil.isNotBlank(content)) {
-                log.info("添加索引, filepath: {}", file.getAbsoluteFile());
+                log.info("添加索引, filepath: {}, fileId: {}", file.getAbsoluteFile(), fileIntroVO.getId());
             }
         }
         indexWriter.commit();
