@@ -132,6 +132,8 @@
                         setTimeout(function (){
                             // 隐藏加载动画
                             $('#wrap-mask').hide()
+                            // 外部连接使用新标签打开
+                            updateLink()
                         }, 0)
                         justLoading = true
                         setTimeout(function (){
@@ -615,6 +617,24 @@
                     }
                 }
                 return "";
+            }
+            function updateLink() {
+                // 选择所有的a标签
+                document.querySelectorAll('a').forEach(function(link) {
+                    console.log('link', link)
+                    link.addEventListener('click', function(e) {
+                        console.log('123')
+                        // 获取链接的href属性
+                        let href = link.getAttribute('href');
+                        // 判断是否为外部链接
+                        if (href.startsWith('http') && !href.startsWith(window.location.origin)) {
+                            // 阻止默认的链接打开方式
+                            e.preventDefault();
+                            // 在新标签页中打开链接
+                            window.open(href, '_blank');
+                        }
+                    });
+                });
             }
         });
     </script>
