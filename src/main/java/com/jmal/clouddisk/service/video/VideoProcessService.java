@@ -249,9 +249,12 @@ public class VideoProcessService {
         }
         ProcessBuilder processBuilder = cpuTranscoding(fileId, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
         if (!onlyCPU && checkNvidiaDrive()) {
-            // 检测是硬件加速
             log.info("use NVENC hardware acceleration");
-            processBuilder = checkHardwareAcceleration(fileId, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
+            processBuilder = useNvencCuda(fileId, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
+        }
+        if (!onlyCPU && checkMacAppleSilicon()) {
+            log.info("use videotoolbox hardware acceleration");
+            processBuilder = useVideotoolbox(fileId, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
         }
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
@@ -291,6 +294,29 @@ public class VideoProcessService {
         }
     }
 
+    private static ProcessBuilder useVideotoolbox(String fileId, Path fileAbsolutePath, int bitrate, String videoCacheDir, String outputPath) {
+        return new ProcessBuilder(
+                Constants.FFMPEG,
+                "-hwaccel", "videotoolbox",
+                "-i", fileAbsolutePath.toString(),
+                "-c:v", "h264_videotoolbox",
+                "-profile:v", "main",
+                "-pix_fmt", "yuv420p",
+                "-level", "4.0",
+                "-start_number", "0",
+                "-hls_time", "10",
+                "-hls_list_size", "0",
+                "-vf", "scale=-2:720",
+                "-b:v", Convert.toStr(bitrate),
+                "-preset", "medium",
+                "-g", "48",
+                "-sc_threshold", "0",
+                "-f", "hls",
+                "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
+                outputPath
+        );
+    }
+
     private static ProcessBuilder cpuTranscoding(String fileId, Path fileAbsolutePath, int bitrate, String videoCacheDir, String outputPath) {
         return new ProcessBuilder(
                 Constants.FFMPEG,
@@ -312,7 +338,7 @@ public class VideoProcessService {
         );
     }
 
-    private ProcessBuilder checkHardwareAcceleration(String fileId, Path fileAbsolutePath, int bitrate, String videoCacheDir, String outputPath) {
+    private ProcessBuilder useNvencCuda(String fileId, Path fileAbsolutePath, int bitrate, String videoCacheDir, String outputPath) {
         // 使用CUDA硬件加速和NVENC编码器
         return new ProcessBuilder(
                 Constants.FFMPEG,
@@ -353,6 +379,25 @@ public class VideoProcessService {
                 "-hls_list_size", "0",
                 outputPath
         );
+    }
+
+    /**
+     * 检测是否装有Mac Apple Silicon
+     */
+    private boolean checkMacAppleSilicon() {
+        try {
+            Process process = Runtime.getRuntime().exec("ffmpeg -hwaccels");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("videotoolbox")) {
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            return false;
+        }
+        return false;
     }
 
     /**
