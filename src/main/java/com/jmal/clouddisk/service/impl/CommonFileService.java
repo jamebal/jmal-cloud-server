@@ -25,6 +25,7 @@ import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
@@ -526,11 +527,11 @@ public class CommonFileService {
             update.set("h", imageInfo.getHeight());
             update.set("content", out.toByteArray());
         } catch (UnsupportedFormatException e) {
-            log.warn(e.getMessage() + file.getAbsolutePath());
+            log.warn("{}{}", e.getMessage(), file.getAbsolutePath());
         } catch (Exception e) {
-            log.error(e.getMessage() + file.getAbsolutePath());
+            log.error("{}{}", e.getMessage(), file.getAbsolutePath());
         } catch (Throwable e) {
-            log.error(e.getMessage(), e);
+            log.error(e.getMessage());
         }
     }
 
@@ -925,10 +926,17 @@ public class CommonFileService {
         query.limit(pageSize);
     }
 
-    public void deleteDocByDeleteFlag(String username) {
+    /**
+     * 移除删除标记
+     * @param username username
+     */
+    public void removeDocByDeleteFlag(String username) {
         Query query = new Query();
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userService.getUserIdByUserName(username)));
         query.addCriteria(Criteria.where("delete").is(1));
-        mongoTemplate.remove(query, COLLECTION_NAME);
+        DeleteResult deleteResult = mongoTemplate.remove(query, COLLECTION_NAME);
+        if (deleteResult.getDeletedCount() > 0) {
+            log.info("移除删除标记: {}, username: {}", deleteResult.getDeletedCount(), username);
+        }
     }
 }

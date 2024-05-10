@@ -3,6 +3,7 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileIndex;
@@ -14,6 +15,8 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import com.mongodb.client.AggregateIterable;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.Analyzer;
@@ -36,10 +39,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author jmal
@@ -63,16 +63,28 @@ public class LuceneService {
     private final SearcherManager searcherManager;
     private final IUserService userService;
     private final TagService tagService;
+    private ExecutorService executorService;
 
     /**
      * 新建索引文件缓冲队列大小
      */
-    private final static int CREATE_INDEX_QUEUE_SIZE = 256;
+    private final static int CREATE_INDEX_QUEUE_SIZE = 512;
 
     /**
      * 新建索引文件缓冲队列
      */
     private ArrayBlockingQueue<String> indexFileQueue;
+
+    @PostConstruct
+    public void init() {
+        if (executorService == null) {
+            int processors = Runtime.getRuntime().availableProcessors() - 1;
+            if (processors < 1) {
+                processors = 1;
+            }
+            executorService = ThreadUtil.newFixedExecutor(processors, 100, "createIndexFileTask", true);
+        }
+    }
 
     /**
      * 推送至新建索引文件缓存队列
@@ -109,22 +121,23 @@ public class LuceneService {
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 List<String> fileIdList = new ArrayList<>(indexFileQueue.size());
-                indexFileQueue.drainTo(fileIdList);
-                if (!fileIdList.isEmpty()) {
-                    createIndexFiles(fileIdList);
-                }
+                executorService.execute(() -> {
+                    indexFileQueue.drainTo(fileIdList);
+                    if (!fileIdList.isEmpty()) {
+                        createIndexFiles(fileIdList);
+                    }
+                });
             } catch (Exception e) {
                 log.error("创建索引失败", e);
             }
-        }, 0, 1, TimeUnit.SECONDS);
+        }, 0, 200, TimeUnit.MILLISECONDS);
     }
 
     /**
      * 创建索引
      * @param fileIdList fileIdList
-     * @throws IOException IOException
      */
-    private void createIndexFiles(List<String> fileIdList) throws IOException {
+    private void createIndexFiles(List<String> fileIdList) {
         // 提取出fileIdList
         List<FileIntroVO> fileIntroVOList = getFileIntroVOs(fileIdList);
         for (FileIntroVO fileIntroVO : fileIntroVOList) {
@@ -139,7 +152,6 @@ public class LuceneService {
                 log.info("添加索引, filepath: {}", file.getAbsoluteFile());
             }
         }
-        indexWriter.commit();
         removeDeletedFlag(fileIdList);
     }
 
@@ -526,6 +538,13 @@ public class LuceneService {
         Update update = new Update();
         update.set("delete", 1);
         mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+    }
+
+    @PreDestroy
+    public void destroy() {
+        if (executorService != null) {
+            executorService.shutdown();
+        }
     }
 
 }

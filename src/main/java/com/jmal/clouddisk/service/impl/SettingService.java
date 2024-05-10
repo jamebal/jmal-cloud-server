@@ -17,8 +17,10 @@ import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.lucene.index.IndexWriter;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -35,7 +37,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -76,11 +78,18 @@ public class SettingService {
     @Autowired
     LuceneService luceneService;
 
+    @Autowired
+    private IndexWriter indexWriter;
+
+    private ExecutorService executorService;
+
     private static final Map<String, SyncFileVisitor> syncFileVisitorMap = new ConcurrentHashMap<>(16);
 
     private static final Map<String, String> syncCache = new ConcurrentHashMap<>(16);
 
     private static final String SYNCED = "synced";
+
+    private static final Map<String, Timer> delayDeleteTagtimerMap = new ConcurrentHashMap<>(16);
 
     @PostConstruct
     public void init() {
@@ -95,6 +104,11 @@ public class SettingService {
             List<String> usernames = userService.getAllUsernameList();
             usernames.forEach(this::sync);
         }
+        int processors = Runtime.getRuntime().availableProcessors() - 2;
+        if (processors < 1) {
+            processors = 1;
+        }
+        executorService = ThreadUtil.newFixedExecutor(processors, 100, "syncFileVisitor", true);
     }
 
     /***
@@ -107,10 +121,12 @@ public class SettingService {
                 Path path = Paths.get(fileProperties.getRootDir(), username);
                 TimeInterval timeInterval = new TimeInterval();
                 try {
-
+                    if (delayDeleteTagtimerMap.containsKey(username)) {
+                        delayDeleteTagtimerMap.get(username).cancel();
+                        delayDeleteTagtimerMap.remove(username);
+                    }
                     Set<FileVisitOption> fileVisitOptions = EnumSet.noneOf(FileVisitOption.class);
                     fileVisitOptions.add(FileVisitOption.FOLLOW_LINKS);
-
                     // 先删除索引
                     luceneService.deleteAllIndex(userService.getUserIdByUserName(username));
                     FileCountVisitor fileCountVisitor = new FileCountVisitor();
@@ -120,13 +136,10 @@ public class SettingService {
                     SyncFileVisitor syncFileVisitor = new SyncFileVisitor(username, fileCountVisitor.getCount());
                     syncFileVisitorMap.put(username, syncFileVisitor);
                     Files.walkFileTree(path, fileVisitOptions, Integer.MAX_VALUE, syncFileVisitor);
-                    TimeUnit.MINUTES.sleep(1);
-                    // 删除有删除标记的doc
-                    commonFileService.deleteDocByDeleteFlag(username);
+                    indexWriter.commit();
+                    removeDocByDeleteFlag(username);
                 } catch (IOException e) {
                     log.error("{}{}", e.getMessage(), path, e);
-                } catch (InterruptedException e) {
-                    log.error(e.getMessage(), e);
                 } finally {
                     syncCache.remove(username);
                     syncFileVisitorMap.remove(username);
@@ -137,6 +150,17 @@ public class SettingService {
             return "syncing";
         });
         return ResultUtil.success();
+    }
+
+    private void removeDocByDeleteFlag(String username) {
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                commonFileService.removeDocByDeleteFlag(username);
+            }
+        }, 60000 * 3);
+        delayDeleteTagtimerMap.put(username, timer);
     }
 
     /**
@@ -220,13 +244,13 @@ public class SettingService {
 
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-            createFile(dir);
+            executorService.execute(() -> createFile(dir));
             return super.preVisitDirectory(dir, attrs);
         }
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            createFile(file);
+            executorService.execute(() -> createFile(file));
             return super.visitFile(file, attrs);
         }
 
@@ -414,6 +438,13 @@ public class SettingService {
     public void resetMenuAndRole() {
         menuService.initMenus();
         roleService.initRoles();
+    }
+
+    @PreDestroy
+    public void destroy() {
+        if (executorService != null) {
+            executorService.shutdown();
+        }
     }
 
 }

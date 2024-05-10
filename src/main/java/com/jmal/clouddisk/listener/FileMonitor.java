@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
@@ -223,6 +224,17 @@ public class FileMonitor {
                     boolean videoCache = fileProperties.getVideoTranscodeCache().equals(file.getName()) || fileProperties.getLuceneIndexDir().equals(file.getParentFile().getName());
                     if (sevenDayAgo && !videoCache) {
                         FileUtil.del(file);
+                    }
+                    if (videoCache) {
+                        if (file.listFiles() != null) {
+                            for (File f : Objects.requireNonNull(file.listFiles())) {
+                                FileDocument fileDocument = fileService.getById(f.getName());
+                                if (fileDocument == null || f.isFile()) {
+                                    FileUtil.del(f);
+                                    log.info("删除视频转码缓存文件: {}", f.getAbsolutePath());
+                                }
+                            }
+                        }
                     }
                 }
             }
