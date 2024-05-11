@@ -40,11 +40,6 @@ public class WebdavAuthenticator extends BasicAuthenticator {
 
     @Override
     protected boolean doAuthenticate(Request request, HttpServletResponse response) throws IOException {
-        if (request.getMethod().equals(WebdavMethod.GET.getCode())) {
-            // 浏览器访问webdav时，会先发一个GET请求，提示使用webdav客户端访问
-            notAllowBrowser(response);
-            return false;
-        }
         long time = System.currentTimeMillis();
         if (OPERATION_METHODS.contains(request.getMethod())) {
             setScheme(request);
