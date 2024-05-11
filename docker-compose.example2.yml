@@ -8,6 +8,8 @@ services:
       TZ: Asia/Shanghai
     volumes:
       - ./docker/jmalcloud/files:/jmalcloud/files/
+    ports:
+      - 7072:8088
     restart: unless-stopped
   mongo:
     container_name: jmalcloud_mongodb
