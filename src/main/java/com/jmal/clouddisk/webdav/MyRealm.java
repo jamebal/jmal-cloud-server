@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.webdav;
 
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.config.WebFilter;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
@@ -62,6 +63,9 @@ public class MyRealm extends RealmBase {
     @Override
     public Principal authenticate(String username, String password) {
         String hashPassword = userService.getHashPasswordUserName(username);
+        if (StrUtil.isBlank(hashPassword)) {
+            return null;
+        }
         boolean valid = PasswordHash.validatePassword(password, hashPassword);
         return valid ? getPrincipal(username) : null;
     }

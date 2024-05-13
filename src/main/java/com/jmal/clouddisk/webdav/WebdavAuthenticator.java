@@ -5,7 +5,6 @@ import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.impl.LogService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.catalina.authenticator.BasicAuthenticator;
 import org.apache.catalina.connector.Request;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +32,7 @@ public class WebdavAuthenticator extends BasicAuthenticator {
     private final LogService logService;
 
     public WebdavAuthenticator(FileProperties fileProperties, LogService logService) {
-        super();
+        super(fileProperties);
         this.fileProperties = fileProperties;
         this.logService = logService;
     }
@@ -77,19 +76,6 @@ public class WebdavAuthenticator extends BasicAuthenticator {
         logOperation.setOperationFun("WebDAV请求");
         logOperation.setType(LogOperation.Type.WEBDAV.name());
         logService.addLogBefore(logOperation, null, request, response);
-    }
-
-    /**
-     * 不允许浏览器访问webDAV
-     */
-    private void notAllowBrowser(HttpServletResponse resp) throws IOException {
-        resp.setHeader("Content-type", "text/html;charset=UTF-8");
-        resp.getWriter().print("<p>这是 WebDAV 接口。请使用 WebDAV 客户端访问。</p></br>");
-        resp.getWriter().println("Windows : 文件资源管理器 或者 <a href='https://www.raidrive.com/'>RaiDrive</a></br>");
-        resp.getWriter().println("Mac OS : Finder 或者 <a href='https://cyberduck.io/webdav/'>Cyberduck</a></br>");
-        resp.getWriter().println("Android : <a href='https://play.google.com/store/apps/details?id=com.rs.explorer.filemanager'>RS 文件浏览器</a></br>");
-        resp.getWriter().println("iOS : <a href='https://apps.apple.com/cn/app/documents-by-readdle/id364901807'>Documents</a></br>");
-        resp.getWriter().close();
     }
 
 }
