@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.webdav;
 
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -76,15 +77,13 @@ public class BasicAuthenticator extends AuthenticatorBase {
                 credentials = new BasicCredentials(authorizationBC, charset, getTrimCredentials());
                 String username = credentials.getUsername();
                 String usernameByUri = MyRealm.getUsernameByUri(fileProperties.getWebDavPrefixPath(), request.getRequestURI());
-                if (usernameByUri == null || !usernameByUri.equals(username)) {
-                    return false;
-                }
-                String password = credentials.getPassword();
-
-                Principal principal = context.getRealm().authenticate(username, password);
-                if (principal != null) {
-                    register(request, response, principal, HttpServletRequest.BASIC_AUTH, username, password);
-                    return true;
+                if (StrUtil.isNotBlank(usernameByUri) && usernameByUri.equals(username)) {
+                    String password = credentials.getPassword();
+                    Principal principal = context.getRealm().authenticate(username, password);
+                    if (principal != null) {
+                        register(request, response, principal, HttpServletRequest.BASIC_AUTH, username, password);
+                        return true;
+                    }
                 }
             } catch (IllegalArgumentException iae) {
                 if (log.isDebugEnabled()) {
