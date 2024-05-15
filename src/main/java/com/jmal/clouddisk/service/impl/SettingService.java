@@ -20,7 +20,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.index.IndexWriter;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -78,9 +77,6 @@ public class SettingService {
     @Autowired
     LuceneService luceneService;
 
-    @Autowired
-    private IndexWriter indexWriter;
-
     private ExecutorService executorService;
 
     private static final Map<String, SyncFileVisitor> syncFileVisitorMap = new ConcurrentHashMap<>(16);
@@ -136,7 +132,6 @@ public class SettingService {
                     SyncFileVisitor syncFileVisitor = new SyncFileVisitor(username, fileCountVisitor.getCount());
                     syncFileVisitorMap.put(username, syncFileVisitor);
                     Files.walkFileTree(path, fileVisitOptions, Integer.MAX_VALUE, syncFileVisitor);
-                    indexWriter.commit();
                     removeDocByDeleteFlag(username);
                 } catch (IOException e) {
                     log.error("{}{}", e.getMessage(), path, e);
