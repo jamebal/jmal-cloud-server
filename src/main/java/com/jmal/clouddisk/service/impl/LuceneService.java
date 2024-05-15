@@ -81,7 +81,10 @@ public class LuceneService {
      */
     private ArrayBlockingQueue<String> indexFileContentQueue;
 
-    private final ReentrantLock lock = new ReentrantLock();
+    /**
+     * 处理待索引文件锁, 防止多次处理
+     */
+    private final ReentrantLock toBeIndexedLock = new ReentrantLock();
 
     @PostConstruct
     public void init() {
@@ -124,20 +127,6 @@ public class LuceneService {
         } catch (InterruptedException e) {
             log.error("推送新建索引内容队列失败, fileId: {}, {}", fileId, e.getMessage(), e);
         }
-        executorService.execute(() -> {
-            if (!lock.tryLock()) {
-                return;
-            }
-            try {
-                try {
-                    getUnintendedFileIdList();
-                } catch (IOException e) {
-                    log.error("处理待索引文件失败", e);
-                }
-            } finally {
-                lock.unlock();
-            }
-        });
     }
 
     private ArrayBlockingQueue<String> getIndexFileQueue() {
@@ -166,12 +155,12 @@ public class LuceneService {
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 List<String> fileIdList = new ArrayList<>(indexFileQueue.size());
-                List<String> unintendedFileIdList = new ArrayList<>(indexFileContentQueue.size());
+                List<String> toBeIndexedFileIdList = new ArrayList<>(indexFileContentQueue.size());
                 executorService.execute(() -> {
 
                     // 添加待索引标记
-                    indexFileContentQueue.drainTo(unintendedFileIdList);
-                    addUnIndexFlagOfDoc(unintendedFileIdList);
+                    indexFileContentQueue.drainTo(toBeIndexedFileIdList);
+                    addToBeIndexedFlagOfDoc(toBeIndexedFileIdList);
 
                     // 添加不带文件内容的索引
                     indexFileQueue.drainTo(fileIdList);
@@ -657,29 +646,34 @@ public class LuceneService {
     }
 
     /**
-     * 添加未索引标记
+     * 添加待索引标记
      */
-    private void addUnIndexFlagOfDoc(List<String> fielIdList) {
+    private void addToBeIndexedFlagOfDoc(List<String> fielIdList) {
+        if (fielIdList.isEmpty()) {
+            return;
+        }
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where("_id").in(fielIdList));
         Update update = new Update();
-        // 添加索引标记用于在之后创建文件内容索引, 0表示未创建, 1表示已创建但是未包含内容, 2表示已创建并包含内容
+        // 添加索引标记用于在之后创建文件内容索引, 0表示待索引, 1表示已索引
         update.set("index", 0);
         mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+        log.debug("添加待索引标记, fileIds: {}", fielIdList);
+        startProcessFilesToBeIndexed();
     }
 
     /**
      * 处理待索引文件
      */
-    public void getUnintendedFileIdList() throws IOException {
+    public void processFilesToBeIndexed() throws IOException {
         boolean run = true;
-        log.info("开始处理待索引文件");
+        log.debug("开始处理待索引文件");
         while (run) {
             org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
             query.addCriteria(Criteria.where("index").is(0));
             long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
             if (count == 0) {
-                log.info("处理待索引文件完成");
+                log.debug("处理待索引文件完成");
                 indexWriter.commit();
                 run = false;
             }
@@ -694,6 +688,23 @@ public class LuceneService {
                 }
             }
         }
+    }
+
+    private void startProcessFilesToBeIndexed() {
+        executorService.execute(() -> {
+            if (!toBeIndexedLock.tryLock()) {
+                return;
+            }
+            try {
+                try {
+                    processFilesToBeIndexed();
+                } catch (IOException e) {
+                    log.error("处理待索引文件内容失败", e);
+                }
+            } finally {
+                toBeIndexedLock.unlock();
+            }
+        });
     }
 
     @PreDestroy
