@@ -2,7 +2,8 @@ name: Build nightly
 
 on:
   push:
-    branches: [ * ]
+    branches:
+      - '*'
   workflow_dispatch:
 
 jobs:
