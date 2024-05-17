@@ -4,18 +4,17 @@ tag-template: 'v$NEXT_PATCH_VERSION'
 categories:
   - title: '新功能 ✨'
     labels:
-      - 'feat'
+      - 'feature'
   - title: '修复 🐛'
     labels:
-      - 'fix'
-  - title: '优化 🎨'
+      - 'bug'
+  - title: '优化 ⚡️'
     labels:
-      - 'perf'
-change-template: '- $TITLE (#$NUMBER) @${{PRAUTHOR}}'
+      - 'improvement'
+change-template: '- $TITLE (#$NUMBER)'
 no-changes-template: '- No changes'
-replacers:
-  - search: '(.*)'
-    replace: 'Updated: $1'
 template: |
+  ## v$NEXT_PATCH_VERSION 🌟
+
   ## Changes
   $CHANGES
