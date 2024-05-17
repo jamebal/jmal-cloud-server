@@ -1,3 +1,4 @@
+# .github/release-drafter.yml
 name-template: 'v$NEXT_PATCH_VERSION 🌟'
 tag-template: 'v$NEXT_PATCH_VERSION'
 categories:
@@ -9,23 +10,23 @@ categories:
       - 'bug'
   - title: '优化 ⚡️'
     labels:
-      - 'perf'  # 确保标签名称一致
-change-template: '- $TITLE (#$NUMBER) @${{PRAUTHOR}}'
-no-changes-template: '- 没有变化'
+      - 'improvement'
+change-template: '- $TITLE (#$NUMBER)'
+no-changes-template: '- No changes'
 template: |
-  ## v$NEXT_PATCH_VERSION 🌟
+  ## Changes in this release:
 
   {% if categories['新功能 ✨'] %}
   ## 新功能 ✨
-  {{categories['新功能 ✨']}}
+  {{ categories['新功能 ✨'] | replace('\n', '\n- ') }}
   {% endif %}
 
   {% if categories['修复 🐛'] %}
   ## 修复 🐛
-  {{categories['修复 🐛']}}
+  {{ categories['修复 🐛'] | replace('\n', '\n- ') }}
   {% endif %}
 
   {% if categories['优化 ⚡️'] %}
   ## 优化 ⚡️
-  {{categories['优化 ⚡️']}}
+  {{ categories['优化 ⚡️'] | replace('\n', '\n- ') }}
   {% endif %}
