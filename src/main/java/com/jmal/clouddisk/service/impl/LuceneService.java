@@ -40,6 +40,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author jmal
@@ -75,6 +76,16 @@ public class LuceneService {
      */
     private ArrayBlockingQueue<String> indexFileQueue;
 
+    /**
+     * 新建索引文件内容缓冲队列
+     */
+    private ArrayBlockingQueue<String> indexFileContentQueue;
+
+    /**
+     * 处理待索引文件锁, 防止多次处理
+     */
+    private final ReentrantLock toBeIndexedLock = new ReentrantLock();
+
     @PostConstruct
     public void init() {
         if (executorService == null) {
@@ -96,10 +107,25 @@ public class LuceneService {
             return;
         }
         try {
-            ArrayBlockingQueue<String> indexFileQueue = getIndexFileQueue();
-            indexFileQueue.put(fileId);
+            getIndexFileQueue().put(fileId);
         } catch (InterruptedException e) {
             log.error("推送新建索引队列失败, fileId: {}, {}", fileId, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 推送至新建索引文件缓存队列
+     *
+     * @param fileId fileId
+     */
+    public void pushCreateIndexContentQueue(String fileId) {
+        if (StrUtil.isBlank(fileId)) {
+            return;
+        }
+        try {
+            getIndexFileContentQueue().put(fileId);
+        } catch (InterruptedException e) {
+            log.error("推送新建索引内容队列失败, fileId: {}, {}", fileId, e.getMessage(), e);
         }
     }
 
@@ -111,17 +137,32 @@ public class LuceneService {
         return indexFileQueue;
     }
 
+    private ArrayBlockingQueue<String> getIndexFileContentQueue() {
+        if (indexFileContentQueue == null) {
+            indexFileContentQueue = new ArrayBlockingQueue<>(CREATE_INDEX_QUEUE_SIZE);
+        }
+        return indexFileContentQueue;
+    }
+
     /**
      * 新建索引文件任务
      *
      */
     private void createIndexFileTask() {
         ArrayBlockingQueue<String> indexFileQueue = getIndexFileQueue();
+        ArrayBlockingQueue<String> indexFileContentQueue = getIndexFileContentQueue();
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 List<String> fileIdList = new ArrayList<>(indexFileQueue.size());
+                List<String> toBeIndexedFileIdList = new ArrayList<>(indexFileContentQueue.size());
                 executorService.execute(() -> {
+
+                    // 添加待索引标记
+                    indexFileContentQueue.drainTo(toBeIndexedFileIdList);
+                    addToBeIndexedFlagOfDoc(toBeIndexedFileIdList);
+
+                    // 添加不带文件内容的索引
                     indexFileQueue.drainTo(fileIdList);
                     if (!fileIdList.isEmpty()) {
                         createIndexFiles(fileIdList);
@@ -135,24 +176,48 @@ public class LuceneService {
 
     /**
      * 创建索引
+     *
      * @param fileIdList fileIdList
      */
     private void createIndexFiles(List<String> fileIdList) {
         // 提取出fileIdList
         List<FileIntroVO> fileIntroVOList = getFileIntroVOs(fileIdList);
         for (FileIntroVO fileIntroVO : fileIntroVOList) {
-            String username = userService.getUserNameById(fileIntroVO.getUserId());
-            File file = Paths.get(fileProperties.getRootDir(), username, fileIntroVO.getPath(), fileIntroVO.getName()).toFile();
-            FileIndex fileIndex = new FileIndex(file, fileIntroVO);
-            fileIndex.setTagName(getTagName(fileIntroVO));
-            setFileIndex(fileIndex);
-            String content = readFileContent(file);
-            updateIndexDocument(indexWriter, fileIndex, content);
-            if (StrUtil.isNotBlank(content)) {
-                log.info("添加索引, filepath: {}", file.getAbsoluteFile());
-            }
+            updateIndex(false, fileIntroVO);
         }
         removeDeletedFlag(fileIdList);
+    }
+
+    private void updateIndex(boolean readContent, FileIntroVO fileIntroVO) {
+        String username = userService.getUserNameById(fileIntroVO.getUserId());
+        File file = Paths.get(fileProperties.getRootDir(), username, fileIntroVO.getPath(), fileIntroVO.getName()).toFile();
+        if (!readContent && checkFileContent(file)) {
+            pushCreateIndexContentQueue(fileIntroVO.getId());
+        }
+        FileIndex fileIndex = new FileIndex(file, fileIntroVO);
+        fileIndex.setTagName(getTagName(fileIntroVO));
+        setFileIndex(fileIndex);
+        String content = null;
+        if (readContent) {
+            content = readFileContent(file);
+            if (content == null) {
+                finishIndexing(fileIntroVO);
+                return;
+            }
+        }
+        updateIndexDocument(indexWriter, fileIndex, content);
+        if (StrUtil.isNotBlank(content)) {
+            log.info("添加索引, filepath: {}", file.getAbsoluteFile());
+        }
+        finishIndexing(fileIntroVO);
+    }
+
+    private void finishIndexing(FileIntroVO fileIntroVO) {
+        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+        query.addCriteria(Criteria.where("_id").is(fileIntroVO.getId()));
+        Update update = new Update();
+        update.set("index", 2);
+        mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
     }
 
     private String getTagName(FileIntroVO fileDocument) {
@@ -250,6 +315,39 @@ public class LuceneService {
             log.error("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
         }
         return null;
+    }
+
+    private boolean checkFileContent(File file) {
+        try {
+            if (file == null) {
+                return false;
+            }
+            if (!file.isFile() || file.length() < 1) {
+                return false;
+            }
+            String type = FileTypeUtil.getType(file);
+            if ("pdf".equals(type)) {
+                return true;
+            }
+            if ("ppt".equals(type) || "pptx".equals(type)) {
+                return true;
+            }
+            if ("doc".equals(type) || "docx".equals(type)) {
+                return true;
+            }
+            Charset charset = CharsetDetector.detect(file);
+            if (charset == null) {
+                return false;
+            }
+            if ("UTF-8".equals(charset.toString())) {
+                if (fileProperties.getSimText().contains(type)) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        return false;
     }
 
 
@@ -505,6 +603,12 @@ public class LuceneService {
         return results;
     }
 
+    public FileIntroVO getFileIntroVO(String fileId) {
+        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        return mongoTemplate.findOne(query, FileIntroVO.class, CommonFileService.COLLECTION_NAME);
+    }
+
     public boolean checkIndexExists() {
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where("ossFolder").exists(true));
@@ -535,9 +639,74 @@ public class LuceneService {
     private void addDeleteFlagOfDoc(String userId) {
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        query.addCriteria(Criteria.where("alonePage").exists(false));
+        query.addCriteria(Criteria.where("release").exists(false));
         Update update = new Update();
+        // 添加删除标记用于在之后删除
         update.set("delete", 1);
         mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+    }
+
+    /**
+     * 添加待索引标记
+     */
+    private void addToBeIndexedFlagOfDoc(List<String> fielIdList) {
+        if (fielIdList.isEmpty()) {
+            return;
+        }
+        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+        query.addCriteria(Criteria.where("_id").in(fielIdList));
+        Update update = new Update();
+        // 添加索引标记用于在之后创建文件内容索引, 0表示待索引, 1表示已索引
+        update.set("index", 0);
+        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+        log.debug("添加待索引标记, fileIds: {}", fielIdList);
+        startProcessFilesToBeIndexed();
+    }
+
+    /**
+     * 处理待索引文件
+     */
+    public void processFilesToBeIndexed() throws IOException {
+        boolean run = true;
+        log.debug("开始处理待索引文件");
+        while (run) {
+            org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+            query.addCriteria(Criteria.where("index").is(0));
+            long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
+            if (count == 0) {
+                log.debug("处理待索引文件完成");
+                indexWriter.commit();
+                run = false;
+            }
+            List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match", new org.bson.Document("index", 0)), new org.bson.Document("$project", new org.bson.Document("_id", 1)), new org.bson.Document("$limit", 8));
+            AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline).allowDiskUse(true);
+            while (aggregateIterable.iterator().hasNext()) {
+                org.bson.Document document = aggregateIterable.iterator().next();
+                String fileId = document.getObjectId("_id").toHexString();
+                FileIntroVO fileIntroVO = getFileIntroVO(fileId);
+                if (fileIntroVO != null) {
+                    updateIndex(true, fileIntroVO);
+                }
+            }
+        }
+    }
+
+    private void startProcessFilesToBeIndexed() {
+        executorService.execute(() -> {
+            if (!toBeIndexedLock.tryLock()) {
+                return;
+            }
+            try {
+                try {
+                    processFilesToBeIndexed();
+                } catch (IOException e) {
+                    log.error("处理待索引文件内容失败", e);
+                }
+            } finally {
+                toBeIndexedLock.unlock();
+            }
+        });
     }
 
     @PreDestroy
