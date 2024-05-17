@@ -1,5 +1,5 @@
 # .github/release-drafter.yml
-name-template: 'v$NEXT_PATCH_VERSION 🌟'
+name-template: 'v$NEXT_PATCH_VERSION'
 tag-template: 'v$NEXT_PATCH_VERSION'
 categories:
   - title: '新功能 ✨'
@@ -18,5 +18,4 @@ template: |
 
   $CHANGES
   
-  ## Full Changelog
-  [Full Changelog](https://github.com/OWNER/REPO/compare/v$PREVIOUS_TAG...v$NEXT_TAG)
+  Full Changelog: [v$PREVIOUS_TAG...v$NEXT_TAG](https://github.com/OWNER/REPO/compare/v$PREVIOUS_TAG...v$NEXT_TAG)
