@@ -639,6 +639,8 @@ public class LuceneService {
     private void addDeleteFlagOfDoc(String userId) {
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        query.addCriteria(Criteria.where("alonePage").exists(false));
+        query.addCriteria(Criteria.where("release").exists(false));
         Update update = new Update();
         // 添加删除标记用于在之后删除
         update.set("delete", 1);
