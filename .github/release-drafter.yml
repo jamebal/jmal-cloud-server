@@ -14,7 +14,13 @@ categories:
 change-template: '- $TITLE (#$NUMBER)'
 no-changes-template: '- No changes'
 template: |
-  ## v$NEXT_PATCH_VERSION 🌟
+  ## Changes in this release:
 
-  ## Changes
+  ## 新功能 ✨
+  $CHANGES
+
+  ## 修复 🐛
+  $CHANGES
+
+  ## 优化 ⚡️
   $CHANGES
