@@ -14,6 +14,12 @@ categories:
 change-template: '- $TITLE (#$NUMBER)'
 no-changes-template: '- No changes'
 template: |
+  
+  ### 更新前备份数据库
+  ```shell
+  docker exec -it jmalcloud_mongodb mongodump -d jmalcloud -o /dump --gzip --quiet
+  ```
+  
   ## Changes in this release:
 
   $CHANGES
