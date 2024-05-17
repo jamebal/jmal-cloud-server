@@ -18,4 +18,4 @@ template: |
 
   $CHANGES
   
-  Full Changelog: [$PREVIOUS_TAG...v$NEXT_PATCH_VERSION](https://github.com/OWNER/REPO/compare/$PREVIOUS_TAG...v$NEXT_PATCH_VERSION)
+  **Full Changelog**: [$PREVIOUS_TAG...v$NEXT_PATCH_VERSION](https://github.com/jamebal/jmal-cloud-server/compare/$PREVIOUS_TAG...v$NEXT_PATCH_VERSION)
