@@ -781,7 +781,6 @@ public class CommonFileService {
 
         String suffix = FileUtil.extName(fileName);
         String contentType = FileContentTypeUtils.getContentType(suffix);
-
         // 文件是否存在
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
@@ -800,8 +799,8 @@ public class CommonFileService {
                 update.set("contentText", markDownContent);
             }
             pushMessage(username, fileDocument, "updateFile");
-            if (null != updateResult.getUpsertedId()) {
-                updateResult.getUpsertedId().asObjectId().getValue().toHexString();
+            if (updateResult.getModifiedCount() > 0) {
+                luceneService.pushCreateIndexQueue(fileDocument.getId());
             }
         }
     }
