@@ -5,6 +5,7 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
@@ -394,6 +395,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
     private static boolean setProperty(ArticleDTO articleDTO, Query query) {
         boolean isDraft = false;
         query.addCriteria(Criteria.where(Constants.SUFFIX).is("md"));
+        query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape("/Document")));
         if (!CharSequenceUtil.isBlank(articleDTO.getUserId())) {
             query.addCriteria(Criteria.where(IUserService.USER_ID).is(articleDTO.getUserId()));
         }
