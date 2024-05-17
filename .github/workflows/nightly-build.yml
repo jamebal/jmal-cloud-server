@@ -3,7 +3,6 @@ name: Build nightly
 on:
   push:
     branches:
-      - 'develop'
       - 'master'
   workflow_dispatch:
 
