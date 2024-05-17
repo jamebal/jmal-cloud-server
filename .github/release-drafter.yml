@@ -18,4 +18,4 @@ template: |
 
   $CHANGES
   
-  Full Changelog: [v$PREVIOUS_TAG...v$NEXT_TAG](https://github.com/OWNER/REPO/compare/v$PREVIOUS_TAG...v$NEXT_TAG)
+  Full Changelog: [$PREVIOUS_TAG...v$NEXT_PATCH_VERSION](https://github.com/OWNER/REPO/compare/$PREVIOUS_TAG...v$NEXT_PATCH_VERSION)
