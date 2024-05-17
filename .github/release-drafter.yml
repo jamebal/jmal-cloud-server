@@ -16,17 +16,4 @@ no-changes-template: '- No changes'
 template: |
   ## Changes in this release:
 
-  {% if categories['新功能 ✨'] %}
-  ## 新功能 ✨
-  {{ categories['新功能 ✨'] }}
-  {% endif %}
-
-  {% if categories['修复 🐛'] %}
-  ## 修复 🐛
-  {{ categories['修复 🐛'] }}
-  {% endif %}
-
-  {% if categories['优化 ⚡️'] %}
-  ## 优化 ⚡️
-  {{ categories['优化 ⚡️'] }}
-  {% endif %}
+  $CHANGES
