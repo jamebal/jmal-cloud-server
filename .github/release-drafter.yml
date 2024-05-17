@@ -17,3 +17,6 @@ template: |
   ## Changes in this release:
 
   $CHANGES
+  
+  ## Full Changelog
+  [Full Changelog](https://github.com/OWNER/REPO/compare/v$PREVIOUS_TAG...v$NEXT_TAG)
