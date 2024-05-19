@@ -1,43 +1,40 @@
 package com.jmal.clouddisk.config;
 
-import cn.hutool.core.util.StrUtil;
+import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
-import com.mongodb.ServerAddress;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
+import org.springframework.data.mongodb.core.MongoTemplate;
 
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
+import java.util.Objects;
 
-import static java.util.Collections.singletonList;
 
 @Configuration
 @Slf4j
+@RequiredArgsConstructor
 public class MongoClientConfig extends AbstractMongoClientConfiguration {
 
-  @Autowired
-  Environment env;
+  private final Environment env;
 
   @NotNull
   @Override
   protected String getDatabaseName() {
-    String name = "jmalcloud";
     String mongoURI = env.getProperty("spring.data.mongodb.uri");
-    if (StrUtil.isBlank(mongoURI)) {
-      return name;
+    if (mongoURI != null && !mongoURI.isBlank()) {
+      try {
+        return Objects.requireNonNull(new ConnectionString(mongoURI).getDatabase());
+      } catch (Exception e) {
+        log.error("Invalid MongoDB URI", e);
+      }
     }
-    try {
-      URI uri = new URI(mongoURI);
-      return uri.getPath().substring(1);
-    } catch (Exception e) {
-      log.error(e.getMessage(), e);
-    }
-    return name;
+    return "jmalcloud";
   }
 
   @Override
@@ -45,41 +42,27 @@ public class MongoClientConfig extends AbstractMongoClientConfiguration {
     return true;
   }
 
-  private String domainResolver(String domainName) {
-    if (StrUtil.isBlank(domainName)) {
-      return "localhost";
-    }
-    try {
-      InetAddress address = InetAddress.getByName(domainName);
-      return address.getHostAddress();
-    } catch (UnknownHostException e) {
-      log.error(e.getMessage(), e);
-    }
-    return "localhost";
-  }
-
+  @NotNull
+  @Bean
   @Override
-  protected void configureClientSettings(@NotNull MongoClientSettings.Builder builder) {
-
-    String host = "mongo";
-    String port = "27017";
+  public MongoClient mongoClient() {
     String mongoURI = env.getProperty("spring.data.mongodb.uri");
-    if (StrUtil.isNotBlank(mongoURI)) {
-        try {
-            URI uri = new URI(mongoURI);
-            host = uri.getHost();
-            port = String.valueOf(uri.getPort());
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
+    if (mongoURI != null && !mongoURI.isBlank()) {
+      try {
+        ConnectionString connectionString = new ConnectionString(mongoURI);
+        MongoClientSettings mongoClientSettings = MongoClientSettings.builder()
+                .applyConnectionString(connectionString)
+                .build();
+        return MongoClients.create(mongoClientSettings);
+      } catch (Exception e) {
+        log.error("Failed to create MongoClient", e);
+      }
     }
-
-    String finalPort = port;
-    String finalHost = host;
-    builder.applyToClusterSettings(settings -> {
-      settings.hosts(singletonList(
-              new ServerAddress(domainResolver(finalHost), Integer.parseInt(finalPort))));
-    });
+    return MongoClients.create();
   }
 
+  @Bean
+  public MongoTemplate mongoTemplate() {
+    return new MongoTemplate(mongoClient(), getDatabaseName());
+  }
 }
