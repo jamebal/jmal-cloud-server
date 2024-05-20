@@ -506,7 +506,6 @@ public class LuceneService {
                 continue;
             }
             regexpQueryBuilder.add(new BoostQuery(new RegexpQuery(new Term(field, ".*" + keyword + ".*")), boosts.get(field)), BooleanClause.Occur.SHOULD);
-            // regexpQueryBuilder.add(new BoostQuery(new WildcardQuery(new Term("field", "*" + keyword + "*")), boosts.get(field)), BooleanClause.Occur.SHOULD);
         }
         Query regExpQuery = regexpQueryBuilder.build();
         BoostQuery boostedRegExpQuery = new BoostQuery(regExpQuery, 10.0f);
@@ -558,7 +557,7 @@ public class LuceneService {
         if (searchDTO.getTagId() != null) {
             TagDO tagDO = tagService.getTagInfo(searchDTO.getTagId());
             if (tagDO != null) {
-                builder.add(new TermQuery(new Term("tag", tagDO.getName())), BooleanClause.Occur.MUST);
+                builder.add(new RegexpQuery(new Term("tag", ".*" + tagDO.getName() + ".*")), BooleanClause.Occur.MUST);
             }
         }
         if (StrUtil.isNotBlank(searchDTO.getCurrentDirectory()) && searchDTO.getCurrentDirectory().length() > 1) {
