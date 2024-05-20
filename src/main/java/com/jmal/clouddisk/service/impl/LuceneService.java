@@ -551,24 +551,25 @@ public class LuceneService {
     }
 
     private void otherQueryParams(SearchDTO searchDTO, BooleanQuery.Builder builder) {
-        if (StrUtil.isNotBlank(searchDTO.getType())) {
+        boolean queryPath = StrUtil.isNotBlank(searchDTO.getCurrentDirectory()) && searchDTO.getCurrentDirectory().length() > 1;
+        if (queryPath) {
+            Term prefixTerm = new Term("path", searchDTO.getCurrentDirectory());
+            PrefixQuery prefixQuery = new PrefixQuery(prefixTerm);
+            builder.add(prefixQuery, BooleanClause.Occur.MUST);
+        }
+        if (!queryPath && StrUtil.isNotBlank(searchDTO.getType())) {
             builder.add(new TermQuery(new Term("type", searchDTO.getType())), BooleanClause.Occur.MUST);
         }
-        if (searchDTO.getTagId() != null) {
+        if (!queryPath && searchDTO.getTagId() != null) {
             TagDO tagDO = tagService.getTagInfo(searchDTO.getTagId());
             if (tagDO != null) {
                 builder.add(new RegexpQuery(new Term("tag", ".*" + tagDO.getName() + ".*")), BooleanClause.Occur.MUST);
             }
         }
-        if (StrUtil.isNotBlank(searchDTO.getCurrentDirectory()) && searchDTO.getCurrentDirectory().length() > 1) {
-            Term prefixTerm = new Term("path", searchDTO.getCurrentDirectory());
-            PrefixQuery prefixQuery = new PrefixQuery(prefixTerm);
-            builder.add(prefixQuery, BooleanClause.Occur.MUST);
-        }
-        if (searchDTO.getIsFolder() != null) {
+        if (!queryPath && searchDTO.getIsFolder() != null) {
             builder.add(IntPoint.newExactQuery("isFolder", searchDTO.getIsFolder() ? 1 : 0), BooleanClause.Occur.MUST);
         }
-        if (searchDTO.getIsFavorite() != null) {
+        if (!queryPath && searchDTO.getIsFavorite() != null) {
             builder.add(IntPoint.newExactQuery("isFavorite", searchDTO.getIsFavorite() ? 1 : 0), BooleanClause.Occur.MUST);
         }
     }
