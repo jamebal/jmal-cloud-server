@@ -109,10 +109,10 @@ public class CommonFileService {
     @Autowired
     public LuceneService luceneService;
 
-    /***
+    /**
      * 上传文件夹的写入锁缓存
      */
-    private final Cache<String, Lock> uploadFolderLockCache = CaffeineUtil.getUploadFolderLockCache();
+    private final Cache<String, Lock> uploadFileLockCache = CaffeineUtil.getUploadFileLockCache();
 
     protected static final Set<String> FILE_PATH_LOCK = new CopyOnWriteArraySet<>();
 
@@ -304,12 +304,9 @@ public class CommonFileService {
         }
 
         String fileAbsolutePath = file.getAbsolutePath();
-        Lock lock = null;
-        if (file.isDirectory()) {
-            lock = uploadFolderLockCache.get(fileAbsolutePath, key -> new ReentrantLock());
-            if (lock != null) {
-                lock.lock();
-            }
+        Lock lock = uploadFileLockCache.get(fileAbsolutePath, key -> new ReentrantLock());
+        if (lock != null) {
+            lock.lock();
         }
         UpdateResult updateResult;
         ObjectId objectId = new ObjectId();
@@ -356,6 +353,7 @@ public class CommonFileService {
         } finally {
             if (lock != null) {
                 lock.unlock();
+                uploadFileLockCache.invalidate(fileAbsolutePath);
             }
         }
         if (null != updateResult.getUpsertedId()) {
@@ -446,24 +444,28 @@ public class CommonFileService {
     }
 
     private void setFileConfig(String fileId, String username, File file, String fileName, String suffix, String contentType, String relativePath, Update update) {
-        long size = file.length();
-        update.set("size", size);
-        update.set("md5", size + relativePath + fileName);
-        update.set(Constants.CONTENT_TYPE, getContentType(file, contentType));
-        update.set(Constants.SUFFIX, suffix);
-        if (contentType.contains(Constants.AUDIO)) {
-            setMusic(file, update);
-        }
-        if (contentType.contains(Constants.VIDEO)) {
-            setMediaCover(fileId, username, fileName, relativePath, update);
-        }
-        if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE) && (!"ico".equals(suffix) && !"svg".equals(suffix))) {
-            generateThumbnail(file, update);
-        }
-        if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
-            // 写入markdown内容
-            String markDownContent = FileUtil.readString(file, MyFileUtils.getFileCharset(file));
-            update.set("contentText", markDownContent);
+        try {
+            long size = file.length();
+            update.set("size", size);
+            update.set("md5", size + relativePath + fileName);
+            update.set(Constants.CONTENT_TYPE, getContentType(file, contentType));
+            update.set(Constants.SUFFIX, suffix);
+            if (contentType.contains(Constants.AUDIO)) {
+                setMusic(file, update);
+            }
+            if (contentType.contains(Constants.VIDEO)) {
+                setMediaCover(fileId, username, fileName, relativePath, update);
+            }
+            if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE) && (!"ico".equals(suffix) && !"svg".equals(suffix))) {
+                generateThumbnail(file, update);
+            }
+            if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
+                // 写入markdown内容
+                String markDownContent = FileUtil.readString(file, MyFileUtils.getFileCharset(file));
+                update.set("contentText", markDownContent);
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
         }
     }
 

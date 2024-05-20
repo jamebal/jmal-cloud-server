@@ -1,0 +1,34 @@
+# .github/release-drafter.yml
+name-template: 'v$NEXT_PATCH_VERSION'
+tag-template: 'v$NEXT_PATCH_VERSION'
+categories:
+  - title: '新功能 ✨'
+    labels:
+      - 'feature'
+  - title: '修复 🐛'
+    labels:
+      - 'bug'
+  - title: '优化 ⚡️'
+    labels:
+      - 'improvement'
+change-template: '- $TITLE (#$NUMBER)'
+no-changes-template: '- No changes'
+template: |
+  
+  [docker-docker.yml](https://github.com/jamebal/jmal-cloud-server/blob/master/docker-compose.example2.yml)
+  
+  #### 更新前备份数据库
+  
+  ```shell
+  docker exec -it jmalcloud_mongodb mongodump -d jmalcloud -o /dump/$PREVIOUS_TAG --gzip --quiet
+  ```
+  
+  ```shell
+  docker-compose pull && docker-compose up -d
+  ```
+  
+  ## Changes in this release:
+
+  $CHANGES
+  
+  **Full Changelog**: [$PREVIOUS_TAG...v$NEXT_PATCH_VERSION](https://github.com/jamebal/jmal-cloud-server/compare/$PREVIOUS_TAG...v$NEXT_PATCH_VERSION)

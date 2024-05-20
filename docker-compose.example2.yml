@@ -18,6 +18,7 @@ services:
       TZ: Asia/Shanghai
     volumes:
       - ./docker/jmalcloud/mongodb/data/db:/data/db
+      - ./docker/jmalcloud/mongodb/backup:/dump
     restart: unless-stopped
     command: --wiredTigerCacheSizeGB 0.5
   nginx:

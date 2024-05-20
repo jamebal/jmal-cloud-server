@@ -70,10 +70,10 @@ public class CaffeineUtil {
      */
     private static Cache<String, Lock> chunkWriteLockCache;
 
-    /***
-     * 上传文件夹锁
+    /**
+     * 上传文件锁
      */
-    private static Cache<String, Lock> uploadFolderLockCache;
+    private static Cache<String, Lock> uploadFileLockCache;
 
     /***
      * 用户身份权限缓存
@@ -147,8 +147,8 @@ public class CaffeineUtil {
         if(chunkWriteLockCache == null){
             chunkWriteLockCache = Caffeine.newBuilder().build();
         }
-        if(uploadFolderLockCache == null) {
-            uploadFolderLockCache = Caffeine.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build();
+        if(uploadFileLockCache == null) {
+            uploadFileLockCache = Caffeine.newBuilder().build();
         }
     }
 
@@ -180,11 +180,11 @@ public class CaffeineUtil {
         return chunkWriteLockCache;
     }
 
-    public static Cache<String, Lock> getUploadFolderLockCache(){
-        if(uploadFolderLockCache == null){
+    public static Cache<String, Lock> getUploadFileLockCache(){
+        if(uploadFileLockCache == null){
             initMyCache();
         }
-        return uploadFolderLockCache;
+        return uploadFileLockCache;
     }
 
     public static void setSpaceFull(String userId) {
