@@ -56,7 +56,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/file/*/Image/**")
                 .addResourceLocations("file:" + fileProperties.getRootDir() + File.separator)
-                .setCacheControl(CacheControl.maxAge(30, TimeUnit.DAYS));
+                .setCacheControl(CacheControl.maxAge(7, TimeUnit.DAYS));
         registry.addResourceHandler("/file/**")
                 .addResourceLocations("file:" + fileProperties.getRootDir() + File.separator)
                 .setCacheControl(CacheControl.maxAge(3, TimeUnit.HOURS));
