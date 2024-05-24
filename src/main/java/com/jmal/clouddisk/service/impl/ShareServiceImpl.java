@@ -272,7 +272,7 @@ public class ShareServiceImpl implements IShareService {
     }
 
     @Override
-    public ResponseResult<Object> accessShare(ShareDO shareDO, Integer pageIndex, Integer pageSize) {
+    public ResponseResult<Object> accessShare(ShareDO shareDO, Integer pageIndex, Integer pageSize, Boolean showFolderSize) {
         UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
         uploadApiParamDTO.setPageIndex(pageIndex);
         uploadApiParamDTO.setPageSize(pageSize);
@@ -288,6 +288,7 @@ public class ShareServiceImpl implements IShareService {
         String username = userService.getUserNameById(shareDO.getUserId());
         uploadApiParamDTO.setUsername(username);
         uploadApiParamDTO.setCurrentDirectory("/");
+        uploadApiParamDTO.setShowFolderSize(showFolderSize);
         return fileService.searchFileAndOpenDir(uploadApiParamDTO, shareDO.getFileId(), null);
     }
 
@@ -349,7 +350,7 @@ public class ShareServiceImpl implements IShareService {
     }
 
     @Override
-    public ResponseResult<Object> accessShareOpenDir(ShareDO shareDO, String fileId, Integer pageIndex, Integer pageSize) {
+    public ResponseResult<Object> accessShareOpenDir(ShareDO shareDO, String fileId, Integer pageIndex, Integer pageSize, Boolean showFolderSize) {
         UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
         uploadApiParamDTO.setUserId(shareDO.getUserId());
         uploadApiParamDTO.setPageIndex(pageIndex);
@@ -365,6 +366,7 @@ public class ShareServiceImpl implements IShareService {
             String username = userService.getUserNameById(shareDO.getUserId());
             uploadApiParamDTO.setUsername(username);
         }
+        uploadApiParamDTO.setShowFolderSize(showFolderSize);
         return fileService.searchFileAndOpenDir(uploadApiParamDTO, fileId, null);
     }
 

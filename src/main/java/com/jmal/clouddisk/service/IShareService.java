@@ -28,9 +28,10 @@ public interface IShareService {
      * @param shareDO ShareDO
      * @param pageIndex pageIndex
      * @param pageSize pageSize
+     * @param showFolderSize 是否显示文件夹大小
      * @return 文件列表
      */
-    ResponseResult<Object> accessShare(ShareDO shareDO, Integer pageIndex, Integer pageSize);
+    ResponseResult<Object> accessShare(ShareDO shareDO, Integer pageIndex, Integer pageSize, Boolean showFolderSize);
 
     /**
      * 获取分享信息
@@ -45,9 +46,10 @@ public interface IShareService {
      * @param fileId fileId
      * @param pageIndex pageIndex
      * @param pageSize pageSize
+     * @param showFolderSize 是否显示文件夹大小
      * @return ResponseResult
      */
-    ResponseResult<Object> accessShareOpenDir(ShareDO share, String fileId, Integer pageIndex, Integer pageSize);
+    ResponseResult<Object> accessShareOpenDir(ShareDO share, String fileId, Integer pageIndex, Integer pageSize, Boolean showFolderSize);
 
     /**
      * 获取分享列表
