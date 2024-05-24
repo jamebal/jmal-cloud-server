@@ -182,7 +182,7 @@ public class FileInterceptor implements HandlerInterceptor {
     private boolean validShareFile(HttpServletRequest request, Path uriPath, String shareKey) {
         FileDocument fileDocument = fileService.getById(shareKey);
         if (!isNotAllowAccess(fileDocument, request)) {
-            // 判断当前uri所属的文件是否为该分享的文件或其子文件
+            // 判断当前uri所属的文件是否为已分享的文件或其子文件
             FileDocument thisFile = getFileDocument(uriPath);
             if (thisFile.getPath().equals(fileDocument.getPath())) {
                 return false;
