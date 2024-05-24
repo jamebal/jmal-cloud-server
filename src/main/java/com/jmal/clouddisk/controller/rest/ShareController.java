@@ -31,10 +31,7 @@ import org.springframework.web.util.UriUtils;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @Description share
@@ -150,6 +147,18 @@ public class ShareController {
         } else {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }
+    }
+
+    @Operation(summary = "打包下载")
+    @GetMapping("/public/s/{fileId}/packageDownload/{filename}")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public void publicPackageDownloadOne(HttpServletRequest request, HttpServletResponse response, @PathVariable String fileId, @PathVariable String filename) {
+        FileDocument fileDocument = fileService.getById(fileId);
+        if (fileInterceptor.isNotAllowAccess(fileDocument, request)) {
+            return;
+        }
+        List<String> fileIdList = Collections.singletonList(fileId);
+        fileService.publicPackageDownload(request, response, fileIdList);
     }
 
     @Operation(summary = "显示缩略图")
