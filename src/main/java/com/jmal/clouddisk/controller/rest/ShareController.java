@@ -78,6 +78,14 @@ public class ShareController {
         return ResultUtil.success(shareService.getShare(shareId));
     }
 
+    @Operation(summary = "获取分享信息")
+    @GetMapping("/get/share/by/fileId")
+    @Permission("cloud:file:list")
+    @LogOperatingFun
+    public ResponseResult<ShareDO> getShareByFileId(@RequestParam String fileId) {
+        return ResultUtil.success(shareService.getShareByFileId(fileId));
+    }
+
     @Operation(summary = "取消分享")
     @DeleteMapping("/share/cancel")
     @Permission("cloud:file:delete")
@@ -114,10 +122,10 @@ public class ShareController {
     @Operation(summary = "访问分享链接")
     @GetMapping("/public/access-share")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> accessShare(HttpServletRequest request, @RequestParam String share, Integer pageIndex, Integer pageSize) {
+    public ResponseResult<Object> accessShare(HttpServletRequest request, @RequestParam String share, Integer pageIndex, Integer pageSize, Boolean showFolderSize) {
         ShareDO shareDO = shareService.getShare(share);
         shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
-        return shareService.accessShare(shareDO, pageIndex, pageSize);
+        return shareService.accessShare(shareDO, pageIndex, pageSize, showFolderSize);
     }
 
     @Operation(summary = "获取分享者信息")
@@ -130,10 +138,10 @@ public class ShareController {
     @Operation(summary = "访问分享链接里的目录")
     @GetMapping("public/access-share/open")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> accessShareOpenDir(HttpServletRequest request, @RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize) {
+    public ResponseResult<Object> accessShareOpenDir(HttpServletRequest request, @RequestParam String share, @RequestParam String fileId, Integer pageIndex, Integer pageSize, Boolean showFolderSize) {
         ShareDO shareDO = shareService.getShare(share);
         shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareDO);
-        return shareService.accessShareOpenDir(shareDO, fileId, pageIndex, pageSize);
+        return shareService.accessShareOpenDir(shareDO, fileId, pageIndex, pageSize, showFolderSize);
     }
 
     @Operation(summary = "打包下载")
