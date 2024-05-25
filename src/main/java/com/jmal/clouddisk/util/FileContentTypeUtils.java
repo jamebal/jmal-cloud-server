@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.util;
 
+import java.io.Serial;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,15 +34,16 @@ public class FileContentTypeUtils {
      * 1.new HashMap
      * 2.static 静态代码块
      */
-    private static final Map<String , String> CONTENT_TYPE = new HashMap<String , String>(){
+    private static final Map<String , String> CONTENT_TYPE = new HashMap<>() {
         /**
-		 *
-		 */
-		private static final long serialVersionUID = -5418984619984073478L;
+         *
+         */
+        @Serial
+        private static final long serialVersionUID = -5418984619984073478L;
 
-		{
-            put("jpg","image/jpeg");
-            put("jpeg","image/jpeg");
+        {
+            put("jpg", "image/jpeg");
+            put("jpeg", "image/jpeg");
         }
     };
     static {
