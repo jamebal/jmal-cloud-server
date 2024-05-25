@@ -6,7 +6,6 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.web.WebOssService;
@@ -15,7 +14,6 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Sort;
@@ -184,28 +182,6 @@ public class ShareServiceImpl implements IShareService {
             throw new CommonException(ExceptionType.WARNING.getCode(), Constants.LINK_FAILED);
         }
         validShare(shareToken, shareDO);
-    }
-
-    @Override
-    public void validShare(HttpServletRequest request) {
-        String shareToken = request.getHeader(Constants.SHARE_TOKEN);
-        String shareId = request.getHeader(Constants.SHARE_ID);
-        if (CharSequenceUtil.isBlank(shareToken)) {
-            shareToken = request.getParameter(Constants.SHARE_TOKEN);
-        }
-        if (CharSequenceUtil.isBlank(shareId)) {
-            shareId = request.getParameter(Constants.SHARE_ID);
-        }
-        if (CharSequenceUtil.isBlank(shareToken)) {
-            shareToken = AuthInterceptor.getCookie(request, Constants.SHARE_TOKEN);
-        }
-        if (CharSequenceUtil.isBlank(shareId)) {
-            shareId = AuthInterceptor.getCookie(request, Constants.SHARE_ID);
-        }
-        if (CharSequenceUtil.isBlank(shareId) || CharSequenceUtil.isBlank(shareToken)) {
-            throw new CommonException(ExceptionType.WARNING.getCode(), Constants.LINK_FAILED);
-        }
-        validShare(shareToken, shareId);
     }
 
     @Override
