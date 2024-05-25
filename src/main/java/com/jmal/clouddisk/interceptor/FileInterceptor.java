@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.interceptor;
 
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -123,13 +124,28 @@ public class FileInterceptor implements HandlerInterceptor {
                 case THUMBNAIL -> thumbnail(request, response);
                 case WEBP -> webp(request, response);
                 default -> {
+                    setImageCacheControl(request, response);
                     return true;
                 }
             }
         } else {
+            setImageCacheControl(request, response);
             return !previewOssFile(request, response, path, encodedFilename);
         }
+        setImageCacheControl(request, response);
         return true;
+    }
+
+    private void setImageCacheControl(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
+        File file = getFileByRequest(request);
+        String contentType = FileContentTypeUtils.getContentType(FileTypeUtil.getType(file));
+        if (contentType.contains("image")) {
+            setCacheControl(response);
+        }
+    }
+
+    private static void setCacheControl(@NotNull HttpServletResponse response) {
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "max-age=2592000");
     }
 
     /**
@@ -294,9 +310,7 @@ public class FileInterceptor implements HandlerInterceptor {
     }
 
     private void handleCrop(HttpServletRequest request, HttpServletResponse response) {
-        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
-        uriPath = uriPath.subpath(1, uriPath.getNameCount());
-        File file = Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
+        File file = getFileByRequest(request);
         String q = request.getParameter("q");
         String w = request.getParameter("w");
         String h = request.getParameter("h");
@@ -304,6 +318,12 @@ public class FileInterceptor implements HandlerInterceptor {
         if (img.length > 0) {
             responseWritImage(response, file.getName(), img);
         }
+    }
+
+    private @NotNull File getFileByRequest(HttpServletRequest request) {
+        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
+        uriPath = uriPath.subpath(1, uriPath.getNameCount());
+        return Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
     }
 
     private void responseWritImage(HttpServletResponse response, String fileName, byte[] img) {
@@ -326,7 +346,7 @@ public class FileInterceptor implements HandlerInterceptor {
         }
         response.setHeader(HttpHeaders.CONNECTION, "close");
         response.setHeader(HttpHeaders.CONTENT_ENCODING, "utf-8");
-        response.setHeader(HttpHeaders.CACHE_CONTROL, "max-age=2592000");
+        setCacheControl(response);
     }
 
     /**

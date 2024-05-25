@@ -19,7 +19,7 @@ public class FileContentTypeUtils {
      */
     public static String getContentType(String ext) {
         String value = CONTENT_TYPE.get(ext.toLowerCase());
-        if(value != null && value.length() > 0){
+        if(value != null && !value.isEmpty()){
             return value;
         }
         if(ext.contains(UNSPLASH)){
