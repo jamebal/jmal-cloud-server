@@ -332,6 +332,11 @@ public class ShareServiceImpl implements IShareService {
         return mongoTemplate.findById(shareId, ShareDO.class, COLLECTION_NAME);
     }
 
+    @Override
+    public ShareDO getShareByFileId(String fileId) {
+        return findByFileId(fileId);
+    }
+
     /**
      * 检查是否过期
      * @param shareDO 分享信息

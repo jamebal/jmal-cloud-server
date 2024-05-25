@@ -41,6 +41,13 @@ public interface IShareService {
     ShareDO getShare(String share);
 
     /**
+     * 获取分享信息
+     * @param fileId 文件id
+     * @return ShareDO
+     */
+    ShareDO getShareByFileId(String fileId);
+
+    /**
      * 打开目录
      * @param share ShareDO
      * @param fileId fileId
