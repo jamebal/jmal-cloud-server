@@ -7,12 +7,13 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.AsyncTaskExecutor;
-import org.springframework.http.CacheControl;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.web.servlet.config.annotation.*;
+import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.io.File;
-import java.util.concurrent.TimeUnit;
 
 /**
  * WebConfig
@@ -44,12 +45,8 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/file/*/Image/**")
-                .addResourceLocations("file:" + fileProperties.getRootDir() + File.separator)
-                .setCacheControl(CacheControl.maxAge(7, TimeUnit.DAYS));
         registry.addResourceHandler("/file/**")
-                .addResourceLocations("file:" + fileProperties.getRootDir() + File.separator)
-                .setCacheControl(CacheControl.noCache());
+                .addResourceLocations("file:" + fileProperties.getRootDir() + File.separator);
         log.info("静态资源目录:{}", fileProperties.getRootDir() + File.separator);
     }
 

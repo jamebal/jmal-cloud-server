@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.interceptor;
 
 import cn.hutool.core.convert.Convert;
-import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -15,6 +14,7 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
+import com.jmal.clouddisk.util.MyFileUtils;
 import com.luciad.imageio.webp.WebPWriteParam;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -106,6 +106,7 @@ public class FileInterceptor implements HandlerInterceptor {
         Path path = Paths.get(request.getRequestURI());
         String encodedFilename = URLEncoder.encode(String.valueOf(path.getFileName()), StandardCharsets.UTF_8);
         String operation = request.getParameter(OPERATION);
+        setCacheControl(request, response);
         if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD -> {
@@ -124,28 +125,22 @@ public class FileInterceptor implements HandlerInterceptor {
                 case THUMBNAIL -> thumbnail(request, response);
                 case WEBP -> webp(request, response);
                 default -> {
-                    setImageCacheControl(request, response);
                     return true;
                 }
             }
         } else {
-            setImageCacheControl(request, response);
             return !previewOssFile(request, response, path, encodedFilename);
         }
-        setImageCacheControl(request, response);
         return true;
     }
 
-    private void setImageCacheControl(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
+    private void setCacheControl(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
         File file = getFileByRequest(request);
-        String contentType = FileContentTypeUtils.getContentType(FileTypeUtil.getType(file));
-        if (contentType.contains("image")) {
-            setCacheControl(response);
+        if (MyFileUtils.checkNoCacheFile(file)) {
+            response.setHeader(HttpHeaders.CACHE_CONTROL, "no-cache");
+        } else {
+            response.setHeader(HttpHeaders.CACHE_CONTROL, "max-age=2592000");
         }
-    }
-
-    private static void setCacheControl(@NotNull HttpServletResponse response) {
-        response.setHeader(HttpHeaders.CACHE_CONTROL, "max-age=2592000");
     }
 
     /**
@@ -346,7 +341,7 @@ public class FileInterceptor implements HandlerInterceptor {
         }
         response.setHeader(HttpHeaders.CONNECTION, "close");
         response.setHeader(HttpHeaders.CONTENT_ENCODING, "utf-8");
-        setCacheControl(response);
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "max-age=2592000");
     }
 
     /**
