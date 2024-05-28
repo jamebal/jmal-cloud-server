@@ -47,7 +47,7 @@ public class WebOssCommonService {
         FileIntroVO fileIntroVO = new FileIntroVO();
         fileIntroVO.setPath(getPathByObjectName(ossRootFolderName, objectName));
         fileIntroVO.setName(Paths.get(objectName).getFileName().toString());
-        commonFileService.pushMessage(username, fileIntroVO, "createFile");
+        commonFileService.pushMessage(username, fileIntroVO, Constants.CREATE_FILE);
     }
 
     public void notifyUpdateFile(String ossPath, String objectName, long size) {
@@ -57,7 +57,7 @@ public class WebOssCommonService {
         fileIntroVO.setId(id);
         fileIntroVO.setSize(size);
         fileIntroVO.setUpdateDate(LocalDateTime.now());
-        commonFileService.pushMessage(username, fileIntroVO, "updateFile");
+        commonFileService.pushMessage(username, fileIntroVO, Constants.UPDATE_FILE);
     }
 
     public void notifyDeleteFile(String ossPath, String objectName) {
@@ -65,7 +65,7 @@ public class WebOssCommonService {
         String username = getUsernameByOssPath(ossPath);
         String id = getFileId(getOssRootFolderName(ossPath), objectName, username);
         fileIntroVO.setId(id);
-        commonFileService.pushMessage(username, fileIntroVO, "deleteFile");
+        commonFileService.pushMessage(username, fileIntroVO, Constants.DELETE_FILE);
     }
 
     public static String getFileId(String rootName, String objectName, String username) {

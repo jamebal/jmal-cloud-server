@@ -85,7 +85,7 @@ public class SaveCallback implements Callback {
             fileDocument.setSize(size);
             fileDocument.setUpdateDate(updateDate);
             fileDocument.setMd5(md5);
-            commonFileService.pushMessage(userLoginHolder.getUsername(), fileDocument, "updateFile");
+            commonFileService.pushMessage(userLoginHolder.getUsername(), fileDocument, Constants.UPDATE_FILE);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }

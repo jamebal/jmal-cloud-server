@@ -152,7 +152,7 @@ public class FileController {
     @PostMapping("checkExist")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     @Permission("cloud:file:upload")
-    public ResponseResult<Object> checkFileExist(UploadApiParamDTO upload) throws IOException {
+    public ResponseResult<Object> checkFileExist(@RequestBody UploadApiParamDTO upload) throws IOException {
         return fileService.checkFileExist(upload);
     }
 

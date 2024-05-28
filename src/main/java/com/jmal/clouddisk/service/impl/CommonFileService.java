@@ -7,8 +7,10 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.controller.sse.Message;
 import com.jmal.clouddisk.controller.sse.SseController;
@@ -108,6 +110,8 @@ public class CommonFileService {
 
     @Autowired
     public LuceneService luceneService;
+
+    private final Cache<String, Map<String, ThrottleExecutor>> throttleExecutorCache = Caffeine.newBuilder().build();
 
     /**
      * 上传文件夹的写入锁缓存
@@ -347,7 +351,7 @@ public class CommonFileService {
             // 检查该文件的上级目录是否有已经分享的目录
             checkShareBase(update, relativePath);
             updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
-            pushMessage(username, update.getUpdateObject(), "createFile");
+            pushMessage(username, update.getUpdateObject(), Constants.CREATE_FILE);
             // 添加文件索引
             luceneService.pushCreateIndexQueue(fileId);
         } finally {
@@ -544,6 +548,22 @@ public class CommonFileService {
      * @param url url
      */
     public void pushMessage(String username, Object message, String url) {
+        if (Constants.CREATE_FILE.equals(url) || Constants.DELETE_FILE.equals(url)) {
+            Map<String, ThrottleExecutor> throttleExecutorMap = throttleExecutorCache.get(username, key -> new HashMap<>(8));
+            if (throttleExecutorMap != null) {
+                ThrottleExecutor throttleExecutor = throttleExecutorMap.get(url);
+                if (throttleExecutor == null) {
+                    throttleExecutor = new ThrottleExecutor(300);
+                    throttleExecutorMap.put(url, throttleExecutor);
+                }
+                throttleExecutor.schedule(() -> pushMsg(username, message, url));
+            }
+        } else {
+            pushMsg(username, message, url);
+        }
+    }
+
+    private void pushMsg(String username, Object message, String url) {
         Message msg = new Message();
         String userId = userLoginHolder.getUserId();
         if (CharSequenceUtil.isBlank(userId)) {
@@ -559,6 +579,7 @@ public class CommonFileService {
         msg.setUrl(url);
         msg.setUsername(username);
         msg.setBody(message);
+        log.info("pushMessage:{}", JSON.toJSONString(msg));
         sseController.sendEvent(msg);
     }
 
@@ -567,7 +588,7 @@ public class CommonFileService {
         msg.put("code", -1);
         msg.put("msg", message);
         msg.put("operation", operation);
-        pushMessage(username, msg, "operationFile");
+        pushMessage(username, msg, Constants.OPERATION_FILE);
     }
 
     public void pushMessageOperationFileSuccess(String fromPath, String toPath, String username, String operation) {
@@ -576,7 +597,7 @@ public class CommonFileService {
         msg.put("from", fromPath);
         msg.put("to", toPath);
         msg.put("operation", operation);
-        pushMessage(username, msg, "operationFile");
+        pushMessage(username, msg, Constants.OPERATION_FILE);
     }
 
     public long occupiedSpace(String userId) {
@@ -800,7 +821,7 @@ public class CommonFileService {
                 String markDownContent = FileUtil.readString(file, MyFileUtils.getFileCharset(file));
                 update.set("contentText", markDownContent);
             }
-            pushMessage(username, fileDocument, "updateFile");
+            pushMessage(username, fileDocument, Constants.UPDATE_FILE);
             if (updateResult.getModifiedCount() > 0) {
                 luceneService.pushCreateIndexQueue(fileDocument.getId());
             }
