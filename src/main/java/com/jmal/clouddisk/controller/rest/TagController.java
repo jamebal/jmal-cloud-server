@@ -32,7 +32,6 @@ public class TagController {
 
     @Operation(summary = "标签列表")
     @GetMapping("/tag/list")
-    @Permission("website:set:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<List<TagDTO>> list(String userId) {
         return ResultUtil.success(tagService.list(userId));
