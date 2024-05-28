@@ -830,7 +830,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 return;
             }
             fileDocument.setName(newFileName);
-            pushMessage(operator, fileDocument, "createFile");
+            pushMessage(operator, fileDocument, Constants.CREATE_FILE);
         } else {
             pushMessageOperationFileError(operator, "重命名失败", "重命名");
             return;
@@ -1015,7 +1015,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 luceneService.deleteIndexDocuments(Collections.singletonList(fileDocument.getId()));
             }
         }
-        pushMessage(username, fileDocument, "deleteFile");
+        pushMessage(username, fileDocument, Constants.DELETE_FILE);
     }
 
     @Override
@@ -1830,7 +1830,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 deleteDependencies(username, delFileIds);
                 isDel = true;
             }
-            pushMessage(username, fileDocument, "deleteFile");
+            pushMessage(username, fileDocument, Constants.DELETE_FILE);
         }
         if (isDel) {
             mongoTemplate.remove(query, COLLECTION_NAME);

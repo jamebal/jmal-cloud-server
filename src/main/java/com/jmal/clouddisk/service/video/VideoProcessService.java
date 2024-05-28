@@ -493,7 +493,7 @@ public class VideoProcessService {
         }
         mongoTemplate.upsert(query, update, FileDocument.class);
         fileDocument.setM3u8(m3u8);
-        commonFileService.pushMessage(username, fileDocument, "updateFile");
+        commonFileService.pushMessage(username, fileDocument, Constants.UPDATE_FILE);
     }
 
     private static void printErrorInfo(ProcessBuilder processBuilder, Process process) throws IOException {

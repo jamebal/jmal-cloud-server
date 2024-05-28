@@ -206,7 +206,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
         String operation = isMove ? "移动" : "复制";
         // 复制成功
         log.info(operation + "成功, from: {}, to: {}", objectNameFrom, destFileDocument.getName());
-        commonFileService.pushMessage(destFileDocument.getUsername(), destFileDocument, "createFile");
+        commonFileService.pushMessage(destFileDocument.getUsername(), destFileDocument, Constants.CREATE_FILE);
         Path fromPath = Paths.get(getOssRootFolderName(ossPathFrom), objectNameFrom);
         Path toPath = Paths.get(destFileDocument.getPath(), destFileDocument.getName(), Paths.get(objectNameFrom).getFileName().toString());
         commonFileService.pushMessageOperationFileSuccess(fromPath.toString(), toPath.toString(), destFileDocument.getUsername(), operation);
