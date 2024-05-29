@@ -93,6 +93,7 @@ public class WebOssService extends WebOssCommonService {
 
     public ResponseResult<Object> searchFileAndOpenOssFolder(Path prePth, UploadApiParamDTO upload) {
         String ossPath = CaffeineUtil.getOssPath(prePth);
+        commonFileService.pushMessage(upload.getUsername(), Constants.OSS_CHUNK_SIZE, Constants.UPLOADER_CHUNK_SIZE);
         if (ossPath == null) {
             return ResultUtil.success().setData(new ArrayList<>(0)).setCode(0);
         }
