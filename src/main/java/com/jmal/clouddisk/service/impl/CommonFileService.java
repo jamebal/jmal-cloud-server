@@ -7,7 +7,6 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -548,6 +547,7 @@ public class CommonFileService {
      * @param url url
      */
     public void pushMessage(String username, Object message, String url) {
+        if (timelyPush(username, message, url)) return;
         if (Constants.CREATE_FILE.equals(url) || Constants.DELETE_FILE.equals(url)) {
             Map<String, ThrottleExecutor> throttleExecutorMap = throttleExecutorCache.get(username, key -> new HashMap<>(8));
             if (throttleExecutorMap != null) {
@@ -561,6 +561,22 @@ public class CommonFileService {
         } else {
             pushMsg(username, message, url);
         }
+    }
+
+    private boolean timelyPush(String username, Object message, String url) {
+        if (Constants.CREATE_FILE.equals(url)) {
+            if (message instanceof Document setDoc) {
+                Object set = setDoc.get("$set");
+                if (set instanceof Document doc) {
+                    Boolean isFolder = doc.getBoolean(Constants.IS_FOLDER);
+                    if (Boolean.TRUE.equals(isFolder)) {
+                        pushMsg(username, message, url);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private void pushMsg(String username, Object message, String url) {
@@ -579,7 +595,6 @@ public class CommonFileService {
         msg.setUrl(url);
         msg.setUsername(username);
         msg.setBody(message);
-        log.info("pushMessage:{}", JSON.toJSONString(msg));
         sseController.sendEvent(msg);
     }
 
