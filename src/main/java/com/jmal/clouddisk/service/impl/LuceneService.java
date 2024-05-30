@@ -326,15 +326,7 @@ public class LuceneService {
                 return false;
             }
             String type = FileTypeUtil.getType(file);
-            if ("pdf".equals(type)) {
-                return true;
-            }
-            if ("ppt".equals(type) || "pptx".equals(type)) {
-                return true;
-            }
-            if ("doc".equals(type) || "docx".equals(type)) {
-                return true;
-            }
+            if (MyFileUtils.hasContentFile(type)) return true;
             Charset charset = CharsetDetector.detect(file);
             if (charset == null) {
                 return false;
