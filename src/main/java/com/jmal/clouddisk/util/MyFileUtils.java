@@ -6,6 +6,8 @@ import cn.hutool.core.io.FileTypeUtil;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author jmal
@@ -13,6 +15,8 @@ import java.nio.charset.StandardCharsets;
  * @Date 2020-06-16 16:24
  */
 public class MyFileUtils {
+
+    public static List<String> hasContentTypes = Arrays.asList("pdf", "ppt", "pptx", "doc", "docx", "drawio", "mind");
 
     private MyFileUtils(){
 
@@ -33,19 +37,14 @@ public class MyFileUtils {
             if (file == null) {
                 return false;
             }
-            if (!file.isFile() || file.length() < 1) {
+            if (!file.isFile()) {
                 return false;
             }
+            if (file.length() == 0) {
+                return true;
+            }
             String type = FileTypeUtil.getType(file);
-            if ("pdf".equals(type)) {
-                return true;
-            }
-            if ("ppt".equals(type) || "pptx".equals(type)) {
-                return true;
-            }
-            if ("doc".equals(type) || "docx".equals(type)) {
-                return true;
-            }
+            if (hasContentFile(type)) return true;
             Charset charset = CharsetDetector.detect(file);
             if (charset == null) {
                 return false;
@@ -57,6 +56,10 @@ public class MyFileUtils {
             return false;
         }
         return false;
+    }
+
+    public static boolean hasContentFile(String type) {
+        return hasContentTypes.contains(type);
     }
 }
 
