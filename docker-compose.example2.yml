@@ -1,4 +1,3 @@
-version: "3"
 services:
   jmalcloud:
     container_name: jmalcloud_server
