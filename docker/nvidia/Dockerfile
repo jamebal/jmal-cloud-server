@@ -3,8 +3,8 @@ FROM nvidia/cuda:11.7.1-base-ubuntu22.04 AS base
 # 设置非交互式安装，避免 tzdata 等包的配置暂停
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 安装wget
-RUN apt-get update && apt-get install -y wget && apt-get install -y locales && \
+# 安装wget 和 tesseract
+RUN apt-get update && apt-get install -y wget && apt-get install -y locales tesseract-ocr && \
                                                   locale-gen en_US.UTF-8 && \
                                                   update-locale LANG=en_US.UTF-8
 
@@ -42,9 +42,12 @@ COPY --from=java-base /opt/java/openjdk /opt/java/openjdk
 # 设置时区
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
-RUN mkdir -p /jmalcloud/files
+RUN mkdir -p /jmalcloud/files /jmalcloud/tess4j/datapath
 
 ADD docker/ip2region.xdb /jmalcloud/
+
+ADD tess4j/datapath/chi_sim.traineddata /jmalcloud/tess4j/datapath/
+
 
 ADD target/lib /usr/local/clouddisk-lib
 

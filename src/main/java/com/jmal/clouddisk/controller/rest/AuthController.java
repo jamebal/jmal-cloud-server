@@ -3,19 +3,20 @@ package com.jmal.clouddisk.controller.rest;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
-import com.jmal.clouddisk.model.LdapConfigDTO;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 登录、登出、验证
@@ -37,28 +38,6 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseResult<Object> login(@RequestBody ConsumerDTO userDTO, HttpServletResponse response) {
         return authService.login(response, userDTO);
-    }
-
-    @Operation(summary = "加载ldap配置")
-    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
-    @GetMapping("/ldap/config")
-    public ResponseResult<Object> loadLdapConfig() {
-        return ResultUtil.success(authService.loadLdapConfig());
-    }
-
-    @Operation(summary = "ldap配置")
-    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
-    @PutMapping("/ldap/config")
-    public ResponseResult<Object> updateLdapConfig(@RequestBody LdapConfigDTO ldapConfigDTO) {
-        return authService.updateLdapConfig(ldapConfigDTO);
-    }
-
-    @Operation(summary = "测试ldap配置")
-    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    @PutMapping("/ldap/test-config")
-    public ResponseResult<Object> testLdapConfig(@RequestBody LdapConfigDTO ldapConfigDTO) {
-        authService.testLdapConfig(ldapConfigDTO);
-        return ResultUtil.success();
     }
 
     @Operation(summary = "校验旧密码")

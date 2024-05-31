@@ -15,6 +15,7 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.Either;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;

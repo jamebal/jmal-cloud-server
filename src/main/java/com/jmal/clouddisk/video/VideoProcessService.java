@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.service.video;
+package com.jmal.clouddisk.video;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
@@ -41,6 +41,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import static com.jmal.clouddisk.util.FFMPEGUtils.*;
 
 @Service
 @Lazy
@@ -144,36 +146,8 @@ public class VideoProcessService {
             double videoDuration = getVideoInfo(videoPath).getDuration();
             ProcessBuilder processBuilder = getVideoCoverProcessBuilder(videoPath, outputPath, videoDuration);
             printSuccessInfo(processBuilder);
-            Process process = processBuilder.start();
-            boolean finished = process.waitFor(12, TimeUnit.SECONDS);
-            try {
-                log.info("finished: {}", finished);
-                log.info("exitValue: {}", process.exitValue());
-                if (finished && process.exitValue() == 0) {
-                    if (FileUtil.exist(outputPath)) {
-                        return outputPath;
-                    } else {
-                        log.error("处理完成后输出文件不存在。");
-                    }
-                }
-            } catch (IllegalThreadStateException e) {
-                log.error(e.getMessage());
-            }
-            if (!finished) {
-                // 超时后处理
-                process.destroy(); // 尝试正常终止
-                process.destroyForcibly(); // 强制终止
-                log.error("进程超时并被终止。");
-                TimeUnit.SECONDS.sleep(2);
-                printErrorInfo(processBuilder);
-            } else {
-                // 进程结束但退出码非0
-                printErrorInfo(processBuilder, process);
-            }
-            if (FileUtil.exist(outputPath)) {
-                return outputPath;
-            }
-            return null;
+            // 等待处理结果
+            return getWaitingForResults(outputPath, processBuilder);
         } catch (InterruptedException e) {
             log.error(e.getMessage(), e);
             return null;
@@ -496,30 +470,6 @@ public class VideoProcessService {
         commonFileService.pushMessage(username, fileDocument, Constants.UPDATE_FILE);
     }
 
-    private static void printErrorInfo(ProcessBuilder processBuilder, Process process) throws IOException {
-        printErrorInfo(processBuilder);
-        // 打印process的错误输出
-        try (InputStream inputStream = process.getErrorStream();
-             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                log.error(line);
-            }
-        }
-    }
-
-    private static void printErrorInfo(ProcessBuilder processBuilder) {
-        // 打印命令 用空格连接
-        String command = String.join(" ", processBuilder.command());
-        log.error("ffmpeg 执行失败, command: \r\n{}", command);
-    }
-
-    private static void printSuccessInfo(ProcessBuilder processBuilder) {
-        // 打印命令 用空格连接
-        String command = String.join(" ", processBuilder.command());
-        log.info("ffmpeg 执行成功, command: \r\n{}", command);
-    }
-
     /**
      * 获取视频的分辨率和码率信息
      *
@@ -589,24 +539,6 @@ public class VideoProcessService {
             this.duration = duration;
             log.info("\r\nvideoPath: {}, width: {}, height: {}, format: {}, bitrate: {}, duration: {}", videoPath, width, height, format, bitrate, duration);
         }
-    }
-
-
-    public static boolean hasNoFFmpeg() {
-        try {
-            Process process = Runtime.getRuntime().exec("ffmpeg -version");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.contains("ffmpeg version")) {
-                    return false;
-                }
-            }
-            return true;
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-        }
-        return true;
     }
 
     @PreDestroy

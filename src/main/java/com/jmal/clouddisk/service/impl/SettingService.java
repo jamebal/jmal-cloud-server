@@ -6,10 +6,12 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.service.Constants;
@@ -98,7 +100,7 @@ public class SettingService {
         // 启动时检测是否存在lucene索引，不存在则初始化
         if (!luceneService.checkIndexExists()) {
             List<String> usernames = userService.getAllUsernameList();
-            usernames.forEach(this::sync);
+            usernames.forEach(this::doSync);
         }
         int processors = Runtime.getRuntime().availableProcessors() - 2;
         if (processors < 1) {
@@ -112,6 +114,16 @@ public class SettingService {
      * @param username 用户名
      */
     public ResponseResult<Object> sync(String username) {
+        if (StrUtil.isBlank(username)) {
+            List<String> usernames = userService.getAllUsernameList();
+            usernames.forEach(this::doSync);
+        } else {
+            doSync(username);
+        }
+        return ResultUtil.success();
+    }
+
+    public void doSync(String username) {
         syncCache.computeIfAbsent(username, key -> {
             ThreadUtil.execute(() -> {
                 Path path = Paths.get(fileProperties.getRootDir(), username);
@@ -144,7 +156,6 @@ public class SettingService {
             });
             return "syncing";
         });
-        return ResultUtil.success();
     }
 
     private void removeDocByDeleteFlag(String username) {
