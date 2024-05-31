@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static com.jmal.clouddisk.util.FFMPEGUtils.getWaitingForResults;
@@ -55,6 +56,10 @@ public class OcrService {
      * 生成一个临时的图片路径
      */
     public String generateOrcTempImagePath() {
+        Path tempPath = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir());
+        if (!FileUtil.exist(tempPath.toString())) {
+            FileUtil.mkdir(tempPath.toString());
+        }
         return Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), ObjectId.next(true) + "_temp_ocr.png").toString();
     }
 
