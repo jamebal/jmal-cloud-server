@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.ocr;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.TessAPI;
 import net.sourceforge.tess4j.Tesseract;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Configuration
 @ConfigurationProperties(prefix = "tess4j")
+@Slf4j
 public class TesseractOcrConfig {
 
     private String dataPath;
@@ -21,6 +23,7 @@ public class TesseractOcrConfig {
         Tesseract tesseract = new Tesseract();
         //设置数据文件夹路径
         tesseract.setDatapath(dataPath);
+        log.info("tesseract dataPath: {}", dataPath);
         //设置为中文简体
         tesseract.setLanguage("chi_sim");
         tesseract.setOcrEngineMode(TessAPI.TessOcrEngineMode.OEM_LSTM_ONLY);
