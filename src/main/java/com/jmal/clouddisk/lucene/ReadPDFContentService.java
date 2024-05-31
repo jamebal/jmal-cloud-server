@@ -1,12 +1,10 @@
 package com.jmal.clouddisk.lucene;
 
 import cn.hutool.core.io.FileUtil;
-import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.ocr.OcrService;
 import com.jmal.clouddisk.util.FileContentUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.sourceforge.tess4j.Tesseract;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
@@ -27,10 +25,6 @@ import java.io.IOException;
 @RequiredArgsConstructor
 @Slf4j
 public class ReadPDFContentService {
-
-    private final Tesseract tesseract;
-
-    private final FileProperties fileProperties;
 
     private final OcrService ocrService;
 
