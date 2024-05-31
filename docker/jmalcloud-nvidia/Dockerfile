@@ -4,6 +4,7 @@ ARG VERSION
 
 ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
 ENV RUN_ENVIRONMENT prod
+ENV JVM_OPTS "-Xms50m -Xmx512m"
 ENV LOG_LEVEL warn
 
 ENV FILE_MONITOR true
@@ -24,9 +25,6 @@ ENV VERSION=${VERSION}
 # 如果需要，可以根据需要更改此设置
 ENV DOCKER_DEFAULT_PLATFORM=linux/amd64,linux/arm64
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+EXPOSE 8088
 
-EXPOSE 8088 8080
-
-ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD java -Dfile.encoding=UTF-8 -Dloader.path=/usr/local/clouddisk-lib -jar ${JVM_OPTS} /usr/local/clouddisk-${VERSION}.jar --spring.profiles.active=${RUN_ENVIRONMENT} --spring.data.mongodb.uri=${MONGODB_URI} --file.monitor=${FILE_MONITOR} --file.rootDir=${FILE_ROOT_DIR} --logging.level.root=${LOG_LEVEL} --file.ip2region-db-path=/jmalcloud/ip2region.xdb
