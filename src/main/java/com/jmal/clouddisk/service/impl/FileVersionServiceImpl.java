@@ -10,6 +10,7 @@ import cn.hutool.core.util.URLUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.GridFSBO;
 import com.jmal.clouddisk.model.Metadata;

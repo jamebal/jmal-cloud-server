@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.service.impl;
+package com.jmal.clouddisk.lucene;
 
 import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
@@ -13,6 +13,8 @@ import com.jmal.clouddisk.model.TagDO;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.TagService;
 import com.jmal.clouddisk.util.*;
 import com.mongodb.client.AggregateIterable;
 import jakarta.annotation.PostConstruct;
@@ -64,6 +66,7 @@ public class LuceneService {
     private final SearcherManager searcherManager;
     private final IUserService userService;
     private final TagService tagService;
+    private final ReadPDFContentService readPDFContentService;
     private ExecutorService executorService;
 
     /**
@@ -294,7 +297,7 @@ public class LuceneService {
             }
             String type = FileTypeUtil.getType(file);
             if ("pdf".equals(type)) {
-                return FileContentUtil.readPdfContent(file);
+                return readPDFContentService.read(file);
             }
             if ("ppt".equals(type) || "pptx".equals(type)) {
                 return FileContentUtil.readPPTContent(file);

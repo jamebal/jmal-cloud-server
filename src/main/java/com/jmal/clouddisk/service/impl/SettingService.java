@@ -10,6 +10,7 @@ import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.service.Constants;

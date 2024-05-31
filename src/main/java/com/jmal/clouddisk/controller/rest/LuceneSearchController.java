@@ -2,7 +2,7 @@ package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.query.SearchDTO;
-import com.jmal.clouddisk.service.impl.LuceneService;
+import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.util.ResponseResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

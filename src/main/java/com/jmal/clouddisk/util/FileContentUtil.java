@@ -1,8 +1,6 @@
 package com.jmal.clouddisk.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xslf.usermodel.XSLFShape;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
@@ -17,16 +15,6 @@ import java.util.List;
 
 @Slf4j
 public class FileContentUtil {
-
-    public static String readPdfContent(File file) {
-        try (PDDocument document = PDDocument.load(file)) {
-            PDFTextStripper pdfStripper = new PDFTextStripper();
-            return pdfStripper.getText(document);
-        } catch (IOException e) {
-            readFailed(file, e);
-        }
-        return null;
-    }
 
     public static String readPPTContent(File file) {
         try (FileInputStream fis = new FileInputStream(file.getAbsolutePath());
@@ -61,7 +49,7 @@ public class FileContentUtil {
         return null;
     }
 
-    private static void readFailed(File file, IOException e) {
+    public static void readFailed(File file, IOException e) {
         log.warn("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage());
     }
 

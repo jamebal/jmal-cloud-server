@@ -12,6 +12,9 @@ spring:
           max-age: 0
       chain:
         cache: false
+tess4j:
+  # tess4j ocr path
+  data-path: /Users/jmal/studio/myProject/github/jmal-cloud-server/tess4j/datapath
 logging:
   level:
     root: info
