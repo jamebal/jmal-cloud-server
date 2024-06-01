@@ -59,7 +59,14 @@ public class FileIntroVO extends FileBase {
      * 分享有效期
      */
     private Long expiresAt;
+    /**
+     * music
+     */
     private Music music;
+    /**
+     * 照片exif信息
+     */
+    private ExifInfo exif;
     /**
      * 媒体封面
      */

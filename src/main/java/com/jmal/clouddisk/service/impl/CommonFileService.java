@@ -461,7 +461,8 @@ public class CommonFileService {
                 setMediaCover(fileId, username, fileName, relativePath, update);
             }
             if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE) && (!"ico".equals(suffix) && !"svg".equals(suffix))) {
-                generateThumbnail(file, update);
+                // 处理图片
+                processImage(file, update);
             }
             if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
                 // 写入markdown内容
@@ -471,6 +472,22 @@ public class CommonFileService {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    private void processImage(File file, Update update) {
+        // 获取图片尺寸
+        FastImageInfo imageInfo = new FastImageInfo(file);
+        if (imageInfo.getWidth() > 0 && imageInfo.getHeight() > 0) {
+            update.set("w", imageInfo.getWidth());
+            update.set("h", imageInfo.getHeight());
+        }
+        // 获取照片Exif信息
+        ExifInfo exifInfo = ImageExifUtil.getExif(file);
+        if (exifInfo != null) {
+            update.set("exif", exifInfo);
+        }
+        // 生成缩略图
+        generateThumbnail(file, update);
     }
 
     public static String getContentType(File file, String contentType) {
@@ -518,7 +535,7 @@ public class CommonFileService {
         }
     }
 
-    /***
+    /**
      * 生成缩略图
      * @param file File
      * @param update org.springframework.data.mongodb.core.query.UpdateDefinition
@@ -528,9 +545,6 @@ public class CommonFileService {
             Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(file);
             thumbnail.size(256, 256);
             thumbnail.toOutputStream(out);
-            FastImageInfo imageInfo = new FastImageInfo(file);
-            update.set("w", imageInfo.getWidth());
-            update.set("h", imageInfo.getHeight());
             update.set("content", out.toByteArray());
         } catch (UnsupportedFormatException e) {
             log.warn("{}{}", e.getMessage(), file.getAbsolutePath());
