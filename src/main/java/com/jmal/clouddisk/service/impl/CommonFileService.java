@@ -327,6 +327,7 @@ public class CommonFileService {
             if (fileExists != null) {
                 // 添加文件索引
                 // 获取tagName
+                updateExifInfo(file, fileExists, contentType, suffix, query);
                 luceneService.pushCreateIndexQueue(fileExists.getId());
                 return fileExists.getId();
             }
@@ -364,6 +365,28 @@ public class CommonFileService {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return fileId;
+    }
+
+    /**
+     * 更新文档的Exif信息
+     * @param file 文件
+     * @param fileExists 文件信息
+     * @param contentType 文件类型
+     * @param suffix 文件后缀
+     * @param query 查询条件
+     */
+    private void updateExifInfo(File file, FileDocument fileExists, String contentType, String suffix, Query query) {
+        if (fileExists.getExif() == null) {
+            if (ImageExifUtil.isImageType(contentType, suffix)) {
+                // 更新图片Exif信息
+                ExifInfo exifInfo = ImageExifUtil.getExif(file);
+                if (exifInfo != null) {
+                    Update update = new Update();
+                    update.set("exif", exifInfo);
+                    mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
+                }
+            }
+        }
     }
 
     private static void setDateTime(File file, Update update) {
@@ -460,7 +483,7 @@ public class CommonFileService {
             if (contentType.contains(Constants.VIDEO)) {
                 setMediaCover(fileId, username, fileName, relativePath, update);
             }
-            if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE) && (!"ico".equals(suffix) && !"svg".equals(suffix))) {
+            if (ImageExifUtil.isImageType(contentType, suffix)) {
                 // 处理图片
                 processImage(file, update);
             }
@@ -481,11 +504,8 @@ public class CommonFileService {
             update.set("w", imageInfo.getWidth());
             update.set("h", imageInfo.getHeight());
         }
-        // 获取照片Exif信息
-        ExifInfo exifInfo = ImageExifUtil.getExif(file);
-        if (exifInfo != null) {
-            update.set("exif", exifInfo);
-        }
+        // 获取图片Exif信息
+        ImageExifUtil.setExifInfo(file, update);
         // 生成缩略图
         generateThumbnail(file, update);
     }
