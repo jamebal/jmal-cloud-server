@@ -9,9 +9,9 @@ public class ExifReader {
     public static void main(String[] args) {
         try {
             // File file = new File("/Users/jmal/Pictures/壁纸/WechatIMG15108.jpeg");
-            File file = new File("/Users/jmal/Pictures/壁纸/WechatIMG15107.jpeg");
+            // File file = new File("/Users/jmal/Pictures/壁纸/WechatIMG15107.jpeg");
             // File file = new File("/Users/jmal/Downloads/output.png");
-            // File file = new File("/Users/jmal/Downloads/IMG_0871.HEIC");
+            File file = new File("/Users/jmal/Downloads/IMG_0871.HEIC");
             // File file = new File("/Users/jmal/Downloads/fox.profile0.10bpc.yuv420.avif");
             // File file = new File("/Users/jmal/Downloads/IMG_0872.HEIC");
 

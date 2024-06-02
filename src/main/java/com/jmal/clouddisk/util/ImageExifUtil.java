@@ -15,6 +15,7 @@ import org.springframework.data.mongodb.core.query.Update;
 
 import java.io.File;
 import java.util.Date;
+import java.util.TimeZone;
 
 @Slf4j
 public class ImageExifUtil {
@@ -72,7 +73,7 @@ public class ImageExifUtil {
                 ExifSubIFDDescriptor descriptor = new ExifSubIFDDescriptor(exifDirectory);
                 // 内容创建时间
                 if (exifDirectory.containsTag(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL)) {
-                    Date date = exifDirectory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
+                    Date date = exifDirectory.getDateOriginal(TimeZone.getDefault());
                     if (date != null) {
                         exifInfo.setDateTimeOriginal(LocalDateTimeUtil.of(date));
                     }
@@ -132,7 +133,7 @@ public class ImageExifUtil {
             return exifInfo;
         } catch (Exception e) {
             // 获取图片EXIF信息失败
-            log.warn("获取图片EXIF信息失败: {}, {}", e.getMessage(), file, e);
+            log.warn("获取图片EXIF信息失败: {}, {}", e.getMessage(), file);
         }
         return null;
     }
