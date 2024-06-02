@@ -327,6 +327,7 @@ public class CommonFileService {
             if (fileExists != null) {
                 // 添加文件索引
                 // 获取tagName
+                updateExifInfo(file, fileExists, contentType, suffix, query);
                 luceneService.pushCreateIndexQueue(fileExists.getId());
                 return fileExists.getId();
             }
@@ -364,6 +365,28 @@ public class CommonFileService {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return fileId;
+    }
+
+    /**
+     * 更新文档的Exif信息
+     * @param file 文件
+     * @param fileExists 文件信息
+     * @param contentType 文件类型
+     * @param suffix 文件后缀
+     * @param query 查询条件
+     */
+    private void updateExifInfo(File file, FileDocument fileExists, String contentType, String suffix, Query query) {
+        if (fileExists.getExif() == null) {
+            if (ImageExifUtil.isImageType(contentType, suffix)) {
+                // 更新图片Exif信息
+                ExifInfo exifInfo = ImageExifUtil.getExif(file);
+                if (exifInfo != null) {
+                    Update update = new Update();
+                    update.set("exif", exifInfo);
+                    mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
+                }
+            }
+        }
     }
 
     private static void setDateTime(File file, Update update) {
@@ -460,8 +483,9 @@ public class CommonFileService {
             if (contentType.contains(Constants.VIDEO)) {
                 setMediaCover(fileId, username, fileName, relativePath, update);
             }
-            if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE) && (!"ico".equals(suffix) && !"svg".equals(suffix))) {
-                generateThumbnail(file, update);
+            if (ImageExifUtil.isImageType(contentType, suffix)) {
+                // 处理图片
+                processImage(file, update);
             }
             if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
                 // 写入markdown内容
@@ -471,6 +495,19 @@ public class CommonFileService {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    private void processImage(File file, Update update) {
+        // 获取图片尺寸
+        FastImageInfo imageInfo = new FastImageInfo(file);
+        if (imageInfo.getWidth() > 0 && imageInfo.getHeight() > 0) {
+            update.set("w", imageInfo.getWidth());
+            update.set("h", imageInfo.getHeight());
+        }
+        // 获取图片Exif信息
+        ImageExifUtil.setExifInfo(file, update);
+        // 生成缩略图
+        generateThumbnail(file, update);
     }
 
     public static String getContentType(File file, String contentType) {
@@ -518,7 +555,7 @@ public class CommonFileService {
         }
     }
 
-    /***
+    /**
      * 生成缩略图
      * @param file File
      * @param update org.springframework.data.mongodb.core.query.UpdateDefinition
@@ -528,9 +565,6 @@ public class CommonFileService {
             Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(file);
             thumbnail.size(256, 256);
             thumbnail.toOutputStream(out);
-            FastImageInfo imageInfo = new FastImageInfo(file);
-            update.set("w", imageInfo.getWidth());
-            update.set("h", imageInfo.getHeight());
             update.set("content", out.toByteArray());
         } catch (UnsupportedFormatException e) {
             log.warn("{}{}", e.getMessage(), file.getAbsolutePath());

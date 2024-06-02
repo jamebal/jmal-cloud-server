@@ -126,6 +126,10 @@ public class FileDocument extends FileBase {
      */
     private Music music;
     /**
+     * 照片exif信息
+     */
+    private ExifInfo exif;
+    /**
      * 媒体封面
      */
     private String mediaCover;

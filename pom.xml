@@ -125,7 +125,7 @@
         <dependency>
             <groupId>net.coobird</groupId>
             <artifactId>thumbnailator</artifactId>
-            <version>0.4.17</version>
+            <version>0.4.20</version>
         </dependency>
 
         <!--解析MP3-->
@@ -139,7 +139,7 @@
         <dependency>
             <groupId>com.drewnoakes</groupId>
             <artifactId>metadata-extractor</artifactId>
-            <version>2.18.0</version>
+            <version>2.19.0</version>
         </dependency>
 
         <!-- 文件的压缩和解压-->

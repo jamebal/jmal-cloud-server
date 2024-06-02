@@ -276,7 +276,9 @@ public class FileContentTypeUtils {
         CONTENT_TYPE.put("jpeg" , "image/jpeg");
         CONTENT_TYPE.put("jpf" , "image/jp2");
         CONTENT_TYPE.put("jpg" , "image/jpeg");
+        CONTENT_TYPE.put("heic" , "image/heic");
         CONTENT_TYPE.put("webp" , "image/webp");
+        CONTENT_TYPE.put("avif" , "image/avif");
         CONTENT_TYPE.put("jpr" , "application/x-jbuilder-project");
         CONTENT_TYPE.put("jpx" , "image/jp2");
         CONTENT_TYPE.put("js" , "application/javascript");

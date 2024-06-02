@@ -1,30 +1,26 @@
 package com.jmal.clouddisk.util;
 
 import cn.hutool.core.lang.Console;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 
-/***
+/**
  * 快速获取图片的分辨率
  */
+@Data
+@Slf4j
 public class FastImageInfo {
     private int height;
     private int width;
     private String mimeType;
 
-    public FastImageInfo(File file) throws IOException {
+    public FastImageInfo(File file) {
         try (InputStream is = new FileInputStream(file)) {
             processStream(is);
-        }
-    }
-
-    public FastImageInfo(InputStream is) throws IOException {
-        processStream(is);
-    }
-
-    public FastImageInfo(byte[] bytes) throws IOException {
-        try (InputStream is = new ByteArrayInputStream(bytes)) {
-            processStream(is);
+        } catch (IOException e) {
+            log.warn("获取图片尺寸失败, {}", file);
         }
     }
 
@@ -78,6 +74,19 @@ public class FastImageInfo {
             width = ((int) bytes[24] & 0xff) << 8 | ((int) bytes[23] & 0xff);
             height = ((int) bytes[26] & 0xff) << 8 | ((int) bytes[25] & 0xff);
             mimeType = "image/webp";
+        } else if (c1 == 'f' && c2 == 't' && c3 == 'y') {
+            // HEIC/AVIF
+            is.skip(5);
+            byte[] bytes = new byte[4];
+            is.read(bytes, 0, 4);
+            String type = new String(bytes);
+            if ("heic".equals(type) || "avif".equals(type)) {
+                mimeType = type.equals("heic") ? "image/heic" : "image/avif";
+                is.skip(16);
+                width = readInt(is, 2, true);
+                is.skip(2);
+                height = readInt(is, 2, true);
+            }
         } else {
             //TIFF
             int c4 = is.read();
@@ -126,30 +135,6 @@ public class FastImageInfo {
         return ret;
     }
 
-    public int getHeight() {
-        return height;
-    }
-
-    public void setHeight(int height) {
-        this.height = height;
-    }
-
-    public int getWidth() {
-        return width;
-    }
-
-    public void setWidth(int width) {
-        this.width = width;
-    }
-
-    public String getMimeType() {
-        return mimeType;
-    }
-
-    public void setMimeType(String mimeType) {
-        this.mimeType = mimeType;
-    }
-
     @Override
     public String toString() {
         return "MIME Type : " + mimeType + "\t Width : " + width
@@ -158,7 +143,7 @@ public class FastImageInfo {
 
     public static void main(String[] args) throws IOException {
         long s1 = System.currentTimeMillis();
-        String path = "/Users/jmal/Downloads/bolg/photo-1603989112393-db862d0176b4.jpeg";
+        String path = "/Users/jmal/Pictures/壁纸/WechatIMG15108.jpeg";
         FastImageInfo imageInfo = new FastImageInfo(new File(path));
         int width = imageInfo.getWidth();
         int height = imageInfo.getHeight();
