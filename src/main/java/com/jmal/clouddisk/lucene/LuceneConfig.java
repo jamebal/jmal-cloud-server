@@ -1,5 +1,6 @@
-package com.jmal.clouddisk.config;
+package com.jmal.clouddisk.lucene;
 
+import com.jmal.clouddisk.config.FileProperties;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.apache.lucene.analysis.Analyzer;

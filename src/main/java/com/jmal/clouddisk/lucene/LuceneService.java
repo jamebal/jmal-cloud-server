@@ -487,63 +487,44 @@ public class LuceneService {
      */
     private Query getQuery(SearchDTO searchDTO) throws ParseException {
         String[] fields = {"name", "tag", "content"};
-        Map<String, Float> boosts = new HashMap<>();
-        boosts.put("name", 3.0f);
-        boosts.put("tag", 2.0f);
-        boosts.put("content", 1.0f);
+        Map<String, Float> boosts = Map.of("name", 3.0f, "tag", 2.0f, "content", 1.0f);
 
-        // 将关键字转为小写
-        String keyword = searchDTO.getKeyword().toLowerCase().trim();
+        // 将关键字转为小写并去掉空格和特殊字符
+        String keyword = searchDTO.getKeyword().toLowerCase().trim().replaceAll("[\\s\\p{Punct}]+", " ");
 
+        // 创建正则表达式查询
         BooleanQuery.Builder regexpQueryBuilder = new BooleanQuery.Builder();
         for (String field : fields) {
-            if ("content".equals(field)) {
-                continue;
+            if (!"content".equals(field)) {
+                regexpQueryBuilder.add(new BoostQuery(new RegexpQuery(new Term(field, ".*" + keyword + ".*")), boosts.get(field)), BooleanClause.Occur.SHOULD);
             }
-            regexpQueryBuilder.add(new BoostQuery(new RegexpQuery(new Term(field, ".*" + keyword + ".*")), boosts.get(field)), BooleanClause.Occur.SHOULD);
         }
-        Query regExpQuery = regexpQueryBuilder.build();
-        BoostQuery boostedRegExpQuery = new BoostQuery(regExpQuery, 10.0f);
+        Query regExpQuery = new BoostQuery(regexpQueryBuilder.build(), 10.0f);
 
-        BooleanQuery.Builder phraseQueryBuilder = new BooleanQuery.Builder();
-        for (String field : fields) {
-            PhraseQuery.Builder builder = new PhraseQuery.Builder();
-            // 去掉关键字中的空格和特殊字符
-            keyword = keyword.replaceAll("[\\s\\p{Punct}]+", " ");
-            builder.add(new Term(field, keyword.trim()));
-            Query phraseQuery = builder.build();
-            phraseQueryBuilder.add(new BoostQuery(phraseQuery, boosts.get(field)), BooleanClause.Occur.SHOULD);
-        }
-        Query phraseQuery = phraseQueryBuilder.build();
+        // 对 content 字段进行完全匹配
+        BooleanQuery.Builder contentQueryBuilder = new BooleanQuery.Builder();
+        QueryParser contentParser = new QueryParser("content", analyzer);
+        contentParser.setDefaultOperator(QueryParser.Operator.AND);
+        Query contentQuery = contentParser.parse(keyword.trim());
+        contentQueryBuilder.add(new BoostQuery(contentQuery, boosts.get("content")), BooleanClause.Occur.MUST);
 
-        // 创建分词匹配查询
-        BooleanQuery.Builder tokensQueryBuilder = new BooleanQuery.Builder();
-        for (String field : fields) {
-            QueryParser parser = new QueryParser(field, analyzer);
-            parser.setDefaultOperator(QueryParser.Operator.OR);
-            // 去掉关键字中的空格和特殊字符
-            keyword = keyword.replaceAll("[\\s\\p{Punct}]+", " ");
-            Query query = parser.parse(keyword.trim());
-            tokensQueryBuilder.add(new BoostQuery(query, boosts.get(field)), BooleanClause.Occur.SHOULD);
-        }
-        Query tokensQuery = tokensQueryBuilder.build();
         // 将正则表达式查询、短语查询和分词匹配查询组合成一个查询（OR关系）
-        BooleanQuery.Builder combinedQueryBuilder = new BooleanQuery.Builder();
-        combinedQueryBuilder.add(boostedRegExpQuery, BooleanClause.Occur.SHOULD);
-        combinedQueryBuilder.add(phraseQuery, BooleanClause.Occur.SHOULD);
-        combinedQueryBuilder.add(tokensQuery, BooleanClause.Occur.SHOULD);
-        Query combinedQuery = combinedQueryBuilder.build();
+        BooleanQuery combinedQuery = new BooleanQuery.Builder()
+                .add(regExpQuery, BooleanClause.Occur.SHOULD)
+                .add(contentQueryBuilder.build(), BooleanClause.Occur.SHOULD)
+                .build();
+
         // 创建最终查询（AND关系）
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        builder.add(new TermQuery(new Term(IUserService.USER_ID, searchDTO.getUserId())), BooleanClause.Occur.MUST);
+        BooleanQuery.Builder finalQueryBuilder = new BooleanQuery.Builder()
+                .add(new TermQuery(new Term(IUserService.USER_ID, searchDTO.getUserId())), BooleanClause.Occur.MUST)
+                .add(combinedQuery, BooleanClause.Occur.MUST);
+
         // 添加其他查询条件
-        otherQueryParams(searchDTO, builder);
-        // 添加组合查询
-        builder.add(combinedQuery, BooleanClause.Occur.MUST);
+        otherQueryParams(searchDTO, finalQueryBuilder);
 
-        return builder.build();
-
+        return finalQueryBuilder.build();
     }
+
 
     private void otherQueryParams(SearchDTO searchDTO, BooleanQuery.Builder builder) {
         boolean queryPath = StrUtil.isNotBlank(searchDTO.getCurrentDirectory()) && searchDTO.getCurrentDirectory().length() > 1;
