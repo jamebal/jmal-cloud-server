@@ -799,6 +799,25 @@ public class CommonFileService {
         }
     }
 
+    /**
+     * 通过文件的绝对路径获取用户名
+     * @param absolutePath 绝对路径
+     * @return 用户名
+     */
+    public String getUsernameByAbsolutePath(Path absolutePath) {
+        if (absolutePath == null) {
+            return null;
+        }
+        Path parentPath = Paths.get(fileProperties.getRootDir());
+        if (absolutePath.startsWith(parentPath)) {
+            Path relativePath = parentPath.relativize(absolutePath);
+            if (relativePath.getNameCount() > 1) {
+                return relativePath.getName(0).toString();
+            }
+        }
+        return null;
+    }
+
     /***
      * 解除共享属性
      * @param fileDocument FileDocument
@@ -999,16 +1018,14 @@ public class CommonFileService {
     }
 
     /**
-     * 移除删除标记
-     * @param username username
+     * 删除有删除标记的文档
      */
-    public void removeDocByDeleteFlag(String username) {
+    public void deleteDocWithDeleteFlag() {
         Query query = new Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userService.getUserIdByUserName(username)));
         query.addCriteria(Criteria.where("delete").is(1));
         DeleteResult deleteResult = mongoTemplate.remove(query, COLLECTION_NAME);
         if (deleteResult.getDeletedCount() > 0) {
-            log.info("移除删除标记: {}, username: {}", deleteResult.getDeletedCount(), username);
+            log.info("删除有删除标记的文档: {}", deleteResult.getDeletedCount());
         }
     }
 }

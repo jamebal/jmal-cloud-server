@@ -605,7 +605,7 @@ public class UserServiceImpl implements IUserService {
         return "";
     }
 
-    /***
+    /**
      * 获取创建者的头像
      * @return 头像文件Id
      */
@@ -617,5 +617,19 @@ public class UserServiceImpl implements IUserService {
             return null;
         }
         return consumerDO.getAvatar();
+    }
+
+    /**
+     * 获取创建者的用户名
+     * @return 用户名
+     */
+    public String getCreatorUsername() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("creator").is(true));
+        ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
+        if (consumerDO == null) {
+            return null;
+        }
+        return consumerDO.getUsername();
     }
 }

@@ -1,32 +1,24 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
@@ -34,12 +26,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author jmal
@@ -75,112 +64,6 @@ public class SettingService {
 
     @Autowired
     UserLoginHolder userLoginHolder;
-
-    @Autowired
-    LuceneService luceneService;
-
-    private ExecutorService executorService;
-
-    private static final Map<String, SyncFileVisitor> syncFileVisitorMap = new ConcurrentHashMap<>(16);
-
-    private static final Map<String, String> syncCache = new ConcurrentHashMap<>(16);
-
-    private static final String SYNCED = "synced";
-
-    private static final Map<String, Timer> delayDeleteTagtimerMap = new ConcurrentHashMap<>(16);
-
-    @PostConstruct
-    public void init() {
-        // 启动时检测是否存在菜单，不存在则初始化
-        if (!menuService.existsMenu()) {
-            log.info("初始化角色、菜单！");
-            menuService.initMenus();
-            roleService.initRoles();
-        }
-        // 启动时检测是否存在lucene索引，不存在则初始化
-        if (!luceneService.checkIndexExists()) {
-            List<String> usernames = userService.getAllUsernameList();
-            usernames.forEach(this::doSync);
-        }
-        int processors = Runtime.getRuntime().availableProcessors() - 2;
-        if (processors < 1) {
-            processors = 1;
-        }
-        executorService = ThreadUtil.newFixedExecutor(processors, 100, "syncFileVisitor", true);
-    }
-
-    /***
-     * 把文件同步到数据库
-     * @param username 用户名
-     */
-    public ResponseResult<Object> sync(String username) {
-        if (StrUtil.isBlank(username)) {
-            List<String> usernames = userService.getAllUsernameList();
-            usernames.forEach(this::doSync);
-        } else {
-            doSync(username);
-        }
-        return ResultUtil.success();
-    }
-
-    public void doSync(String username) {
-        syncCache.computeIfAbsent(username, key -> {
-            ThreadUtil.execute(() -> {
-                Path path = Paths.get(fileProperties.getRootDir(), username);
-                TimeInterval timeInterval = new TimeInterval();
-                try {
-                    if (delayDeleteTagtimerMap.containsKey(username)) {
-                        delayDeleteTagtimerMap.get(username).cancel();
-                        delayDeleteTagtimerMap.remove(username);
-                    }
-                    Set<FileVisitOption> fileVisitOptions = EnumSet.noneOf(FileVisitOption.class);
-                    fileVisitOptions.add(FileVisitOption.FOLLOW_LINKS);
-                    // 先删除索引
-                    luceneService.deleteAllIndex(userService.getUserIdByUserName(username));
-                    FileCountVisitor fileCountVisitor = new FileCountVisitor();
-                    Files.walkFileTree(path, fileVisitOptions, Integer.MAX_VALUE, fileCountVisitor);
-                    log.info("user: {}, 开始同步, 文件数: {}", username, fileCountVisitor.getCount());
-                    timeInterval.start();
-                    SyncFileVisitor syncFileVisitor = new SyncFileVisitor(username, fileCountVisitor.getCount());
-                    syncFileVisitorMap.put(username, syncFileVisitor);
-                    Files.walkFileTree(path, fileVisitOptions, Integer.MAX_VALUE, syncFileVisitor);
-                    removeDocByDeleteFlag(username);
-                } catch (IOException e) {
-                    log.error("{}{}", e.getMessage(), path, e);
-                } finally {
-                    syncCache.remove(username);
-                    syncFileVisitorMap.remove(username);
-                    log.info("user: {}, 同步完成, 耗时: {}s", username, timeInterval.intervalSecond());
-                    commonFileService.pushMessage(username, 100, SYNCED);
-                }
-            });
-            return "syncing";
-        });
-    }
-
-    private void removeDocByDeleteFlag(String username) {
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                commonFileService.removeDocByDeleteFlag(username);
-            }
-        }, 60000 * 3);
-        delayDeleteTagtimerMap.put(username, timer);
-    }
-
-    /**
-     * 是否正在同步中
-     */
-    public ResponseResult<Object> isSync(String username) {
-        if (!syncCache.containsKey(username)) {
-            return ResultUtil.success(100);
-        }
-        if (syncFileVisitorMap.containsKey(username)) {
-            return ResultUtil.success(syncFileVisitorMap.get(username).getPercent());
-        }
-        return ResultUtil.success(100);
-    }
 
     /**
      * 上传网盘logo
@@ -224,98 +107,6 @@ public class SettingService {
         update.set("netdiskName", netdiskName);
         mongoTemplate.upsert(query, update, COLLECTION_NAME_WEBSITE_SETTING);
         return ResultUtil.success("修改成功");
-    }
-
-    private class SyncFileVisitor extends SimpleFileVisitor<Path> {
-
-        private final String username;
-        private final double totalCount;
-
-        @Getter
-        private int percent = 0;
-
-        private final AtomicLong processCount;
-
-        public SyncFileVisitor(String username, double totalCount) {
-            this.username = username;
-            this.totalCount = totalCount;
-            this.processCount = new AtomicLong(0);
-        }
-
-        @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-            log.error(exc.getMessage(), exc);
-            return super.visitFileFailed(file, exc);
-        }
-
-        @Override
-        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-            executorService.execute(() -> createFile(dir));
-            return super.preVisitDirectory(dir, attrs);
-        }
-
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            executorService.execute(() -> createFile(file));
-            return super.visitFile(file, attrs);
-        }
-
-        private void createFile(Path file) {
-            try {
-                commonFileService.createFile(username, file.toFile(), null, null);
-            } catch (Exception e) {
-                log.error("{}{}", e.getMessage(), file, e);
-                FileDocument fileDocument = commonFileService.getFileDocument(username, file.toFile().getAbsolutePath());
-                if (fileDocument != null) {
-                    // 需要移除删除标记
-                    removeDeleteFlagOfDoc(fileDocument.getId());
-                }
-            } finally {
-                if (totalCount > 0) {
-                    if (processCount.get() <= 2) {
-                        commonFileService.pushMessage(username, 1, SYNCED);
-                    }
-                    processCount.addAndGet(1);
-                    int currentPercent = (int) (processCount.get()/totalCount * 100);
-                    if (currentPercent > percent) {
-                        commonFileService.pushMessage(username, currentPercent, SYNCED);
-                    }
-                    percent = currentPercent;
-                }
-            }
-        }
-    }
-
-    /**
-     * 移除删除标记
-     * @param fileId fileId
-     */
-    public void removeDeleteFlagOfDoc(String fileId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(fileId));
-        Update update = new Update();
-        update.unset("delete");
-        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
-    }
-
-    private static class FileCountVisitor extends SimpleFileVisitor<Path> {
-        private final AtomicLong count = new AtomicLong(0);
-
-        public long getCount() {
-            return count.get();
-        }
-
-        @Override
-        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-            count.addAndGet(1);
-            return super.preVisitDirectory(dir, attrs);
-        }
-
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            count.addAndGet(1);
-            return super.visitFile(file, attrs);
-        }
     }
 
     /***
@@ -444,13 +235,6 @@ public class SettingService {
     public void resetMenuAndRole() {
         menuService.initMenus();
         roleService.initRoles();
-    }
-
-    @PreDestroy
-    public void destroy() {
-        if (executorService != null) {
-            executorService.shutdown();
-        }
     }
 
 }

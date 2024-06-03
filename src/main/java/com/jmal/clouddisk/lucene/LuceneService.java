@@ -46,11 +46,10 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author jmal
- *
+ * <p>
  * 优化索引
  * indexWriter.forceMerge(1);
  * indexWriter.commit();
- *
  * @Description LuceneService
  * @Date 2021/4/27 4:44 下午
  */
@@ -67,7 +66,18 @@ public class LuceneService {
     private final IUserService userService;
     private final TagService tagService;
     private final ReadPDFContentService readPDFContentService;
-    private ExecutorService executorService;
+    private final RebuildIndexTaskService rebuildIndexTaskService;
+
+    public final static String MONGO_INDEX_FIELD = "index";
+
+    /**
+     * 创建索引线程池
+     */
+    private ExecutorService executorCreateIndexService;
+    /**
+     * 更新索引内容线程池
+     */
+    private ExecutorService executorUpdateContentIndexService;
 
     /**
      * 新建索引文件缓冲队列大小
@@ -91,12 +101,28 @@ public class LuceneService {
 
     @PostConstruct
     public void init() {
-        if (executorService == null) {
+        if (executorCreateIndexService == null) {
             int processors = Runtime.getRuntime().availableProcessors() - 1;
             if (processors < 1) {
                 processors = 1;
             }
-            executorService = ThreadUtil.newFixedExecutor(processors, 100, "createIndexFileTask", true);
+            executorCreateIndexService = ThreadUtil.newFixedExecutor(processors, 100, "createIndexFileTask", true);
+        }
+        if (executorUpdateContentIndexService == null) {
+            // 获取可用处理器数量
+            int processors = Runtime.getRuntime().availableProcessors() - 2;
+            // 获取jvm可用内存
+            long maxMemory = Runtime.getRuntime().maxMemory();
+            // 设置线程数, 假设每个线程占用内存为50M
+            int maxProcessors = (int) (maxMemory / 50 / 1024 / 1024);
+            if (processors > maxProcessors) {
+                processors = maxProcessors;
+            }
+            if (processors < 1) {
+                processors = 1;
+            }
+            log.info("updateContentIndexTask 线程数: {}, maxProcessors: {}", processors, maxProcessors);
+            executorUpdateContentIndexService = ThreadUtil.newFixedExecutor(processors, 1, "updateContentIndexTask", true);
         }
     }
 
@@ -149,7 +175,6 @@ public class LuceneService {
 
     /**
      * 新建索引文件任务
-     *
      */
     private void createIndexFileTask() {
         ArrayBlockingQueue<String> indexFileQueue = getIndexFileQueue();
@@ -159,7 +184,7 @@ public class LuceneService {
             try {
                 List<String> fileIdList = new ArrayList<>(indexFileQueue.size());
                 List<String> toBeIndexedFileIdList = new ArrayList<>(indexFileContentQueue.size());
-                executorService.execute(() -> {
+                executorCreateIndexService.execute(() -> {
 
                     // 添加待索引标记
                     indexFileContentQueue.drainTo(toBeIndexedFileIdList);
@@ -188,7 +213,7 @@ public class LuceneService {
         for (FileIntroVO fileIntroVO : fileIntroVOList) {
             updateIndex(false, fileIntroVO);
         }
-        removeDeletedFlag(fileIdList);
+        rebuildIndexTaskService.removeDeletedFlag(fileIdList);
     }
 
     private void updateIndex(boolean readContent, FileIntroVO fileIntroVO) {
@@ -204,22 +229,36 @@ public class LuceneService {
         if (readContent) {
             content = readFileContent(file);
             if (content == null) {
-                finishIndexing(fileIntroVO);
+                updateIndexStatus(fileIntroVO, IndexStatus.INDEXED.getStatus());
                 return;
             }
         }
         updateIndexDocument(indexWriter, fileIndex, content);
         if (StrUtil.isNotBlank(content)) {
-            log.info("添加索引, filepath: {}", file.getAbsoluteFile());
+            if (RebuildIndexTaskService.isNotRebuildingIndex()) {
+                log.info("添加索引, filepath: {}", file.getAbsoluteFile());
+            }
+            rebuildIndexTaskService.incrementIndexedTaskSize();
+            startProcessFilesToBeIndexed();
         }
-        finishIndexing(fileIntroVO);
+        updateIndexStatus(fileIntroVO, IndexStatus.INDEXED.getStatus());
     }
 
-    private void finishIndexing(FileIntroVO fileIntroVO) {
+    /**
+     * 更新索引状态
+     *
+     * @param fileIntroVO fileIntroVO
+     * @param indexedStatus indexedStatus<br>
+     *                      0: 表示待索引<br>
+     *                      1: 表示完成文件基本信息索引<br>
+     *                      2: 表示正在进行文件内容索引<br>
+     *                      3: 表示完成文件内容索引<br>
+     */
+    private void updateIndexStatus(FileIntroVO fileIntroVO, int indexedStatus) {
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where("_id").is(fileIntroVO.getId()));
         Update update = new Update();
-        update.set("index", 2);
+        update.set(MONGO_INDEX_FIELD, indexedStatus);
         mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
     }
 
@@ -228,15 +267,6 @@ public class LuceneService {
             return fileDocument.getTags().stream().map(Tag::getName).reduce((a, b) -> a + " " + b).orElse("");
         }
         return null;
-    }
-
-    private void removeDeletedFlag(List<String> fileIdList) {
-        // 移除删除标记
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where("_id").in(fileIdList).and("delete").is(1));
-        Update update = new Update();
-        update.unset("delete");
-        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
     }
 
     /**
@@ -360,9 +390,10 @@ public class LuceneService {
 
     /**
      * 添加/更新索引
+     *
      * @param indexWriter indexWriter
-     * @param fileIndex FileIndex
-     * @param content content
+     * @param fileIndex   FileIndex
+     * @param content     content
      */
     public void updateIndexDocument(IndexWriter indexWriter, FileIndex fileIndex, String content) {
         String fileId = fileIndex.getFileId();
@@ -456,6 +487,7 @@ public class LuceneService {
 
     /**
      * 获取排序规则
+     *
      * @param searchDTO searchDTO
      * @return Sort
      */
@@ -585,44 +617,6 @@ public class LuceneService {
         return mongoTemplate.findOne(query, FileIntroVO.class, CommonFileService.COLLECTION_NAME);
     }
 
-    public boolean checkIndexExists() {
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where("ossFolder").exists(true));
-        long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
-        long indexCount = indexWriter.getDocStats().numDocs;
-        return indexCount > count;
-    }
-
-    public void deleteAllIndex(String userId) {
-        try {
-            // 创建一个Term来指定userId字段和要删除的具体userId
-            Term term = new Term(IUserService.USER_ID, userId);
-            // 删除所有匹配此Term的文档
-            indexWriter.deleteDocuments(term);
-            // 提交更改
-            indexWriter.commit();
-            addDeleteFlagOfDoc(userId);
-            log.info("所有userId为 {} 的索引已被删除", userId);
-        } catch (IOException e) {
-            log.error("删除索引失败, userId: {}, {}", userId, e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 添加删除标记
-     * @param userId userId
-     */
-    private void addDeleteFlagOfDoc(String userId) {
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        query.addCriteria(Criteria.where("alonePage").exists(false));
-        query.addCriteria(Criteria.where("release").exists(false));
-        Update update = new Update();
-        // 添加删除标记用于在之后删除
-        update.set("delete", 1);
-        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
-    }
-
     /**
      * 添加待索引标记
      */
@@ -633,10 +627,10 @@ public class LuceneService {
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where("_id").in(fielIdList));
         Update update = new Update();
-        // 添加索引标记用于在之后创建文件内容索引, 0表示待索引, 1表示已索引
-        update.set("index", 0);
+        update.set(MONGO_INDEX_FIELD, IndexStatus.NOT_INDEX.getStatus());
         mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
-        log.debug("添加待索引标记, fileIds: {}", fielIdList);
+        rebuildIndexTaskService.incrementNotIndexTaskSize(fielIdList.size());
+        // 添加待索引标记
         startProcessFilesToBeIndexed();
     }
 
@@ -645,13 +639,13 @@ public class LuceneService {
      */
     public void processFilesToBeIndexed() throws IOException {
         boolean run = true;
-        log.debug("开始处理待索引文件");
+        log.info("开始处理待索引文件");
         while (run) {
             org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-            query.addCriteria(Criteria.where("index").is(0));
+            query.addCriteria(Criteria.where(MONGO_INDEX_FIELD).is(IndexStatus.NOT_INDEX.getStatus()));
             long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
             if (count == 0) {
-                log.debug("处理待索引文件完成");
+                rebuildIndexTaskService.rebuildingIndexCompleted();
                 indexWriter.commit();
                 run = false;
             }
@@ -662,14 +656,22 @@ public class LuceneService {
                 String fileId = document.getObjectId("_id").toHexString();
                 FileIntroVO fileIntroVO = getFileIntroVO(fileId);
                 if (fileIntroVO != null) {
-                    updateIndex(true, fileIntroVO);
+                    // 处理待索引文件
+                    updateIndexStatus(fileIntroVO, IndexStatus.INDEXING.getStatus());
+                    long size = fileIntroVO.getSize();
+                    if (RebuildIndexTaskService.isNotSyncFile() || size < 25 * 1024 * 1024) {
+                        executorUpdateContentIndexService.execute(() -> updateIndex(true, fileIntroVO));
+                    } else {
+                        updateIndex(true, fileIntroVO);
+                    }
                 }
             }
+
         }
     }
 
     private void startProcessFilesToBeIndexed() {
-        executorService.execute(() -> {
+        executorCreateIndexService.execute(() -> {
             if (!toBeIndexedLock.tryLock()) {
                 return;
             }
@@ -687,8 +689,11 @@ public class LuceneService {
 
     @PreDestroy
     public void destroy() {
-        if (executorService != null) {
-            executorService.shutdown();
+        if (executorCreateIndexService != null) {
+            executorCreateIndexService.shutdown();
+        }
+        if (executorUpdateContentIndexService != null) {
+            executorUpdateContentIndexService.shutdown();
         }
     }
 
