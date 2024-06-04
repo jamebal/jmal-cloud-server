@@ -645,7 +645,7 @@ public class LuceneService {
             query.addCriteria(Criteria.where(MONGO_INDEX_FIELD).is(IndexStatus.NOT_INDEX.getStatus()));
             long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
             if (count == 0) {
-                rebuildIndexTaskService.rebuildingIndexCompleted();
+                rebuildIndexTaskService.rebuildingIndexCompleted(null);
                 indexWriter.commit();
                 run = false;
             }

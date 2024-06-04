@@ -8,7 +8,6 @@ import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.SettingService;
-import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,16 +29,22 @@ public class CloudSettingController {
 
     private final IAuthService authService;
 
-    private final UserLoginHolder userLoginHolder;
-
     private final RebuildIndexTaskService rebuildIndexTaskService;
 
-    @Operation(summary = "重建索引")
+    @Operation(summary = "重建索引-用户")
     @GetMapping("/user/setting/sync")
+    @Permission(value = "cloud:file:upload")
+    @LogOperatingFun
+    public ResponseResult<Object> userSync(@RequestParam String username, String path) {
+        return rebuildIndexTaskService.sync(username, path);
+    }
+
+    @Operation(summary = "重建索引-全盘")
+    @GetMapping("/cloud/setting/sync")
     @Permission(value = "cloud:set:sync")
     @LogOperatingFun
-    public ResponseResult<Object> sync() {
-        return rebuildIndexTaskService.sync(userLoginHolder.getUsername());
+    public ResponseResult<Object> sync(@RequestParam String username) {
+        return rebuildIndexTaskService.sync(username, null);
     }
 
     @Operation(summary = "是否正在同步")

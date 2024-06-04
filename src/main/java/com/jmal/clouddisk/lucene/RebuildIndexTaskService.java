@@ -2,6 +2,7 @@ package com.jmal.clouddisk.lucene;
 
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
@@ -13,7 +14,6 @@ import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.index.IndexWriter;
@@ -26,7 +26,9 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -57,19 +59,24 @@ public class RebuildIndexTaskService {
 
     private final MongoTemplate mongoTemplate;
 
-    private ExecutorService executorService;
+    private ExecutorService syncFileVisitorService;
 
     private SyncFileVisitor syncFileVisitor;
 
     /**
      * 接收消息的用户
      */
-    private String recipient;
+    private static final Set<String> RECIPIENT = new CopyOnWriteArraySet<>();
 
     /**
      * 已完成的索引进度
      */
     private int indexingPercent;
+
+    /**
+     * 已完成的同步进度
+     */
+    private int syncPercent;
 
     public static final String MSG_INDEXING = "indexing";
 
@@ -107,16 +114,21 @@ public class RebuildIndexTaskService {
         }
         // 启动时检测是否存在lucene索引，不存在则初始化
         if (!checkIndexExists()) {
-            doSync(userService.getCreatorUsername());
+            doSync(userService.getCreatorUsername(), null);
         }
+    }
+
+    private void getSyncFileVisitorService() {
         int processors = Runtime.getRuntime().availableProcessors() - 2;
         if (processors < 1) {
             processors = 1;
         }
-        executorService = ThreadUtil.newFixedExecutor(processors, 100, "syncFileVisitor", true);
+        if (syncFileVisitorService == null || syncFileVisitorService.isShutdown()) {
+            syncFileVisitorService = ThreadUtil.newFixedExecutor(processors, 1, "syncFileVisitor", true);
+        }
     }
 
-    public void doSync(String recipient) {
+    public void doSync(String username, String path) {
         if (!isNotRebuildingIndex()) {
             return;
         }
@@ -125,8 +137,16 @@ public class RebuildIndexTaskService {
                 return;
             }
             try {
-                Path path = Paths.get(fileProperties.getRootDir());
-                rebuildingIndex(recipient, path);
+                Path canPath;
+                if (StrUtil.isBlank(path)) {
+                    canPath = Paths.get(fileProperties.getRootDir());
+                } else {
+                    canPath = Paths.get(path);
+                }
+                if (!Files.exists(canPath)) {
+                    return;
+                }
+                rebuildingIndex(username, canPath);
             } finally {
                 SYNC_FILE_LOCK.unlock();
             }
@@ -142,27 +162,30 @@ public class RebuildIndexTaskService {
     private void rebuildingIndex(String recipient, Path path) {
         TimeInterval timeInterval = new TimeInterval();
         try {
-            rebuildingIndexCompleted();
-            if (this.recipient == null) {
-                this.recipient = recipient;
-            }
+            rebuildingIndexCompleted(recipient);
             if (DELAY_DELETE_TAG_TIMER != null) {
                 DELAY_DELETE_TAG_TIMER.cancel();
             }
             Set<FileVisitOption> fileVisitOptions = EnumSet.noneOf(FileVisitOption.class);
             fileVisitOptions.add(FileVisitOption.FOLLOW_LINKS);
+            // 先移除删除标记, 以免因为扫描路径的不同导致删除标记未移除
+            removeDeletedFlag(null);
             // 添加删除标记, 扫描完后如果标记还在则删除
-            addDeleteFlagOfDoc();
+            addDeleteFlagOfDoc(path);
             // 重置索引状态
             resetIndexStatus();
             FileCountVisitor fileCountVisitor = new FileCountVisitor();
             Files.walkFileTree(path, fileVisitOptions, Integer.MAX_VALUE, fileCountVisitor);
-            log.info("开始同步, 文件数: {}", fileCountVisitor.getCount());
+            log.info("path: {}, 开始同步, 文件数: {}", path, fileCountVisitor.getCount());
             timeInterval.start();
             if (syncFileVisitor == null) {
                 syncFileVisitor = new SyncFileVisitor(fileCountVisitor.getCount());
             }
+            // 开启线程池
+            getSyncFileVisitorService();
             Files.walkFileTree(path, fileVisitOptions, Integer.MAX_VALUE, syncFileVisitor);
+            // 等待线程池里所有任务完成
+            waitTaskCompleted();
             // 同步文件完成
             REBUILDING_INDEX.set(true);
             deleteDocWithDeleteFlag();
@@ -171,9 +194,31 @@ public class RebuildIndexTaskService {
         } finally {
             syncFileVisitor = null;
             log.info("同步完成, 耗时: {}s", timeInterval.intervalSecond());
-            pushMessage(this.recipient, 100, MSG_SYNCED);
-            pushMessage(this.recipient, 0, RebuildIndexTaskService.MSG_INDEXING);
+            pushMessage(getRecipient(null), 100, MSG_SYNCED);
+            pushMessage(getRecipient(null), 0, RebuildIndexTaskService.MSG_INDEXING);
         }
+    }
+
+    private void waitTaskCompleted() {
+        try {
+            syncFileVisitorService.shutdown();
+            // 等待线程池里所有任务完成
+            if (!syncFileVisitorService.awaitTermination(10, TimeUnit.MINUTES)) {
+                log.warn("同步文件超时, 尝试强制停止所有任务");
+                syncFileVisitorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            syncFileVisitorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private String getRecipient(String username) {
+        if (StrUtil.isNotBlank(username)) {
+            RECIPIENT.clear();
+            RECIPIENT.add(username);
+        }
+        return RECIPIENT.stream().findFirst().orElse(username);
     }
 
     private void deleteDocWithDeleteFlag() {
@@ -186,11 +231,13 @@ public class RebuildIndexTaskService {
         }, 60000 * 3);
     }
 
-    public void rebuildingIndexCompleted() {
+    public void rebuildingIndexCompleted(String recipient) {
+        log.info("重建索引完成, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", INDEXED_TASK_SIZE, NOT_INDEX_TASK_SIZE);
         REBUILDING_INDEX.set(false);
         NOT_INDEX_TASK_SIZE.set(0);
         INDEXED_TASK_SIZE.set(0);
         indexingPercent = 0;
+        pushMessage(getRecipient(recipient), 100, RebuildIndexTaskService.MSG_INDEXING);
     }
 
     public void incrementNotIndexTaskSize(int size) {
@@ -199,11 +246,11 @@ public class RebuildIndexTaskService {
 
     public void incrementIndexedTaskSize() {
         INDEXED_TASK_SIZE.incrementAndGet();
-        if (isNotSyncFile()) {
+        if (isNotSyncFile() && !isNotRebuildingIndex()) {
             double percent = (double) INDEXED_TASK_SIZE.get() / NOT_INDEX_TASK_SIZE.get();
             int currentPercent = (int) (percent * 100);
             if (currentPercent > indexingPercent) {
-                pushMessage(null, indexingPercent, RebuildIndexTaskService.MSG_INDEXING);
+                pushMessage(getRecipient(null), indexingPercent, RebuildIndexTaskService.MSG_INDEXING);
             }
             indexingPercent = currentPercent;
         }
@@ -226,9 +273,13 @@ public class RebuildIndexTaskService {
     /***
      * 把文件同步到数据库
      * @param username 用户名
+     * @param path 文件相对路径
      */
-    public ResponseResult<Object> sync(String username) {
-        doSync(username);
+    public ResponseResult<Object> sync(String username, String path) {
+        if (StrUtil.isNotBlank(path)) {
+            path = Paths.get(fileProperties.getRootDir(), username, path).toString();
+        }
+        doSync(username, path);
         return ResultUtil.success();
     }
 
@@ -243,8 +294,8 @@ public class RebuildIndexTaskService {
             return percentMap;
         }
         int syncPercent = 100;
-        if (syncFileVisitor != null && syncFileVisitor.getPercent() < 100) {
-            syncPercent = syncFileVisitor.getPercent();
+        if (syncFileVisitor != null && this.syncPercent < 100) {
+            syncPercent = this.syncPercent;
         }
         percentMap.put("syncPercent", syncPercent);
 
@@ -257,14 +308,11 @@ public class RebuildIndexTaskService {
 
         private final double totalCount;
 
-        @Getter
-        private int percent = 0;
-
-        private final AtomicLong processCount;
+        private final AtomicInteger processCount;
 
         public SyncFileVisitor(double totalCount) {
             this.totalCount = totalCount;
-            this.processCount = new AtomicLong(0);
+            this.processCount = new AtomicInteger(0);
         }
 
         @Override
@@ -287,7 +335,7 @@ public class RebuildIndexTaskService {
             if (StrUtil.isBlank(username)) {
                 return super.visitFile(dir, attrs);
             }
-            executorService.execute(() -> createFile(username, dir));
+            syncFileVisitorService.execute(() -> createFile(username, dir));
             return super.preVisitDirectory(dir, attrs);
         }
 
@@ -297,7 +345,7 @@ public class RebuildIndexTaskService {
             if (StrUtil.isBlank(username)) {
                 return super.visitFile(file, attrs);
             }
-            executorService.execute(() -> createFile(username, file));
+            syncFileVisitorService.execute(() -> createFile(username, file));
             return super.visitFile(file, attrs);
         }
 
@@ -312,26 +360,20 @@ public class RebuildIndexTaskService {
                     removeDeletedFlag(Collections.singletonList(fileDocument.getId()));
                 }
             } finally {
-                if (totalCount > 0) {
-                    if (processCount.get() <= 2) {
-                        pushMessage(recipient, 1, MSG_SYNCED);
-                    }
-                    processCount.addAndGet(1);
-                    int currentPercent = (int) (processCount.get() / totalCount * 100);
-                    if (currentPercent > percent) {
-                        pushMessage(recipient, currentPercent, MSG_SYNCED);
-                    }
-                    percent = currentPercent;
+                processCount.incrementAndGet();
+                double percent = processCount.get() / totalCount;
+                int currentPercent = (int) (percent * 100);
+                if (currentPercent > syncPercent) {
+                    pushMessage(getRecipient(null), currentPercent, MSG_SYNCED);
                 }
+                syncPercent = currentPercent;
             }
         }
     }
 
     public void pushMessage(String recipient, int percent, String message) {
-        if (StrUtil.isBlank(recipient)) {
-            recipient = this.recipient;
-        }
         commonFileService.pushMessage(recipient, percent, message);
+        log.info("recipient: {}, percent: {}, message: {}", recipient, percent, message);
     }
 
     private static class FileCountVisitor extends SimpleFileVisitor<Path> {
@@ -376,10 +418,37 @@ public class RebuildIndexTaskService {
     /**
      * 添加删除标记
      */
-    private void addDeleteFlagOfDoc() {
+    private void addDeleteFlagOfDoc(Path filepath) {
+        if (filepath == null) {
+            return;
+        }
+        if (Files.notExists(filepath)) {
+            return;
+        }
+        if (filepath.toFile().isFile()) {
+            return;
+        }
+        String username = commonFileService.getUsernameByAbsolutePath(filepath);
+        String userId = null;
+        String path = null;
+        if (StrUtil.isNotBlank(username)) {
+            userId = userService.getUserIdByUserName(username);
+            Path relativePath = Paths.get(fileProperties.getRootDir(), username).relativize(filepath);
+            if (relativePath.getNameCount() > 0) {
+                path = "/" + relativePath + "/";
+            } else {
+                path = "/";
+            }
+        }
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where("alonePage").exists(false));
         query.addCriteria(Criteria.where("release").exists(false));
+        if (StrUtil.isNotBlank(userId)) {
+            query.addCriteria(Criteria.where("userId").is(userId));
+        }
+        if (StrUtil.isNotBlank(path)) {
+            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(path)));
+        }
         Update update = new Update();
         // 添加删除标记用于在之后删除
         update.set("delete", 1);
@@ -393,7 +462,11 @@ public class RebuildIndexTaskService {
      */
     public void removeDeletedFlag(List<String> fileIdList) {
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where("_id").in(fileIdList).and("delete").is(1));
+        if (fileIdList == null || fileIdList.isEmpty()) {
+            query.addCriteria(Criteria.where("delete").is(1));
+        } else {
+            query.addCriteria(Criteria.where("_id").in(fileIdList).and("delete").is(1));
+        }
         Update update = new Update();
         update.unset("delete");
         mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
@@ -401,8 +474,8 @@ public class RebuildIndexTaskService {
 
     @PreDestroy
     public void destroy() {
-        if (executorService != null) {
-            executorService.shutdown();
+        if (syncFileVisitorService != null) {
+            syncFileVisitorService.shutdown();
         }
     }
 

@@ -316,12 +316,8 @@ public class CommonFileService {
         ObjectId objectId = new ObjectId();
         String fileId = objectId.toHexString();
         try {
-            int startIndex = fileProperties.getRootDir().length() + username.length() + 1;
-            int endIndex = fileAbsolutePath.length() - fileName.length();
-            if (startIndex >= endIndex) {
-                return null;
-            }
-            String relativePath = fileAbsolutePath.substring(startIndex, endIndex);
+            String relativePath = getRelativePath(username, fileAbsolutePath, fileName);
+            if (relativePath == null) return null;
             Query query = new Query();
             FileDocument fileExists = getFileDocument(userId, fileName, relativePath, query);
             if (fileExists != null) {
@@ -365,6 +361,15 @@ public class CommonFileService {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return fileId;
+    }
+
+    private String getRelativePath(String username, String fileAbsolutePath, String fileName) {
+        int startIndex = fileProperties.getRootDir().length() + username.length() + 1;
+        int endIndex = fileAbsolutePath.length() - fileName.length();
+        if (startIndex >= endIndex) {
+            return null;
+        }
+        return fileAbsolutePath.substring(startIndex, endIndex);
     }
 
     /**
