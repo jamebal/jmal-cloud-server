@@ -2,6 +2,7 @@ package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
+import com.jmal.clouddisk.lucene.RebuildIndexTaskService;
 import com.jmal.clouddisk.model.LdapConfigDTO;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.IAuthService;
@@ -15,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Map;
+
 @RestController
 @Tag(name = "网盘设置")
 @RequiredArgsConstructor
@@ -26,12 +29,29 @@ public class CloudSettingController {
 
     private final IAuthService authService;
 
-    @Operation(summary = "重建索引")
+    private final RebuildIndexTaskService rebuildIndexTaskService;
+
+    @Operation(summary = "重建索引-用户")
     @GetMapping("/user/setting/sync")
+    @Permission(value = "cloud:file:upload")
+    @LogOperatingFun
+    public ResponseResult<Object> userSync(@RequestParam String username, String path) {
+        return rebuildIndexTaskService.sync(username, path);
+    }
+
+    @Operation(summary = "重建索引-全盘")
+    @GetMapping("/cloud/setting/sync")
     @Permission(value = "cloud:set:sync")
     @LogOperatingFun
-    public ResponseResult<Object> sync() {
-        return settingService.sync(null);
+    public ResponseResult<Object> sync(@RequestParam String username) {
+        return rebuildIndexTaskService.sync(username, null);
+    }
+
+    @Operation(summary = "是否正在同步")
+    @GetMapping("/user/setting/isSync")
+    @LogOperatingFun
+    public ResponseResult<Map<String, Double>> isSync() {
+        return ResultUtil.success(rebuildIndexTaskService.isSync());
     }
 
     @Operation(summary = "上传网盘logo")
@@ -48,13 +68,6 @@ public class CloudSettingController {
     @LogOperatingFun
     public ResponseResult<Object> updateNetdiskName(@RequestParam String netdiskName) {
         return settingService.updateNetdiskName(netdiskName);
-    }
-
-    @Operation(summary = "是否正在同步")
-    @GetMapping("/user/setting/isSync")
-    @LogOperatingFun
-    public ResponseResult<Object> isSync(@RequestParam String username) {
-        return settingService.isSync(username);
     }
 
     @Operation(summary = "重置角色菜单")

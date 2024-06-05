@@ -7,6 +7,7 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ import static com.jmal.clouddisk.util.FFMPEGUtils.hasNoFFmpeg;
 @Slf4j
 public class OcrService {
 
-    private final Tesseract tesseract;
+    private final ThreadLocal<Tesseract> tesseractThreadLocal;
 
     private final FileProperties fileProperties;
 
@@ -43,6 +44,7 @@ public class OcrService {
                 return "";
             }
             File imageFile = new File(preprocessedOCRImage);
+            ITesseract tesseract = tesseractThreadLocal.get();
             return tesseract.doOCR(imageFile);
         } catch (TesseractException e) {
             log.warn("Error while performing OCR: {}", e.getMessage(), e);
