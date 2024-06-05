@@ -8,6 +8,8 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.lucene.TaskProgressService;
+import com.jmal.clouddisk.lucene.TaskType;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.oss.IOssService;
 import com.jmal.clouddisk.oss.OssConfigService;
@@ -57,6 +59,9 @@ public class VideoProcessService {
 
     @Autowired
     private CommonFileService commonFileService;
+
+    @Autowired
+    private TaskProgressService taskProgressService;
 
     @Resource
     MongoTemplate mongoTemplate;
@@ -252,6 +257,8 @@ public class VideoProcessService {
                 }
                 transcodingProgress(fileAbsolutePath, videoInfo.getDuration(), line);
             }
+        } finally {
+            taskProgressService.removeTaskProgress(fileAbsolutePath.toFile());
         }
         int exitCode = process.waitFor();
         if (exitCode == 0) {
@@ -444,7 +451,9 @@ public class VideoProcessService {
                     int totalSeconds = hours * 3600 + minutes * 60 + seconds;
                     // 计算转码进度百分比
                     double progress = (double) totalSeconds / videoDuration * 100;
-                    log.info("{}, 转码进度: {}%", fileAbsolutePath.getFileName(), String.format("%.2f", progress));
+                    String progressStr = String.format("%.2f", progress);
+                    log.debug("{}, 转码进度: {}%", fileAbsolutePath.getFileName(), progressStr);
+                    taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, progressStr + "%");
                 }
             } catch (Exception e) {
                 log.warn(e.getMessage(), e);

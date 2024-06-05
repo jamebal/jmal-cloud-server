@@ -2,13 +2,16 @@ package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
-import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.HeartwingsDO;
+import com.jmal.clouddisk.model.LogOperation;
+import com.jmal.clouddisk.model.WebsiteSettingDO;
+import com.jmal.clouddisk.model.WebsiteSettingDTO;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,10 +23,10 @@ import java.util.List;
  */
 @RestController
 @Tag(name = "网站设置")
+@RequiredArgsConstructor
 public class WebsiteSettingController {
 
-    @Autowired
-    private SettingService settingService;
+    private final SettingService settingService;
 
     @Operation(summary = "获取网站设置")
     @GetMapping("/website/setting")
@@ -53,14 +56,6 @@ public class WebsiteSettingController {
     public ResponseResult<Object> update(@RequestBody WebsiteSettingDO websiteSettingDO) {
         return settingService.websiteUpdate(websiteSettingDO);
     }
-
-    // @Operation(summary = "更新网盘设置")
-    // @PostMapping("/cloud/setting/update")
-    // @Permission("website:set:update")
-    // @LogOperatingFun
-    // public ResponseResult<Object> cloudUpdate( CloudSettingDTO cloudSettingDTO) {
-    //     return settingService.cloudUpdate(cloudSettingDTO);
-    // }
 
 }
 
