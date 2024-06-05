@@ -355,6 +355,9 @@ public class RebuildIndexTaskService {
     }
 
     private double getIndexedPercentValue() {
+        if (totalCount == 0) {
+            return 0;
+        }
         return NumberUtil.round((double) INDEXED_TASK_SIZE.get() / totalCount * 100, 2, RoundingMode.DOWN).doubleValue();
     }
 
