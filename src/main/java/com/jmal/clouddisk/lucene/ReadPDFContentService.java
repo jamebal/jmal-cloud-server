@@ -28,6 +28,8 @@ public class ReadPDFContentService {
 
     private final OcrService ocrService;
 
+    public final TaskProgressService taskProgressService;
+
     public String read(File file) {
         try (PDDocument document = Loader.loadPDF(new RandomAccessReadBufferedFile(file))) {
             StringBuilder content = new StringBuilder();
@@ -40,6 +42,7 @@ public class ReadPDFContentService {
                 if (!text.isEmpty()) {
                     content.append(text);
                 } else {
+                    taskProgressService.addTaskProgress(file,TaskType.OCR, pageNumber + "/" + document.getNumberOfPages());
                     PDPage page = document.getPage(pageNumber - 1);
                     PDResources resources = page.getResources();
                     for (COSName xObjectName : resources.getXObjectNames()) {
@@ -64,6 +67,8 @@ public class ReadPDFContentService {
             return content.toString();
         } catch (IOException e) {
             FileContentUtil.readFailed(file, e);
+        } finally {
+            taskProgressService.removeTaskProgress(file);
         }
         return null;
     }

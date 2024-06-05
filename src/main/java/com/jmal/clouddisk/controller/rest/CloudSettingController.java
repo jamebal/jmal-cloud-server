@@ -3,6 +3,8 @@ package com.jmal.clouddisk.controller.rest;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.lucene.RebuildIndexTaskService;
+import com.jmal.clouddisk.lucene.TaskProgress;
+import com.jmal.clouddisk.lucene.TaskProgressService;
 import com.jmal.clouddisk.model.LdapConfigDTO;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.IAuthService;
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -24,6 +27,8 @@ import java.util.Map;
 public class CloudSettingController {
 
     private final SettingService settingService;
+
+    private final TaskProgressService taskProgressService;
 
     private final IUserService userService;
 
@@ -116,6 +121,14 @@ public class CloudSettingController {
     public ResponseResult<Object> testLdapConfig(@RequestBody LdapConfigDTO ldapConfigDTO) {
         authService.testLdapConfig(ldapConfigDTO);
         return ResultUtil.success();
+    }
+
+    @Operation(summary = "加载任务进度")
+    @GetMapping("/cloud/task/progress")
+    @Permission(value = "cloud:file:upload")
+    @LogOperatingFun
+    public ResponseResult<List<TaskProgress>> getTaskProgress() {
+        return ResultUtil.success(taskProgressService.getTaskProgressList());
     }
 
 }
