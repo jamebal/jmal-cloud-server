@@ -50,7 +50,7 @@ public class CloudSettingController {
     @Operation(summary = "是否正在同步")
     @GetMapping("/user/setting/isSync")
     @LogOperatingFun
-    public ResponseResult<Map<String, Object>> isSync() {
+    public ResponseResult<Map<String, Double>> isSync() {
         return ResultUtil.success(rebuildIndexTaskService.isSync());
     }
 

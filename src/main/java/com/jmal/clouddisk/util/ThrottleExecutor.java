@@ -21,6 +21,12 @@ public class ThrottleExecutor {
         scheduledFuture = scheduler.schedule(command, delay, TimeUnit.MILLISECONDS);
     }
 
+    public void cancel() {
+        if (scheduledFuture != null && !scheduledFuture.isDone()) {
+            scheduledFuture.cancel(false);
+        }
+    }
+
     public void shutdown() {
         scheduler.shutdown();
     }

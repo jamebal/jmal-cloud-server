@@ -80,6 +80,11 @@ public class LuceneService {
     private ExecutorService executorUpdateContentIndexService;
 
     /**
+     * 定时任务线程池
+     */
+    ScheduledExecutorService scheduler;
+
+    /**
      * 新建索引文件缓冲队列大小
      */
     private final static int CREATE_INDEX_QUEUE_SIZE = 512;
@@ -161,6 +166,9 @@ public class LuceneService {
     private ArrayBlockingQueue<String> getIndexFileQueue() {
         if (indexFileQueue == null) {
             indexFileQueue = new ArrayBlockingQueue<>(CREATE_INDEX_QUEUE_SIZE);
+            if (scheduler == null) {
+                scheduler = Executors.newScheduledThreadPool(1);
+            }
             createIndexFileTask();
         }
         return indexFileQueue;
@@ -179,13 +187,11 @@ public class LuceneService {
     private void createIndexFileTask() {
         ArrayBlockingQueue<String> indexFileQueue = getIndexFileQueue();
         ArrayBlockingQueue<String> indexFileContentQueue = getIndexFileContentQueue();
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 List<String> fileIdList = new ArrayList<>(indexFileQueue.size());
                 List<String> toBeIndexedFileIdList = new ArrayList<>(indexFileContentQueue.size());
                 executorCreateIndexService.execute(() -> {
-
                     // 添加待索引标记
                     indexFileContentQueue.drainTo(toBeIndexedFileIdList);
                     addToBeIndexedFlagOfDoc(toBeIndexedFileIdList);
@@ -196,6 +202,8 @@ public class LuceneService {
                         createIndexFiles(fileIdList);
                     }
                 });
+                // 更新任务进度
+                rebuildIndexTaskService.updateTaskProgress();
             } catch (Exception e) {
                 log.error("创建索引失败", e);
             }
@@ -211,6 +219,7 @@ public class LuceneService {
         // 提取出fileIdList
         List<FileIntroVO> fileIntroVOList = getFileIntroVOs(fileIdList);
         for (FileIntroVO fileIntroVO : fileIntroVOList) {
+            rebuildIndexTaskService.incrementNotIndexTaskSize();
             updateIndex(false, fileIntroVO);
         }
         rebuildIndexTaskService.removeDeletedFlag(fileIdList);
@@ -219,8 +228,12 @@ public class LuceneService {
     private void updateIndex(boolean readContent, FileIntroVO fileIntroVO) {
         String username = userService.getUserNameById(fileIntroVO.getUserId());
         File file = Paths.get(fileProperties.getRootDir(), username, fileIntroVO.getPath(), fileIntroVO.getName()).toFile();
-        if (!readContent && checkFileContent(file)) {
+        boolean isContent = checkFileContent(file);
+        if (!readContent && isContent) {
             pushCreateIndexContentQueue(fileIntroVO.getId());
+        }
+        if (!readContent && !isContent) {
+            rebuildIndexTaskService.incrementIndexedTaskSize();
         }
         FileIndex fileIndex = new FileIndex(file, fileIntroVO);
         fileIndex.setTagName(getTagName(fileIntroVO));
@@ -228,37 +241,32 @@ public class LuceneService {
         String content = null;
         if (readContent) {
             content = readFileContent(file);
-            if (content == null) {
-                updateIndexStatus(fileIntroVO, IndexStatus.INDEXED.getStatus());
+            if (StrUtil.isBlank(content)) {
+                rebuildIndexTaskService.incrementIndexedTaskSize();
+                updateIndexStatus(fileIntroVO, IndexStatus.INDEXED);
                 return;
             }
         }
         updateIndexDocument(indexWriter, fileIndex, content);
         if (StrUtil.isNotBlank(content)) {
-            if (RebuildIndexTaskService.isNotRebuildingIndex()) {
-                log.info("添加索引, filepath: {}", file.getAbsoluteFile());
-            }
-            rebuildIndexTaskService.incrementIndexedTaskSize();
+            log.debug("添加索引, filepath: {}", file.getAbsoluteFile());
             startProcessFilesToBeIndexed();
+            rebuildIndexTaskService.incrementIndexedTaskSize();
         }
-        updateIndexStatus(fileIntroVO, IndexStatus.INDEXED.getStatus());
+        updateIndexStatus(fileIntroVO, IndexStatus.INDEXED);
     }
 
     /**
      * 更新索引状态
      *
      * @param fileIntroVO fileIntroVO
-     * @param indexedStatus indexedStatus<br>
-     *                      0: 表示待索引<br>
-     *                      1: 表示完成文件基本信息索引<br>
-     *                      2: 表示正在进行文件内容索引<br>
-     *                      3: 表示完成文件内容索引<br>
+     * @param indexStatus IndexStatus
      */
-    private void updateIndexStatus(FileIntroVO fileIntroVO, int indexedStatus) {
+    private void updateIndexStatus(FileIntroVO fileIntroVO, IndexStatus indexStatus) {
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where("_id").is(fileIntroVO.getId()));
         Update update = new Update();
-        update.set(MONGO_INDEX_FIELD, indexedStatus);
+        update.set(MONGO_INDEX_FIELD, indexStatus.getStatus());
         mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
     }
 
@@ -629,7 +637,6 @@ public class LuceneService {
         Update update = new Update();
         update.set(MONGO_INDEX_FIELD, IndexStatus.NOT_INDEX.getStatus());
         mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
-        rebuildIndexTaskService.incrementNotIndexTaskSize(fielIdList.size());
         // 添加待索引标记
         startProcessFilesToBeIndexed();
     }
@@ -639,14 +646,14 @@ public class LuceneService {
      */
     public void processFilesToBeIndexed() throws IOException {
         boolean run = true;
-        log.info("开始处理待索引文件");
+        log.debug("开始处理待索引文件");
         while (run) {
             org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
             query.addCriteria(Criteria.where(MONGO_INDEX_FIELD).is(IndexStatus.NOT_INDEX.getStatus()));
             long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
             if (count == 0) {
-                rebuildIndexTaskService.rebuildingIndexCompleted(null);
-                indexWriter.commit();
+                log.debug("待索引文件处理完成");
+                rebuildIndexTaskService.rebuildingIndexCompleted();
                 run = false;
             }
             List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match", new org.bson.Document("index", 0)), new org.bson.Document("$project", new org.bson.Document("_id", 1)), new org.bson.Document("$limit", 8));
@@ -657,16 +664,15 @@ public class LuceneService {
                 FileIntroVO fileIntroVO = getFileIntroVO(fileId);
                 if (fileIntroVO != null) {
                     // 处理待索引文件
-                    updateIndexStatus(fileIntroVO, IndexStatus.INDEXING.getStatus());
+                    updateIndexStatus(fileIntroVO, IndexStatus.INDEXING);
                     long size = fileIntroVO.getSize();
-                    if (RebuildIndexTaskService.isNotSyncFile() || size < 25 * 1024 * 1024) {
-                        executorUpdateContentIndexService.execute(() -> updateIndex(true, fileIntroVO));
+                    if (RebuildIndexTaskService.isSyncFile() || size > 20 * 1024 * 1024) {
+                        updateIndex(false, fileIntroVO);
                     } else {
-                        updateIndex(true, fileIntroVO);
+                        executorUpdateContentIndexService.execute(() -> updateIndex(true, fileIntroVO));
                     }
                 }
             }
-
         }
     }
 
@@ -694,6 +700,9 @@ public class LuceneService {
         }
         if (executorUpdateContentIndexService != null) {
             executorUpdateContentIndexService.shutdown();
+        }
+        if (scheduler != null) {
+            scheduler.shutdown();
         }
     }
 
