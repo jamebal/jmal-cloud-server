@@ -36,8 +36,9 @@ public class OcrService {
                 return "";
             }
             if (StrUtil.isBlank(tempImagePath)) {
-                tempImagePath = generateOrcTempImagePath();
+                tempImagePath = generateOrcTempImagePath(null);
             }
+            System.out.println("tempImageFile: " + tempImagePath);
             // 预处理后的图片
             String preprocessedOCRImage = getPreprocessedOCRImage(imagePath, tempImagePath);
             if (StrUtil.isBlank(preprocessedOCRImage)) {
@@ -57,12 +58,17 @@ public class OcrService {
     /**
      * 生成一个临时的图片路径
      */
-    public String generateOrcTempImagePath() {
-        Path tempPath = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir());
+    public String generateOrcTempImagePath(String username) {
+        Path tempPath;
+        if (StrUtil.isBlank(username)) {
+            tempPath = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir());
+        } else {
+            tempPath = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username);
+        }
         if (!FileUtil.exist(tempPath.toString())) {
             FileUtil.mkdir(tempPath.toString());
         }
-        return Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), ObjectId.next(true) + "_temp_ocr.png").toString();
+        return Paths.get(tempPath.toString(), ObjectId.next(true) + "_temp_ocr.png").toString();
     }
 
     /**

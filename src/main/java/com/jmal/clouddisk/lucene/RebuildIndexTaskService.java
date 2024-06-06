@@ -273,12 +273,7 @@ public class RebuildIndexTaskService {
                 throttleExecutor = new ThrottleExecutor(3000);
             }
         }
-        if (INDEXED_TASK_SIZE.get() == NOT_INDEX_TASK_SIZE.get()) {
-            // 3秒钟后重置索引任务数据
-            throttleExecutor.schedule(this::rebuildingIndexCompleted);
-        } else {
-            throttleExecutor.cancel();
-        }
+        throttleExecutor.schedule(this::rebuildingIndexCompleted);
     }
 
     private void updatePercent() {
@@ -348,7 +343,7 @@ public class RebuildIndexTaskService {
      * 获取索引进度
      */
     private double getIndexedPercent() {
-        if (totalCount == 0 || NOT_INDEX_TASK_SIZE.get() == 0 || isSyncFile()) {
+        if (NOT_INDEX_TASK_SIZE.get() == 0 || isSyncFile()) {
             return 100;
         }
         return getIndexedPercentValue();

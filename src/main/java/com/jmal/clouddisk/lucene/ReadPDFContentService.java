@@ -2,6 +2,7 @@ package com.jmal.clouddisk.lucene;
 
 import cn.hutool.core.io.FileUtil;
 import com.jmal.clouddisk.ocr.OcrService;
+import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.FileContentUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 @Service
 @RequiredArgsConstructor
@@ -28,10 +30,13 @@ public class ReadPDFContentService {
 
     private final OcrService ocrService;
 
+    public final CommonFileService commonFileService;
+
     public final TaskProgressService taskProgressService;
 
     public String read(File file) {
         try (PDDocument document = Loader.loadPDF(new RandomAccessReadBufferedFile(file))) {
+            String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
             StringBuilder content = new StringBuilder();
             // 提取每一页的内容
             PDFTextStripper pdfStripper = new PDFTextStripper();
@@ -50,11 +55,11 @@ public class ReadPDFContentService {
                         if (xObject instanceof PDImageXObject image) {
                             BufferedImage bufferedImage = image.getImage();
                             // 将图像保存到临时文件
-                            String tempImageFile = ocrService.generateOrcTempImagePath();
+                            String tempImageFile = ocrService.generateOrcTempImagePath(username);
                             ImageIO.write(bufferedImage, "png", new File(tempImageFile));
                             try {
                                 // 使用 Tesseract 进行 OCR 识别
-                                String ocrResult = ocrService.doOCR(tempImageFile, null);
+                                String ocrResult = ocrService.doOCR(tempImageFile, ocrService.generateOrcTempImagePath(username));
                                 content.append(ocrResult);
                             } finally {
                                 // 删除临时文件
