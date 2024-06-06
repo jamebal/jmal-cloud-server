@@ -560,7 +560,7 @@ public class CommonFileService {
             }
             update.set("content", PathUtil.readBytes(Paths.get(coverPath)));
             update.set("video", videoInfo.toVideoInfoDO());
-            videoProcessService.convertToM3U8(fileId, username, relativePath, fileName);
+            videoProcessService.convertToM3U8(fileId);
             update.set("mediaCover", true);
             FileUtil.del(coverPath);
         } else {

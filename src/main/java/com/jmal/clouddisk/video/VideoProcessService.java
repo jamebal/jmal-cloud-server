@@ -37,6 +37,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static com.jmal.clouddisk.util.FFMPEGUtils.*;
@@ -61,13 +62,27 @@ public class VideoProcessService {
     @Resource
     MongoTemplate mongoTemplate;
 
-    private ExecutorService executorService;
+    /**
+     * 视频转码线程池
+     */
+    private ExecutorService videoTranscodingService;
 
+    /**
+     * 添加转码任务线程池
+     */
+    private ExecutorService addTranscodingTaskService;
+
+    /**
+     * 处理待转码文件锁, 防止多次处理
+     */
+    private final ReentrantLock toBeTranscodeLock = new ReentrantLock();
 
     /**
      * h5播放器支持的视频格式
      */
     private final String[] WEB_SUPPORTED_FORMATS = {"mp4", "webm", "ogg", "flv", "hls", "mkv"};
+
+    private final static String TRANSCODE_VIDEO  = "transcodeVideo";
 
     @PostConstruct
     public void init() {
@@ -75,24 +90,101 @@ public class VideoProcessService {
         if (processors < 1) {
             processors = 1;
         }
-        if (processors > 4) {
-            processors = 4;
+        if (processors > 3) {
+            processors = 3;
         }
-        executorService = ThreadUtil.newFixedExecutor(processors, 100, "videoTranscoding", false);
+        videoTranscodingService = ThreadUtil.newFixedExecutor(processors, 1, "videoTranscoding", true);
+        addTranscodingTaskService = ThreadUtil.newFixedExecutor(4, 100, "addTranscodingTask", true);
     }
 
-    public void convertToM3U8(String fileId, String username, String relativePath, String fileName) {
-        executorService.execute(() -> {
+    /**
+     * 设置转码状态
+     * @param fileId fileId
+     * @param transcodeStatus TranscodeStatus
+     */
+    private void updateTranscodeVideo(String fileId, TranscodeStatus transcodeStatus) {
+        // 设置未转码标记
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        Update update = new Update();
+        if (transcodeStatus == TranscodeStatus.TRANSCENDED) {
+            update.unset(TRANSCODE_VIDEO);
+        } else {
+            update.set(TRANSCODE_VIDEO, transcodeStatus.getStatus());
+        }
+        mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
+    }
+
+    /**
+     * 处理待转码文件
+     */
+    public void processingToBeTranscode() {
+        boolean run = true;
+        log.debug("开始处理待转码文件");
+        while (run) {
+            Query query = new Query();
+            query.addCriteria(Criteria.where(TRANSCODE_VIDEO).is(TranscodeStatus.NOT_TRANSCODE.getStatus()));
+            long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
+            if (count == 0) {
+                log.debug("待转码文件处理完成");
+                run = false;
+            }
+            query.limit(8);
+            List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
+            for (FileDocument fileDocument : fileDocumentList) {
+                String fileId = fileDocument.getId();
+                String username = userService.getUserNameById(fileDocument.getUserId());
+                String relativePath = fileDocument.getPath();
+                String fileName = fileDocument.getName();
+                updateTranscodeVideo(fileId, TranscodeStatus.TRANSCODING);
+                videoTranscodingService.execute(() -> doConvertToM3U8(fileId, username, relativePath, fileName));
+            }
+        }
+    }
+
+    private void startProcessFilesToBeIndexed() {
+        addTranscodingTaskService.execute(() -> {
+            if (!toBeTranscodeLock.tryLock()) {
+                return;
+            }
             try {
-                TimeUnit.SECONDS.sleep(3);
-                videoToM3U8(fileId, username, relativePath, fileName, false);
-            } catch (InterruptedException e) {
-                log.error(e.getMessage(), e);
-                Thread.currentThread().interrupt();
-            } catch (IOException e) {
-                log.error(e.getMessage(), e);
+                processingToBeTranscode();
+            } finally {
+                toBeTranscodeLock.unlock();
             }
         });
+    }
+
+    public void convertToM3U8(String fileId) {
+        addTranscodingTaskService.execute(() -> {
+            try {
+                TimeUnit.SECONDS.sleep(5);
+            } catch (InterruptedException e) {
+                log.error(e.getMessage(), e);
+            }
+            updateTranscodeVideo(fileId, TranscodeStatus.NOT_TRANSCODE);
+            startProcessFilesToBeIndexed();
+        });
+    }
+
+    /**
+     * 转码视频
+     * @param fileId fileId
+     * @param username username
+     * @param relativePath relativePath
+     * @param fileName fileName
+     */
+    private void doConvertToM3U8(String fileId, String username, String relativePath, String fileName) {
+        try {
+            videoToM3U8(fileId, username, relativePath, fileName, false);
+        } catch (InterruptedException e) {
+            log.error(e.getMessage(), e);
+            Thread.currentThread().interrupt();
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        } finally {
+            updateTranscodeVideo(fileId, TranscodeStatus.TRANSCENDED);
+        }
     }
 
     public void deleteVideoCacheByIds(String username, List<String> fileIds) {
@@ -552,8 +644,11 @@ public class VideoProcessService {
 
     @PreDestroy
     private void destroy() {
-        if (executorService != null) {
-            executorService.shutdown();
+        if (videoTranscodingService != null) {
+            videoTranscodingService.shutdown();
+        }
+        if (addTranscodingTaskService != null) {
+            addTranscodingTaskService.shutdown();
         }
     }
 
