@@ -35,10 +35,17 @@ services:
     links:
       - jmalcloud
       - office
+      - drawio-webapp
     restart: always
   office:
     container_name: ${CONTAINER_NAME_PREFIX}_office
     image: onlyoffice/documentserver:${OFFICE_IMAGE_VERSION}
+    environment:
+      TZ: Asia/Shanghai
+    restart: always
+  drawio-webapp:
+    container_name: ${CONTAINER_NAME_PREFIX}_drawio
+    image: jgraph/drawio:${DRAWIO_IMAGE_VERSION}
     environment:
       TZ: Asia/Shanghai
     restart: always
