@@ -81,4 +81,30 @@ public class MongoUtil {
         }
     }
 
+    /**
+     * 检查是否为有效的ObjectId
+     * @param objectId ObjectId
+     * @return 是否为有效的ObjectId
+     */
+    public static boolean isValidObjectId(String objectId) {
+        // 检查长度是否为24个字符
+        if (objectId == null || objectId.length() != 24) {
+            return false;
+        }
+        // 检查是否为有效的十六进制字符串
+        for (char c : objectId.toCharArray()) {
+            if (!isHexCharacter(c)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // 检查字符是否为有效的十六进制字符
+    private static boolean isHexCharacter(char c) {
+        return (c >= '0' && c <= '9') ||
+                (c >= 'a' && c <= 'f') ||
+                (c >= 'A' && c <= 'F');
+    }
+
 }

@@ -1,5 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.codec.Base62;
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
@@ -79,8 +81,10 @@ public class ShareServiceImpl implements IShareService {
             if (Boolean.TRUE.equals(share.getIsPrivacy())) {
                 share.setExtractionCode(generateExtractionCode());
             }
+            share.setShortId(generateShortId());
             shareDO = mongoTemplate.save(share, COLLECTION_NAME);
         } else {
+            setShortId(share, shareDO);
             updateShare(share, shareDO, file);
         }
         file.setShareBase(shareDO.getShareBase());
@@ -90,7 +94,7 @@ public class ShareServiceImpl implements IShareService {
         } else {
             shareVO.setOperationPermissionList(share.getOperationPermissionList());
         }
-
+        shareVO.setShortId(shareDO.getShortId());
         shareVO.setShareId(shareDO.getId());
         if (Boolean.TRUE.equals(share.getIsPrivacy())) {
             shareVO.setExtractionCode(share.getExtractionCode());
@@ -100,6 +104,30 @@ public class ShareServiceImpl implements IShareService {
         // 设置文件的分享属性
         fileService.setShareFile(file, expireAt, share);
         return ResultUtil.success(shareVO);
+    }
+
+    private void setShortId(ShareDO share, ShareDO shareDO) {
+        if (shareDO.getShortId() == null) {
+            String shortId = generateShortId();
+            share.setShortId(shortId);
+            shareDO.setShortId(shortId);
+        } else {
+            share.setShortId(shareDO.getShortId());
+        }
+    }
+
+    /**
+     * 生成5-8位短链接字符串
+     * @return 链接字符串
+     */
+    private String generateShortId() {
+        String shortId = Base62.encode(Convert.toStr(RandomUtil.randomInt(1000, 1000000)));
+        Query query = new Query();
+        query.addCriteria(Criteria.where(Constants.SHORT_ID).is(shortId));
+        if (mongoTemplate.exists(query, ShareDO.class, COLLECTION_NAME)) {
+            return generateShortId();
+        }
+        return shortId;
     }
 
     private void checkOssPath(ShareDO share, String userId, FileDocument file) {
@@ -130,6 +158,7 @@ public class ShareServiceImpl implements IShareService {
         Query query = new Query().addCriteria(Criteria.where(Constants.FILE_ID).is(share.getFileId()));
         Update update = new Update();
         update.set("fileName", file.getName());
+        update.set(Constants.SHORT_ID, share.getShortId());
         if (share.getExpireDate() != null) {
             update.set("expireDate", share.getExpireDate());
         } else {
@@ -305,7 +334,13 @@ public class ShareServiceImpl implements IShareService {
 
     @Override
     public ShareDO getShare(String shareId) {
-        return mongoTemplate.findById(shareId, ShareDO.class, COLLECTION_NAME);
+        if (MongoUtil.isValidObjectId(shareId)) {
+            return mongoTemplate.findById(shareId, ShareDO.class, COLLECTION_NAME);
+        } else {
+            Query query = new Query();
+            query.addCriteria(Criteria.where(Constants.SHORT_ID).is(shareId));
+            return mongoTemplate.findOne(query, ShareDO.class, COLLECTION_NAME);
+        }
     }
 
     @Override
@@ -465,6 +500,7 @@ public class ShareServiceImpl implements IShareService {
         }
         String userId = shareDO.getUserId();
         SharerDTO sharerDTO = new SharerDTO();
+        sharerDTO.setShareId(shareDO.getId());
         ConsumerDO consumerDO = userService.getUserInfoById(userId);
         sharerDTO.setShowName(consumerDO.getShowName());
         sharerDTO.setUsername(consumerDO.getUsername());

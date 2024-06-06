@@ -12,6 +12,7 @@ import lombok.Data;
 @Data
 @Schema
 public class SharerDTO {
+    String shareId;
     String userId;
     @Schema(name = "avatar", title = "头像链接")
     String avatar;

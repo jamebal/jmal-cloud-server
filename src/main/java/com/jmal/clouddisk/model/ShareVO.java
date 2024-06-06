@@ -15,6 +15,7 @@ import java.util.List;
 @Data
 public class ShareVO {
     private String shareId;
+    private String shortId;
     /***
      * 提取码
      */
