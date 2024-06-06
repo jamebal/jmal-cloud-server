@@ -25,8 +25,9 @@ import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IFileVersionService;
-import com.jmal.clouddisk.video.VideoProcessService;
 import com.jmal.clouddisk.util.*;
+import com.jmal.clouddisk.video.VideoInfo;
+import com.jmal.clouddisk.video.VideoProcessService;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import com.mongodb.client.AggregateIterable;
 import jakarta.servlet.http.HttpServletRequest;
@@ -624,7 +625,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (contentType.contains(Constants.VIDEO)) {
             // 视频文件
             Query query = new Query().addCriteria(Criteria.where("_id").is(id));
-            String imagePath = videoProcessService.getVideoCover(id, username, fileDocument.getPath(), fileDocument.getName());
+            VideoInfo videoInfo = videoProcessService.getVideoCover(id, username, fileDocument.getPath(), fileDocument.getName());
+            String imagePath = videoInfo.getCovertPath();
             if (!CharSequenceUtil.isBlank(imagePath)) {
                 fileDocument.setContent(FileUtil.readBytes(imagePath));
                 if (hasOldFileDocument) {

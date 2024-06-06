@@ -21,8 +21,6 @@ import com.jmal.clouddisk.util.CaffeineUtil;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -32,10 +30,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -80,6 +75,9 @@ public class VideoProcessService {
         if (processors < 1) {
             processors = 1;
         }
+        if (processors > 4) {
+            processors = 4;
+        }
         executorService = ThreadUtil.newFixedExecutor(processors, 100, "videoTranscoding", false);
     }
 
@@ -119,9 +117,22 @@ public class VideoProcessService {
         }
     }
 
-    public String getVideoCover(String fileId, String username, String relativePath, String fileName) {
+    public VideoInfo getVideoInfo(File videoFile) {
+        VideoInfo videoInfo = new VideoInfo();
         if (hasNoFFmpeg()) {
-            return null;
+            return videoInfo;
+        }
+        if (!videoFile.exists()) {
+            return videoInfo;
+        }
+        videoInfo = getVideoInfo(videoFile.getAbsolutePath());
+        return videoInfo;
+    }
+
+    public VideoInfo getVideoCover(String fileId, String username, String relativePath, String fileName) {
+        VideoInfo videoInfo = new VideoInfo();
+        if (hasNoFFmpeg()) {
+            return videoInfo;
         }
         Path prePath = Paths.get(username, relativePath, fileName);
         String ossPath = CaffeineUtil.getOssPath(prePath);
@@ -132,8 +143,9 @@ public class VideoProcessService {
             fileId = fileId.substring(fileId.lastIndexOf("/") + 1);
         }
         String outputPath = Paths.get(videoCacheDir, fileId + ".png").toString();
+        videoInfo.setCovertPath(outputPath);
         if (FileUtil.exist(outputPath)) {
-            return outputPath;
+            return videoInfo;
         }
         try {
             String videoPath = fileAbsolutePath.toString();
@@ -146,26 +158,38 @@ public class VideoProcessService {
                 }
             }
             if (FileUtil.exist(outputPath)) {
-                return outputPath;
+                return videoInfo;
             }
-            double videoDuration = getVideoInfo(videoPath).getDuration();
+            videoInfo = getVideoInfo(videoPath);
+            videoInfo.setCovertPath(outputPath);
+            int videoDuration = videoInfo.getDuration();
             ProcessBuilder processBuilder = getVideoCoverProcessBuilder(videoPath, outputPath, videoDuration);
             printSuccessInfo(processBuilder);
             // 等待处理结果
-            return getWaitingForResults(outputPath, processBuilder);
+            outputPath = getWaitingForResults(outputPath, processBuilder);
+            if (outputPath != null) {
+                return videoInfo;
+            }
         } catch (InterruptedException e) {
             log.error(e.getMessage(), e);
-            return null;
+            return videoInfo;
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
-        return null;
+        return videoInfo;
     }
 
-    private static ProcessBuilder getVideoCoverProcessBuilder(String videoPath, String outputPath, double videoDuration) {
-        double targetTimestamp = videoDuration * 0.1;
-        String formattedTimestamp = formatTimestamp(targetTimestamp);
-        log.info("\r\nvideoPath: {}, formattedTimestamp: {}", videoPath, formattedTimestamp);
+    /**
+     * 获取视频封面
+     * @param videoPath 视频路径
+     * @param outputPath 输出路径
+     * @param videoDuration 视频时长
+     * @return ProcessBuilder
+     */
+    private static ProcessBuilder getVideoCoverProcessBuilder(String videoPath, String outputPath, int videoDuration) {
+        int targetTimestamp = (int) (videoDuration * 0.1);
+        String formattedTimestamp = VideoInfoUtil.formatTimestamp(targetTimestamp);
+        log.debug("\r\nvideoPath: {}, formattedTimestamp: {}", videoPath, formattedTimestamp);
         ProcessBuilder processBuilder = new ProcessBuilder(
                 Constants.FFMPEG,
                 "-y",
@@ -177,13 +201,6 @@ public class VideoProcessService {
         );
         processBuilder.redirectErrorStream(true);
         return processBuilder;
-    }
-
-    private static String formatTimestamp(double timestamp) {
-        int hours = (int) (timestamp / 3600);
-        int minutes = (int) ((timestamp % 3600) / 60);
-        double seconds = timestamp % 60;
-        return String.format("%02d:%02d:%.3f", hours, minutes, seconds);
     }
 
     /**
@@ -439,26 +456,36 @@ public class VideoProcessService {
      * @param videoDuration    视频时长
      * @param line             命令输出信息
      */
-    private void transcodingProgress(Path fileAbsolutePath, double videoDuration, String line) {
+    private void transcodingProgress(Path fileAbsolutePath, int videoDuration, String line) {
         // 解析转码进度
         if (line.contains("time=")) {
             try {
                 if (line.contains(":")) {
-                    String[] parts = line.split("time=")[1].split(" ")[0].split(":");
-                    int hours = Integer.parseInt(parts[0]);
-                    int minutes = Integer.parseInt(parts[1]);
-                    int seconds = Integer.parseInt(parts[2].split("\\.")[0]);
-                    int totalSeconds = hours * 3600 + minutes * 60 + seconds;
-                    // 计算转码进度百分比
-                    double progress = (double) totalSeconds / videoDuration * 100;
-                    String progressStr = String.format("%.2f", progress);
-                    log.debug("{}, 转码进度: {}%", fileAbsolutePath.getFileName(), progressStr);
+                    String progressStr = getProgressStr(videoDuration, line);
+                    log.info("{}, 转码进度: {}%", fileAbsolutePath.getFileName(), progressStr);
                     taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, progressStr + "%");
                 }
             } catch (Exception e) {
                 log.warn(e.getMessage(), e);
             }
         }
+    }
+
+    /**
+     * 获取转码进度
+     * @param videoDuration 视频时长
+     * @param line         命令输出信息
+     * @return 转码进度
+     */
+    private static String getProgressStr(int videoDuration, String line) {
+        String[] parts = line.split("time=")[1].split(" ")[0].split(":");
+        int hours = Integer.parseInt(parts[0]);
+        int minutes = Integer.parseInt(parts[1]);
+        int seconds = Integer.parseInt(parts[2].split("\\.")[0]);
+        int totalSeconds = hours * 3600 + minutes * 60 + seconds;
+        // 计算转码进度百分比
+        double progress = (double) totalSeconds / videoDuration * 100;
+        return String.format("%.2f", progress);
     }
 
     private void startConvert(String username, String relativePath, String fileName, String fileId) {
@@ -500,7 +527,7 @@ public class VideoProcessService {
                 String format = formatObject.getString("format_name");
 
                 // 获取视频时长
-                double duration = Convert.toDouble(formatObject.get("duration"), 0d);
+                int duration = Convert.toInt(formatObject.get("duration"));
 
                 // 获取视频流信息
                 JSONArray streamsArray = jsonObject.getJSONArray("streams");
@@ -521,33 +548,6 @@ public class VideoProcessService {
             log.error(e.getMessage(), e);
         }
         return new VideoInfo();
-    }
-
-    @Setter
-    @Getter
-    private static class VideoInfo {
-        private int width;
-        private int height;
-        private int bitrate;
-        private String format;
-        private double duration;
-
-        public VideoInfo() {
-            this.width = 1920;
-            this.height = 1080;
-            this.format = "mov,mp4,m4a,3gp,3g2,mj2";
-            this.bitrate = 3000;
-            this.duration = 10d;
-        }
-
-        public VideoInfo(String videoPath, int width, int height, String format, int bitrate, double duration) {
-            this.width = width;
-            this.height = height;
-            this.format = format;
-            this.bitrate = bitrate;
-            this.duration = duration;
-            log.info("\r\nvideoPath: {}, width: {}, height: {}, format: {}, bitrate: {}, duration: {}", videoPath, width, height, format, bitrate, duration);
-        }
     }
 
     @PreDestroy

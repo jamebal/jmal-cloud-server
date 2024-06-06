@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.video.VideoInfoDO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -67,6 +68,10 @@ public class FileIntroVO extends FileBase {
      * 照片exif信息
      */
     private ExifInfo exif;
+    /**
+     * 视频信息
+     */
+    private VideoInfoDO video;
     /**
      * 媒体封面
      */
