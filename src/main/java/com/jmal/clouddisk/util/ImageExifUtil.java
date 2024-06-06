@@ -58,9 +58,6 @@ public class ImageExifUtil {
             // 获取图片的Exif信息
             ExifSubIFDDirectory exifDirectory = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
             if (exifDirectory != null) {
-                if (exifInfo == null) {
-                    exifInfo = new ExifInfo();
-                }
                 ExifSubIFDDescriptor descriptor = new ExifSubIFDDescriptor(exifDirectory);
                 // 内容创建时间
                 if (exifDirectory.containsTag(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL)) {
@@ -109,9 +106,6 @@ public class ImageExifUtil {
             // 获取GPS信息
             GpsDirectory gpsDirectory = metadata.getFirstDirectoryOfType(GpsDirectory.class);
             if (gpsDirectory != null) {
-                if (exifInfo == null) {
-                    exifInfo = new ExifInfo();
-                }
                 if (gpsDirectory.getGeoLocation() != null) {
                     // 经度
                     exifInfo.setLongitude(gpsDirectory.getGeoLocation().getLongitude());
