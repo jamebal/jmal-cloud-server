@@ -12,9 +12,12 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.video.TranscodeConfig;
+import com.jmal.clouddisk.video.VideoProcessService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -36,6 +39,8 @@ public class CloudSettingController {
 
     private final RebuildIndexTaskService rebuildIndexTaskService;
 
+    private final VideoProcessService videoProcessService;
+
     @Operation(summary = "重建索引-用户")
     @GetMapping("/user/setting/sync")
     @Permission(value = "cloud:file:upload")
@@ -52,9 +57,23 @@ public class CloudSettingController {
         return rebuildIndexTaskService.sync(username, null);
     }
 
+    @Operation(summary = "获取视频转码配置")
+    @GetMapping("/cloud/setting/transcode/config")
+    @Permission(value = "cloud:set:sync")
+    public ResponseResult<TranscodeConfig> getTranscodeConfig() {
+        return ResultUtil.success(videoProcessService.getTranscodeConfig());
+    }
+
+    @Operation(summary = "设置视频转码配置")
+    @PutMapping("/cloud/setting/transcode/config")
+    @Permission(value = "cloud:set:sync")
+    public ResponseResult<Object> getTranscodeConfig(@RequestBody @Validated TranscodeConfig transcodeConfig) {
+        videoProcessService.setTranscodeConfig(transcodeConfig);
+        return ResultUtil.success();
+    }
+
     @Operation(summary = "是否正在同步")
     @GetMapping("/user/setting/isSync")
-    @LogOperatingFun
     public ResponseResult<Map<String, Double>> isSync() {
         return ResultUtil.success(rebuildIndexTaskService.isSync());
     }
@@ -87,7 +106,6 @@ public class CloudSettingController {
     @Operation(summary = "获取是否禁用webp状态")
     @GetMapping("/user/setting/get/webp")
     @Permission("sys:user:list")
-    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Boolean> getDisabledWebp(@RequestParam String userId) {
         return ResultUtil.success(userService.getDisabledWebp(userId));
     }
@@ -126,7 +144,6 @@ public class CloudSettingController {
     @Operation(summary = "加载任务进度")
     @GetMapping("/cloud/task/progress")
     @Permission(value = "cloud:file:upload")
-    @LogOperatingFun
     public ResponseResult<List<TaskProgress>> getTaskProgress() {
         return ResultUtil.success(taskProgressService.getTaskProgressList());
     }
