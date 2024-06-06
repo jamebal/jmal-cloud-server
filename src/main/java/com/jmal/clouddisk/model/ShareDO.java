@@ -20,6 +20,7 @@ import java.util.List;
 public class ShareDO {
     @Id
     private String id;
+    private String shortId;
     private Boolean shareBase;
     /**
      * 链接拥有者

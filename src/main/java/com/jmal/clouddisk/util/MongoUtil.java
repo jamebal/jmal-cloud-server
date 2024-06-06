@@ -25,27 +25,18 @@ public class MongoUtil {
 
     /**
      * 获取mongodb更新对象
-     * @param source
-     * @return
+     * @param source 源对象
+     * @return Update
      */
     public static Update getUpdate(Object source) {
         return getUpdate(source, DEFAULT_EXCLUDES);
     }
 
     /**
-     * 获取mongodb更新或新增对象
-     * @param source
-     * @return
-     */
-    public static Update getUpsert(Object source) {
-        return getUpdate(source, null);
-    }
-
-    /**
      * 获取mongodb更新对象
      * @param source 源对象
      * @param excludeList 要排除的字段列表
-     * @return
+     * @return Update
      */
     public static Update getUpdate(Object source, List<String> excludeList) {
         Update update = new Update();
@@ -63,8 +54,8 @@ public class MongoUtil {
 
     /***
      * 通用查询条件
-     * @param queryBaseDTO
-     * @param query
+     * @param queryBaseDTO 查询条件
+     * @param query 查询对象
      */
     public static void commonQuery(QueryBaseDTO queryBaseDTO, Query query) {
         if(queryBaseDTO.getPage() != null && queryBaseDTO.getPageSize() != null) {
@@ -79,6 +70,32 @@ public class MongoUtil {
                 query.with(Sort.by(Sort.Direction.ASC, queryBaseDTO.getSortProp()));
             }
         }
+    }
+
+    /**
+     * 检查是否为有效的ObjectId
+     * @param objectId ObjectId
+     * @return 是否为有效的ObjectId
+     */
+    public static boolean isValidObjectId(String objectId) {
+        // 检查长度是否为24个字符
+        if (objectId == null || objectId.length() != 24) {
+            return false;
+        }
+        // 检查是否为有效的十六进制字符串
+        for (char c : objectId.toCharArray()) {
+            if (!isHexCharacter(c)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // 检查字符是否为有效的十六进制字符
+    private static boolean isHexCharacter(char c) {
+        return (c >= '0' && c <= '9') ||
+                (c >= 'a' && c <= 'f') ||
+                (c >= 'A' && c <= 'F');
     }
 
 }
