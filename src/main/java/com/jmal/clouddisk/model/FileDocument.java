@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.jmal.clouddisk.service.impl.FileServiceImpl;
+import com.jmal.clouddisk.video.VideoInfoDO;
 import lombok.Data;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
@@ -129,6 +130,10 @@ public class FileDocument extends FileBase {
      * 照片exif信息
      */
     private ExifInfo exif;
+    /**
+     * 视频信息
+     */
+    private VideoInfoDO video;
     /**
      * 媒体封面
      */

@@ -21,8 +21,6 @@ import com.jmal.clouddisk.util.CaffeineUtil;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -32,16 +30,14 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static com.jmal.clouddisk.util.FFMPEGUtils.*;
@@ -66,13 +62,27 @@ public class VideoProcessService {
     @Resource
     MongoTemplate mongoTemplate;
 
-    private ExecutorService executorService;
+    /**
+     * 视频转码线程池
+     */
+    private ExecutorService videoTranscodingService;
 
+    /**
+     * 添加转码任务线程池
+     */
+    private ExecutorService addTranscodingTaskService;
+
+    /**
+     * 处理待转码文件锁, 防止多次处理
+     */
+    private final ReentrantLock toBeTranscodeLock = new ReentrantLock();
 
     /**
      * h5播放器支持的视频格式
      */
     private final String[] WEB_SUPPORTED_FORMATS = {"mp4", "webm", "ogg", "flv", "hls", "mkv"};
+
+    private final static String TRANSCODE_VIDEO  = "transcodeVideo";
 
     @PostConstruct
     public void init() {
@@ -80,21 +90,101 @@ public class VideoProcessService {
         if (processors < 1) {
             processors = 1;
         }
-        executorService = ThreadUtil.newFixedExecutor(processors, 100, "videoTranscoding", false);
+        if (processors > 3) {
+            processors = 3;
+        }
+        videoTranscodingService = ThreadUtil.newFixedExecutor(processors, 1, "videoTranscoding", true);
+        addTranscodingTaskService = ThreadUtil.newFixedExecutor(4, 100, "addTranscodingTask", true);
     }
 
-    public void convertToM3U8(String fileId, String username, String relativePath, String fileName) {
-        executorService.execute(() -> {
+    /**
+     * 设置转码状态
+     * @param fileId fileId
+     * @param transcodeStatus TranscodeStatus
+     */
+    private void updateTranscodeVideo(String fileId, TranscodeStatus transcodeStatus) {
+        // 设置未转码标记
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        Update update = new Update();
+        if (transcodeStatus == TranscodeStatus.TRANSCENDED) {
+            update.unset(TRANSCODE_VIDEO);
+        } else {
+            update.set(TRANSCODE_VIDEO, transcodeStatus.getStatus());
+        }
+        mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
+    }
+
+    /**
+     * 处理待转码文件
+     */
+    public void processingToBeTranscode() {
+        boolean run = true;
+        log.debug("开始处理待转码文件");
+        while (run) {
+            Query query = new Query();
+            query.addCriteria(Criteria.where(TRANSCODE_VIDEO).is(TranscodeStatus.NOT_TRANSCODE.getStatus()));
+            long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
+            if (count == 0) {
+                log.debug("待转码文件处理完成");
+                run = false;
+            }
+            query.limit(8);
+            List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
+            for (FileDocument fileDocument : fileDocumentList) {
+                String fileId = fileDocument.getId();
+                String username = userService.getUserNameById(fileDocument.getUserId());
+                String relativePath = fileDocument.getPath();
+                String fileName = fileDocument.getName();
+                updateTranscodeVideo(fileId, TranscodeStatus.TRANSCODING);
+                videoTranscodingService.execute(() -> doConvertToM3U8(fileId, username, relativePath, fileName));
+            }
+        }
+    }
+
+    private void startProcessFilesToBeIndexed() {
+        addTranscodingTaskService.execute(() -> {
+            if (!toBeTranscodeLock.tryLock()) {
+                return;
+            }
             try {
-                TimeUnit.SECONDS.sleep(3);
-                videoToM3U8(fileId, username, relativePath, fileName, false);
-            } catch (InterruptedException e) {
-                log.error(e.getMessage(), e);
-                Thread.currentThread().interrupt();
-            } catch (IOException e) {
-                log.error(e.getMessage(), e);
+                processingToBeTranscode();
+            } finally {
+                toBeTranscodeLock.unlock();
             }
         });
+    }
+
+    public void convertToM3U8(String fileId) {
+        addTranscodingTaskService.execute(() -> {
+            try {
+                TimeUnit.SECONDS.sleep(5);
+            } catch (InterruptedException e) {
+                log.error(e.getMessage(), e);
+            }
+            updateTranscodeVideo(fileId, TranscodeStatus.NOT_TRANSCODE);
+            startProcessFilesToBeIndexed();
+        });
+    }
+
+    /**
+     * 转码视频
+     * @param fileId fileId
+     * @param username username
+     * @param relativePath relativePath
+     * @param fileName fileName
+     */
+    private void doConvertToM3U8(String fileId, String username, String relativePath, String fileName) {
+        try {
+            videoToM3U8(fileId, username, relativePath, fileName, false);
+        } catch (InterruptedException e) {
+            log.error(e.getMessage(), e);
+            Thread.currentThread().interrupt();
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        } finally {
+            updateTranscodeVideo(fileId, TranscodeStatus.TRANSCENDED);
+        }
     }
 
     public void deleteVideoCacheByIds(String username, List<String> fileIds) {
@@ -119,9 +209,22 @@ public class VideoProcessService {
         }
     }
 
-    public String getVideoCover(String fileId, String username, String relativePath, String fileName) {
+    public VideoInfo getVideoInfo(File videoFile) {
+        VideoInfo videoInfo = new VideoInfo();
         if (hasNoFFmpeg()) {
-            return null;
+            return videoInfo;
+        }
+        if (!videoFile.exists()) {
+            return videoInfo;
+        }
+        videoInfo = getVideoInfo(videoFile.getAbsolutePath());
+        return videoInfo;
+    }
+
+    public VideoInfo getVideoCover(String fileId, String username, String relativePath, String fileName) {
+        VideoInfo videoInfo = new VideoInfo();
+        if (hasNoFFmpeg()) {
+            return videoInfo;
         }
         Path prePath = Paths.get(username, relativePath, fileName);
         String ossPath = CaffeineUtil.getOssPath(prePath);
@@ -132,8 +235,9 @@ public class VideoProcessService {
             fileId = fileId.substring(fileId.lastIndexOf("/") + 1);
         }
         String outputPath = Paths.get(videoCacheDir, fileId + ".png").toString();
+        videoInfo.setCovertPath(outputPath);
         if (FileUtil.exist(outputPath)) {
-            return outputPath;
+            return videoInfo;
         }
         try {
             String videoPath = fileAbsolutePath.toString();
@@ -146,26 +250,38 @@ public class VideoProcessService {
                 }
             }
             if (FileUtil.exist(outputPath)) {
-                return outputPath;
+                return videoInfo;
             }
-            double videoDuration = getVideoInfo(videoPath).getDuration();
+            videoInfo = getVideoInfo(videoPath);
+            videoInfo.setCovertPath(outputPath);
+            int videoDuration = videoInfo.getDuration();
             ProcessBuilder processBuilder = getVideoCoverProcessBuilder(videoPath, outputPath, videoDuration);
             printSuccessInfo(processBuilder);
             // 等待处理结果
-            return getWaitingForResults(outputPath, processBuilder);
+            outputPath = getWaitingForResults(outputPath, processBuilder);
+            if (outputPath != null) {
+                return videoInfo;
+            }
         } catch (InterruptedException e) {
             log.error(e.getMessage(), e);
-            return null;
+            return videoInfo;
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
-        return null;
+        return videoInfo;
     }
 
-    private static ProcessBuilder getVideoCoverProcessBuilder(String videoPath, String outputPath, double videoDuration) {
-        double targetTimestamp = videoDuration * 0.1;
-        String formattedTimestamp = formatTimestamp(targetTimestamp);
-        log.info("\r\nvideoPath: {}, formattedTimestamp: {}", videoPath, formattedTimestamp);
+    /**
+     * 获取视频封面
+     * @param videoPath 视频路径
+     * @param outputPath 输出路径
+     * @param videoDuration 视频时长
+     * @return ProcessBuilder
+     */
+    private static ProcessBuilder getVideoCoverProcessBuilder(String videoPath, String outputPath, int videoDuration) {
+        int targetTimestamp = (int) (videoDuration * 0.1);
+        String formattedTimestamp = VideoInfoUtil.formatTimestamp(targetTimestamp);
+        log.debug("\r\nvideoPath: {}, formattedTimestamp: {}", videoPath, formattedTimestamp);
         ProcessBuilder processBuilder = new ProcessBuilder(
                 Constants.FFMPEG,
                 "-y",
@@ -177,13 +293,6 @@ public class VideoProcessService {
         );
         processBuilder.redirectErrorStream(true);
         return processBuilder;
-    }
-
-    private static String formatTimestamp(double timestamp) {
-        int hours = (int) (timestamp / 3600);
-        int minutes = (int) ((timestamp % 3600) / 60);
-        double seconds = timestamp % 60;
-        return String.format("%02d:%02d:%.3f", hours, minutes, seconds);
     }
 
     /**
@@ -439,26 +548,36 @@ public class VideoProcessService {
      * @param videoDuration    视频时长
      * @param line             命令输出信息
      */
-    private void transcodingProgress(Path fileAbsolutePath, double videoDuration, String line) {
+    private void transcodingProgress(Path fileAbsolutePath, int videoDuration, String line) {
         // 解析转码进度
         if (line.contains("time=")) {
             try {
                 if (line.contains(":")) {
-                    String[] parts = line.split("time=")[1].split(" ")[0].split(":");
-                    int hours = Integer.parseInt(parts[0]);
-                    int minutes = Integer.parseInt(parts[1]);
-                    int seconds = Integer.parseInt(parts[2].split("\\.")[0]);
-                    int totalSeconds = hours * 3600 + minutes * 60 + seconds;
-                    // 计算转码进度百分比
-                    double progress = (double) totalSeconds / videoDuration * 100;
-                    String progressStr = String.format("%.2f", progress);
-                    log.debug("{}, 转码进度: {}%", fileAbsolutePath.getFileName(), progressStr);
+                    String progressStr = getProgressStr(videoDuration, line);
+                    log.info("{}, 转码进度: {}%", fileAbsolutePath.getFileName(), progressStr);
                     taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, progressStr + "%");
                 }
             } catch (Exception e) {
                 log.warn(e.getMessage(), e);
             }
         }
+    }
+
+    /**
+     * 获取转码进度
+     * @param videoDuration 视频时长
+     * @param line         命令输出信息
+     * @return 转码进度
+     */
+    private static String getProgressStr(int videoDuration, String line) {
+        String[] parts = line.split("time=")[1].split(" ")[0].split(":");
+        int hours = Integer.parseInt(parts[0]);
+        int minutes = Integer.parseInt(parts[1]);
+        int seconds = Integer.parseInt(parts[2].split("\\.")[0]);
+        int totalSeconds = hours * 3600 + minutes * 60 + seconds;
+        // 计算转码进度百分比
+        double progress = (double) totalSeconds / videoDuration * 100;
+        return String.format("%.2f", progress);
     }
 
     private void startConvert(String username, String relativePath, String fileName, String fileId) {
@@ -500,7 +619,7 @@ public class VideoProcessService {
                 String format = formatObject.getString("format_name");
 
                 // 获取视频时长
-                double duration = Convert.toDouble(formatObject.get("duration"), 0d);
+                int duration = Convert.toInt(formatObject.get("duration"));
 
                 // 获取视频流信息
                 JSONArray streamsArray = jsonObject.getJSONArray("streams");
@@ -523,37 +642,13 @@ public class VideoProcessService {
         return new VideoInfo();
     }
 
-    @Setter
-    @Getter
-    private static class VideoInfo {
-        private int width;
-        private int height;
-        private int bitrate;
-        private String format;
-        private double duration;
-
-        public VideoInfo() {
-            this.width = 1920;
-            this.height = 1080;
-            this.format = "mov,mp4,m4a,3gp,3g2,mj2";
-            this.bitrate = 3000;
-            this.duration = 10d;
-        }
-
-        public VideoInfo(String videoPath, int width, int height, String format, int bitrate, double duration) {
-            this.width = width;
-            this.height = height;
-            this.format = format;
-            this.bitrate = bitrate;
-            this.duration = duration;
-            log.info("\r\nvideoPath: {}, width: {}, height: {}, format: {}, bitrate: {}, duration: {}", videoPath, width, height, format, bitrate, duration);
-        }
-    }
-
     @PreDestroy
     private void destroy() {
-        if (executorService != null) {
-            executorService.shutdown();
+        if (videoTranscodingService != null) {
+            videoTranscodingService.shutdown();
+        }
+        if (addTranscodingTaskService != null) {
+            addTranscodingTaskService.shutdown();
         }
     }
 

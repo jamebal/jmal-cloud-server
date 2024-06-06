@@ -21,8 +21,9 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.video.VideoProcessService;
 import com.jmal.clouddisk.util.*;
+import com.jmal.clouddisk.video.VideoInfo;
+import com.jmal.clouddisk.video.VideoProcessService;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
@@ -324,6 +325,7 @@ public class CommonFileService {
                 // 添加文件索引
                 // 获取tagName
                 updateExifInfo(file, fileExists, contentType, suffix, query);
+                updateVideoInfo(file, fileExists, contentType, query);
                 luceneService.pushCreateIndexQueue(fileExists.getId());
                 return fileExists.getId();
             }
@@ -381,16 +383,20 @@ public class CommonFileService {
      * @param query 查询条件
      */
     private void updateExifInfo(File file, FileDocument fileExists, String contentType, String suffix, Query query) {
-        if (fileExists.getExif() == null) {
-            if (ImageExifUtil.isImageType(contentType, suffix)) {
-                // 更新图片Exif信息
-                ExifInfo exifInfo = ImageExifUtil.getExif(file);
-                if (exifInfo != null) {
-                    Update update = new Update();
-                    update.set("exif", exifInfo);
-                    mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
-                }
-            }
+        if (fileExists.getExif() == null && ImageExifUtil.isImageType(contentType, suffix)) {
+            // 更新图片Exif信息
+            Update update = new Update();
+            update.set("exif", ImageExifUtil.getExif(file));
+            mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
+        }
+    }
+
+    private void updateVideoInfo(File file, FileDocument fileExists, String contentType, Query query) {
+        if (contentType.contains(Constants.VIDEO) && fileExists.getVideo() == null) {
+            VideoInfo videoInfo = videoProcessService.getVideoInfo(file);
+            Update update = new Update();
+            update.set("video", videoInfo.toVideoInfoDO());
+            mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
         }
     }
 
@@ -510,7 +516,7 @@ public class CommonFileService {
             update.set("h", imageInfo.getHeight());
         }
         // 获取图片Exif信息
-        ImageExifUtil.setExifInfo(file, update);
+        update.set("exif", ImageExifUtil.getExif(file));
         // 生成缩略图
         generateThumbnail(file, update);
     }
@@ -545,14 +551,16 @@ public class CommonFileService {
     }
 
     private void setMediaCover(String fileId, String username, String fileName, String relativePath, Update update) {
-        String coverPath = videoProcessService.getVideoCover(fileId, username, relativePath, fileName);
-        log.info("\r\ncoverPath:{}", coverPath);
+        VideoInfo videoInfo = videoProcessService.getVideoCover(fileId, username, relativePath, fileName);
+        String coverPath = videoInfo.getCovertPath();
+        log.debug("\r\ncoverPath:{}", coverPath);
         if (!CharSequenceUtil.isBlank(coverPath)) {
             if (update == null) {
                 update = new Update();
             }
             update.set("content", PathUtil.readBytes(Paths.get(coverPath)));
-            videoProcessService.convertToM3U8(fileId, username, relativePath, fileName);
+            update.set("video", videoInfo.toVideoInfoDO());
+            videoProcessService.convertToM3U8(fileId);
             update.set("mediaCover", true);
             FileUtil.del(coverPath);
         } else {

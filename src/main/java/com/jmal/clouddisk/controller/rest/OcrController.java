@@ -4,6 +4,7 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.http.HttpUtil;
 import com.jmal.clouddisk.ocr.OcrService;
+import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,10 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class OcrController {
 
     private final OcrService ocrService;
+    private final UserLoginHolder userLoginHolder;
 
     @GetMapping("/ocr")
     public String performOcr(@RequestParam String fileUrl) {
-        String tempImagePath = ocrService.generateOrcTempImagePath();
+        String tempImagePath = ocrService.generateOrcTempImagePath(userLoginHolder.getUsername());
         try {
             HttpUtil.downloadFile(fileUrl, tempImagePath);
             TimeInterval timeInterval = new TimeInterval();
