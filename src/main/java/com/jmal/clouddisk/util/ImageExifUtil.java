@@ -11,7 +11,6 @@ import com.drew.metadata.exif.GpsDirectory;
 import com.jmal.clouddisk.model.ExifInfo;
 import com.jmal.clouddisk.service.Constants;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.query.Update;
 
 import java.io.File;
 import java.util.Date;
@@ -24,23 +23,15 @@ public class ImageExifUtil {
         return contentType.startsWith(Constants.CONTENT_TYPE_IMAGE) && (!"ico".equals(suffix) && !"svg".equals(suffix));
     }
 
-    public static void setExifInfo(File file, Update update) {
-        // 获取照片Exif信息
-        ExifInfo exifInfo = ImageExifUtil.getExif(file);
-        if (exifInfo != null) {
-            update.set("exif", exifInfo);
-        }
-    }
-
     public static ExifInfo getExif(File file) {
+        ExifInfo exifInfo = new ExifInfo();
         if (file == null) {
-            return null;
+            return exifInfo;
         }
         if (!file.exists()) {
-            return null;
+            return exifInfo;
         }
         try {
-            ExifInfo exifInfo = null;
             Metadata metadata = ImageMetadataReader.readMetadata(file);
             // 获取图片基础信息
             ExifIFD0Directory directory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
@@ -135,7 +126,7 @@ public class ImageExifUtil {
             // 获取图片EXIF信息失败
             log.warn("获取图片EXIF信息失败: {}, {}", e.getMessage(), file);
         }
-        return null;
+        return exifInfo;
     }
 
     /**

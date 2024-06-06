@@ -384,12 +384,9 @@ public class CommonFileService {
         if (fileExists.getExif() == null) {
             if (ImageExifUtil.isImageType(contentType, suffix)) {
                 // 更新图片Exif信息
-                ExifInfo exifInfo = ImageExifUtil.getExif(file);
-                if (exifInfo != null) {
-                    Update update = new Update();
-                    update.set("exif", exifInfo);
-                    mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
-                }
+                Update update = new Update();
+                update.set("exif", ImageExifUtil.getExif(file));
+                mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
             }
         }
     }
@@ -510,7 +507,7 @@ public class CommonFileService {
             update.set("h", imageInfo.getHeight());
         }
         // 获取图片Exif信息
-        ImageExifUtil.setExifInfo(file, update);
+        update.set("exif", ImageExifUtil.getExif(file));
         // 生成缩略图
         generateThumbnail(file, update);
     }
