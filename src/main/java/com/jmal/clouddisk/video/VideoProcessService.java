@@ -98,6 +98,36 @@ public class VideoProcessService {
     }
 
     /**
+     * 设置转码配置
+     * @param config TranscodeConfig
+     */
+    public void setTranscodeConfig(TranscodeConfig config) {
+        if (config == null) {
+            return;
+        }
+        Query query = new Query();
+        TranscodeConfig tc = mongoTemplate.findOne(query, TranscodeConfig.class);
+        if (tc == null) {
+            mongoTemplate.save(config);
+        } else {
+            Update update = new Update();
+            update.set("enable", config.getEnable());
+            update.set("bitrate", config.getBitrate());
+            update.set("height", config.getHeight());
+            mongoTemplate.updateFirst(query, update, TranscodeConfig.class);
+        }
+    }
+
+    public TranscodeConfig getTranscodeConfig() {
+        Query query = new Query();
+        TranscodeConfig config = mongoTemplate.findOne(query, TranscodeConfig.class);
+        if (config == null) {
+            config = new TranscodeConfig();
+        }
+        return config;
+    }
+
+    /**
      * 设置转码状态
      * @param fileId fileId
      * @param transcodeStatus TranscodeStatus
@@ -312,6 +342,10 @@ public class VideoProcessService {
     }
 
     private void videoToM3U8(String fileId, String username, String relativePath, String fileName, boolean onlyCPU) throws IOException, InterruptedException {
+        TranscodeConfig transcodeConfig = getTranscodeConfig();
+        if (BooleanUtil.isFalse(transcodeConfig.getEnable())) {
+            return;
+        }
         Path fileAbsolutePath = Paths.get(fileProperties.getRootDir(), username, relativePath, fileName);
         // 视频文件缓存目录
         String videoCacheDir = getVideoCacheDir(username, fileId);
@@ -325,24 +359,28 @@ public class VideoProcessService {
         // 获取原始视频的分辨率和码率信息
         VideoInfo videoInfo = getVideoInfo(fileAbsolutePath.toString());
         // 判断是否需要转码
-        if (!needTranscode(videoInfo)) {
+        if (!needTranscode(videoInfo, transcodeConfig)) {
             return;
         }
-        // 如果视频的码率小于2500kbps，则使用视频的原始码率
+        // 如果视频的码率小于配置码率，则使用视频的原始码率
         // 标清视频码率
-        int SD_VIDEO_BITRATE = 2500 * 1000;
+        int SD_VIDEO_BITRATE = transcodeConfig.getBitrate() * 1000;
         int bitrate = SD_VIDEO_BITRATE;
         if (videoInfo.getBitrate() < SD_VIDEO_BITRATE && videoInfo.getBitrate() > 0) {
             bitrate = videoInfo.getBitrate();
         }
-        ProcessBuilder processBuilder = cpuTranscoding(fileId, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
+        int targetHeight = transcodeConfig.getHeight();
+        if (videoInfo.getHeight() < targetHeight) {
+            targetHeight = videoInfo.getHeight();
+        }
+        ProcessBuilder processBuilder = cpuTranscoding(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath);
         if (!onlyCPU && checkNvidiaDrive()) {
             log.info("use NVENC hardware acceleration");
-            processBuilder = useNvencCuda(fileId, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
+            processBuilder = useNvencCuda(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath);
         }
         if (!onlyCPU && checkMacAppleSilicon()) {
             log.info("use videotoolbox hardware acceleration");
-            processBuilder = useVideotoolbox(fileId, fileAbsolutePath, bitrate, videoCacheDir, outputPath);
+            processBuilder = useVideotoolbox(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath);
         }
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
@@ -384,7 +422,7 @@ public class VideoProcessService {
         }
     }
 
-    private static ProcessBuilder useVideotoolbox(String fileId, Path fileAbsolutePath, int bitrate, String videoCacheDir, String outputPath) {
+    private static ProcessBuilder useVideotoolbox(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath) {
         return new ProcessBuilder(
                 Constants.FFMPEG,
                 "-hwaccel", "videotoolbox",
@@ -396,7 +434,7 @@ public class VideoProcessService {
                 "-start_number", "0",
                 "-hls_time", "10",
                 "-hls_list_size", "0",
-                "-vf", "scale=-2:720",
+                "-vf", "scale=-2:" + height,
                 "-b:v", Convert.toStr(bitrate),
                 "-preset", "medium",
                 "-g", "48",
@@ -407,7 +445,8 @@ public class VideoProcessService {
         );
     }
 
-    private static ProcessBuilder cpuTranscoding(String fileId, Path fileAbsolutePath, int bitrate, String videoCacheDir, String outputPath) {
+    private static ProcessBuilder cpuTranscoding(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath) {
+
         return new ProcessBuilder(
                 Constants.FFMPEG,
                 "-i", fileAbsolutePath.toString(),
@@ -417,7 +456,7 @@ public class VideoProcessService {
                 "-start_number", "0",
                 "-hls_time", "10",
                 "-hls_list_size", "0",
-                "-vf", "scale=-2:720",
+                "-vf", "scale=-2:" + height,
                 "-b:v", Convert.toStr(bitrate),
                 "-preset", "medium",
                 "-g", "48",
@@ -428,7 +467,7 @@ public class VideoProcessService {
         );
     }
 
-    private ProcessBuilder useNvencCuda(String fileId, Path fileAbsolutePath, int bitrate, String videoCacheDir, String outputPath) {
+    private ProcessBuilder useNvencCuda(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath) {
         // 使用CUDA硬件加速和NVENC编码器
         return new ProcessBuilder(
                 Constants.FFMPEG,
@@ -453,7 +492,7 @@ public class VideoProcessService {
                 "-bufsize", "5643118",
                 "-g:v:0", "180",
                 "-keyint_min:v:0", "180",
-                "-vf", "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale_cuda=-2:720:format=yuv420p",
+                "-vf", "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale_cuda=-2:" + height + ":format=yuv420p",
                 "-codec:a:0", "copy",
                 "-copyts",
                 "-avoid_negative_ts", "disabled",
@@ -515,8 +554,8 @@ public class VideoProcessService {
      * @param videoInfo 视频信息
      * @return 是否需要转码
      */
-    private boolean needTranscode(VideoInfo videoInfo) {
-        if ((videoInfo.getBitrate() > 0 && videoInfo.getBitrate() <= 2000) || videoInfo.getHeight() <= 720) {
+    private boolean needTranscode(VideoInfo videoInfo, TranscodeConfig transcodeConfig) {
+        if ((videoInfo.getBitrate() > 0 && videoInfo.getBitrate() <= transcodeConfig.getBitrate()) || videoInfo.getHeight() <= transcodeConfig.getHeight()) {
             return !isSupportedFormat(videoInfo.getFormat());
         }
         return true;

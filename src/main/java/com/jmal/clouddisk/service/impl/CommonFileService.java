@@ -16,6 +16,7 @@ import com.jmal.clouddisk.controller.sse.SseController;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.lucene.LuceneService;
+import com.jmal.clouddisk.lucene.RebuildIndexTaskService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.OssConfigService;
@@ -383,7 +384,10 @@ public class CommonFileService {
      * @param query 查询条件
      */
     private void updateExifInfo(File file, FileDocument fileExists, String contentType, String suffix, Query query) {
-        if (fileExists.getExif() == null && ImageExifUtil.isImageType(contentType, suffix)) {
+        if (!ImageExifUtil.isImageType(contentType, suffix)) {
+            return;
+        }
+        if (fileExists.getExif() == null || RebuildIndexTaskService.isSyncFile()) {
             // 更新图片Exif信息
             Update update = new Update();
             update.set("exif", ImageExifUtil.getExif(file));
@@ -392,7 +396,10 @@ public class CommonFileService {
     }
 
     private void updateVideoInfo(File file, FileDocument fileExists, String contentType, Query query) {
-        if (contentType.contains(Constants.VIDEO) && fileExists.getVideo() == null) {
+        if (!contentType.contains(Constants.VIDEO)) {
+            return;
+        }
+        if (fileExists.getVideo() == null || RebuildIndexTaskService.isSyncFile()) {
             VideoInfo videoInfo = videoProcessService.getVideoInfo(file);
             Update update = new Update();
             update.set("video", videoInfo.toVideoInfoDO());
