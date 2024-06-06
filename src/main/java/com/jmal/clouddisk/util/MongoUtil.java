@@ -25,27 +25,18 @@ public class MongoUtil {
 
     /**
      * 获取mongodb更新对象
-     * @param source
-     * @return
+     * @param source 源对象
+     * @return Update
      */
     public static Update getUpdate(Object source) {
         return getUpdate(source, DEFAULT_EXCLUDES);
     }
 
     /**
-     * 获取mongodb更新或新增对象
-     * @param source
-     * @return
-     */
-    public static Update getUpsert(Object source) {
-        return getUpdate(source, null);
-    }
-
-    /**
      * 获取mongodb更新对象
      * @param source 源对象
      * @param excludeList 要排除的字段列表
-     * @return
+     * @return Update
      */
     public static Update getUpdate(Object source, List<String> excludeList) {
         Update update = new Update();
@@ -63,8 +54,8 @@ public class MongoUtil {
 
     /***
      * 通用查询条件
-     * @param queryBaseDTO
-     * @param query
+     * @param queryBaseDTO 查询条件
+     * @param query 查询对象
      */
     public static void commonQuery(QueryBaseDTO queryBaseDTO, Query query) {
         if(queryBaseDTO.getPage() != null && queryBaseDTO.getPageSize() != null) {
