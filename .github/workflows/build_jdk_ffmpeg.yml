@@ -7,6 +7,15 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            arch_tag: amd64
+          - arch: arm64
+            arch_tag: arm64
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -49,6 +58,3 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             ARCH=${{ matrix.arch }}
-    strategy:
-      matrix:
-        arch: [amd64, arm64]
