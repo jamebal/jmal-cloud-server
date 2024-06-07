@@ -25,11 +25,7 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-
-      - name: Set up Maven 3.8.4
-        run: |
-          curl -sL https://apache.osuosl.org/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.tar.gz | tar -xz -C /opt/
-          ln -s /opt/apache-maven-3.8.4/bin/mvn /usr/bin/mvn
+          maven-version: '3.8.4'
 
       - name: Build with Maven
         run: mvn clean package -DskipTests
