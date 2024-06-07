@@ -1,4 +1,4 @@
-name: Build jdk17_ffmpeg
+name: Build jdk17_ffmpeg_nvidia
 
 on:
   workflow_dispatch:
@@ -41,7 +41,10 @@ jobs:
           context: .
           file: docker/Dockerfile
           push: true
-          tags: jmal/jdk17_ffmpeg:latest
+          tags: jmal/jdk17_ffmpeg_nvidia:latest
           platforms: linux/amd64,linux/arm64
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          build-args: |
+            ARCH=${{ matrix.arch }}
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
