@@ -1,4 +1,4 @@
-FROM jmal/jdk17_ffmpeg:latest
+FROM jmal/jdk17_ffmpeg_nvidia:latest
 
 ARG VERSION
 

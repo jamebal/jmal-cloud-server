@@ -52,8 +52,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            jmal/jmalcloud-nvidia:test
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud-nvidia:test
+            jmal/jmalcloud:test
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud:test
           platforms: linux/amd64,linux/arm64
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
