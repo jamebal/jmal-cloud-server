@@ -312,6 +312,9 @@ public class RebuildIndexTaskService {
      * 是否正在同步中
      */
     public Map<String, Double> isSync() {
+        if (PERCENT_MAP.isEmpty()) {
+            setPercentMap(100d, 100d);
+        }
         return PERCENT_MAP;
     }
 
