@@ -38,15 +38,22 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_IO_USERNAME }}
+          password: ${{ secrets.GHCR_IO_TOKEN }}
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: jmal/jmalcloud:${{ env.PROJECT_VERSION }},jmal/jmalcloud:latest
+          tags: |
+            jmal/jmalcloud:${{ env.PROJECT_VERSION }},jmal/jmalcloud:latest
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud:${{ env.PROJECT_VERSION }},ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud:latest
           platforms: linux/amd64,linux/arm64
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
