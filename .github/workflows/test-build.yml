@@ -1,4 +1,4 @@
-name: Build test
+name: Build test (nvidia)
 
 on:
   push:
@@ -52,8 +52,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            jmal/jmalcloud:test
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud:test
+            jmal/jmalcloud-nvidia:test
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud-nvidia:test
           platforms: linux/amd64,linux/arm64
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
