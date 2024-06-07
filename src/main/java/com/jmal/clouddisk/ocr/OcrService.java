@@ -38,7 +38,6 @@ public class OcrService {
             if (StrUtil.isBlank(tempImagePath)) {
                 tempImagePath = generateOrcTempImagePath(null);
             }
-            System.out.println("tempImageFile: " + tempImagePath);
             // 预处理后的图片
             String preprocessedOCRImage = getPreprocessedOCRImage(imagePath, tempImagePath);
             if (StrUtil.isBlank(preprocessedOCRImage)) {
