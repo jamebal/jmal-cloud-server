@@ -4,7 +4,6 @@ import cn.hutool.core.codec.Base62;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.KeyUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
-import cn.hutool.crypto.symmetric.SymmetricCrypto;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.signers.JWTSigner;
 import cn.hutool.jwt.signers.JWTSignerUtil;
@@ -25,41 +24,37 @@ public class OfficeConfigService {
     public final static String VO_KEY = "****************";
 
     private final MongoTemplate mongoTemplate;
-    private volatile String officeServerSecret;
 
-    private String getOfficeServerSecret() {
-        if (officeServerSecret == null) {
+    private volatile OfficeConfigDTO officeConfigDTO;
+
+    private OfficeConfigDTO getOfficeConfigCache() {
+        if (officeConfigDTO == null) {
             synchronized (this) {
-                if (officeServerSecret == null) {
+                if (officeConfigDTO == null) {
                     OfficeConfigDO officeConfigDO = mongoTemplate.findOne(new Query(), OfficeConfigDO.class);
-                    if (officeConfigDO == null || officeConfigDO.getEncrypted() == null || officeConfigDO.getKey() == null) {
-                        officeServerSecret = "";  // 如果没有找到配置或配置不完整，设置为空字符串
+                    if (officeConfigDO == null) {
+                        officeConfigDTO = new OfficeConfigDTO();
                     } else {
-                        SymmetricCrypto symmetricCrypto = new SymmetricCrypto(SymmetricAlgorithm.AES, officeConfigDO.getKey().getBytes());
-                        officeServerSecret = symmetricCrypto.decryptStr(officeConfigDO.getEncrypted());
+                        officeConfigDTO = officeConfigDO.toOfficeConfigCache();
                     }
                 }
             }
         }
-        return officeServerSecret;
+        return officeConfigDTO;
     }
 
     public String createOfficeToken(final Map<String, Object> payloadClaims) {
-        String key = getOfficeServerSecret();
-        if (StrUtil.isBlank(key)) {
+        String secret = officeConfigDTO.getSecret();
+        if (StrUtil.isBlank(secret)) {
             return "";
         }
-        final JWTSigner signer = JWTSignerUtil.hs256(getOfficeServerSecret().getBytes());
+        final JWTSigner signer = JWTSignerUtil.hs256(secret.getBytes());
         JWT jwt = JWT.create().addPayloads(payloadClaims);
         return jwt.sign(signer);
     }
 
     public OfficeConfigDTO getOfficeConfig() {
-        OfficeConfigDO officeConfigDO = mongoTemplate.findOne(new Query(), OfficeConfigDO.class);
-        if (officeConfigDO == null) {
-            return new OfficeConfigDTO();
-        }
-        return officeConfigDO.toOfficeConfigDTO();
+        return getOfficeConfigCache();
     }
 
     public void setOfficeConfig(OfficeConfigDTO officeConfigDTO) {
@@ -81,11 +76,7 @@ public class OfficeConfigService {
             if (VO_KEY.equals(officeConfigDTO.getSecret())) {
                 return;
             }
-            if (StrUtil.isNotBlank(officeConfigDTO.getSecret())) {
-                officeServerSecret = officeConfigDTO.getSecret();
-            } else {
-                officeServerSecret = null;
-            }
+            this.officeConfigDTO = officeConfigDTO;
         }
     }
 
