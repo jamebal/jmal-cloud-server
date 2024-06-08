@@ -229,8 +229,12 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             BeanUtils.copyProperties(fileDocument, fileIntroVO);
             return fileIntroVO;
         }).toList();
-        pushMessage(upload.getUsername(), Constants.LOCAL_CHUNK_SIZE, Constants.UPLOADER_CHUNK_SIZE);
+        pushConfigInfo(upload);
         return sortByFileName(upload, fileIntroVOList, order);
+    }
+
+    private void pushConfigInfo(UploadApiParamDTO upload) {
+        pushMessage(upload.getUsername(), Constants.LOCAL_CHUNK_SIZE, Constants.UPLOADER_CHUNK_SIZE);
     }
 
     /***

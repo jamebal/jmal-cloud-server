@@ -268,7 +268,8 @@ public class UserServiceImpl implements IUserService {
         if (StrUtil.isBlank(userLoginHolder.getUserId())) {
             return ResultUtil.success(new ConsumerDTO());
         }
-        return userInfo(userLoginHolder.getUserId());
+        ResponseResult<ConsumerDTO> result = userInfo(userLoginHolder.getUserId());
+        return result;
     }
 
     @Override
