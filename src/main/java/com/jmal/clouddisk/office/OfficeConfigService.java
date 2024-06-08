@@ -54,7 +54,11 @@ public class OfficeConfigService {
     }
 
     public OfficeConfigDTO getOfficeConfig() {
-        return getOfficeConfigCache();
+        OfficeConfigDTO officeConfigDTO = getOfficeConfigCache();
+        if (StrUtil.isNotBlank(officeConfigDTO.getSecret())) {
+            officeConfigDTO.setSecret(VO_KEY);
+        }
+        return officeConfigDTO;
     }
 
     public void setOfficeConfig(OfficeConfigDTO officeConfigDTO) {
