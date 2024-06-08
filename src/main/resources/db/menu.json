@@ -639,8 +639,8 @@
     "name": "授权应用",
     "parentId": "",
     "path": "/setting/authAPP",
-    "sortNumber": 16,
-    "updateTime": 1611461838684
+    "sortNumber": 17,
+    "updateTime": 1717766257111
   },
   {
     "authority": "",
@@ -739,5 +739,19 @@
     "path": "",
     "sortNumber": 303,
     "updateTime": 1680744601649
+  },
+  {
+    "authority": "",
+    "component": "/setting/taskProgress",
+    "createTime": 1717765938045,
+    "hide": false,
+    "icon": "gengxinjindu",
+    "id": "66630732fc290e06878516f0",
+    "menuType": 2,
+    "name": "任务进度",
+    "parentId": "",
+    "path": "/setting/taskProgress",
+    "sortNumber": 16,
+    "updateTime": 1717766722975
   }
 ]

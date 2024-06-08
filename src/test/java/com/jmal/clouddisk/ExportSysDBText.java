@@ -39,7 +39,7 @@ class ExportSysDBText {
         String now = LocalDateTimeUtil.formatNormal(LocalDateTime.now(TimeUntils.ZONE_ID));
         File file = new File("/Users/jmal/Downloads/menu"+now+".json");
         List<MenuDO> menuDOList = menuService.getAllMenus();
-        if(menuDOList.size() > 0){
+        if(!menuDOList.isEmpty()){
             FileUtil.writeString(JSONArray.toJSONString(menuDOList),file, StandardCharsets.UTF_8);
         }
     }
@@ -52,7 +52,7 @@ class ExportSysDBText {
         String now = LocalDateTimeUtil.formatNormal(LocalDateTime.now(TimeUntils.ZONE_ID));
         File file = new File("/Users/jmal/Downloads/role"+now+".json");
         List<RoleDO> roleDOList = roleService.getAllRoles();
-        if(roleDOList.size() > 0){
+        if(!roleDOList.isEmpty()){
             FileUtil.writeString(JSONArray.toJSONString(roleDOList),file,StandardCharsets.UTF_8);
         }
     }
