@@ -55,10 +55,14 @@ public class OfficeConfigService {
 
     public OfficeConfigDTO getOfficeConfig() {
         OfficeConfigDTO officeConfigDTO = getOfficeConfigCache();
+        OfficeConfigDTO officeConfigVO = new OfficeConfigDTO();
+        officeConfigVO.setDocumentServer(officeConfigDTO.getDocumentServer());
+        officeConfigVO.setCallbackServer(officeConfigDTO.getCallbackServer());
+        officeConfigVO.setTokenEnabled(officeConfigDTO.isTokenEnabled());
         if (StrUtil.isNotBlank(officeConfigDTO.getSecret())) {
-            officeConfigDTO.setSecret(VO_KEY);
+            officeConfigVO.setSecret(VO_KEY);
         }
-        return officeConfigDTO;
+        return officeConfigVO;
     }
 
     public void setOfficeConfig(OfficeConfigDTO officeConfigDTO) {
