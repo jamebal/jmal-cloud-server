@@ -55,6 +55,5 @@ jobs:
           tags: |
             jmal/jdk17_ffmpeg_nvidia:latest
             ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jdk17_ffmpeg_nvidia:latest
-          platforms: linux/amd64,linux/arm64
           build-args: |
             ARCH=${{ matrix.arch }}
