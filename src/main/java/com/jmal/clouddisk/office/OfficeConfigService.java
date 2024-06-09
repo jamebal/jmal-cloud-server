@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.office;
 
 import cn.hutool.core.codec.Base62;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.KeyUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
@@ -82,10 +83,18 @@ public class OfficeConfigService {
 
         // 重置缓存的密钥，使其在下次访问时重新加载
         synchronized (this) {
+            this.officeConfigDTO.setDocumentServer(officeConfigDTO.getDocumentServer());
+            this.officeConfigDTO.setCallbackServer(officeConfigDTO.getCallbackServer());
+            this.officeConfigDTO.setFormat(officeConfigDTO.getFormat());
+            this.officeConfigDTO.setTokenEnabled(StrUtil.isNotBlank(officeConfigDTO.getSecret()));
             if (VO_KEY.equals(officeConfigDTO.getSecret())) {
                 return;
             }
-            this.officeConfigDTO = officeConfigDTO;
+            if (BooleanUtil.isTrue(this.officeConfigDTO.isTokenEnabled())) {
+                this.officeConfigDTO.setSecret(officeConfigDTO.getSecret());
+            } else {
+                this.officeConfigDTO.setSecret(null);
+            }
         }
     }
 
