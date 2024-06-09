@@ -163,7 +163,7 @@ help() {
 }
 
 env_init() {
-  env_set OFFICE_IMAGE_VERSION "7.0.0.132"
+  env_set OFFICE_IMAGE_VERSION "8.0.1"
   env_set APP_PORT 7070
   env_set BLOG_PORT 7071
   env_set SERVER_PORT 7072
