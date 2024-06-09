@@ -3,24 +3,21 @@ FROM nvidia/cuda:11.7.1-base-ubuntu22.04 AS base
 # 设置非交互式安装，避免 tzdata 等包的配置暂停
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 安装wget 和 tesseract
-RUN apt-get update && apt-get install -y wget && apt-get install -y locales tesseract-ocr && \
-                                                  locale-gen en_US.UTF-8 && \
-                                                  update-locale LANG=en_US.UTF-8
+# 安装 wget 和 tesseract，并配置时区和 locales
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends wget locales tesseract-ocr && \
+    locale-gen en_US.UTF-8 && \
+    update-locale LANG=en_US.UTF-8 && \
+    # 下载并安装 jellyfin-ffmpeg
+    ARCH=$(dpkg --print-architecture) && \
+    wget https://repo.jellyfin.org/files/ffmpeg/ubuntu/latest-5.x/${ARCH}/jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb && \
+    dpkg -i jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb || apt-get install -fy && \
+    # 卸载 wget 并清理下载的文件和APT缓存
+    rm -f jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb && \
+    apt-get remove -y wget && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-ARG ARCH=amd64
-
-# 下载jellyfin-ffmpeg.deb
-RUN wget https://repo.jellyfin.org/files/ffmpeg/ubuntu/latest-5.x/${ARCH}/jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb
-
-# 安装下载的 jellyfin-ffmpeg.deb
-RUN dpkg -i jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb || apt-get install -fy
-
-# 卸载 wget 并清理
-RUN apt-get remove -y wget && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# 清除安装文件
-RUN rm -rf jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb
 
 # 将/usr/lib/jellyfin-ffmpeg添加到PATH
 ENV PATH=/usr/lib/jellyfin-ffmpeg:$PATH

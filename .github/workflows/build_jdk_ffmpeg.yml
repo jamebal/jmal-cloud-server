@@ -6,16 +6,6 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        arch: [amd64, arm64]
-        include:
-          - arch: amd64
-            arch_tag: amd64
-          - arch: arm64
-            arch_tag: arm64
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -55,5 +45,4 @@ jobs:
           tags: |
             jmal/jdk17_ffmpeg_nvidia:latest
             ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jdk17_ffmpeg_nvidia:latest
-          build-args: |
-            ARCH=${{ matrix.arch }}
+          platforms: linux/amd64,linux/arm64
