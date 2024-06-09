@@ -59,6 +59,7 @@ public class OfficeConfigService {
         officeConfigVO.setDocumentServer(officeConfigDTO.getDocumentServer());
         officeConfigVO.setCallbackServer(officeConfigDTO.getCallbackServer());
         officeConfigVO.setTokenEnabled(officeConfigDTO.isTokenEnabled());
+        officeConfigVO.setFormat(officeConfigDTO.getFormat());
         if (StrUtil.isNotBlank(officeConfigDTO.getSecret())) {
             officeConfigVO.setSecret(VO_KEY);
         }
