@@ -78,6 +78,10 @@ public class LuceneService {
      * 更新索引内容线程池
      */
     private ExecutorService executorUpdateContentIndexService;
+    /**
+     * 更新大文件索引内容线程池
+     */
+    private ExecutorService executorUpdateBigContentIndexService;
 
     /**
      * 定时任务线程池
@@ -128,6 +132,9 @@ public class LuceneService {
             }
             log.info("updateContentIndexTask 线程数: {}, maxProcessors: {}", processors, maxProcessors);
             executorUpdateContentIndexService = ThreadUtil.newFixedExecutor(processors, 1, "updateContentIndexTask", true);
+        }
+        if (executorUpdateBigContentIndexService == null) {
+            executorUpdateBigContentIndexService = ThreadUtil.newFixedExecutor(2, 100, "updateBigContentIndexTask", true);
         }
     }
 
@@ -665,13 +672,24 @@ public class LuceneService {
                 if (fileIntroVO != null) {
                     // 处理待索引文件
                     updateIndexStatus(fileIntroVO, IndexStatus.INDEXING);
-                    long size = fileIntroVO.getSize();
-                    if (RebuildIndexTaskService.isSyncFile() || size > 20 * 1024 * 1024) {
-                        updateIndex(true, fileIntroVO);
-                    } else {
-                        executorUpdateContentIndexService.execute(() -> updateIndex(true, fileIntroVO));
-                    }
+                    processFileThreaded(fileIntroVO);
                 }
+            }
+        }
+    }
+
+    private void processFileThreaded(FileIntroVO fileIntroVO) {
+        long size = fileIntroVO.getSize();
+        if (RebuildIndexTaskService.isSyncFile()) {
+            // 单线程处理
+            updateIndex(true, fileIntroVO);
+        } else {
+            if (RebuildIndexTaskService.isSyncFile() || size > 20 * 1024 * 1024) {
+                // 大文件线程
+                executorUpdateBigContentIndexService.execute(() -> updateIndex(true, fileIntroVO));
+            } else {
+                // 小文件线程
+                executorUpdateContentIndexService.execute(() -> updateIndex(true, fileIntroVO));
             }
         }
     }
@@ -700,6 +718,9 @@ public class LuceneService {
         }
         if (executorUpdateContentIndexService != null) {
             executorUpdateContentIndexService.shutdown();
+        }
+        if (executorUpdateBigContentIndexService != null) {
+            executorUpdateBigContentIndexService.shutdown();
         }
         if (scheduler != null) {
             scheduler.shutdown();
