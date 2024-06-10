@@ -18,7 +18,6 @@ services:
   jmalcloud:
     container_name: jmalcloud_server
     image: jmal/jmalcloud:latest
-    #image: ghcr.io/jamebal/jmalcloud:latest
     environment:
       MONGODB_URI: "mongodb://mongo:27017/jmalcloud"
       TZ: "Asia/Shanghai"
@@ -33,7 +32,6 @@ services:
   nginx:
     container_name: jmalcloud_nginx
     image: jmal/jmalcloud-nginx:latest
-    #image: ghcr.io/jamebal/jmalcloud-nginx:latest
     ports:
       - 7070:80
       - 7071:8089
