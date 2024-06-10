@@ -667,7 +667,7 @@ public class LuceneService {
                     updateIndexStatus(fileIntroVO, IndexStatus.INDEXING);
                     long size = fileIntroVO.getSize();
                     if (RebuildIndexTaskService.isSyncFile() || size > 20 * 1024 * 1024) {
-                        updateIndex(false, fileIntroVO);
+                        updateIndex(true, fileIntroVO);
                     } else {
                         executorUpdateContentIndexService.execute(() -> updateIndex(true, fileIntroVO));
                     }
