@@ -1,0 +1,51 @@
+services:
+  mongo:
+    container_name: jmalcloud_mongodb
+    image: registry.cn-beijing.aliyuncs.com/jmalcloud/mongo:4.4
+    environment:
+      TZ: "Asia/Shanghai"
+    volumes:
+      - ./docker/jmalcloud/mongodb/data/db:/data/db
+      - ./docker/jmalcloud/mongodb/backup:/dump
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: --wiredTigerCacheSizeGB 0.5
+
+  jmalcloud:
+    container_name: jmalcloud_server
+    image: registry.cn-beijing.aliyuncs.com/jmalcloud/jmalcloud:latest
+    environment:
+      MONGODB_URI: "mongodb://mongo:27017/jmalcloud"
+      TZ: "Asia/Shanghai"
+      JVM_OPTS: "-Xms256m -Xmx512m"
+    volumes:
+      - ./docker/jmalcloud/files:/jmalcloud/files/
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  nginx:
+    container_name: jmalcloud_nginx
+    image: registry.cn-beijing.aliyuncs.com/jmalcloud/jmalcloud-nginx:latest
+    ports:
+      - 7070:80
+      - 7071:8089
+    environment:
+      TZ: "Asia/Shanghai"
+    links:
+      - jmalcloud
+      - office
+    restart: unless-stopped
+
+  office: # Optional
+    container_name: jmalcloud_office
+    image: registry.cn-beijing.aliyuncs.com/jmalcloud/onlyoffice_documentserver:8.0.1
+    environment:
+      TZ: "Asia/Shanghai"
+      JWT_SECRET: "my_secret"
+    restart: unless-stopped
