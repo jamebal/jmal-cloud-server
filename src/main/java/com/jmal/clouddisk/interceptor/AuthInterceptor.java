@@ -194,7 +194,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         String username = TokenUtil.getTokenKey(refreshToken, hashPassword);
         if (name.equals(username)) {
             boolean rememberMe = name.equals(getCookie(request, "rememberName"));
-            String jmalToken = generateJmalToken(hashPassword, username, rememberMe);
+            String jmalToken = generateJmalToken(hashPassword, username);
             Cookie cookie = new Cookie(JMAL_TOKEN, jmalToken);
             cookie.setPath("/");
             response.addCookie(cookie);
@@ -208,13 +208,12 @@ public class AuthInterceptor implements HandlerInterceptor {
      *
      * @param hashPassword hashPassword
      * @param username     username
-     * @param rememberMe   rememberMe
      * @return jmal-token
      */
-    public static String generateJmalToken(String hashPassword, String username, boolean rememberMe) {
+    public static String generateJmalToken(String hashPassword, String username) {
         LocalDateTime jmalTokenExpiration = LocalDateTime.now();
-        // 如果用户勾选了记住我, jmal-token 期限为1天, 否则为2小时
-        jmalTokenExpiration = jmalTokenExpiration.plusSeconds(rememberMe ? 24 * 3600 : 2 * 3600);
+        // jmal-token 期限为2小时
+        jmalTokenExpiration = jmalTokenExpiration.plusSeconds(2 * 3600);
         return TokenUtil.createToken(username, hashPassword, jmalTokenExpiration);
     }
 
