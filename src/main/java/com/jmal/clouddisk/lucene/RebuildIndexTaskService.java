@@ -20,6 +20,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.PrefixQuery;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -201,6 +203,25 @@ public class RebuildIndexTaskService {
             setPercentMap(100d, getIndexedPercentValue());
             syncFileVisitor = null;
             log.info("同步完成, 耗时: {}s", timeInterval.intervalSecond());
+        }
+    }
+
+    /**
+     * 删除path下的所有索引
+     * @param path path
+     */
+    private void deleteAllIndex(String path) {
+        if (StrUtil.isBlank(path)) {
+            path = "/";
+        }
+        // 查询path下的所有索引
+        Term prefixTerm = new Term("path", path);
+        PrefixQuery prefixQuery = new PrefixQuery(prefixTerm);
+        try {
+            indexWriter.deleteDocuments(prefixQuery);
+            indexWriter.commit();
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -533,6 +554,7 @@ public class RebuildIndexTaskService {
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where("alonePage").exists(false));
         query.addCriteria(Criteria.where("release").exists(false));
+        query.addCriteria(Criteria.where("mountFileId").exists(false));
         if (StrUtil.isNotBlank(userId)) {
             query.addCriteria(Criteria.where("userId").is(userId));
         }
@@ -543,6 +565,8 @@ public class RebuildIndexTaskService {
         // 添加删除标记用于在之后删除
         update.set("delete", 1);
         mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+        // 删除索引
+        deleteAllIndex(path);
     }
 
     /**
