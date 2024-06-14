@@ -1867,7 +1867,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
      * @param username username
      * @param fileIds fileIds
      */
-    private void deleteDependencies(String username, List<String> fileIds) {
+    public void deleteDependencies(String username, List<String> fileIds) {
         // delete history version
         fileVersionService.deleteAll(fileIds);
         // delete video cache
