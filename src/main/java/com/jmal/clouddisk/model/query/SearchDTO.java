@@ -38,4 +38,8 @@ public class SearchDTO extends QueryBaseDTO {
      * tagId
      */
     String tagId;
+    /**
+     * 查询的文件夹
+     */
+    String folder;
 }

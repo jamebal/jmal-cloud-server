@@ -295,6 +295,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         searchDTO.setType(upload.getQueryFileType());
         searchDTO.setIsFavorite(upload.getIsFavorite());
         searchDTO.setTagId(upload.getTagId());
+        searchDTO.setFolder(upload.getFolder());
         return luceneService.searchFile(searchDTO);
         // ResponseResult<Object> result = ResultUtil.genResult();
         // Criteria criteria1 = Criteria.where("name").regex(keyword, "i");

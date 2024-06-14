@@ -6,15 +6,13 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.model.FileIndex;
-import com.jmal.clouddisk.model.FileIntroVO;
-import com.jmal.clouddisk.model.Tag;
-import com.jmal.clouddisk.model.TagDO;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.TagService;
+import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.*;
 import com.mongodb.client.AggregateIterable;
 import jakarta.annotation.PostConstruct;
@@ -69,6 +67,7 @@ public class LuceneService {
     private final RebuildIndexTaskService rebuildIndexTaskService;
 
     public final static String MONGO_INDEX_FIELD = "index";
+    private final UserLoginHolder userLoginHolder;
 
     /**
      * 创建索引线程池
@@ -459,7 +458,15 @@ public class LuceneService {
         if (keyword == null || keyword.trim().isEmpty() || searchDTO.getUserId() == null) {
             return ResultUtil.success(Collections.emptyList());
         }
+        ResponseResult<List<FileIntroVO>> result = ResultUtil.genResult();
         try {
+            beforeQuery(searchDTO);
+            if (!searchDTO.getUserId().equals(userLoginHolder.getUserId())) {
+                Map<String, Object> props = new HashMap<>();
+                props.put("fileUsername", userService.getUserNameById(searchDTO.getUserId()));
+                result.setProps(props);
+            }
+
             int pageNum = searchDTO.getPage();
             int pageSize = searchDTO.getPageSize();
             searcherManager.maybeRefresh();
@@ -492,12 +499,13 @@ public class LuceneService {
                 long update = TimeUntils.getMilli(updateDate);
                 fileIntroVO.setAgoTime(now - update);
             }).toList();
-            return ResultUtil.success(fileIntroVOList).setCount(count);
+            result.setData(fileIntroVOList);
+            result.setCount(count);
+            return result;
         } catch (IOException | ParseException e) {
             log.error("搜索失败", e);
         }
-
-        return ResultUtil.success(new ArrayList<>());
+        return result;
     }
 
     /**
@@ -572,6 +580,24 @@ public class LuceneService {
         return finalQueryBuilder.build();
     }
 
+    /**
+     * 查询前置处理
+     * @param searchDTO searchDTO
+     */
+    private void beforeQuery(SearchDTO searchDTO) {
+        String folder = searchDTO.getFolder();
+        if (StrUtil.isNotBlank(folder)) {
+            // 挂载点查询
+            org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+            query.addCriteria(Criteria.where("_id").is(folder));
+            FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
+            if (fileDocument != null) {
+                searchDTO.setCurrentDirectory(fileDocument.getPath() + fileDocument.getName());
+                searchDTO.setUserId(fileDocument.getUserId());
+            }
+        }
+    }
+
 
     private void otherQueryParams(SearchDTO searchDTO, BooleanQuery.Builder builder) {
         boolean queryPath = StrUtil.isNotBlank(searchDTO.getCurrentDirectory()) && searchDTO.getCurrentDirectory().length() > 1;
@@ -614,9 +640,7 @@ public class LuceneService {
                         new org.bson.Document("order", 0L)
                                 .append("contentText", 0L)));
 
-        AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME)
-                .aggregate(pipeline)
-                .allowDiskUse(true);
+        AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
 
         List<FileIntroVO> results = new ArrayList<>();
         for (org.bson.Document document : aggregateIterable) {
