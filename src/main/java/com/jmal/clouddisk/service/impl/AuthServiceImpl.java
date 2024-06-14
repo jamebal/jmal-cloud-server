@@ -109,7 +109,7 @@ public class AuthServiceImpl implements IAuthService {
         String username = userDTO.getUsername();
         String hashPassword = consumerDO.getPassword();
         boolean rememberMe = BooleanUtil.isTrue(userDTO.getRememberMe());
-        String jmalToken = AuthInterceptor.generateJmalToken(hashPassword, username, rememberMe);
+        String jmalToken = AuthInterceptor.generateJmalToken(hashPassword, username);
         map.put("jmalToken", jmalToken);
         map.put("username", username);
         map.put("userId", consumerDO.getId());
