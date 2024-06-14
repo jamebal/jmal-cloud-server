@@ -151,6 +151,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         List<FileIntroVO> list = getFileDocuments(upload, criteria);
         result.setData(list);
         result.setCount(getFileDocumentsCount(upload, criteria));
+        if (upload.getProps() != null) {
+            result.setProps(upload.getProps());
+        }
         return result;
     }
 
@@ -170,7 +173,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             FileDocument fileDocument = getById(fileId);
             if (fileDocument != null) {
                 upload.setUserId(fileDocument.getUserId());
-                upload.setUsername(userService.getUserNameById(fileDocument.getUserId()));
+                Map<String, Object> props = new HashMap<>(2);
+                String username = userService.getUserNameById(fileDocument.getUserId());
+                props.put("fileUsername", username);
+                upload.setProps(props);
+                upload.setUsername(username);
                 upload.setCurrentDirectory(fileDocument.getPath() + fileDocument.getName());
                 upload.setFolder(null);
                 return true;
@@ -317,6 +324,12 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument == null) {
             return ResultUtil.error(ExceptionType.FILE_NOT_FIND);
+        }
+        if (!fileDocument.getUserId().equals(userLoginHolder.getUserId())) {
+            Map<String, Object> props = new HashMap<>(2);
+            String username = userService.getUserNameById(fileDocument.getUserId());
+            props.put("fileUsername", username);
+            result.setProps(props);
         }
         String currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
 

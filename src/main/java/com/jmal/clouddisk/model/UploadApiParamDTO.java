@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Description UploadApiParam
@@ -83,7 +84,7 @@ public class UploadApiParamDTO {
      * 目录fileId
      */
     String folder;
-
+    Map<String, Object> props;
     /**
      * 文件id
      */
