@@ -477,6 +477,10 @@ public class ShareServiceImpl implements IShareService {
                 mongoTemplate.insertAll(fileDocumentList);
             }
         }
+        // 移除挂载文件
+        Query query = new Query();
+        query.addCriteria(Criteria.where("mountFileId").is(fileId));
+        mongoTemplate.remove(query, FileDocument.class);
     }
 
     @Override

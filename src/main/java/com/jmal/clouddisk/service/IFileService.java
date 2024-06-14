@@ -390,4 +390,11 @@ public interface IFileService {
      * @return ResponseResult<Object>
      */
     ResponseResult<Object> setTag(EditTagDTO editTagDTO);
+
+    /**
+     * 删除文件所有依赖
+     * @param username 用户名
+     * @param fileIds 文件id列表
+     */
+    void deleteDependencies(String username, List<String> fileIds);
 }
