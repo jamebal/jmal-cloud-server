@@ -242,7 +242,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
     private Charset getCharset(GridFSFile gridFSFile) {
         Charset charset = StandardCharsets.UTF_8;
         try (InputStream inputStream = getInputStream(gridFSFile)) {
-            charset = CharsetDetector.detect(inputStream, StandardCharsets.UTF_8);
+            charset = CharsetDetector.detect(inputStream);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
@@ -262,8 +262,8 @@ public class FileVersionServiceImpl implements IFileVersionService {
                  BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {
-                    outputStream.write(line.getBytes(charset));
-                    outputStream.write("\n".getBytes(charset));
+                    outputStream.write(line.getBytes());
+                    outputStream.write("\n".getBytes());
                     outputStream.flush();
                 }
             } catch (ClientAbortException ignored) {
