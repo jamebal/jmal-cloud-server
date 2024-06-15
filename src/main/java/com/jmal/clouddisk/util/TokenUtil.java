@@ -1,8 +1,6 @@
 package com.jmal.clouddisk.util;
 
 
-import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.HexUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
@@ -20,7 +18,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author jmal
@@ -102,23 +99,5 @@ public class TokenUtil {
         }
         return Collections.emptyMap();
     }
-
-    public static void main(String[] args) {
-        String key = "jmal";
-        String password = "oiyugihiyuighjiougihbjhug";
-        LocalDateTime ldt = LocalDateTimeUtil.now().plusSeconds(2);
-        String token = createToken(key, password, ldt);
-        String verifyKey1 = getTokenKey(token, password);
-        Console.log("verifyKey1: ", verifyKey1);
-        try {
-            TimeUnit.SECONDS.sleep(3);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        String verifyKey2 = getTokenKey(token, password);
-        Console.log("verifyKey2: ", verifyKey2);
-
-    }
-
 
 }

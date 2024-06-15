@@ -269,6 +269,27 @@ public class ShareServiceImpl implements IShareService {
         mongoTemplate.upsert(query, update, FileDocument.class);
     }
 
+    @Override
+    public ResponseResult<Object> generateShareToken(String fileId) {
+        FileDocument fileDocument = fileService.getById(fileId);
+        if (fileDocument == null || fileDocument.getShareId() == null) {
+            return ResultUtil.warning("文件不存在");
+        }
+        ShareDO shareDO = getShare(fileDocument.getShareId());
+        if (shareDO == null || BooleanUtil.isFalse(shareDO.getIsPrivacy())) {
+            return ResultUtil.warning("分享不存在或不是私密分享");
+        }
+        if (!fileDocument.getUserId().equals(userLoginHolder.getUserId())) {
+            // 非本人判断是否有挂载
+            if (!existsMountFile(shareDO.getFileId(), userLoginHolder.getUserId())) {
+                return ResultUtil.error(ExceptionType.PERMISSION_DENIED);
+            }
+        }
+        // 生成share-token, share-token有效期等于分享有效期
+        String shareToken = TokenUtil.createToken(shareDO.getId(), shareDO.getExpireDate());
+        return ResultUtil.success(shareToken);
+    }
+
     public void validShare(String shareToken, ShareDO shareDO) {
         if (checkWhetherExpired(shareDO)) {
             throw new CommonException(ExceptionType.WARNING.getCode(), SHARE_EXPIRED);
@@ -311,7 +332,7 @@ public class ShareServiceImpl implements IShareService {
             if (CharSequenceUtil.isBlank(shareToken)) {
                 String userId = userLoginHolder.getUserId();
                 if (CharSequenceUtil.isBlank(userId)) {
-                    throw new CommonException(ExceptionType.SYSTEM_SUCCESS, shareDO);
+                    shareValidFailed(shareDO);
                 }
                 if (existsMountFile(shareDO.getFileId(), userId)) {
                     return;
@@ -320,9 +341,21 @@ public class ShareServiceImpl implements IShareService {
             // 再检查share-token是否正确
             if (!shareDO.getId().equals(TokenUtil.getTokenKey(shareToken))) {
                 // 验证失败
-                throw new CommonException(ExceptionType.SYSTEM_SUCCESS, shareDO);
+                shareValidFailed(shareDO);
             }
         }
+    }
+
+    /**
+     * 分享验证失败·
+     * @param shareDO 分享信息
+     */
+    private static void shareValidFailed(ShareDO shareDO) {
+        shareDO.setExtractionCode(null);
+        shareDO.setOperationPermissionList(null);
+        shareDO.setUserId(null);
+        shareDO.setFileId(null);
+        throw new CommonException(ExceptionType.SYSTEM_SUCCESS, shareDO);
     }
 
     private boolean existsMountFile(String fileId, String userId) {

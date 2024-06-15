@@ -5,7 +5,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -43,7 +42,7 @@ public class SseController {
             uuids.add(uuid);
             users.put(username, uuids);
         }
-        SseEmitter emitter = new SseEmitter(60 * 1000L);
+        SseEmitter emitter = new SseEmitter(30 * 60 * 1000L);
         emitters.put(uuid, emitter);
         emitter.onCompletion(() -> emitters.remove(uuid));
         return emitter;
@@ -66,31 +65,34 @@ public class SseController {
     public void sendEvent(@RequestBody Message message) {
         String username = message.getUsername();
         if (users.containsKey(username)) {
-            users.get(username).forEach(uuid -> sendMessage(message, uuid));
+            users.get(username).forEach(uuid -> sendMessage(message, username, uuid));
         }
     }
 
-    private void sendMessage(Object message, String uuid) {
+    private void sendMessage(Object message, String username, String uuid) {
         SseEmitter emitter = emitters.get(uuid);
         if (emitter != null) {
             try {
                 emitter.send(message);
             } catch (IllegalStateException e) {
                 if (e.getMessage().contains("completed")) {
-                    emitters.remove(uuid);
+                    removeUuid(username, uuid);
                 }
             } catch (IOException e) {
-                emitters.remove(uuid);
+                removeUuid(username, uuid);
             }
         }
     }
 
-    /**
-     * 每5秒发送一次心跳消息
-     */
-    @Scheduled(fixedRate = 5000)
-    public void heartbeat() {
-        emitters.forEach((uuid, emitter) -> sendMessage("h", uuid));
+    private void removeUuid(String username, String uuid) {
+        emitters.remove(uuid);
+        Set<String> uuids = users.get(username);
+        if (uuids != null) {
+            uuids.remove(uuid);
+            if (uuids.isEmpty()) {
+                users.remove(username);
+            }
+        }
     }
 }
 

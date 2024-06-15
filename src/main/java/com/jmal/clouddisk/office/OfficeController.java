@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.office;
 
-import com.alibaba.fastjson.JSON;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.office.callbacks.CallbackHandler;
 import com.jmal.clouddisk.office.model.OfficeConfigDTO;
@@ -40,7 +39,6 @@ public class OfficeController {
     @Permission("cloud:file:list")
     public String track(@RequestParam(Constants.FILE_ID) String fileId, @RequestBody Track body) {
         body.setFileId(fileId);
-        log.info("callbackHandler, {}", JSON.toJSONString(body));
         int error = callbackHandler.handle(body);
         return "{\"error\":" + error + "}";
     }
