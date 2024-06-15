@@ -60,7 +60,7 @@ public class OfficeController {
 
     @Operation(summary = "获取office配置")
     @GetMapping("/office/config")
-    @Permission(value = "cloud:set:sync")
+    @Permission(value = "cloud:file:list")
     public ResponseResult<OfficeConfigDTO> getOfficeConfig() {
         return ResultUtil.success(officeConfigService.getOfficeConfig());
     }
