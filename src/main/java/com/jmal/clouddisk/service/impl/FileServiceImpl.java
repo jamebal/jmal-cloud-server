@@ -570,11 +570,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 while ((line = bufferedReader.readLine()) != null) {
                     if (logFile) {
                         String processedLine = removeAnsiCodes(line);
-                        outputStream.write(processedLine.getBytes(charset));
+                        outputStream.write(processedLine.getBytes());
                     } else {
-                        outputStream.write(line.getBytes(charset));
+                        outputStream.write(line.getBytes());
                     }
-                    outputStream.write("\n".getBytes(charset));
+                    outputStream.write("\n".getBytes());
                     outputStream.flush();
                 }
             } catch (ClientAbortException ignored) {
