@@ -110,4 +110,11 @@ public interface IShareService {
      * @param upload UploadApiParamDTO
      */
     void mountFile(UploadApiParamDTO upload);
+
+    /**
+     * 生成分享token
+     * @param fileId fileId
+     * @return ResponseResult
+     */
+    ResponseResult<Object> generateShareToken(String fileId);
 }

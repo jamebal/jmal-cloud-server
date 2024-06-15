@@ -215,11 +215,11 @@ public class FileInterceptor implements HandlerInterceptor {
         if (fileDocument == null) {
             return true;
         }
-        if (fileDocument.getIsPublic() != null && fileDocument.getIsPublic()) {
+        if (BooleanUtil.isTrue(fileDocument.getIsPublic())) {
             return false;
         }
         // 分享文件
-        if (fileDocument.getIsShare() != null) {
+        if (BooleanUtil.isTrue(fileDocument.getIsShare())) {
             return validShareFile(fileDocument, request);
         }
         return true;
