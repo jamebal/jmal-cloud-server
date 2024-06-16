@@ -99,11 +99,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     @Autowired
     LuceneService luceneService;
 
-    /***
-     * 前端文件夹树的第一级的文件Id
-     */
-    private static final String FIRST_FILE_TREE_ID = "0";
-
     private static final AES aes = SecureUtil.aes();
 
     @Override
@@ -362,10 +357,18 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     private FileDocument getFileDocumentById(String fileId) {
-        if (CharSequenceUtil.isBlank(fileId) || FIRST_FILE_TREE_ID.equals(fileId)) {
+        if (CharSequenceUtil.isBlank(fileId) || Constants.REGION_DEFAULT.equals(fileId)) {
             return null;
         }
         return mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
+    }
+
+    private FileDocument getOriginalFileDocumentById(String fileId) {
+        FileDocument fileDocument = getFileDocumentById(fileId);
+        if (fileDocument != null && fileDocument.getMountFileId() != null) {
+            fileDocument = mongoTemplate.findById(fileDocument.getMountFileId(), FileDocument.class, COLLECTION_NAME);
+        }
+        return fileDocument;
     }
 
     /**
@@ -415,12 +418,18 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                         return webOssService.searchFileAndOpenOssFolder(path, upload);
                     }
                 }
+                if (!fileDocument.getUserId().equals(userLoginHolder.getUserId())) {
+                    upload.setUserId(fileDocument.getUserId());
+                    upload.setUsername(userService.getUserNameById(fileDocument.getUserId()));
+                }
                 currentDirectory = getUserDirectory(fileDocument.getPath() + fileDocument.getName());
             }
         }
         Criteria criteria = Criteria.where("path").is(currentDirectory);
         List<FileDocument> list = getDirDocuments(upload, criteria);
-        list = list.stream().filter(fileDocument -> fileDocument.getMountFileId() == null).toList();
+        if (BooleanUtil.isTrue(upload.getHideMountFile())) {
+            list = list.stream().filter(fileDocument -> fileDocument.getMountFileId() == null).toList();
+        }
         return ResultUtil.success(list);
     }
 
@@ -889,6 +898,14 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         upload.setUsername(userLoginHolder.getUsername());
         ThreadUtil.execute(() -> {
             try {
+                FileDocument formFileDocument = getOriginalFileDocumentById(froms.get(0));
+                if (formFileDocument == null) {
+                    return;
+                }
+                String formUsername = userService.getUserNameById(formFileDocument.getUserId());
+                if (!upload.getUsername().equals(formUsername)) {
+                    checkPermissionUsername(formUsername, formFileDocument.getOperationPermissionList(), OperationPermission.DELETE);
+                }
                 // 复制成功
                 getCopyResult(upload, froms, to, true);
                 String currentDirectory = getOssFileCurrentDirectory(upload, froms);
@@ -1470,32 +1487,52 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
      * @param to 目标文件id
      */
     private ResponseResult<Object> copy(UploadApiParamDTO upload, String from, String to, boolean move) {
-        FileDocument formFileDocument = getFileDocumentById(from);
+        FileDocument formFileDocument = getOriginalFileDocumentById(from);
         String fromPath = getRelativePath(formFileDocument);
-        String fromFilePath = getUserDir(upload.getUsername()) + fromPath;
-        FileDocument toFileDocument = getFileDocumentById(to);
-        ResponseResult<Object> result = ossCopy(upload.getUsername(), formFileDocument, toFileDocument, from, to, move);
+        FileDocument toFileDocument;
+        if (Constants.REGION_DEFAULT.equals(to)) {
+            // 复制到根目录
+            toFileDocument = new FileDocument();
+            toFileDocument.setPath("/");
+            toFileDocument.setName("");
+            toFileDocument.setUserId(upload.getUserId());
+        } else {
+            toFileDocument = getOriginalFileDocumentById(to);
+        }
+        ResponseResult<Object> result = ossCopy(formFileDocument, toFileDocument, from, to, move);
         if (result != null) {
             return result;
         }
 
         String toPath = getRelativePath(toFileDocument);
-        String toFilePath = getUserDir(upload.getUsername()) + toPath;
+
         if (formFileDocument != null) {
+
+            String formUsername = userService.getUserNameById(formFileDocument.getUserId());
+            String fromFilePath = getUserDir(formUsername) + fromPath;
+
             if (CommonFileService.isLock(formFileDocument)) {
                 throw new CommonException(ExceptionType.LOCKED_RESOURCES);
             }
             Path pathFrom = Paths.get(formFileDocument.getPath(), formFileDocument.getName());
-            Path pathTo = Paths.get("/");
             if (toFileDocument != null) {
-                pathTo = Paths.get(toFileDocument.getPath(), toFileDocument.getName());
+
+                String toUsername = userService.getUserNameById(toFileDocument.getUserId());
+                if (!upload.getUsername().equals(toUsername)) {
+                    checkPermissionUsername(toUsername, toFileDocument.getOperationPermissionList(), OperationPermission.UPLOAD);
+                }
+
+                String toFilePath = Paths.get(getUserDir(toUsername) , toPath).toString();
+
+                Path pathTo = Paths.get(toFileDocument.getPath(), toFileDocument.getName());
+                formFileDocument.setUserId(toFileDocument.getUserId());
+                ResponseResult<Object> result1 = copyFile(formFileDocument, fromPath, fromFilePath, toPath, toFilePath);
+                if (result1 != null) return result1;
+                String operation = move ? "移动" : "复制";
+                // 复制成功
+                pushMessageOperationFileSuccess(pathFrom.toString(), pathTo.toString(), upload.getUsername(), operation);
+                return ResultUtil.success();
             }
-            ResponseResult<Object> result1 = copyFile(formFileDocument, fromPath, fromFilePath, toPath, toFilePath);
-            if (result1 != null) return result1;
-            String operation = move ? "移动" : "复制";
-            // 复制成功
-            pushMessageOperationFileSuccess(pathFrom.toString(), pathTo.toString(), upload.getUsername(), operation);
-            return ResultUtil.success();
         }
         return ResultUtil.error("复制失败");
     }
@@ -1543,15 +1580,17 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         createFile(username, file);
     }
 
-    private ResponseResult<Object> ossCopy(String username, FileDocument fileDocumentFrom, FileDocument fileDocumentTo, String from, String to, boolean isMove) {
+    private ResponseResult<Object> ossCopy(FileDocument fileDocumentFrom, FileDocument fileDocumentTo, String from, String to, boolean isMove) {
         if (fileDocumentFrom != null && fileDocumentFrom.getOssFolder() != null) {
             if (isMove) {
                 throw new CommonException("不能移动oss根目录");
             }
-            from = username + MyWebdavServlet.PATH_DELIMITER + fileDocumentFrom.getOssFolder() + MyWebdavServlet.PATH_DELIMITER;
+            String formUsername = userService.getUserNameById(fileDocumentFrom.getUserId());
+            from = formUsername + MyWebdavServlet.PATH_DELIMITER + fileDocumentFrom.getOssFolder() + MyWebdavServlet.PATH_DELIMITER;
         }
         if (fileDocumentTo != null && fileDocumentTo.getOssFolder() != null) {
-            to = username + MyWebdavServlet.PATH_DELIMITER + fileDocumentTo.getOssFolder() + MyWebdavServlet.PATH_DELIMITER;
+            String toUsername = userService.getUserNameById(fileDocumentTo.getUserId());
+            to = toUsername + MyWebdavServlet.PATH_DELIMITER + fileDocumentTo.getOssFolder() + MyWebdavServlet.PATH_DELIMITER;
         }
         Path prePathFrom = Paths.get(from);
         Path prePathTo = Paths.get(to);

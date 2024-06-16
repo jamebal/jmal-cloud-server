@@ -13,6 +13,7 @@ public class Constants {
 
     private Constants() { }
 
+    public static final String REGION_DEFAULT = "0";
     public static final String EXTRACTION_CODE = "extractionCode";
     public static final String IS_PRIVACY = "isPrivacy";
     public static final String OPERATION_PERMISSION_LIST = "operationPermissionList";

@@ -184,7 +184,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
         boolean isFolder = objectNameFrom.endsWith("/");
 
         FileDocument destFileDocument;
-        if ("0".equals(fileId)) {
+        if (Constants.REGION_DEFAULT.equals(fileId)) {
             // 根目录
             destFileDocument = new FileDocument();
             destFileDocument.setName("");

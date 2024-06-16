@@ -237,7 +237,7 @@ public class ShareServiceImpl implements IShareService {
             throw new CommonException(ExceptionType.WARNING.getCode(), "该分享不是文件夹");
         }
         FileDocument toFileDocument;
-        if ("0".equals(upload.getFileId())) {
+        if (Constants.REGION_DEFAULT.equals(upload.getFileId())) {
             //  挂载到根目录
             toFileDocument = new FileDocument();
             toFileDocument.setPath("");
@@ -253,7 +253,10 @@ public class ShareServiceImpl implements IShareService {
         if (BooleanUtil.isFalse(toFileDocument.getIsFolder())) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "只能挂载到文件夹下");
         }
-
+        // 判断是否有挂载
+        if (existsMountFile(fromFileDocument.getId(), upload.getUserId())) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "已经挂载过了");
+        }
         // 创建文件夹
         FileDocument fileDocument = new FileDocument();
         fileDocument.setIsFolder(true);
