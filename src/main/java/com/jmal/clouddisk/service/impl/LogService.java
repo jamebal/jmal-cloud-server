@@ -39,8 +39,6 @@ public class LogService {
 
     private static final int REGION_LENGTH = 5;
 
-    private static final String REGION_DEFAULT = "0";
-
     @Autowired
     private MongoTemplate mongoTemplate;
 
@@ -175,23 +173,23 @@ public class LogService {
         String[] r = region.split("\\|");
         if (r.length != REGION_LENGTH) return ipInfo;
         String country = r[0];
-        if (!REGION_DEFAULT.equals(country)) {
+        if (!Constants.REGION_DEFAULT.equals(country)) {
             ipInfo.setCountry(country);
         }
         String area = r[1];
-        if (!REGION_DEFAULT.equals(area)) {
+        if (!Constants.REGION_DEFAULT.equals(area)) {
             ipInfo.setArea(area);
         }
         String province = r[2];
-        if (!REGION_DEFAULT.equals(province)) {
+        if (!Constants.REGION_DEFAULT.equals(province)) {
             ipInfo.setProvince(province);
         }
         String city = r[3];
-        if (!REGION_DEFAULT.equals(city)) {
+        if (!Constants.REGION_DEFAULT.equals(city)) {
             ipInfo.setCity(city);
         }
         String operators = r[4];
-        if (!REGION_DEFAULT.equals(operators)) {
+        if (!Constants.REGION_DEFAULT.equals(operators)) {
             ipInfo.setOperators(operators);
         }
         return ipInfo;
