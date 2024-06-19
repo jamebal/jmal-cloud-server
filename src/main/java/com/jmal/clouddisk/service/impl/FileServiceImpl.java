@@ -696,9 +696,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (fileDocument == null) {
             return;
         }
-        if (CharSequenceUtil.isBlank(username)) {
-            username = fileDocument.getUsername();
-        }
         //响应头的设置
         response.reset();
         response.setCharacterEncoding("utf-8");
@@ -706,24 +703,17 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         //设置压缩包的名字
         setDownloadName(request, response, fileDocument.getName() + ".zip");
 
-        Path srcDir = Paths.get(fileProperties.getRootDir(), username, getUserDirectory(fileDocument.getPath()));
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIdList));
         List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
         // 选中的文件
-        List<String> selectNameList;
-        selectNameList = fileDocuments.stream().map(FileBase::getName).toList();
-        List<String> finalSelectNameList = selectNameList;
-        File[] excludeFiles = srcDir.toFile().listFiles(file -> !finalSelectNameList.contains(file.getName()));
-        List<Path> excludeFilePathList = new ArrayList<>();
-        if (excludeFiles != null) {
-            for (File excludeFile : excludeFiles) {
-                excludeFilePathList.add(excludeFile.toPath());
-            }
-        }
+        List<Path> selectFileList = fileDocuments.stream().map(fileDoc -> {
+            String fileUsername = userService.getUserNameById(fileDoc.getUserId());
+            return Paths.get(fileProperties.getRootDir(), fileUsername, fileDoc.getPath(), fileDoc.getName());
+        }).toList();
         // 压缩传输
         try {
-            CompressUtils.zip(srcDir, excludeFilePathList, response.getOutputStream());
+            CompressUtils.compress(selectFileList, response.getOutputStream());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
