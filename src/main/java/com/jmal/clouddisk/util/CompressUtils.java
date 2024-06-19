@@ -1,5 +1,7 @@
 package com.jmal.clouddisk.util;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +12,6 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.utils.IOUtils;
 import org.apache.tools.zip.ZipEntry;
 import org.apache.tools.zip.ZipFile;
 import org.apache.tools.zip.ZipOutputStream;
@@ -29,19 +30,6 @@ import java.util.Objects;
  */
 @Slf4j
 public class CompressUtils {
-
-    /**
-     * 压缩文件夹下的指定文件到指定zip文件
-     *
-     * @param paths      源文件列表
-     * @param targetFile 目标指定zip文件
-     * @throws IOException IO异常，抛出给调用者处理
-     */
-    public static void compress(List<Path> paths, String targetFile) throws IOException {
-        try (OutputStream outputStream = new FileOutputStream(targetFile)) {
-            compress(paths, outputStream);
-        }
-    }
 
     public static void compress(List<Path> paths, OutputStream outputStream) {
         try (ZipOutputStream zipOut = new ZipOutputStream(outputStream)) {
@@ -118,17 +106,6 @@ public class CompressUtils {
         }
     }
 
-    /**
-     * 解压zip文件到指定文件夹
-     *
-     * @param zipFileName 源zip文件路径
-     * @param destDir     解压后输出路径
-     * @param isWrite     是否输出文件
-     * @throws IOException IO异常，抛出给调用者处理
-     */
-    public static void unzip(String zipFileName, String destDir, boolean isWrite) throws IOException {
-        unZip(new File(zipFileName), destDir, isWrite);
-    }
 
     /**
      * 解压 .zip 文件
@@ -136,7 +113,6 @@ public class CompressUtils {
      * @param file      要解压的zip文件对象
      * @param outputDir 要解压到某个指定的目录下
      * @param isWrite   是否输出文件
-     * @throws IOException
      */
     public static void unZip(File file, String outputDir, boolean isWrite) throws IOException {
         ZipFile zipFile = new ZipFile(file, "utf-8");
@@ -146,43 +122,43 @@ public class CompressUtils {
         while (enums.hasMoreElements()) {
             org.apache.tools.zip.ZipEntry entry = (ZipEntry) enums.nextElement();
             InputStream in = zipFile.getInputStream(entry);
-            if (entry.isDirectory()) {
-                //创建空目录
-                createDirectory(outputDir, entry.getName());
-            } else {
-                Path parentPath = Paths.get(outputDir, entry.getName()).getParent();
-                if (!Files.exists(parentPath)) {
-                    parentPath.toFile().mkdirs();
-                }
-                OutputStream out = new FileOutputStream(new File(outputDir + File.separator + entry.getName()));
-                if (isWrite) {
-                    IOUtils.copy(in, out);
-                }
-            }
+            decompress(outputDir, isWrite, in, entry.isDirectory(), entry.getName());
         }
         zipFile.close();
+    }
+
+    private static void decompress(String outputDir, boolean isWrite, InputStream in, boolean directory, String name) throws FileNotFoundException {
+        if (directory) {
+            //创建空目录
+            createDirectory(outputDir, name);
+        } else {
+            Path parentPath = Paths.get(outputDir, name).getParent();
+            if (!Files.exists(parentPath)) {
+                FileUtil.mkdir(parentPath.toFile());
+            }
+            OutputStream out = new FileOutputStream(outputDir + File.separator + name);
+            if (isWrite) {
+                IoUtil.copy(in, out);
+            }
+        }
     }
 
     public static void decompressTarGz(File file, String outputDir, boolean isWrite) throws IOException {
         TarArchiveInputStream tarIn = new TarArchiveInputStream(new GzipCompressorInputStream(new BufferedInputStream(new FileInputStream(file))));
         //创建输出目录
         createDirectory(outputDir, null);
-        TarArchiveEntry entry = null;
-        while ((entry = tarIn.getNextTarEntry()) != null) {
+        TarArchiveEntry entry;
+        while ((entry = tarIn.getNextEntry()) != null) {
             decompress(outputDir, isWrite, tarIn, entry);
         }
-    }
-
-    public static void decompressRAR(File file, String outputDir, boolean isWrite) throws IOException {
-
     }
 
     public static void decompressJar(File file, String outputDir, boolean isWrite) throws IOException {
         JarArchiveInputStream inputStream = new JarArchiveInputStream(new FileInputStream(file));
         //创建输出目录
         createDirectory(outputDir, null);
-        JarArchiveEntry entry = null;
-        while (Objects.nonNull(entry = inputStream.getNextJarEntry())) {
+        JarArchiveEntry entry;
+        while (Objects.nonNull(entry = inputStream.getNextEntry())) {
             decompress(outputDir, isWrite, inputStream, entry);
         }
     }
@@ -191,8 +167,8 @@ public class CompressUtils {
         TarArchiveInputStream inputStream = new TarArchiveInputStream(new FileInputStream(file));
         //创建输出目录
         createDirectory(outputDir, null);
-        TarArchiveEntry entry = null;
-        while (Objects.nonNull(entry = inputStream.getNextTarEntry())) {
+        TarArchiveEntry entry;
+        while (Objects.nonNull(entry = inputStream.getNextEntry())) {
             decompress(outputDir, isWrite, inputStream, entry);
         }
     }
@@ -207,57 +183,34 @@ public class CompressUtils {
         TarArchiveInputStream tarIn = new TarArchiveInputStream(new BZip2CompressorInputStream(new FileInputStream(file)));
         createDirectory(outputDir, null);
         TarArchiveEntry entry;
-        while (Objects.nonNull(entry = tarIn.getNextTarEntry())) {
+        while (Objects.nonNull(entry = tarIn.getNextEntry())) {
             decompress(outputDir, isWrite, tarIn, entry);
         }
     }
 
     private static void decompress(String outputDir, boolean isWrite, InputStream inputStream, ArchiveEntry entry) throws IOException {
         //是目录
-        if (entry.isDirectory()) {
-            //创建空目录
-            createDirectory(outputDir, entry.getName());
-        } else {
-            Path parentPath = Paths.get(outputDir, entry.getName()).getParent();
-            if (!Files.exists(parentPath)) {
-                parentPath.toFile().mkdirs();
-            }
-            OutputStream out = new FileOutputStream(new File(outputDir + File.separator + entry.getName()));
-            if (isWrite) {
-                IOUtils.copy(inputStream, out);
-            }
-        }
+        decompress(outputDir, isWrite, inputStream, entry.isDirectory(), entry.getName());
     }
 
     /**
      * 创建目录
      *
-     * @param outputDir
-     * @param subDir
+     * @param outputDir 输出目录
+     * @param subDir   子目录
      */
     public static void createDirectory(String outputDir, String subDir) {
         File file = new File(outputDir);
         //子目录不为空
-        if (!(subDir == null || subDir.trim().equals(""))) {
+        if (!(subDir == null || subDir.trim().isEmpty())) {
             file = new File(outputDir + File.separator + subDir);
         }
         if (!file.exists()) {
             if (!file.getParentFile().exists()) {
-                file.getParentFile().mkdirs();
+                FileUtil.mkdir(file.getParentFile());
             }
-            file.mkdirs();
+            FileUtil.mkdir(file);
         }
-    }
-
-    public static void main(String[] args) throws IOException {
-
-        List<Path> paths = List.of(
-                Paths.get("/Users/jmal/temp/filetest/rootpath/jmal/滨滨广场点位表.xlsx"),
-                Paths.get("/Users/jmal/temp/filetest/rootpath/jmal/测试移动/IMG_0465.MOV"),
-                Paths.get("/Users/jmal/Downloads/demo")
-        );
-
-        compress(paths, "/Users/jmal/Downloads/压缩测试.zip");
     }
 
 }
