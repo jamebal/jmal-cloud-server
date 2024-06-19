@@ -16,7 +16,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
         <maven-jar-plugin.version>3.0.0</maven-jar-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lucene.version>9.10.0</lucene.version>
@@ -99,6 +99,12 @@
             <groupId>com.github.gotson</groupId>
             <artifactId>webp-imageio</artifactId>
             <version>0.2.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.albfernandez</groupId>
+            <artifactId>juniversalchardet</artifactId>
+            <version>2.5.0</version>
         </dependency>
 
         <dependency>
