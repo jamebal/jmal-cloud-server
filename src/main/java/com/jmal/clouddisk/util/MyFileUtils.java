@@ -2,6 +2,7 @@ package com.jmal.clouddisk.util;
 
 import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
+import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.mozilla.universalchardet.UniversalDetector;
 
@@ -32,7 +33,8 @@ public class MyFileUtils {
      */
     public static Charset getFileCharset(File file) {
         try {
-            return Charset.forName(UniversalDetector.detectCharset(file), StandardCharsets.UTF_8);
+            String charset = UniversalDetector.detectCharset(file);
+            return StrUtil.isBlank(charset) ? StandardCharsets.UTF_8 : Charset.forName(charset);
         } catch (Exception e) {
             return StandardCharsets.UTF_8;
         }
