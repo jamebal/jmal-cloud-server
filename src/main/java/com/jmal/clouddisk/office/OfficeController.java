@@ -49,13 +49,6 @@ public class OfficeController {
         return ResultUtil.success(officeConfigService.createOfficeToken(config));
     }
 
-    @Operation(summary = "public signature")
-    @PostMapping("/public/office/signature")
-    public ResponseResult<String> signaturePublic(@RequestBody Map<String, Object> config, @RequestParam String shareId, @RequestParam String shareToken) {
-        shareService.validShare(shareToken, shareId);
-        return ResultUtil.success(officeConfigService.createOfficeToken(config));
-    }
-
     @Operation(summary = "获取office配置")
     @GetMapping("/office/config")
     @Permission(value = "cloud:file:list")
@@ -69,6 +62,20 @@ public class OfficeController {
     public ResponseResult<OfficeConfigDTO> putOfficeConfig(@RequestBody @Validated OfficeConfigDTO officeConfigDTO) {
         officeConfigService.setOfficeConfig(officeConfigDTO);
         return ResultUtil.success();
+    }
+
+    @Operation(summary = "public signature")
+    @PostMapping("/public/office/signature")
+    public ResponseResult<String> signaturePublic(@RequestBody Map<String, Object> config, @RequestParam String shareId, String shareToken) {
+        shareService.validShare(shareToken, shareId);
+        return ResultUtil.success(officeConfigService.createOfficeToken(config));
+    }
+
+    @Operation(summary = "获取public office配置")
+    @GetMapping("/public/office/config")
+    public ResponseResult<OfficeConfigDTO> getPublicOfficeConfig(@RequestParam String shareId, String shareToken) {
+        shareService.validShare(shareToken, shareId);
+        return ResultUtil.success(officeConfigService.getOfficeConfig());
     }
 
 }
