@@ -325,8 +325,13 @@ public class CommonFileService {
             if (fileExists != null) {
                 // 添加文件索引
                 // 获取tagName
-                updateExifInfo(file, fileExists, contentType, suffix, query);
-                updateVideoInfo(file, fileExists, contentType, query);
+                Update update = new Update();
+                updateExifInfo(file, fileExists, contentType, suffix, update);
+                updateVideoInfo(file, fileExists, contentType, update);
+                updateOtherInfo(fileExists, contentType, update);
+                if (!update.getUpdateObject().isEmpty()) {
+                    mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
+                }
                 luceneService.pushCreateIndexQueue(fileExists.getId());
                 return fileExists.getId();
             }
@@ -366,6 +371,12 @@ public class CommonFileService {
         return fileId;
     }
 
+    private void updateOtherInfo(FileDocument fileExists, String contentType, Update update) {
+        if (!contentType.equals(fileExists.getContentType())) {
+            update.set(Constants.CONTENT_TYPE, contentType);
+        }
+    }
+
     private String getRelativePath(String username, String fileAbsolutePath, String fileName) {
         int startIndex = fileProperties.getRootDir().length() + username.length() + 1;
         int endIndex = fileAbsolutePath.length() - fileName.length();
@@ -381,29 +392,24 @@ public class CommonFileService {
      * @param fileExists 文件信息
      * @param contentType 文件类型
      * @param suffix 文件后缀
-     * @param query 查询条件
      */
-    private void updateExifInfo(File file, FileDocument fileExists, String contentType, String suffix, Query query) {
+    private void updateExifInfo(File file, FileDocument fileExists, String contentType, String suffix, Update update) {
         if (!ImageExifUtil.isImageType(contentType, suffix)) {
             return;
         }
         if (fileExists.getExif() == null || RebuildIndexTaskService.isSyncFile()) {
             // 更新图片Exif信息
-            Update update = new Update();
             update.set("exif", ImageExifUtil.getExif(file));
-            mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
         }
     }
 
-    private void updateVideoInfo(File file, FileDocument fileExists, String contentType, Query query) {
+    private void updateVideoInfo(File file, FileDocument fileExists, String contentType, Update update) {
         if (!contentType.contains(Constants.VIDEO)) {
             return;
         }
         if (fileExists.getVideo() == null || RebuildIndexTaskService.isSyncFile()) {
             VideoInfo videoInfo = videoProcessService.getVideoInfo(file);
-            Update update = new Update();
             update.set("video", videoInfo.toVideoInfoDO());
-            mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
         }
     }
 

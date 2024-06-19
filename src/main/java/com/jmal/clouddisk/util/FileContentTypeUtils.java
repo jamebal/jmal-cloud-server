@@ -168,8 +168,8 @@ public class FileContentTypeUtils {
         CONTENT_TYPE.put("dvi" , "application/x-dvi");
         CONTENT_TYPE.put("dvi.bz2" , "application/x-bzdvi");
         CONTENT_TYPE.put("dvi.gz" , "application/x-gzdvi");
-        CONTENT_TYPE.put("dwg" , "image/vnd.dwg");
-        CONTENT_TYPE.put("dxf" , "image/vnd.dxf");
+        CONTENT_TYPE.put("dwg" , "application/acad");
+        CONTENT_TYPE.put("dxf" , "application/acad");
         CONTENT_TYPE.put("e" , "text/x-eiffel");
         CONTENT_TYPE.put("egon" , "application/x-egon");
         CONTENT_TYPE.put("eif" , "text/x-eiffel");
