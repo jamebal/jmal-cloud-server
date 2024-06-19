@@ -4,20 +4,16 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.ArchiveInputStream;
-import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.jar.JarArchiveEntry;
 import org.apache.commons.compress.archivers.jar.JarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
-import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.tools.zip.ZipEntry;
 import org.apache.tools.zip.ZipFile;
+import org.apache.tools.zip.ZipOutputStream;
 
 import java.io.*;
 import java.nio.file.*;
@@ -37,126 +33,64 @@ public class CompressUtils {
     /**
      * 压缩文件夹下的指定文件到指定zip文件
      *
-     * @param srcDir 源文件夹
-     * @param excludeFilePathList 源文件夹下要排除的文件
+     * @param paths      源文件列表
      * @param targetFile 目标指定zip文件
      * @throws IOException IO异常，抛出给调用者处理
      */
-    public static void zip(Path srcDir, List<Path> excludeFilePathList, String targetFile) throws IOException {
-        try (
-                OutputStream outputStream = new FileOutputStream(targetFile);
-        ) {
-            zip(srcDir, excludeFilePathList, outputStream);
+    public static void compress(List<Path> paths, String targetFile) throws IOException {
+        try (OutputStream outputStream = new FileOutputStream(targetFile)) {
+            compress(paths, outputStream);
         }
     }
 
-    /**
-     * 压缩文件夹到指定输出流中，可以是本地文件输出流，也可以是web响应下载流
-     *
-     * @param srcDir 源文件夹
-     * @param excludeFilePathList 源文件夹下的文件路径列表
-     * @param outputStream 压缩后文件的输出流
-     * @throws IOException IO异常，抛出给调用者处理
-     */
-    public static void zip(Path srcDir, List<Path> excludeFilePathList, OutputStream outputStream) throws IOException {
-        try (
-                BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream);
-                ArchiveOutputStream out = new ZipArchiveOutputStream(bufferedOutputStream);
-        ) {
-            Files.walkFileTree(srcDir, new PathSimpleFileVisitor(excludeFilePathList, srcDir, out));
-        }
-    }
-
-    /**
-     * 解压zip文件到指定文件夹
-     *
-     * @param zipFileName 源zip文件路径
-     * @param destDir 解压后输出路径
-     * @throws IOException IO异常，抛出给调用者处理
-     */
-    public static void unzip(String zipFileName, String destDir) throws IOException {
-        try (
-                InputStream inputStream = new FileInputStream(zipFileName);
-        ) {
-            unzip(inputStream, destDir);
-        }
-
-    }
-
-    /**
-     * 从输入流中获取zip文件，并解压到指定文件夹
-     *
-     * @param inputStream zip文件输入流，可以是本地文件输入流，也可以是web请求上传流
-     * @param destDir 解压后输出路径
-     * @throws IOException IO异常，抛出给调用者处理
-     */
-    public static void unzip(InputStream inputStream, String destDir) throws IOException {
-        try (
-                BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
-                ArchiveInputStream in = new ZipArchiveInputStream(bufferedInputStream);
-        ) {
-            ArchiveEntry entry = null;
-            while (Objects.nonNull(entry = in.getNextEntry())) {
-                if (in.canReadEntryData(entry)) {
-                    File file = Paths.get(destDir, entry.getName()).toFile();
-                    if (entry.isDirectory()) {
-                        if (!file.exists()) {
-                            file.mkdirs();
-                        }
-                    } else {
-                        try (
-                                OutputStream out = new FileOutputStream(file);
-                        ) {
-                            IOUtils.copy(in, out);
-                        }
-                    }
+    public static void compress(List<Path> paths, OutputStream outputStream) {
+        try (ZipOutputStream zipOut = new ZipOutputStream(outputStream)) {
+            // 遍历每个路径
+            // 遍历每个路径并处理
+            for (Path path : paths) {
+                if (Files.isDirectory(path)) {
+                    // 处理文件夹及其内容
+                    addDirectoryToZip(path.getParent(), path, zipOut);
                 } else {
-                    System.out.println(entry.getName());
+                    // 直接处理文件
+                    addToZip(path.getParent(), path, zipOut);
                 }
             }
+        } catch (IOException e) {
+            log.warn("压缩文件失败", e);
         }
-
     }
 
-    private static class PathSimpleFileVisitor extends SimpleFileVisitor<Path> {
-
-        private final List<Path> selectFilePathList;
-        private final Path start;
-        private final ArchiveOutputStream out;
-
-        PathSimpleFileVisitor(List<Path> selectFilePathList, Path start, ArchiveOutputStream out) {
-            this.selectFilePathList = selectFilePathList;
-            this.start = start;
-            this.out = out;
-        }
-
-        @Override
-        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-            if(selectFilePathList.contains(dir)){
-                return FileVisitResult.SKIP_SUBTREE;
+    private static void addDirectoryToZip(Path rootDir, Path sourceDir, ZipOutputStream zipOut) throws IOException {
+        // 遍历文件夹及其子文件夹内容
+        Files.walkFileTree(sourceDir, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                addToZip(rootDir, file, zipOut);
+                return FileVisitResult.CONTINUE;
             }
-            ArchiveEntry entry = new ZipArchiveEntry(dir.toFile(), start.relativize(dir).toString());
-            out.putArchiveEntry(entry);
-            out.closeArchiveEntry();
-            return FileVisitResult.CONTINUE;
-        }
 
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            if(selectFilePathList.contains(file)){
-                return FileVisitResult.SKIP_SUBTREE;
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                if (!dir.equals(sourceDir)) {
+                    addToZip(rootDir, dir, zipOut);
+                }
+                return FileVisitResult.CONTINUE;
             }
-            try (
-                    InputStream input = new FileInputStream(file.toFile())
-            ) {
-                ArchiveEntry entry = new ZipArchiveEntry(file.toFile(), start.relativize(file).toString());
-                out.putArchiveEntry(entry);
-                IOUtils.copy(input, out);
-                out.closeArchiveEntry();
-            }
-            return FileVisitResult.CONTINUE;
-        }
+        });
+    }
 
+    private static void addToZip(Path rootDir, Path file, ZipOutputStream zipOut) throws IOException {
+        String zipEntryName = rootDir.relativize(file).toString().replace("\\", "/");
+        if (Files.isDirectory(file)) {
+            zipEntryName += "/";
+        }
+        ZipEntry zipEntry = new ZipEntry(zipEntryName);
+        zipOut.putNextEntry(zipEntry);
+        if (!Files.isDirectory(file)) {
+            Files.copy(file, zipOut);
+        }
+        zipOut.closeEntry();
     }
 
     public static void decompress(String filePath, String outputDir, boolean isWrite) {
@@ -179,7 +113,7 @@ public class CompressUtils {
                 throw new CommonException(ExceptionType.UNRECOGNIZED_FILE);
             }
         } catch (IOException e) {
-            log.error(e.getMessage(),e);
+            log.error(e.getMessage(), e);
             throw new CommonException(ExceptionType.FAIL_DECOMPRESS);
         }
     }
@@ -205,7 +139,7 @@ public class CompressUtils {
      * @throws IOException
      */
     public static void unZip(File file, String outputDir, boolean isWrite) throws IOException {
-        ZipFile zipFile = new ZipFile(file,"utf-8");
+        ZipFile zipFile = new ZipFile(file, "utf-8");
         //创建输出目录
         createDirectory(outputDir, null);
         Enumeration<?> enums = zipFile.getEntries();
@@ -216,13 +150,13 @@ public class CompressUtils {
                 //创建空目录
                 createDirectory(outputDir, entry.getName());
             } else {
-                Path parentPath = Paths.get(outputDir,entry.getName()).getParent();
-                if(!Files.exists(parentPath)){
+                Path parentPath = Paths.get(outputDir, entry.getName()).getParent();
+                if (!Files.exists(parentPath)) {
                     parentPath.toFile().mkdirs();
                 }
                 OutputStream out = new FileOutputStream(new File(outputDir + File.separator + entry.getName()));
-                if(isWrite){
-                    IOUtils.copy(in,out);
+                if (isWrite) {
+                    IOUtils.copy(in, out);
                 }
             }
         }
@@ -316,11 +250,14 @@ public class CompressUtils {
     }
 
     public static void main(String[] args) throws IOException {
-        long stime = System.currentTimeMillis();
-        String filePath = "/Users/jmal/temp/filetest/rootpath/jmal/文件类型测试/download.zip";
-        String destDir = "/Users/jmal/temp/filetest/rootpath/jmal/文件类型测试/download";
-        CompressUtils.unzip(filePath, destDir, false);
-        System.out.println(System.currentTimeMillis() - stime);
+
+        List<Path> paths = List.of(
+                Paths.get("/Users/jmal/temp/filetest/rootpath/jmal/滨滨广场点位表.xlsx"),
+                Paths.get("/Users/jmal/temp/filetest/rootpath/jmal/测试移动/IMG_0465.MOV"),
+                Paths.get("/Users/jmal/Downloads/demo")
+        );
+
+        compress(paths, "/Users/jmal/Downloads/压缩测试.zip");
     }
 
 }
