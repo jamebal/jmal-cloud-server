@@ -3,7 +3,6 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.URLUtil;
@@ -30,6 +29,7 @@ import org.apache.commons.io.IOUtils;
 import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -242,9 +242,9 @@ public class FileVersionServiceImpl implements IFileVersionService {
     private Charset getCharset(GridFSFile gridFSFile) {
         Charset charset = StandardCharsets.UTF_8;
         try (InputStream inputStream = getInputStream(gridFSFile)) {
-            charset = CharsetDetector.detect(inputStream);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            charset = Charset.forName(UniversalDetector.detectCharset(inputStream));
+        } catch (Exception e) {
+            return charset;
         }
         return charset;
     }

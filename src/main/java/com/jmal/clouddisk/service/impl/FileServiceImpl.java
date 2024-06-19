@@ -42,6 +42,7 @@ import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.jetbrains.annotations.NotNull;
+import org.mozilla.universalchardet.ReaderFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -54,7 +55,9 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -499,7 +502,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             if (Files.exists(filepath)) {
                 File file = filepath.toFile();
                 Charset charset = MyFileUtils.getFileCharset(file);
-                fileDocument.setDecoder(charset.toString());
+                fileDocument.setDecoder(charset.name());
                 if (BooleanUtil.isTrue(content)) {
                     fileDocument.setContentText(FileUtil.readString(file, charset));
                 }
@@ -542,7 +545,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         FileDocument fileDocument = new FileDocument();
-        fileDocument.setDecoder(MyFileUtils.getFileCharset(file).toString());
+        fileDocument.setDecoder(MyFileUtils.getFileCharset(file).name());
         Path path1 = path.subpath(0, path.getNameCount() - 1);
         int rootCount = Paths.get(fileProperties.getRootDir(), username).getNameCount();
         int path1Count = path1.getNameCount();
@@ -569,10 +572,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     @NotNull
     private static StreamingResponseBody getStreamingResponseBody(File file) {
         return outputStream -> {
-            Charset charset = MyFileUtils.getFileCharset(file);
-            try (InputStream inputStream = FileUtil.getInputStream(file);
-                 InputStreamReader inputStreamReader = new InputStreamReader(inputStream, charset);
-                 BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+            try (BufferedReader bufferedReader = ReaderFactory.createBufferedReader(file)) {
                 // 判断file是否为log文件
                 boolean logFile = file.length() > 0 && FileTypeUtil.getType(file).equals("log");
                 String line;
