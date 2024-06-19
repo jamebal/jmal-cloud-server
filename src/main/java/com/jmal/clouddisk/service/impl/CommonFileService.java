@@ -2,11 +2,11 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -40,6 +40,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.jetbrains.annotations.Nullable;
+import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -539,8 +540,8 @@ public class CommonFileService {
             if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN)) {
                 return contentType;
             }
-            Charset charset = CharsetDetector.detect(file);
-            if (charset != null && "UTF-8".equals(charset.toString())) {
+            String charset = UniversalDetector.detectCharset(file);
+            if (StrUtil.isNotBlank(charset) && StandardCharsets.UTF_8.name().equals(charset)) {
                 contentType = contentType + ";charset=utf-8";
             }
         } catch (Exception e) {

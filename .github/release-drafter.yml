@@ -29,7 +29,7 @@ template: |
   
   #### 清理旧镜像
   ```shell
-  docker images --filter=reference='jmal/jmalcloud*' --filter "dangling=true" -q | xargs -r docker rmi
+  docker rmi $(docker images --filter "dangling=true" | grep "jmalcloud" | awk '{print $3}')
   ```
   
   ## Changes in this release:
