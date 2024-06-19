@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.lucene;
 
-import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.thread.ThreadUtil;
@@ -27,6 +26,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.bson.types.ObjectId;
+import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Update;
@@ -349,13 +349,10 @@ public class LuceneService {
             if ("doc".equals(type) || "docx".equals(type)) {
                 return FileContentUtil.readWordContent(file);
             }
-            Charset charset = CharsetDetector.detect(file);
-            if (charset == null) {
-                return null;
-            }
-            if ("UTF-8".equals(charset.toString())) {
+            String charset = UniversalDetector.detectCharset(file);
+            if (StrUtil.isNotBlank(charset)) {
                 if (fileProperties.getSimText().contains(type)) {
-                    return FileUtil.readUtf8String(file);
+                    return FileUtil.readString(file, Charset.forName(charset));
                 }
             }
         } catch (Exception e) {
@@ -374,11 +371,8 @@ public class LuceneService {
             }
             String type = FileTypeUtil.getType(file);
             if (MyFileUtils.hasContentFile(type)) return true;
-            Charset charset = CharsetDetector.detect(file);
-            if (charset == null) {
-                return false;
-            }
-            if ("UTF-8".equals(charset.toString())) {
+            String charset = UniversalDetector.detectCharset(file);
+            if (StrUtil.isNotBlank(charset)) {
                 if (fileProperties.getSimText().contains(type)) {
                     return true;
                 }

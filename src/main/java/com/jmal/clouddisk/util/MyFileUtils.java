@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.util;
 
-import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -53,17 +52,11 @@ public class MyFileUtils {
             }
             String type = FileTypeUtil.getType(file);
             if (hasContentFile(type)) return true;
-            Charset charset = CharsetDetector.detect(file);
-            if (charset == null) {
-                return false;
-            }
-            if ("UTF-8".equals(charset.toString())) {
-                return true;
-            }
+            String charset = UniversalDetector.detectCharset(file);
+            return !StrUtil.isBlank(charset);
         } catch (Exception e) {
             return false;
         }
-        return false;
     }
 
     public static boolean hasContentFile(String type) {
