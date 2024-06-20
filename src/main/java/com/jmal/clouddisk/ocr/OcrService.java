@@ -5,6 +5,7 @@ import cn.hutool.core.lang.ObjectId;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.video.FFMPEGCommand;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.ITesseract;
@@ -18,7 +19,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static com.jmal.clouddisk.util.FFMPEGUtils.getWaitingForResults;
-import static com.jmal.clouddisk.util.FFMPEGUtils.hasNoFFmpeg;
 
 
 @Service
@@ -77,7 +77,7 @@ public class OcrService {
      * @return 预处理后的图片路径
      */
     public String getPreprocessedOCRImage(String inputPath, String outputPath) {
-        if (hasNoFFmpeg()) {
+        if (FFMPEGCommand.hasNoFFmpeg()) {
             return outputPath;
         }
         if (FileUtil.exist(outputPath)) {

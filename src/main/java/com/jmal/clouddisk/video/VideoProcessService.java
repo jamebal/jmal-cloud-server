@@ -1,12 +1,9 @@
 package com.jmal.clouddisk.video;
 
-import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONArray;
-import com.alibaba.fastjson2.JSONObject;
+import cn.hutool.core.util.ObjectUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.lucene.TaskProgressService;
 import com.jmal.clouddisk.lucene.TaskType;
@@ -39,7 +36,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
 import static com.jmal.clouddisk.util.FFMPEGUtils.*;
 
@@ -78,29 +74,45 @@ public class VideoProcessService {
      */
     private final ReentrantLock toBeTranscodeLock = new ReentrantLock();
 
-    /**
-     * h5播放器支持的视频格式
-     */
-    private final String[] WEB_SUPPORTED_FORMATS = {"mp4", "webm", "ogg", "flv", "hls", "mkv"};
-
-    /**
-     * 缩略图宽度
-     */
-    private static final int thumbnailWidth = 128;
-
     private final static String TRANSCODE_VIDEO  = "transcodeVideo";
 
     @PostConstruct
     public void init() {
-        int processors = Runtime.getRuntime().availableProcessors() - 1;
-        if (processors < 1) {
-            processors = 1;
+        getVideoTranscodingService();
+        addTranscodingTaskService = ThreadUtil.newFixedExecutor(8, 100, "addTranscodingTask", true);
+    }
+
+    private void getVideoTranscodingService() {
+        TranscodeConfig transcodeConfig = getTranscodeConfig();
+        int processors = 1;
+        if (transcodeConfig.getMaxThreads() != null) {
+            processors = transcodeConfig.getMaxThreads();
         }
-        if (processors > 3) {
-            processors = 3;
+        synchronized (this) {
+            if (videoTranscodingService == null) {
+                createExecutor(processors);
+                return;
+            }
         }
+        if (videoTranscodingService.isShutdown()) {
+            createExecutor(processors);
+        } else {
+            try {
+                videoTranscodingService.shutdown();
+                if (!videoTranscodingService.awaitTermination(30, TimeUnit.MINUTES)) {
+                    log.warn("等待转码超时, 尝试强制停止所有转码任务");
+                    videoTranscodingService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                videoTranscodingService.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+            createExecutor(processors);
+        }
+    }
+
+    private void createExecutor(int processors) {
         videoTranscodingService = ThreadUtil.newFixedExecutor(processors, 1, "videoTranscoding", true);
-        addTranscodingTaskService = ThreadUtil.newFixedExecutor(4, 100, "addTranscodingTask", true);
     }
 
     /**
@@ -121,6 +133,10 @@ public class VideoProcessService {
             update.set("bitrate", config.getBitrate());
             update.set("height", config.getHeight());
             mongoTemplate.updateFirst(query, update, TranscodeConfig.class);
+            if (ObjectUtil.equals(tc.getEnable(), config.getEnable())) {
+                // 重新加载转码线程池
+                addTranscodingTaskService.execute(this::getVideoTranscodingService);
+            }
         }
     }
 
@@ -247,19 +263,19 @@ public class VideoProcessService {
 
     public VideoInfo getVideoInfo(File videoFile) {
         VideoInfo videoInfo = new VideoInfo();
-        if (hasNoFFmpeg()) {
+        if (FFMPEGCommand.hasNoFFmpeg()) {
             return videoInfo;
         }
         if (!videoFile.exists()) {
             return videoInfo;
         }
-        videoInfo = getVideoInfo(videoFile.getAbsolutePath());
+        videoInfo = FFMPEGCommand.getVideoInfo(videoFile.getAbsolutePath());
         return videoInfo;
     }
 
     public VideoInfo getVideoCover(String fileId, String username, String relativePath, String fileName) {
         VideoInfo videoInfo = new VideoInfo();
-        if (hasNoFFmpeg()) {
+        if (FFMPEGCommand.hasNoFFmpeg()) {
             return videoInfo;
         }
         Path prePath = Paths.get(username, relativePath, fileName);
@@ -288,10 +304,10 @@ public class VideoProcessService {
             if (FileUtil.exist(outputPath)) {
                 return videoInfo;
             }
-            videoInfo = getVideoInfo(videoPath);
+            videoInfo = FFMPEGCommand.getVideoInfo(videoPath);
             videoInfo.setCovertPath(outputPath);
             int videoDuration = videoInfo.getDuration();
-            ProcessBuilder processBuilder = getVideoCoverProcessBuilder(videoPath, outputPath, videoDuration);
+            ProcessBuilder processBuilder = FFMPEGCommand.getVideoCoverProcessBuilder(videoPath, outputPath, videoDuration);
             printSuccessInfo(processBuilder);
             // 等待处理结果
             outputPath = getWaitingForResults(outputPath, processBuilder);
@@ -305,30 +321,6 @@ public class VideoProcessService {
             log.error(e.getMessage(), e);
         }
         return videoInfo;
-    }
-
-    /**
-     * 获取视频封面
-     * @param videoPath 视频路径
-     * @param outputPath 输出路径
-     * @param videoDuration 视频时长
-     * @return ProcessBuilder
-     */
-    private static ProcessBuilder getVideoCoverProcessBuilder(String videoPath, String outputPath, int videoDuration) {
-        int targetTimestamp = (int) (videoDuration * 0.1);
-        String formattedTimestamp = VideoInfoUtil.formatTimestamp(targetTimestamp, false);
-        log.debug("\r\nvideoPath: {}, formattedTimestamp: {}", videoPath, formattedTimestamp);
-        ProcessBuilder processBuilder = new ProcessBuilder(
-                Constants.FFMPEG,
-                "-y",
-                "-ss", formattedTimestamp,
-                "-i", videoPath,
-                "-vf", String.format("scale=%s:-2", thumbnailWidth),
-                "-frames:v", "1",
-                outputPath
-        );
-        processBuilder.redirectErrorStream(true);
-        return processBuilder;
     }
 
     /**
@@ -355,7 +347,7 @@ public class VideoProcessService {
         Path fileAbsolutePath = Paths.get(fileProperties.getRootDir(), username, relativePath, fileName);
         // 视频文件缓存目录
         String videoCacheDir = getVideoCacheDir(username, fileId);
-        if (hasNoFFmpeg()) {
+        if (FFMPEGCommand.hasNoFFmpeg()) {
             return;
         }
         String outputPath = Paths.get(videoCacheDir, fileId + ".m3u8").toString();
@@ -363,9 +355,9 @@ public class VideoProcessService {
             return;
         }
         // 获取原始视频的分辨率和码率信息
-        VideoInfo videoInfo = getVideoInfo(fileAbsolutePath.toString());
+        VideoInfo videoInfo = FFMPEGCommand.getVideoInfo(fileAbsolutePath.toString());
         // 判断是否需要转码
-        if (!needTranscode(videoInfo, transcodeConfig)) {
+        if (!FFMPEGUtils.needTranscode(videoInfo, transcodeConfig)) {
             return;
         }
         // 如果视频的码率小于配置码率，则使用视频的原始码率
@@ -381,21 +373,21 @@ public class VideoProcessService {
         }
 
         // 计算缩略图间隔
-        int vttInterval = getVttInterval(videoInfo);
+        int vttInterval = FFMPEGUtils.getVttInterval(videoInfo);
         Path vttPath = Paths.get(videoCacheDir, "vtt");
         if (!Files.exists(vttPath)) {
             FileUtil.mkdir(vttPath);
         }
         String thumbnailPattern = Paths.get(vttPath.toString(), "thumb_%03d.png").toString();
 
-        ProcessBuilder processBuilder = cpuTranscoding(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern);
-        if (!onlyCPU && checkNvidiaDrive()) {
+        ProcessBuilder processBuilder = FFMPEGCommand.cpuTranscoding(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern);
+        if (!onlyCPU && FFMPEGCommand.checkNvidiaDrive()) {
             log.info("use NVENC hardware acceleration");
-            processBuilder = useNvencCuda(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern);
+            processBuilder = FFMPEGCommand.useNvencCuda(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern);
         }
-        if (!onlyCPU && checkMacAppleSilicon()) {
+        if (!onlyCPU && FFMPEGCommand.checkMacAppleSilicon()) {
             log.info("use videotoolbox hardware acceleration");
-            processBuilder = useVideotoolbox(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern);
+            processBuilder = FFMPEGCommand.useVideotoolbox(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern);
         }
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
@@ -419,16 +411,8 @@ public class VideoProcessService {
                 }
                 transcodingProgress(fileAbsolutePath, videoInfo.getDuration(), line);
             }
-            String vttFilePath = Paths.get(videoCacheDir, fileId + ".vtt").toString();
-
-            int columns = 10; // 合并图像的列数
-            int rows = (int) Math.ceil((double) videoInfo.getDuration() / vttInterval / columns);
-
-            String thumbnailImagePath = Paths.get(videoCacheDir, fileId + "-vtt.jpg").toString();
-
-            ProcessBuilder processBuilder1 = mergeVTT(thumbnailPattern, thumbnailImagePath, columns, rows);
-            processBuilder1.start().waitFor();
-            generateVTT(videoInfo, vttInterval, vttFilePath, String.format("%s-vtt.jpg", fileId), 10);
+            // 生成vtt缩略图
+            generateVtt(fileId, videoCacheDir, videoInfo, vttInterval, thumbnailPattern);
         } finally {
             taskProgressService.removeTaskProgress(fileAbsolutePath.toFile());
         }
@@ -447,233 +431,17 @@ public class VideoProcessService {
         }
     }
 
-    /**
-     * 获取VTT文件间隔
-     * @param videoInfo 视频信息
-     * @return VTT文件间隔
-     */
-    private int getVttInterval(VideoInfo videoInfo) {
-        // 期望的缩略图数量 50张
-        int videoDuration = videoInfo.getDuration();
-        // 计算缩略图间隔
-        if (videoDuration <= 50) {
-            return 1;
-        }
-        return videoDuration / 50;
-    }
-
-    /**
-     * 生成VTT文件
-     * @param videoInfo 视频信息
-     * @param interval 缩略图间隔
-     * @param vttFilePath VTT文件路径
-     * @param thumbnailImagePath 最终缩略图路径
-     */
-    public static void generateVTT(VideoInfo videoInfo, int interval, String vttFilePath, String thumbnailImagePath, int columns) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(vttFilePath))) {
-            writer.write("WEBVTT\n\n");
-            int expectedThumbnails = videoInfo.getDuration() / interval;
-            for (int i = 0; i < expectedThumbnails; i++) {
-                String startTime = VideoInfoUtil.formatTimestamp(i * interval, true);
-                String endTime = VideoInfoUtil.formatTimestamp((i + 1) * interval, true);
-
-                int column = i % columns;
-                int row = i / columns;
-                int thumbWidth = thumbnailWidth;
-                double tHeight = (double) videoInfo.getHeight() / ((double) videoInfo.getWidth() / thumbnailWidth);
-                int thumbHeight = (int) Math.ceil(tHeight);
-                int x = column * thumbWidth;
-                int y = row * thumbHeight;
-
-                writer.write(String.format("%s --> %s\n", startTime, endTime));
-                writer.write(String.format("%s#xywh=%d,%d,%d,%d\n\n", thumbnailImagePath, x, y, thumbWidth, thumbHeight));
-            }
-        } catch (IOException e) {
-            log.warn(e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 合并缩略图
-     * @param inputPattern 输入文件名格式
-     * @param outputImage 输出图片
-     * @param columns 列数
-     * @param rows 行数
-     * @return ProcessBuilder
-     */
-    private static ProcessBuilder mergeVTT(String inputPattern, String outputImage, int columns, int rows) {
-        ProcessBuilder processBuilder = new ProcessBuilder(
-                Constants.FFMPEG,
-                "-i", inputPattern,
-                "-filter_complex", String.format("tile=%dx%d", columns, rows),
-                outputImage
-        );
-        processBuilder.redirectErrorStream(true);
-        return processBuilder;
-    }
-
-    private static ProcessBuilder useVideotoolbox(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath, int vttInterval, String thumbnailPattern) {
-        return new ProcessBuilder(
-                Constants.FFMPEG,
-                "-hwaccel", "videotoolbox",
-                "-i", fileAbsolutePath.toString(),
-                "-c:v", "h264_videotoolbox",
-                "-profile:v", "main",
-                "-pix_fmt", "yuv420p",
-                "-level", "4.0",
-                "-start_number", "0",
-                "-hls_time", "10",
-                "-hls_list_size", "0",
-                "-vf", "scale=-2:" + height,
-                "-b:v", Convert.toStr(bitrate),
-                "-preset", "medium",
-                "-g", "48",
-                "-sc_threshold", "0",
-                "-f", "hls",
-                "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
-                outputPath,
-                "-vf", String.format("scale=%s:-2,fps=1/%d", thumbnailWidth, vttInterval),
-                thumbnailPattern
-        );
-    }
-
-    private static ProcessBuilder cpuTranscoding(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath, int vttInterval, String thumbnailPattern) {
-
-        return new ProcessBuilder(
-                Constants.FFMPEG,
-                "-i", fileAbsolutePath.toString(),
-                "-profile:v", "main",
-                "-pix_fmt", "yuv420p",
-                "-level", "4.0",
-                "-start_number", "0",
-                "-hls_time", "10",
-                "-hls_list_size", "0",
-                "-vf", "scale=-2:" + height,
-                "-b:v", Convert.toStr(bitrate),
-                "-preset", "medium",
-                "-g", "48",
-                "-sc_threshold", "0",
-                "-f", "hls",
-                "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
-                outputPath,
-                "-vf", String.format("scale=%s:-2,fps=1/%d", thumbnailWidth, vttInterval),
-                thumbnailPattern
-        );
-    }
-
-    private ProcessBuilder useNvencCuda(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath, int vttInterval, String thumbnailPattern) {
-        // 使用CUDA硬件加速和NVENC编码器
-        return new ProcessBuilder(
-                Constants.FFMPEG,
-                "-init_hw_device", "cuda=cu:0",
-                "-filter_hw_device", "cu",
-                "-hwaccel", "cuda",
-                "-hwaccel_output_format", "cuda",
-                "-threads", "1",
-                "-autorotate", "0",
-                "-i", fileAbsolutePath.toString(),
-                "-autoscale", "0",
-                "-map_metadata", "-1",
-                "-map_chapters", "-1",
-                "-threads", "0",
-                "-map", "0:0",
-                "-map", "0:1",
-                "-map", "-0:s",
-                "-codec:v:0", "h264_nvenc",
-                "-preset", "p1",
-                "-b:v", Convert.toStr(bitrate),
-                "-maxrate", Convert.toStr(bitrate),
-                "-bufsize", "5643118",
-                "-g:v:0", "180",
-                "-keyint_min:v:0", "180",
-                "-vf", "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709,scale_cuda=-2:" + height + ":format=yuv420p",
-                "-codec:a:0", "copy",
-                "-copyts",
-                "-avoid_negative_ts", "disabled",
-                "-max_muxing_queue_size", "2048",
-                "-f", "hls",
-                "-max_delay", "5000000",
-                "-hls_time", "3",
-                "-hls_segment_type", "mpegts",
-                "-start_number", "0",
-                "-y",
-                "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
-                "-hls_playlist_type", "vod",
-                "-hls_list_size", "0",
-                outputPath,
-                "-vf", String.format("scale=%s:-2,fps=1/%d", thumbnailWidth, vttInterval),
-                thumbnailPattern
-        );
-    }
-
-    /**
-     * 检测是否装有Mac Apple Silicon
-     */
-    private boolean checkMacAppleSilicon() {
-        try {
-            Process process = Runtime.getRuntime().exec("ffmpeg -hwaccels");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.contains("videotoolbox")) {
-                    return true;
-                }
-            }
-        } catch (IOException e) {
-            return false;
-        }
-        return false;
-    }
-
-    /**
-     * 检测是否装有NVIDIA显卡驱动
-     */
-    private boolean checkNvidiaDrive() {
-        try {
-            Process process = Runtime.getRuntime().exec("nvidia-smi");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.contains("Version")) {
-                    return true;
-                }
-            }
-        } catch (IOException e) {
-            return false;
-        }
-        return false;
-    }
-
-    /**
-     * 判断是否需要转码
-     *
-     * @param videoInfo 视频信息
-     * @return 是否需要转码
-     */
-    private boolean needTranscode(VideoInfo videoInfo, TranscodeConfig transcodeConfig) {
-        if ((videoInfo.getBitrate() > 0 && videoInfo.getBitrate() <= transcodeConfig.getBitrate()) && videoInfo.getHeight() <= transcodeConfig.getHeight()) {
-            return !isSupportedFormat(videoInfo.getFormat());
-        }
-        return true;
-    }
-
-    /**
-     * 判断视频格式是否为HTML5 Video Player支持的格式
-     *
-     * @param format 视频格式
-     * @return 是否支持
-     */
-    private boolean isSupportedFormat(String format) {
-        // HTML5 Video Player支持的视频格式
-        String[] formatList = format.split(",");
-        for (String f : formatList) {
-            for (String supportedFormat : WEB_SUPPORTED_FORMATS) {
-                if (f.trim().equalsIgnoreCase(supportedFormat)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+    private static void generateVtt(String fileId, String videoCacheDir, VideoInfo videoInfo, int vttInterval, String thumbnailPattern) throws InterruptedException, IOException {
+        String vttFilePath = Paths.get(videoCacheDir, fileId + ".vtt").toString();
+        int columns = 10; // 合并图像的列数
+        int rows = (int) Math.ceil((double) videoInfo.getDuration() / vttInterval / columns);
+        String thumbnailImagePath = Paths.get(videoCacheDir, fileId + "-vtt.jpg").toString();
+        ProcessBuilder processBuilder = FFMPEGCommand.mergeVTT(thumbnailPattern, thumbnailImagePath, columns, rows);
+        processBuilder.start().waitFor();
+        FFMPEGUtils.generateVTT(videoInfo, vttInterval, vttFilePath, String.format("%s-vtt.jpg", fileId), columns);
+        // 删除vtt临时文件
+        Path vttPath = Paths.get(videoCacheDir, "vtt");
+        FileUtil.del(vttPath);
     }
 
     /**
@@ -688,7 +456,7 @@ public class VideoProcessService {
         if (line.contains("time=")) {
             try {
                 if (line.contains(":")) {
-                    String progressStr = getProgressStr(videoDuration, line);
+                    String progressStr = FFMPEGUtils.getProgressStr(videoDuration, line);
                     log.info("{}, 转码进度: {}%", fileAbsolutePath.getFileName(), progressStr);
                     taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, progressStr + "%");
                 }
@@ -696,23 +464,6 @@ public class VideoProcessService {
                 log.warn(e.getMessage(), e);
             }
         }
-    }
-
-    /**
-     * 获取转码进度
-     * @param videoDuration 视频时长
-     * @param line         命令输出信息
-     * @return 转码进度
-     */
-    private static String getProgressStr(int videoDuration, String line) {
-        String[] parts = line.split("time=")[1].split(" ")[0].split(":");
-        int hours = Integer.parseInt(parts[0]);
-        int minutes = Integer.parseInt(parts[1]);
-        int seconds = Integer.parseInt(parts[2].split("\\.")[0]);
-        int totalSeconds = hours * 3600 + minutes * 60 + seconds;
-        // 计算转码进度百分比
-        double progress = (double) totalSeconds / videoDuration * 100;
-        return String.format("%.2f", progress);
     }
 
     private void startConvert(String username, String relativePath, String fileName, String fileId) {
@@ -731,61 +482,6 @@ public class VideoProcessService {
         mongoTemplate.upsert(query, update, FileDocument.class);
         fileDocument.setM3u8(m3u8);
         commonFileService.pushMessage(username, fileDocument, Constants.UPDATE_FILE);
-    }
-
-    /**
-     * 获取视频的分辨率和码率信息
-     *
-     * @param videoPath 视频路径
-     * @return 视频信息
-     */
-    private VideoInfo getVideoInfo(String videoPath) {
-        try {
-            ProcessBuilder processBuilder = new ProcessBuilder(
-                    "ffprobe", "-v", "error", "-select_streams", "v:0", "-show_format", "-show_streams", "-of", "json", videoPath);
-            Process process = processBuilder.start();
-            try (InputStream inputStream = process.getInputStream();
-                 BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-                String json = reader.lines().collect(Collectors.joining());
-                JSONObject jsonObject = JSON.parseObject(json);
-
-                // 获取视频格式信息
-                JSONObject formatObject = jsonObject.getJSONObject("format");
-                String format = formatObject.getString("format_name");
-
-                // 获取视频时长
-                int duration = Convert.toInt(formatObject.get("duration"));
-
-                // 获取视频流信息
-                JSONArray streamsArray = jsonObject.getJSONArray("streams");
-                if (!streamsArray.isEmpty()) {
-                    JSONObject streamObject = streamsArray.getJSONObject(0);
-                    int width = streamObject.getIntValue("width");
-                    int height = streamObject.getIntValue("height");
-                    int rotation = 0;
-                    if (streamObject.containsKey("side_data_list")) {
-                        for (int i = 0; i < streamObject.getJSONArray("side_data_list").size(); i++) {
-                            JSONObject sideData = streamObject.getJSONArray("side_data_list").getJSONObject(i);
-                            if (sideData.containsKey("rotation")) {
-                                rotation = sideData.getIntValue("rotation");
-                                break;
-                            }
-                        }
-                    }
-                    // 转换rotation
-                    int bitrate = streamObject.getIntValue("bit_rate"); // bps
-                    return new VideoInfo(videoPath, width, height, format, bitrate, duration, Math.abs(rotation));
-                }
-            }
-
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                printErrorInfo(processBuilder, process);
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-        return new VideoInfo();
     }
 
     @PreDestroy

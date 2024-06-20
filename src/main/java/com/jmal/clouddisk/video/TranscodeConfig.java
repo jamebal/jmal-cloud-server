@@ -19,6 +19,11 @@ public class TranscodeConfig {
     @Schema(description = "是否启用转码, 默认开启")
     private Boolean enable;
 
+    @Max(value = 8, message = "最大任务数不能超过8")
+    @Min(value = 1, message = "最大任务数不能小于1")
+    @Schema(description = "最大任务数, 最多同时处理的转码任务数, 默认为1")
+    private Integer maxThreads;
+
     @Max(value = 1000000, message = "码率不能超过 1000000 kbps")
     @Min(value = 100, message = "码率不能低于 100 kbps")
     @Schema(description = "转码后的视频码率(kbps), 默认 2500 kbps, 小于该值则不转码")
