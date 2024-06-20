@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -81,6 +82,11 @@ public class VideoProcessService {
      * h5播放器支持的视频格式
      */
     private final String[] WEB_SUPPORTED_FORMATS = {"mp4", "webm", "ogg", "flv", "hls", "mkv"};
+
+    /**
+     * 缩略图宽度
+     */
+    private static final int thumbnailWidth = 128;
 
     private final static String TRANSCODE_VIDEO  = "transcodeVideo";
 
@@ -310,14 +316,14 @@ public class VideoProcessService {
      */
     private static ProcessBuilder getVideoCoverProcessBuilder(String videoPath, String outputPath, int videoDuration) {
         int targetTimestamp = (int) (videoDuration * 0.1);
-        String formattedTimestamp = VideoInfoUtil.formatTimestamp(targetTimestamp);
+        String formattedTimestamp = VideoInfoUtil.formatTimestamp(targetTimestamp, false);
         log.debug("\r\nvideoPath: {}, formattedTimestamp: {}", videoPath, formattedTimestamp);
         ProcessBuilder processBuilder = new ProcessBuilder(
                 Constants.FFMPEG,
                 "-y",
                 "-ss", formattedTimestamp,
                 "-i", videoPath,
-                "-vf", "scale=320:-2",
+                "-vf", String.format("scale=%s:-2", thumbnailWidth),
                 "-frames:v", "1",
                 outputPath
         );
@@ -373,14 +379,23 @@ public class VideoProcessService {
         if (videoInfo.getHeight() < targetHeight) {
             targetHeight = videoInfo.getHeight();
         }
-        ProcessBuilder processBuilder = cpuTranscoding(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath);
+
+        // 计算缩略图间隔
+        int vttInterval = getVttInterval(videoInfo);
+        Path vttPath = Paths.get(videoCacheDir, "vtt");
+        if (!Files.exists(vttPath)) {
+            FileUtil.mkdir(vttPath);
+        }
+        String thumbnailPattern = Paths.get(vttPath.toString(), "thumb_%03d.png").toString();
+
+        ProcessBuilder processBuilder = cpuTranscoding(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern);
         if (!onlyCPU && checkNvidiaDrive()) {
             log.info("use NVENC hardware acceleration");
-            processBuilder = useNvencCuda(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath);
+            processBuilder = useNvencCuda(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern);
         }
         if (!onlyCPU && checkMacAppleSilicon()) {
             log.info("use videotoolbox hardware acceleration");
-            processBuilder = useVideotoolbox(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath);
+            processBuilder = useVideotoolbox(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern);
         }
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
@@ -404,6 +419,16 @@ public class VideoProcessService {
                 }
                 transcodingProgress(fileAbsolutePath, videoInfo.getDuration(), line);
             }
+            String vttFilePath = Paths.get(videoCacheDir, fileId + ".vtt").toString();
+
+            int columns = 10; // 合并图像的列数
+            int rows = (int) Math.ceil((double) videoInfo.getDuration() / vttInterval / columns);
+
+            String thumbnailImagePath = Paths.get(videoCacheDir, fileId + "-vtt.jpg").toString();
+
+            ProcessBuilder processBuilder1 = mergeVTT(thumbnailPattern, thumbnailImagePath, columns, rows);
+            processBuilder1.start().waitFor();
+            generateVTT(videoInfo, vttInterval, vttFilePath, String.format("%s-vtt.jpg", fileId), 10);
         } finally {
             taskProgressService.removeTaskProgress(fileAbsolutePath.toFile());
         }
@@ -422,7 +447,72 @@ public class VideoProcessService {
         }
     }
 
-    private static ProcessBuilder useVideotoolbox(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath) {
+    /**
+     * 获取VTT文件间隔
+     * @param videoInfo 视频信息
+     * @return VTT文件间隔
+     */
+    private int getVttInterval(VideoInfo videoInfo) {
+        // 期望的缩略图数量 50张
+        int videoDuration = videoInfo.getDuration();
+        // 计算缩略图间隔
+        if (videoDuration <= 50) {
+            return 1;
+        }
+        return videoDuration / 50;
+    }
+
+    /**
+     * 生成VTT文件
+     * @param videoInfo 视频信息
+     * @param interval 缩略图间隔
+     * @param vttFilePath VTT文件路径
+     * @param thumbnailImagePath 最终缩略图路径
+     */
+    public static void generateVTT(VideoInfo videoInfo, int interval, String vttFilePath, String thumbnailImagePath, int columns) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(vttFilePath))) {
+            writer.write("WEBVTT\n\n");
+            int expectedThumbnails = videoInfo.getDuration() / interval;
+            for (int i = 0; i < expectedThumbnails; i++) {
+                String startTime = VideoInfoUtil.formatTimestamp(i * interval, true);
+                String endTime = VideoInfoUtil.formatTimestamp((i + 1) * interval, true);
+
+                int column = i % columns;
+                int row = i / columns;
+                int thumbWidth = thumbnailWidth;
+                double tHeight = (double) videoInfo.getHeight() / ((double) videoInfo.getWidth() / thumbnailWidth);
+                int thumbHeight = (int) Math.ceil(tHeight);
+                int x = column * thumbWidth;
+                int y = row * thumbHeight;
+
+                writer.write(String.format("%s --> %s\n", startTime, endTime));
+                writer.write(String.format("%s#xywh=%d,%d,%d,%d\n\n", thumbnailImagePath, x, y, thumbWidth, thumbHeight));
+            }
+        } catch (IOException e) {
+            log.warn(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 合并缩略图
+     * @param inputPattern 输入文件名格式
+     * @param outputImage 输出图片
+     * @param columns 列数
+     * @param rows 行数
+     * @return ProcessBuilder
+     */
+    private static ProcessBuilder mergeVTT(String inputPattern, String outputImage, int columns, int rows) {
+        ProcessBuilder processBuilder = new ProcessBuilder(
+                Constants.FFMPEG,
+                "-i", inputPattern,
+                "-filter_complex", String.format("tile=%dx%d", columns, rows),
+                outputImage
+        );
+        processBuilder.redirectErrorStream(true);
+        return processBuilder;
+    }
+
+    private static ProcessBuilder useVideotoolbox(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath, int vttInterval, String thumbnailPattern) {
         return new ProcessBuilder(
                 Constants.FFMPEG,
                 "-hwaccel", "videotoolbox",
@@ -441,11 +531,13 @@ public class VideoProcessService {
                 "-sc_threshold", "0",
                 "-f", "hls",
                 "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
-                outputPath
+                outputPath,
+                "-vf", String.format("scale=%s:-2,fps=1/%d", thumbnailWidth, vttInterval),
+                thumbnailPattern
         );
     }
 
-    private static ProcessBuilder cpuTranscoding(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath) {
+    private static ProcessBuilder cpuTranscoding(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath, int vttInterval, String thumbnailPattern) {
 
         return new ProcessBuilder(
                 Constants.FFMPEG,
@@ -463,11 +555,13 @@ public class VideoProcessService {
                 "-sc_threshold", "0",
                 "-f", "hls",
                 "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
-                outputPath
+                outputPath,
+                "-vf", String.format("scale=%s:-2,fps=1/%d", thumbnailWidth, vttInterval),
+                thumbnailPattern
         );
     }
 
-    private ProcessBuilder useNvencCuda(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath) {
+    private ProcessBuilder useNvencCuda(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath, int vttInterval, String thumbnailPattern) {
         // 使用CUDA硬件加速和NVENC编码器
         return new ProcessBuilder(
                 Constants.FFMPEG,
@@ -506,7 +600,9 @@ public class VideoProcessService {
                 "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
                 "-hls_playlist_type", "vod",
                 "-hls_list_size", "0",
-                outputPath
+                outputPath,
+                "-vf", String.format("scale=%s:-2,fps=1/%d", thumbnailWidth, vttInterval),
+                thumbnailPattern
         );
     }
 
@@ -666,8 +762,19 @@ public class VideoProcessService {
                     JSONObject streamObject = streamsArray.getJSONObject(0);
                     int width = streamObject.getIntValue("width");
                     int height = streamObject.getIntValue("height");
+                    int rotation = 0;
+                    if (streamObject.containsKey("side_data_list")) {
+                        for (int i = 0; i < streamObject.getJSONArray("side_data_list").size(); i++) {
+                            JSONObject sideData = streamObject.getJSONArray("side_data_list").getJSONObject(i);
+                            if (sideData.containsKey("rotation")) {
+                                rotation = sideData.getIntValue("rotation");
+                                break;
+                            }
+                        }
+                    }
+                    // 转换rotation
                     int bitrate = streamObject.getIntValue("bit_rate"); // bps
-                    return new VideoInfo(videoPath, width, height, format, bitrate, duration);
+                    return new VideoInfo(videoPath, width, height, format, bitrate, duration, Math.abs(rotation));
                 }
             }
 

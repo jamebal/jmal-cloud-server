@@ -22,9 +22,14 @@ public class VideoInfo {
         this.duration = 0;
     }
 
-    public VideoInfo(String videoPath, int width, int height, String format, int bitrate, int duration) {
-        this.width = width;
-        this.height = height;
+    public VideoInfo(String videoPath, int width, int height, String format, int bitrate, int duration, int rotation) {
+        if (rotation == 90 || rotation == 270) {
+            this.width = height;
+            this.height = width;
+        } else {
+            this.width = width;
+            this.height = height;
+        }
         this.format = format;
         this.bitrate = bitrate;
         this.duration = duration;
@@ -40,7 +45,7 @@ public class VideoInfo {
             videoInfoDO.setFormat(this.format);
         }
         if (this.duration > 0) {
-            videoInfoDO.setDuration(VideoInfoUtil.formatTimestamp(this.duration));
+            videoInfoDO.setDuration(VideoInfoUtil.formatTimestamp(this.duration, false));
         }
         if (this.height > 0 && this.width > 0) {
             videoInfoDO.setHeight(this.height);

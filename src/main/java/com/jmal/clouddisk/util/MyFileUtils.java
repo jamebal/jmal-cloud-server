@@ -1,7 +1,10 @@
 package com.jmal.clouddisk.util;
 
+import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
+import com.jmal.clouddisk.service.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.mozilla.universalchardet.UniversalDetector;
 
@@ -19,10 +22,35 @@ import java.util.List;
 @Slf4j
 public class MyFileUtils {
 
-    public static List<String> hasContentTypes = Arrays.asList("pdf", "ppt", "pptx", "doc", "docx", "drawio", "mind");
+    public static List<String> hasContentTypes = Arrays.asList("pdf", "drawio", "mind", "doc", "docx", "xls", "xlsx", "xlsm", "ppt", "pptx", "csv", "tsv", "dotm", "xlt", "xltm", "dot", "dotx", "xlam", "xla", "pages");
 
     private MyFileUtils(){
 
+    }
+
+    public static boolean hasCharset(File file) {
+        try {
+            if (file == null) {
+                return false;
+            }
+            String suffix = FileUtil.extName(file.getName());
+            String contentType = FileContentTypeUtils.getContentType(suffix);
+            if (file.isDirectory()) {
+                return false;
+            }
+            if (contentType.contains(Constants.VIDEO)) {
+                return false;
+            }
+            if (contentType.contains(Constants.CONTENT_TYPE_IMAGE)) {
+                return false;
+            }
+            if (contentType.contains(Constants.AUDIO)) {
+                return false;
+            }
+            return CharsetDetector.detect(file) != null;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /***
@@ -52,8 +80,7 @@ public class MyFileUtils {
             }
             String type = FileTypeUtil.getType(file);
             if (hasContentFile(type)) return true;
-            String charset = UniversalDetector.detectCharset(file);
-            return !StrUtil.isBlank(charset);
+            return hasCharset(file);
         } catch (Exception e) {
             return false;
         }

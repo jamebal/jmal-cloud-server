@@ -370,17 +370,16 @@ public class LuceneService {
                 return false;
             }
             String type = FileTypeUtil.getType(file);
-            if (MyFileUtils.hasContentFile(type)) return true;
-            String charset = UniversalDetector.detectCharset(file);
-            if (StrUtil.isNotBlank(charset)) {
-                if (fileProperties.getSimText().contains(type)) {
-                    return true;
-                }
+            if (MyFileUtils.hasContentFile(type)) {
+                return true;
             }
+            if (fileProperties.getSimText().contains(type)) {
+                return true;
+            }
+            return MyFileUtils.hasCharset(file);
         } catch (Exception e) {
             return false;
         }
-        return false;
     }
 
 
