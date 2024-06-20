@@ -154,7 +154,6 @@ public class FileContentTypeUtils {
         CONTENT_TYPE.put("divx" , "video/x-msvideo");
         CONTENT_TYPE.put("djv" , "image/vnd.djvu");
         CONTENT_TYPE.put("djvu" , "image/vnd.djvu");
-        CONTENT_TYPE.put("dng" , "image/x-adobe-dng");
         CONTENT_TYPE.put("doc" , "application/officedocument-msword");
         CONTENT_TYPE.put("docbook" , "application/docbook+xml");
         CONTENT_TYPE.put("docm" , "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
@@ -170,6 +169,11 @@ public class FileContentTypeUtils {
         CONTENT_TYPE.put("dvi.gz" , "application/x-gzdvi");
         CONTENT_TYPE.put("dwg" , "application/acad");
         CONTENT_TYPE.put("dxf" , "application/acad");
+        CONTENT_TYPE.put("dwf" , "application/acad");
+        CONTENT_TYPE.put("iges" , "application/acad");
+        CONTENT_TYPE.put("igs" , "application/acad");
+        CONTENT_TYPE.put("dwt" , "application/acad");
+        CONTENT_TYPE.put("dng" , "application/acad");
         CONTENT_TYPE.put("e" , "text/x-eiffel");
         CONTENT_TYPE.put("egon" , "application/x-egon");
         CONTENT_TYPE.put("eif" , "text/x-eiffel");

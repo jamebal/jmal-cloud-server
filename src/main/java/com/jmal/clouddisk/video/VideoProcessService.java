@@ -555,7 +555,7 @@ public class VideoProcessService {
      * @return 是否需要转码
      */
     private boolean needTranscode(VideoInfo videoInfo, TranscodeConfig transcodeConfig) {
-        if ((videoInfo.getBitrate() > 0 && videoInfo.getBitrate() <= transcodeConfig.getBitrate()) || videoInfo.getHeight() <= transcodeConfig.getHeight()) {
+        if ((videoInfo.getBitrate() > 0 && videoInfo.getBitrate() <= transcodeConfig.getBitrate()) && videoInfo.getHeight() <= transcodeConfig.getHeight()) {
             return !isSupportedFormat(videoInfo.getFormat());
         }
         return true;
