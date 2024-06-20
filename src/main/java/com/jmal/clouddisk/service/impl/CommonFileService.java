@@ -536,18 +536,11 @@ public class CommonFileService {
 
     public static String getContentType(File file, String contentType) {
         try {
-            if (file == null) {
-                return contentType;
-            }
-            if (file.isDirectory()) {
-                return contentType;
-            }
-            if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN)) {
-                return contentType;
-            }
-            String charset = UniversalDetector.detectCharset(file);
-            if (StrUtil.isNotBlank(charset) && StandardCharsets.UTF_8.name().equals(charset)) {
-                contentType = contentType + ";charset=utf-8";
+            if (MyFileUtils.hasCharset(file)) {
+                String charset = UniversalDetector.detectCharset(file);
+                if (StrUtil.isNotBlank(charset) && StandardCharsets.UTF_8.name().equals(charset)) {
+                    contentType = contentType + ";charset=utf-8";
+                }
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);

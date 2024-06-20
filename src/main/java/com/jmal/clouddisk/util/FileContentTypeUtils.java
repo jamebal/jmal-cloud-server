@@ -333,6 +333,7 @@ public class FileContentTypeUtils {
         CONTENT_TYPE.put("m2t" , "video/mpeg");
         CONTENT_TYPE.put("m3u" , "audio/x-mpegurl");
         CONTENT_TYPE.put("m3u8" , "audio/x-mpegurl");
+        CONTENT_TYPE.put("vtt" , "audio/x-mpegurl");
         CONTENT_TYPE.put("m4" , "application/x-m4");
         CONTENT_TYPE.put("m4a" , "audio/mp4");
         CONTENT_TYPE.put("m4b" , "audio/x-m4b");

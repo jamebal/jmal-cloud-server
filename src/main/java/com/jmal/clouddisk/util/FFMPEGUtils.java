@@ -74,24 +74,4 @@ public class FFMPEGUtils {
         return null;
     }
 
-    /**
-     * 检查是否没有ffmpeg
-     * @return true: 没有ffmpeg
-     */
-    public static boolean hasNoFFmpeg() {
-        try {
-            Process process = Runtime.getRuntime().exec("ffmpeg -version");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.contains("ffmpeg version")) {
-                    return false;
-                }
-            }
-            return true;
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-        }
-        return true;
-    }
 }

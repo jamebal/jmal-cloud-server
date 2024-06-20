@@ -319,7 +319,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (ossPath != null) {
             return webOssService.searchFileAndOpenOssFolder(path, upload);
         }
-
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument == null) {
             return ResultUtil.error(ExceptionType.FILE_NOT_FIND);
@@ -501,10 +500,12 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             Path filepath = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName());
             if (Files.exists(filepath)) {
                 File file = filepath.toFile();
-                Charset charset = MyFileUtils.getFileCharset(file);
-                fileDocument.setDecoder(charset.name());
-                if (BooleanUtil.isTrue(content)) {
-                    fileDocument.setContentText(FileUtil.readString(file, charset));
+                if (MyFileUtils.hasCharset(file)) {
+                    Charset charset = MyFileUtils.getFileCharset(file);
+                    fileDocument.setDecoder(charset.name());
+                    if (BooleanUtil.isTrue(content)) {
+                        fileDocument.setContentText(FileUtil.readString(file, charset));
+                    }
                 }
             }
             return Optional.of(fileDocument);
@@ -545,7 +546,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         FileDocument fileDocument = new FileDocument();
-        fileDocument.setDecoder(MyFileUtils.getFileCharset(file).name());
+        if (MyFileUtils.hasCharset(file)) {
+            fileDocument.setDecoder(MyFileUtils.getFileCharset(file).name());
+        }
         Path path1 = path.subpath(0, path.getNameCount() - 1);
         int rootCount = Paths.get(fileProperties.getRootDir(), username).getNameCount();
         int path1Count = path1.getNameCount();
