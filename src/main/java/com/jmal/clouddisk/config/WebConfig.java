@@ -2,16 +2,13 @@ package com.jmal.clouddisk.config;
 
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.interceptor.FileInterceptor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.*;
 
 import java.io.File;
 
@@ -22,16 +19,14 @@ import java.io.File;
  */
 @Configuration
 @Slf4j
+@RequiredArgsConstructor
 public class WebConfig implements WebMvcConfigurer {
 
-    @Autowired
-    FileProperties fileProperties;
+    private final FileProperties fileProperties;
 
-    @Autowired
-    AuthInterceptor authInterceptor;
+    private final AuthInterceptor authInterceptor;
 
-    @Autowired
-    FileInterceptor fileInterceptor;
+    private final FileInterceptor fileInterceptor;
 
     /**
      * 注册拦截器
@@ -58,6 +53,14 @@ public class WebConfig implements WebMvcConfigurer {
         executor.setThreadNamePrefix("Custom-Executor-");
         executor.initialize();
         return executor;
+    }
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOrigins("*")
+                .allowedMethods("GET", "OPTIONS")
+                .allowedHeaders("*");
     }
 
     @Override
