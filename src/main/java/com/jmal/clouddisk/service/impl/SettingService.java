@@ -237,4 +237,15 @@ public class SettingService {
         roleService.initRoles();
     }
 
+    public PreviewConfig getPreviewConfig() {
+        PreviewConfig previewConfig = mongoTemplate.findOne(new Query(), PreviewConfig.class);
+        if (previewConfig == null) {
+            return new PreviewConfig();
+        }
+        return previewConfig;
+    }
+
+    public synchronized void updatePreviewConfig(PreviewConfig previewConfig) {
+        mongoTemplate.save(previewConfig);
+    }
 }
