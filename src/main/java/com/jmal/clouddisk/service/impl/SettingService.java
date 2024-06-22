@@ -237,15 +237,19 @@ public class SettingService {
         roleService.initRoles();
     }
 
-    public PreviewConfig getPreviewConfig() {
-        PreviewConfig previewConfig = mongoTemplate.findOne(new Query(), PreviewConfig.class);
-        if (previewConfig == null) {
-            return new PreviewConfig();
+    public WebsiteSettingDTO getPreviewConfig() {
+        Query query = new Query();
+        query.fields().include("iframe");
+        WebsiteSettingDTO websiteSettingDTO = mongoTemplate.findOne(new Query(), WebsiteSettingDTO.class, COLLECTION_NAME_WEBSITE_SETTING);
+        if (websiteSettingDTO == null) {
+            return new WebsiteSettingDTO();
         }
-        return previewConfig;
+        return websiteSettingDTO;
     }
 
-    public synchronized void updatePreviewConfig(PreviewConfig previewConfig) {
-        mongoTemplate.save(previewConfig);
+    public synchronized void updatePreviewConfig(WebsiteSettingDTO websiteSettingDTO) {
+        Update update = new Update();
+        update.set("iframe", websiteSettingDTO.getIframe());
+        mongoTemplate.upsert(new Query(), update, COLLECTION_NAME_WEBSITE_SETTING);
     }
 }

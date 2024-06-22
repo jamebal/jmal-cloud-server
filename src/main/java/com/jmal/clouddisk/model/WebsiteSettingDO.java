@@ -85,4 +85,8 @@ public class WebsiteSettingDO {
      * 公网备案号 展示文本
      */
     String networkRecordNumberStr;
+    /**
+     * iframe预览配置
+     */
+    String iframe;
 }

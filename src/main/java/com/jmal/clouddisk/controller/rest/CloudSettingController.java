@@ -7,7 +7,7 @@ import com.jmal.clouddisk.lucene.TaskProgress;
 import com.jmal.clouddisk.lucene.TaskProgressService;
 import com.jmal.clouddisk.model.LdapConfigDTO;
 import com.jmal.clouddisk.model.LogOperation;
-import com.jmal.clouddisk.model.PreviewConfig;
+import com.jmal.clouddisk.model.WebsiteSettingDTO;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.SettingService;
@@ -121,14 +121,13 @@ public class CloudSettingController {
     }
 
     @Operation(summary = "加载ldap配置")
-    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
     @GetMapping("/ldap/config")
     public ResponseResult<Object> loadLdapConfig() {
         return ResultUtil.success(authService.loadLdapConfig());
     }
 
     @Operation(summary = "ldap配置")
-    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
+    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
     @PutMapping("/ldap/config")
     @Permission(value = "cloud:set:sync")
     public ResponseResult<Object> updateLdapConfig(@RequestBody LdapConfigDTO ldapConfigDTO) {
@@ -136,7 +135,6 @@ public class CloudSettingController {
     }
 
     @Operation(summary = "测试ldap配置")
-    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     @PutMapping("/ldap/test-config")
     @Permission(value = "cloud:set:sync")
     public ResponseResult<Object> testLdapConfig(@RequestBody LdapConfigDTO ldapConfigDTO) {
@@ -145,18 +143,17 @@ public class CloudSettingController {
     }
 
     @Operation(summary = "获取预览配置")
-    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
     @GetMapping("/cloud/setting/preview/config")
     public ResponseResult<Object> getPreviewConfig() {
         return ResultUtil.success(settingService.getPreviewConfig());
     }
 
     @Operation(summary = "更新预览配置")
-    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
+    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
     @PutMapping("/cloud/setting/preview/config")
     @Permission(value = "cloud:set:sync")
-    public ResponseResult<Object> updatePreviewConfig(@RequestBody PreviewConfig previewConfig) {
-        settingService.updatePreviewConfig(previewConfig);
+    public ResponseResult<Object> updatePreviewConfig(@RequestBody WebsiteSettingDTO websiteSettingDTO) {
+        settingService.updatePreviewConfig(websiteSettingDTO);
         return ResultUtil.success();
     }
 

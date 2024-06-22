@@ -61,4 +61,6 @@ public class ConsumerDTO extends ConsumerBase {
     @Schema(name = "newVersion", title = "新版本", hidden = true)
     String newVersion;
 
+    String iframe;
+
 }
