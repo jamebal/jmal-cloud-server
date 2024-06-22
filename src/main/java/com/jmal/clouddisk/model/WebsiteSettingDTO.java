@@ -97,6 +97,11 @@ public class WebsiteSettingDTO {
      */
     String networkRecordNumberStr;
 
+    /**
+     * iframe预览配置
+     */
+    String iframe;
+
     @Data
     public static class OperatingButton {
         /***
