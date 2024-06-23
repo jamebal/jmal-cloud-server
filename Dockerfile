@@ -29,14 +29,11 @@ ENV DOCKER_DEFAULT_PLATFORM=linux/amd64,linux/arm64
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 RUN apt-get update && \
-    apt-get upgrade -y --no-install-recommends && \
-    apt-get install -y --no-install-recommends \
-        bash \
-        ca-certificates \
+    apt-get install -y \
         su-exec \
         tzdata && \
     chmod +x /docker-entrypoint.sh && \
-    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8088
 
