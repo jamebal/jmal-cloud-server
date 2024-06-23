@@ -26,7 +26,7 @@ ENV VERSION=${VERSION}
 # 如果需要，可以根据需要更改此设置
 ENV DOCKER_DEFAULT_PLATFORM=linux/amd64,linux/arm64
 
-COPY entrypoint.sh /entrypoint.sh
+COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 RUN apt-get update && \
     apt-get upgrade -y --no-install-recommends && \
@@ -35,8 +35,9 @@ RUN apt-get update && \
         ca-certificates \
         su-exec \
         tzdata && \
+    chmod +x /docker-entrypoint.sh && \
     rm -rf /var/lib/apt/lists/* && \
 
 EXPOSE 8088
 
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
