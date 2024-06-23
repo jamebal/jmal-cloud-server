@@ -26,6 +26,15 @@ ENV VERSION=${VERSION}
 # 如果需要，可以根据需要更改此设置
 ENV DOCKER_DEFAULT_PLATFORM=linux/amd64,linux/arm64
 
+# 安装 gosu 工具
+RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
+
+# 复制入口点脚本
+COPY docker-entrypoint.sh /usr/local/bin/
+
+# 确保入口点脚本可执行
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 EXPOSE 8088
 
 ENTRYPOINT ["docker-entrypoint.sh"]
