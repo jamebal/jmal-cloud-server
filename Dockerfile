@@ -26,6 +26,13 @@ ENV VERSION=${VERSION}
 # 如果需要，可以根据需要更改此设置
 ENV DOCKER_DEFAULT_PLATFORM=linux/amd64,linux/arm64
 
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+
+RUN apt-get update && \
+    apt-get install -y gosu && \
+    chmod +x /docker-entrypoint.sh && \
+    rm -rf /var/lib/apt/lists/*
+
 EXPOSE 8088
 
-CMD java -Dfile.encoding=UTF-8 -Dloader.path=/usr/local/clouddisk-lib -jar ${JVM_OPTS} /usr/local/clouddisk-${VERSION}.jar --spring.profiles.active=${RUN_ENVIRONMENT} --spring.data.mongodb.uri=${MONGODB_URI} --tess4j.data-path=${TESS4J_DATA_PATH} --file.monitor=${FILE_MONITOR} --file.rootDir=${FILE_ROOT_DIR} --logging.level.root=${LOG_LEVEL} --file.ip2region-db-path=/jmalcloud/ip2region.xdb
+ENTRYPOINT ["/docker-entrypoint.sh"]
