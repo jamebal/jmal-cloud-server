@@ -23,7 +23,7 @@ else
     chown -R appuser:appgroup /jmalcloud
 
     # 切换到新用户并执行应用程序
-    exec gosu appuser "$0" "$@"
+    exec gosu appuser "$@"
 fi
 
 # 启动应用程序
