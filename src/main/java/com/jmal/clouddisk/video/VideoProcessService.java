@@ -15,10 +15,15 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
+import com.mongodb.client.AggregateIterable;
+import com.mongodb.client.result.UpdateResult;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -32,9 +37,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.jmal.clouddisk.util.FFMPEGUtils.*;
@@ -65,16 +70,32 @@ public class VideoProcessService {
     private ExecutorService videoTranscodingService;
 
     /**
+     * 视频转码任务
+     */
+    private final static Map<String, Future<?>> videoTranscodingTasks = new ConcurrentHashMap<>();
+    private final static Set<Process> processesTasks = new CopyOnWriteArraySet<>();
+
+    /**
      * 添加转码任务线程池
      */
     private ExecutorService addTranscodingTaskService;
+
+    /**
+     * 正在转码的视频文件数
+     */
+    private final static AtomicInteger transcodingCount = new AtomicInteger(0);
+
+    /**
+     * 等待转码的视频文件数
+     */
+    private final static AtomicInteger waitingTranscodingCount = new AtomicInteger(0);
 
     /**
      * 处理待转码文件锁, 防止多次处理
      */
     private final ReentrantLock toBeTranscodeLock = new ReentrantLock();
 
-    private final static String TRANSCODE_VIDEO  = "transcodeVideo";
+    private final static String TRANSCODE_VIDEO = "transcodeVideo";
 
     @PostConstruct
     public void init() {
@@ -84,10 +105,7 @@ public class VideoProcessService {
 
     private void getVideoTranscodingService() {
         TranscodeConfig transcodeConfig = getTranscodeConfig();
-        int processors = 1;
-        if (transcodeConfig.getMaxThreads() != null) {
-            processors = transcodeConfig.getMaxThreads();
-        }
+        int processors = transcodeConfig.getMaxThreads();
         synchronized (this) {
             if (videoTranscodingService == null) {
                 createExecutor(processors);
@@ -99,7 +117,7 @@ public class VideoProcessService {
         } else {
             try {
                 videoTranscodingService.shutdown();
-                if (!videoTranscodingService.awaitTermination(30, TimeUnit.MINUTES)) {
+                if (!videoTranscodingService.awaitTermination(180, TimeUnit.MINUTES)) {
                     log.warn("等待转码超时, 尝试强制停止所有转码任务");
                     videoTranscodingService.shutdownNow();
                 }
@@ -112,11 +130,39 @@ public class VideoProcessService {
     }
 
     private void createExecutor(int processors) {
+        waitingTranscodingCount.set(0);
+        transcodingCount.set(0);
         videoTranscodingService = ThreadUtil.newFixedExecutor(processors, 1, "videoTranscoding", true);
     }
 
     /**
+     * 取消转码任务
+     */
+    public void cancelTranscodeTask() {
+        // 修改所有未转码的视频文件状态
+        Query query = new Query();
+        query.addCriteria(Criteria.where(TRANSCODE_VIDEO).is(TranscodeStatus.NOT_TRANSCODE.getStatus()));
+        Update update = new Update();
+        update.unset(TRANSCODE_VIDEO);
+        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+        // 取消process任务
+        processesTasks.forEach(Process::destroy);
+        processesTasks.clear();
+        // 取消转码任务
+        videoTranscodingTasks.forEach((fileId, future) -> {
+            if (!future.isDone()) {
+                future.cancel(true);
+            }
+        });
+        videoTranscodingTasks.clear();
+        getVideoTranscodingService();
+        // 更新转码状态
+        taskProgressService.updateTranscodeStatus(getTranscodeStatus());
+    }
+
+    /**
      * 设置转码配置
+     *
      * @param config TranscodeConfig
      */
     public void setTranscodeConfig(TranscodeConfig config) {
@@ -128,16 +174,82 @@ public class VideoProcessService {
         if (tc == null) {
             mongoTemplate.save(config);
         } else {
-            Update update = new Update();
-            update.set("enable", config.getEnable());
-            update.set("bitrate", config.getBitrate());
-            update.set("height", config.getHeight());
+            Update update = getTranscodeConfigUpdate(config);
             mongoTemplate.updateFirst(query, update, TranscodeConfig.class);
-            if (ObjectUtil.equals(tc.getEnable(), config.getEnable())) {
+            if (!ObjectUtil.equals(tc.getMaxThreads(), config.getMaxThreads())) {
                 // 重新加载转码线程池
                 addTranscodingTaskService.execute(this::getVideoTranscodingService);
             }
+            // 检查是否需要重新转码
+            if (BooleanUtil.isTrue(config.getIsReTranscode())) {
+                // 检查转码参数是否变化
+                checkTranscodeConfigChange(config);
+            }
         }
+    }
+
+    /**
+     * 检查转码参数是否变化
+     *
+     * @param config 新参数
+     */
+    private void checkTranscodeConfigChange(TranscodeConfig config) {
+        // 更新所有视频文件的转码状态
+        List<String> fileIdList = getTranscodeConfigQuery(config);
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIdList));
+        Update update = new Update();
+        update.set(TRANSCODE_VIDEO, TranscodeStatus.NOT_TRANSCODE.getStatus());
+        UpdateResult updateResult = mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+        if (updateResult.getModifiedCount() > 0) {
+            log.info("需要重新转码的数量: {}", updateResult.getModifiedCount());
+            // 重新转码
+            startProcessFilesToBeIndexed();
+        }
+    }
+
+    private List<String> getTranscodeConfigQuery(TranscodeConfig config) {
+        List<Bson> pipeline = Arrays.asList(new Document("$match",
+                        new Document("video",
+                                new Document("$exists", true))),
+                new Document("$match",
+                        new Document("$or", Arrays.asList(new Document("video.height",
+                                        new Document("$gt", config.getHeightCond())),
+                                new Document("video.bitrateNum",
+                                        new Document("$gt", config.getBitrateCond() * 1000)),
+                                new Document("video.frameRate",
+                                        new Document("$gt", config.getFrameRateCond()))))),
+                new Document("$match",
+                        new Document("$or", Arrays.asList(new Document("video.toHeight",
+                                        new Document("$ne", config.getHeight())),
+                                new Document("video.toBitrate",
+                                        new Document("$ne", config.getBitrate())),
+                                new Document("video.toFrameRate",
+                                        new Document("$ne", config.getFrameRate()))))),
+                new Document("$project",
+                        new Document("_id", 1L)));
+        List<String> fileIdList = new ArrayList<>();
+        AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
+        for (org.bson.Document document : aggregateIterable) {
+            String fileId = document.getObjectId("_id").toHexString();
+            fileIdList.add(fileId);
+        }
+        return fileIdList;
+    }
+
+    private static @NotNull Update getTranscodeConfigUpdate(TranscodeConfig config) {
+        Update update = new Update();
+        update.set("enable", config.getEnable());
+        update.set("maxThreads", config.getMaxThreads());
+        update.set("bitrate", config.getBitrate());
+        update.set("height", config.getHeight());
+        update.set("frameRate", config.getFrameRate());
+        update.set("bitrateCond", config.getBitrateCond());
+        update.set("heightCond", config.getHeightCond());
+        update.set("frameRateCond", config.getFrameRateCond());
+        update.set("vttThumbnailCount", config.getVttThumbnailCount());
+        update.set("isReTranscode", config.getIsReTranscode());
+        return update;
     }
 
     public TranscodeConfig getTranscodeConfig() {
@@ -151,7 +263,8 @@ public class VideoProcessService {
 
     /**
      * 设置转码状态
-     * @param fileId fileId
+     *
+     * @param fileId          fileId
      * @param transcodeStatus TranscodeStatus
      */
     private void updateTranscodeVideo(String fileId, TranscodeStatus transcodeStatus) {
@@ -167,6 +280,10 @@ public class VideoProcessService {
         mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
     }
 
+    public Map<String, Integer> getTranscodeStatus() {
+        return Map.of("waitingTranscodingCount", waitingTranscodingCount.get(), "transcodingCount", transcodingCount.get());
+    }
+
     /**
      * 处理待转码文件
      */
@@ -177,6 +294,10 @@ public class VideoProcessService {
             Query query = new Query();
             query.addCriteria(Criteria.where(TRANSCODE_VIDEO).is(TranscodeStatus.NOT_TRANSCODE.getStatus()));
             long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
+            // 更新待转码文件数量
+            waitingTranscodingCount.set((int) count);
+            // 更新转码状态
+            taskProgressService.updateTranscodeStatus(getTranscodeStatus());
             if (count == 0) {
                 log.debug("待转码文件处理完成");
                 run = false;
@@ -189,7 +310,8 @@ public class VideoProcessService {
                 String relativePath = fileDocument.getPath();
                 String fileName = fileDocument.getName();
                 updateTranscodeVideo(fileId, TranscodeStatus.TRANSCODING);
-                videoTranscodingService.execute(() -> doConvertToM3U8(fileId, username, relativePath, fileName));
+                Future<?> videoTranscodingTask = videoTranscodingService.submit(() -> doConvertToM3U8(fileId, username, relativePath, fileName));
+                videoTranscodingTasks.put(fileId, videoTranscodingTask);
             }
         }
     }
@@ -221,13 +343,20 @@ public class VideoProcessService {
 
     /**
      * 转码视频
-     * @param fileId fileId
-     * @param username username
+     *
+     * @param fileId       fileId
+     * @param username     username
      * @param relativePath relativePath
-     * @param fileName fileName
+     * @param fileName     fileName
      */
     private void doConvertToM3U8(String fileId, String username, String relativePath, String fileName) {
         try {
+            // 更新正在转码的视频文件数
+            transcodingCount.incrementAndGet();
+            waitingTranscodingCount.decrementAndGet();
+            // 更新转码状态
+            taskProgressService.updateTranscodeStatus(getTranscodeStatus());
+            // 开始转码
             videoToM3U8(fileId, username, relativePath, fileName, false);
         } catch (InterruptedException e) {
             log.error(e.getMessage(), e);
@@ -235,7 +364,12 @@ public class VideoProcessService {
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         } finally {
+            // 更新正在转码的视频文件数
+            transcodingCount.decrementAndGet();
+            // 更新转码状态
+            taskProgressService.updateTranscodeStatus(getTranscodeStatus());
             updateTranscodeVideo(fileId, TranscodeStatus.TRANSCENDED);
+            videoTranscodingTasks.remove(fileId);
         }
     }
 
@@ -351,7 +485,7 @@ public class VideoProcessService {
             return;
         }
         String outputPath = Paths.get(videoCacheDir, fileId + ".m3u8").toString();
-        if (FileUtil.exist(outputPath)) {
+        if (FileUtil.exist(outputPath) && !checkTranscodeChange(fileId, transcodeConfig)) {
             return;
         }
         // 获取原始视频的分辨率和码率信息
@@ -361,36 +495,42 @@ public class VideoProcessService {
             return;
         }
         // 如果视频的码率小于配置码率，则使用视频的原始码率
-        // 标清视频码率
         int SD_VIDEO_BITRATE = transcodeConfig.getBitrate() * 1000;
         int bitrate = SD_VIDEO_BITRATE;
         if (videoInfo.getBitrate() < SD_VIDEO_BITRATE && videoInfo.getBitrate() > 0) {
             bitrate = videoInfo.getBitrate();
         }
+        // 如果视频的高度小于配置高度，则使用视频的原始高度
         int targetHeight = transcodeConfig.getHeight();
         if (videoInfo.getHeight() < targetHeight) {
             targetHeight = videoInfo.getHeight();
         }
+        // 如果视频的帧率小于配置帧率，则使用视频的原始帧率
+        double frameRate = transcodeConfig.getFrameRate();
+        if (videoInfo.getFrameRate() < frameRate) {
+            frameRate = videoInfo.getFrameRate();
+        }
 
         // 计算缩略图间隔
-        int vttInterval = FFMPEGUtils.getVttInterval(videoInfo);
+        int vttInterval = FFMPEGUtils.getVttInterval(videoInfo, transcodeConfig.getVttThumbnailCount());
         Path vttPath = Paths.get(videoCacheDir, "vtt");
         if (!Files.exists(vttPath)) {
             FileUtil.mkdir(vttPath);
         }
         String thumbnailPattern = Paths.get(vttPath.toString(), "thumb_%03d.png").toString();
 
-        ProcessBuilder processBuilder = FFMPEGCommand.cpuTranscoding(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern);
+        ProcessBuilder processBuilder = FFMPEGCommand.cpuTranscoding(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern, frameRate);
         if (!onlyCPU && FFMPEGCommand.checkNvidiaDrive()) {
             log.info("use NVENC hardware acceleration");
-            processBuilder = FFMPEGCommand.useNvencCuda(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern);
+            processBuilder = FFMPEGCommand.useNvencCuda(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern, frameRate);
         }
         if (!onlyCPU && FFMPEGCommand.checkMacAppleSilicon()) {
             log.info("use videotoolbox hardware acceleration");
-            processBuilder = FFMPEGCommand.useVideotoolbox(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern);
+            processBuilder = FFMPEGCommand.useVideotoolbox(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern, frameRate);
         }
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
+        processesTasks.add(process);
         boolean pushMessage = false;
         // 第一个ts文件
         String firstTS = fileId + "-001.ts";
@@ -406,7 +546,7 @@ public class VideoProcessService {
                 if (line.contains(firstTS)) {
                     // 开始转码
                     // log.info("开始转码: {}", fileName);
-                    startConvert(username, relativePath, fileName, fileId);
+                    startConvert(username, relativePath, fileName, fileId, transcodeConfig);
                     pushMessage = true;
                 }
                 transcodingProgress(fileAbsolutePath, videoInfo.getDuration(), line);
@@ -415,13 +555,14 @@ public class VideoProcessService {
             generateVtt(fileId, videoCacheDir, videoInfo, vttInterval, thumbnailPattern);
         } finally {
             taskProgressService.removeTaskProgress(fileAbsolutePath.toFile());
+            processesTasks.remove(process);
         }
         int exitCode = process.waitFor();
         if (exitCode == 0) {
             printSuccessInfo(processBuilder);
             log.info("转码成功: {}, onlyCPU: {}", fileName, onlyCPU);
             if (BooleanUtil.isFalse(pushMessage)) {
-                startConvert(username, relativePath, fileName, fileId);
+                startConvert(username, relativePath, fileName, fileId, transcodeConfig);
             }
         } else {
             if (!onlyCPU) {
@@ -431,17 +572,45 @@ public class VideoProcessService {
         }
     }
 
+    /**
+     * 检查转码参数是否变化
+     * @param fileId 文件id
+     * @param config 转码配置
+     * @return 是否变化
+     */
+    private boolean checkTranscodeChange(String fileId, TranscodeConfig config) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
+        if (fileDocument == null) {
+            return true;
+        }
+        VideoInfoDO videoInfo = fileDocument.getVideo();
+        if (videoInfo == null) {
+            return true;
+        }
+        return !Objects.equals(videoInfo.getToHeight(), config.getHeight()) || !Objects.equals(videoInfo.getToBitrate(), config.getBitrate()) || !Objects.equals(videoInfo.getToFrameRate(), config.getFrameRate());
+    }
+
     private static void generateVtt(String fileId, String videoCacheDir, VideoInfo videoInfo, int vttInterval, String thumbnailPattern) throws InterruptedException, IOException {
         String vttFilePath = Paths.get(videoCacheDir, fileId + ".vtt").toString();
         int columns = 10; // 合并图像的列数
         int rows = (int) Math.ceil((double) videoInfo.getDuration() / vttInterval / columns);
         String thumbnailImagePath = Paths.get(videoCacheDir, fileId + "-vtt.jpg").toString();
         ProcessBuilder processBuilder = FFMPEGCommand.mergeVTT(thumbnailPattern, thumbnailImagePath, columns, rows);
-        processBuilder.start().waitFor();
-        FFMPEGUtils.generateVTT(videoInfo, vttInterval, vttFilePath, String.format("%s-vtt.jpg", fileId), columns);
-        // 删除vtt临时文件
-        Path vttPath = Paths.get(videoCacheDir, "vtt");
-        FileUtil.del(vttPath);
+
+        printSuccessInfo(processBuilder);
+        // 等待处理结果
+        String outputPath = getWaitingForResults(thumbnailImagePath, processBuilder);
+        if (outputPath != null) {
+            log.info("生成vtt缩略图成功: {}", fileId);
+            FFMPEGUtils.generateVTT(videoInfo, vttInterval, vttFilePath, String.format("%s-vtt.jpg", fileId), columns);
+            // 删除vtt临时文件
+            Path vttPath = Paths.get(videoCacheDir, "vtt");
+            FileUtil.del(vttPath);
+        } else {
+            log.error("生成vtt缩略图失败: {}", fileId);
+        }
     }
 
     /**
@@ -466,7 +635,7 @@ public class VideoProcessService {
         }
     }
 
-    private void startConvert(String username, String relativePath, String fileName, String fileId) {
+    private void startConvert(String username, String relativePath, String fileName, String fileId, TranscodeConfig transcodeConfig) {
         Query query = new Query();
         String userId = userService.getUserIdByUserName(username);
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
@@ -475,6 +644,13 @@ public class VideoProcessService {
         Update update = new Update();
         String m3u8 = Paths.get(username, fileId + ".m3u8").toString();
         update.set("m3u8", m3u8);
+        String vtt = Paths.get(username, fileId + ".vtt").toString();
+        update.set("vtt", vtt);
+
+        update.set("video.toHeight", transcodeConfig.getHeight());
+        update.set("video.toBitrate", transcodeConfig.getBitrate());
+        update.set("video.toFrameRate", transcodeConfig.getFrameRate());
+
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
         if (fileDocument == null) {
             return;

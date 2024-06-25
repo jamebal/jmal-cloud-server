@@ -23,16 +23,30 @@ public class TaskProgressService {
 
     private final static String MSG_TASK_PROGRESS = "taskProgress";
 
+    private final static String MSG_TRANSCODE_STATUS = "transcodeStatus";
+
     private String defaultUsername;
 
     public List<TaskProgress> getTaskProgressList() {
         return List.copyOf(TASK_PROGRESS_MAP.values());
     }
 
+    /**
+     * 更新转码状态
+     * @param transcodeStatus 转码状态
+     */
+    public void updateTranscodeStatus(Map<String, Integer> transcodeStatus) {
+        commonFileService.pushMessage(getDefaultUsername(), transcodeStatus, MSG_TRANSCODE_STATUS);
+    }
+
+    /**
+     * 添加任务进度
+     * @param file 文件
+     * @param taskType 任务类型
+     * @param progress 进度
+     */
     public void addTaskProgress(File file, TaskType taskType, String progress) {
-        if (defaultUsername == null) {
-            defaultUsername = userService.getCreatorUsername();
-        }
+        getDefaultUsername();
         String taskId = getTaskId(file);
         TaskProgress taskProgress;
         if (checkTaskProgress(taskId)) {
@@ -48,9 +62,20 @@ public class TaskProgressService {
         addTaskProgress(taskProgress);
     }
 
+    /**
+     * 移除任务进度
+     * @param file 文件
+     */
     public void removeTaskProgress(File file) {
         String taskId = getTaskId(file);
         removeTaskProgress(taskId);
+    }
+
+    private String getDefaultUsername() {
+        if (defaultUsername == null) {
+            defaultUsername = userService.getCreatorUsername();
+        }
+        return defaultUsername;
     }
 
     private static String getTaskId(File file) {
