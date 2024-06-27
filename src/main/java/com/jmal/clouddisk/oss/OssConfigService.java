@@ -195,10 +195,14 @@ public class OssConfigService {
                 updateOssConfig(ossConfigDTO, ossService, query, ossConfigDO);
             }
         } catch (Exception e) {
-            log.warn(e.getMessage());
+            if (e instanceof CommonException commonException) {
+                throw commonException;
+            }
+            log.warn(e.getMessage(), e);
             if (ossService != null) {
                 ossService.close();
             }
+            configErr = e.getMessage();
             throw new CommonException(ExceptionType.WARNING.getCode(), configErr);
         }
     }

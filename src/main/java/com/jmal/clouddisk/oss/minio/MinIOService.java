@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.StrUtil;
 import com.google.common.collect.HashMultimap;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.interceptor.FileInterceptor;
@@ -56,11 +57,19 @@ public class MinIOService implements IOssService {
         String accessKeySecret = ossConfigDTO.getSecretKey();
         this.bucketName = ossConfigDTO.getBucket();
         // 创建ossClient实例。
-        this.minIoClient = new MinIoClient(MinioAsyncClient.builder()
-                .endpoint(endpoint)
-                .region(region)
-                .credentials(accessKeyId, accessKeySecret)
-                .build());
+        if (StrUtil.isBlank(region)) {
+            this.minIoClient = new MinIoClient(MinioAsyncClient.builder()
+                    .endpoint(endpoint)
+                    .credentials(accessKeyId, accessKeySecret)
+                    .build());
+        } else {
+            this.minIoClient = new MinIoClient(MinioAsyncClient.builder()
+                    .endpoint(endpoint)
+                    .region(region)
+                    .credentials(accessKeyId, accessKeySecret)
+                    .build());
+        }
+
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor, ossConfigDTO);
         ThreadUtil.execute(this::getMultipartUploads);
@@ -312,14 +321,8 @@ public class MinIOService implements IOssService {
     }
 
     @Override
-    public boolean doesBucketExist() {
-        boolean exist = false;
-        try {
-            exist = this.minIoClient.bucketExists(bucketName);
-        }catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-        return exist;
+    public boolean doesBucketExist() throws Exception {
+        return this.minIoClient.bucketExists(bucketName);
     }
 
     @Override

@@ -133,7 +133,7 @@ public interface IOssService {
     /**
      * 检查Bucket是否存在，并且验证配置是否可用，用于创建OSS配置时使用
      */
-    boolean doesBucketExist();
+    boolean doesBucketExist() throws Exception;
 
     /**
      * 判断对象是否存在
