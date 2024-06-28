@@ -73,6 +73,14 @@ public class CloudSettingController {
         return ResultUtil.success();
     }
 
+    @Operation(summary = "取消转码任务")
+    @PutMapping("/cloud/setting/transcode/cancel-task")
+    @Permission(value = "cloud:set:sync")
+    public ResponseResult<Object> cancelTranscodeTask() {
+        videoProcessService.cancelTranscodeTask();
+        return ResultUtil.success();
+    }
+
     @Operation(summary = "是否正在同步")
     @GetMapping("/user/setting/isSync")
     public ResponseResult<Map<String, Double>> isSync() {
@@ -162,6 +170,13 @@ public class CloudSettingController {
     @Permission(value = "cloud:file:upload")
     public ResponseResult<List<TaskProgress>> getTaskProgress() {
         return ResultUtil.success(taskProgressService.getTaskProgressList());
+    }
+
+    @Operation(summary = "加载转码状态")
+    @GetMapping("/cloud/transcode/status")
+    @Permission(value = "cloud:file:upload")
+    public ResponseResult<Map<String, Integer>> getTranscodeStatus() {
+        return ResultUtil.success(videoProcessService.getTranscodeStatus());
     }
 
 }

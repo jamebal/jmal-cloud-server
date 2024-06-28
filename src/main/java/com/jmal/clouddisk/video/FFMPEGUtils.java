@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.video;
 
+import cn.hutool.core.util.BooleanUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedWriter;
@@ -16,17 +17,19 @@ public class FFMPEGUtils {
 
     /**
      * 获取VTT文件间隔
-     * @param videoInfo 视频信息
+     *
+     * @param videoInfo         视频信息
+     * @param vttThumbnailCount 期望的缩略图数量
      * @return VTT文件间隔
      */
-    static int getVttInterval(VideoInfo videoInfo) {
-        // 期望的缩略图数量 50张
+    static int getVttInterval(VideoInfo videoInfo, Integer vttThumbnailCount) {
+        // 期望的缩略图数量默认为60张
         int videoDuration = videoInfo.getDuration();
         // 计算缩略图间隔
-        if (videoDuration <= 50) {
+        if (videoDuration <= vttThumbnailCount) {
             return 1;
         }
-        return videoDuration / 50;
+        return videoDuration / vttThumbnailCount;
     }
 
     /**
@@ -67,7 +70,15 @@ public class FFMPEGUtils {
      * @return 是否需要转码
      */
     static boolean needTranscode(VideoInfo videoInfo, TranscodeConfig transcodeConfig) {
-        if ((videoInfo.getBitrate() > 0 && videoInfo.getBitrate() <= transcodeConfig.getBitrate()) && videoInfo.getHeight() <= transcodeConfig.getHeight()) {
+        if (BooleanUtil.isFalse(transcodeConfig.getEnable())) {
+            return false;
+        }
+        // 判断视频码率、高度、帧率是否满足转码条件
+        boolean bitrateCond = videoInfo.getBitrate() > 0 && videoInfo.getBitrate() <= transcodeConfig.getBitrateCond();
+        boolean heightCond = videoInfo.getHeight() > 0 && videoInfo.getHeight() <= transcodeConfig.getHeightCond();
+        boolean frameRateCond = videoInfo.getFrameRate() > 0 && videoInfo.getFrameRate() <= transcodeConfig.getFrameRateCond();
+        if (bitrateCond && heightCond && frameRateCond) {
+            // 都不满足, 则判断视频格式是否为HTML5 Video Player支持的格式, 不支持则需要转码
             return !isSupportedFormat(videoInfo.getFormat());
         }
         return true;

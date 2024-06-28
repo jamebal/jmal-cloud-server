@@ -681,7 +681,7 @@ public class LuceneService {
                 run = false;
             }
             List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match", new org.bson.Document("index", 0)), new org.bson.Document("$project", new org.bson.Document("_id", 1)), new org.bson.Document("$limit", 8));
-            AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline).allowDiskUse(true);
+            AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
             while (aggregateIterable.iterator().hasNext()) {
                 org.bson.Document document = aggregateIterable.iterator().next();
                 String fileId = document.getObjectId("_id").toHexString();

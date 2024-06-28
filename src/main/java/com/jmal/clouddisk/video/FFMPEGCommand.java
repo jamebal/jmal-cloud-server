@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.video;
 
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.util.NumberUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
@@ -65,8 +66,13 @@ public class FFMPEGCommand {
                         }
                     }
                     // 转换rotation
+
+                    // 获取视频帧率信息
+                    String frameRateStr = streamObject.getString("r_frame_rate");
+                    double frameRate = parseFrameRate(frameRateStr);
+
                     int bitrate = streamObject.getIntValue("bit_rate"); // bps
-                    return new VideoInfo(videoPath, width, height, format, bitrate, duration, Math.abs(rotation));
+                    return new VideoInfo(videoPath, width, height, format, bitrate, duration, Math.abs(rotation), frameRate);
                 }
             }
 
@@ -81,6 +87,28 @@ public class FFMPEGCommand {
     }
 
     /**
+     * 解析帧率字符串
+     *
+     * @param frameRateStr 帧率字符串（形如 "30000/1001"）
+     * @return 帧率
+     */
+    static double parseFrameRate(String frameRateStr) {
+        if (frameRateStr != null && frameRateStr.contains("/")) {
+            String[] parts = frameRateStr.split("/");
+            if (parts.length == 2) {
+                try {
+                    double numerator = Double.parseDouble(parts[0]);
+                    double denominator = Double.parseDouble(parts[1]);
+                    return NumberUtil.round(numerator / denominator, 2).doubleValue();
+                } catch (NumberFormatException e) {
+                    log.error("Failed to parse frame rate: {}", frameRateStr, e);
+                }
+            }
+        }
+        return 0.0;
+    }
+
+    /**
      * 合并缩略图
      * @param inputPattern 输入文件名格式
      * @param outputImage 输出图片
@@ -91,6 +119,7 @@ public class FFMPEGCommand {
     static ProcessBuilder mergeVTT(String inputPattern, String outputImage, int columns, int rows) {
         ProcessBuilder processBuilder = new ProcessBuilder(
                 Constants.FFMPEG,
+                "-y",
                 "-i", inputPattern,
                 "-filter_complex", String.format("tile=%dx%d", columns, rows),
                 outputImage
@@ -123,7 +152,7 @@ public class FFMPEGCommand {
         return processBuilder;
     }
 
-    static ProcessBuilder useVideotoolbox(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath, int vttInterval, String thumbnailPattern) {
+    static ProcessBuilder useVideotoolbox(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath, int vttInterval, String thumbnailPattern, double frameRate) {
         return new ProcessBuilder(
                 Constants.FFMPEG,
                 "-hwaccel", "videotoolbox",
@@ -140,6 +169,7 @@ public class FFMPEGCommand {
                 "-preset", "medium",
                 "-g", "48",
                 "-sc_threshold", "0",
+                "-r", String.format("%.2f", frameRate),
                 "-f", "hls",
                 "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
                 outputPath,
@@ -148,7 +178,7 @@ public class FFMPEGCommand {
         );
     }
 
-    static ProcessBuilder cpuTranscoding(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath, int vttInterval, String thumbnailPattern) {
+    static ProcessBuilder cpuTranscoding(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath, int vttInterval, String thumbnailPattern, double frameRate) {
 
         return new ProcessBuilder(
                 Constants.FFMPEG,
@@ -164,6 +194,7 @@ public class FFMPEGCommand {
                 "-preset", "medium",
                 "-g", "48",
                 "-sc_threshold", "0",
+                "-r", String.format("%.2f", frameRate),
                 "-f", "hls",
                 "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
                 outputPath,
@@ -172,7 +203,7 @@ public class FFMPEGCommand {
         );
     }
 
-    static ProcessBuilder useNvencCuda(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath, int vttInterval, String thumbnailPattern) {
+    static ProcessBuilder useNvencCuda(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath, int vttInterval, String thumbnailPattern, double frameRate) {
         // 使用CUDA硬件加速和NVENC编码器
         return new ProcessBuilder(
                 Constants.FFMPEG,
@@ -202,6 +233,7 @@ public class FFMPEGCommand {
                 "-copyts",
                 "-avoid_negative_ts", "disabled",
                 "-max_muxing_queue_size", "2048",
+                "-r", String.format("%.2f", frameRate),
                 "-f", "hls",
                 "-max_delay", "5000000",
                 "-hls_time", "3",

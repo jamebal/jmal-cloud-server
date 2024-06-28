@@ -31,6 +31,8 @@ import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
@@ -594,13 +596,19 @@ public class CommonFileService {
         }
     }
 
-    /***
+    public void pushMessage(String username, Object message, String url) {
+        Completable.fromAction(() -> pushMessageSync(username, message, url))
+                .subscribeOn(Schedulers.io())
+                .subscribe();
+    }
+
+    /**
      * 给用户推送消息
      * @param username username
      * @param message message
      * @param url url
      */
-    public void pushMessage(String username, Object message, String url) {
+    public void pushMessageSync(String username, Object message, String url) {
         if (timelyPush(username, message, url)) return;
         if (Constants.CREATE_FILE.equals(url) || Constants.DELETE_FILE.equals(url)) {
             Map<String, ThrottleExecutor> throttleExecutorMap = throttleExecutorCache.get(username, key -> new HashMap<>(8));
@@ -622,6 +630,7 @@ public class CommonFileService {
             if (message instanceof Document setDoc) {
                 Object set = setDoc.get("$set");
                 if (set instanceof Document doc) {
+                    doc.remove("content");
                     Boolean isFolder = doc.getBoolean(Constants.IS_FOLDER);
                     if (Boolean.TRUE.equals(isFolder)) {
                         pushMsg(username, message, url);
@@ -645,6 +654,9 @@ public class CommonFileService {
         }
         if (message == null) {
             message = new Document();
+        }
+        if (message instanceof FileDocument fileDocument) {
+            fileDocument.setContent(null);
         }
         msg.setUrl(url);
         msg.setUsername(username);
