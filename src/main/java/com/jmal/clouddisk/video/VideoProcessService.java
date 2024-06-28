@@ -213,7 +213,10 @@ public class VideoProcessService {
                         new Document("video",
                                 new Document("$exists", true))),
                 new Document("$match",
-                        new Document("$or", Arrays.asList(new Document("video.height",
+                        new Document("$or", Arrays.asList(
+                                new Document("video.height",
+                                        new Document("$exists", false)),
+                                new Document("video.height",
                                         new Document("$gt", config.getHeightCond())),
                                 new Document("video.bitrateNum",
                                         new Document("$gt", config.getBitrateCond() * 1000)),
@@ -574,6 +577,7 @@ public class VideoProcessService {
 
     /**
      * 检查转码参数是否变化
+     *
      * @param fileId 文件id
      * @param config 转码配置
      * @return 是否变化
