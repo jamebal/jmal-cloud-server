@@ -69,8 +69,7 @@ public class CloudSettingController {
     @PutMapping("/cloud/setting/transcode/config")
     @Permission(value = "cloud:set:sync")
     public ResponseResult<Object> getTranscodeConfig(@RequestBody @Validated TranscodeConfig transcodeConfig) {
-        videoProcessService.setTranscodeConfig(transcodeConfig);
-        return ResultUtil.success();
+        return ResultUtil.success(videoProcessService.setTranscodeConfig(transcodeConfig));
     }
 
     @Operation(summary = "取消转码任务")

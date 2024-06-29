@@ -146,8 +146,13 @@ public class VideoProcessService {
         update.unset(TRANSCODE_VIDEO);
         mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
         // 取消process任务
-        processesTasks.forEach(Process::destroy);
+        processesTasks.forEach(p -> {
+            if (p.isAlive()) {
+                p.destroy();
+            }
+        });
         processesTasks.clear();
+
         // 取消转码任务
         videoTranscodingTasks.forEach((fileId, future) -> {
             if (!future.isDone()) {
@@ -155,9 +160,19 @@ public class VideoProcessService {
             }
         });
         videoTranscodingTasks.clear();
+        videoTranscodingService.shutdownNow();
         getVideoTranscodingService();
+        // 等待 waitingTranscodingCount < 0 且 transcodingCount < 0
+        while (waitingTranscodingCount.get() > 0  || transcodingCount.get() > 0) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(50);
+            } catch (InterruptedException e) {
+                log.error(e.getMessage(), e);
+                Thread.currentThread().interrupt();
+            }
+        }
         // 更新转码状态
-        taskProgressService.updateTranscodeStatus(getTranscodeStatus());
+        taskProgressService.pushTranscodeStatus(getTranscodeStatus());
     }
 
     /**
@@ -165,9 +180,9 @@ public class VideoProcessService {
      *
      * @param config TranscodeConfig
      */
-    public void setTranscodeConfig(TranscodeConfig config) {
+    public long setTranscodeConfig(TranscodeConfig config) {
         if (config == null) {
-            return;
+            return 0;
         }
         Query query = new Query();
         TranscodeConfig tc = mongoTemplate.findOne(query, TranscodeConfig.class);
@@ -183,9 +198,10 @@ public class VideoProcessService {
             // 检查是否需要重新转码
             if (BooleanUtil.isTrue(config.getIsReTranscode())) {
                 // 检查转码参数是否变化
-                checkTranscodeConfigChange(config);
+                return checkTranscodeConfigChange(config);
             }
         }
+        return 0;
     }
 
     /**
@@ -193,7 +209,7 @@ public class VideoProcessService {
      *
      * @param config 新参数
      */
-    private void checkTranscodeConfigChange(TranscodeConfig config) {
+    private long checkTranscodeConfigChange(TranscodeConfig config) {
         // 更新所有视频文件的转码状态
         List<String> fileIdList = getTranscodeConfigQuery(config);
         Query query = new Query();
@@ -203,9 +219,12 @@ public class VideoProcessService {
         UpdateResult updateResult = mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
         if (updateResult.getModifiedCount() > 0) {
             log.info("需要重新转码的数量: {}", updateResult.getModifiedCount());
+            createExecutor(config.getMaxThreads());
             // 重新转码
             startProcessFilesToBeIndexed();
+            return updateResult.getModifiedCount();
         }
+        return 0;
     }
 
     private List<String> getTranscodeConfigQuery(TranscodeConfig config) {
@@ -300,12 +319,12 @@ public class VideoProcessService {
             // 更新待转码文件数量
             waitingTranscodingCount.set((int) count);
             // 更新转码状态
-            taskProgressService.updateTranscodeStatus(getTranscodeStatus());
+            taskProgressService.pushTranscodeStatus(getTranscodeStatus());
             if (count == 0) {
                 log.debug("待转码文件处理完成");
                 run = false;
             }
-            query.limit(8);
+            query.limit(1);
             List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
             for (FileDocument fileDocument : fileDocumentList) {
                 String fileId = fileDocument.getId();
@@ -358,7 +377,7 @@ public class VideoProcessService {
             transcodingCount.incrementAndGet();
             waitingTranscodingCount.decrementAndGet();
             // 更新转码状态
-            taskProgressService.updateTranscodeStatus(getTranscodeStatus());
+            taskProgressService.pushTranscodeStatus(getTranscodeStatus());
             // 开始转码
             videoToM3U8(fileId, username, relativePath, fileName, false);
         } catch (InterruptedException e) {
@@ -370,7 +389,7 @@ public class VideoProcessService {
             // 更新正在转码的视频文件数
             transcodingCount.decrementAndGet();
             // 更新转码状态
-            taskProgressService.updateTranscodeStatus(getTranscodeStatus());
+            taskProgressService.pushTranscodeStatus(getTranscodeStatus());
             updateTranscodeVideo(fileId, TranscodeStatus.TRANSCENDED);
             videoTranscodingTasks.remove(fileId);
         }
@@ -447,7 +466,8 @@ public class VideoProcessService {
             ProcessBuilder processBuilder = FFMPEGCommand.getVideoCoverProcessBuilder(videoPath, outputPath, videoDuration);
             printSuccessInfo(processBuilder);
             // 等待处理结果
-            outputPath = getWaitingForResults(outputPath, processBuilder);
+            Process process = processBuilder.start();
+            outputPath = getWaitingForResults(outputPath, processBuilder, process);
             if (outputPath != null) {
                 return videoInfo;
             }
@@ -554,24 +574,30 @@ public class VideoProcessService {
                 }
                 transcodingProgress(fileAbsolutePath, videoInfo.getDuration(), line);
             }
+
             // 生成vtt缩略图
             generateVtt(fileId, videoCacheDir, videoInfo, vttInterval, thumbnailPattern);
+
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                printSuccessInfo(processBuilder);
+                log.info("转码成功: {}, onlyCPU: {}", fileName, onlyCPU);
+                if (BooleanUtil.isFalse(pushMessage)) {
+                    startConvert(username, relativePath, fileName, fileId, transcodeConfig);
+                }
+            } else {
+                if (!onlyCPU) {
+                    videoToM3U8(fileId, username, relativePath, fileName, true);
+                }
+                printErrorInfo(processBuilder, process);
+            }
+
+        } catch (InterruptedException exception) {
+            log.warn("转码被中断: {}", fileName);
+            Thread.currentThread().interrupt();
         } finally {
             taskProgressService.removeTaskProgress(fileAbsolutePath.toFile());
             processesTasks.remove(process);
-        }
-        int exitCode = process.waitFor();
-        if (exitCode == 0) {
-            printSuccessInfo(processBuilder);
-            log.info("转码成功: {}, onlyCPU: {}", fileName, onlyCPU);
-            if (BooleanUtil.isFalse(pushMessage)) {
-                startConvert(username, relativePath, fileName, fileId, transcodeConfig);
-            }
-        } else {
-            if (!onlyCPU) {
-                videoToM3U8(fileId, username, relativePath, fileName, true);
-            }
-            printErrorInfo(processBuilder, process);
         }
     }
 
@@ -596,24 +622,31 @@ public class VideoProcessService {
         return !Objects.equals(videoInfo.getToHeight(), config.getHeight()) || !Objects.equals(videoInfo.getToBitrate(), config.getBitrate()) || !Objects.equals(videoInfo.getToFrameRate(), config.getFrameRate());
     }
 
-    private static void generateVtt(String fileId, String videoCacheDir, VideoInfo videoInfo, int vttInterval, String thumbnailPattern) throws InterruptedException, IOException {
+    private void generateVtt(String fileId, String videoCacheDir, VideoInfo videoInfo, int vttInterval, String thumbnailPattern) throws InterruptedException, IOException {
         String vttFilePath = Paths.get(videoCacheDir, fileId + ".vtt").toString();
         int columns = 10; // 合并图像的列数
         int rows = (int) Math.ceil((double) videoInfo.getDuration() / vttInterval / columns);
         String thumbnailImagePath = Paths.get(videoCacheDir, fileId + "-vtt.jpg").toString();
         ProcessBuilder processBuilder = FFMPEGCommand.mergeVTT(thumbnailPattern, thumbnailImagePath, columns, rows);
-
-        printSuccessInfo(processBuilder);
         // 等待处理结果
-        String outputPath = getWaitingForResults(thumbnailImagePath, processBuilder);
-        if (outputPath != null) {
-            log.info("生成vtt缩略图成功: {}", fileId);
-            FFMPEGUtils.generateVTT(videoInfo, vttInterval, vttFilePath, String.format("%s-vtt.jpg", fileId), columns);
-            // 删除vtt临时文件
-            Path vttPath = Paths.get(videoCacheDir, "vtt");
-            FileUtil.del(vttPath);
-        } else {
-            log.error("生成vtt缩略图失败: {}", fileId);
+        Process process = processBuilder.start();
+        processesTasks.add(process);
+        try {
+            String outputPath = getWaitingForResults(thumbnailImagePath, processBuilder, process);
+            if (outputPath != null) {
+                log.info("生成vtt缩略图成功: {}", fileId);
+                printSuccessInfo(processBuilder);
+                FFMPEGUtils.generateVTT(videoInfo, vttInterval, vttFilePath, String.format("%s-vtt.jpg", fileId), columns);
+                // 删除vtt临时文件
+                Path vttPath = Paths.get(videoCacheDir, "vtt");
+                FileUtil.del(vttPath);
+            } else {
+                log.error("生成vtt缩略图失败: {}", fileId);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            processesTasks.remove(process);
         }
     }
 
@@ -630,7 +663,7 @@ public class VideoProcessService {
             try {
                 if (line.contains(":")) {
                     String progressStr = FFMPEGUtils.getProgressStr(videoDuration, line);
-                    log.info("{}, 转码进度: {}%", fileAbsolutePath.getFileName(), progressStr);
+                    log.debug("{}, 转码进度: {}%", fileAbsolutePath.getFileName(), progressStr);
                     taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, progressStr + "%");
                 }
             } catch (Exception e) {

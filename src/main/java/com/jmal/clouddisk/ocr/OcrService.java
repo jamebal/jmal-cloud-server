@@ -85,7 +85,8 @@ public class OcrService {
         }
         try {
             ProcessBuilder processBuilder = getPreOCRImageProcessBuilder(inputPath, outputPath);
-            return getWaitingForResults(outputPath, processBuilder);
+            Process process = processBuilder.start();
+            return getWaitingForResults(outputPath, processBuilder, process);
         } catch (InterruptedException e) {
             log.error(e.getMessage(), e);
             return null;

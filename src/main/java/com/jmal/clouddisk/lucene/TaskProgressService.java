@@ -4,6 +4,7 @@ import cn.hutool.crypto.SecureUtil;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -13,6 +14,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TaskProgressService {
 
     private final CommonFileService commonFileService;
@@ -35,7 +37,7 @@ public class TaskProgressService {
      * 更新转码状态
      * @param transcodeStatus 转码状态
      */
-    public void updateTranscodeStatus(Map<String, Integer> transcodeStatus) {
+    public void pushTranscodeStatus(Map<String, Integer> transcodeStatus) {
         commonFileService.pushMessage(getDefaultUsername(), transcodeStatus, MSG_TRANSCODE_STATUS);
     }
 
