@@ -41,8 +41,7 @@ public class FFMPEGUtils {
      * @param processBuilder 处理器
      * @return outputPath
      */
-    public static String getWaitingForResults(String outputPath, ProcessBuilder processBuilder) throws IOException, InterruptedException {
-        Process process = processBuilder.start();
+    public static String getWaitingForResults(String outputPath, ProcessBuilder processBuilder, Process process) throws IOException, InterruptedException {
         boolean finished = process.waitFor(12, TimeUnit.SECONDS);
         try {
             log.debug("finished: {}", finished);
