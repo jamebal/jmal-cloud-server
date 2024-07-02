@@ -47,6 +47,31 @@ public class MyFileUtils {
             if (contentType.contains(Constants.AUDIO)) {
                 return false;
             }
+            if (contentType.contains("zip")) {
+                return false;
+            }
+            if (contentType.contains("rar")) {
+                return false;
+            }
+            if (contentType.contains("7z")) {
+                return false;
+            }
+            if (contentType.contains("tar")) {
+                return false;
+            }
+            if (contentType.contains("gz")) {
+                return false;
+            }
+            if (contentType.contains("bz2")) {
+                return false;
+            }
+            if (contentType.contains("xz")) {
+                return false;
+            }
+            // 大于250M的文件不检查
+            if (file.length() > 250 * 1024 * 1024) {
+                return false;
+            }
             return CharsetDetector.detect(file) != null;
         } catch (Exception e) {
             return false;
