@@ -201,12 +201,13 @@ public class MinIOService implements IOssService {
     private List<FileInfo> setLastModified(List<FileInfo> fileInfoList) {
         fileInfoList = fileInfoList.parallelStream().peek(fileInfo -> {
             if (fileInfo.getLastModified() == null) {
+                Date date = new Date(0);
                 try {
-                    Date date = getLastModified(fileInfo.getKey());
-                    fileInfo.setLastModified(date);
+                    date = getLastModified(fileInfo.getKey());
                 } catch (Exception e) {
-                    log.error(e.getMessage(), e);
+                    log.warn("getLastModified Failed: {}, key: {}", e.getMessage(), fileInfo.getKey());
                 }
+                fileInfo.setLastModified(date);
             }
         }).collect(Collectors.toList());
         return fileInfoList;

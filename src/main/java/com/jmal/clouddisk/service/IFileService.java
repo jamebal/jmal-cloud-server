@@ -395,6 +395,30 @@ public interface IFileService {
      * 删除文件所有依赖
      * @param username 用户名
      * @param fileIds 文件id列表
+     * @param toTrash  是否移动到回收站, 否则就是硬删除
      */
-    void deleteDependencies(String username, List<String> fileIds);
+    void deleteDependencies(String username, List<String> fileIds, boolean toTrash);
+
+    /**
+     * 返回原处
+     * @param fileIds 文件id列表
+     * @param username 用户名
+     * @return ResponseResult<Object>
+     */
+    ResponseResult<Object> restore(List<String> fileIds, String username);
+
+    /**
+     * 清空回收站
+     * @param username 用户名
+     * @return ResponseResult<Object>
+     */
+    ResponseResult<Object> clearTrash(String username);
+
+    /**
+     * 彻底删除
+     * @param fileIds 文件id列表
+     * @param username 用户名
+     * @return ResponseResult<Object>
+     */
+    ResponseResult<Object> sweep(List<String> fileIds, String username);
 }
