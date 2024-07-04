@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.interceptor;
 
-import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -31,11 +30,9 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.util.UriUtils;
 
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
+import javax.imageio.*;
 import javax.imageio.stream.FileCacheImageOutputStream;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -44,6 +41,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Iterator;
 
 /**
  * @author jmal
@@ -354,21 +352,36 @@ public class FileInterceptor implements HandlerInterceptor {
      * @return 剪裁后的文件
      */
     public static byte[] imageCrop(File srcFile, String q, String w, String h) {
+        ByteArrayOutputStream out = null;
+        ImageInputStream iis = null;
         try {
-            Thumbnails.Builder<? extends File> thumbnail = Thumbnails.of(srcFile);
-            //获取图片信息
-            BufferedImage bim = ImageIO.read(srcFile);
+            // 使用ImageInputStream来处理大文件
+            iis = ImageIO.createImageInputStream(srcFile);
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
+            if (!readers.hasNext()) {
+                return new byte[0];
+            }
+            ImageReader reader = readers.next();
+            reader.setInput(iis, true);
+
+            // 获取图像元数据
+            BufferedImage bim = reader.read(0);
             if (bim == null) {
                 return new byte[0];
             }
+
             int srcWidth = bim.getWidth();
             int srcHeight = bim.getHeight();
-            double quality = Convert.toDouble(q, 0.8);
-            if (quality >= 0 && quality <= 1) {
-                thumbnail.outputQuality(quality);
-            }
-            int width = Convert.toInt(w, -1);
-            int height = Convert.toInt(h, -1);
+
+            // 处理质量参数
+            double quality = parseQuality(q, 0.8);
+            int width = parseDimension(w, -1);
+            int height = parseDimension(h, -1);
+
+            Thumbnails.Builder<? extends BufferedImage> thumbnail = Thumbnails.of(bim)
+                    .outputFormat("jpg") // 指定输出格式
+                    .outputQuality(quality);
+
             if (width > 0 && srcWidth > width) {
                 if (height <= 0 || srcHeight <= height) {
                     height = (int) (width / (double) srcWidth * srcHeight);
@@ -376,18 +389,51 @@ public class FileInterceptor implements HandlerInterceptor {
                 }
                 thumbnail.size(width, height);
             } else {
-                //宽高均小，指定原大小
+                // 宽高均小，指定原大小
                 thumbnail.size(srcWidth, srcHeight);
             }
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+            out = new ByteArrayOutputStream();
             thumbnail.toOutputStream(out);
             return out.toByteArray();
         } catch (UnsupportedFormatException e) {
             log.warn(e.getMessage(), e);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
+        } finally {
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    log.error("Error closing ByteArrayOutputStream", e);
+                }
+            }
+            if (iis != null) {
+                try {
+                    iis.close();
+                } catch (IOException e) {
+                    log.error("Error closing ImageInputStream", e);
+                }
+            }
         }
         return new byte[0];
+    }
+
+    private static double parseQuality(String q, double defaultQuality) {
+        try {
+            double quality = Double.parseDouble(q);
+            return (quality >= 0 && quality <= 1) ? quality : defaultQuality;
+        } catch (NumberFormatException e) {
+            return defaultQuality;
+        }
+    }
+
+    private static int parseDimension(String dim, int defaultValue) {
+        try {
+            return Integer.parseInt(dim);
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 
 }
