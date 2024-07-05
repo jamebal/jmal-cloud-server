@@ -91,6 +91,8 @@ public class CompressUtils {
                 unZip(file, outputDir, isWrite);
             } else if (filePath.endsWith(".tar")) {
                 decompressTar(file, outputDir, isWrite);
+            } else if (filePath.endsWith(".7z")) {
+                decompressSevenZ(file, outputDir, isWrite);
             } else if (filePath.endsWith(".jar")) {
                 decompressJar(file, outputDir, isWrite);
             } else if (filePath.endsWith(".tar.gz") || filePath.endsWith(".tgz") || filePath.endsWith(".gz")) {
@@ -105,7 +107,6 @@ public class CompressUtils {
             throw new CommonException(ExceptionType.FAIL_DECOMPRESS);
         }
     }
-
 
     /**
      * 解压 .zip 文件
@@ -160,6 +161,24 @@ public class CompressUtils {
         JarArchiveEntry entry;
         while (Objects.nonNull(entry = inputStream.getNextEntry())) {
             decompress(outputDir, isWrite, inputStream, entry);
+        }
+    }
+
+    private static void decompressSevenZ(File sevenZFile, String outputDir, boolean isWrite) throws IOException {
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        processBuilder.command("7z", "x", sevenZFile.getAbsolutePath(), "-o" + outputDir, "-y");
+        // 将输出和错误流重定向到空输出流
+        processBuilder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+        processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD);
+        try {
+            Process process = processBuilder.start();
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new RuntimeException("Failed to extract 7z file. Exit code: " + exitCode);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Extraction interrupted", e);
         }
     }
 
