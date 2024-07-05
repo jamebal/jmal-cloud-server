@@ -93,6 +93,8 @@ public class CompressUtils {
                 decompressTar(file, outputDir, isWrite);
             } else if (filePath.endsWith(".7z")) {
                 decompressSevenZ(file, outputDir, isWrite);
+            } else if (filePath.endsWith(".rar")) {
+                decompressRar(file, outputDir, isWrite);
             } else if (filePath.endsWith(".jar")) {
                 decompressJar(file, outputDir, isWrite);
             } else if (filePath.endsWith(".tar.gz") || filePath.endsWith(".tgz") || filePath.endsWith(".gz")) {
@@ -156,7 +158,7 @@ public class CompressUtils {
 
     public static void decompressJar(File file, String outputDir, boolean isWrite) throws IOException {
         JarArchiveInputStream inputStream = new JarArchiveInputStream(new FileInputStream(file));
-        //创建输出目录
+        // 创建输出目录
         createDirectory(outputDir, null);
         JarArchiveEntry entry;
         while (Objects.nonNull(entry = inputStream.getNextEntry())) {
@@ -165,8 +167,23 @@ public class CompressUtils {
     }
 
     private static void decompressSevenZ(File sevenZFile, String outputDir, boolean isWrite) throws IOException {
+        // 创建输出目录
+        createDirectory(outputDir, null);
         ProcessBuilder processBuilder = new ProcessBuilder();
         processBuilder.command("7z", "x", sevenZFile.getAbsolutePath(), "-o" + outputDir, "-y");
+        // 将输出和错误流重定向到空输出流
+        executingCommand(processBuilder, "7z");
+    }
+
+    private static void decompressRar(File sevenZFile, String outputDir, boolean isWrite) throws IOException {
+        // 创建输出目录
+        createDirectory(outputDir, null);
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        processBuilder.command("unrar", "x", "-o+", sevenZFile.getAbsolutePath(), outputDir);
+        executingCommand(processBuilder, "rar");
+    }
+
+    private static void executingCommand(ProcessBuilder processBuilder, String type) throws IOException {
         // 将输出和错误流重定向到空输出流
         processBuilder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
         processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD);
@@ -174,7 +191,7 @@ public class CompressUtils {
             Process process = processBuilder.start();
             int exitCode = process.waitFor();
             if (exitCode != 0) {
-                throw new RuntimeException("Failed to extract 7z file. Exit code: " + exitCode);
+                throw new RuntimeException("Failed to extract " + type + " file. Exit code: " + exitCode);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
