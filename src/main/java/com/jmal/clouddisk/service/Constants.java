@@ -66,6 +66,8 @@ public class Constants {
 
     public static final String OPERATION_FILE = "operationFile";
 
+    public static final String OPERATION_TIPS = "operationTips";
+
     public static final String UPLOADER_CHUNK_SIZE = "uploaderChunkSize";
 
     public static final int OSS_CHUNK_SIZE = 5 * 1024 * 1024;

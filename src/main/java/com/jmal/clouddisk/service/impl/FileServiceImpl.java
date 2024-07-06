@@ -30,6 +30,8 @@ import com.jmal.clouddisk.video.VideoInfo;
 import com.jmal.clouddisk.video.VideoProcessService;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import com.mongodb.client.AggregateIterable;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -494,15 +496,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
      * 统计文件夹的大小
      */
     private long getFolderSize(String userId, String path) {
-        List<Bson> list = Arrays.asList(new Document("$match",
-                        new Document(USER_ID, userId)
-                                .append(Constants.IS_FOLDER, false)
-                                .append("path", new Document("$regex", "^" + ReUtil.escape(path)))),
-                new Document("$group",
-                        new Document("_id",
-                                new BsonNull())
-                                .append(Constants.TOTAL_SIZE,
-                                        new Document("$sum", "$size"))));
+        List<Bson> list = Arrays.asList(new Document("$match", new Document(USER_ID, userId).append(Constants.IS_FOLDER, false).append("path", new Document("$regex", "^" + ReUtil.escape(path)))), new Document("$group", new Document("_id", new BsonNull()).append(Constants.TOTAL_SIZE, new Document("$sum", "$size"))));
         AggregateIterable<Document> result = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
         long totalSize = 0;
         Document doc = result.first();
@@ -1259,14 +1253,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         }
         String username = userService.getUserNameById(fileDocument.getUserId());
         String relativepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(fileDocument.getPath() + fileDocument.getName(), StandardCharsets.UTF_8);
-        StringBuilder sb = StrUtil.builder()
-                .append("forward:/file/")
-                .append(username)
-                .append(relativepath)
-                .append("?shareKey=")
-                .append(org.apache.catalina.util.URLEncoder.DEFAULT.encode(shareKey, StandardCharsets.UTF_8))
-                .append("&o=")
-                .append(operation);
+        StringBuilder sb = StrUtil.builder().append("forward:/file/").append(username).append(relativepath).append("?shareKey=").append(org.apache.catalina.util.URLEncoder.DEFAULT.encode(shareKey, StandardCharsets.UTF_8)).append("&o=").append(operation);
         if (!CharSequenceUtil.isBlank(shareToken)) {
             sb.append("&share-token=").append(shareToken);
         }
@@ -1895,13 +1882,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             if (CommonFileService.isLock(fileDocument)) {
                 throw new CommonException(ExceptionType.LOCKED_RESOURCES);
             }
-            if (BooleanUtil.isFalse(fileDocument.getIsFolder()) && fileDocuments.size() == 1) {
+            if (BooleanUtil.isFalse(fileDocument.getIsFolder())) {
                 isDel = true;
             }
-            // String currentDirectory1 = getUserDirectory(fileDocument.getPath());
-            // String filePath = fileProperties.getRootDir() + File.separator + username + currentDirectory1 + fileDocument.getName();
-            // File file = new File(filePath);
-            // isDel = FileUtil.del(file);
             if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
                 // 删除文件夹及其下的所有文件
                 List<FileDocument> delFileDocumentList = mongoTemplate.findAllAndRemove(getAllByFolderQuery(fileDocument), FileDocument.class, COLLECTION_NAME);
@@ -1914,15 +1897,18 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             }
             pushMessage(username, fileDocument, Constants.DELETE_FILE);
         }
+        OperationTips operationTips = OperationTips.builder().operation("移动到回收站").build();
         if (isDel) {
             List<FileDocument> delFileDocumentList = mongoTemplate.findAllAndRemove(query, FileDocument.class, COLLECTION_NAME);
             // 移动到回收站
             moveToTrash(delFileDocumentList, false);
             deleteDependencies(username, fileIds, true);
+            operationTips.setSuccess(true);
         } else {
-            throw new CommonException(-1, "移动到回收站失败");
+            operationTips.setSuccess(false);
         }
-        return ResultUtil.success().setMessage("移动到回收站成功");
+        pushMessage(username, operationTips, Constants.OPERATION_TIPS);
+        return ResultUtil.success();
     }
 
     private Query getAllByFolderQuery(FileDocument fileDocument) {
@@ -1934,32 +1920,44 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public ResponseResult<Object> restore(List<String> fileIds, String username) {
-        List<FileDocument> trashList = mongoTemplate.findAllAndRemove(new Query(Criteria.where("_id").in(fileIds)), FileDocument.class, TRASH_COLLECTION_NAME);
-        for (FileDocument fileDocument : trashList) {
-            if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
-                List<FileDocument> trashList1 = mongoTemplate.findAllAndRemove(getAllByFolderQuery(fileDocument), FileDocument.class, TRASH_COLLECTION_NAME);
-                restoreFileDocument(trashList1);
+        Single.create(emitter -> {
+            List<FileDocument> trashList = mongoTemplate.findAllAndRemove(new Query(Criteria.where("_id").in(fileIds)), FileDocument.class, TRASH_COLLECTION_NAME);
+            for (FileDocument fileDocument : trashList) {
+                if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
+                    List<FileDocument> trashList1 = mongoTemplate.findAllAndRemove(getAllByFolderQuery(fileDocument), FileDocument.class, TRASH_COLLECTION_NAME);
+                    restoreFileDocument(trashList1);
+                }
             }
-        }
-        restoreFileDocument(trashList);
-        return ResultUtil.success().setMessage("还原成功");
+            restoreFileDocument(trashList);
+            OperationTips operationTips = OperationTips.builder().success(true).operation("还原").build();
+            pushMessage(username, operationTips, Constants.OPERATION_TIPS);
+        }).subscribeOn(Schedulers.io()).subscribe();
+        return ResultUtil.success();
     }
 
     @Override
     public ResponseResult<Object> sweep(List<String> fileIds, String username) {
-        Query query = new Query(Criteria.where("_id").in(fileIds));
-        deleteTrash(query);
-        return ResultUtil.success().setMessage("删除成功");
+        Single.create(emitter -> {
+            Query query = new Query(Criteria.where("_id").in(fileIds));
+            deleteTrash(query);
+            OperationTips operationTips = OperationTips.builder().success(true).operation("删除").build();
+            pushMessage(username, operationTips, Constants.OPERATION_TIPS);
+        }).subscribeOn(Schedulers.io()).subscribe();
+        return ResultUtil.success();
     }
 
     @Override
     public ResponseResult<Object> clearTrash(String username) {
-        String userId = userService.getUserIdByUserName(username);
-        Query query = new Query();
-        query.addCriteria(Criteria.where(USER_ID).is(userId));
-        query.fields().include(USER_ID, "path", "name");
-        deleteTrash(query);
-        return ResultUtil.success().setMessage("已经清空回收站");
+        Single.create(emitter -> {
+            String userId = userService.getUserIdByUserName(username);
+            Query query = new Query();
+            query.addCriteria(Criteria.where(USER_ID).is(userId));
+            query.fields().include(USER_ID, "path", "name");
+            deleteTrash(query);
+            OperationTips operationTips = OperationTips.builder().success(true).operation("清空回收站").build();
+            pushMessage(username, operationTips, Constants.OPERATION_TIPS);
+        }).subscribeOn(Schedulers.io()).subscribe();
+        return ResultUtil.success();
     }
 
     private void deleteTrash(Query query) {
