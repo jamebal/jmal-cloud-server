@@ -753,5 +753,19 @@
     "path": "/setting/taskProgress",
     "sortNumber": 16,
     "updateTime": 1717766722975
+  },
+  {
+    "authority": "",
+    "component": "/trash/index",
+    "createTime": 1719912060104,
+    "hide": false,
+    "icon": "huishouzhan",
+    "id": "6683c67cf66d83694bc9fe5c",
+    "menuType": 0,
+    "name": "回收站",
+    "parentId": "",
+    "path": "/trash",
+    "sortNumber": 8,
+    "updateTime": 1719912071511
   }
 ]
