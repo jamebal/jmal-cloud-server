@@ -547,6 +547,7 @@ public class VideoProcessService {
             log.info("use NVENC hardware acceleration");
             processBuilder = FFMPEGCommand.useNvencCuda(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern, frameRate);
             // 生成vtt缩略图, nvidia加速时要单独生成vtt缩略图
+            taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, "vtt生成中...");
             ProcessBuilder proVtt = FFMPEGCommand.useNvencCudaVtt(fileAbsolutePath, vttInterval, thumbnailPattern);
             printSuccessInfo(proVtt);
             // 等待处理结果
