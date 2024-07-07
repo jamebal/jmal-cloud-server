@@ -923,7 +923,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 getCopyResult(upload, froms, to, true);
                 String currentDirectory = getOssFileCurrentDirectory(upload, froms);
                 // 删除
-                delete(upload.getUsername(), currentDirectory, froms, upload.getUsername());
+                delete(upload.getUsername(), currentDirectory, froms, upload.getUsername(), true);
             } catch (CommonException e) {
                 pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMsg(), Constants.UNKNOWN_ERROR), "移动");
             } catch (Exception e) {
@@ -1855,7 +1855,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds, String operator) {
+    public ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds, String operator, boolean sweep) {
         FileDocument doc = getById(fileIds.get(0));
         List<OperationPermission> operationPermissionList = null;
         if (doc != null) {
@@ -1871,7 +1871,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             webOssService.delete(ossPath, fileIds);
             return ResultUtil.success();
         }
-
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds));
         List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
@@ -1883,8 +1882,15 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             if (CommonFileService.isLock(fileDocument)) {
                 throw new CommonException(ExceptionType.LOCKED_RESOURCES);
             }
-            if (BooleanUtil.isFalse(fileDocument.getIsFolder())) {
-                isDel = true;
+            if (sweep) {
+                String currentDirectory1 = getUserDirectory(fileDocument.getPath());
+                String filePath = fileProperties.getRootDir() + File.separator + username + currentDirectory1 + fileDocument.getName();
+                File file = new File(filePath);
+                isDel = FileUtil.del(file);
+            } else {
+                if (BooleanUtil.isFalse(fileDocument.getIsFolder())) {
+                    isDel = true;
+                }
             }
             if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
                 // 删除文件夹及其下的所有文件
@@ -1893,22 +1899,28 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 moveToTrash(delFileDocumentList, true);
                 // 提取出delFileDocumentList中文件id
                 List<String> delFileIds = delFileDocumentList.stream().map(FileDocument::getId).collect(Collectors.toList());
-                deleteDependencies(username, delFileIds, true);
+                deleteDependencies(username, delFileIds, !sweep);
                 isDel = true;
             }
             pushMessage(username, fileDocument, Constants.DELETE_FILE);
         }
-        OperationTips operationTips = OperationTips.builder().operation("移动到回收站").build();
+        OperationTips operationTips = OperationTips.builder().operation(sweep ? "删除" : "移动到回收站").build();
         if (isDel) {
-            List<FileDocument> delFileDocumentList = mongoTemplate.findAllAndRemove(query, FileDocument.class, COLLECTION_NAME);
-            // 移动到回收站
-            moveToTrash(delFileDocumentList, false);
-            deleteDependencies(username, fileIds, true);
+            if (sweep) {
+                mongoTemplate.remove(query, COLLECTION_NAME);
+            } else {
+                List<FileDocument> delFileDocumentList = mongoTemplate.findAllAndRemove(query, FileDocument.class, COLLECTION_NAME);
+                // 移动到回收站
+                moveToTrash(delFileDocumentList, false);
+            }
+            deleteDependencies(username, fileIds, !sweep);
             operationTips.setSuccess(true);
         } else {
             operationTips.setSuccess(false);
         }
-        pushMessage(username, operationTips, Constants.OPERATION_TIPS);
+        if (!sweep) {
+            pushMessage(username, operationTips, Constants.OPERATION_TIPS);
+        }
         return ResultUtil.success();
     }
 

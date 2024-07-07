@@ -323,7 +323,7 @@ public class FileController {
     public ResponseResult<Object> delete(@RequestParam String username, @RequestParam String[] fileIds, @RequestParam String currentDirectory) {
         if (fileIds != null && fileIds.length > 0) {
             List<String> list = Arrays.asList(fileIds);
-            return fileService.delete(username, currentDirectory, list, userLoginHolder.getUsername());
+            return fileService.delete(username, currentDirectory, list, userLoginHolder.getUsername(), false);
         } else {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }

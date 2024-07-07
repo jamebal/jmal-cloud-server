@@ -171,9 +171,10 @@ public interface IFileService {
      * @param currentDirectory 当前目录
      * @param fileIds 文件id
      * @param operator 操作者
+     * @param sweep 是否彻底删除
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds, String operator);
+    ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds, String operator, boolean sweep);
 
     /**
      * 显示缩略图
