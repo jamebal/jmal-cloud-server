@@ -329,6 +329,40 @@ public class FileController {
         }
     }
 
+    @Operation(summary = "返回原处")
+    @PostMapping("/restore")
+    @LogOperatingFun
+    @Permission("cloud:file:upload")
+    public ResponseResult<Object> restore(@RequestParam String[] fileIds) {
+        if (fileIds != null && fileIds.length > 0) {
+            List<String> list = Arrays.asList(fileIds);
+            return fileService.restore(list, userLoginHolder.getUsername());
+        } else {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
+        }
+    }
+
+    @Operation(summary = "彻底删除")
+    @DeleteMapping("/sweep")
+    @LogOperatingFun
+    @Permission("cloud:file:delete")
+    public ResponseResult<Object> sweep(@RequestParam String[] fileIds) {
+        if (fileIds != null && fileIds.length > 0) {
+            List<String> list = Arrays.asList(fileIds);
+            return fileService.sweep(list, userLoginHolder.getUsername());
+        } else {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
+        }
+    }
+
+    @Operation(summary = "清空回收站")
+    @DeleteMapping("/clear-trash")
+    @LogOperatingFun
+    @Permission("cloud:file:delete")
+    public ResponseResult<Object> clearTrash() {
+        return fileService.clearTrash(userLoginHolder.getUsername());
+    }
+
     @Operation(summary = "重命名")
     @GetMapping("/rename")
     @LogOperatingFun

@@ -100,6 +100,8 @@ public class CommonFileService {
 
     public static final String COLLECTION_NAME = "fileDocument";
 
+    public static final String TRASH_COLLECTION_NAME = "trash";
+
     @Autowired
     MongoTemplate mongoTemplate;
 

@@ -167,6 +167,10 @@ public class UploadApiParamDTO {
      * tagId
      */
     String tagId;
+    /**
+     * 是否在回收站
+     */
+    Boolean isTrash;
     /***
      * 封面
      */

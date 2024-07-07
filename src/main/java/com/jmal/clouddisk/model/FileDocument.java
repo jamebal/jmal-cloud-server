@@ -142,6 +142,10 @@ public class FileDocument extends FileBase {
      * m3u8文件路径(相对路径)
      */
     private String m3u8;
+    /**
+     * vtt文件路径(相对路径)
+     */
+    private String vtt;
     /***
      * 是否发布，适用于文档类型
      */
@@ -212,5 +216,30 @@ public class FileDocument extends FileBase {
         int hash = 7;
         hash = 89 * hash + (this.id != null ? this.id.hashCode() : 0);
         return hash;
+    }
+
+    public Trash toTrash(boolean hidden) {
+        Trash trash = new Trash();
+        trash.setId(this.getId());
+        trash.setName(this.getName());
+        trash.setPath(this.getPath());
+        trash.setUserId(this.getUserId());
+        trash.setH(this.getH());
+        trash.setW(this.getW());
+        trash.setSuffix(this.getSuffix());
+        trash.setIsFolder(this.getIsFolder());
+        trash.setContent(this.getContent());
+        trash.setExif(this.getExif());
+        trash.setMusic(this.getMusic());
+        trash.setVideo(this.getVideo());
+        trash.setContentType(this.getContentType());
+        trash.setSize(this.getSize());
+        trash.setUploadDate(this.getUploadDate());
+        trash.setUpdateDate(this.getUpdateDate());
+        trash.setMd5(this.getMd5());
+        trash.setM3u8(this.getM3u8());
+        trash.setVtt(this.getVtt());
+        trash.setHidden(hidden);
+        return trash;
     }
 }
