@@ -24,6 +24,7 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.video.VideoInfo;
+import com.jmal.clouddisk.video.VideoInfoDO;
 import com.jmal.clouddisk.video.VideoProcessService;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import com.luciad.imageio.webp.WebPWriteParam;
@@ -413,7 +414,15 @@ public class CommonFileService {
         }
         if (fileExists.getVideo() == null || RebuildIndexTaskService.isSyncFile()) {
             VideoInfo videoInfo = videoProcessService.getVideoInfo(file);
-            update.set("video", videoInfo.toVideoInfoDO());
+            VideoInfoDO videoInfoDO = videoInfo.toVideoInfoDO();
+            update.set("video.bitrate", videoInfoDO.getBitrate());
+            update.set("video.bitrateNum", videoInfoDO.getBitrateNum());
+            update.set("video.format", videoInfoDO.getFormat());
+            update.set("video.duration", videoInfoDO.getDuration());
+            update.set("video.durationNum", videoInfoDO.getDurationNum());
+            update.set("video.width", videoInfoDO.getWidth());
+            update.set("video.height", videoInfoDO.getHeight());
+            update.set("video.frameRate", videoInfoDO.getFrameRate());
         }
     }
 
