@@ -12,6 +12,7 @@
       "5ffc37a19a2c787ef115f97f",
       "5ffc37db9a2c787ef115f980",
       "63b79129a7b6db0f8c1f2ad9",
+      "6683c67cf66d83694bc9fe5c",
       "5ffb1b38eb9cf770a889b7ea",
       "6020dec9cfb7a66f628397a8",
       "5ffb1b57eb9cf770a889b7eb",
@@ -43,6 +44,7 @@
       "5ffd707129d84649e3f02cda",
       "5ffb1cf6eb9cf770a889b7f3",
       "5ffd396829d8463da1186735",
+      "66630732fc290e06878516f0",
       "600cf2ef194ba43988898423",
       "5ffd395029d8463da1186734",
       "5ffd38ed29d8463da1186731",
@@ -60,7 +62,7 @@
     ],
     "name": "超级管理员",
     "remarks": "超级管理员",
-    "updateTime": 1680744633638
+    "updateTime": 1720334128676
   },
   {
     "code": "admin",
@@ -75,6 +77,7 @@
       "5ffc37a19a2c787ef115f97f",
       "5ffc37db9a2c787ef115f980",
       "63b79129a7b6db0f8c1f2ad9",
+      "6683c67cf66d83694bc9fe5c",
       "5ffb1b38eb9cf770a889b7ea",
       "6020dec9cfb7a66f628397a8",
       "5ffb1b57eb9cf770a889b7eb",
@@ -107,7 +110,7 @@
     ],
     "name": "管理员",
     "remarks": "所有菜单(只读)",
-    "updateTime": 1613718961613
+    "updateTime": 1720334138113
   },
   {
     "code": "visitor-website",
@@ -145,6 +148,7 @@
       "5ffc378b9a2c787ef115f97e",
       "5ffc37a19a2c787ef115f97f",
       "5ffc37db9a2c787ef115f980",
+      "6683c67cf66d83694bc9fe5c",
       "5ffb1b38eb9cf770a889b7ea",
       "5ffd3ecf29d8463da118673e",
       "5ffd3f5f29d8463da1186740",
@@ -173,7 +177,7 @@
     ],
     "name": "网站编辑者",
     "remarks": "所有网站菜单可写",
-    "updateTime": 1611300975061
+    "updateTime": 1720334159599
   },
   {
     "code": "admin-website",
@@ -188,6 +192,7 @@
       "5ffc37a19a2c787ef115f97f",
       "5ffc37db9a2c787ef115f980",
       "63b79129a7b6db0f8c1f2ad9",
+      "6683c67cf66d83694bc9fe5c",
       "5ffb1b38eb9cf770a889b7ea",
       "5ffd3ecf29d8463da118673e",
       "5ffd3dc829d8463da118673a",
@@ -210,7 +215,7 @@
     ],
     "name": "网站管理员",
     "remarks": "网站-所有菜单(只读)",
-    "updateTime": 1613719034018
+    "updateTime": 1720334165458
   },
   {
     "code": "visitor",
@@ -291,6 +296,7 @@
       "5ffc37a19a2c787ef115f97f",
       "5ffc37db9a2c787ef115f980",
       "63b79129a7b6db0f8c1f2ad9",
+      "6683c67cf66d83694bc9fe5c",
       "5ffb1b38eb9cf770a889b7ea",
       "6020dec9cfb7a66f628397a8",
       "5ffd3ecf29d8463da118673e",
@@ -305,6 +311,6 @@
     ],
     "name": "普通用户",
     "remarks": "普通网盘用户",
-    "updateTime": 1613719060086
+    "updateTime": 1720334191182
   }
 ]
