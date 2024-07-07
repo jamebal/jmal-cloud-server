@@ -243,8 +243,20 @@ public class FFMPEGCommand {
                 "-hls_segment_filename", Paths.get(videoCacheDir, fileId + "-%03d.ts").toString(),
                 "-hls_playlist_type", "vod",
                 "-hls_list_size", "0",
-                outputPath,
+                outputPath
+        );
+    }
+
+    static ProcessBuilder useNvencCudaVtt(Path fileAbsolutePath, int vttInterval, String thumbnailPattern) {
+        // 使用CUDA硬件加速和NVENC编码器
+        return new ProcessBuilder(
+                Constants.FFMPEG,
+                "-init_hw_device", "cuda=cu:0",
+                "-filter_hw_device", "cu",
+                "-i", fileAbsolutePath.toString(),
+                "-y",
                 "-vf", String.format("scale=%s:-2,fps=1/%d", thumbnailWidth, vttInterval),
+                "-vsync", "vfr",
                 thumbnailPattern
         );
     }
