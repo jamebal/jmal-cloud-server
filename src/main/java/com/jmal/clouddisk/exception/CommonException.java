@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.exception;
 
+import lombok.Getter;
 import org.springframework.data.annotation.Transient;
 
 import java.io.Serial;
@@ -10,6 +11,7 @@ import java.io.Serial;
  * @Date 2019-08-15 10:54
  * @author jmal
  */
+@Getter
 public class CommonException extends RuntimeException {
 
     /**
@@ -47,16 +49,8 @@ public class CommonException extends RuntimeException {
         this.data = null;
     }
 
-    public int getCode() {
-        return code;
-    }
-
-    public String getMsg() {
+    public String getMessage() {
         return msg;
-    }
-
-    public Object getData() {
-        return data;
     }
 
 }

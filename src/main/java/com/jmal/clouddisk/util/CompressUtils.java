@@ -106,7 +106,7 @@ public class CompressUtils {
             }
         } catch (IOException e) {
             log.error(e.getMessage(), e);
-            throw new CommonException(ExceptionType.FAIL_DECOMPRESS);
+            throw new CommonException(ExceptionType.FAIL_DECOMPRESS + e.getMessage());
         }
     }
 
@@ -167,6 +167,7 @@ public class CompressUtils {
     }
 
     private static void decompressSevenZ(File sevenZFile, String outputDir, boolean isWrite) throws IOException {
+        previewNotSupported(sevenZFile, isWrite);
         // 创建输出目录
         createDirectory(outputDir, null);
         ProcessBuilder processBuilder = new ProcessBuilder();
@@ -175,7 +176,17 @@ public class CompressUtils {
         executingCommand(processBuilder, "7z");
     }
 
+    private static void previewNotSupported(File sevenZFile, boolean isWrite) {
+        if (!isWrite) {
+            // 如果文件超过200M, 提示直接下载
+            if (sevenZFile.length() > 200 * 1024 * 1024) {
+                throw new CommonException(ExceptionType.CUSTOM_EXCEPTION.getCode(), "文件过大, 不支持预览, 请解压或下载后查看");
+            }
+        }
+    }
+
     private static void decompressRar(File sevenZFile, String outputDir, boolean isWrite) throws IOException {
+        previewNotSupported(sevenZFile, isWrite);
         // 创建输出目录
         createDirectory(outputDir, null);
         ProcessBuilder processBuilder = new ProcessBuilder();

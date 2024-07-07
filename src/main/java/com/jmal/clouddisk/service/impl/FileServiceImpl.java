@@ -1105,8 +1105,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             }
             CompressUtils.decompress(filePath, destDir, isWrite);
             return ResultUtil.success(listFile(username, destDir, !isWrite));
+        } catch (CommonException e) {
+            return ResultUtil.warning(e.getMessage());
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
             return ResultUtil.error("解压失败!");
         }
     }
