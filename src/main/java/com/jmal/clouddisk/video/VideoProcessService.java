@@ -64,8 +64,6 @@ public class VideoProcessService {
     @Resource
     MongoTemplate mongoTemplate;
 
-    private final static ReentrantLock VTT_LOCK = new ReentrantLock();
-
     /**
      * 视频转码线程池
      */
@@ -575,7 +573,7 @@ public class VideoProcessService {
                     startConvert(username, relativePath, fileName, fileId, transcodeConfig);
                     pushMessage = true;
                 }
-                transcodingProgress(fileAbsolutePath, videoInfo.getDuration(), line, "转码进度");
+                transcodingProgress(fileAbsolutePath, videoInfo.getDuration(), line, "");
             }
 
             // 生成vtt缩略图
@@ -621,7 +619,7 @@ public class VideoProcessService {
                 if (line.contains("Error")) {
                     log.error(line);
                 }
-                transcodingProgress(fileAbsolutePath, videoInfo.getDuration(), line, "vtt生成进度");
+                transcodingProgress(fileAbsolutePath, videoInfo.getDuration(), line, "vtt—");
             }
             int exitCode = process.waitFor();
             if (exitCode == 0) {
@@ -699,8 +697,8 @@ public class VideoProcessService {
             try {
                 if (line.contains(":")) {
                     String progressStr = FFMPEGUtils.getProgressStr(videoDuration, line);
-                    log.debug("{}, {}: {}%", fileAbsolutePath.getFileName(), desc, progressStr);
-                    taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, progressStr + "%");
+                    log.debug("{}, 转码进度: {}%", fileAbsolutePath.getFileName(), progressStr);
+                    taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, desc + progressStr + "%");
                 }
             } catch (Exception e) {
                 log.warn(e.getMessage(), e);
