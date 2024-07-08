@@ -212,7 +212,6 @@ public class FFMPEGCommand {
                 "-hwaccel", "cuda",
                 "-hwaccel_output_format", "cuda",
                 "-threads", "1",
-                "-autorotate", "0",
                 "-i", fileAbsolutePath.toString(),
                 "-autoscale", "0",
                 "-map_metadata", "-1",

@@ -14,6 +14,10 @@ public class VideoInfo {
     private Double frameRate;
     private Integer duration;
     private String covertPath;
+    /**
+     * 视频旋转角度
+     */
+    private Integer rotation;
 
     /**
      * 转码后的视频高度
@@ -49,6 +53,7 @@ public class VideoInfo {
         this.bitrate = bitrate;
         this.duration = duration;
         this.frameRate = frameRate;
+        this.rotation = rotation;
         log.debug("\r\nvideoPath: {}, width: {}, height: {}, format: {}, bitrate: {}, duration: {}", videoPath, width, height, format, bitrate, duration);
     }
 
