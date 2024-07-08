@@ -18,15 +18,15 @@
                                 <div class="new-meta-item date">
                                     <div class="not-link">
                                         <svg class="icon" aria-hidden="true">
-                                            <use xlink:href="#icon-fabu"></use>
+                                            <use href="#icon-fabu"></use>
                                         </svg>
                                         <p th:text="'发布于 '+${article.uploadTime()}"></p>
                                     </div>
                                 </div>
                                 <div class="new-meta-item categoryDO" th:if="${article.categories != null && article.categories.size() > 0}">
-                                    <a class="link">
+                                    <a class="link" href="#">
                                         <svg class="icon" aria-hidden="true">
-                                            <use xlink:href="#icon-fenlei"></use>
+                                            <use href="#icon-fenlei"></use>
                                         </svg>
                                     </a>
                                     <div class="flex-text">
@@ -37,9 +37,9 @@
                                     </div>
                                 </div>
                                 <div class="new-meta-item tag" th:if="${article.tags != null && article.tags.size() > 0}">
-                                    <a class="link">
+                                    <a class="link" href="#">
                                         <svg class="icon" aria-hidden="true">
-                                            <use xlink:href="#icon-tag"></use>
+                                            <use href="#icon-tag"></use>
                                         </svg>
                                     </a>
                                     <div class="flex-text">
@@ -73,7 +73,7 @@
             <div class="layui-box layui-laypage layui-laypage-default" id="layui-laypage-1">
                 <i th:if="${articlesData.getTotalPage() > 1}">
                     <i th:if="${articlesData.getCurrentPage() == 1}">
-                        <a data-pjax th:class="'layui-laypage-prev'+ ${articlesData.isFirst()?' layui-disabled':''}" >上一页</a>
+                        <a data-pjax th:class="'layui-laypage-prev'+ ${articlesData.isFirst()?' layui-disabled':''}" href="#" >上一页</a>
                     </i>
                     <i th:if="${articlesData.getCurrentPage() > 1}">
                         <a data-pjax th:href="'?page=' + ${articlesData.getCurrentPage()-1}" th:class="'layui-laypage-prev'+ ${articlesData.isFirst()?' layui-disabled':''}" >上一页</a>

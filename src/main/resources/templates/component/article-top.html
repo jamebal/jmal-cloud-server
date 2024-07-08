@@ -6,7 +6,7 @@
                 <li class="nav-item" th:if="${setting.isShowAlonePage('archives')}">
                     <a class="nav-link" th:href="${setting.siteUrl} + '/archives'" title="归档">
                         <svg class="icon" aria-hidden="true">
-                            <use xlink:href="#icon-guidang"></use>
+                            <use href="#icon-guidang"></use>
                         </svg>
                         <span class="nav-link-label">归档</span>
                     </a>
@@ -14,7 +14,7 @@
                 <li class="nav-item" th:if="${setting.isShowAlonePage('categories')}">
                     <a class="nav-link" th:href="${setting.siteUrl} + '/categories'" title="分类">
                         <svg class="icon" aria-hidden="true">
-                            <use xlink:href="#icon-fenlei"></use>
+                            <use href="#icon-fenlei"></use>
                         </svg>
                         <span class="nav-link-label">分类</span>
                     </a>
@@ -22,7 +22,7 @@
                 <li class="nav-item" th:if="${setting.isShowAlonePage('tags')}">
                     <a class="nav-link" th:href="${setting.siteUrl} + '/tags'" title="标签">
                         <svg class="icon" aria-hidden="true">
-                            <use xlink:href="#icon-tag"></use>
+                            <use href="#icon-tag"></use>
                         </svg>
                         <span class="nav-link-label">标签</span>
                     </a>
@@ -33,10 +33,10 @@
                     </a>
                 </li>
                 <li th:if="${alonePages.size() > showAlonePages.size()}" class="nav-item nav-item-more" onmouseover="mouseover()" onmouseleave="mouseleave()">
-                    <a class="nav-link">
+                    <a class="nav-link" href="#">
                         <span class="nav-link-label">更多</span>
                         <svg class="icon icon-more" aria-hidden="true">
-                            <use xlink:href="#icon-drop_down"></use>
+                            <use href="#icon-drop_down"></use>
                         </svg>
                     </a>
                     <ul class="dropdown-menu">
@@ -66,7 +66,7 @@
                     </a>
                 </li>
                 <li>
-                    <a class="changeTheme">
+                    <a class="changeTheme" href="javascript:changeTheme();">
                         <i th:if="${darkTheme}" class="fas fa-sun"></i>
                         <i th:if="${!darkTheme}" class="fas fa-moon"></i>
                     </a>
@@ -76,6 +76,8 @@
     </div>
 </div>
 <script>
+    function changeTheme() {
+    }
     let menu = document.body.querySelector('.dropdown-menu')
     let icon = document.documentElement.querySelector('.icon-more')
     function mouseover(){
