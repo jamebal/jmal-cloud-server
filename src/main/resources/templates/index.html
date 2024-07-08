@@ -76,9 +76,9 @@
 </div>
 <iframe th:replace="~{component/footer.html}"></iframe>
 <script th:inline="javascript">
-    console.log(siteUrl)
+    let pjaxSiteUrl = [[${setting.siteUrl}]]
     $(function () {
-        $('body').pjax('a[href^="' + siteUrl + '"]:not(a[target="_blank"], a[not-pjax]), a[data-pjax]', {
+        $('body').pjax('a[href^="' + pjaxSiteUrl + '"]:not(a[target="_blank"], a[not-pjax]), a[data-pjax]', {
                 container: '#content-body',
                 timeout: 8000
             }

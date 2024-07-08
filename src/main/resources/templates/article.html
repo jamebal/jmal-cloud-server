@@ -81,7 +81,7 @@
     </div>
     <script th:inline="javascript">
         $(document).ready(function(){
-            const siteUrl = [[${setting.siteUrl}]]
+            const articleSiteUrl = [[${setting.siteUrl}]]
             document.title = [[${titleName}]]
             // 是否为独立页面
             const isAlonePage = [[${markdown.alonePage}]]
@@ -117,7 +117,7 @@
                     theme: {
                         current: 'light'
                     },
-                    cdn: `${siteUrl}/vditor@3.9.3`,
+                    cdn: `${articleSiteUrl}/vditor@3.9.3`,
                     transform(htmlStr) {
                         renderContents($(htmlStr))
                         return htmlStr;
@@ -505,9 +505,9 @@
             }
             function setContentTheme(){
                 const isDark = getThemeCSSName() === 'dark'
-                Vditor.setContentTheme(isDark ? 'dark': 'light', `${siteUrl}/vditor@3.9.3/dist/css/content-theme`)
-                Vditor.setCodeTheme(isDark ? 'native': 'github', `${siteUrl}/vditor@3.9.3`)
-                // Vditor.highlightRender({cnd: `${siteUrl}/vditor@3.9.3`})
+                Vditor.setContentTheme(isDark ? 'dark': 'light', `${articleSiteUrl}/vditor@3.9.3/dist/css/content-theme`)
+                Vditor.setCodeTheme(isDark ? 'native': 'github', `${articleSiteUrl}/vditor@3.9.3`)
+                // Vditor.highlightRender({cnd: `${articleSiteUrl}/vditor@3.9.3`})
             }
 
             // common.js
@@ -540,7 +540,7 @@
                 link.type = 'text/css';
                 link.id = "theme-css-dark";  // 加上id方便后面好查找到进行删除
                 link.rel = 'stylesheet';
-                link.href = siteUrl + '/css/dark/index-2.0.2.css';
+                link.href = articleSiteUrl + '/css/dark/index-2.0.2.css';
                 document.getElementsByTagName("head")[0].appendChild(link);
                 labelIcon.removeClass('fa-moon')
                 labelIcon.addClass('fa-sun')
