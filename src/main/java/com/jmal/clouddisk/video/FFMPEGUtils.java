@@ -51,7 +51,7 @@ public class FFMPEGUtils {
                 int row = i / columns;
                 int thumbWidth = FFMPEGCommand.thumbnailWidth;
                 double tHeight = (double) videoInfo.getHeight() / ((double) videoInfo.getWidth() / FFMPEGCommand.thumbnailWidth);
-                int thumbHeight = (int) Math.ceil(tHeight);
+                int thumbHeight = (int) Math.floor(tHeight);
                 int x = column * thumbWidth;
                 int y = row * thumbHeight;
 
