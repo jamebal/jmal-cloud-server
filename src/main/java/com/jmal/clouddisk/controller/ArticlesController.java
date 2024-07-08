@@ -3,6 +3,7 @@ package com.jmal.clouddisk.controller;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.IMarkdownService;
@@ -293,7 +294,7 @@ public class ArticlesController {
     }
 
     private WebsiteSettingDTO getSetting(HttpServletRequest request, Model map) {
-        WebsiteSettingDTO websiteSettingDTO = settingService.getWebsiteSetting();
+        WebsiteSettingDTO websiteSettingDTO = getWebsiteSetting(request);
         setOperatingButtonList(websiteSettingDTO);
         List<MarkdownVO> markdownVOList = fileService.getAlonePages();
         map.addAttribute("alonePages", markdownVOList);
@@ -360,10 +361,22 @@ public class ArticlesController {
         if (!isPjax) {
             getSetting(request, map);
         } else {
-            map.addAttribute("setting", settingService.getWebsiteSetting());
+            map.addAttribute("setting", getWebsiteSetting(request));
         }
         map.addAttribute("mark", viewName);
         return isPjax;
+    }
+
+    private WebsiteSettingDTO getWebsiteSetting(HttpServletRequest request) {
+        WebsiteSettingDTO websiteSettingDTO = settingService.getWebsiteSetting();
+        if (StrUtil.isNotBlank(websiteSettingDTO.getSiteUrl())) {
+            String siteUrl = websiteSettingDTO.getSiteUrl();
+            if (siteUrl.endsWith("/")) {
+                siteUrl = siteUrl.substring(0, siteUrl.length() - 1);
+                websiteSettingDTO.setSiteUrl(siteUrl);
+            }
+        }
+        return websiteSettingDTO;
     }
 
 }

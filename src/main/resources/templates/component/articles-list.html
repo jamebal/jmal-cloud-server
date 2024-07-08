@@ -6,12 +6,12 @@
                     <section class="meta">
                         <div class="meta" id="header-meta">
                             <h2 class="title">
-                                <a th:href="'/s/'+${article.slug == null ? article.id:article.slug}" th:text="${article.name}"></a>
+                                <a th:href="${setting.siteUrl} + '/s/'+${article.slug == null ? article.id:article.slug}" th:text="${article.name}"></a>
                             </h2>
                             <div class="new-meta-box">
                                 <div class="new-meta-item author">
-                                    <a th:href="'/author/'+${article.username}" rel="nofollow">
-                                        <img th:src="'/s/view/thumbnail?id='+${article.avatar}">
+                                    <a th:href="${setting.siteUrl} + '/author/'+${article.username}" rel="nofollow">
+                                        <img th:src="'/api/public/s/view/thumbnail?id='+${article.avatar}">
                                         <p th:text="${article.username}"></p>
                                     </a>
                                 </div>
@@ -32,7 +32,7 @@
                                     <div class="flex-text">
                                            <span class="flex-text" th:each="categoryDO,categoryStat : ${article.categories}">
                                             <span th:text="${categoryStat.index > 0?' , ':''}"></span>
-                                               <a th:href="'/categories/'+${categoryDO.slug}" th:text="${categoryDO.name}"></a>
+                                               <a th:href="${setting.siteUrl} + '/categories/'+${categoryDO.slug}" th:text="${categoryDO.name}"></a>
                                             </span>
                                     </div>
                                 </div>
@@ -45,7 +45,7 @@
                                     <div class="flex-text">
                                            <span class="flex-text" th:each="tag,tagStat : ${article.tags}">
                                             <span th:text="${tagStat.index > 0?' , ':''}"></span>
-                                               <a th:href="'/tags/'+${tag.slug}" th:text="${tag.name}"></a>
+                                               <a th:href="${setting.siteUrl} + '/tags/'+${tag.slug}" th:text="${tag.name}"></a>
                                             </span>
                                     </div>
                                 </div>
@@ -54,7 +54,7 @@
                         </div>
                     </section>
                     <section class="article typo">
-                        <a th:href="'/s/'+${article.slug == null ? article.id:article.slug}">
+                        <a th:href="${setting.siteUrl} + '/s/'+${article.slug == null ? article.id:article.slug}">
                             <div class="article-entry" itemprop="articleBody">
                                 <p>
                                     <img class="blog-background articles-list" style="display: none"
@@ -81,7 +81,7 @@
 
                     <i class="rainbow-page">
                         <i th:if="${articlesData.getCurrentPage() >= 5}">
-                            <a data-pjax href="/articles" class="layui-laypage-first" title="首页">1</a>
+                            <a data-pjax th:href="${setting.siteUrl}" class="layui-laypage-first" title="首页">1</a>
                             <span class="layui-laypage-spr">…</span>
                         </i>
                         <i th:each="page : ${articlesData.rainbow()}">
