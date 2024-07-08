@@ -1,10 +1,10 @@
 <div class="navbar animated fadeIn fast delay-1s" xmlns:th="http://www.thymeleaf.org">
     <div class="container-fluid">
-        <a class="navbar-brand text-brand" href="/" th:text="${setting.siteLogo}"></a>
+        <a class="navbar-brand text-brand" th:href="${setting.siteUrl}" th:text="${setting.siteLogo}"></a>
         <div class="collapse navbar-collapse">
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item" th:if="${setting.isShowAlonePage('archives')}">
-                    <a class="nav-link" href="/archives" title="归档">
+                    <a class="nav-link" th:href="${setting.siteUrl} + '/archives'" title="归档">
                         <svg class="icon" aria-hidden="true">
                             <use xlink:href="#icon-guidang"></use>
                         </svg>
@@ -12,7 +12,7 @@
                     </a>
                 </li>
                 <li class="nav-item" th:if="${setting.isShowAlonePage('categories')}">
-                    <a class="nav-link" href="/categories" title="分类">
+                    <a class="nav-link" th:href="${setting.siteUrl} + '/categories'" title="分类">
                         <svg class="icon" aria-hidden="true">
                             <use xlink:href="#icon-fenlei"></use>
                         </svg>
@@ -20,7 +20,7 @@
                     </a>
                 </li>
                 <li class="nav-item" th:if="${setting.isShowAlonePage('tags')}">
-                    <a class="nav-link" href="/tags" title="标签">
+                    <a class="nav-link" th:href="${setting.siteUrl} + '/tags'" title="标签">
                         <svg class="icon" aria-hidden="true">
                             <use xlink:href="#icon-tag"></use>
                         </svg>
@@ -28,7 +28,7 @@
                     </a>
                 </li>
                 <li class="nav-item" th:each="page: ${showAlonePages}">
-                    <a class="nav-link" th:href="'/o/'+${page.slug}" th:title="${page.name}">
+                    <a class="nav-link" th:href="${setting.siteUrl} + '/o/'+${page.slug}" th:title="${page.name}">
                         <span class="nav-link-label" th:text="${page.name}"></span>
                     </a>
                 </li>
@@ -41,7 +41,7 @@
                     </a>
                     <ul class="dropdown-menu">
                         <li class="dropdown-item alone-page" th:each="page,pageStat : ${alonePages}" th:if="${pageStat.index > (showAlonePages.size() - 1)}">
-                            <a th:href="'/o/'+${page.slug}" th:text="${page.name}"></a>
+                            <a th:href="${setting.siteUrl} + '/o/'+${page.slug}" th:text="${page.name}"></a>
                         </li>
                     </ul>
                 </li>

@@ -23,6 +23,7 @@
     </script>
     <script th:inline="javascript">
         document.title = [[${titleName}]]
+        const siteUrl = [[${setting.siteUrl}]]
         $(function(){
             // common.js
             /***
@@ -54,7 +55,7 @@
                 link.type = 'text/css';
                 link.id = "theme-css-dark";  // 加上id方便后面好查找到进行删除
                 link.rel = 'stylesheet';
-                link.href = '/articles/css/dark/index-2.0.2.css';
+                link.href = siteUrl + '/css/dark/index-2.0.2.css';
                 document.getElementsByTagName("head")[0].appendChild(link);
                 labelIcon.removeClass('fa-moon')
                 labelIcon.addClass('fa-sun')

@@ -1,5 +1,5 @@
 <div xmlns:th="http://www.thymeleaf.org">
-    <link rel="stylesheet" type="text/css" href="/articles/css/independent.css">
+    <link rel="stylesheet" type="text/css" th:href="${setting.siteUrl} + '/css/independent.css'">
     <style>
         .tag-cloud {
             padding: 1rem 5%;
@@ -40,7 +40,7 @@
             <el-main id="main_body" class="l_main article_l_main">
                 <div class="content article-body" style="padding: 0;">
                     <div class="text-center tag-cloud">
-                        <a th:title="${tag.name} + ' - 文章数: ' + ${tag.articleNum}" th:href="'/tags/' + ${tag.slug}" th:style="'font-size: ' + ${tag.fontSize} + 'px; color: ' + ${tag.color}" th:each="tag : ${tags}" th:text="${tag.name}"></a>
+                        <a th:title="${tag.name} + ' - 文章数: ' + ${tag.articleNum}" th:href="${setting.siteUrl} + '/tags/' + ${tag.slug}" th:style="'font-size: ' + ${tag.fontSize} + 'px; color: ' + ${tag.color}" th:each="tag : ${tags}" th:text="${tag.name}"></a>
                     </div>
                 </div>
             </el-main>

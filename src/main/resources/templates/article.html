@@ -13,7 +13,7 @@
             <div class="inner">
                 <div class="blog-title"><span id="article-title" th:text="${markdown.name}"></span><span class="typed-cursor">_</span></div>
                 <div class="blog-description font-mono">
-                    <a class="edit" itemprop="name" th:href="'/author/'+${markdown.username}" rel="author" th:text="${markdown.username}"></a>
+                    <a class="edit" itemprop="name" th:href="${setting.siteUrl} + '/author/'+${markdown.username}" rel="author" th:text="${markdown.username}"></a>
                     <span th:text="'· '+${markdown.uploadTime()}"></span>
                     <span th:if="${visits != null}">
                    · 阅读: <span th:text="${visits}"></span>
@@ -21,19 +21,19 @@
                     <span class="link"  th:if="${markdown.categories != null && markdown.categories.size() > 0}">
                     ·
                     <a th:each="categoryDO,categoryStat : ${markdown.categories}">
-                        <span th:text="${categoryStat.index > 0?' · ':''}"></span><a th:href="'/categories/'+${categoryDO.name}" th:text="${categoryDO.name}"></a>
+                        <span th:text="${categoryStat.index > 0?' · ':''}"></span><a th:href="${setting.siteUrl} + '/categories/'+${categoryDO.name}" th:text="${categoryDO.name}"></a>
                     </a>
                 </span>
                     <span class="edit"  th:if="${markdown.editable != null && markdown.editable}">
                     ·
-                    <a th:href="'/setting/website/manager-articles?operation=editor&id='+${markdown.id}" target="_blank">编辑</a>
+                    <a th:href="'setting/website/manager-articles?operation=editor&id='+${markdown.id}" target="_blank">编辑</a>
                 </span>
                     <div class="meta-item-tag" th:if="${markdown.tags != null && markdown.tags.size() > 0}">
                         <svg class="icon" aria-hidden="true">
                             <use xlink:href="#icon-tag"></use>
                         </svg>
                         <span th:each="tag,tagStat : ${markdown.tags}">
-                        <span th:text="${tagStat.index > 0?' · ':''}"></span><a th:href="'/tags/'+${tag.slug}" th:text="${tag.name}"></a>
+                        <span th:text="${tagStat.index > 0?' · ':''}"></span><a th:href="${setting.siteUrl} + '/tags/'+${tag.slug}" th:text="${tag.name}"></a>
                     </span>
                     </div>
                 </div>
@@ -81,6 +81,7 @@
     </div>
     <script th:inline="javascript">
         $(document).ready(function(){
+            const siteUrl = [[${setting.siteUrl}]]
             document.title = [[${titleName}]]
             // 是否为独立页面
             const isAlonePage = [[${markdown.alonePage}]]
@@ -116,7 +117,7 @@
                     theme: {
                         current: 'light'
                     },
-                    cdn: `${window.location.origin}/articles/vditor@3.9.3`,
+                    cdn: `${siteUrl}/vditor@3.9.3`,
                     transform(htmlStr) {
                         renderContents($(htmlStr))
                         return htmlStr;
@@ -504,9 +505,9 @@
             }
             function setContentTheme(){
                 const isDark = getThemeCSSName() === 'dark'
-                Vditor.setContentTheme(isDark ? 'dark': 'light', `${origin}/articles/vditor@3.9.3/dist/css/content-theme`)
-                Vditor.setCodeTheme(isDark ? 'native': 'github', `${origin}/articles/vditor@3.9.3`)
-                // Vditor.highlightRender({cnd: `${origin}/articles/vditor@3.9.3`})
+                Vditor.setContentTheme(isDark ? 'dark': 'light', `${siteUrl}/vditor@3.9.3/dist/css/content-theme`)
+                Vditor.setCodeTheme(isDark ? 'native': 'github', `${siteUrl}/vditor@3.9.3`)
+                // Vditor.highlightRender({cnd: `${siteUrl}/vditor@3.9.3`})
             }
 
             // common.js
@@ -539,7 +540,7 @@
                 link.type = 'text/css';
                 link.id = "theme-css-dark";  // 加上id方便后面好查找到进行删除
                 link.rel = 'stylesheet';
-                link.href = '/articles/css/dark/index-2.0.2.css';
+                link.href = siteUrl + '/css/dark/index-2.0.2.css';
                 document.getElementsByTagName("head")[0].appendChild(link);
                 labelIcon.removeClass('fa-moon')
                 labelIcon.addClass('fa-sun')
@@ -621,9 +622,7 @@
             function updateLink() {
                 // 选择所有的a标签
                 document.querySelectorAll('a').forEach(function(link) {
-                    console.log('link', link)
                     link.addEventListener('click', function(e) {
-                        console.log('123')
                         // 获取链接的href属性
                         let href = link.getAttribute('href');
                         // 判断是否为外部链接

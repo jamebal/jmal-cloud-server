@@ -1,5 +1,5 @@
 <div xmlns:th="http://www.thymeleaf.org">
-    <link rel="stylesheet" type="text/css" href="/articles/css/independent.css">
+    <link rel="stylesheet" type="text/css" th:href="${setting.siteUrl} + '/css/independent.css'">
     <div id="body">
         <div class="article-header">
             <div class="article-background"></div>
@@ -31,7 +31,7 @@
             if (typeof echarts !== 'undefined') {
                 initEcharts()
             } else {
-                loadScript('/articles/js/echarts.min.js',function(){
+                loadScript(siteUrl + '/js/echarts.min.js',function(){
                     initEcharts()
                 })
             }

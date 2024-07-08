@@ -12,17 +12,17 @@
     </div>
     <div id="sidebar-nav">
         <div class="author navbar-header">
-            <a href="/">
-                <img th:src="${setting.siteUrl} + '/s/view/thumbnail?id='+${setting.avatar}" alt="Avatar" width="100"
+            <a th:href="${setting.siteUrl}">
+                <img th:src="${setting.siteUrl} + '/api/public/s/view/thumbnail?id='+${setting.avatar}" alt="Avatar" width="100"
                      height="100">
             </a>
         </div>
         <ul id="menu-menu-1" class="menu navbar-nav">
             <li class="menu-item" onclick="toggle()">
-                <a href="/">首页</a>
+                <a th:href="${setting.siteUrl}">首页</a>
             </li>
             <li class="menu-item" th:if="${setting.isShowAlonePage('archives')}" onclick="toggle()">
-                <a class="nav-link" href="/archives" title="归档">
+                <a class="nav-link" th:href="${setting.siteUrl} + '/archives'" title="归档">
                     <svg class="icon" aria-hidden="true">
                         <use xlink:href="#icon-guidang"></use>
                     </svg>
@@ -30,7 +30,7 @@
                 </a>
             </li>
             <li class="menu-item" th:if="${setting.isShowAlonePage('categories')}" onclick="toggle()">
-                <a class="nav-link" href="/categories" title="分类">
+                <a class="nav-link" th:href="${setting.siteUrl} + '/categories'" title="分类">
                     <svg class="icon" aria-hidden="true">
                         <use xlink:href="#icon-fenlei"></use>
                     </svg>
@@ -38,7 +38,7 @@
                 </a>
             </li>
             <li class="nav-item" th:if="${setting.isShowAlonePage('tags')}" onclick="toggle()">
-                <a class="nav-link" href="/tags" title="标签">
+                <a class="nav-link" th:href="${setting.siteUrl} + '/tags'" title="标签">
                     <svg class="icon" aria-hidden="true">
                         <use xlink:href="#icon-tag"></use>
                     </svg>
@@ -46,7 +46,7 @@
                 </a>
             </li>
             <li class="menu-item" th:each="page : ${alonePages}" onclick="toggle()">
-                <a class="nav-link" th:href="@{'/o/'+${page.slug}}" th:title="${page.name}">
+                <a class="nav-link" th:href="@{${setting.siteUrl} + '/o/'+${page.slug}}" th:title="${page.name}">
                     <span class="nav-link-label" th:text="${page.name}"></span>
                 </a>
             </li>
