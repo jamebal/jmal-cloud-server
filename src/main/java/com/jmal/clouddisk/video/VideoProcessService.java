@@ -548,7 +548,7 @@ public class VideoProcessService {
         if (!onlyCPU && FFMPEGCommand.checkNvidiaDrive()) {
             log.info("use NVENC hardware acceleration");
             processBuilder = FFMPEGCommand.useNvencCuda(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern, frameRate);
-            generateVttOfNvidia(fileAbsolutePath, vttInterval, thumbnailPattern, vttPath);
+            generateVttOfNvidia(fileAbsolutePath, vttInterval, thumbnailPattern, videoInfo);
         }
         if (!onlyCPU && FFMPEGCommand.checkMacAppleSilicon()) {
             log.info("use videotoolbox hardware acceleration");
@@ -575,7 +575,7 @@ public class VideoProcessService {
                     startConvert(username, relativePath, fileName, fileId, transcodeConfig);
                     pushMessage = true;
                 }
-                transcodingProgress(fileAbsolutePath, videoInfo.getDuration(), line);
+                transcodingProgress(fileAbsolutePath, videoInfo.getDuration(), line, "转码进度");
             }
 
             // 生成vtt缩略图
@@ -604,20 +604,36 @@ public class VideoProcessService {
         }
     }
 
-    private void generateVttOfNvidia(Path fileAbsolutePath, int vttInterval, String thumbnailPattern, Path vttPath) throws IOException, InterruptedException {
+    private void generateVttOfNvidia(Path fileAbsolutePath, int vttInterval, String thumbnailPattern, VideoInfo videoInfo) throws IOException, InterruptedException {
         // 生成vtt缩略图, nvidia加速时要单独生成vtt缩略图
-        taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, "准备中...");
-        if (VTT_LOCK.tryLock()) {
-            try {
-                taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, "vtt生成中...");
-                ProcessBuilder proVtt = FFMPEGCommand.useNvencCudaVtt(fileAbsolutePath, vttInterval, thumbnailPattern);
-                printSuccessInfo(proVtt);
-                // 等待处理结果
-                Process process = proVtt.start();
-                getWaitingForResults(vttPath.toString(), proVtt, process);
-            } finally {
-                VTT_LOCK.unlock();
+        taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, "vtt生成中...");
+        ProcessBuilder processBuilder = FFMPEGCommand.useNvencCudaVtt(fileAbsolutePath, vttInterval, thumbnailPattern);
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
+        processesTasks.add(process);
+        // 第一个ts文件
+        try (InputStream inputStream = process.getInputStream();
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+            // 读取命令的输出信息
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // 处理命令的输出信息，例如打印到控制台
+                if (line.contains("Error")) {
+                    log.error(line);
+                }
+                transcodingProgress(fileAbsolutePath, videoInfo.getDuration(), line, "vtt生成进度");
             }
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                printSuccessInfo(processBuilder);
+            } else {
+                printErrorInfo(processBuilder, process);
+            }
+        } catch (InterruptedException exception) {
+            log.warn("生成vtt缩略图被中断: {}", fileAbsolutePath.getFileName());
+            Thread.currentThread().interrupt();
+        } finally {
+            processesTasks.remove(process);
         }
     }
 
@@ -677,13 +693,13 @@ public class VideoProcessService {
      * @param videoDuration    视频时长
      * @param line             命令输出信息
      */
-    private void transcodingProgress(Path fileAbsolutePath, int videoDuration, String line) {
+    private void transcodingProgress(Path fileAbsolutePath, int videoDuration, String line, String desc) {
         // 解析转码进度
         if (line.contains("time=")) {
             try {
                 if (line.contains(":")) {
                     String progressStr = FFMPEGUtils.getProgressStr(videoDuration, line);
-                    log.debug("{}, 转码进度: {}%", fileAbsolutePath.getFileName(), progressStr);
+                    log.debug("{}, {}: {}%", fileAbsolutePath.getFileName(), desc, progressStr);
                     taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, progressStr + "%");
                 }
             } catch (Exception e) {
