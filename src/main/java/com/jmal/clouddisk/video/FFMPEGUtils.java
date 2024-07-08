@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.video;
 
 import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.NumberUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedWriter;
@@ -109,7 +110,7 @@ public class FFMPEGUtils {
      * @param line         命令输出信息
      * @return 转码进度
      */
-    static String getProgressStr(int videoDuration, String line) {
+    static double getProgressStr(int videoDuration, String line) {
         String[] parts = line.split("time=")[1].split(" ")[0].split(":");
         int hours = Integer.parseInt(parts[0]);
         int minutes = Integer.parseInt(parts[1]);
@@ -117,6 +118,9 @@ public class FFMPEGUtils {
         int totalSeconds = hours * 3600 + minutes * 60 + seconds;
         // 计算转码进度百分比
         double progress = (double) totalSeconds / videoDuration * 100;
-        return String.format("%.2f", progress);
+        if (progress > 100) {
+            progress = 100;
+        }
+        return NumberUtil.round(progress, 2).doubleValue();
     }
 }
