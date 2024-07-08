@@ -64,6 +64,8 @@ public class VideoProcessService {
     @Resource
     MongoTemplate mongoTemplate;
 
+    private final static ReentrantLock VTT_LOCK = new ReentrantLock();
+
     /**
      * 视频转码线程池
      */
@@ -546,13 +548,7 @@ public class VideoProcessService {
         if (!onlyCPU && FFMPEGCommand.checkNvidiaDrive()) {
             log.info("use NVENC hardware acceleration");
             processBuilder = FFMPEGCommand.useNvencCuda(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern, frameRate);
-            // 生成vtt缩略图, nvidia加速时要单独生成vtt缩略图
-            taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, "vtt生成中...");
-            ProcessBuilder proVtt = FFMPEGCommand.useNvencCudaVtt(fileAbsolutePath, vttInterval, thumbnailPattern);
-            printSuccessInfo(proVtt);
-            // 等待处理结果
-            Process process = proVtt.start();
-            getWaitingForResults(vttPath.toString(), proVtt, process);
+            generateVttOfNvidia(fileAbsolutePath, vttInterval, thumbnailPattern, vttPath);
         }
         if (!onlyCPU && FFMPEGCommand.checkMacAppleSilicon()) {
             log.info("use videotoolbox hardware acceleration");
@@ -605,6 +601,23 @@ public class VideoProcessService {
         } finally {
             taskProgressService.removeTaskProgress(fileAbsolutePath.toFile());
             processesTasks.remove(process);
+        }
+    }
+
+    private void generateVttOfNvidia(Path fileAbsolutePath, int vttInterval, String thumbnailPattern, Path vttPath) throws IOException, InterruptedException {
+        // 生成vtt缩略图, nvidia加速时要单独生成vtt缩略图
+        taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, "准备中...");
+        if (VTT_LOCK.tryLock()) {
+            try {
+                taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, "vtt生成中...");
+                ProcessBuilder proVtt = FFMPEGCommand.useNvencCudaVtt(fileAbsolutePath, vttInterval, thumbnailPattern);
+                printSuccessInfo(proVtt);
+                // 等待处理结果
+                Process process = proVtt.start();
+                getWaitingForResults(vttPath.toString(), proVtt, process);
+            } finally {
+                VTT_LOCK.unlock();
+            }
         }
     }
 
