@@ -57,7 +57,7 @@
                 </a>
             </li>
             <li onclick="toggle()">
-                <a class="changeTheme">
+                <a class="changeTheme" href="javascript:changeTheme();">
                     <i th:if="${darkTheme}" class="fas fa-sun"></i>
                     <span th:if="${darkTheme}">亮色</span>
                     <i th:if="${!darkTheme}" class="fas fa-moon"></i>
@@ -68,6 +68,8 @@
     </div>
 </div>
 <script>
+    function changeTheme() {
+    }
     let body = document.getElementById("body")
     let footer = document.getElementById("footer")
     let toggleNav = document.getElementById("toggle-nav")

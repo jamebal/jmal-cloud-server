@@ -84,10 +84,15 @@
             function getThemeCSSName() {
                 return getCookie('jmal-theme') || "light";
             }
-            $('.changeTheme').on('click', function (){
+
+            function changeTheme() {
                 useDarkTheme(getThemeCSSName() === 'light')
                 // 记录切换主题的时间戳
                 setCookie('changeTheme', new Date().getTime())
+            }
+
+            $('.changeTheme').on('click', function (){
+                changeTheme()
             })
 
             let media = window.matchMedia('(prefers-color-scheme: dark)');

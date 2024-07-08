@@ -8,7 +8,9 @@
 <meta property="og:title" th:content="${titleName}" />
 <meta property="og:site_name" th:content="${setting.siteName}" />
 <meta property="og:type" th:content="${markdown!= null ? 'article' : 'website'}" />
-<meta property="og:description" th:content="${description}" />
+<meta property="og:description" th:content="${description != null ? description : setting.siteName}" />
+<meta name="description" th:content="${description != null ? description : setting.siteName}" />
+
 <meta property="og:url" th:content="${setting.siteUrl + (url != null ? url : '')}" />
 <meta property="og:image" th:content="${markdown != null && markdown.cover !=null ? markdown.cover : setting.backgroundSite}" />
 <meta name="title" th:content="${titleName}" />

@@ -140,7 +140,7 @@ public class ArticlesController {
 
     private String setDescription(ArticleVO articleVO) {
         if (articleVO == null || articleVO.getHtml() == null) {
-            return "";
+            return articleVO.getName();
         }
         return articleVO.getHtml().substring(0, Math.min(articleVO.getHtml().length(), 500)).replaceAll("<[^>]*>","");
     }
