@@ -696,9 +696,9 @@ public class VideoProcessService {
         if (line.contains("time=")) {
             try {
                 if (line.contains(":")) {
-                    String progressStr = FFMPEGUtils.getProgressStr(videoDuration, line);
-                    log.debug("{}, 转码进度: {}%", fileAbsolutePath.getFileName(), progressStr);
-                    taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, desc + progressStr + "%");
+                    double progress = FFMPEGUtils.getProgressStr(videoDuration, line);
+                    log.debug("{}, 转码进度: {}%", fileAbsolutePath.getFileName(), progress);
+                    taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, desc + progress + "%");
                 }
             } catch (Exception e) {
                 log.warn(e.getMessage(), e);
