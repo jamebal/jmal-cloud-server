@@ -203,7 +203,7 @@ public class FFMPEGCommand {
         );
     }
 
-    static ProcessBuilder useNvencCuda(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath, int vttInterval, String thumbnailPattern, double frameRate) {
+    static ProcessBuilder useNvencCuda(String fileId, Path fileAbsolutePath, int bitrate, int height, String videoCacheDir, String outputPath, double frameRate) {
         // 使用CUDA硬件加速和NVENC编码器
         return new ProcessBuilder(
                 Constants.FFMPEG,

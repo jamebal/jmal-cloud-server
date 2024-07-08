@@ -545,7 +545,7 @@ public class VideoProcessService {
         ProcessBuilder processBuilder = FFMPEGCommand.cpuTranscoding(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern, frameRate);
         if (!onlyCPU && FFMPEGCommand.checkNvidiaDrive()) {
             log.info("use NVENC hardware acceleration");
-            processBuilder = FFMPEGCommand.useNvencCuda(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, vttInterval, thumbnailPattern, frameRate);
+            processBuilder = FFMPEGCommand.useNvencCuda(fileId, fileAbsolutePath, bitrate, targetHeight, videoCacheDir, outputPath, frameRate);
             generateVttOfNvidia(fileAbsolutePath, vttInterval, thumbnailPattern, videoInfo);
         }
         if (!onlyCPU && FFMPEGCommand.checkMacAppleSilicon()) {
@@ -602,7 +602,7 @@ public class VideoProcessService {
         }
     }
 
-    private void generateVttOfNvidia(Path fileAbsolutePath, int vttInterval, String thumbnailPattern, VideoInfo videoInfo) throws IOException, InterruptedException {
+    private void generateVttOfNvidia(Path fileAbsolutePath, int vttInterval, String thumbnailPattern, VideoInfo videoInfo) throws IOException {
         // 生成vtt缩略图, nvidia加速时要单独生成vtt缩略图
         taskProgressService.addTaskProgress(fileAbsolutePath.toFile(), TaskType.TRANSCODE_VIDEO, "vtt生成中...");
         ProcessBuilder processBuilder = FFMPEGCommand.useNvencCudaVtt(fileAbsolutePath, vttInterval, thumbnailPattern);
