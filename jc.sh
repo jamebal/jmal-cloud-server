@@ -130,7 +130,7 @@ run_mongo() {
     judge "备份数据库"
   elif [ "$1" = "restore" ]; then
     # 恢复数据库
-    run_exec mongodb "mongorestore -d jmalcloud --dir /dump/jmalcloud --gzip --quiet"
+    run_exec mongodb "mongorestore --gzip --nsInclude=jmalcloud.* --dir /dump/jmalcloud --quiet"
     judge "恢复数据库"
   fi
 }
