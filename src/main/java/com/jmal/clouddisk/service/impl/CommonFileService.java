@@ -308,7 +308,7 @@ public class CommonFileService {
         }
         String fileName = file.getName();
         String suffix = FileUtil.extName(fileName);
-        String contentType = FileContentTypeUtils.getContentType(suffix);
+        String contentType = getContentType(file, FileContentTypeUtils.getContentType(suffix));
         if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE)) {
             // 换成webp格式的图片
             file = replaceWebp(userId, file);
@@ -526,7 +526,7 @@ public class CommonFileService {
             long size = file.length();
             update.set("size", size);
             update.set("md5", size + relativePath + fileName);
-            update.set(Constants.CONTENT_TYPE, getContentType(file, contentType));
+            update.set(Constants.CONTENT_TYPE, contentType);
             update.set(Constants.SUFFIX, suffix);
             if (contentType.contains(Constants.AUDIO)) {
                 setMusic(file, update);
