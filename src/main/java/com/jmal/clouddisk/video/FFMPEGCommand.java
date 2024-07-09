@@ -24,8 +24,7 @@ public class FFMPEGCommand {
     /**
      * 缩略图宽度
      */
-    static final int thumbnailWidth = 128;
-
+    static final int thumbnailWidth = 192;
     /**
      * 获取视频的分辨率和码率信息
      *
@@ -213,6 +212,10 @@ public class FFMPEGCommand {
                 "-hwaccel_output_format", "cuda",
                 "-threads", "1",
                 "-i", fileAbsolutePath.toString(),
+                "-autoscale", "0",
+                "-map_metadata", "-1",
+                "-map_chapters", "-1",
+                "-autorotate", "0",
                 "-threads", "0",
                 "-map", "0:0",
                 "-map", "0:1",
