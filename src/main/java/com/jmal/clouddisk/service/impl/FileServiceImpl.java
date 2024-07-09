@@ -923,7 +923,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 getCopyResult(upload, froms, to, true);
                 String currentDirectory = getOssFileCurrentDirectory(upload, froms);
                 // 删除
-                delete(upload.getUsername(), currentDirectory, froms, upload.getUsername(), true);
+                delete(upload.getUsername(), currentDirectory, froms, upload.getUsername(), true, false);
             } catch (CommonException e) {
                 pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMsg(), Constants.UNKNOWN_ERROR), "移动");
             } catch (Exception e) {
@@ -1855,7 +1855,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds, String operator, boolean sweep) {
+    public ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds, String operator, boolean sweep, boolean notify) {
         FileDocument doc = getById(fileIds.get(0));
         List<OperationPermission> operationPermissionList = null;
         if (doc != null) {
@@ -1918,7 +1918,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         } else {
             operationTips.setSuccess(false);
         }
-        if (!sweep) {
+        if (notify) {
             pushMessage(username, operationTips, Constants.OPERATION_TIPS);
         }
         return ResultUtil.success();

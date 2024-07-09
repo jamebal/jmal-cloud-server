@@ -319,7 +319,7 @@ public class CommonFileService {
         if (lock != null) {
             lock.lock();
         }
-        UpdateResult updateResult;
+        UpdateResult updateResult = null;
         ObjectId objectId = new ObjectId();
         String fileId = objectId.toHexString();
         try {
@@ -364,16 +364,30 @@ public class CommonFileService {
             pushMessage(username, update.getUpdateObject(), Constants.CREATE_FILE);
             // 添加文件索引
             luceneService.pushCreateIndexQueue(fileId);
+            // 判断回收站是否存在该文件, 如果存在则删除
+            checkTrash(file, username);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
         } finally {
             if (lock != null) {
                 lock.unlock();
                 uploadFileLockCache.invalidate(fileAbsolutePath);
             }
         }
-        if (null != updateResult.getUpsertedId()) {
+        if (updateResult != null && null != updateResult.getUpsertedId()) {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return fileId;
+    }
+
+    private void checkTrash(File file, String username) {
+        String userId = userService.getUserIdByUserName(username);
+        String relativePath = getRelativePath(username, String.valueOf(file.getAbsoluteFile()), file.getName());
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        query.addCriteria(Criteria.where("path").is(relativePath));
+        query.addCriteria(Criteria.where("name").is(file.getName()));
+        mongoTemplate.remove(query, TRASH_COLLECTION_NAME);
     }
 
     private void updateOtherInfo(FileDocument fileExists, String contentType, Update update) {

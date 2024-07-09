@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.controller.rest;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.URLUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
@@ -320,10 +321,10 @@ public class FileController {
     @DeleteMapping("/delete")
     @LogOperatingFun
     @Permission("cloud:file:delete")
-    public ResponseResult<Object> delete(@RequestParam String username, @RequestParam String[] fileIds, @RequestParam String currentDirectory) {
+    public ResponseResult<Object> delete(@RequestParam String username, @RequestParam String[] fileIds, @RequestParam String currentDirectory, Boolean sweep) {
         if (fileIds != null && fileIds.length > 0) {
             List<String> list = Arrays.asList(fileIds);
-            return fileService.delete(username, currentDirectory, list, userLoginHolder.getUsername(), false);
+            return fileService.delete(username, currentDirectory, list, userLoginHolder.getUsername(), BooleanUtil.isTrue(sweep), true);
         } else {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }

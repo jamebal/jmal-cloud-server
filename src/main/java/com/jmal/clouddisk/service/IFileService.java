@@ -174,7 +174,7 @@ public interface IFileService {
      * @param sweep 是否彻底删除
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds, String operator, boolean sweep);
+    ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds, String operator, boolean sweep, boolean notify);
 
     /**
      * 显示缩略图
