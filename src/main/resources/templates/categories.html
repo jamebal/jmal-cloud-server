@@ -31,7 +31,7 @@
             if (typeof echarts !== 'undefined') {
                 initEcharts()
             } else {
-                loadScript(siteUrl + '/js/echarts.min.js',function(){
+                loadScript(commonSiteUrl + '/js/echarts.min.js',function(){
                     initEcharts()
                 })
             }
