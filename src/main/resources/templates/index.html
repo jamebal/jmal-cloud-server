@@ -76,9 +76,9 @@
 </div>
 <iframe th:replace="~{component/footer.html}"></iframe>
 <script th:inline="javascript">
-    let pjaxSiteUrl = [[${setting.siteUrl}]]
+    let commonSiteUrl = [[${setting.siteUrl}]]
     $(function () {
-        $('body').pjax('a[href^="' + pjaxSiteUrl + '"]:not(a[target="_blank"], a[not-pjax]), a[data-pjax]', {
+        $('body').pjax('a[href^="' + commonSiteUrl + '"]:not(a[target="_blank"], a[not-pjax]), a[data-pjax]', {
                 container: '#content-body',
                 timeout: 8000
             }
