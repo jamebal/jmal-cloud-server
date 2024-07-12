@@ -421,6 +421,7 @@ public class LuceneService {
             }
             if (StrUtil.isNotBlank(fileName)) {
                 newDocument.add(new StringField("name", fileName.toLowerCase(), Field.Store.NO));
+                newDocument.add(new TextField("content", fileName, Field.Store.NO));
             }
             if (isFolder != null) {
                 newDocument.add(new IntPoint("isFolder", isFolder ? 1 : 0));
@@ -433,6 +434,7 @@ public class LuceneService {
             }
             if (StrUtil.isNotBlank(tagName)) {
                 newDocument.add(new StringField("tag", tagName.toLowerCase(), Field.Store.NO));
+                newDocument.add(new TextField("content", tagName, Field.Store.NO));
             }
             if (StrUtil.isNotBlank(content)) {
                 newDocument.add(new TextField("content", content, Field.Store.NO));
@@ -470,8 +472,8 @@ public class LuceneService {
             IndexSearcher indexSearcher = searcherManager.acquire();
             Query query = getQuery(searchDTO);
             Sort sort = getSort(searchDTO);
-            log.debug("搜索关键字: {}", query.toString());
-            log.debug("排序规则: {}", sort);
+            log.info("搜索关键字: {}", query.toString());
+            log.info("排序规则: {}", sort);
             ScoreDoc lastScoreDoc = null;
             if (pageNum > 1) {
                 int totalHitsToSkip = (pageNum - 1) * pageSize;
@@ -498,10 +500,10 @@ public class LuceneService {
             result.setData(fileIntroVOList);
             result.setCount(count);
             return result;
-        } catch (IOException | ParseException e) {
+        } catch (IOException | ParseException | java.lang.IllegalArgumentException e) {
             log.error("搜索失败", e);
+            return result.setData(Collections.emptyList()).setCount(0);
         }
-        return result;
     }
 
     /**
@@ -540,8 +542,11 @@ public class LuceneService {
         String[] fields = {"name", "tag", "content"};
         Map<String, Float> boosts = Map.of("name", 3.0f, "tag", 2.0f, "content", 1.0f);
 
-        // 将关键字转为小写并去掉空格和特殊字符
-        String keyword = searchDTO.getKeyword().toLowerCase().trim().replaceAll("[\\s\\p{Punct}]+", " ");
+        // 将关键字转为小写并去掉空格
+        String keyword = searchDTO.getKeyword().toLowerCase().trim();
+
+        // 将关键字中的特殊字符转义
+        keyword = QueryParser.escape(keyword);
 
         // 创建正则表达式查询
         BooleanQuery.Builder regexpQueryBuilder = new BooleanQuery.Builder();
