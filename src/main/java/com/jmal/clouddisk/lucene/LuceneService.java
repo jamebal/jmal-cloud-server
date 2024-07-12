@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.lucene;
 
+import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.thread.ThreadUtil;
@@ -35,6 +36,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -349,11 +351,12 @@ public class LuceneService {
             if ("doc".equals(type) || "docx".equals(type)) {
                 return FileContentUtil.readWordContent(file);
             }
-            String charset = UniversalDetector.detectCharset(file);
-            if (StrUtil.isNotBlank(charset)) {
-                if (fileProperties.getSimText().contains(type)) {
-                    return FileUtil.readString(file, Charset.forName(charset));
+            if (fileProperties.getSimText().contains(type)) {
+                String charset = UniversalDetector.detectCharset(file);
+                if (StrUtil.isBlank(charset)) {
+                    charset = String.valueOf(CharsetDetector.detect(file, StandardCharsets.UTF_8));
                 }
+                return FileUtil.readString(file, Charset.forName(charset));
             }
         } catch (Exception e) {
             log.error("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
@@ -467,8 +470,8 @@ public class LuceneService {
             IndexSearcher indexSearcher = searcherManager.acquire();
             Query query = getQuery(searchDTO);
             Sort sort = getSort(searchDTO);
-            log.info("搜索关键字: {}", query.toString());
-            log.info("排序规则: {}", sort);
+            log.debug("搜索关键字: {}", query.toString());
+            log.debug("排序规则: {}", sort);
             ScoreDoc lastScoreDoc = null;
             if (pageNum > 1) {
                 int totalHitsToSkip = (pageNum - 1) * pageSize;
