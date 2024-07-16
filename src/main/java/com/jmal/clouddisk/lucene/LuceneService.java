@@ -420,7 +420,8 @@ public class LuceneService {
                 newDocument.add(new StringField("type", fileIndex.getType(), Field.Store.NO));
             }
             if (StrUtil.isNotBlank(fileName)) {
-                newDocument.add(new StringField("name", fileName.toLowerCase(), Field.Store.NO));
+                fileName = fileName.toLowerCase();
+                newDocument.add(new StringField("name", fileName, Field.Store.NO));
                 newDocument.add(new TextField("content", fileName, Field.Store.NO));
             }
             if (isFolder != null) {
@@ -433,7 +434,8 @@ public class LuceneService {
                 newDocument.add(new StringField("path", path, Field.Store.NO));
             }
             if (StrUtil.isNotBlank(tagName)) {
-                newDocument.add(new StringField("tag", tagName.toLowerCase(), Field.Store.NO));
+                tagName = tagName.toLowerCase();
+                newDocument.add(new StringField("tag", tagName, Field.Store.NO));
                 newDocument.add(new TextField("content", tagName, Field.Store.NO));
             }
             if (StrUtil.isNotBlank(content)) {
