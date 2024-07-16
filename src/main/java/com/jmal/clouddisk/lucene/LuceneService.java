@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.lucene;
 
+import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.thread.ThreadUtil;
@@ -35,6 +36,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -349,11 +351,12 @@ public class LuceneService {
             if ("doc".equals(type) || "docx".equals(type)) {
                 return FileContentUtil.readWordContent(file);
             }
-            String charset = UniversalDetector.detectCharset(file);
-            if (StrUtil.isNotBlank(charset)) {
-                if (fileProperties.getSimText().contains(type)) {
-                    return FileUtil.readString(file, Charset.forName(charset));
+            if (fileProperties.getSimText().contains(type)) {
+                String charset = UniversalDetector.detectCharset(file);
+                if (StrUtil.isBlank(charset)) {
+                    charset = String.valueOf(CharsetDetector.detect(file, StandardCharsets.UTF_8));
                 }
+                return FileUtil.readString(file, Charset.forName(charset));
             }
         } catch (Exception e) {
             log.error("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
@@ -417,7 +420,9 @@ public class LuceneService {
                 newDocument.add(new StringField("type", fileIndex.getType(), Field.Store.NO));
             }
             if (StrUtil.isNotBlank(fileName)) {
-                newDocument.add(new StringField("name", fileName.toLowerCase(), Field.Store.NO));
+                fileName = fileName.toLowerCase();
+                newDocument.add(new StringField("name", fileName, Field.Store.NO));
+                newDocument.add(new TextField("content", fileName, Field.Store.NO));
             }
             if (isFolder != null) {
                 newDocument.add(new IntPoint("isFolder", isFolder ? 1 : 0));
@@ -429,7 +434,9 @@ public class LuceneService {
                 newDocument.add(new StringField("path", path, Field.Store.NO));
             }
             if (StrUtil.isNotBlank(tagName)) {
-                newDocument.add(new StringField("tag", tagName.toLowerCase(), Field.Store.NO));
+                tagName = tagName.toLowerCase();
+                newDocument.add(new StringField("tag", tagName, Field.Store.NO));
+                newDocument.add(new TextField("content", tagName, Field.Store.NO));
             }
             if (StrUtil.isNotBlank(content)) {
                 newDocument.add(new TextField("content", content, Field.Store.NO));
@@ -495,10 +502,10 @@ public class LuceneService {
             result.setData(fileIntroVOList);
             result.setCount(count);
             return result;
-        } catch (IOException | ParseException e) {
+        } catch (IOException | ParseException | java.lang.IllegalArgumentException e) {
             log.error("搜索失败", e);
+            return result.setData(Collections.emptyList()).setCount(0);
         }
-        return result;
     }
 
     /**
@@ -537,8 +544,11 @@ public class LuceneService {
         String[] fields = {"name", "tag", "content"};
         Map<String, Float> boosts = Map.of("name", 3.0f, "tag", 2.0f, "content", 1.0f);
 
-        // 将关键字转为小写并去掉空格和特殊字符
-        String keyword = searchDTO.getKeyword().toLowerCase().trim().replaceAll("[\\s\\p{Punct}]+", " ");
+        // 将关键字转为小写并去掉空格
+        String keyword = searchDTO.getKeyword().toLowerCase().trim();
+
+        // 将关键字中的特殊字符转义
+        keyword = QueryParser.escape(keyword);
 
         // 创建正则表达式查询
         BooleanQuery.Builder regexpQueryBuilder = new BooleanQuery.Builder();
