@@ -198,6 +198,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             Cookie cookie = new Cookie(JMAL_TOKEN, jmalToken);
             cookie.setPath("/");
             response.addCookie(cookie);
+            response.addHeader(JMAL_TOKEN, jmalToken);
             setRefreshCookie(response, hashPassword, username, rememberMe);
         }
         return username;
