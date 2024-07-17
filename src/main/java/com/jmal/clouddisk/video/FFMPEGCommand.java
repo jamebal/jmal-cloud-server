@@ -211,11 +211,11 @@ public class FFMPEGCommand {
                 "-hwaccel", "cuda",
                 "-hwaccel_output_format", "cuda",
                 "-threads", "1",
+                "-autorotate", "0",
                 "-i", fileAbsolutePath.toString(),
                 "-autoscale", "0",
                 "-map_metadata", "-1",
                 "-map_chapters", "-1",
-                "-autorotate", "0",
                 "-threads", "0",
                 "-map", "0:0",
                 "-map", "0:1",
@@ -245,7 +245,6 @@ public class FFMPEGCommand {
                 outputPath
         );
     }
-
     static ProcessBuilder useNvencCudaVtt(Path fileAbsolutePath, int vttInterval, String thumbnailPattern) {
         // 使用CUDA硬件加速和NVENC编码器
         return new ProcessBuilder(
