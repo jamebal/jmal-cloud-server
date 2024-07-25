@@ -33,6 +33,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
@@ -707,15 +708,7 @@ public class CommonFileService {
     }
 
     public long occupiedSpace(String userId) {
-        long space = 0;
-        List<Bson> list = Arrays.asList(
-                match(eq(IUserService.USER_ID, userId)),
-                group(new BsonNull(), sum(Constants.TOTAL_SIZE, "$size")));
-        AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(list);
-        Document doc = aggregateIterable.first();
-        if (doc != null) {
-            space = Convert.toLong(doc.get(Constants.TOTAL_SIZE), 0L);
-        }
+        long space = calculateTotalOccupiedSpace(userId).blockingGet();
         ConsumerDO consumerDO = userService.userInfoById(userId);
         if (consumerDO != null && consumerDO.getQuota() != null) {
             if (space >= consumerDO.getQuota() * 1024L * 1024L * 1024L) {
@@ -726,6 +719,30 @@ public class CommonFileService {
                     CaffeineUtil.removeSpaceFull(userId);
                 }
             }
+        }
+        return space;
+    }
+
+    public Single<Long> calculateTotalOccupiedSpace(String userId) {
+        Single<Long> space1Single = getOccupiedSpaceAsync(userId, COLLECTION_NAME);
+        Single<Long> space2Single = getOccupiedSpaceAsync(userId, TRASH_COLLECTION_NAME);
+        return Single.zip(space1Single, space2Single, Long::sum);
+    }
+
+    public Single<Long> getOccupiedSpaceAsync(String userId, String collectionName) {
+        return Single.fromCallable(() -> getOccupiedSpace(userId, collectionName))
+                .subscribeOn(Schedulers.io());
+    }
+
+    private long getOccupiedSpace(String userId, String collectionName) {
+        long space = 0;
+        List<Bson> list = Arrays.asList(
+                match(eq(IUserService.USER_ID, userId)),
+                group(new BsonNull(), sum(Constants.TOTAL_SIZE, "$size")));
+        AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(collectionName).aggregate(list);
+        Document doc = aggregateIterable.first();
+        if (doc != null) {
+            space = Convert.toLong(doc.get(Constants.TOTAL_SIZE), 0L);
         }
         return space;
     }
