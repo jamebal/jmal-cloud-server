@@ -9,6 +9,8 @@ file:
   chunkFileDir: ugyuvgbhnouvghjbnk
   # 视频转码后的缓存目录, 位于 ${chunkFileDir}/${username}/${videoTranscodeCache}
   videoTranscodeCache: videoTranscodeCache
+  # 回收站目录, 位于 ${chunkFileDir}/${username}/${jmalcloudTrashDir}
+  jmalcloudTrashDir: .jmalcloudTrash
   # lucene索引存储目录
   luceneIndexDir: luceneIndex
   # 是否开启文件监控, 默认关闭(开启会损耗性能), 开启的好处在于使用webDAV、FTP等修改文件会自动同步, 如果需要用webDAV建议开启

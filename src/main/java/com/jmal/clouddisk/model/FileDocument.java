@@ -194,6 +194,8 @@ public class FileDocument extends FileBase {
      */
     private Integer delete;
 
+    private Boolean move;
+
     /**
      * 操作权限
      */
@@ -218,7 +220,7 @@ public class FileDocument extends FileBase {
         return hash;
     }
 
-    public Trash toTrash(boolean hidden) {
+    public Trash toTrash(boolean hidden, boolean move) {
         Trash trash = new Trash();
         trash.setId(this.getId());
         trash.setName(this.getName());
@@ -240,6 +242,7 @@ public class FileDocument extends FileBase {
         trash.setM3u8(this.getM3u8());
         trash.setVtt(this.getVtt());
         trash.setHidden(hidden);
+        trash.setMove(move);
         return trash;
     }
 }
