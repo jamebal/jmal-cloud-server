@@ -5,6 +5,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -93,6 +94,20 @@ public class SseController {
                 users.remove(username);
             }
         }
+    }
+
+    /**
+     * 每3秒发送一次心跳消息
+     */
+    @Scheduled(fixedRate = 3000)
+    public void heartbeat() {
+        emitters.forEach((uuid, emitter) -> {
+            try {
+                emitter.send("h");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 }
 

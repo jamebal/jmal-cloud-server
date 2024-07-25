@@ -37,6 +37,10 @@ public class FileProperties {
      */
     private String videoTranscodeCache = "videoTranscodeCache";
     /**
+     * 回收站目录, 位于 ${chunkFileDir}/${username}/${jmalcloudTrashDir}
+     */
+    private String jmalcloudTrashDir = ".jmalcloudTrash";
+    /**
      * lucene索引存储目录
      */
     private String luceneIndexDir = "luceneIndex";

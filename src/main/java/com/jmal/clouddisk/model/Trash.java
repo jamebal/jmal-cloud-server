@@ -64,7 +64,11 @@ public class Trash extends FileBase {
     /**
      * 是否隐藏显示
      */
-    private boolean hidden;
+    private Boolean hidden;
+    /**
+     * 是否移动到回收站, 从原位置移动到jmalcloudTrashDir
+     */
+    private Boolean move;
 
     @Override
     public boolean equals(Object obj) {

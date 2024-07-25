@@ -324,7 +324,7 @@ public class FileController {
     public ResponseResult<Object> delete(@RequestParam String username, @RequestParam String[] fileIds, @RequestParam String currentDirectory, Boolean sweep) {
         if (fileIds != null && fileIds.length > 0) {
             List<String> list = Arrays.asList(fileIds);
-            return fileService.delete(username, currentDirectory, list, userLoginHolder.getUsername(), BooleanUtil.isTrue(sweep), true);
+            return fileService.delete(username, currentDirectory, list, userLoginHolder.getUsername(), BooleanUtil.isTrue(sweep));
         } else {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }

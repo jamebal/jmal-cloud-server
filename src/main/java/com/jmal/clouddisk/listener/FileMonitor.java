@@ -207,9 +207,11 @@ public class FileMonitor {
     }
 
     /**
-     * 定时清理临时目录
-     * 每天凌晨2点执行
-     * 清理临时目录中7天前的文件
+     * <p>定时清理临时目录</p>
+     * 每天凌晨2点执行<br>
+     * 1.清理临时目录中3天前的文件<br>
+     * 2.清理视频转码缓存目录中的无效文件<br>
+     * 3.清理回收站中30天前的文件<br>
      */
     @Scheduled(cron = "0 0 2 * * ?")
     private void cleanTempDir() {
@@ -218,13 +220,10 @@ public class FileMonitor {
         for (File username : FileUtil.ls(tempPath.toString())) {
             if (username.isDirectory()) {
                 for (File file : FileUtil.ls(username.getAbsolutePath())) {
-                    // 是否为七天前的文件
-                    boolean sevenDayAgo = file.lastModified() < (System.currentTimeMillis() - DateUnit.DAY.getMillis() * 7);
+                    // 是否为三天前的文件
+                    boolean sevenDayAgo = file.lastModified() < (System.currentTimeMillis() - DateUnit.DAY.getMillis() * 3);
                     // 是否为视频转码缓存目录
                     boolean videoCache = fileProperties.getVideoTranscodeCache().equals(file.getName()) || fileProperties.getLuceneIndexDir().equals(file.getParentFile().getName());
-                    if (sevenDayAgo && !videoCache) {
-                        FileUtil.del(file);
-                    }
                     if (videoCache) {
                         if (file.listFiles() != null) {
                             for (File f : Objects.requireNonNull(file.listFiles())) {
@@ -235,6 +234,15 @@ public class FileMonitor {
                                 }
                             }
                         }
+                        return;
+                    }
+                    // 回收站
+                    boolean trash = fileProperties.getJmalcloudTrashDir().equals(file.getName());
+                    if (trash) {
+                        return;
+                    }
+                    if (sevenDayAgo) {
+                        FileUtil.del(file);
                     }
                 }
             }

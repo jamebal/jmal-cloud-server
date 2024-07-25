@@ -174,7 +174,7 @@ public interface IFileService {
      * @param sweep 是否彻底删除
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds, String operator, boolean sweep, boolean notify);
+    ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds, String operator, boolean sweep);
 
     /**
      * 显示缩略图
@@ -396,9 +396,9 @@ public interface IFileService {
      * 删除文件所有依赖
      * @param username 用户名
      * @param fileIds 文件id列表
-     * @param toTrash  是否移动到回收站, 否则就是硬删除
+     * @param sweep  是否硬删除, 否则就是移动到回收站
      */
-    void deleteDependencies(String username, List<String> fileIds, boolean toTrash);
+    void deleteDependencies(String username, List<String> fileIds, boolean sweep);
 
     /**
      * 返回原处
