@@ -196,6 +196,11 @@ public class UploadApiParamDTO {
      */
     Boolean hideMountFile;
 
+    /**
+     * 是否覆盖, 用于移动或复制文件
+     */
+    Boolean isOverride;
+
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime uploadDate;
