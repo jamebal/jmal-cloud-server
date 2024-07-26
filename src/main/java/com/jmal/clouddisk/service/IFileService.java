@@ -220,6 +220,15 @@ public interface IFileService {
     ResponseResult<Object> rename(String newFileName, String username, String id, String folder);
 
     /**
+     * 移动或复制前检查目标目录是否存在要移动或复制的文件
+     * @param upload 上传参数
+     * @param froms 从哪里来
+     * @param to    要到哪里去
+     * @return ResponseResult<Object>
+     */
+    ResponseResult<List<FileDocument>> checkMoveOrCopy(UploadApiParamDTO upload, List<String> froms, String to) throws IOException;
+
+    /**
      * 移动文件/文件夹
      * @param upload 上传参数
      * @param froms 从哪里移动

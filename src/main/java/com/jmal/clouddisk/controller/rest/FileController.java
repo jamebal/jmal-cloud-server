@@ -372,6 +372,18 @@ public class FileController {
         return fileService.rename(URLUtil.decode(newFileName), username, id, folder);
     }
 
+    @Operation(summary = "移动或复制前检查目标目录是否存在要移动或复制的文件")
+    @GetMapping("/check-move-copy")
+    @Permission("cloud:file:update")
+    public ResponseResult<List<FileDocument>> checkMoveOrCopy(UploadApiParamDTO upload, @RequestParam String[] froms, String to) throws IOException {
+        if (froms != null && froms.length > 0) {
+            List<String> list = Arrays.asList(froms);
+            return fileService.checkMoveOrCopy(upload, list, to);
+        } else {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
+        }
+    }
+
     @Operation(summary = "移动文件/文件夹")
     @GetMapping("/move")
     @LogOperatingFun

@@ -908,6 +908,26 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
+    public ResponseResult<List<FileDocument>> checkMoveOrCopy(UploadApiParamDTO upload, List<String> froms, String to) {
+        List<String> fromFilenameList = getFromFilenameList(froms);
+        FileDocument toFileDocument = getToFileDocument(upload, to);
+        String toPath = getRelativePath(toFileDocument);
+        Query query = new Query();
+        query.addCriteria(Criteria.where(USER_ID).is(toFileDocument.getUserId()));
+        query.addCriteria(Criteria.where("path").is(toPath));
+        query.addCriteria(Criteria.where("name").in(fromFilenameList));
+        List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+        return ResultUtil.success(fileDocuments).setCount(fileDocuments.size());
+    }
+
+    private List<String> getFromFilenameList(List<String> froms) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(froms));
+        query.fields().include("name");
+        return mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME).stream().map(FileDocument::getName).toList();
+    }
+
+    @Override
     public ResponseResult<Object> move(UploadApiParamDTO upload, List<String> froms, String to) throws IOException {
         // 复制
         upload.setUserId(userLoginHolder.getUserId());
@@ -955,7 +975,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         for (String from : froms) {
             ResponseResult<Object> result;
             try {
-                result = copy(upload, from, to, move);
+                result = copyOrMove(upload, from, to, move);
             } catch (CommonException e) {
                 throw e;
             } catch (Exception e) {
@@ -1504,19 +1524,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
      * @param from 来源文件id
      * @param to 目标文件id
      */
-    private ResponseResult<Object> copy(UploadApiParamDTO upload, String from, String to, boolean move) {
+    private ResponseResult<Object> copyOrMove(UploadApiParamDTO upload, String from, String to, boolean move) {
         FileDocument formFileDocument = getOriginalFileDocumentById(from);
         String fromPath = getRelativePath(formFileDocument);
-        FileDocument toFileDocument;
-        if (Constants.REGION_DEFAULT.equals(to)) {
-            // 复制到根目录
-            toFileDocument = new FileDocument();
-            toFileDocument.setPath("/");
-            toFileDocument.setName("");
-            toFileDocument.setUserId(upload.getUserId());
-        } else {
-            toFileDocument = getOriginalFileDocumentById(to);
-        }
+        FileDocument toFileDocument = getToFileDocument(upload, to);
         ResponseResult<Object> result = ossCopy(formFileDocument, toFileDocument, from, to, move);
         if (result != null) {
             return result;
@@ -1539,20 +1550,14 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 if (!upload.getUsername().equals(toUsername)) {
                     checkPermissionUsername(toUsername, toFileDocument.getOperationPermissionList(), OperationPermission.UPLOAD);
                 }
-
                 String toFilePath = Paths.get(getUserDir(toUsername), toPath).toString();
-
                 Path pathTo = Paths.get(toFileDocument.getPath(), toFileDocument.getName());
                 formFileDocument.setUserId(toFileDocument.getUserId());
-
-                FileDocument copyFileDocument = copyFileDocument(formFileDocument, toPath);
-                if (isExistsOfToCopy(copyFileDocument, toPath)) {
-                    throw new CommonException(ExceptionType.WARNING.getCode(), Constants.COPY_EXISTS_FILE);
-                }
+                boolean isOverride = BooleanUtil.isTrue(upload.getIsOverride());
                 if (move) {
-                    FileUtil.move(new File(fromFilePath), new File(toFilePath), true);
+                    FileUtil.move(new File(fromFilePath), new File(toFilePath), isOverride);
                 } else {
-                    FileUtil.copy(fromFilePath, toFilePath, true);
+                    FileUtil.copy(fromFilePath, toFilePath, isOverride);
                 }
                 String operation = move ? "移动" : "复制";
                 // 复制成功
@@ -1561,6 +1566,20 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             }
         }
         return ResultUtil.error("复制失败");
+    }
+
+    private FileDocument getToFileDocument(UploadApiParamDTO upload, String to) {
+        FileDocument toFileDocument;
+        if (Constants.REGION_DEFAULT.equals(to)) {
+            // 复制到根目录
+            toFileDocument = new FileDocument();
+            toFileDocument.setPath("/");
+            toFileDocument.setName("");
+            toFileDocument.setUserId(upload.getUserId());
+        } else {
+            toFileDocument = getOriginalFileDocumentById(to);
+        }
+        return toFileDocument;
     }
 
     private void saveFileDocument(FileDocument fileDocument) {
@@ -1612,19 +1631,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         formFileDocument.setPath(toPath);
         formFileDocument.setUpdateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
         return formFileDocument;
-    }
-
-    /***
-     * 目标目录是否存该文件
-     * @param formFileDocument FileDocument
-     * @param toPath toPath
-     */
-    private boolean isExistsOfToCopy(FileDocument formFileDocument, String toPath) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(USER_ID).is(formFileDocument.getUserId()));
-        query.addCriteria(Criteria.where("path").is(toPath));
-        query.addCriteria(Criteria.where("name").is(formFileDocument.getName()));
-        return mongoTemplate.exists(query, COLLECTION_NAME);
     }
 
     private static String replaceStart(String str, CharSequence searchStr, CharSequence replacement) {
