@@ -1652,18 +1652,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         return null;
     }
 
-    /***
-     * 复制更新数据
-     * @param formFileDocument FileDocument
-     * @param toPath toPath
-     */
-    private FileDocument copyFileDocument(FileDocument formFileDocument, String toPath) {
-        formFileDocument.setId(null);
-        formFileDocument.setPath(toPath);
-        formFileDocument.setUpdateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
-        return formFileDocument;
-    }
-
     private static String replaceStart(String str, CharSequence searchStr, CharSequence replacement) {
         return replacement + str.substring(searchStr.length());
     }
