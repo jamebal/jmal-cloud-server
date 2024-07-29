@@ -71,6 +71,13 @@ public class ResultUtil {
         return result;
     }
 
+    public static <T> ResponseResult<T> ignore(String msg) {
+        ResponseResult<T> result = new ResponseResult<>();
+        result.setCode(-3);
+        result.setMessage(msg);
+        return result;
+    }
+
     /***
      * 检查参数是否为空
      * @param params 参数集合

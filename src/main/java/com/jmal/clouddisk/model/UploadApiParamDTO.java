@@ -201,6 +201,11 @@ public class UploadApiParamDTO {
      */
     Boolean isOverride;
 
+    /**
+     * 移动或复制文件的目标路径
+     */
+    String targetPath;
+
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime uploadDate;
