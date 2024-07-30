@@ -4,6 +4,7 @@ import cn.hutool.core.codec.Base64;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
@@ -1098,7 +1099,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 luceneService.deleteIndexDocuments(Collections.singletonList(fileDocument.getId()));
             }
         }
-        pushMessage(username, fileDocument, Constants.DELETE_FILE);
+        pushMessage(username, relativePath, Constants.DELETE_FILE);
     }
 
     @Override
@@ -1882,16 +1883,18 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             // 提取出delFileDocumentList中文件id
             List<String> delFileIds = delFileDocumentList.stream().map(FileDocument::getId).collect(Collectors.toList());
             deleteDependencies(username, delFileIds, false);
-            pushMessage(username, fileDocument, Constants.DELETE_FILE);
+            pushMessage(username, fileDocument.getPath(), Constants.DELETE_FILE);
         }
     }
 
     @Override
     public ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds, String operator, boolean sweep) {
+        TimeInterval interval = new TimeInterval();
         username = deleteOss(username, currentDirectory, fileIds, operator);
         if (username == null) {
             return ResultUtil.success();
         }
+        log.info("deleteOss: {}ms", interval.intervalMs());
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds));
         List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
@@ -1923,7 +1926,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 deleteDependencies(username, delFileIds, sweep);
                 isDel = true;
             }
-            pushMessage(username, fileDocument, Constants.DELETE_FILE);
+            pushMessage(username, fileDocument.getPath(), Constants.DELETE_FILE);
         }
         OperationTips operationTips = OperationTips.builder().operation(sweep ? "删除" : "移动到回收站").build();
         if (isDel) {
@@ -1939,6 +1942,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         } else {
             operationTips.setSuccess(false);
         }
+        log.info("deleteFile: {}ms", interval.intervalMs());
         pushMessage(username, operationTips, Constants.OPERATION_TIPS);
         return ResultUtil.success();
     }
@@ -2072,6 +2076,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                         String timePrefix = LocalDateTimeUtil.now().format(DateTimeFormatter.ofPattern(DatePattern.PURE_DATETIME_PATTERN));
                         sourceFilePath = Paths.get(fileProperties.getRootDir(), username, trashFileDocument.getPath(), timePrefix + "_" + trashFileDocument.getName());
                     }
+                    mongoTemplate.insert(trashFileDocument, COLLECTION_NAME);
                     PathUtil.move(trashFilePath, sourceFilePath, false);
                 } else {
                     // 老版本还原
