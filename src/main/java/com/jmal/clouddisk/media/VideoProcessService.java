@@ -406,17 +406,6 @@ public class VideoProcessService {
         }
     }
 
-    public void deleteVideoCache(String username, String fileAbsolutePath) {
-        FileDocument fileDocument = commonFileService.getFileDocument(username, fileAbsolutePath);
-        if (fileDocument != null) {
-            String fileId = fileDocument.getId();
-            String videoCacheDir = getVideoCacheDir(username, fileId);
-            if (FileUtil.exist(videoCacheDir)) {
-                FileUtil.del(videoCacheDir);
-            }
-        }
-    }
-
     public VideoInfo getVideoInfo(File videoFile) {
         VideoInfo videoInfo = new VideoInfo();
         if (FFMPEGCommand.hasNoFFmpeg()) {

@@ -1090,7 +1090,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         // 文件是否存在
         FileDocument fileDocument = getFileDocument(userId, fileName, relativePath, query);
         if (fileDocument != null) {
-            deleteDependencies(username, Collections.singletonList(fileDocument.getId()), true);
+            deleteDependencies(username, Collections.singletonList(fileDocument.getId()), false);
             mongoTemplate.remove(query, COLLECTION_NAME);
             if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
                 // 删除文件夹及其下的所有文件
