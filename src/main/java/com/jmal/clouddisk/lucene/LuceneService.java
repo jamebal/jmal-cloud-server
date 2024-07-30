@@ -548,7 +548,8 @@ public class LuceneService {
         String keyword = searchDTO.getKeyword().toLowerCase().trim();
 
         // 将关键字中的特殊字符转义
-        keyword = QueryParser.escape(keyword);
+
+        keyword = StringUtil.escape(keyword);
 
         // 创建正则表达式查询
         BooleanQuery.Builder regexpQueryBuilder = new BooleanQuery.Builder();
