@@ -33,6 +33,8 @@ public class Constants {
 
     public static final String FFMPEG = "ffmpeg";
 
+    public static final String HEIF_CONVERT = "heif-convert";
+
     public static final String DOCUMENT = "document";
 
     public static final String OTHER = "other";

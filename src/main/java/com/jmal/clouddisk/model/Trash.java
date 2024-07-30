@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.jmal.clouddisk.service.impl.FileServiceImpl;
-import com.jmal.clouddisk.video.VideoInfoDO;
+import com.jmal.clouddisk.media.VideoInfoDO;
 import lombok.Data;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;

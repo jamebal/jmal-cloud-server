@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.video;
+package com.jmal.clouddisk.media;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.thread.ThreadUtil;
@@ -403,17 +403,6 @@ public class VideoProcessService {
         String videoCacheDir = getVideoCacheDir(username, fileId);
         if (FileUtil.exist(videoCacheDir)) {
             FileUtil.del(videoCacheDir);
-        }
-    }
-
-    public void deleteVideoCache(String username, String fileAbsolutePath) {
-        FileDocument fileDocument = commonFileService.getFileDocument(username, fileAbsolutePath);
-        if (fileDocument != null) {
-            String fileId = fileDocument.getId();
-            String videoCacheDir = getVideoCacheDir(username, fileId);
-            if (FileUtil.exist(videoCacheDir)) {
-                FileUtil.del(videoCacheDir);
-            }
         }
     }
 

@@ -65,7 +65,7 @@ public class WebOssCommonService {
         String username = getUsernameByOssPath(ossPath);
         String id = getFileId(getOssRootFolderName(ossPath), objectName, username);
         fileIntroVO.setId(id);
-        commonFileService.pushMessage(username, fileIntroVO, Constants.DELETE_FILE);
+        commonFileService.pushMessage(username, fileIntroVO.getPath(), Constants.DELETE_FILE);
     }
 
     public static String getFileId(String rootName, String objectName, String username) {

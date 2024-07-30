@@ -104,8 +104,7 @@ public class SseController {
         emitters.forEach((uuid, emitter) -> {
             try {
                 emitter.send("h");
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            } catch (IOException ignored) {
             }
         });
     }
