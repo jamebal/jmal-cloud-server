@@ -5,7 +5,7 @@ import cn.hutool.core.lang.ObjectId;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.video.FFMPEGCommand;
+import com.jmal.clouddisk.media.FFMPEGCommand;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.ITesseract;

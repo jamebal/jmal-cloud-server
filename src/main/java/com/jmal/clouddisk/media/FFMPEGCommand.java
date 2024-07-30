@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.video;
+package com.jmal.clouddisk.media;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.NumberUtil;

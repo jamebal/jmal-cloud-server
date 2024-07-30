@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.video;
+package com.jmal.clouddisk.media;
 
 import lombok.Data;
 

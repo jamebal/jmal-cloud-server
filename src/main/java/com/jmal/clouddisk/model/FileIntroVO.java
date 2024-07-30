@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.model;
 
-import com.jmal.clouddisk.video.VideoInfoDO;
+import com.jmal.clouddisk.media.VideoInfoDO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.video;
+package com.jmal.clouddisk.media;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;

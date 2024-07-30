@@ -17,15 +17,16 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.lucene.RebuildIndexTaskService;
+import com.jmal.clouddisk.media.HeifUtils;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
-import com.jmal.clouddisk.video.VideoInfo;
-import com.jmal.clouddisk.video.VideoInfoDO;
-import com.jmal.clouddisk.video.VideoProcessService;
+import com.jmal.clouddisk.media.VideoInfo;
+import com.jmal.clouddisk.media.VideoInfoDO;
+import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
@@ -313,6 +314,9 @@ public class CommonFileService {
         if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE)) {
             // 换成webp格式的图片
             file = replaceWebp(userId, file);
+            if (file == null) {
+                return null;
+            }
         }
 
         String fileAbsolutePath = file.getAbsolutePath();
@@ -475,10 +479,20 @@ public class CommonFileService {
     }
 
     private File replaceWebp(String userId, File file) {
-        if (userService.getDisabledWebp(userId) || ("ico".equals(FileUtil.getSuffix(file)))) {
+        String suffix = FileUtil.getSuffix(file).toLowerCase();
+        // 判断是否为heic格式
+        if ("heic".equals(suffix)) {
+            String output = HeifUtils.heifConvert(file.getAbsolutePath());
+            if (output != null) {
+                FileUtil.del(file);
+                return null;
+            }
+        }
+
+        if (userService.getDisabledWebp(userId) || ("ico".equals(suffix))) {
             return file;
         }
-        if (Constants.SUFFIX_WEBP.equals(FileUtil.getSuffix(file))) {
+        if (Constants.SUFFIX_WEBP.equals(suffix)) {
             return file;
         }
         File outputFile = new File(file.getPath() + Constants.POINT_SUFFIX_WEBP);
