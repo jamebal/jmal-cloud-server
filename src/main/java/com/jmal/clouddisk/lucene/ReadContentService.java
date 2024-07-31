@@ -107,7 +107,7 @@ public class ReadContentService {
     }
 
     public String readEpubContent(File file) {
-        try (InputStream fileInputStream = new FileInputStream(file);) {
+        try (InputStream fileInputStream = new FileInputStream(file)) {
             // 打开 EPUB 文件
             EpubReader epubReader = new EpubReader();
             Book book = epubReader.readEpub(fileInputStream);

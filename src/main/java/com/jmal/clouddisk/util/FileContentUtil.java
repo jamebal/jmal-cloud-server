@@ -37,8 +37,6 @@ public class FileContentUtil {
             // 设置渲染块的大小
             int blockSize = 100;
             for (int y = 0; y < height; y += blockSize) {
-                int blockHeight = Math.min(blockSize, height - y);
-                Rectangle block = new Rectangle(0, y, width, blockHeight);
                 BufferedImage blockImage = pdfRenderer.renderImage(pageIndex);
                 graphics.drawImage(blockImage, 0, y, null);
                 blockImage.flush();

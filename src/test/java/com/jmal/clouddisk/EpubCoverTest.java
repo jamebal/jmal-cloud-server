@@ -57,7 +57,7 @@ public class EpubCoverTest {
             }
             fileInputStream.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("EPUB 文件读取失败: " + e.getMessage());
         }
 
         return null;
@@ -86,7 +86,7 @@ public class EpubCoverTest {
             fileInputStream.close();
             return content.toString();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("EPUB 文件读取失败: " + e.getMessage());
         }
         return null;
     }
