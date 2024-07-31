@@ -1103,4 +1103,18 @@ public class CommonFileService {
             log.info("删除有删除标记的文档: {}", deleteResult.getDeletedCount());
         }
     }
+
+    /**
+     * 更新文件封面
+     * @param fileId 文件Id
+     * @param coverFile 封面文件
+     */
+    public void updateCoverFileDocument(String fileId, File coverFile) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(new ObjectId(fileId)));
+        Update update = new Update();
+        generateThumbnail(coverFile, update);
+        update.set("showCover", true);
+        mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
+    }
 }

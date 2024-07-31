@@ -65,7 +65,7 @@ public class LuceneService {
     private final SearcherManager searcherManager;
     private final IUserService userService;
     private final TagService tagService;
-    private final ReadPDFContentService readPDFContentService;
+    private final ReadContentService readContentService;
     private final RebuildIndexTaskService rebuildIndexTaskService;
 
     public final static String MONGO_INDEX_FIELD = "index";
@@ -248,7 +248,7 @@ public class LuceneService {
         setFileIndex(fileIndex);
         String content = null;
         if (readContent) {
-            content = readFileContent(file);
+            content = readFileContent(file, fileIntroVO.getId());
             if (StrUtil.isBlank(content)) {
                 rebuildIndexTaskService.incrementIndexedTaskSize();
                 updateIndexStatus(fileIntroVO, IndexStatus.INDEXED);
@@ -333,7 +333,7 @@ public class LuceneService {
         }
     }
 
-    private String readFileContent(File file) {
+    private String readFileContent(File file, String fileId) {
         try {
             if (file == null) {
                 return null;
@@ -343,13 +343,16 @@ public class LuceneService {
             }
             String type = FileTypeUtil.getType(file);
             if ("pdf".equals(type)) {
-                return readPDFContentService.read(file);
+                return readContentService.readPdfContent(file, fileId);
+            }
+            if ("epub".equals(type)) {
+                return readContentService.readEpubContent(file);
             }
             if ("ppt".equals(type) || "pptx".equals(type)) {
-                return FileContentUtil.readPPTContent(file);
+                return readContentService.readPPTContent(file);
             }
             if ("doc".equals(type) || "docx".equals(type)) {
-                return FileContentUtil.readWordContent(file);
+                return readContentService.readWordContent(file);
             }
             if (fileProperties.getSimText().contains(type)) {
                 String charset = UniversalDetector.detectCharset(file);

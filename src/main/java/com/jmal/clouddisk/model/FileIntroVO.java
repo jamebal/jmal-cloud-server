@@ -92,6 +92,10 @@ public class FileIntroVO extends FileBase {
      * 封面
      */
     private String cover;
+    /***
+     * 是否显示封面, 缩略图保存在content中
+     */
+    private Boolean showCover;
     /**
      * 挂载的文件id
      */

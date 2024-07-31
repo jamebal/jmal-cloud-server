@@ -476,7 +476,7 @@ public class VideoProcessService {
      * @param fileId   fileId
      * @return 视频文件缓存目录
      */
-    private String getVideoCacheDir(String username, String fileId) {
+    public String getVideoCacheDir(String username, String fileId) {
         // 视频文件缓存目录
         String videoCacheDir = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, fileProperties.getVideoTranscodeCache(), fileId).toString();
         if (!FileUtil.exist(videoCacheDir)) {

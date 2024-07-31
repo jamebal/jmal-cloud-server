@@ -1,56 +1,59 @@
 package com.jmal.clouddisk.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.xslf.usermodel.XMLSlideShow;
-import org.apache.poi.xslf.usermodel.XSLFShape;
-import org.apache.poi.xslf.usermodel.XSLFSlide;
-import org.apache.poi.xslf.usermodel.XSLFTextShape;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.ImageType;
+import org.apache.pdfbox.rendering.PDFRenderer;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.List;
 
 @Slf4j
 public class FileContentUtil {
 
-    public static String readPPTContent(File file) {
-        try (FileInputStream fis = new FileInputStream(file.getAbsolutePath());
-             XMLSlideShow ppt = new XMLSlideShow(fis)) {
-            StringBuilder stringBuilder = new StringBuilder();
-            for (XSLFSlide slide : ppt.getSlides()) {
-                for (XSLFShape shape : slide.getShapes()) {
-                    if (shape instanceof XSLFTextShape textShape) {
-                        stringBuilder.append(textShape.getText());
-                    }
-                }
-            }
-            return stringBuilder.toString();
-        } catch (IOException e) {
-            readFailed(file, e);
-        }
-        return null;
-    }
-
-    public static String readWordContent(File file) {
-        try (FileInputStream fis = new FileInputStream(file.getAbsolutePath());
-             XWPFDocument document = new XWPFDocument(fis)) {
-            StringBuilder stringBuilder = new StringBuilder();
-            List<XWPFParagraph> paragraphs = document.getParagraphs();
-            for (XWPFParagraph para : paragraphs) {
-                stringBuilder.append(para.getText());
-            }
-            return stringBuilder.toString();
-        } catch (IOException e) {
-            readFailed(file, e);
-        }
-        return null;
-    }
-
     public static void readFailed(File file, IOException e) {
         log.warn("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage());
+    }
+
+    public static File pdfCoverImage(PDDocument document, String outputPath) {
+        try {
+            PDFRenderer pdfRenderer = new PDFRenderer(document);
+            int pageIndex = 0;
+            int dpi = 150;
+
+            // 渲染第一页的图像，获取图像的尺寸
+            BufferedImage tempImage = pdfRenderer.renderImageWithDPI(pageIndex, dpi, ImageType.RGB);
+            int width = tempImage.getWidth();
+            int height = tempImage.getHeight();
+            tempImage.flush();
+
+            // 创建用于逐块渲染的BufferedImage
+            BufferedImage coverImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = coverImage.createGraphics();
+
+            // 设置渲染块的大小
+            int blockSize = 100;
+            for (int y = 0; y < height; y += blockSize) {
+                int blockHeight = Math.min(blockSize, height - y);
+                Rectangle block = new Rectangle(0, y, width, blockHeight);
+                BufferedImage blockImage = pdfRenderer.renderImage(pageIndex);
+                graphics.drawImage(blockImage, 0, y, null);
+                blockImage.flush();
+            }
+            graphics.dispose();
+
+            // 将封面图像保存为JPEG文件
+            File coverImageFile = new File(outputPath, "cover.jpg");
+            ImageIO.write(coverImage, "JPEG", coverImageFile);
+
+            coverImage.flush();
+            return coverImageFile;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
 }

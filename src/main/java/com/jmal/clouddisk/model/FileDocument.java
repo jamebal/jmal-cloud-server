@@ -197,6 +197,11 @@ public class FileDocument extends FileBase {
     private Boolean move;
 
     /**
+     * 是否显示封面, 缩略图保存在content中
+     */
+    private Boolean showCover;
+
+    /**
      * 操作权限
      */
     private List<OperationPermission> operationPermissionList;
