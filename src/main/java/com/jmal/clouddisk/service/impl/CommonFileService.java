@@ -313,7 +313,7 @@ public class CommonFileService {
         String contentType = getContentType(file, FileContentTypeUtils.getContentType(suffix));
         if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE)) {
             // 换成webp格式的图片
-            file = replaceWebp(userId, file);
+            file = replaceWebp(userId, file, username);
             if (file == null) {
                 return null;
             }
@@ -478,11 +478,11 @@ public class CommonFileService {
         return getFileDocument(userId, fileName, relativePath, query);
     }
 
-    private File replaceWebp(String userId, File file) {
+    private File replaceWebp(String userId, File file, String username) {
         String suffix = FileUtil.getSuffix(file).toLowerCase();
         // 判断是否为heic格式
         if ("heic".equals(suffix)) {
-            String output = HeifUtils.heifConvert(file.getAbsolutePath());
+            String output = HeifUtils.heifConvert(file.getAbsolutePath(), Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username));
             if (output != null) {
                 FileUtil.del(file);
                 return null;
