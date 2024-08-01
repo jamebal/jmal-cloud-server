@@ -19,6 +19,8 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.lucene.LuceneService;
+import com.jmal.clouddisk.media.VideoInfo;
+import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -29,8 +31,6 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.util.*;
-import com.jmal.clouddisk.media.VideoInfo;
-import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import com.mongodb.client.AggregateIterable;
 import io.reactivex.rxjava3.core.Single;
@@ -50,7 +50,6 @@ import org.jetbrains.annotations.NotNull;
 import org.mozilla.universalchardet.ReaderFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -110,9 +109,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     LuceneService luceneService;
 
     private static final AES aes = SecureUtil.aes();
-    @Qualifier("commonFileService")
-    @Autowired
-    private CommonFileService commonFileService;
 
     @Override
     public ResponseResult<Object> listFiles(UploadApiParamDTO upload) throws CommonException {

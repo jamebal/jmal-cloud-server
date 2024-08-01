@@ -42,7 +42,7 @@ public class FileContentUtil {
         if (coverImage != null) {
             File coverImageFile = getCoverPath(outputPath);
             try (InputStream coverImageInputStream = coverImage.getInputStream();
-                 OutputStream coverImageOutput = new FileOutputStream(coverImageFile);) {
+                 OutputStream coverImageOutput = new FileOutputStream(coverImageFile)) {
                 byte[] buffer = new byte[1024];
                 int bytesRead;
                 while ((bytesRead = coverImageInputStream.read(buffer)) != -1) {
