@@ -346,7 +346,7 @@ public class LuceneService {
                 return readContentService.readPdfContent(file, fileId);
             }
             if ("epub".equals(type)) {
-                return readContentService.readEpubContent(file);
+                return readContentService.readEpubContent(file, fileId);
             }
             if ("ppt".equals(type) || "pptx".equals(type)) {
                 return readContentService.readPPTContent(file);

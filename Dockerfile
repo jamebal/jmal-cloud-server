@@ -4,7 +4,7 @@ ARG VERSION
 
 ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
 ENV RUN_ENVIRONMENT prod
-ENV JVM_OPTS "-Xms50m -Xmx512m"
+ENV JVM_OPTS "-Xms256m -Xmx1024m"
 ENV LOG_LEVEL warn
 
 ENV FILE_MONITOR true

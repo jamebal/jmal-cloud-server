@@ -1110,6 +1110,9 @@ public class CommonFileService {
      * @param coverFile 封面文件
      */
     public void updateCoverFileDocument(String fileId, File coverFile) {
+        if (coverFile == null || !coverFile.exists()) {
+            return;
+        }
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(new ObjectId(fileId)));
         Update update = new Update();

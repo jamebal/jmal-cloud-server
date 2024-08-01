@@ -247,12 +247,12 @@ public class FileController {
     @GetMapping("/view/thumbnail")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> thumbnail(@RequestParam String id) {
+    public ResponseEntity<Object> thumbnail(@RequestParam String id, Boolean showCover) {
         String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
         if (ossPath != null) {
             return webOssService.thumbnail(ossPath, id);
         }
-        Optional<FileDocument> file = fileService.thumbnail(id);
+        Optional<FileDocument> file = fileService.thumbnail(id, showCover);
         return file.map(fileService::getObjectResponseEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
     }
 
@@ -260,8 +260,8 @@ public class FileController {
     @GetMapping("/view/thumbnail/{filename}")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> thumbnailName(@RequestParam String id) {
-        return thumbnail(id);
+    public ResponseEntity<Object> thumbnailName(@RequestParam String id, Boolean showCover) {
+        return thumbnail(id, showCover);
     }
 
     @Operation(summary = "显示缩略图(媒体封面)")

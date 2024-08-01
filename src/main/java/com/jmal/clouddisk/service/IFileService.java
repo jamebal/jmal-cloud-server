@@ -178,10 +178,12 @@ public interface IFileService {
 
     /**
      * 显示缩略图
-     * @param id fileId
+     *
+     * @param id        fileId
+     * @param showCover 是否显示封面
      * @return FileDocument
      */
-    Optional<FileDocument> thumbnail(String id);
+    Optional<FileDocument> thumbnail(String id, Boolean showCover);
 
     /**
      * 显示缩略图(媒体文件封面)

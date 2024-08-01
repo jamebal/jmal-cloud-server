@@ -59,9 +59,9 @@ public class ReadContentService {
 
             String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
 
-            if (StrUtil.isNotBlank(fileId))  {
-                // 生成pdf封面图像
-                File coverFile = FileContentUtil.pdfCoverImage(document, videoProcessService.getVideoCacheDir(username, fileId));
+            // 生成封面图像
+            if (StrUtil.isNotBlank(fileId)) {
+                File coverFile = FileContentUtil.pdfCoverImage(file, document, videoProcessService.getVideoCacheDir(username, fileId));
                 commonFileService.updateCoverFileDocument(fileId, coverFile);
             }
 
@@ -106,11 +106,19 @@ public class ReadContentService {
         return null;
     }
 
-    public String readEpubContent(File file) {
+    public String readEpubContent(File file, String fileId) {
         try (InputStream fileInputStream = new FileInputStream(file)) {
             // 打开 EPUB 文件
             EpubReader epubReader = new EpubReader();
             Book book = epubReader.readEpub(fileInputStream);
+
+            // 生成封面图像
+            String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
+            if (StrUtil.isNotBlank(fileId))  {
+                File coverFile = FileContentUtil.epubCoverImage(book, videoProcessService.getVideoCacheDir(username, fileId));
+                commonFileService.updateCoverFileDocument(fileId, coverFile);
+            }
+
             StringBuilder content = new StringBuilder();
             // 获取章节内容
             Spine spine = book.getSpine();

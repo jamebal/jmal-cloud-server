@@ -50,6 +50,7 @@ import org.jetbrains.annotations.NotNull;
 import org.mozilla.universalchardet.ReaderFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -109,6 +110,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     LuceneService luceneService;
 
     private static final AES aes = SecureUtil.aes();
+    @Qualifier("commonFileService")
+    @Autowired
+    private CommonFileService commonFileService;
 
     @Override
     public ResponseResult<Object> listFiles(UploadApiParamDTO upload) throws CommonException {
@@ -624,11 +628,20 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public Optional<FileDocument> thumbnail(String id) {
+    public Optional<FileDocument> thumbnail(String id, Boolean showCover) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
+
+            String username = userService.getUserNameById(fileDocument.getUserId());
+
+            if (BooleanUtil.isTrue(showCover) && BooleanUtil.isTrue(fileDocument.getShowCover())) {
+                File file = FileContentUtil.getCoverPath(videoProcessService.getVideoCacheDir(username,id));
+                if (file.exists()) {
+                    fileDocument.setContent(FileUtil.readBytes(file));
+                    return Optional.of(fileDocument);
+                }
+            }
             if (fileDocument.getContent() == null) {
-                String username = userService.getUserNameById(fileDocument.getUserId());
                 String currentDirectory = getUserDirectory(fileDocument.getPath());
                 File file = new File(fileProperties.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
                 if (file.exists()) {
