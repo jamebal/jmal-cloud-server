@@ -19,6 +19,8 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.lucene.LuceneService;
+import com.jmal.clouddisk.media.VideoInfo;
+import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -29,8 +31,6 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.util.*;
-import com.jmal.clouddisk.media.VideoInfo;
-import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import com.mongodb.client.AggregateIterable;
 import io.reactivex.rxjava3.core.Single;
@@ -624,11 +624,20 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
-    public Optional<FileDocument> thumbnail(String id) {
+    public Optional<FileDocument> thumbnail(String id, Boolean showCover) {
         FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
+
+            String username = userService.getUserNameById(fileDocument.getUserId());
+
+            if (BooleanUtil.isTrue(showCover) && BooleanUtil.isTrue(fileDocument.getShowCover())) {
+                File file = FileContentUtil.getCoverPath(videoProcessService.getVideoCacheDir(username,id));
+                if (file.exists()) {
+                    fileDocument.setContent(FileUtil.readBytes(file));
+                    return Optional.of(fileDocument);
+                }
+            }
             if (fileDocument.getContent() == null) {
-                String username = userService.getUserNameById(fileDocument.getUserId());
                 String currentDirectory = getUserDirectory(fileDocument.getPath());
                 File file = new File(fileProperties.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
                 if (file.exists()) {

@@ -22,7 +22,7 @@ import java.util.List;
 @Slf4j
 public class MyFileUtils {
 
-    public static List<String> hasContentTypes = Arrays.asList("pdf", "drawio", "mind", "doc", "docx", "xls", "xlsx", "xlsm", "ppt", "pptx", "csv", "tsv", "dotm", "xlt", "xltm", "dot", "dotx", "xlam", "xla", "pages");
+    public static List<String> hasContentTypes = Arrays.asList("pdf", "drawio", "mind", "doc", "docx", "xls", "xlsx", "xlsm", "ppt", "pptx", "csv", "tsv", "dotm", "xlt", "xltm", "dot", "dotx", "xlam", "xla", "pages", "epub");
 
     private MyFileUtils(){
 

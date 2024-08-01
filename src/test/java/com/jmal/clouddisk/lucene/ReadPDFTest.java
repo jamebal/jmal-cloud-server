@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ReadPDFTest {
 
     @Autowired
-    private ReadPDFContentService readPDFContentService;
+    private ReadContentService readContentService;
 
     @Test
     public void testImagePDF() {
@@ -29,7 +29,7 @@ public class ReadPDFTest {
         assertNotNull(file, "File should not be null");
         assertTrue(file.exists(), "File should exist");
 
-        String content = readPDFContentService.read(file);
+        String content = readContentService.readPdfContent(file, null);
         assertNotNull(content, "Content should not be null");
         assertFalse(content.isEmpty(), "Content should not be empty");
 
@@ -44,7 +44,7 @@ public class ReadPDFTest {
         assertNotNull(file, "File should not be null");
         assertTrue(file.exists(), "File should exist");
 
-        String content = readPDFContentService.read(file);
+        String content = readContentService.readPdfContent(file, null);
         assertNotNull(content, "Content should not be null");
         assertFalse(content.isEmpty(), "Content should not be empty");
 

@@ -180,22 +180,22 @@ public class ShareController {
     @Operation(summary = "显示缩略图")
     @GetMapping("/articles/s/view/thumbnail")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> articlesThumbnail(String id) {
-        return thumbnail(id, null);
+    public ResponseEntity<Object> articlesThumbnail(String id, Boolean showCover) {
+        return thumbnail(id, showCover, null);
     }
 
     @Operation(summary = "显示缩略图")
     @GetMapping("/public/s/view/thumbnail")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> publicThumbnail(String id, HttpServletRequest request) {
-        return thumbnail(id, request);
+    public ResponseEntity<Object> publicThumbnail(String id, Boolean showCover, HttpServletRequest request) {
+        return thumbnail(id, showCover, request);
     }
 
     @Operation(summary = "显示缩略图")
     @GetMapping("/public/s/view/thumbnail/{filename}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> publicThumbnailName(String id, HttpServletRequest request) {
-        return publicThumbnail(id, request);
+    public ResponseEntity<Object> publicThumbnailName(String id, Boolean showCover, HttpServletRequest request) {
+        return publicThumbnail(id, showCover, request);
     }
 
     @Operation(summary = "显示缩略图(媒体封面)")
@@ -207,9 +207,9 @@ public class ShareController {
         return file.map(fileService::getObjectResponseEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
     }
 
-    private ResponseEntity<Object> thumbnail(String id, HttpServletRequest request) {
+    private ResponseEntity<Object> thumbnail(String id, Boolean showCover, HttpServletRequest request) {
         ResultUtil.checkParamIsNull(id);
-        Optional<FileDocument> file = fileService.thumbnail(id);
+        Optional<FileDocument> file = fileService.thumbnail(id, showCover);
         if (fileInterceptor.isNotAllowAccess(file.orElse(null), request)) {
             return null;
         }

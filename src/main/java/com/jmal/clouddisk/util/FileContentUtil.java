@@ -1,56 +1,61 @@
 package com.jmal.clouddisk.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.xslf.usermodel.XMLSlideShow;
-import org.apache.poi.xslf.usermodel.XSLFShape;
-import org.apache.poi.xslf.usermodel.XSLFSlide;
-import org.apache.poi.xslf.usermodel.XSLFTextShape;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import nl.siegmann.epublib.domain.Book;
+import nl.siegmann.epublib.domain.Resource;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.ImageType;
+import org.apache.pdfbox.rendering.PDFRenderer;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.List;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.*;
 
 @Slf4j
 public class FileContentUtil {
 
-    public static String readPPTContent(File file) {
-        try (FileInputStream fis = new FileInputStream(file.getAbsolutePath());
-             XMLSlideShow ppt = new XMLSlideShow(fis)) {
-            StringBuilder stringBuilder = new StringBuilder();
-            for (XSLFSlide slide : ppt.getSlides()) {
-                for (XSLFShape shape : slide.getShapes()) {
-                    if (shape instanceof XSLFTextShape textShape) {
-                        stringBuilder.append(textShape.getText());
-                    }
-                }
-            }
-            return stringBuilder.toString();
-        } catch (IOException e) {
-            readFailed(file, e);
-        }
-        return null;
-    }
-
-    public static String readWordContent(File file) {
-        try (FileInputStream fis = new FileInputStream(file.getAbsolutePath());
-             XWPFDocument document = new XWPFDocument(fis)) {
-            StringBuilder stringBuilder = new StringBuilder();
-            List<XWPFParagraph> paragraphs = document.getParagraphs();
-            for (XWPFParagraph para : paragraphs) {
-                stringBuilder.append(para.getText());
-            }
-            return stringBuilder.toString();
-        } catch (IOException e) {
-            readFailed(file, e);
-        }
-        return null;
-    }
-
     public static void readFailed(File file, IOException e) {
         log.warn("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage());
+    }
+
+    public static File getCoverPath(String outputPath) {
+        return new File(outputPath, "cover.jpg");
+    }
+
+    public static File pdfCoverImage(File file, PDDocument document, String outputPath) {
+        try {
+            PDFRenderer pdfRenderer = new PDFRenderer(document);
+            BufferedImage coverImage = pdfRenderer.renderImageWithDPI(0, 128, ImageType.RGB);
+            // 将封面图像保存为JPEG文件
+            File coverImageFile = getCoverPath(outputPath);
+            ImageIO.write(coverImage, "JPEG", coverImageFile);
+            return coverImageFile;
+        } catch (Throwable e) {
+            log.warn("PDF 文件封面图像生成失败: {}, file: {}", e.getMessage(), file.getName());
+            return null;
+        }
+    }
+
+    public static File epubCoverImage(Book book, String outputPath) {
+        // 获取封面图片
+        Resource coverImage = book.getCoverImage();
+        if (coverImage != null) {
+            File coverImageFile = getCoverPath(outputPath);
+            try (InputStream coverImageInputStream = coverImage.getInputStream();
+                 OutputStream coverImageOutput = new FileOutputStream(coverImageFile)) {
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = coverImageInputStream.read(buffer)) != -1) {
+                    coverImageOutput.write(buffer, 0, bytesRead);
+                }
+                return coverImageFile;
+            } catch (Throwable e) {
+                log.warn("epub 文件封面图像生成失败: {}", e.getMessage());
+                return null;
+            }
+        }
+        log.warn("epub 文件封面图像生成失败: 未找到封面图片");
+        return null;
     }
 
 }
