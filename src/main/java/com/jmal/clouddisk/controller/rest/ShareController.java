@@ -191,6 +191,15 @@ public class ShareController {
         return thumbnail(id, showCover, request);
     }
 
+    @Operation(summary = "获取dwg文件对应的mxweb文件")
+    @GetMapping("/public/s/view/mxweb/{fileId}/{shareId}")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseEntity<Object> publicGetMxweb(HttpServletRequest request, @PathVariable String shareId, @PathVariable String fileId) {
+        validShare(request, shareId);
+        Optional<FileDocument> file = fileService.getMxweb(fileId);
+        return file.map(fileService::getObjectResponseEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+    }
+
     @Operation(summary = "显示缩略图")
     @GetMapping("/public/s/view/thumbnail/{filename}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
