@@ -243,6 +243,15 @@ public class FileController {
         }
     }
 
+    @Operation(summary = "获取dwg文件对应的mxweb文件")
+    @GetMapping("/view/mxweb")
+    @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseEntity<Object> getMxweb(@RequestParam String id) {
+        Optional<FileDocument> file = fileService.getMxweb(id);
+        return file.map(fileService::getObjectResponseEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+    }
+
     @Operation(summary = "显示缩略图")
     @GetMapping("/view/thumbnail")
     @Permission("cloud:file:list")

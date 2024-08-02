@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.ocr.OcrService;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.FileContentUtil;
 import lombok.RequiredArgsConstructor;
@@ -64,7 +65,7 @@ public class ReadContentService {
         String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
         // 生成封面图像
         if (StrUtil.isNotBlank(fileId)) {
-            String outputName = file.getName() + ".mxweb";
+            String outputName = file.getName() + Constants.MXWEB_SUFFIX;
             FileContentUtil.dwgConvert(file.getAbsolutePath(), videoProcessService.getVideoCacheDir(username, fileId), outputName);
         }
         return null;

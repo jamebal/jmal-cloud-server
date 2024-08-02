@@ -650,6 +650,20 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
+    public Optional<FileDocument> getMxweb(String id) {
+        FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
+        if (fileDocument != null)  {
+            String username = userService.getUserNameById(fileDocument.getUserId());
+            File file = Paths.get(videoProcessService.getVideoCacheDir(username,id), fileDocument.getName() + Constants.MXWEB_SUFFIX).toFile();
+            if (file.exists()) {
+                fileDocument.setContent(FileUtil.readBytes(file));
+                return Optional.of(fileDocument);
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
     public Optional<FileDocument> coverOfMedia(String id, String username) throws CommonException {
         FileDocument fileDocument = getFileDocumentById(id);
         if (fileDocument != null && fileDocument.getContent() != null) {

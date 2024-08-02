@@ -186,6 +186,13 @@ public interface IFileService {
     Optional<FileDocument> thumbnail(String id, Boolean showCover);
 
     /**
+     * 获取dwg文件对应的mxweb文件
+     * @param id fileId
+     * @return FileDocument
+     */
+    Optional<FileDocument> getMxweb(String id);
+
+    /**
      * 显示缩略图(媒体文件封面)
      * @param id fileId
      * @param username username
