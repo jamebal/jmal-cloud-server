@@ -119,6 +119,7 @@ public class MultipartUpload {
         }
         PathUtil.move(file, outputFile, true);
         uploadResponse.setUpload(true);
+        CaffeineUtil.setUploadFileCache(outputFile.toFile().getAbsolutePath());
         commonFileService.createFile(upload.getUsername(), outputFile.toFile(), null, null);
         return uploadResponse;
     }

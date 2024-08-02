@@ -7,6 +7,7 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.BucketInfo;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -22,7 +23,13 @@ import java.util.concurrent.locks.Lock;
  * @author jmal
  */
 @Component
+@Slf4j
 public class CaffeineUtil {
+
+    /**
+     * 上传文件缓存, 用于判断文件是否刚刚上传, 避免一些重复的操作
+     */
+    public static final Cache<String, Long> UPLOAD_FILE_CACHE = Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.SECONDS).build();
 
     /**
      * 缩略图请求缓存
@@ -266,6 +273,18 @@ public class CaffeineUtil {
             }
         }
         return null;
+    }
+
+    public static Boolean hasUploadFileCache(String key) {
+        Long uploadTime = UPLOAD_FILE_CACHE.getIfPresent(key);
+        if (uploadTime == null) {
+            return false;
+        }
+        return System.currentTimeMillis() - uploadTime > 5;
+    }
+
+    public static void setUploadFileCache(String key) {
+        UPLOAD_FILE_CACHE.put(key, System.currentTimeMillis());
     }
 
     public static Boolean hasThumbnailRequestCache(String id) {

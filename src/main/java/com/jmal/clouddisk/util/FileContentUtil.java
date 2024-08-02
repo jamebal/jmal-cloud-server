@@ -67,32 +67,25 @@ public class FileContentUtil {
 
     /**
      * 将dwg文件转换为mxweb文件的命令
+     *
      * @param sourceFile dwg文件绝对路径
      * @param outputPath 输出路径
      * @param outputFile 输出文件名
-     * @return ProcessBuilder
      */
-    public static File dwgConvert(String sourceFile, String outputPath, String outputFile) {
+    public static void dwgConvert(String sourceFile, String outputPath, String outputFile) {
         if (!Paths.get(mxcadassemblyPath).toFile().exists()) {
-            return null;
+            return;
         }
         try {
             ProcessBuilder processBuilder = dwgConvertCommand(sourceFile, outputPath, outputFile);
             Process process = processBuilder.start();
             outputPath = getWaitingForResults(outputPath, processBuilder, process, 60);
-            // 打印命令 用空格连接
-            String command = String.join(" ", processBuilder.command());
-            log.info("dwg文件转换 执行成功, command: \r\n{}", command);
             if (outputPath != null) {
-                return new File(outputFile);
+                log.info("dwg文件转换成功, outputPath: {}", outputPath);
             }
-        } catch (InterruptedException e) {
-            log.error(e.getMessage(), e);
-            return null;
-        } catch (IOException e) {
+        } catch (InterruptedException | IOException e) {
             log.error(e.getMessage(), e);
         }
-        return null;
     }
 
     /**
