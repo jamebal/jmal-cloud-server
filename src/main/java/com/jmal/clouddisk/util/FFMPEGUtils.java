@@ -42,7 +42,11 @@ public class FFMPEGUtils {
      * @return outputPath
      */
     public static String getWaitingForResults(String outputPath, ProcessBuilder processBuilder, Process process) throws IOException, InterruptedException {
-        boolean finished = process.waitFor(12, TimeUnit.SECONDS);
+        return getWaitingForResults(outputPath, processBuilder, process, 12);
+    }
+
+    public static String getWaitingForResults(String outputPath, ProcessBuilder processBuilder, Process process, int waitSeconds) throws InterruptedException, IOException {
+        boolean finished = process.waitFor(waitSeconds, TimeUnit.SECONDS);
         try {
             log.debug("finished: {}", finished);
             log.debug("exitValue: {}", process.exitValue());

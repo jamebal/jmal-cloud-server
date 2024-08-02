@@ -341,18 +341,23 @@ public class LuceneService {
             if (!file.isFile() || file.length() < 1) {
                 return null;
             }
-            String type = FileTypeUtil.getType(file);
-            if ("pdf".equals(type)) {
-                return readContentService.readPdfContent(file, fileId);
-            }
-            if ("epub".equals(type)) {
-                return readContentService.readEpubContent(file, fileId);
-            }
-            if ("ppt".equals(type) || "pptx".equals(type)) {
-                return readContentService.readPPTContent(file);
-            }
-            if ("doc".equals(type) || "docx".equals(type)) {
-                return readContentService.readWordContent(file);
+            String type = FileTypeUtil.getType(file).toLowerCase();
+            switch (type) {
+                case "pdf" -> {
+                    return readContentService.readPdfContent(file, fileId);
+                }
+                case "dwg" -> {
+                    return readContentService.dwg2mxweb(file, fileId);
+                }
+                case "epub" -> {
+                    return readContentService.readEpubContent(file, fileId);
+                }
+                case "ppt", "pptx" -> {
+                    return readContentService.readPPTContent(file);
+                }
+                case "doc", "docx" -> {
+                    return readContentService.readWordContent(file);
+                }
             }
             if (fileProperties.getSimText().contains(type)) {
                 String charset = UniversalDetector.detectCharset(file);

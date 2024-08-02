@@ -4,7 +4,6 @@ import cn.hutool.core.codec.Base64;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
@@ -477,7 +476,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             if (!userService.getDisabledWebp(userLoginHolder.getUserId()) && (!"ico".equals(FileUtil.getSuffix(newFile)))) {
                 fileName += Constants.POINT_SUFFIX_WEBP;
             }
-            createFile(username, newFile);
+            uploadFile(username, newFile);
             return baseUrl + Paths.get("/file", username, filepath, fileName);
         } catch (IOException e) {
             throw new CommonException(ExceptionType.FAIL_UPLOAD_FILE.getCode(), ExceptionType.FAIL_UPLOAD_FILE.getMsg());
@@ -645,6 +644,20 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 }
             }
             return Optional.of(fileDocument);
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<FileDocument> getMxweb(String id) {
+        FileDocument fileDocument = mongoTemplate.findById(id, FileDocument.class, COLLECTION_NAME);
+        if (fileDocument != null)  {
+            String username = userService.getUserNameById(fileDocument.getUserId());
+            File file = Paths.get(videoProcessService.getVideoCacheDir(username,id), fileDocument.getName() + Constants.MXWEB_SUFFIX).toFile();
+            if (file.exists()) {
+                fileDocument.setContent(FileUtil.readBytes(file));
+                return Optional.of(fileDocument);
+            }
         }
         return Optional.empty();
     }
@@ -1082,6 +1095,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         return createFile(username, file, null, null);
     }
 
+    private String uploadFile(String username, File file) {
+        CaffeineUtil.setUploadFileCache(file.getAbsolutePath());
+        return createFile(username, file, null, null);
+    }
+
     @Override
     public void updateFile(String username, File file) {
         modifyFile(username, file);
@@ -1285,7 +1303,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         fileIntroVO.setPath(resPath);
         fileIntroVO.setIsFolder(isFolder);
         fileIntroVO.setSuffix(FileUtil.extName(fileName));
-        String fileId = createFile(username, path.toFile());
+        String fileId = uploadFile(username, path.toFile());
         fileIntroVO.setId(fileId);
         return ResultUtil.success(fileIntroVO);
     }
@@ -1484,7 +1502,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         // 复制文件
         PathUtil.copyFile(fromFilePath, toFilePath);
         // 保存文件信息
-        createFile(username, toFilePath.toFile());
+        uploadFile(username, toFilePath.toFile());
         return ResultUtil.success();
     }
 
@@ -1626,7 +1644,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     private void saveFileDocument(FileDocument fileDocument) {
         File file = getFileByFileDocument(fileDocument);
         String username = userService.getUserNameById(fileDocument.getUserId());
-        createFile(username, file);
+        uploadFile(username, file);
     }
 
     private ResponseResult<Object> ossCopy(FileDocument fileDocumentFrom, FileDocument fileDocumentTo, String from, String to, boolean isMove) {
@@ -1718,7 +1736,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             upload.setContentType(file.getContentType());
             upload.setSuffix(FileUtil.extName(filename));
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
-            createFile(upload.getUsername(), chunkFile);
+            uploadFile(upload.getUsername(), chunkFile);
             uploadResponse.setUpload(true);
         } else {
             // 上传分片
@@ -1780,7 +1798,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (!dir.exists()) {
             FileUtil.mkdir(dir);
         }
-        return ResultUtil.success(createFile(upload.getUsername(), dir));
+        return ResultUtil.success(uploadFile(upload.getUsername(), dir));
     }
 
     @Override
@@ -1898,12 +1916,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public ResponseResult<Object> delete(String username, String currentDirectory, List<String> fileIds, String operator, boolean sweep) {
-        TimeInterval interval = new TimeInterval();
         username = deleteOss(username, currentDirectory, fileIds, operator);
         if (username == null) {
             return ResultUtil.success();
         }
-        log.info("deleteOss: {}ms", interval.intervalMs());
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIds));
         List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
@@ -1951,7 +1967,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         } else {
             operationTips.setSuccess(false);
         }
-        log.info("deleteFile: {}ms", interval.intervalMs());
         pushMessage(username, operationTips, Constants.OPERATION_TIPS);
         return ResultUtil.success();
     }

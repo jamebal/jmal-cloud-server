@@ -299,6 +299,10 @@ public class CommonFileService {
      * @return fileId
      */
     public String createFile(String username, File file, String userId, Boolean isPublic) {
+        if (CaffeineUtil.hasUploadFileCache(file.getAbsolutePath())) {
+            return null;
+        }
+        log.info("createFile");
         if (CharSequenceUtil.isBlank(username)) {
             return null;
         }

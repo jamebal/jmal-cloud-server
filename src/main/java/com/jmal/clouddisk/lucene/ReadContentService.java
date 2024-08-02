@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.ocr.OcrService;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.FileContentUtil;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +54,22 @@ public class ReadContentService {
     public final TaskProgressService taskProgressService;
 
     public final VideoProcessService videoProcessService;
+
+    /**
+     * 将 DWG 文件转换为 MXWeb 文件
+     * @param file 文件
+     * @param fileId 文件 ID
+     * @return MXWeb 文件路径
+     */
+    public String dwg2mxweb(File file, String fileId) {
+        String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
+        // 生成封面图像
+        if (StrUtil.isNotBlank(fileId)) {
+            String outputName = file.getName() + Constants.MXWEB_SUFFIX;
+            FileContentUtil.dwgConvert(file.getAbsolutePath(), videoProcessService.getVideoCacheDir(username, fileId), outputName);
+        }
+        return null;
+    }
 
     public String readPdfContent(File file, String fileId) {
         try (PDDocument document = Loader.loadPDF(new RandomAccessReadBufferedFile(file))) {
