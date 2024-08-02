@@ -16,17 +16,17 @@ RUN apt-get update && \
     dpkg -i jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb || apt-get install -fy && \
     # 安装 mxcad
     unzip -o /jmalcloud/mxcad_x86_64.zip -d /usr/local/ && \
-         rm -f /jmalcloud/mxcad_x86_64.zip && \
-         rm -rf /usr/local/__MACOSX/ && \
-         mv /usr/local/x86_64/ /usr/local/mxcad && \
-         chmod -R 777 /usr/local/mxcad/mxcadassembly && \
-         chmod -R 777 ./mx/so/* && \
-         cp -r -f ./mx/locale /usr/local/share/locale && \
+    mv /usr/local/x86_64/ /usr/local/mxcad && \
+    chmod -R 777 /usr/local/mxcad/mxcadassembly && \
+    chmod -R 777 /usr/local/mxcad/mx/so/* && \
+    cp -r -f /usr/local/mxcad/mx/locale /usr/local/share/locale && \
     # 卸载 wget 并清理下载的文件和APT缓存
     apt-get remove -y wget unzip && \
     apt-get clean && \
     rm -f jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    rm -f /jmalcloud/mxcad_x86_64.zip && \
+    rm -rf /usr/local/__MACOSX/
 
 # 将/usr/lib/jellyfin-ffmpeg添加到PATH
 ENV PATH=/usr/lib/jellyfin-ffmpeg:$PATH
