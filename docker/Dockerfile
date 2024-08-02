@@ -26,7 +26,7 @@ RUN apt-get update && \
     rm -f jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb && \
     rm -rf /var/lib/apt/lists/* && \
     rm -f /jmalcloud/mxcad_x86_64.zip && \
-    rm -rf /usr/local/__MACOSX/ && \
+    rm -rf /usr/local/__MACOSX/
 
 # 将/usr/lib/jellyfin-ffmpeg添加到PATH
 ENV PATH=/usr/lib/jellyfin-ffmpeg:$PATH
