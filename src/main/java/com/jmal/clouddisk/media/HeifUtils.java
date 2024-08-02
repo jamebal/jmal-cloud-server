@@ -88,7 +88,7 @@ public class HeifUtils {
         return processBuilder;
     }
 
-    private static StringBuilder printProcessInfo(Process process) throws IOException {
+    public static StringBuilder printProcessInfo(Process process) throws IOException {
         StringBuilder output = new StringBuilder();
         try (InputStream inputStream = process.getInputStream();
              BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {

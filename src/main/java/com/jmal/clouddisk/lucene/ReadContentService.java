@@ -54,6 +54,22 @@ public class ReadContentService {
 
     public final VideoProcessService videoProcessService;
 
+    /**
+     * 将 DWG 文件转换为 MXWeb 文件
+     * @param file 文件
+     * @param fileId 文件 ID
+     * @return MXWeb 文件路径
+     */
+    public String dwg2mxweb(File file, String fileId) {
+        String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
+        // 生成封面图像
+        if (StrUtil.isNotBlank(fileId)) {
+            String outputName = file.getName() + ".mxweb";
+            FileContentUtil.dwgConvert(file.getAbsolutePath(), videoProcessService.getVideoCacheDir(username, fileId), outputName);
+        }
+        return null;
+    }
+
     public String readPdfContent(File file, String fileId) {
         try (PDDocument document = Loader.loadPDF(new RandomAccessReadBufferedFile(file))) {
 
