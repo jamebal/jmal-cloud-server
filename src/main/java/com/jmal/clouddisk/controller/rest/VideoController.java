@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.controller.rest;
 
-import cn.hutool.core.io.FileUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
