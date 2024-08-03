@@ -302,7 +302,6 @@ public class CommonFileService {
         if (CaffeineUtil.hasUploadFileCache(file.getAbsolutePath())) {
             return null;
         }
-        log.info("createFile");
         if (CharSequenceUtil.isBlank(username)) {
             return null;
         }
@@ -342,7 +341,7 @@ public class CommonFileService {
                 Update update = new Update();
                 updateExifInfo(file, fileExists, contentType, suffix, update);
                 updateVideoInfo(file, fileExists, contentType, update);
-                updateOtherInfo(fileExists, contentType, update);
+                updateOtherInfo(fileExists, contentType, suffix, update);
                 if (!update.getUpdateObject().isEmpty()) {
                     mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
                 }
@@ -387,9 +386,12 @@ public class CommonFileService {
         return fileId;
     }
 
-    private void updateOtherInfo(FileDocument fileExists, String contentType, Update update) {
+    private void updateOtherInfo(FileDocument fileExists, String contentType, String suffix, Update update) {
         if (!contentType.equals(fileExists.getContentType())) {
             update.set(Constants.CONTENT_TYPE, contentType);
+        }
+        if (StrUtil.isNotBlank(suffix) && !suffix.equals(fileExists.getSuffix())) {
+            update.set(Constants.SUFFIX, suffix);
         }
     }
 
@@ -416,9 +418,6 @@ public class CommonFileService {
         if (fileExists.getExif() == null || RebuildIndexTaskService.isSyncFile()) {
             // 更新图片Exif信息
             update.set("exif", ImageExifUtil.getExif(file));
-        }
-        if (StrUtil.isNotBlank(suffix) && !suffix.equals(fileExists.getSuffix())) {
-            update.set(Constants.SUFFIX, suffix);
         }
     }
 
