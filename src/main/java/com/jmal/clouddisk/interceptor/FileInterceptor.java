@@ -332,7 +332,7 @@ public class FileInterceptor implements HandlerInterceptor {
         if (!CharSequenceUtil.isBlank(fileName)) {
             response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + ContentDisposition.builder("attachment")
                     .filename(UriUtils.encode(fileName, StandardCharsets.UTF_8)));
-            response.setHeader(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(FileUtil.extName(fileName)));
+            response.setHeader(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(MyFileUtils.extName(fileName)));
         }
         if (img != null) {
             response.setHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(img.length));

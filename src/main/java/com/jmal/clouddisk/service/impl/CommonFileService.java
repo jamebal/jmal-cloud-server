@@ -313,7 +313,7 @@ public class CommonFileService {
             }
         }
         String fileName = file.getName();
-        String suffix = FileUtil.extName(fileName);
+        String suffix = MyFileUtils.extName(fileName);
         String contentType = getContentType(file, FileContentTypeUtils.getContentType(suffix));
         if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE)) {
             // 换成webp格式的图片
@@ -416,6 +416,9 @@ public class CommonFileService {
         if (fileExists.getExif() == null || RebuildIndexTaskService.isSyncFile()) {
             // 更新图片Exif信息
             update.set("exif", ImageExifUtil.getExif(file));
+        }
+        if (StrUtil.isNotBlank(suffix) && !suffix.equals(fileExists.getSuffix())) {
+            update.set(Constants.SUFFIX, suffix);
         }
     }
 
@@ -950,7 +953,7 @@ public class CommonFileService {
         query.addCriteria(Criteria.where("path").is(relativePath));
         query.addCriteria(Criteria.where("name").is(fileName));
 
-        String suffix = FileUtil.extName(fileName);
+        String suffix = MyFileUtils.extName(fileName);
         String contentType = FileContentTypeUtils.getContentType(suffix);
         // 文件是否存在
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);

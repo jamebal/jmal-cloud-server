@@ -1,12 +1,12 @@
 package com.jmal.clouddisk.oss;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.hutool.core.io.FileUtil;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.oss.web.WebOssCommonService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
+import com.jmal.clouddisk.util.MyFileUtils;
 import lombok.Data;
 
 import java.nio.file.Path;
@@ -54,7 +54,7 @@ public class FileInfo {
         fileIntroVO.setName(fileName);
         fileIntroVO.setPath(WebOssCommonService.getPath(key, rootName));
         fileIntroVO.setSize(size);
-        String suffix = FileUtil.extName(fileName);
+        String suffix = MyFileUtils.extName(fileName);
         fileIntroVO.setSuffix(suffix);
         fileIntroVO.setMd5(eTag);
         fileIntroVO.setContentType(FileContentTypeUtils.getContentType(suffix));

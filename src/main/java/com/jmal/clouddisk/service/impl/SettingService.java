@@ -12,6 +12,7 @@ import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.MongoUtil;
+import com.jmal.clouddisk.util.MyFileUtils;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -71,7 +72,7 @@ public class SettingService {
      * @param file logo文件
      */
     public ResponseResult<Object> uploadLogo(MultipartFile file) {
-        String filename = "logo-" + System.currentTimeMillis() + "." + FileUtil.extName(file.getOriginalFilename());
+        String filename = "logo-" + System.currentTimeMillis() + "." + MyFileUtils.extName(file.getOriginalFilename());
         File dist = new File(fileProperties.getRootDir() + File.separator + filename);
         try {
             String oldFilename = null;

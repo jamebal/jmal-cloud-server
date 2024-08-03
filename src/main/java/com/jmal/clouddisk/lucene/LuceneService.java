@@ -308,7 +308,7 @@ public class LuceneService {
 
     private void setType(File file, FileIndex fileIndex) {
         String fileName = file.getName();
-        String suffix = FileUtil.extName(fileName);
+        String suffix = MyFileUtils.extName(fileName);
         fileIndex.setType(Constants.OTHER);
         if (StrUtil.isBlank(suffix)) {
             fileIndex.setType(Constants.OTHER);
@@ -380,7 +380,7 @@ public class LuceneService {
             if (!file.isFile() || file.length() < 1) {
                 return false;
             }
-            String type = FileTypeUtil.getType(file);
+            String type = FileTypeUtil.getType(file).toLowerCase();
             if (MyFileUtils.hasContentFile(type)) {
                 return true;
             }

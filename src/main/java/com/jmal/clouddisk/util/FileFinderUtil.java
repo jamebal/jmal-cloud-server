@@ -52,7 +52,7 @@ public class FileFinderUtil {
                         return true;
                     }
                     if(pathname.isFile()){
-                        String contentType = FileContentTypeUtils.getContentType(FileUtil.extName(pathname));
+                        String contentType = FileContentTypeUtils.getContentType(MyFileUtils.extName(pathname));
                         if(contentType.contains(type)){
                             return true;
                         }
