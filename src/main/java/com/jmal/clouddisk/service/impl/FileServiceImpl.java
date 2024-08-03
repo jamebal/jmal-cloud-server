@@ -598,7 +598,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         return outputStream -> {
             try (BufferedReader bufferedReader = ReaderFactory.createBufferedReader(file)) {
                 // 判断file是否为log文件
-                boolean logFile = file.length() > 0 && FileTypeUtil.getType(file).equals("log");
+                boolean logFile = file.length() > 0 && FileTypeUtil.getType(file).equalsIgnoreCase("log");
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {
                     if (logFile) {
@@ -1153,7 +1153,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             } else {
                 if (fileId.equals(destFileId)) {
                     // 解压到当前文件夹
-                    destDir = filePath.substring(0, filePath.length() - FileUtil.extName(new File(filePath)).length() - 1);
+                    destDir = filePath.substring(0, filePath.length() - MyFileUtils.extName(new File(filePath)).length() - 1);
                 } else {
                     // 其他目录
                     FileDocument dest = getById(destFileId);
@@ -1302,7 +1302,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         fileIntroVO.setUserId(userId);
         fileIntroVO.setPath(resPath);
         fileIntroVO.setIsFolder(isFolder);
-        fileIntroVO.setSuffix(FileUtil.extName(fileName));
+        fileIntroVO.setSuffix(MyFileUtils.extName(fileName));
         String fileId = uploadFile(username, path.toFile());
         fileIntroVO.setId(fileId);
         return ResultUtil.success(fileIntroVO);
@@ -1417,7 +1417,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         return Arrays.stream(fileList).map(file -> {
             FileIntroVO fileDocument = new FileIntroVO();
             String filename = file.getName();
-            String suffix = FileUtil.extName(filename);
+            String suffix = MyFileUtils.extName(filename);
             boolean isFolder = file.isDirectory();
             fileDocument.setName(filename);
             fileDocument.setIsFolder(isFolder);
@@ -1690,7 +1690,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             query.addCriteria(Criteria.where("_id").is(fileId));
             Update update = new Update();
             update.set("name", newFileName);
-            update.set(Constants.SUFFIX, FileUtil.extName(newFileName));
+            update.set(Constants.SUFFIX, MyFileUtils.extName(newFileName));
             update.set("updateDate", LocalDateTime.now(TimeUntils.ZONE_ID));
             mongoTemplate.upsert(query, update, COLLECTION_NAME);
         } else {
@@ -1734,7 +1734,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             // 保存文件信息
             upload.setInputStream(file.getInputStream());
             upload.setContentType(file.getContentType());
-            upload.setSuffix(FileUtil.extName(filename));
+            upload.setSuffix(MyFileUtils.extName(filename));
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
             uploadFile(upload.getUsername(), chunkFile);
             uploadResponse.setUpload(true);

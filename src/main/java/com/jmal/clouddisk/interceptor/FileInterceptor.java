@@ -332,7 +332,7 @@ public class FileInterceptor implements HandlerInterceptor {
         if (!CharSequenceUtil.isBlank(fileName)) {
             response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + ContentDisposition.builder("attachment")
                     .filename(UriUtils.encode(fileName, StandardCharsets.UTF_8)));
-            response.setHeader(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(FileUtil.extName(fileName)));
+            response.setHeader(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(MyFileUtils.extName(fileName)));
         }
         if (img != null) {
             response.setHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(img.length));
@@ -374,9 +374,9 @@ public class FileInterceptor implements HandlerInterceptor {
             int srcHeight = bim.getHeight();
 
             // 处理质量参数
-            double quality = parseQuality(q, 0.8);
-            int width = parseDimension(w, -1);
-            int height = parseDimension(h, -1);
+            double quality = parseQuality(q);
+            int width = parseDimension(w);
+            int height = parseDimension(h);
 
             Thumbnails.Builder<? extends BufferedImage> thumbnail = Thumbnails.of(bim)
                     .outputFormat("jpg") // 指定输出格式
@@ -419,20 +419,20 @@ public class FileInterceptor implements HandlerInterceptor {
         return new byte[0];
     }
 
-    private static double parseQuality(String q, double defaultQuality) {
+    private static double parseQuality(String q) {
         try {
             double quality = Double.parseDouble(q);
-            return (quality >= 0 && quality <= 1) ? quality : defaultQuality;
+            return (quality >= 0 && quality <= 1) ? quality : 0.8;
         } catch (NumberFormatException e) {
-            return defaultQuality;
+            return 0.8;
         }
     }
 
-    private static int parseDimension(String dim, int defaultValue) {
+    private static int parseDimension(String dim) {
         try {
             return Integer.parseInt(dim);
         } catch (NumberFormatException e) {
-            return defaultValue;
+            return -1;
         }
     }
 

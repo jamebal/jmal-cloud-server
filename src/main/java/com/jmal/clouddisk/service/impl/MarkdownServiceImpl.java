@@ -492,7 +492,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         String filename = upload.getFilename();
         // 同步文档文件
         String currentDirectory = syncDocFile(upload, uploadDate, fileDocument, filename);
-        fileDocument.setSuffix(FileUtil.extName(filename));
+        fileDocument.setSuffix(MyFileUtils.extName(filename));
         fileDocument.setUserId(upload.getUserId());
         fileDocument.setUpdateDate(nowDate);
         fileDocument.setPath(currentDirectory);

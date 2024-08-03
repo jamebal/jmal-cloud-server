@@ -28,12 +28,24 @@ public class MyFileUtils {
 
     }
 
+    public static void main(String[] args) {
+        System.out.println(extName("file"));
+    }
+
+    public static String extName(File file) {
+        return FileUtil.extName(file.getName()).toLowerCase();
+    }
+
+    public static String extName(String fileName) {
+        return FileUtil.extName(fileName).toLowerCase();
+    }
+
     public static boolean hasCharset(File file) {
         try {
             if (file == null) {
                 return false;
             }
-            String suffix = FileUtil.extName(file.getName());
+            String suffix = MyFileUtils.extName(file.getName());
             String contentType = FileContentTypeUtils.getContentType(suffix);
             if (file.isDirectory()) {
                 return false;
@@ -103,7 +115,7 @@ public class MyFileUtils {
             if (file.length() == 0) {
                 return true;
             }
-            String type = FileTypeUtil.getType(file);
+            String type = FileTypeUtil.getType(file).toLowerCase();
             if (hasContentFile(type)) return true;
             return hasCharset(file);
         } catch (Exception e) {

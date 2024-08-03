@@ -1,9 +1,9 @@
 package com.jmal.clouddisk.controller.rest;
 
-import cn.hutool.core.io.FileUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
+import com.jmal.clouddisk.util.MyFileUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -38,7 +38,7 @@ public class VideoController {
         Path txtPath = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, fileProperties.getVideoTranscodeCache(), fileId, suffix);
         UrlResource videoResource = new UrlResource(txtPath.toUri());
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(FileUtil.extName(suffix)))
+                .header(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(MyFileUtils.extName(suffix)))
                 .header(HttpHeaders.CACHE_CONTROL, "max-age=600")
                 .body(videoResource);
     }

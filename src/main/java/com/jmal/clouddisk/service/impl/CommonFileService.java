@@ -302,7 +302,6 @@ public class CommonFileService {
         if (CaffeineUtil.hasUploadFileCache(file.getAbsolutePath())) {
             return null;
         }
-        log.info("createFile");
         if (CharSequenceUtil.isBlank(username)) {
             return null;
         }
@@ -313,7 +312,7 @@ public class CommonFileService {
             }
         }
         String fileName = file.getName();
-        String suffix = FileUtil.extName(fileName);
+        String suffix = MyFileUtils.extName(fileName);
         String contentType = getContentType(file, FileContentTypeUtils.getContentType(suffix));
         if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE)) {
             // 换成webp格式的图片
@@ -342,7 +341,7 @@ public class CommonFileService {
                 Update update = new Update();
                 updateExifInfo(file, fileExists, contentType, suffix, update);
                 updateVideoInfo(file, fileExists, contentType, update);
-                updateOtherInfo(fileExists, contentType, update);
+                updateOtherInfo(fileExists, contentType, suffix, update);
                 if (!update.getUpdateObject().isEmpty()) {
                     mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
                 }
@@ -387,9 +386,12 @@ public class CommonFileService {
         return fileId;
     }
 
-    private void updateOtherInfo(FileDocument fileExists, String contentType, Update update) {
+    private void updateOtherInfo(FileDocument fileExists, String contentType, String suffix, Update update) {
         if (!contentType.equals(fileExists.getContentType())) {
             update.set(Constants.CONTENT_TYPE, contentType);
+        }
+        if (StrUtil.isNotBlank(suffix) && !suffix.equals(fileExists.getSuffix())) {
+            update.set(Constants.SUFFIX, suffix);
         }
     }
 
@@ -950,7 +952,7 @@ public class CommonFileService {
         query.addCriteria(Criteria.where("path").is(relativePath));
         query.addCriteria(Criteria.where("name").is(fileName));
 
-        String suffix = FileUtil.extName(fileName);
+        String suffix = MyFileUtils.extName(fileName);
         String contentType = FileContentTypeUtils.getContentType(suffix);
         // 文件是否存在
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
