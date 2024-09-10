@@ -49,6 +49,9 @@ public class RoleService {
     @Autowired
     private IUserService userService;
 
+    @Autowired
+    private MessageUtil messageUtil;
+
     /***
      * 角色列表
      * @param queryDTO 角色查询条件
@@ -68,6 +71,11 @@ public class RoleService {
             query.addCriteria(Criteria.where("remarks").regex(queryDTO.getRemarks(), "i"));
         }
         List<RoleDTO> roleDTOList = mongoTemplate.find(query, RoleDTO.class, COLLECTION_NAME);
+        // to i18n
+        roleDTOList = roleDTOList.stream().peek(roleDTO -> {
+            roleDTO.setName(messageUtil.getMessage(roleDTO.getName()));
+            roleDTO.setRemarks(messageUtil.getMessage(roleDTO.getRemarks()));
+        }).collect(Collectors.toList());
         return ResultUtil.success(roleDTOList).setCount(count);
     }
 
