@@ -19,6 +19,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.ldap.AuthenticationException;
@@ -54,7 +56,11 @@ public class AuthServiceImpl implements IAuthService {
 
     private final IUserService userService;
 
-    private static final String LOGIN_ERROR = "用户名或密码错误";
+    private final MessageSource messageSource;
+
+    public String loginError() {
+        return messageSource.getMessage("login.error", null, LocaleContextHolder.getLocale());
+    }
 
     @PostConstruct
     private void init() {
@@ -94,14 +100,14 @@ public class AuthServiceImpl implements IAuthService {
                 // ldap登录
                 return ldapLogin(response, consumerDTO);
             }
-            return ResultUtil.error(LOGIN_ERROR);
+            return ResultUtil.error(loginError());
         } else {
             String hashPassword = consumerDO.getPassword();
             if (!CharSequenceUtil.isBlank(password) && PasswordHash.validatePassword(password, hashPassword)) {
                 return loginValidSuccess(response, consumerDTO, consumerDO);
             }
         }
-        return ResultUtil.error(LOGIN_ERROR);
+        return ResultUtil.error(loginError());
     }
 
     private static ResponseResult<Object> loginValidSuccess(HttpServletResponse response, ConsumerDTO userDTO, ConsumerDO consumerDO) {
@@ -122,7 +128,7 @@ public class AuthServiceImpl implements IAuthService {
             LdapQuery query = LdapQueryBuilder.query().where(ldapLoginName).is(consumerDTO.getUsername());
             ldapTemplate.authenticate(query, consumerDTO.getPassword());
         } catch (Exception e) {
-            return ResultUtil.error(LOGIN_ERROR);
+            return ResultUtil.error(loginError());
         }
         LdapConfigDO ldapConfigDO = mongoTemplate.findOne(new Query(), LdapConfigDO.class);
         if (ldapConfigDO != null) {
@@ -132,7 +138,7 @@ public class AuthServiceImpl implements IAuthService {
             ConsumerDO consumerDO = userService.add(consumerDTO);
             return loginValidSuccess(response, consumerDTO, consumerDO);
         }
-        return ResultUtil.error(LOGIN_ERROR);
+        return ResultUtil.error(loginError());
     }
 
     /**
@@ -163,14 +169,14 @@ public class AuthServiceImpl implements IAuthService {
     public ResponseResult<Object> validOldPass(String userId, String password) {
         ConsumerDO user = mongoTemplate.findById(userId, ConsumerDO.class, UserServiceImpl.COLLECTION_NAME);
         if (user == null) {
-            return ResultUtil.warning(LOGIN_ERROR);
+            return ResultUtil.warning(loginError());
         } else {
             String userPassword = user.getPassword();
             if (!CharSequenceUtil.isBlank(password) && PasswordHash.validatePassword(password, userPassword)) {
                 return ResultUtil.success();
             }
         }
-        return ResultUtil.warning(LOGIN_ERROR);
+        return ResultUtil.warning(loginError());
     }
 
     @Override

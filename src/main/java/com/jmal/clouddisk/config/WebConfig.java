@@ -2,15 +2,20 @@ package com.jmal.clouddisk.config;
 
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.interceptor.FileInterceptor;
+import com.jmal.clouddisk.interceptor.HeaderLocaleChangeInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.*;
+import org.springframework.web.servlet.i18n.CookieLocaleResolver;
 
 import java.io.File;
+import java.util.Locale;
 
 /**
  * WebConfig
@@ -33,6 +38,7 @@ public class WebConfig implements WebMvcConfigurer {
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(localeChangeInterceptor());
 		registry.addInterceptor(authInterceptor).addPathPatterns("/**").
 				excludePathPatterns("/login/**", "/public/**", "/articles/**", "/error/**", "/file/**" , "/files/**","/swagger-ui/**");
         registry.addInterceptor(fileInterceptor).addPathPatterns("/file/**").addPathPatterns("/files/**");
@@ -69,4 +75,17 @@ public class WebConfig implements WebMvcConfigurer {
         // configurer.setDefaultTimeout(3000);
         WebMvcConfigurer.super.configureAsyncSupport(configurer);
     }
+
+    @Bean
+    public LocaleResolver localeResolver() {
+        CookieLocaleResolver resolver = new CookieLocaleResolver("locale");
+        resolver.setDefaultLocale(Locale.US);
+        return resolver;
+    }
+
+    @Bean
+    public HeaderLocaleChangeInterceptor localeChangeInterceptor() {
+        return new HeaderLocaleChangeInterceptor();
+    }
+
 }
