@@ -26,7 +26,7 @@ public class MenuDTO implements Comparable<MenuDTO>{
     @Schema(name = "parentId", title = "父级菜单Id")
     String parentId;
     @NotNull(message = "菜单名称不能为空")
-    @Schema(name = "name", title = "菜单名称", required = true)
+    @Schema(name = "name", title = "菜单名称", requiredMode = Schema.RequiredMode.REQUIRED)
     String name;
     @Schema(name = "authority", title = "权限标识")
     String authority;
@@ -37,13 +37,13 @@ public class MenuDTO implements Comparable<MenuDTO>{
     @Schema(name = "icon", title = "菜单图标")
     String icon;
     @NotNull(message = "排序号不能为空")
-    @Schema(name = "sortNumber", title = "排序号", required = true)
+    @Schema(name = "sortNumber", title = "排序号", requiredMode = Schema.RequiredMode.REQUIRED)
     Integer sortNumber;
     @NotNull(message = "菜单类型不能为空")
-    @Schema(name = "menuType", title = "菜单类型 0:菜单，1:按钮", required = true)
+    @Schema(name = "menuType", title = "菜单类型 0:菜单，1:按钮", requiredMode = Schema.RequiredMode.REQUIRED)
     Integer menuType;
     @NotNull(message = "是否隐藏不能为空")
-    @Schema(name = "hide", title = "是否隐藏", required = true)
+    @Schema(name = "hide", title = "是否隐藏", requiredMode = Schema.RequiredMode.REQUIRED)
     Boolean hide;
     /***
      * 子菜单

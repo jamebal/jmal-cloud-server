@@ -11,16 +11,11 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.util.CaffeineUtil;
-import com.jmal.clouddisk.util.PasswordHash;
-import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.*;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.ldap.AuthenticationException;
@@ -56,10 +51,10 @@ public class AuthServiceImpl implements IAuthService {
 
     private final IUserService userService;
 
-    private final MessageSource messageSource;
+    private final MessageUtil messageUtil;
 
     public String loginError() {
-        return messageSource.getMessage("login.error", null, LocaleContextHolder.getLocale());
+        return messageUtil.getMessage("login.error");
     }
 
     @PostConstruct
