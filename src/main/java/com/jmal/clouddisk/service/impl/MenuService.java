@@ -9,14 +9,12 @@ import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.MenuDTO;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.util.MongoUtil;
-import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
-import com.jmal.clouddisk.util.TimeUntils;
+import com.jmal.clouddisk.util.*;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -29,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * @Description 菜单管理
@@ -49,6 +48,9 @@ public class MenuService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
+
+    @Autowired
+    private MessageUtil messageUtil;
 
     @PostConstruct
     public void init() {
@@ -98,9 +100,11 @@ public class MenuService {
             query.addCriteria(Criteria.where("component").regex(queryDTO.getPath(), "i"));
         }
         List<MenuDO> menuDOList = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME);
+        Locale locale = LocaleContextHolder.getLocale();
         List<MenuDTO> menuDTOList = menuDOList.parallelStream().map(menuDO -> {
             MenuDTO menuDTO = new MenuDTO();
             BeanUtils.copyProperties(menuDO, menuDTO);
+            menuDTO.setName(messageUtil.getMessage(menuDO.getName(), locale));
             return menuDTO;
         }).toList();
         return getSubMenu(null, menuDTOList);
