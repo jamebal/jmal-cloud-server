@@ -114,6 +114,12 @@
                             img.on('load', function () {
                                 img.removeClass("lazy");
                             })
+                            if (!img.parent().is("a")) {
+                                new Viewer(img.get(0), {
+                                    navbar: false,
+                                    toolbar: false
+                                });
+                            }
                             observer.unobserve(entry.target);
                         }
                     });
