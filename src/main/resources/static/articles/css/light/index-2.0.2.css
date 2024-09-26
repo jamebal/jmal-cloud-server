@@ -1378,3 +1378,14 @@ code::-webkit-scrollbar {
         max-width: 1200px;
     }
 }
+
+img.lazy {
+    opacity: 1;
+    filter: blur(20px);
+    transition: opacity 0.5s ease-out, filter 0.5s ease-out;
+}
+
+img:not(.lazy) {
+    opacity: 1;
+    filter: none;
+}
