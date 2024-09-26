@@ -1,6 +1,6 @@
 <div xmlns:th="http://www.thymeleaf.org">
     <div id="body">
-        <div th:if="${markdown.size > 15000}" id="wrap-mask"><div class="boxLoading"></div></div>
+        <div th:if="${markdown.size > 10000}" id="wrap-mask"><div class="boxLoading"></div></div>
         <div class="article-header">
             <div class="article-background"></div>
             <div class="lazyload-container" th:style="${markdown.cover !=null ? 'background-image: url('+markdown.cover+'?o=thumbnail)': 'background-image: url('+ setting.backgroundSite+'?o=thumbnail)'}">
@@ -103,46 +103,80 @@
                 addUpdateTime()
             }
 
-            /***
-             * 初始化markdown解析器
-             */
-            Vditor.preview(document.getElementById('preview'),
-                [[${markdown.contentText}]], {
-                    hljs: {
-                        // 是否显示行号
-                        lineNumber: window.innerWidth > 768,
-                        style: 'native'
-                    },
-                    theme: {
-                        current: 'light'
-                    },
-                    cdn: `${commonSiteUrl}/vditor@3.9.3`,
-                    transform(htmlStr) {
-                        renderContents($(htmlStr))
-                        return htmlStr;
-                    },
-                    after() {
-                        setContentTheme()
-                        // 添加更新时间
-                        if(!isAlonePage){
-                            addUpdateTime()
-                            // 添加文章尾部信息
-                            document.getElementById('preview').append(document.getElementById('article_tail'))
+            let lazyImages = $("#preview img");
+
+            if ("IntersectionObserver" in window) {
+                let observer = new IntersectionObserver(function(entries, observer) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            let img = $(entry.target);
+                            img.attr("src", img.data("src"));
+                            img.on('load', function () {
+                                img.removeClass("lazy");
+                            })
+                            observer.unobserve(entry.target);
                         }
-                        setTimeout(function (){
-                            // 隐藏加载动画
-                            $('#wrap-mask').hide()
-                            // 外部连接使用新标签打开
-                            updateLink()
-                        }, 0)
-                        justLoading = true
-                        setTimeout(function (){
-                            justLoading = false
-                            keepTocVisible()
-                        }, 800)
-                        contentAfter()
-                    }
-                })
+                    });
+                });
+                lazyImages.each(function() {
+                    observer.observe(this);
+                });
+            } else {
+                // Fallback for browsers without IntersectionObserver support
+                function lazyLoad() {
+                    lazyImages.each(function() {
+                        let img = $(this);
+                        if (img.offset().top <= $(window).scrollTop() + $(window).height() && img.offset().top + img.height() >= $(window).scrollTop()) {
+                            img.attr("src", img.data("src"));
+                            img.on('load', function () {
+                                img.removeClass("lazy");
+                            })
+                        }
+                    });
+                }
+
+                $(window).on("scroll resize orientationchange", lazyLoad);
+                lazyLoad();
+            }
+
+            const previewElement = document.getElementById('preview')
+            Vditor.codeRender(previewElement);
+            Vditor.highlightRender({"enable":true,"lineNumber":true,"defaultLang":"","style":"github"}, previewElement, vditorResource);
+            Vditor.mathRender(previewElement, {
+                cdn: vditorResource,
+                math: {"engine":"KaTeX","inlineDigit":false,"macros":{}},
+            });
+            Vditor.mermaidRender(previewElement, vditorResource, 'classic');
+            Vditor.markmapRender(previewElement, vditorResource, 'classic');
+            Vditor.flowchartRender(previewElement, vditorResource);
+            Vditor.graphvizRender(previewElement, vditorResource);
+            Vditor.chartRender(previewElement, vditorResource, 'classic');
+            Vditor.mindmapRender(previewElement, vditorResource, 'classic');
+            Vditor.abcRender(previewElement, vditorResource);
+            Vditor.mediaRender(previewElement);
+            Vditor.speechRender(previewElement);
+
+            // 渲染目录
+            renderContents()
+
+            setContentTheme()
+            // 添加更新时间
+            if(!isAlonePage){
+                // 添加文章尾部信息
+                document.getElementById('preview').append(document.getElementById('article_tail'))
+            }
+            setTimeout(function (){
+                // 隐藏加载动画
+                $('#wrap-mask').hide()
+                // 外部连接使用新标签打开
+                updateLink()
+            }, 0)
+            justLoading = true
+            setTimeout(function (){
+                justLoading = false
+                keepTocVisible()
+            }, 800)
+            contentAfter()
 
             /***
              * 创建目录项
@@ -189,9 +223,10 @@
             /***
              * 渲染目录
              */
-            function renderContents(article) {
+            function renderContents() {
                 let headerList = ["H1","H2","H3","H4","H5","H6"];
                 let headers = []
+                const article = $('#preview').children()
                 article.each(function () {
                     let tagName = $(this).prop("tagName")
                     if (tagName && headerList.indexOf(tagName) > -1) {
@@ -346,7 +381,11 @@
                 }
                 const tocAction = $('.j-bj')
                 for (let i = 0; i < contents.length; i++) {
-                    if ($(window).scrollTop() > $('#' + contents[i]).offset().top - 100 || $(this).scrollTop() + $(this).height() === $(document).height()) {
+                    const contentItem = $('#' + contents[i])
+                    if (!contentItem || !contentItem.offset()) {
+                        continue
+                    }
+                    if ($(window).scrollTop() > contentItem.offset().top - 100 || $(this).scrollTop() + $(this).height() === $(document).height()) {
                         $('.j-titleList').find('li').eq(i).addClass('active').siblings('li').removeClass('active');
                         tocAction.css('top', i * 34)
                     }
@@ -504,9 +543,8 @@
             }
             function setContentTheme(){
                 const isDark = getThemeCSSName() === 'dark'
-                Vditor.setContentTheme(isDark ? 'dark': 'light', `${commonSiteUrl}/vditor@3.9.3/dist/css/content-theme`)
-                Vditor.setCodeTheme(isDark ? 'native': 'github', `${commonSiteUrl}/vditor@3.9.3`)
-                // Vditor.highlightRender({cnd: `${commonSiteUrl}/vditor@3.9.3`})
+                Vditor.setContentTheme(isDark ? 'dark': 'light', `${vditorResource}/dist/css/content-theme`)
+                Vditor.setCodeTheme(isDark ? 'native': 'github', vditorResource)
             }
 
             // common.js

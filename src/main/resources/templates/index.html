@@ -76,7 +76,8 @@
 </div>
 <iframe th:replace="~{component/footer.html}"></iframe>
 <script th:inline="javascript">
-    let commonSiteUrl = [[${setting.siteUrl}]]
+    const commonSiteUrl = [[${setting.siteUrl}]]
+    const vditorResource = `${commonSiteUrl}/vditor@3.9.3`
     $(function () {
         $('body').pjax('a[href^="' + commonSiteUrl + '"]:not(a[target="_blank"], a[not-pjax]), a[data-pjax]', {
                 container: '#content-body',

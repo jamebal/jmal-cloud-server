@@ -15,7 +15,11 @@ import com.jmal.clouddisk.service.impl.TagService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -30,25 +34,20 @@ import java.util.List;
  */
 @Controller
 @Tag(name = "文章")
+@RequiredArgsConstructor
 public class ArticlesController {
 
-    @Autowired
-    private SettingService settingService;
+    private final SettingService settingService;
 
-    @Autowired
-    private CategoryService categoryService;
+    private final CategoryService categoryService;
 
-    @Autowired
-    private TagService tagService;
+    private final TagService tagService;
 
-    @Autowired
-    private IMarkdownService fileService;
+    private final IMarkdownService fileService;
 
-    @Autowired
-    private LogService logService;
+    private final LogService logService;
 
-    @Autowired
-    IUserService userService;
+    private final IUserService userService;
 
     private static final String X_PJAX = "X-PJAX";
     private static final String X_PJAX_TRUE = "true";
@@ -133,13 +132,57 @@ public class ArticlesController {
         }
         map.addAttribute("keywords", setKeywords(articleVO));
         map.addAttribute("description", setDescription(articleVO));
+
+        modifyHtml(map, articleVO);
+
         map.addAttribute("markdown", articleVO);
+
         map.addAttribute("titleName", articleVO.getName());
         return isPjax ? "article" : "index";
     }
 
+    private static void modifyHtml(Model map, ArticleVO articleVO) {
+        // 使用 Jsoup 解析 HTML 内容
+        Document document = Jsoup.parse(articleVO.getHtml());
+        // 遍历所有 h 标签（h1, h2, h3, h4, h5, h6）
+        for (int i = 1; i <= 6; i++) {
+            Elements headers = document.select("h" + i);
+            for (Element header : headers) {
+                if (!header.hasAttr("id")) {
+                    String textContent = header.text();
+                    // 将非字母数字字符替换为下划线
+                    String idValue = textContent.replaceAll("[^a-zA-Z0-9一-龥]", "_");
+                    header.attr("id", idValue);
+                }
+            }
+        }
+
+        // default img
+        String cover = articleVO.getCover();
+        if (StrUtil.isBlank(cover)) {
+            Object object = map.getAttribute("setting");
+            if (object instanceof WebsiteSettingDTO settingDTO) {
+                cover = settingDTO.getBackgroundSite();
+            }
+        }
+
+        // 遍历所有 img 标签
+        Elements images = document.select("img");
+        for (Element img : images) {
+            if (img.hasAttr("src")) {
+                String srcValue = img.attr("src");
+                img.attr("data-src", srcValue);
+                img.addClass("lazy");
+                img.attr("src", cover);
+            }
+        }
+        // 获取修改后的 HTML 内容
+        String modifiedHtmlContent = document.html();
+        articleVO.setHtml(modifiedHtmlContent);
+    }
+
     private String setDescription(ArticleVO articleVO) {
-        if (articleVO == null || articleVO.getHtml() == null) {
+        if (articleVO.getHtml() == null) {
             return articleVO.getName();
         }
         return articleVO.getHtml().substring(0, Math.min(articleVO.getHtml().length(), 500)).replaceAll("<[^>]*>","");
