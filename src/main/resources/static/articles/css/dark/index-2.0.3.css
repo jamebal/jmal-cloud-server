@@ -212,12 +212,6 @@ body {
 }
 /*article-footer*/
 
-footer {
-    color: #c7c8cf;
-}
-footer a {
-    color: #c4c6c9;
-}
 .layui-laypage a, .layui-laypage span {
     border: 1px solid #181d27;
     background-color: #252d38;

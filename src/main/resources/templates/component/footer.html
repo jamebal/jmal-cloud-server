@@ -1,10 +1,13 @@
-<footer id="footer" class="clearfix" xmlns:th="http://www.thymeleaf.org">
-    <br><br><br>
-    <div class="copyright">
-        <p><span th:text="${setting.copyright}"></span></p>
-        <p style="margin-top: 5px;">
-            <a href="http://beian.miit.gov.cn" target="_blank" th:text="${setting.recordPermissionNum}"></a>
-            <a target="_blank" style="margin-left: 5px;" th:href="'http://www.beian.gov.cn/portal/registerSystemInfo?recordcode='+${setting.networkRecordNumber}"><img th:if="${setting.isShowBeian()}" style="width: 15px;" th:src="${setting.siteUrl} + '/img/beian.png'" /><span th:text="${setting.networkRecordNumberStr}"></span></a>
-        </p>
+<footer xmlns:th="http://www.thymeleaf.org">
+    <div id="footer" th:if="${setting.footerHtml == null || setting.footerHtml.length == 0}">
+        <br><br>
+        <div class="copyright">
+            <p><span th:text="${setting.copyright}"></span></p>
+            <p style="margin-top: 5px;">
+                <a href="http://beian.miit.gov.cn" target="_blank" th:text="${setting.recordPermissionNum}"></a>
+                <a target="_blank" style="margin-left: 5px;" th:href="'http://www.beian.gov.cn/portal/registerSystemInfo?recordcode='+${setting.networkRecordNumber}"><img th:if="${setting.isShowBeian()}" style="width: 15px;" th:src="${setting.siteUrl} + '/img/beian.png'" /><span th:text="${setting.networkRecordNumberStr}"></span></a>
+            </p>
+        </div>
     </div>
+    <div th:if="${setting.footerHtml != null && setting.footerHtml.length > 0}" th:utext="${setting.footerHtml}"></div>
 </footer>

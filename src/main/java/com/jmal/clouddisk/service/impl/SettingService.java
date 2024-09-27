@@ -158,6 +158,7 @@ public class SettingService {
         websiteSettingDTO1.setNetworkRecordNumberStr(websiteSettingDTO.getNetworkRecordNumberStr());
         websiteSettingDTO1.setNetdiskName(websiteSettingDTO.getNetdiskName());
         websiteSettingDTO1.setNetdiskLogo(websiteSettingDTO.getNetdiskLogo());
+        websiteSettingDTO1.setFooterHtml(websiteSettingDTO.getFooterHtml());
         return websiteSettingDTO1;
     }
 

@@ -1012,28 +1012,30 @@ html {
     color: #555;
     padding-right: .625rem;
 }
-/*article-footer*/
-footer, footer p {
-    font-size: .8125rem;
-}
 
 footer {
     position: relative;
     bottom: 10px;
     padding: 10px 10px 10px 10px;
     width: 100%;
-    color: rgba(68,68,68,0.65);
     margin: 0 auto;
     overflow: hidden;
     text-align: center;
     -webkit-transition: 0.5s ease all;
     transition: 0.5s ease all;
 }
-footer .copyright {
+
+/*article-footer*/
+#footer p {
+    font-size: .8125rem;
+}
+
+#footer .copyright {
+    color: #444444;
     margin-top: 16px;
     font-size: .75rem;
 }
-footer a {
+#footer a {
     color: rgba(68,68,68,0.65);
     padding: 0;
     transition: all .28s ease;
