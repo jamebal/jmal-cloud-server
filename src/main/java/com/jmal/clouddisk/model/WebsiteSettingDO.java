@@ -85,6 +85,12 @@ public class WebsiteSettingDO {
      * 公网备案号 展示文本
      */
     String networkRecordNumberStr;
+
+    /**
+     * 页脚html
+     */
+    String footerHtml;
+
     /**
      * iframe预览配置
      */
