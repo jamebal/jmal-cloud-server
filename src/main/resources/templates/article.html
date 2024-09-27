@@ -26,7 +26,7 @@
                 </span>
                     <span class="edit"  th:if="${markdown.editable != null && markdown.editable}">
                     ·
-                    <a th:href="'setting/website/manager-articles?operation=editor&id='+${markdown.id}" target="_blank">编辑</a>
+                    <a th:href="'/setting/website/manager-articles?operation=editor&id='+${markdown.id}" target="_blank">编辑</a>
                 </span>
                     <div class="meta-item-tag" th:if="${markdown.tags != null && markdown.tags.size() > 0}">
                         <svg class="icon" aria-hidden="true">
