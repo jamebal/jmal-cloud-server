@@ -234,34 +234,40 @@ public class LuceneService {
     }
 
     private void updateIndex(boolean readContent, FileIntroVO fileIntroVO) {
-        String username = userService.getUserNameById(fileIntroVO.getUserId());
-        File file = Paths.get(fileProperties.getRootDir(), username, fileIntroVO.getPath(), fileIntroVO.getName()).toFile();
-        boolean isContent = checkFileContent(file);
-        if (!readContent && isContent) {
-            pushCreateIndexContentQueue(fileIntroVO.getId());
-        }
-        if (!readContent && !isContent) {
-            rebuildIndexTaskService.incrementIndexedTaskSize();
-        }
-        FileIndex fileIndex = new FileIndex(file, fileIntroVO);
-        fileIndex.setTagName(getTagName(fileIntroVO));
-        setFileIndex(fileIndex);
-        String content = null;
-        if (readContent) {
-            content = readFileContent(file, fileIntroVO.getId());
-            if (StrUtil.isBlank(content)) {
+        try {
+            String username = userService.getUserNameById(fileIntroVO.getUserId());
+            File file = Paths.get(fileProperties.getRootDir(), username, fileIntroVO.getPath(), fileIntroVO.getName()).toFile();
+            boolean isContent = checkFileContent(file);
+            if (!readContent && isContent) {
+                pushCreateIndexContentQueue(fileIntroVO.getId());
+            }
+            if (!readContent && !isContent) {
                 rebuildIndexTaskService.incrementIndexedTaskSize();
-                updateIndexStatus(fileIntroVO, IndexStatus.INDEXED);
-                return;
+            }
+            FileIndex fileIndex = new FileIndex(file, fileIntroVO);
+            fileIndex.setTagName(getTagName(fileIntroVO));
+            setFileIndex(fileIndex);
+            String content = null;
+            if (readContent) {
+                content = readFileContent(file, fileIntroVO.getId());
+                if (StrUtil.isBlank(content)) {
+                    updateIndexStatus(fileIntroVO, IndexStatus.INDEXED);
+                    return;
+                }
+            }
+            updateIndexDocument(indexWriter, fileIndex, content);
+            if (StrUtil.isNotBlank(content)) {
+                log.debug("添加索引, filepath: {}", file.getAbsoluteFile());
+                startProcessFilesToBeIndexed();
+            }
+        } catch (Exception e) {
+            log.warn("updateIndexError: {}", e.getMessage());
+        } finally {
+            updateIndexStatus(fileIntroVO, IndexStatus.INDEXED);
+            if (readContent) {
+                rebuildIndexTaskService.incrementIndexedTaskSize();
             }
         }
-        updateIndexDocument(indexWriter, fileIndex, content);
-        if (StrUtil.isNotBlank(content)) {
-            log.debug("添加索引, filepath: {}", file.getAbsoluteFile());
-            startProcessFilesToBeIndexed();
-            rebuildIndexTaskService.incrementIndexedTaskSize();
-        }
-        updateIndexStatus(fileIntroVO, IndexStatus.INDEXED);
     }
 
     /**
@@ -716,15 +722,17 @@ public class LuceneService {
 
     private void processFileThreaded(FileIntroVO fileIntroVO) {
         long size = fileIntroVO.getSize();
+
         if (RebuildIndexTaskService.isSyncFile()) {
             // 单线程处理
             updateIndex(true, fileIntroVO);
         } else {
-            if (RebuildIndexTaskService.isSyncFile() || size > 20 * 1024 * 1024) {
-                // 大文件线程
+            // 根据文件大小选择多线程处理
+            if (size > 20 * 1024 * 1024) {
+                // 大文件，使用专门线程池处理
                 executorUpdateBigContentIndexService.execute(() -> updateIndex(true, fileIntroVO));
             } else {
-                // 小文件线程
+                // 小文件，使用普通线程池处理
                 executorUpdateContentIndexService.execute(() -> updateIndex(true, fileIntroVO));
             }
         }
