@@ -14,6 +14,8 @@ import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.ThrottleExecutor;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
@@ -261,7 +263,7 @@ public class RebuildIndexTaskService {
     public void rebuildingIndexCompleted() {
         if (!hasUnIndexedTasks() && NOT_INDEX_TASK_SIZE.get() > 0) {
             setPercentMap(100d, 100d);
-            log.debug("重建索引完成, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", INDEXED_TASK_SIZE, NOT_INDEX_TASK_SIZE);
+            log.info("重建索引完成, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", INDEXED_TASK_SIZE, NOT_INDEX_TASK_SIZE);
             restIndexedTasks();
             pushMessage();
         }
@@ -288,10 +290,10 @@ public class RebuildIndexTaskService {
         delayResetIndex();
     }
 
-    private void delayResetIndex() {
+    public void delayResetIndex() {
         synchronized (RebuildIndexTaskService.class) {
             if (throttleExecutor == null) {
-                throttleExecutor = new ThrottleExecutor(3000);
+                throttleExecutor = new ThrottleExecutor(10000);
             }
         }
         throttleExecutor.schedule(this::rebuildingIndexCompleted);
@@ -413,7 +415,7 @@ public class RebuildIndexTaskService {
             if (StrUtil.isBlank(username)) {
                 return super.visitFile(dir, attrs);
             }
-            syncFileVisitorService.execute(() -> createFile(username, dir));
+            processFile(dir, username);
             return super.preVisitDirectory(dir, attrs);
         }
 
@@ -424,21 +426,31 @@ public class RebuildIndexTaskService {
             if (StrUtil.isBlank(username)) {
                 return super.visitFile(file, attrs);
             }
-            syncFileVisitorService.execute(() -> createFile(username, file));
+            processFile(file, username);
             return super.visitFile(file, attrs);
         }
 
-        private void createFile(String username, Path file) {
+        private void processFile(Path file, String username) {
+            // 使用 RxJava 执行异步文件创建
+            Flowable.fromCallable(() -> createFile(username, file))
+                    .subscribeOn(Schedulers.io())
+                    .doOnError(e -> log.warn("Error processing file: {}", file, e))
+                    .subscribe();
+        }
+
+        private boolean createFile(String username, Path file) {
             try {
                 commonFileService.createFile(username, file.toFile(), null, null);
+                return true;
             } catch (Exception e) {
-                log.error("{}{}", e.getMessage(), file, e);
+                log.error("createFile error {}{}", e.getMessage(), file, e);
                 FileDocument fileDocument = commonFileService.getFileDocument(username, file.toFile().getAbsolutePath());
                 if (fileDocument != null) {
                     // 需要移除删除标记
                     removeDeletedFlag(Collections.singletonList(fileDocument.getId()));
                 }
             }
+            return false;
         }
     }
 
@@ -455,7 +467,7 @@ public class RebuildIndexTaskService {
 
     private void pushMessage() {
         commonFileService.pushMessage(getRecipient(null), PERCENT_MAP, RebuildIndexTaskService.MSG_SYNCED);
-        log.debug("推送消息: {}, isSyncFile: {}, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", PERCENT_MAP, isSyncFile(), INDEXED_TASK_SIZE.get(), NOT_INDEX_TASK_SIZE.get());
+        log.info("推送消息: {}, isSyncFile: {}, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", PERCENT_MAP, isSyncFile(), INDEXED_TASK_SIZE.get(), NOT_INDEX_TASK_SIZE.get());
     }
 
     private class FileCountVisitor extends SimpleFileVisitor<Path> {

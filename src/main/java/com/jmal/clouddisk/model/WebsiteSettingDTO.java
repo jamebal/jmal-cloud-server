@@ -98,6 +98,11 @@ public class WebsiteSettingDTO {
     String networkRecordNumberStr;
 
     /**
+     * 页脚html
+     */
+    String footerHtml;
+
+    /**
      * iframe预览配置
      */
     String iframe;
