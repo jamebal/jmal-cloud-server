@@ -116,7 +116,6 @@ public class RebuildIndexTaskService {
     public void init() {
         // 启动时检测是否存在菜单，不存在则初始化
         if (!menuService.existsMenu()) {
-            log.info("初始化角色、菜单！");
             menuService.initMenus();
             roleService.initRoles();
         }
@@ -263,7 +262,7 @@ public class RebuildIndexTaskService {
     public void rebuildingIndexCompleted() {
         if (!hasUnIndexedTasks() && NOT_INDEX_TASK_SIZE.get() > 0) {
             setPercentMap(100d, 100d);
-            log.info("重建索引完成, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", INDEXED_TASK_SIZE, NOT_INDEX_TASK_SIZE);
+            log.debug("重建索引完成, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", INDEXED_TASK_SIZE, NOT_INDEX_TASK_SIZE);
             restIndexedTasks();
             pushMessage();
         }
@@ -467,7 +466,7 @@ public class RebuildIndexTaskService {
 
     private void pushMessage() {
         commonFileService.pushMessage(getRecipient(null), PERCENT_MAP, RebuildIndexTaskService.MSG_SYNCED);
-        log.info("推送消息: {}, isSyncFile: {}, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", PERCENT_MAP, isSyncFile(), INDEXED_TASK_SIZE.get(), NOT_INDEX_TASK_SIZE.get());
+        log.debug("推送消息: {}, isSyncFile: {}, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", PERCENT_MAP, isSyncFile(), INDEXED_TASK_SIZE.get(), NOT_INDEX_TASK_SIZE.get());
     }
 
     private class FileCountVisitor extends SimpleFileVisitor<Path> {
