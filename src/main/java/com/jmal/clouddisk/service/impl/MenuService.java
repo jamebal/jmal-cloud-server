@@ -10,7 +10,6 @@ import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.MenuDTO;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,25 +50,6 @@ public class MenuService {
 
     @Autowired
     private MessageUtil messageUtil;
-
-    @PostConstruct
-    public void init() {
-        // 启动时更新菜单
-        ThreadUtil.execute(() -> {
-            TimeInterval timeInterval = new TimeInterval();
-            List<MenuDO> menuDOList = getMenuDOListByConfigJSON();
-            if (menuDOList.isEmpty()) return;
-            menuDOList.parallelStream().forEach(menuDO -> {
-                Query query = new Query();
-                query.addCriteria(Criteria.where("_id").is(menuDO.getId()));
-                boolean exists = mongoTemplate.exists(query, COLLECTION_NAME);
-                if (!exists) {
-                    mongoTemplate.insert(menuDO);
-                }
-            });
-            log.info("更新菜单， 耗时:{}ms", timeInterval.intervalMs());
-        });
-    }
 
     /***
      * 菜单树
@@ -263,10 +243,20 @@ public class MenuService {
      * 初始化菜单数据
      */
     public void initMenus() {
-        List<MenuDO> menuDOList = getMenuDOListByConfigJSON();
-        if (menuDOList.isEmpty()) return;
-        mongoTemplate.dropCollection(COLLECTION_NAME);
-        mongoTemplate.insertAll(menuDOList);
+        ThreadUtil.execute(() -> {
+            TimeInterval timeInterval = new TimeInterval();
+            List<MenuDO> menuDOList = getMenuDOListByConfigJSON();
+            if (menuDOList.isEmpty()) return;
+            menuDOList.parallelStream().forEach(menuDO -> {
+                Query query = new Query();
+                query.addCriteria(Criteria.where("_id").is(menuDO.getId()));
+                boolean exists = mongoTemplate.exists(query, COLLECTION_NAME);
+                if (!exists) {
+                    mongoTemplate.insert(menuDO);
+                }
+            });
+            log.info("更新菜单， 耗时:{}ms", timeInterval.intervalMs());
+        });
     }
 
     /**
