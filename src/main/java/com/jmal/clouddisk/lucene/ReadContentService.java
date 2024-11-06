@@ -237,8 +237,7 @@ public class ReadContentService {
     public String readExcelContent(File file) {
         StringBuilder content = new StringBuilder();
         try (FileInputStream fis = new FileInputStream(file)) {
-            Workbook workbook = null;
-
+            Workbook workbook;
             if (file.getName().endsWith(".xlsx")) {
                 workbook = new XSSFWorkbook(fis);
             } else if (file.getName().endsWith(".xls")) {

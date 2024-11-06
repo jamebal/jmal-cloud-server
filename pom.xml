@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.4</version>
+        <version>3.3.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.jmal</groupId>
@@ -348,7 +348,7 @@
         <dependency>
             <groupId>io.minio</groupId>
             <artifactId>minio</artifactId>
-            <version>8.5.9</version>
+            <version>8.5.13</version>
         </dependency>
         <!-- 阿里云 OSS -->
         <dependency>
@@ -366,7 +366,7 @@
         <dependency>
             <groupId>com.qcloud</groupId>
             <artifactId>cos_api</artifactId>
-            <version>5.6.213</version>
+            <version>5.6.234</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
