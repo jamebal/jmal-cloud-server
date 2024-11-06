@@ -22,10 +22,20 @@ import org.apache.pdfbox.pdmodel.PDResources;
 import org.apache.pdfbox.pdmodel.graphics.PDXObject;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.poi.hslf.usermodel.HSLFShape;
+import org.apache.poi.hslf.usermodel.HSLFSlideShow;
+import org.apache.poi.hslf.usermodel.HSLFTextShape;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.hwpf.HWPFDocument;
+import org.apache.poi.hwpf.extractor.WordExtractor;
+import org.apache.poi.openxml4j.exceptions.OLE2NotOfficeXmlFileException;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xslf.usermodel.XSLFShape;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.apache.poi.xslf.usermodel.XSLFTextShape;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.jsoup.Jsoup;
@@ -41,6 +51,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -57,7 +68,8 @@ public class ReadContentService {
 
     /**
      * 将 DWG 文件转换为 MXWeb 文件
-     * @param file 文件
+     *
+     * @param file   文件
      * @param fileId 文件 ID
      * @return MXWeb 文件路径
      */
@@ -92,7 +104,7 @@ public class ReadContentService {
                 if (!text.isEmpty()) {
                     content.append(text);
                 } else {
-                    taskProgressService.addTaskProgress(file,TaskType.OCR, pageNumber + "/" + document.getNumberOfPages());
+                    taskProgressService.addTaskProgress(file, TaskType.OCR, pageNumber + "/" + document.getNumberOfPages());
                     PDPage page = document.getPage(pageNumber - 1);
                     PDResources resources = page.getResources();
                     for (COSName xObjectName : resources.getXObjectNames()) {
@@ -131,7 +143,7 @@ public class ReadContentService {
 
             // 生成封面图像
             String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
-            if (StrUtil.isNotBlank(fileId))  {
+            if (StrUtil.isNotBlank(fileId)) {
                 File coverFile = FileContentUtil.epubCoverImage(book, videoProcessService.getVideoCacheDir(username, fileId));
                 commonFileService.updateCoverFileDocument(fileId, coverFile);
             }
@@ -158,36 +170,120 @@ public class ReadContentService {
     }
 
     public String readPPTContent(File file) {
-        try (FileInputStream fis = new FileInputStream(file.getAbsolutePath());
-             XMLSlideShow ppt = new XMLSlideShow(fis)) {
-            StringBuilder stringBuilder = new StringBuilder();
-            for (XSLFSlide slide : ppt.getSlides()) {
-                for (XSLFShape shape : slide.getShapes()) {
-                    if (shape instanceof XSLFTextShape textShape) {
-                        stringBuilder.append(textShape.getText());
+        StringBuilder stringBuilder = new StringBuilder();
+        String fileName = file.getName().toLowerCase();
+
+        try (FileInputStream fis = new FileInputStream(file)) {
+            if (fileName.endsWith(".pptx")) {
+                // 读取 .pptx 文件
+                try (XMLSlideShow pptx = new XMLSlideShow(fis)) {
+                    for (XSLFSlide slide : pptx.getSlides()) {
+                        for (XSLFShape shape : slide.getShapes()) {
+                            if (shape instanceof XSLFTextShape textShape) {
+                                stringBuilder.append(textShape.getText()).append(" ");
+                            }
+                        }
                     }
                 }
+            } else if (fileName.endsWith(".ppt")) {
+                // 读取 .ppt 文件
+                try (HSLFSlideShow ppt = new HSLFSlideShow(fis)) {
+                    for (org.apache.poi.hslf.usermodel.HSLFSlide slide : ppt.getSlides()) {
+                        for (HSLFShape shape : slide.getShapes()) {
+                            if (shape instanceof HSLFTextShape textShape) {
+                                stringBuilder.append(textShape.getText()).append(" ");
+                            }
+                        }
+                    }
+                }
+            } else {
+                throw new IllegalArgumentException("不支持的文件格式");
             }
-            return stringBuilder.toString();
         } catch (IOException e) {
-           FileContentUtil.readFailed(file, e);
+            FileContentUtil.readFailed(file, e);
         }
-        return null;
+
+        return stringBuilder.toString().trim();
     }
 
     public String readWordContent(File file) {
-        try (FileInputStream fis = new FileInputStream(file.getAbsolutePath());
-             XWPFDocument document = new XWPFDocument(fis)) {
-            StringBuilder stringBuilder = new StringBuilder();
-            List<XWPFParagraph> paragraphs = document.getParagraphs();
-            for (XWPFParagraph para : paragraphs) {
-                stringBuilder.append(para.getText());
+        try (FileInputStream fis = new FileInputStream(file)) {
+            try {
+                // 尝试读取 OOXML 格式 (.docx) 文件
+                XWPFDocument document = new XWPFDocument(fis);
+                StringBuilder stringBuilder = new StringBuilder();
+                List<XWPFParagraph> paragraphs = document.getParagraphs();
+                for (XWPFParagraph para : paragraphs) {
+                    stringBuilder.append(para.getText());
+                }
+                return stringBuilder.toString();
+            } catch (OLE2NotOfficeXmlFileException e) {
+                // 如果文件不是 OOXML 格式，尝试读取 OLE2 格式 (.doc) 文件
+                try (FileInputStream fis2 = new FileInputStream(file);
+                     POIFSFileSystem poifs = new POIFSFileSystem(fis2);
+                     HWPFDocument doc = new HWPFDocument(poifs)) {
+                    WordExtractor extractor = new WordExtractor(doc);
+                    return extractor.getText();
+                }
             }
-            return stringBuilder.toString();
         } catch (IOException e) {
             FileContentUtil.readFailed(file, e);
         }
         return null;
     }
 
+    private static final Pattern NON_NUMERIC_PATTERN = Pattern.compile("[^0-9]+");
+
+    public String readExcelContent(File file) {
+        StringBuilder content = new StringBuilder();
+        try (FileInputStream fis = new FileInputStream(file)) {
+            Workbook workbook = null;
+
+            if (file.getName().endsWith(".xlsx")) {
+                workbook = new XSSFWorkbook(fis);
+            } else if (file.getName().endsWith(".xls")) {
+                workbook = new HSSFWorkbook(fis);
+            } else {
+                throw new IllegalArgumentException("不支持的文件格式");
+            }
+
+            for (Sheet sheet : workbook) {
+                for (Row row : sheet) {
+                    for (Cell cell : row) {
+                        String cellValue = getCellValueAsString(cell);
+                        // 过滤掉数字，只保留文字
+                        if (NON_NUMERIC_PATTERN.matcher(cellValue).matches()) {
+                            content.append(cellValue).append(" ");
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            FileContentUtil.readFailed(file, e);
+        }
+        return content.toString().trim();
+    }
+
+    private String getCellValueAsString(Cell cell) {
+        if (cell == null) {
+            return "";
+        }
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue();
+            case BOOLEAN:
+                return Boolean.toString(cell.getBooleanCellValue());
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString();
+                } else {
+                    return Double.toString(cell.getNumericCellValue());
+                }
+            case FORMULA:
+                return cell.getCellFormula();
+            case BLANK:
+            default:
+                return "";
+        }
+    }
 }
