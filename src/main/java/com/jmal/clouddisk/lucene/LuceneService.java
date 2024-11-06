@@ -364,6 +364,9 @@ public class LuceneService {
                 case "doc", "docx" -> {
                     return readContentService.readWordContent(file);
                 }
+                case "xls", "xlsx" -> {
+                    return readContentService.readExcelContent(file);
+                }
             }
             if (fileProperties.getSimText().contains(type)) {
                 String charset = UniversalDetector.detectCharset(file);
@@ -707,8 +710,7 @@ public class LuceneService {
             }
             List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match", new org.bson.Document("index", 0)), new org.bson.Document("$project", new org.bson.Document("_id", 1)), new org.bson.Document("$limit", 8));
             AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
-            while (aggregateIterable.iterator().hasNext()) {
-                org.bson.Document document = aggregateIterable.iterator().next();
+            for (org.bson.Document document : aggregateIterable) {
                 String fileId = document.getObjectId("_id").toHexString();
                 FileIntroVO fileIntroVO = getFileIntroVO(fileId);
                 if (fileIntroVO != null) {
