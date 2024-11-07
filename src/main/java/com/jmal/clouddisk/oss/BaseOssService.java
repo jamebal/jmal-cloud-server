@@ -277,11 +277,11 @@ public class BaseOssService {
      * @param tempFileAbsolutePath 临时文件绝对路径
      */
     public void onUploadSuccess(String objectName, Path tempFileAbsolutePath) {
-        log.info("upload success: {}", objectName);
         clearTempFileCache(objectName);
         setFileInfoCache(objectName, newFileInfo(objectName, tempFileAbsolutePath.toFile()));
         clearFileListCache(objectName);
         removeWaitingUploadCache(objectName);
+        printSuccess(objectName);
     }
 
     /**
@@ -290,11 +290,15 @@ public class BaseOssService {
      * @param fileSize 文件大小
      */
     public void onUploadSuccess(String objectName, Long fileSize) {
-        log.info("upload success: {}", objectName);
         clearTempFileCache(objectName);
         setFileInfoCache(objectName, newFileInfo(objectName, fileSize));
         clearFileListCache(objectName);
         removeWaitingUploadCache(objectName);
+        printSuccess(objectName);
+    }
+
+    private static void printSuccess(String objectName) {
+        log.info("upload success: {}", objectName);
     }
 
     /**
