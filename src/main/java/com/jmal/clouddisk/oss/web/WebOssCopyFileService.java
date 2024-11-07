@@ -12,6 +12,8 @@ import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.file.SimplePathVisitor;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -204,9 +207,6 @@ public class WebOssCopyFileService extends WebOssCommonService {
             copyFile(ossServiceFrom, objectNameFrom, destFileDocument);
         }
         String operation = isMove ? "移动" : "复制";
-        // 复制成功
-        log.info(operation + "成功, from: {}, to: {}", objectNameFrom, destFileDocument.getName());
-        commonFileService.pushMessage(destFileDocument.getUsername(), destFileDocument, Constants.CREATE_FILE);
         Path fromPath = Paths.get(getOssRootFolderName(ossPathFrom), objectNameFrom);
         Path toPath = Paths.get(destFileDocument.getPath(), destFileDocument.getName(), Paths.get(objectNameFrom).getFileName().toString());
         commonFileService.pushMessageOperationFileSuccess(fromPath.toString(), toPath.toString(), destFileDocument.getUsername(), operation);
@@ -288,7 +288,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
     }
 
     /**
-     * 从oss复制文件/夹到本地存储
+     * 从本地存储复制文件/夹到oss
      *
      * @param ossPathTo          目标ossPath
      * @param fileId             源fileId
@@ -316,10 +316,20 @@ public class WebOssCopyFileService extends WebOssCommonService {
             // 复制文件
             copyFile(fromFileDocument, ossServiceTo, objectNameTo, ossPathTo);
         }
-        notifyCreateFile(fromFileDocument.getUsername(), objectNameTo, getOssRootFolderName(ossPathTo));
-        Path fromPath = Paths.get(fromFileDocument.getPath(), fromFileDocument.getName());
-        Path toPath = Paths.get(getOssRootFolderName(ossPathTo), objectNameTo);
-        commonFileService.pushMessageOperationFileSuccess(fromPath.toString(), toPath.toString(), fromFileDocument.getUsername(), isMove ? "移动" : "复制");
+        if (isMove) {
+            // 删除源文件
+            Path fromPathFile = Paths.get(fileProperties.getRootDir(), fromFileDocument.getUsername(), fromFileDocument.getPath(), fromFileDocument.getName());
+            FileUtil.del(fromPathFile);
+        }
+        Completable.fromAction(() -> {
+                    TimeUnit.SECONDS.sleep(1);
+                    notifyCreateFile(fromFileDocument.getUsername(), objectNameTo, getOssRootFolderName(ossPathTo));
+                    Path fromPath = Paths.get(fromFileDocument.getPath(), fromFileDocument.getName());
+                    Path toPath = Paths.get(getOssRootFolderName(ossPathTo), objectNameTo);
+                    commonFileService.pushMessageOperationFileSuccess(fromPath.toString(), toPath.toString(), fromFileDocument.getUsername(), isMove ? "移动" : "复制");
+                })
+                .subscribeOn(Schedulers.io())
+                .subscribe();
         return ResultUtil.success();
     }
 
@@ -349,6 +359,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
                         }
                         return super.preVisitDirectory(dir, attrs);
                     }
+
                     @Override
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                         String objectName = objectNameTo + file.toString().substring(fromPath.toString().length());

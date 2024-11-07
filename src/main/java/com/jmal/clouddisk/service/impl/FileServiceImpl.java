@@ -46,6 +46,7 @@ import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.mozilla.universalchardet.ReaderFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -932,8 +933,20 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public ResponseResult<List<FileDocument>> checkMoveOrCopy(UploadApiParamDTO upload, List<String> froms, String to) {
+        if (StrUtil.isBlank(to) && StrUtil.isBlank(upload.getTargetPath())) {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS);
+        }
         List<String> fromFilenameList = getFromFilenameList(froms);
+
+        String ossPathTo = getPreOssPath(upload, to);
+        if (ossPathTo != null) {
+            return ResultUtil.success();
+        }
+
         FileDocument toFileDocument = getToFileDocument(upload, to);
+        if (toFileDocument == null) {
+            return ResultUtil.error(ExceptionType.FILE_NOT_FIND);
+        }
         String toPath = getRelativePath(toFileDocument);
         Query query = new Query();
         query.addCriteria(Criteria.where(USER_ID).is(toFileDocument.getUserId()));
@@ -951,6 +964,17 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         return ResultUtil.success(fileDocuments).setCount(fileDocuments.size());
     }
 
+    @Nullable
+    private static String getPreOssPath(UploadApiParamDTO upload, String to) {
+        Path prePath;
+        if (!StrUtil.isBlank(to)) {
+            prePath = Paths.get(to);
+        } else {
+            prePath = Paths.get(upload.getUsername(), upload.getTargetPath());
+        }
+        return CaffeineUtil.getOssPath(prePath);
+    }
+
     private List<String> getFromFilenameList(List<String> froms) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(froms));
@@ -965,20 +989,23 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         upload.setUsername(userLoginHolder.getUsername());
         ThreadUtil.execute(() -> {
             try {
+                String currentDirectory = getOssFileCurrentDirectory(upload, froms);
                 String fromFileIdOne = froms.get(0);
                 FileDocument formFileDocument = getOriginalFileDocumentById(fromFileIdOne);
                 if (formFileDocument == null) {
+                    String ossPathFormOne = CaffeineUtil.getOssPath(Paths.get(fromFileIdOne));
+                    if (ossPathFormOne != null) {
+                        // 移动
+                        move(upload, froms, to, currentDirectory);
+                    }
                     return;
                 }
                 String formUsername = userService.getUserNameById(formFileDocument.getUserId());
                 if (!upload.getUsername().equals(formUsername)) {
                     checkPermissionUsername(formUsername, formFileDocument.getOperationPermissionList(), OperationPermission.DELETE);
                 }
-                String currentDirectory = getOssFileCurrentDirectory(upload, froms);
-                // 复制
-                getCopyResult(upload, froms, to, true);
-                // 删除
-                deleteOnlyDoc(upload.getUsername(), currentDirectory, froms, upload.getUsername());
+                // 移动
+                move(upload, froms, to, currentDirectory);
             } catch (CommonException e) {
                 if (e.getCode() != -3) {
                     pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMsg(), Constants.UNKNOWN_ERROR), "移动");
@@ -988,6 +1015,13 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             }
         });
         return ResultUtil.success();
+    }
+
+    private void move(UploadApiParamDTO upload, List<String> froms, String to, String currentDirectory) {
+        // 复制
+        getCopyResult(upload, froms, to, true);
+        // 删除
+        deleteOnlyDoc(upload.getUsername(), currentDirectory, froms, upload.getUsername());
     }
 
     private String getOssFileCurrentDirectory(UploadApiParamDTO upload, List<String> froms) {
@@ -1181,6 +1215,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (ossPath != null) {
             UploadApiParamDTO uploadApiParamDTO = new UploadApiParamDTO();
             uploadApiParamDTO.setPathAttachFileName(true);
+            uploadApiParamDTO.setUsername(username);
             return webOssService.searchFileAndOpenOssFolder(prePth, uploadApiParamDTO);
         }
         String dirPath;
@@ -1568,7 +1603,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         String fromPath = getRelativePath(formFileDocument);
         FileDocument toFileDocument = getToFileDocument(upload, to);
 
-        if (StrUtil.isNotBlank(to)) {
+        if (StrUtil.isNotBlank(to) || StrUtil.isNotBlank(upload.getTargetPath())) {
+            if (StrUtil.isBlank(to)) {
+                to = MyWebdavServlet.PATH_DELIMITER + upload.getUsername() + upload.getTargetPath() + MyWebdavServlet.PATH_DELIMITER;
+            }
             ResponseResult<Object> result = ossCopy(formFileDocument, toFileDocument, from, to, move);
             if (result != null) {
                 return result;
@@ -1623,6 +1661,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             String username = userService.getUserNameById(upload.getUserId());
             FileDocument fileDocument = getFileDocument(username, Paths.get(fileProperties.getRootDir(), username, upload.getTargetPath()).toString());
             if (fileDocument == null) {
+                if (getPreOssPath(upload, to) != null) {
+                    return null;
+                }
                 throw new CommonException(ExceptionType.WARNING.getCode(), "目标文件夹不存在");
             }
             return fileDocument;
@@ -1654,6 +1695,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             }
             String formUsername = userService.getUserNameById(fileDocumentFrom.getUserId());
             from = formUsername + MyWebdavServlet.PATH_DELIMITER + fileDocumentFrom.getOssFolder() + MyWebdavServlet.PATH_DELIMITER;
+        }
+        if (fileDocumentTo != null) {
+            to = fileDocumentTo.getId();
         }
         if (fileDocumentTo != null && fileDocumentTo.getOssFolder() != null) {
             String toUsername = userService.getUserNameById(fileDocumentTo.getUserId());
@@ -2071,13 +2115,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             return;
         }
         Path trashFilePath = getTrashFilePath(username, fileDocument);
-        // if (PathUtil.exists(trashFilePath, true)) {
-        //     // 加一个时间后缀
-        //     String timePrefix = LocalDateTimeUtil.now().format(DateTimeFormatter.ofPattern(DatePattern.PURE_DATETIME_PATTERN));
-        //     fileDocument.setName(timePrefix + "_" + fileDocument.getName());
-        //     fileDocument.setId(new ObjectId().toHexString());
-        //     trashFilePath = getTrashFilePath(username, fileDocument);
-        // }
         PathUtil.move(sourceAbsolutePath, trashFilePath, true);
     }
 

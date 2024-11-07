@@ -61,11 +61,11 @@ public class WebOssCommonService {
     }
 
     public void notifyDeleteFile(String ossPath, String objectName) {
-        FileIntroVO fileIntroVO = new FileIntroVO();
         String username = getUsernameByOssPath(ossPath);
         String id = getFileId(getOssRootFolderName(ossPath), objectName, username);
-        fileIntroVO.setId(id);
-        commonFileService.pushMessage(username, fileIntroVO.getPath(), Constants.DELETE_FILE);
+        String filename = Paths.get(objectName).getFileName().toString();
+        String path = id.substring(username.length(), id.length() - filename.length());
+        commonFileService.pushMessage(username, path, Constants.DELETE_FILE);
     }
 
     public static String getFileId(String rootName, String objectName, String username) {

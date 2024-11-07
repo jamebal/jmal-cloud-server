@@ -691,6 +691,8 @@ public class CommonFileService {
         }
         if (message instanceof FileDocument fileDocument) {
             fileDocument.setContent(null);
+            fileDocument.setMusic(null);
+            fileDocument.setContentText(null);
         }
         msg.setUrl(url);
         msg.setUsername(username);
