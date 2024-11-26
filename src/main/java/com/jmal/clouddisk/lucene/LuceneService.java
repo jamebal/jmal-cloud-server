@@ -565,7 +565,6 @@ public class LuceneService {
         String keyword = searchDTO.getKeyword().toLowerCase().trim();
 
         // 将关键字中的特殊字符转义
-
         keyword = StringUtil.escape(keyword);
 
         // 创建正则表达式查询
@@ -584,11 +583,26 @@ public class LuceneService {
         Query contentQuery = contentParser.parse(keyword.trim());
         contentQueryBuilder.add(new BoostQuery(contentQuery, boosts.get("content")), BooleanClause.Occur.MUST);
 
+        // 如何keyword中有空格，将其拆分为多个关键字，这多个关键字之间是AND关系,在name字段
+        Query nameQuery = null;
+        if (keyword.contains(" ")) {
+            BooleanQuery.Builder nameQueryBuilder = new BooleanQuery.Builder();
+            for (String key : keyword.split(" ")) {
+                nameQueryBuilder.add(new BoostQuery(new RegexpQuery(new Term("name", ".*" + key + ".*")), 3.0f), BooleanClause.Occur.MUST);
+            }
+            nameQuery = nameQueryBuilder.build();
+        }
+
         // 将正则表达式查询、短语查询和分词匹配查询组合成一个查询（OR关系）
-        BooleanQuery combinedQuery = new BooleanQuery.Builder()
+        BooleanQuery.Builder combinedQueryBuilder = new BooleanQuery.Builder()
                 .add(regExpQuery, BooleanClause.Occur.SHOULD)
-                .add(contentQueryBuilder.build(), BooleanClause.Occur.SHOULD)
-                .build();
+                .add(contentQuery, BooleanClause.Occur.SHOULD);
+
+        if (nameQuery != null) {
+            combinedQueryBuilder.add(nameQuery, BooleanClause.Occur.SHOULD);
+        }
+
+        BooleanQuery combinedQuery = combinedQueryBuilder.build();
 
         // 创建最终查询（AND关系）
         BooleanQuery.Builder finalQueryBuilder = new BooleanQuery.Builder()
