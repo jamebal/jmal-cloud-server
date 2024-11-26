@@ -24,10 +24,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -366,13 +363,35 @@ public class MinIOService implements IOssService {
     private List<Part> getPartsList(String objectName, String uploadId) {
         List<Part> listParts = new ArrayList<>();
         try {
-            ListPartsResponse partResult = this.minIoClient.listMultipart(bucketName, null, objectName, 1000, 0, uploadId);
-            return partResult.result().partList();
+            int maxParts = 1000;
+            int partNumberMarker = 0;
+            boolean isTruncated;
+
+            do {
+                ListPartsResponse partResult = this.minIoClient.listMultipart(bucketName, null, objectName, maxParts, partNumberMarker, uploadId);
+                List<Part> currentParts = partResult.result().partList();
+
+                if (currentParts.isEmpty()) {
+                    return Collections.emptyList();
+                }
+
+                listParts.addAll(currentParts);
+                isTruncated = partResult.result().isTruncated();
+
+                if (isTruncated) {
+                    partNumberMarker = currentParts.get(currentParts.size() - 1).partNumber();
+                }
+            } while (isTruncated);
+
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            log.error("Error listing parts for object: {}, uploadId: {}. Exception: {}", objectName, uploadId, e.getMessage(), e);
+            return Collections.emptyList();
         }
         return listParts;
     }
+
+
+
 
     private void getMultipartUploads() {
     }
