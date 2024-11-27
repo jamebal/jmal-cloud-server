@@ -1988,8 +1988,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
                 // 删除文件夹及其下的所有文件
                 List<FileDocument> delFileDocumentList = mongoTemplate.findAllAndRemove(getAllByFolderQuery(fileDocument), FileDocument.class, COLLECTION_NAME);
-                // 移动到回收站
-                moveToTrash(username, delFileDocumentList, true);
+                if (!sweep) {
+                    // 移动到回收站
+                    moveToTrash(username, delFileDocumentList, true);
+                }
                 // 提取出delFileDocumentList中文件id
                 List<String> delFileIds = delFileDocumentList.stream().map(FileDocument::getId).collect(Collectors.toList());
                 deleteDependencies(username, delFileIds, sweep);
