@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -84,7 +85,7 @@ public class FileProperties {
     /**
      * 文件监控忽略的文件前缀
      */
-    private List<String> monitorIgnoreFilePrefix = new ArrayList<>();
+    private List<String> monitorIgnoreFilePrefix;
     /**
      * webDAV协议前缀
      */
@@ -102,6 +103,14 @@ public class FileProperties {
             return;
         }
         this.ip2regionDbPath = path;
+    }
+
+    public void setMonitorIgnoreFilePrefix(String monitorIgnoreFilePrefix) {
+        if (monitorIgnoreFilePrefix != null && !monitorIgnoreFilePrefix.isEmpty()) {
+            this.monitorIgnoreFilePrefix = Arrays.asList(monitorIgnoreFilePrefix.split(","));
+        } else {
+            this.monitorIgnoreFilePrefix = new ArrayList<>();
+        }
     }
 
     public String getWebDavPrefixPath() {

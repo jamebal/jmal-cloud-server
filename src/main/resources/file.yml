@@ -18,7 +18,7 @@ file:
   # 文件监控扫描时间间隔(秒)
   timeInterval: 3
   # 文件监控扫描忽略的文件前缀
-  monitorIgnoreFilePrefix: [ ".DS_Store", "._" ]
+  monitorIgnoreFilePrefix: ".DS_Store,._"
   # FTP server 端口号
   ftpServerPort: 8089
   # 文本类型
