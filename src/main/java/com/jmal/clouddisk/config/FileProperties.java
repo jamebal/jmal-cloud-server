@@ -81,7 +81,11 @@ public class FileProperties {
      * 文件监控扫描时间间隔(秒)
      */
     private Long timeInterval = 10L;
-    /***
+    /**
+     * 文件监控忽略的文件前缀
+     */
+    private List<String> monitorIgnoreFilePrefix = new ArrayList<>();
+    /**
      * webDAV协议前缀
      */
     private String webDavPrefix;
