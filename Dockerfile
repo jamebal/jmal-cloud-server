@@ -8,6 +8,7 @@ ENV JVM_OPTS "-Xms256m -Xmx1024m"
 ENV LOG_LEVEL warn
 
 ENV FILE_MONITOR true
+ENV MONITOR_IGNORE_FILE_PREFIX ".DS_Store,._"
 ENV FILE_ROOT_DIR /jmalcloud/files
 ENV TESS4J_DATA_PATH /jmalcloud/tess4j/datapath
 
