@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -75,15 +75,13 @@ public class SseController {
         if (emitter != null) {
             try {
                 emitter.send(message);
-            } catch (IllegalStateException e) {
-                if (e.getMessage().contains("completed")) {
-                    removeUuid(username, uuid);
-                }
-            } catch (IOException e) {
+            } catch (Exception e) {
+                log.warn("Failed to send message to client {}: {}", uuid, e.getMessage());
                 removeUuid(username, uuid);
             }
         }
     }
+
 
     private void removeUuid(String username, String uuid) {
         emitters.remove(uuid);
@@ -101,12 +99,27 @@ public class SseController {
      */
     @Scheduled(fixedRate = 3000)
     public void heartbeat() {
-        emitters.forEach((uuid, emitter) -> {
+        // 使用迭代器安全删除
+        Iterator<Map.Entry<String, SseEmitter>> iterator = emitters.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, SseEmitter> entry = iterator.next();
             try {
-                emitter.send("h");
-            } catch (IOException | IllegalStateException ignored) {
+                entry.getValue().send("h");
+            } catch (Exception e) {
+                // 发生异常时移除该连接
+                iterator.remove();
+                // 清理关联的用户数据
+                for (Map.Entry<String, Set<String>> userEntry : users.entrySet()) {
+                    if (userEntry.getValue().remove(entry.getKey())) {
+                        if (userEntry.getValue().isEmpty()) {
+                            users.remove(userEntry.getKey());
+                        }
+                        break;
+                    }
+                }
             }
-        });
+        }
     }
+
 }
 

@@ -126,7 +126,7 @@ public class RebuildIndexTaskService {
     }
 
     private void getSyncFileVisitorService() {
-        int processors = Runtime.getRuntime().availableProcessors() - 1;
+        int processors = Runtime.getRuntime().availableProcessors() - 4;
         if (processors < 1) {
             processors = 1;
         }
@@ -412,7 +412,7 @@ public class RebuildIndexTaskService {
             if (StrUtil.isBlank(username)) {
                 return super.visitFile(dir, attrs);
             }
-            //processFile(dir, username);
+            processFile(dir, username);
             return super.preVisitDirectory(dir, attrs);
         }
 
@@ -429,7 +429,7 @@ public class RebuildIndexTaskService {
             if (StrUtil.isBlank(username)) {
                 return super.visitFile(file, attrs);
             }
-            //processFile(file, username);
+            processFile(file, username);
             return super.visitFile(file, attrs);
         }
 
