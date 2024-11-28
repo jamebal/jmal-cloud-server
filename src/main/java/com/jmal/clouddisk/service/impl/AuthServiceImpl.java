@@ -74,8 +74,8 @@ public class AuthServiceImpl implements IAuthService {
         if (isNotValidBaseDn(ldapConfigDTO.getBaseDN())) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "BaseDN格式错误, 应为 dc=xxx,dc=xxx");
         }
-        if (isNotValidBaseDn(ldapConfigDTO.getUserDN())) {
-            throw new CommonException(ExceptionType.WARNING.getCode(), "账号格式错误, 应为 cn=xxx,ou=xxx,dc=xxx");
+        if (isNotValidDn(ldapConfigDTO.getUserDN())) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "账号格式错误, 应为 cn=xxx,ou=xxx,dc=xxx 或者 uid=xxx,ou=xxx,dc=xxx");
         }
         LdapContextSource contextSource = new LdapContextSource();
         contextSource.setUrl("ldap://" + ldapConfigDTO.getLdapServer());
@@ -146,6 +146,29 @@ public class AuthServiceImpl implements IAuthService {
         // 正则表达式来校验BaseDN的格式
         String regex = "((cn|dc|ou)=([^,]+))(,\\s*(cn|dc|ou)=([^,]+))*";
         return baseDn == null || !baseDn.matches(regex);
+    }
+
+    /**
+     * 验证LDAP DN(Distinguished Name)字符串是否有效
+     *
+     * @param dn 要验证的DN字符串
+     * @return 如果DN无效，则为true；否则为false
+     */
+    public static boolean isNotValidDn(String dn) {
+        if (dn == null || dn.trim().isEmpty()) {
+            return true;
+        }
+
+        // 支持常见的LDAP属性类型
+        String attrTypes = "(uid|cn|ou|dc|o|l|st|c)";
+        // 属性值允许包含除逗号外的任意字符
+        String attrValue = "([^,]+)";
+        // 完整的RDN(Relative Distinguished Name)格式
+        String rdn = attrTypes + "=" + attrValue;
+        // 完整的DN格式：一个或多个RDN，用逗号分隔
+        String regex = rdn + "(,\\s*" + rdn + ")*";
+
+        return !dn.matches(regex);
     }
 
     @Override
