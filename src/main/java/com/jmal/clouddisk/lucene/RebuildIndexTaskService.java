@@ -444,7 +444,9 @@ public class RebuildIndexTaskService {
 
         private void createFile(String username, Path file) {
             try {
+                log.info("createFile1:{}", file);
                 commonFileService.createFile(username, file.toFile(), null, null);
+                log.info("createFile2:{}", file);
             } catch (Exception e) {
                 log.error("createFile error {}{}", e.getMessage(), file, e);
                 FileDocument fileDocument = commonFileService.getFileDocument(username, file.toFile().getAbsolutePath());
