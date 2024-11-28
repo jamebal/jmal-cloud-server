@@ -424,7 +424,7 @@ public class RebuildIndexTaskService {
                 return super.visitFile(file, attrs);
             }
             processCount.incrementAndGet();
-            log.info("同步文件数:{}", processCount);
+            log.info("同步文件数:{}, path: {}", processCount, file);
             String username = commonFileService.getUsernameByAbsolutePath(file);
             if (StrUtil.isBlank(username)) {
                 return super.visitFile(file, attrs);
