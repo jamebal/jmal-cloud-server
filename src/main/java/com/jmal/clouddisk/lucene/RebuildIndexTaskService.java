@@ -14,8 +14,6 @@ import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.ThrottleExecutor;
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
@@ -420,6 +418,11 @@ public class RebuildIndexTaskService {
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            // 判断文件名是否在monitorIgnoreFilePrefix中
+            if (fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(file.getFileName()::startsWith)) {
+                log.info("忽略文件:{}", file.getFileName());
+                return super.visitFile(file, attrs);
+            }
             processCount.incrementAndGet();
             String username = commonFileService.getUsernameByAbsolutePath(file);
             if (StrUtil.isBlank(username)) {
@@ -431,16 +434,16 @@ public class RebuildIndexTaskService {
 
         private void processFile(Path file, String username) {
             // 使用 RxJava 执行异步文件创建
-            Flowable.fromCallable(() -> createFile(username, file))
-                    .subscribeOn(Schedulers.io())
-                    .doOnError(e -> log.warn("Error processing file: {}", file, e))
-                    .subscribe();
+            // Flowable.fromCallable(() -> createFile(username, file))
+            //         .subscribeOn(Schedulers.io())
+            //         .doOnError(e -> log.warn("Error processing file: {}", file, e))
+            //         .subscribe();
+            syncFileVisitorService.execute(() -> createFile(username, file));
         }
 
-        private boolean createFile(String username, Path file) {
+        private void createFile(String username, Path file) {
             try {
                 commonFileService.createFile(username, file.toFile(), null, null);
-                return true;
             } catch (Exception e) {
                 log.error("createFile error {}{}", e.getMessage(), file, e);
                 FileDocument fileDocument = commonFileService.getFileDocument(username, file.toFile().getAbsolutePath());
@@ -449,7 +452,6 @@ public class RebuildIndexTaskService {
                     removeDeletedFlag(Collections.singletonList(fileDocument.getId()));
                 }
             }
-            return false;
         }
     }
 
