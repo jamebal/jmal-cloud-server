@@ -412,7 +412,7 @@ public class RebuildIndexTaskService {
             if (StrUtil.isBlank(username)) {
                 return super.visitFile(dir, attrs);
             }
-            processFile(dir, username);
+            //processFile(dir, username);
             return super.preVisitDirectory(dir, attrs);
         }
 
@@ -429,7 +429,7 @@ public class RebuildIndexTaskService {
             if (StrUtil.isBlank(username)) {
                 return super.visitFile(file, attrs);
             }
-            processFile(file, username);
+            //processFile(file, username);
             return super.visitFile(file, attrs);
         }
 
