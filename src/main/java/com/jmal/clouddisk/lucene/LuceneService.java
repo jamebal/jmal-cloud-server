@@ -113,10 +113,7 @@ public class LuceneService {
     public void init() {
         if (executorCreateIndexService == null) {
             int processors = Runtime.getRuntime().availableProcessors() - 1;
-            if (processors < 1) {
-                processors = 1;
-            }
-            executorCreateIndexService = ThreadUtil.newFixedExecutor(processors, 100, "createIndexFileTask", true);
+            executorCreateIndexService = ThreadUtil.newFixedExecutor(Math.max(processors, 3), 100, "createIndexFileTask", true);
         }
         if (executorUpdateContentIndexService == null) {
             // 获取可用处理器数量
