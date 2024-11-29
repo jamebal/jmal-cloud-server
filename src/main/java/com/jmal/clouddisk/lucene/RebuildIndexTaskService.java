@@ -260,7 +260,7 @@ public class RebuildIndexTaskService {
     public void rebuildingIndexCompleted() {
         if (!hasUnIndexedTasks() && NOT_INDEX_TASK_SIZE.get() > 0) {
             setPercentMap(100d, 100d);
-            log.info("重建索引完成, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", INDEXED_TASK_SIZE, NOT_INDEX_TASK_SIZE);
+            log.debug("重建索引完成, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", INDEXED_TASK_SIZE, NOT_INDEX_TASK_SIZE);
             restIndexedTasks();
             pushMessage();
         }
@@ -424,7 +424,6 @@ public class RebuildIndexTaskService {
                 return super.visitFile(file, attrs);
             }
             processCount.incrementAndGet();
-            log.info("同步文件数:{}, path: {}", processCount, file);
             String username = commonFileService.getUsernameByAbsolutePath(file);
             if (StrUtil.isBlank(username)) {
                 return super.visitFile(file, attrs);
@@ -435,18 +434,12 @@ public class RebuildIndexTaskService {
 
         private void processFile(Path file, String username) {
             // 使用 RxJava 执行异步文件创建
-            // Flowable.fromCallable(() -> createFile(username, file))
-            //         .subscribeOn(Schedulers.io())
-            //         .doOnError(e -> log.warn("Error processing file: {}", file, e))
-            //         .subscribe();
             syncFileVisitorService.execute(() -> createFile(username, file));
         }
 
         private void createFile(String username, Path file) {
             try {
-                log.info("createFile1:{}", file);
                 commonFileService.createFile(username, file.toFile(), null, null);
-                log.info("createFile2:{}", file);
             } catch (Exception e) {
                 log.error("createFile error {}{}", e.getMessage(), file, e);
                 FileDocument fileDocument = commonFileService.getFileDocument(username, file.toFile().getAbsolutePath());
@@ -471,7 +464,7 @@ public class RebuildIndexTaskService {
 
     private void pushMessage() {
         commonFileService.pushMessage(getRecipient(null), PERCENT_MAP, RebuildIndexTaskService.MSG_SYNCED);
-        log.info("索引进度: {}, isSyncFile: {}, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", PERCENT_MAP, isSyncFile(), INDEXED_TASK_SIZE.get(), NOT_INDEX_TASK_SIZE.get());
+        log.debug("索引进度: {}, isSyncFile: {}, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", PERCENT_MAP, isSyncFile(), INDEXED_TASK_SIZE.get(), NOT_INDEX_TASK_SIZE.get());
     }
 
     private class FileCountVisitor extends SimpleFileVisitor<Path> {
