@@ -24,4 +24,6 @@ public class SharerDTO {
     String netdiskLogo;
     @Schema(name = "netdiskName", title = "网盘名称", hidden = true)
     String netdiskName;
+    @Schema(name = "iframe", title = "iframe配置", hidden = true)
+    String iframe;
 }

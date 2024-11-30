@@ -552,6 +552,7 @@ public class ShareServiceImpl implements IShareService {
         if (websiteSettingDO != null) {
             sharerDTO.setNetdiskName(websiteSettingDO.getNetdiskName());
             sharerDTO.setNetdiskLogo(websiteSettingDO.getNetdiskLogo());
+            sharerDTO.setIframe(websiteSettingDO.getIframe());
         }
         return ResultUtil.success(sharerDTO);
     }
