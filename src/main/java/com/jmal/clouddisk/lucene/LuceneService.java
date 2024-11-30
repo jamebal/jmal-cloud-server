@@ -92,7 +92,7 @@ public class LuceneService {
     /**
      * 新建索引文件缓冲队列大小
      */
-    private final static int CREATE_INDEX_QUEUE_SIZE = 512;
+    private final static int CREATE_INDEX_QUEUE_SIZE = 40960;
 
     /**
      * 新建索引文件缓冲队列
