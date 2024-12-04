@@ -100,7 +100,7 @@ public class VideoProcessService {
     @PostConstruct
     public void init() {
         getVideoTranscodingService();
-        addTranscodingTaskService = ThreadUtil.newFixedExecutor(8, 100, "addTranscodingTask", true);
+        addTranscodingTaskService = ThreadUtil.newFixedExecutor(8, 40960, "addTranscodingTask", true);
     }
 
     private void getVideoTranscodingService() {
