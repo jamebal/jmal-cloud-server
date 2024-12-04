@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -182,8 +183,9 @@ public class CommonFileService {
 
     /**
      * 是否存在该文件
-     * @param path 文件的相对路径
-     * @param userId userId 用户Id
+     *
+     * @param path      文件的相对路径
+     * @param userId    userId 用户Id
      * @param filenames 文件名列表
      * @return FileDocument
      */
@@ -197,9 +199,10 @@ public class CommonFileService {
 
     /**
      * 是否存在该文件
-     * @param path 文件的相对路径
+     *
+     * @param path   文件的相对路径
      * @param userId userId
-     * @param md5 md5
+     * @param md5    md5
      * @return FileDocument
      */
     FileDocument getByMd5(String path, String userId, String md5) {
@@ -406,10 +409,11 @@ public class CommonFileService {
 
     /**
      * 更新文档的Exif信息
-     * @param file 文件
-     * @param fileExists 文件信息
+     *
+     * @param file        文件
+     * @param fileExists  文件信息
      * @param contentType 文件类型
-     * @param suffix 文件后缀
+     * @param suffix      文件后缀
      */
     private void updateExifInfo(File file, FileDocument fileExists, String contentType, String suffix, Update update) {
         if (!ImageExifUtil.isImageType(contentType, suffix)) {
@@ -464,7 +468,7 @@ public class CommonFileService {
         return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
     }
 
-    public FileDocument getFileDocument(String username, String fileAbsolutePath)  {
+    public FileDocument getFileDocument(String username, String fileAbsolutePath) {
         String userId = userService.getUserIdByUserName(username);
         if (CharSequenceUtil.isBlank(userId)) {
             return null;
@@ -574,8 +578,16 @@ public class CommonFileService {
         try {
             if (MyFileUtils.hasCharset(file)) {
                 String charset = UniversalDetector.detectCharset(file);
-                if (StrUtil.isNotBlank(charset) && StandardCharsets.UTF_8.name().equals(charset)) {
-                    contentType = contentType + ";charset=utf-8";
+                if (StrUtil.isNotBlank(charset)) {
+                    if (StandardCharsets.UTF_8.name().equals(charset)) {
+                        contentType = contentType + ";charset=utf-8";
+                    } else {
+                        if (file.length() < 10 * 1024 * 1024 && CharsetDetector.detect(file).equals(StandardCharsets.UTF_8)) {
+                            contentType = contentType + ";charset=utf-8";
+                        } else {
+                            contentType = contentType + ";charset=" + charset;
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
@@ -592,7 +604,7 @@ public class CommonFileService {
         update.set("music", music);
     }
 
-    private void setMediaCover(String fileId, String username, String fileName, String relativePath, Update update) {
+    private void setMediaCover(String fileId, String username, String fileName, String relativePath, Update update) throws InterruptedException {
         VideoInfo videoInfo = videoProcessService.getVideoCover(fileId, username, relativePath, fileName);
         String coverPath = videoInfo.getCovertPath();
         log.debug("\r\ncoverPath:{}", coverPath);
@@ -612,7 +624,8 @@ public class CommonFileService {
 
     /**
      * 生成缩略图
-     * @param file File
+     *
+     * @param file   File
      * @param update org.springframework.data.mongodb.core.query.UpdateDefinition
      */
     private void generateThumbnail(File file, Update update) {
@@ -638,9 +651,10 @@ public class CommonFileService {
 
     /**
      * 给用户推送消息
+     *
      * @param username username
-     * @param message message
-     * @param url url
+     * @param message  message
+     * @param url      url
      */
     public void pushMessageSync(String username, Object message, String url) {
         if (timelyPush(username, message, url)) return;
@@ -884,6 +898,7 @@ public class CommonFileService {
 
     /**
      * 通过文件的绝对路径获取用户名
+     *
      * @param absolutePath 绝对路径
      * @return 用户名
      */
@@ -1114,7 +1129,8 @@ public class CommonFileService {
 
     /**
      * 更新文件封面
-     * @param fileId 文件Id
+     *
+     * @param fileId    文件Id
      * @param coverFile 封面文件
      */
     public void updateCoverFileDocument(String fileId, File coverFile) {
