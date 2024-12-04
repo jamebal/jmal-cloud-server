@@ -21,8 +21,10 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDResources;
 import org.apache.pdfbox.pdmodel.graphics.PDXObject;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.hslf.usermodel.HSLFShape;
+import org.apache.poi.hslf.usermodel.HSLFSlide;
 import org.apache.poi.hslf.usermodel.HSLFSlideShow;
 import org.apache.poi.hslf.usermodel.HSLFTextShape;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -36,8 +38,7 @@ import org.apache.poi.xslf.usermodel.XSLFShape;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.apache.poi.xslf.usermodel.XSLFTextShape;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
@@ -50,7 +51,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.regex.Pattern;
 
 @Service
@@ -83,9 +83,22 @@ public class ReadContentService {
         return null;
     }
 
+    public static boolean checkPageContent(PDDocument document, int pageIndex) throws IOException {
+        PDPage page = document.getPage(pageIndex); // 获取页面
+        // 检查图片内容
+        PDResources resources = page.getResources();
+        for (COSName xObjectName : resources.getXObjectNames()) {
+            PDXObject xObject = resources.getXObject(xObjectName);
+            if (xObject instanceof PDImageXObject) {
+                // 如果找到至少一张图片，则可以提前退出
+                return true;
+            }
+        }
+        return false;
+    }
+
     public String readPdfContent(File file, String fileId) {
         try (PDDocument document = Loader.loadPDF(new RandomAccessReadBufferedFile(file))) {
-
             String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
 
             // 生成封面图像
@@ -95,35 +108,21 @@ public class ReadContentService {
             }
 
             StringBuilder content = new StringBuilder();
-            // 提取每一页的内容
+            PDFRenderer pdfRenderer = new PDFRenderer(document);
             PDFTextStripper pdfStripper = new PDFTextStripper();
-            for (int pageNumber = 1; pageNumber <= document.getNumberOfPages(); pageNumber++) {
-                pdfStripper.setStartPage(pageNumber);
-                pdfStripper.setEndPage(pageNumber);
+
+            for (int pageIndex = 0; pageIndex < document.getNumberOfPages(); pageIndex++) { // 使用 0-based 索引
+                pdfStripper.setStartPage(pageIndex + 1); // PDFTextStripper 使用 1-based 索引
+                pdfStripper.setEndPage(pageIndex + 1);
                 String text = pdfStripper.getText(document).trim();
+
+                // 如果页面包含文字，添加提取的文字
                 if (!text.isEmpty()) {
                     content.append(text);
-                } else {
-                    taskProgressService.addTaskProgress(file, TaskType.OCR, pageNumber + "/" + document.getNumberOfPages());
-                    PDPage page = document.getPage(pageNumber - 1);
-                    PDResources resources = page.getResources();
-                    for (COSName xObjectName : resources.getXObjectNames()) {
-                        PDXObject xObject = resources.getXObject(xObjectName);
-                        if (xObject instanceof PDImageXObject image) {
-                            BufferedImage bufferedImage = image.getImage();
-                            // 将图像保存到临时文件
-                            String tempImageFile = ocrService.generateOrcTempImagePath(username);
-                            ImageIO.write(bufferedImage, "png", new File(tempImageFile));
-                            try {
-                                // 使用 Tesseract 进行 OCR 识别
-                                String ocrResult = ocrService.doOCR(tempImageFile, ocrService.generateOrcTempImagePath(username));
-                                content.append(ocrResult);
-                            } finally {
-                                // 删除临时文件
-                                FileUtil.del(tempImageFile);
-                            }
-                        }
-                    }
+                }
+                // 如果页面包含图片或没有文字，则进行 OCR
+                if (checkPageContent(document, pageIndex) || text.isEmpty()) {
+                    content.append(extractPageWithOCR(pdfRenderer, pageIndex, username));
                 }
             }
             return content.toString();
@@ -133,6 +132,23 @@ public class ReadContentService {
             taskProgressService.removeTaskProgress(file);
         }
         return null;
+    }
+
+    private String extractPageWithOCR(PDFRenderer pdfRenderer, int pageIndex, String username) {
+        try {
+            BufferedImage pageImage = pdfRenderer.renderImageWithDPI(pageIndex, 300);
+            String tempImageFile = ocrService.generateOrcTempImagePath(username);
+            ImageIO.write(pageImage, "png", new File(tempImageFile));
+            try {
+                // 使用 OCR 识别页面内容
+                return ocrService.doOCR(tempImageFile, ocrService.generateOrcTempImagePath(username));
+            } finally {
+                FileUtil.del(tempImageFile);
+            }
+        } catch (Exception e) {
+            log.error("Error processing page {}", pageIndex + 1, e);
+            return "";
+        }
     }
 
     public String readEpubContent(File file, String fileId) {
@@ -177,48 +193,74 @@ public class ReadContentService {
             if (fileName.endsWith(".pptx")) {
                 // 读取 .pptx 文件
                 try (XMLSlideShow pptx = new XMLSlideShow(fis)) {
-                    for (XSLFSlide slide : pptx.getSlides()) {
-                        for (XSLFShape shape : slide.getShapes()) {
-                            if (shape instanceof XSLFTextShape textShape) {
-                                stringBuilder.append(textShape.getText()).append(" ");
-                            }
-                        }
-                    }
+                    readSlides(pptx.getSlides(), stringBuilder);
                 }
             } else if (fileName.endsWith(".ppt")) {
                 // 读取 .ppt 文件
                 try (HSLFSlideShow ppt = new HSLFSlideShow(fis)) {
-                    for (org.apache.poi.hslf.usermodel.HSLFSlide slide : ppt.getSlides()) {
-                        for (HSLFShape shape : slide.getShapes()) {
-                            if (shape instanceof HSLFTextShape textShape) {
-                                stringBuilder.append(textShape.getText()).append(" ");
-                            }
-                        }
-                    }
+                    readSlides(ppt.getSlides(), stringBuilder);
                 }
             } else {
-                throw new IllegalArgumentException("不支持的文件格式");
+                throw new IllegalArgumentException("Unsupported file format: " + fileName);
             }
         } catch (IOException e) {
             FileContentUtil.readFailed(file, e);
         }
-
         return stringBuilder.toString().trim();
     }
 
+    // 通用方法读取幻灯片中的文本内容
+    private void readSlides(Iterable<?> slides, StringBuilder content) {
+        for (Object slide : slides) {
+            if (slide instanceof XSLFSlide xslfSlide) {
+                for (XSLFShape shape : xslfSlide.getShapes()) {
+                    if (shape instanceof XSLFTextShape textShape) {
+                        content.append(textShape.getText()).append(" ");
+                    }
+                }
+            } else if (slide instanceof HSLFSlide hslfSlide) {
+                for (HSLFShape shape : hslfSlide.getShapes()) {
+                    if (shape instanceof HSLFTextShape textShape) {
+                        content.append(textShape.getText()).append(" ");
+                    }
+                }
+            }
+        }
+    }
     public String readWordContent(File file) {
         try (FileInputStream fis = new FileInputStream(file)) {
             try {
-                // 尝试读取 OOXML 格式 (.docx) 文件
+                // 读取 DOCX 文件
                 XWPFDocument document = new XWPFDocument(fis);
                 StringBuilder stringBuilder = new StringBuilder();
-                List<XWPFParagraph> paragraphs = document.getParagraphs();
-                for (XWPFParagraph para : paragraphs) {
-                    stringBuilder.append(para.getText());
+
+                // 1. 读取段落
+                for (XWPFParagraph paragraph : document.getParagraphs()) {
+                    stringBuilder.append(paragraph.getText()).append("\n");
+                }
+
+                // 2. 读取表格
+                for (XWPFTable table : document.getTables()) {
+                    for (XWPFTableRow row : table.getRows()) {
+                        for (XWPFTableCell cell : row.getTableCells()) {
+                            stringBuilder.append(cell.getText()).append("\t");
+                        }
+                        stringBuilder.append("\n");
+                    }
+                }
+
+                // 3. 读取页眉
+                for (XWPFHeader header : document.getHeaderList()) {
+                    stringBuilder.append(header.getText()).append("\n");
+                }
+
+                // 4. 读取页脚
+                for (XWPFFooter footer : document.getFooterList()) {
+                    stringBuilder.append(footer.getText()).append("\n");
                 }
                 return stringBuilder.toString();
             } catch (OLE2NotOfficeXmlFileException e) {
-                // 如果文件不是 OOXML 格式，尝试读取 OLE2 格式 (.doc) 文件
+                // 读取 DOC 文件
                 try (FileInputStream fis2 = new FileInputStream(file);
                      POIFSFileSystem poifs = new POIFSFileSystem(fis2);
                      HWPFDocument doc = new HWPFDocument(poifs)) {
@@ -232,35 +274,46 @@ public class ReadContentService {
         return null;
     }
 
-    private static final Pattern NON_NUMERIC_PATTERN = Pattern.compile("[^0-9]+");
+    // 匹配包含至少一个中文或英文字符的字符串
+    private static final Pattern TEXT_PATTERN = Pattern.compile(".*[a-zA-Z一-龥]+.*");
 
     public String readExcelContent(File file) {
         StringBuilder content = new StringBuilder();
-        try (FileInputStream fis = new FileInputStream(file)) {
-            Workbook workbook;
-            if (file.getName().endsWith(".xlsx")) {
-                workbook = new XSSFWorkbook(fis);
-            } else if (file.getName().endsWith(".xls")) {
-                workbook = new HSSFWorkbook(fis);
-            } else {
-                throw new IllegalArgumentException("不支持的文件格式");
-            }
 
-            for (Sheet sheet : workbook) {
-                for (Row row : sheet) {
-                    for (Cell cell : row) {
-                        String cellValue = getCellValueAsString(cell);
-                        // 过滤掉数字，只保留文字
-                        if (NON_NUMERIC_PATTERN.matcher(cellValue).matches()) {
-                            content.append(cellValue).append(" ");
-                        }
-                    }
+        try (FileInputStream fis = new FileInputStream(file)) {
+            try (Workbook workbook = createWorkbook(file, fis)) {
+                for (Sheet sheet : workbook) {
+                    readSheetContent(sheet, content);
                 }
             }
         } catch (IOException e) {
             FileContentUtil.readFailed(file, e);
+        } catch (IllegalArgumentException e) {
+            log.warn("Unsupported file format: {}", file.getName());
         }
         return content.toString().trim();
+    }
+
+    private Workbook createWorkbook(File file, FileInputStream fis) throws IOException {
+        if (file.getName().endsWith(".xlsx")) {
+            return new XSSFWorkbook(fis);
+        } else if (file.getName().endsWith(".xls")) {
+            return new HSSFWorkbook(fis);
+        } else {
+            throw new IllegalArgumentException("Unsupported file format");
+        }
+    }
+
+    private void readSheetContent(Sheet sheet, StringBuilder content) {
+        for (Row row : sheet) {
+            for (Cell cell : row) {
+                String cellValue = getCellValueAsString(cell);
+                // 包含至少一个中文或英文字符
+                if (TEXT_PATTERN.matcher(cellValue).matches()) {
+                    content.append(cellValue).append(" ");
+                }
+            }
+        }
     }
 
     private String getCellValueAsString(Cell cell) {
