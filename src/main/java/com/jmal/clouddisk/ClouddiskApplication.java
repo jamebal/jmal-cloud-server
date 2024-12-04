@@ -1,14 +1,12 @@
 package com.jmal.clouddisk;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.crypto.SecureUtil;
+import com.jmal.clouddisk.util.TesseractUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableScheduling;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * ClouddiskApplication
@@ -18,6 +16,7 @@ import java.nio.file.Paths;
 @SpringBootApplication
 @EnableCaching
 @EnableScheduling
+@Slf4j
 public class ClouddiskApplication {
 
     public static void main(String[] args) {
@@ -27,10 +26,7 @@ public class ClouddiskApplication {
         application.setAllowCircularReferences(true);
 
         // dev环境下设置tesseract的lib路径
-        Path tesseractLibPath = Paths.get("/opt/homebrew/Cellar/tesseract/5.3.4_1/lib");
-        if (FileUtil.exist(tesseractLibPath.toFile())) {
-            System.setProperty("jna.library.path", tesseractLibPath.toString());
-        }
+        TesseractUtil.setTesseractLibPath();
 
         application.run(args);
     }

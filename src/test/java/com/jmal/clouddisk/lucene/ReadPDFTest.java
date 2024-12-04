@@ -1,12 +1,11 @@
 package com.jmal.clouddisk.lucene;
 
+import com.jmal.clouddisk.util.TesseractUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -20,10 +19,7 @@ public class ReadPDFTest {
     public void testImagePDF() {
 
         // dev环境下设置tesseract的lib路径
-        Path tesseractLibPath = Paths.get("/opt/homebrew/Cellar/tesseract/5.3.4_1/lib");
-        if (tesseractLibPath.toFile().exists()) {
-            System.setProperty("jna.library.path", tesseractLibPath.toString());
-        }
+        TesseractUtil.setTesseractLibPath();
 
         File file = new File("/Users/jmal/Downloads/1hyflld.pdf");
         assertNotNull(file, "File should not be null");
