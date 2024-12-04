@@ -71,7 +71,7 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     private static LdapContextSource loadLdapConfig(LdapConfigDTO ldapConfigDTO) {
-        if (isNotValidBaseDn(ldapConfigDTO.getBaseDN())) {
+        if (isNotValidDn(ldapConfigDTO.getBaseDN())) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "BaseDN格式错误, 应为 dc=xxx,dc=xxx");
         }
         if (isNotValidDn(ldapConfigDTO.getUserDN())) {
@@ -134,18 +134,6 @@ public class AuthServiceImpl implements IAuthService {
             return loginValidSuccess(response, consumerDTO, consumerDO);
         }
         return ResultUtil.error(loginError());
-    }
-
-    /**
-     * 验证LDAP BaseDN字符串是否有效。
-     *
-     * @param baseDn 要验证的BaseDN字符串。
-     * @return 如果BaseDN有效，则为true；否则为false。
-     */
-    public static boolean isNotValidBaseDn(String baseDn) {
-        // 正则表达式来校验BaseDN的格式
-        String regex = "((cn|dc|ou)=([^,]+))(,\\s*(cn|dc|ou)=([^,]+))*";
-        return baseDn == null || !baseDn.matches(regex);
     }
 
     /**
