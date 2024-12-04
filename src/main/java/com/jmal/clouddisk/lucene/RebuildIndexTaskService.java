@@ -127,11 +127,8 @@ public class RebuildIndexTaskService {
 
     private void getSyncFileVisitorService() {
         int processors = Runtime.getRuntime().availableProcessors() - 4;
-        if (processors < 1) {
-            processors = 1;
-        }
         if (syncFileVisitorService == null || syncFileVisitorService.isShutdown()) {
-            syncFileVisitorService = ThreadUtil.newFixedExecutor(processors, 1, "syncFileVisitor", true);
+            syncFileVisitorService = ThreadUtil.newFixedExecutor(Math.max(processors, 2), 1, "syncFileVisitor", true);
         }
     }
 
@@ -231,6 +228,8 @@ public class RebuildIndexTaskService {
             // 等待线程池里所有任务完成
             if (!syncFileVisitorService.awaitTermination(10, TimeUnit.MINUTES)) {
                 log.warn("同步文件超时, 尝试强制停止所有任务");
+                // 移除删除标记, 以免误删索引
+                removeDeletedFlag(null);
                 syncFileVisitorService.shutdownNow();
             }
         } catch (InterruptedException e) {
