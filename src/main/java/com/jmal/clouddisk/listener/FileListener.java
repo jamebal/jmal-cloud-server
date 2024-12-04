@@ -3,6 +3,7 @@ package com.jmal.clouddisk.listener;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.IFileService;
+import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
                 return;
             }
             fileService.createFile(username, file);
+            CaffeineUtil.setLastAccessTimeCache();
             log.info("用户:{},新建文件:{}", username, file.getAbsolutePath());
         } catch (Exception e) {
             log.error("新建文件后续操作失败, " + file.getAbsolutePath(), e);
@@ -63,6 +65,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
                 return;
             }
             fileService.updateFile(username, file);
+            CaffeineUtil.setLastAccessTimeCache();
             log.info("用户:{},修改文件:{}", username, file.getAbsolutePath());
         } catch (Exception e) {
             log.error("修改文件后续操作失败", e);
@@ -80,6 +83,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
                 return;
             }
             fileService.deleteFile(username, file);
+            CaffeineUtil.setLastAccessTimeCache();
             log.info("用户:{},删除文件:{}", username, file.getAbsolutePath());
         } catch (Exception e) {
             log.error("删除文件后续操作失败", e);
@@ -97,6 +101,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
                 return;
             }
             fileService.createFile(username, directory);
+            CaffeineUtil.setLastAccessTimeCache();
             log.info("用户:{},新建目录:{}", username, directory.getAbsolutePath());
         } catch (Exception e) {
             log.error("新建目录后续操作失败", e);
@@ -127,6 +132,7 @@ public class FileListener extends FileAlterationListenerAdaptor {
                 return;
             }
             fileService.deleteFile(username, directory);
+            CaffeineUtil.setLastAccessTimeCache();
             log.info("用户:{},删除目录:{}", username, directory.getAbsolutePath());
         } catch (Exception e) {
             log.error("删除目录后续操作失败", e);

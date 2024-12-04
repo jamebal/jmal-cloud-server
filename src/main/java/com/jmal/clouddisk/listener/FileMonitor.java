@@ -187,7 +187,7 @@ public class FileMonitor {
         if (isMonitor) {
             monitor.stop(DateUnit.SECOND.getMillis());
             monitor = null;
-            monitor = new FileAlterationMonitor(DateUnit.MINUTE.getMillis() * 30, observer);
+            monitor = new FileAlterationMonitor(DateUnit.MINUTE.getMillis() * 3, observer);
             monitor.start();
             log.info("轮询间隔改为3分钟");
             isMonitor = false;
