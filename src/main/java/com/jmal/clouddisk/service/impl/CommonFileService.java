@@ -604,7 +604,7 @@ public class CommonFileService {
         update.set("music", music);
     }
 
-    private void setMediaCover(String fileId, String username, String fileName, String relativePath, Update update) throws InterruptedException {
+    private void setMediaCover(String fileId, String username, String fileName, String relativePath, Update update) {
         VideoInfo videoInfo = videoProcessService.getVideoCover(fileId, username, relativePath, fileName);
         String coverPath = videoInfo.getCovertPath();
         log.debug("\r\ncoverPath:{}", coverPath);
