@@ -131,7 +131,7 @@
         <dependency>
             <groupId>net.sourceforge.tess4j</groupId>
             <artifactId>tess4j</artifactId>
-            <version>5.11.0</version>
+            <version>5.13.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
