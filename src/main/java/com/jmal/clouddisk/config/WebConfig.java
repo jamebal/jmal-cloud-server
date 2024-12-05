@@ -1,11 +1,13 @@
 package com.jmal.clouddisk.config;
 
+import com.jmal.clouddisk.exception.BrokenPipeFilter;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.interceptor.FileInterceptor;
 import com.jmal.clouddisk.interceptor.HeaderLocaleChangeInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.AsyncTaskExecutor;
@@ -86,6 +88,14 @@ public class WebConfig implements WebMvcConfigurer {
     @Bean
     public HeaderLocaleChangeInterceptor localeChangeInterceptor() {
         return new HeaderLocaleChangeInterceptor();
+    }
+
+    @Bean
+    public FilterRegistrationBean<BrokenPipeFilter> brokenPipeFilter() {
+        FilterRegistrationBean<BrokenPipeFilter> registrationBean = new FilterRegistrationBean<>();
+        registrationBean.setFilter(new BrokenPipeFilter());
+        registrationBean.addUrlPatterns("/*");
+        return registrationBean;
     }
 
 }

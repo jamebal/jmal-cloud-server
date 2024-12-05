@@ -4,37 +4,75 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
+import io.methvin.watcher.DirectoryChangeEvent;
+import io.methvin.watcher.DirectoryChangeListener;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
-/**
- * 文件变化监听器
- * <p>
- * 在Apache的Commons-IO中有关于文件的监控功能的代码. 文件监控的原理如下：
- * 由文件监控类FileAlterationMonitor中的线程不停的扫描文件观察器FileAlterationObserver，
- * 如果有文件的变化，则根据相关的文件比较器，判断文件时新增，还是删除，还是更改。（默认为1000毫秒执行一次扫描）
- *
- * @author jmal
- */
 @Slf4j
 @Service
-public class FileListener extends FileAlterationListenerAdaptor {
+@RequiredArgsConstructor
+public class FileListener implements DirectoryChangeListener {
 
-    @Autowired
-    FileProperties fileProperties;
+    private final FileProperties fileProperties;
 
-    @Autowired
-    IFileService fileService;
+    private final IFileService fileService;
+
+    /**
+     * 续要过滤掉的目录列表
+     */
+    private final Set<Path> FILTER_DIR_SET = new CopyOnWriteArraySet<>();
+
+    public void addFilterDir(Path path) {
+        FILTER_DIR_SET.add(path);
+    }
+
+    public Set<Path> getFilterDirSet() {
+        return FILTER_DIR_SET;
+    }
+
+    public void removeFilterDir(Path path) {
+        FILTER_DIR_SET.remove(path);
+    }
+
+    public boolean containsFilterDir(Path path) {
+        return FILTER_DIR_SET.contains(path);
+    }
+
+    @Override
+    public void onEvent(DirectoryChangeEvent directoryChangeEvent) {
+        Path eventPath = directoryChangeEvent.path();
+        DirectoryChangeEvent.EventType eventType = directoryChangeEvent.eventType();
+        // 检查是否为忽略路径
+        if (FILTER_DIR_SET.stream().anyMatch(eventPath::startsWith)) {
+            log.debug("Ignore Event: {}, Path: {}", eventType, eventPath);
+            return;
+        }
+        log.debug("DirectoryChangeEvent: {}, Path: {}", eventType, eventPath);
+        switch (eventType) {
+            case CREATE:
+                onFileCreate(eventPath.toFile());
+                break;
+            case MODIFY:
+                onFileChange(eventPath.toFile());
+                break;
+            case DELETE:
+                onFileDelete(eventPath.toFile());
+                break;
+        }
+    }
 
     /**
      * 文件创建执行
+     * @param file 文件
      */
-    @Override
     public void onFileCreate(File file) {
         try {
             // 判断文件名是否在monitorIgnoreFilePrefix中
@@ -50,14 +88,14 @@ public class FileListener extends FileAlterationListenerAdaptor {
             CaffeineUtil.setLastAccessTimeCache();
             log.info("用户:{},新建文件:{}", username, file.getAbsolutePath());
         } catch (Exception e) {
-            log.error("新建文件后续操作失败, " + file.getAbsolutePath(), e);
+            log.error("新建文件后续操作失败, {}", file.getAbsolutePath(), e);
         }
     }
 
     /**
      * 文件创建修改
+     * @param file 文件
      */
-    @Override
     public void onFileChange(File file) {
         try {
             String username = ownerOfChangeFile(file);
@@ -74,8 +112,8 @@ public class FileListener extends FileAlterationListenerAdaptor {
 
     /**
      * 文件删除
+     * @param file 文件
      */
-    @Override
     public void onFileDelete(File file) {
         try {
             String username = ownerOfChangeFile(file);
@@ -91,55 +129,6 @@ public class FileListener extends FileAlterationListenerAdaptor {
     }
 
     /**
-     * 目录创建
-     */
-    @Override
-    public void onDirectoryCreate(File directory) {
-        try {
-            String username = ownerOfChangeFile(directory);
-            if (CharSequenceUtil.isBlank(username)) {
-                return;
-            }
-            fileService.createFile(username, directory);
-            CaffeineUtil.setLastAccessTimeCache();
-            log.info("用户:{},新建目录:{}", username, directory.getAbsolutePath());
-        } catch (Exception e) {
-            log.error("新建目录后续操作失败", e);
-        }
-    }
-
-    /**
-     * 目录修改
-     */
-    @Override
-    public void onDirectoryChange(File directory) {
-        try {
-            String username = ownerOfChangeFile(directory);
-            log.info("用户:{},修改目录:{}", username, directory.getAbsolutePath());
-        } catch (Exception e) {
-            log.error("修改目录后续操作失败", e);
-        }
-    }
-
-    /**
-     * 目录删除
-     */
-    @Override
-    public void onDirectoryDelete(File directory) {
-        try {
-            String username = ownerOfChangeFile(directory);
-            if (CharSequenceUtil.isBlank(username)) {
-                return;
-            }
-            fileService.deleteFile(username, directory);
-            CaffeineUtil.setLastAccessTimeCache();
-            log.info("用户:{},删除目录:{}", username, directory.getAbsolutePath());
-        } catch (Exception e) {
-            log.error("删除目录后续操作失败", e);
-        }
-    }
-
-    /***
      * 判断变化的文件属于哪个用户
      * @return username
      */
@@ -157,4 +146,18 @@ public class FileListener extends FileAlterationListenerAdaptor {
         return username;
     }
 
+    @Override
+    public boolean isWatching() {
+        return DirectoryChangeListener.super.isWatching();
+    }
+
+    @Override
+    public void onIdle(int i) {
+        DirectoryChangeListener.super.onIdle(i);
+    }
+
+    @Override
+    public void onException(Exception e) {
+        DirectoryChangeListener.super.onException(e);
+    }
 }

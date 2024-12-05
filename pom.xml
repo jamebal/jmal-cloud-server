@@ -254,6 +254,11 @@
             <version>2.16.1</version>
         </dependency>
         <dependency>
+            <groupId>io.methvin</groupId>
+            <artifactId>directory-watcher</artifactId>
+            <version>0.18.0</version>
+        </dependency>
+        <dependency>
             <groupId>e-iceblue</groupId>
             <artifactId>spire.doc.free</artifactId>
             <version>5.2.0</version>
