@@ -9,13 +9,11 @@ import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.HeartwingsDO;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.IFileService;
-import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.SystemUtil;
+import io.methvin.watcher.DirectoryWatcher;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.monitor.FileAlterationMonitor;
-import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -30,12 +28,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @Description 启动时开启文件目录监控
@@ -49,27 +45,18 @@ public class FileMonitor {
 
     final FileProperties fileProperties;
 
-    final FileListener fileListener;
-
     final MongoTemplate mongoTemplate;
 
     final IFileService fileService;
 
-    private FileAlterationMonitor monitor;
-
-    private FileAlterationObserver observer;
-
-    private boolean isMonitor = false;
+    final FileListener fileListener;
 
     @Value("${version}")
     private String version;
 
     private String newVersion = null;
 
-    /**
-     * 续要过滤掉的目录列表
-     */
-    private static final Set<String> FILTER_DIR_SET = new CopyOnWriteArraySet<>();
+    private DirectoryWatcher watcher;
 
     @EventListener(ContextRefreshedEvent.class)
     public void initIndicesAfterStartup() {
@@ -98,37 +85,31 @@ public class FileMonitor {
         if (Boolean.FALSE.equals(fileProperties.getMonitor())) {
             return;
         }
+        // 忽略目录
+        fileListener.addFilterDir(Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir()));
+        fileListener.addFilterDir(Paths.get(fileProperties.getRootDir(), fileProperties.getLuceneIndexDir()));
+
+        // 开启文件监控
+        newDirectoryWatcher();
+    }
+
+    private void newDirectoryWatcher() throws IOException {
         Path rootDir = Paths.get(fileProperties.getRootDir());
         PathUtil.mkdir(rootDir);
-        // 轮询间隔(秒)
-        long interval = TimeUnit.SECONDS.toMillis(fileProperties.getTimeInterval());
-        FILTER_DIR_SET.add(fileProperties.getChunkFileDir());
-        FILTER_DIR_SET.add(fileProperties.getLuceneIndexDir());
-        newObserver();
-        //创建文件变化监听器
-        monitor = new FileAlterationMonitor(interval, observer);
-        // 开始监控
-        monitor.start();
-        isMonitor = true;
-        log.info("\r\n文件监控服务已开启:\r\n轮询间隔:{}秒\n监控目录:{}\n忽略目录:{}", fileProperties.getTimeInterval(), rootDir, FILTER_DIR_SET);
+        this.watcher = DirectoryWatcher.builder()
+                .path(rootDir)
+                .listener(fileListener)
+                .logger(log)
+                .fileHashing(false)
+                .build();
+        watcher.watchAsync();
+        log.info("\r\n文件监控服务已开启, 监控目录: {}, 忽略目录: {}", rootDir, fileListener.getFilterDirSet());
     }
 
-    private void newObserver() {
-        // 创建过滤器
-        TempDirFilter tempDirFilter = new TempDirFilter(fileProperties.getRootDir(), FILTER_DIR_SET);
-        // 使用过滤器
-        observer = new FileAlterationObserver(new File(fileProperties.getRootDir()), tempDirFilter);
-        observer.addListener(fileListener);
-    }
-
-    private void reloadObserver() {
-        if (monitor == null) {
-            return;
-        }
+    private void reloadDirectoryWatcher() {
         try {
-            newObserver();
-            fastInterval();
-            log.info("reload FileMonitor, ignoreDir: {}", FILTER_DIR_SET);
+            watcher.close();
+            newDirectoryWatcher();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -139,10 +120,11 @@ public class FileMonitor {
      * @param path 需要过滤掉的路径
      */
     public void addDirFilter(String path) {
-        FILTER_DIR_SET.add(path);
+        Path filepath = Paths.get(fileProperties.getRootDir(), path);
+        fileListener.addFilterDir(filepath);
         String username = Paths.get(path).getParent().getFileName().toString();
-        fileService.createFile(username, Paths.get(fileProperties.getRootDir(), path).toFile());
-        reloadObserver();
+        fileService.createFile(username, filepath.toFile());
+        reloadDirectoryWatcher();
     }
 
     /**
@@ -150,60 +132,13 @@ public class FileMonitor {
      * @param path 需要移除的路径
      */
     public void removeDirFilter(String path) {
-        if (FILTER_DIR_SET.contains(path)) {
-            FILTER_DIR_SET.remove(path);
+        Path filepath = Paths.get(fileProperties.getRootDir(), path);
+        if (fileListener.containsFilterDir(filepath)) {
+            fileListener.removeFilterDir(filepath);
             String username = Paths.get(path).getParent().getFileName().toString();
             fileService.deleteFile(username, Paths.get(fileProperties.getRootDir(), path).toFile());
-            reloadObserver();
+            reloadDirectoryWatcher();
         }
-    }
-
-    /**
-     * 5分钟没人访问时，降低轮询频率
-     */
-    @Scheduled(fixedDelay = 1000, initialDelay = 5000)
-    private void check() {
-        if (monitor == null) {
-            return;
-        }
-        long diff = System.currentTimeMillis() - CaffeineUtil.getLastAccessTimeCache();
-        try {
-            if (diff > DateUnit.MINUTE.getMillis() * 5) {
-                slowlyInterval();
-            } else {
-                if (!isMonitor) {
-                    fastInterval();
-                }
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-    }
-
-    private void slowlyInterval() throws Exception {
-        if (monitor == null) {
-            return;
-        }
-        if (isMonitor) {
-            monitor.stop(DateUnit.SECOND.getMillis());
-            monitor = null;
-            monitor = new FileAlterationMonitor(DateUnit.MINUTE.getMillis() * 30, observer);
-            monitor.start();
-            log.info("轮询间隔改为3分钟");
-            isMonitor = false;
-        }
-    }
-
-    private void fastInterval() throws Exception {
-        if (monitor == null) {
-            return;
-        }
-        monitor.stop(DateUnit.SECOND.getMillis());
-        monitor = null;
-        monitor = new FileAlterationMonitor(DateUnit.SECOND.getMillis() * 3, observer);
-        monitor.start();
-        log.info("轮询间隔改为3秒钟");
-        isMonitor = true;
     }
 
     /**
