@@ -42,12 +42,12 @@ public class CommonExceptionHandler {
     }
 
     @ExceptionHandler(AsyncRequestTimeoutException.class)
-    public ResponseEntity<String> handleAsyncRequestTimeoutException(IOException e) {
+    public ResponseEntity<String> handleAsyncRequestTimeoutException() {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     @ExceptionHandler(ClientAbortException.class)
-    public ResponseEntity<String> handleClientAbortException(IOException e) {
+    public ResponseEntity<String> handleClientAbortException() {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
