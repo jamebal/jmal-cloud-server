@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.util.Arrays;
+import java.util.List;
+
 
 /**
  * 统一异常处理
@@ -30,13 +33,43 @@ public class CommonExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseBody
     public ResponseResult<Object> exceptionHandler(Exception e) {
-        if (e instanceof AsyncRequestTimeoutException || e instanceof ClientAbortException) {
-            // ignore
-        } else {
-            log.error(e.getMessage(), e);
+        // 1. 定义需要忽略的异常类型
+        final List<Class<? extends Exception>> IGNORED_EXCEPTIONS = Arrays.asList(
+                AsyncRequestTimeoutException.class,
+                ClientAbortException.class
+        );
+
+        // 2. 定义需要忽略的错误消息
+        final List<String> IGNORED_MESSAGES = Arrays.asList(
+                "Connection reset by peer",
+                "Broken pipe"
+        );
+
+        // 3. 判断是否需要记录日志
+        boolean shouldLog = IGNORED_EXCEPTIONS.stream().noneMatch(cls -> cls.isInstance(e));
+
+        // 4. 检查异常类型
+
+        // 5. 检查异常消息
+        String errorMessage = e.getMessage();
+        if (errorMessage != null && IGNORED_MESSAGES.stream().anyMatch(errorMessage::contains)) {
+            shouldLog = false;
         }
-        return ResultUtil.error(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
+
+        // 6. 记录日志
+        if (shouldLog) {
+            log.error("系统异常: {}", errorMessage, e);
+        } else {
+            log.debug("忽略的异常: {}", errorMessage);
+        }
+
+        // 7. 构建响应
+        return ResultUtil.error(
+                ExceptionType.SYSTEM_ERROR.getCode(),
+                errorMessage != null ? errorMessage : "系统异常"
+        );
     }
+
 
 
     @ExceptionHandler(CommonException.class)

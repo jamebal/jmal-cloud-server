@@ -957,6 +957,10 @@ public class CommonFileService {
     }
 
     public void modifyFile(String username, File file) {
+        // 判断文件是否存在
+        if (!file.exists()) {
+            return;
+        }
         String fileAbsolutePath = file.getAbsolutePath();
         String fileName = file.getName();
         String relativePath = fileAbsolutePath.substring(fileProperties.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
