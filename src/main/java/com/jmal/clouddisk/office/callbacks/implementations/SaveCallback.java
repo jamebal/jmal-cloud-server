@@ -8,7 +8,6 @@ import com.jmal.clouddisk.office.callbacks.Callback;
 import com.jmal.clouddisk.office.callbacks.Status;
 import com.jmal.clouddisk.office.model.Track;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.TimeUntils;
@@ -44,8 +43,6 @@ public class SaveCallback implements Callback {
 
     private final CommonFileService commonFileService;
 
-    private final IFileVersionService fileVersionService;
-
     @Override
     public int handle(Track body) {
         int result = 0;
@@ -62,10 +59,6 @@ public class SaveCallback implements Callback {
             commonFileService.checkPermissionUserId(userId, operationPermissionList, OperationPermission.PUT);
 
             Path path = Paths.get(fileProperties.getRootDir(), userLoginHolder.getUsername(), fileDocument.getPath(), fileDocument.getName());
-
-            // 保存历史文件
-            String relativePath = Paths.get(fileDocument.getPath(), fileDocument.getName()).toString();
-            fileVersionService.saveFileVersion(userLoginHolder.getUsername(), relativePath, userLoginHolder.getUserId());
 
             // 下载最新的文件
             long size = HttpUtil.downloadFile(body.getUrl(), path.toString());
