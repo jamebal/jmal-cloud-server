@@ -112,8 +112,9 @@ public class ReadContentService {
             PDFTextStripper pdfStripper = new PDFTextStripper();
 
             for (int pageIndex = 0; pageIndex < document.getNumberOfPages(); pageIndex++) { // 使用 0-based 索引
-                pdfStripper.setStartPage(pageIndex + 1); // PDFTextStripper 使用 1-based 索引
-                pdfStripper.setEndPage(pageIndex + 1);
+                int pageNumber = pageIndex + 1;
+                pdfStripper.setStartPage(pageNumber); // PDFTextStripper 使用 1-based 索引
+                pdfStripper.setEndPage(pageNumber);
                 String text = pdfStripper.getText(document).trim();
 
                 // 如果页面包含文字，添加提取的文字
@@ -122,6 +123,7 @@ public class ReadContentService {
                 }
                 // 如果页面包含图片或没有文字，则进行 OCR
                 if (checkPageContent(document, pageIndex) || text.isEmpty()) {
+                    taskProgressService.addTaskProgress(file, TaskType.OCR, pageNumber + "/" + document.getNumberOfPages());
                     content.append(extractPageWithOCR(pdfRenderer, pageIndex, username));
                 }
             }

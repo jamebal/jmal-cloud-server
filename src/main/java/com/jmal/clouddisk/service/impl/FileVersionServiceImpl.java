@@ -88,6 +88,9 @@ public class FileVersionServiceImpl implements IFileVersionService {
     public void saveFileVersion(String username, String relativePath, String userId) {
         File file = new File(Paths.get(fileProperties.getRootDir(), username, relativePath).toString());
         String filepath = Paths.get(username, relativePath).toString();
+        if (CaffeineUtil.hasFileHistoryCache(filepath)) {
+            return;
+        }
         FileDocument fileDocument = commonFileService.getFileDocumentByPath(filepath, userId);
         long size = file.length();
         String updateDate = fileDocument.getUpdateDate().format(DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
@@ -96,6 +99,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
         try (InputStream inputStream = new FileInputStream(file);
              InputStream gzipInputStream = gzipCompress(inputStream, metadata)) {
             gridFsTemplate.store(gzipInputStream, fileDocument.getId(), metadata);
+            CaffeineUtil.setFileHistoryCache(filepath);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
@@ -103,6 +107,9 @@ public class FileVersionServiceImpl implements IFileVersionService {
 
     @Override
     public void saveFileVersion(AbstractOssObject abstractOssObject, String fileId) {
+        if (CaffeineUtil.hasFileHistoryCache(fileId)) {
+            return;
+        }
         long size = abstractOssObject.getContentLength();
         String filename = Paths.get(abstractOssObject.getKey()).getFileName().toString();
         String updateDate = DateUtil.format(abstractOssObject.getFileInfo().getLastModified(), DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
@@ -111,6 +118,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
         try (InputStream inputStream = abstractOssObject.getInputStream();
              InputStream gzipInputStream = gzipCompress(inputStream, metadata)) {
             gridFsTemplate.store(gzipInputStream, fileId, metadata);
+            CaffeineUtil.setFileHistoryCache(fileId);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }

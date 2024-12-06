@@ -32,6 +32,11 @@ public class CaffeineUtil {
     public static final Cache<String, Long> UPLOAD_FILE_CACHE = Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.SECONDS).build();
 
     /**
+     * 文件历史记录缓存, 避免过于频繁的记录文件历史，3分钟内只记录一次
+     */
+    public static final Cache<String, Long> FILE_HISTORY_CACHE = Caffeine.newBuilder().expireAfterWrite(3, TimeUnit.MINUTES).build();
+
+    /**
      * 缩略图请求缓存
      */
     private static final Cache<String, Boolean> THUMBNAIL_REQUEST_CACHE = Caffeine.newBuilder().expireAfterWrite(60, TimeUnit.SECONDS).build();
@@ -42,8 +47,6 @@ public class CaffeineUtil {
      * value: BucketInfo
      */
     private static final Cache<String, BucketInfo> OSS_DIAMETER_PREFIX_CACHE = Caffeine.newBuilder().build();
-
-    private static final Cache<String, Long> LAST_ACCESS_TIME_CACHE = Caffeine.newBuilder().build();
 
     /***
      * 空间已满的用户
@@ -234,13 +237,6 @@ public class CaffeineUtil {
         CONSUMER_USERNAME.invalidate(username);
     }
 
-    public static Long getLastAccessTimeCache() {
-        return LAST_ACCESS_TIME_CACHE.get("lastAccessTime", key -> System.currentTimeMillis());
-    }
-
-    public static void setLastAccessTimeCache() {
-        LAST_ACCESS_TIME_CACHE.put("lastAccessTime", System.currentTimeMillis());
-    }
 
     public static void setOssDiameterPrefixCache(String path, BucketInfo bucketInfo) {
         OSS_DIAMETER_PREFIX_CACHE.put(path, bucketInfo);
@@ -302,4 +298,13 @@ public class CaffeineUtil {
     public static void setUsernameCache(String userId, String username) {
         USERNAME_CACHE.put(userId, username);
     }
+
+    public static void setFileHistoryCache(String filepath) {
+        FILE_HISTORY_CACHE.put(filepath, System.currentTimeMillis());
+    }
+
+    public static boolean hasFileHistoryCache(String filepath) {
+        return FILE_HISTORY_CACHE.getIfPresent(filepath) != null;
+    }
+
 }

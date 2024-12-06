@@ -5,6 +5,7 @@ import com.jmal.clouddisk.util.ResultUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.ErrorResponseException;
@@ -17,6 +18,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.io.IOException;
+
 
 /**
  * 统一异常处理
@@ -27,17 +30,32 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @Slf4j
 public class CommonExceptionHandler {
 
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<String> handleIOException(IOException e) {
+        if ("Broken pipe".equals(e.getMessage())) {
+            // 不记录日志或仅记录简要信息
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        }
+        // 记录其他I/O异常
+        log.error("Unhandled IOException: {}", e.getMessage(), e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal Server Error");
+    }
+
+    @ExceptionHandler(AsyncRequestTimeoutException.class)
+    public ResponseEntity<String> handleAsyncRequestTimeoutException() {
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @ExceptionHandler(ClientAbortException.class)
+    public ResponseEntity<String> handleClientAbortException() {
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseBody
     public ResponseResult<Object> exceptionHandler(Exception e) {
-        if (e instanceof AsyncRequestTimeoutException || e instanceof ClientAbortException) {
-            // ignore
-        } else {
-            log.error(e.getMessage(), e);
-        }
         return ResultUtil.error(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
     }
-
 
     @ExceptionHandler(CommonException.class)
     @ResponseBody

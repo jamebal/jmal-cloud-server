@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.config;
 
-import com.jmal.clouddisk.util.CaffeineUtil;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Lazy;
@@ -30,7 +29,6 @@ public class WebFilter implements Filter {
             httpRequest.getRequestDispatcher(uri).forward(request, response);
             return;
         }
-        CaffeineUtil.setLastAccessTimeCache();
         chain.doFilter(request, response);
     }
 

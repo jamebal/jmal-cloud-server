@@ -26,6 +26,7 @@ import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
@@ -117,6 +118,9 @@ public class CommonFileService {
 
     @Autowired
     private VideoProcessService videoProcessService;
+
+    @Autowired
+    private IFileVersionService fileVersionService;
 
     @Autowired
     public LuceneService luceneService;
@@ -582,7 +586,7 @@ public class CommonFileService {
                     if (StandardCharsets.UTF_8.name().equals(charset)) {
                         contentType = contentType + ";charset=utf-8";
                     } else {
-                        if (file.length() < 10 * 1024 * 1024 && CharsetDetector.detect(file).equals(StandardCharsets.UTF_8)) {
+                        if (file.length() < 128 * 1024 * 1024 && CharsetDetector.detect(file).equals(StandardCharsets.UTF_8)) {
                             contentType = contentType + ";charset=utf-8";
                         } else {
                             contentType = contentType + ";charset=" + charset;
@@ -957,6 +961,10 @@ public class CommonFileService {
     }
 
     public void modifyFile(String username, File file) {
+        // 判断文件是否存在
+        if (!file.exists()) {
+            return;
+        }
         String fileAbsolutePath = file.getAbsolutePath();
         String fileName = file.getName();
         String relativePath = fileAbsolutePath.substring(fileProperties.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
@@ -977,7 +985,8 @@ public class CommonFileService {
             Update update = new Update();
             update.set("size", file.length());
             update.set(Constants.SUFFIX, suffix);
-            update.set(Constants.CONTENT_TYPE, getContentType(file, contentType));
+            String fileContentType = getContentType(file, contentType);
+            update.set(Constants.CONTENT_TYPE, fileContentType);
             LocalDateTime updateDate = LocalDateTime.now(TimeUntils.ZONE_ID);
             update.set("updateDate", updateDate);
             UpdateResult updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
@@ -991,6 +1000,11 @@ public class CommonFileService {
             pushMessage(username, fileDocument, Constants.UPDATE_FILE);
             if (updateResult.getModifiedCount() > 0) {
                 luceneService.pushCreateIndexQueue(fileDocument.getId());
+            }
+            // 判断文件类型中是否包含utf-8
+            if (fileContentType.contains("utf-8")) {
+                // 修改文件之后保存历史版本
+                fileVersionService.saveFileVersion(username, Paths.get(relativePath, file.getName()).toString(), userId);
             }
         }
     }
