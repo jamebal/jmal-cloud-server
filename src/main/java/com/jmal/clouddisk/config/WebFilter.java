@@ -30,7 +30,6 @@ public class WebFilter implements Filter {
             httpRequest.getRequestDispatcher(uri).forward(request, response);
             return;
         }
-        CaffeineUtil.setLastAccessTimeCache();
         chain.doFilter(request, response);
     }
 

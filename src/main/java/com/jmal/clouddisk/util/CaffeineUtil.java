@@ -48,8 +48,6 @@ public class CaffeineUtil {
      */
     private static final Cache<String, BucketInfo> OSS_DIAMETER_PREFIX_CACHE = Caffeine.newBuilder().build();
 
-    private static final Cache<String, Long> LAST_ACCESS_TIME_CACHE = Caffeine.newBuilder().build();
-
     /***
      * 空间已满的用户
      */
@@ -239,13 +237,6 @@ public class CaffeineUtil {
         CONSUMER_USERNAME.invalidate(username);
     }
 
-    public static Long getLastAccessTimeCache() {
-        return LAST_ACCESS_TIME_CACHE.get("lastAccessTime", key -> System.currentTimeMillis());
-    }
-
-    public static void setLastAccessTimeCache() {
-        LAST_ACCESS_TIME_CACHE.put("lastAccessTime", System.currentTimeMillis());
-    }
 
     public static void setOssDiameterPrefixCache(String path, BucketInfo bucketInfo) {
         OSS_DIAMETER_PREFIX_CACHE.put(path, bucketInfo);
