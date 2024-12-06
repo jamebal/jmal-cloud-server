@@ -44,6 +44,8 @@ public class SseController {
         SseEmitter emitter = new SseEmitter(30 * 60 * 1000L);
         emitters.put(uuid, emitter);
         emitter.onCompletion(() -> emitters.remove(uuid));
+        emitter.onError((e) -> removeUuid(username, uuid));
+        emitter.onTimeout(() -> removeUuid(username, uuid));
         return emitter;
     }
 
@@ -78,20 +80,24 @@ public class SseController {
                     removeUuid(username, uuid);
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.warn("Failed to send message to client {}: {}", uuid, e.getMessage());
         }
     }
 
 
     private void removeUuid(String username, String uuid) {
-        emitters.remove(uuid);
-        Set<String> uuids = users.get(username);
-        if (uuids != null) {
-            uuids.remove(uuid);
-            if (uuids.isEmpty()) {
-                users.remove(username);
+        try {
+            emitters.remove(uuid);
+            Set<String> uuids = users.get(username);
+            if (uuids != null) {
+                uuids.remove(uuid);
+                if (uuids.isEmpty()) {
+                    users.remove(username);
+                }
             }
+        } catch (Exception e) {
+            log.warn("Failed to remove uuid {}: {}", uuid, e.getMessage());
         }
     }
 
