@@ -69,14 +69,17 @@ public class SseController {
     }
 
     private void sendMessage(Object message, String username, String uuid) {
-        SseEmitter emitter = emitters.get(uuid);
-        if (emitter != null) {
-            try {
-                emitter.send(message);
-            } catch (Exception e) {
-                log.warn("Failed to send message to client {}: {}", uuid, e.getMessage());
-                removeUuid(username, uuid);
+        try {
+            SseEmitter emitter = emitters.get(uuid);
+            if (emitter != null) {
+                try {
+                    emitter.send(message);
+                } catch (Exception e) {
+                    removeUuid(username, uuid);
+                }
             }
+        } catch (Exception e) {
+            log.warn("Failed to send message to client {}: {}", uuid, e.getMessage());
         }
     }
 
