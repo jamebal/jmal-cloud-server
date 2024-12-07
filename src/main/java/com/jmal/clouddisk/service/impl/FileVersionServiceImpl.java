@@ -170,7 +170,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
         return gzipDecompress(gridFsResource.getInputStream(), gridFSFile.getMetadata());
     }
 
-    @Nullable
+    @NotNull
     private GridFSFile getGridFSFile(String gridFSId) {
         Query query = getQueryOfId(gridFSId);
         return gridFsTemplate.findOne(query);

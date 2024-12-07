@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.webdav;
 
-import cn.hutool.core.codec.Base64Decoder;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,11 +54,6 @@ public class BasicAuthenticator extends AuthenticatorBase {
     }
 
 
-    public void setTrimCredentials(boolean trimCredentials) {
-        this.trimCredentials = trimCredentials;
-    }
-
-
     @Override
     protected boolean doAuthenticate(Request request, HttpServletResponse response) throws IOException {
 
@@ -73,7 +67,7 @@ public class BasicAuthenticator extends AuthenticatorBase {
         if (authorization != null) {
             authorization.toBytes();
             ByteChunk authorizationBC = authorization.getByteChunk();
-            BasicCredentials credentials = null;
+            BasicCredentials credentials;
             try {
                 credentials = new BasicCredentials(authorizationBC, charset, getTrimCredentials());
                 String username = credentials.getUsername();
@@ -164,7 +158,6 @@ public class BasicAuthenticator extends AuthenticatorBase {
          * -- GETTER --
          *  Trivial accessor.
          *
-         * @return the decoded username token as a String, which is never be <code>null</code>, but can be empty.
          */
         @Getter
         private String username = null;
@@ -172,8 +165,6 @@ public class BasicAuthenticator extends AuthenticatorBase {
          * -- GETTER --
          *  Trivial accessor.
          *
-         * @return the decoded password token as a String, or <code>null</code> if no password was found in the
-         *             credentials.
          */
         @Getter
         private String password = null;
