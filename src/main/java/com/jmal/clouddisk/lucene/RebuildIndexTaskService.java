@@ -110,6 +110,8 @@ public class RebuildIndexTaskService {
 
     private Timer DELAY_DELETE_TAG_TIMER;
 
+    private final ReentrantLock deleteDocWithDeleteFlagLock = new ReentrantLock();
+
     @PostConstruct
     public void init() {
         // 启动时检测是否存在菜单，不存在则初始化
@@ -155,6 +157,8 @@ public class RebuildIndexTaskService {
                 rebuildingIndex(username, canPath);
             } finally {
                 SYNC_FILE_LOCK.unlock();
+                setPercentMap(100d, 100d);
+                pushMessage();
             }
         });
     }
@@ -251,9 +255,16 @@ public class RebuildIndexTaskService {
         DELAY_DELETE_TAG_TIMER.schedule(new TimerTask() {
             @Override
             public void run() {
-                commonFileService.deleteDocWithDeleteFlag();
+                if (!deleteDocWithDeleteFlagLock.tryLock()) {
+                    return;
+                }
+                try {
+                    commonFileService.deleteDocWithDeleteFlag();
+                } finally {
+                    deleteDocWithDeleteFlagLock.unlock();
+                }
             }
-        }, 60000 * 3);
+        }, 3000);
     }
 
     public void rebuildingIndexCompleted() {

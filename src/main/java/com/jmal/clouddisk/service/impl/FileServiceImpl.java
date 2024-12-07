@@ -100,9 +100,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     VideoProcessService videoProcessService;
 
     @Autowired
-    IFileVersionService fileVersionService;
-
-    @Autowired
     TagService tagService;
 
     @Autowired
@@ -2036,13 +2033,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         return username;
     }
 
-    private Query getAllByFolderQuery(FileDocument fileDocument) {
-        Query query1 = new Query();
-        query1.addCriteria(Criteria.where(USER_ID).is(fileDocument.getUserId()));
-        query1.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName())));
-        return query1;
-    }
-
     @Override
     public ResponseResult<Object> restore(List<String> fileIds, String username) {
         Single.create(emitter -> {
@@ -2152,23 +2142,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 }
             }
         });
-    }
-
-
-    @Override
-    public void deleteDependencies(String username, List<String> fileIds, boolean sweep) {
-        if (sweep) {
-            // delete history version
-            fileVersionService.deleteAll(fileIds);
-            // delete video cache
-            videoProcessService.deleteVideoCacheByIds(username, fileIds);
-        }
-        // delete share
-        Query shareQuery = new Query();
-        shareQuery.addCriteria(Criteria.where(Constants.FILE_ID).in(fileIds));
-        mongoTemplate.remove(shareQuery, ShareDO.class);
-        // delete index
-        luceneService.deleteIndexDocuments(fileIds);
     }
 
 }
