@@ -447,7 +447,7 @@ public class CommonFileService {
         }
     }
 
-    private static void setDateTime(File file, Update update) {
+    public static LocalDateTime setDateTime(File file, Update update) {
         LocalDateTime updateDateTime;
         LocalDateTime uploadDateTime;
         try {
@@ -462,6 +462,7 @@ public class CommonFileService {
         }
         update.set(UPLOAD_DATE, uploadDateTime);
         update.set(UPDATE_DATE, updateDateTime);
+        return updateDateTime;
     }
 
     public FileDocument getFileDocument(String userId, String fileName, String relativePath, Query query) {
@@ -987,11 +988,14 @@ public class CommonFileService {
             update.set(Constants.SUFFIX, suffix);
             String fileContentType = getContentType(file, contentType);
             update.set(Constants.CONTENT_TYPE, fileContentType);
-            LocalDateTime updateDate = LocalDateTime.now(TimeUntils.ZONE_ID);
-            update.set("updateDate", updateDate);
+            LocalDateTime updateTime = setDateTime(file, update);
+            // 如果size相同，不更新,且更新时间在1秒内,则不更新
+            if (fileDocument.getSize() == file.length() && TimeUntils.isWithinOneSecond(fileDocument.getUpdateDate(), updateTime)) {
+                return;
+            }
             UpdateResult updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
             fileDocument.setSize(file.length());
-            fileDocument.setUpdateDate(updateDate);
+            fileDocument.setUpdateDate(updateTime);
             if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
                 // 写入markdown内容
                 String markDownContent = FileUtil.readString(file, MyFileUtils.getFileCharset(file));
@@ -1006,6 +1010,7 @@ public class CommonFileService {
                 // 修改文件之后保存历史版本
                 fileVersionService.saveFileVersion(username, Paths.get(relativePath, file.getName()).toString(), userId);
             }
+            log.info("修改文件完成: {}", file.getAbsolutePath());
         }
     }
 

@@ -28,7 +28,6 @@ import org.apache.catalina.connector.ClientAbortException;
 import org.apache.commons.io.IOUtils;
 import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Sort;
@@ -57,6 +56,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+
+import static com.jmal.clouddisk.service.Constants.UPDATE_DATE;
 
 /**
  * @author jmal
@@ -157,10 +158,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
      */
     public InputStream readFileVersion(String gridFSId) throws IOException {
         GridFSFile gridFSFile = getGridFSFile(gridFSId);
-        if (gridFSFile != null) {
-            return getInputStream(gridFSFile);
-        }
-        return null;
+        return getInputStream(gridFSFile);
     }
 
     private InputStream getInputStream(GridFSFile gridFSFile) throws IOException {
@@ -168,7 +166,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
         return gzipDecompress(gridFsResource.getInputStream(), gridFSFile.getMetadata());
     }
 
-    @Nullable
+    @NotNull
     private GridFSFile getGridFSFile(String gridFSId) {
         Query query = getQueryOfId(gridFSId);
         return gridFsTemplate.findOne(query);
@@ -227,7 +225,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
     @Override
     public FileDocument getFileById(String gridFSId) {
         GridFSFile gridFSFile = getGridFSFile(gridFSId);
-        if (gridFSFile == null || gridFSFile.getMetadata() == null) {
+        if (gridFSFile.getMetadata() == null) {
             return null;
         }
         String fileId = gridFSFile.getFilename();
@@ -261,9 +259,6 @@ public class FileVersionServiceImpl implements IFileVersionService {
     public StreamingResponseBody getStreamFileById(String gridFSId) {
         return outputStream -> {
             GridFSFile gridFSFile = getGridFSFile(gridFSId);
-            if (gridFSFile == null) {
-                return;
-            }
             Charset charset = getCharset(gridFSFile);
             try (InputStream inputStream = getInputStream(gridFSFile);
                  InputStreamReader inputStreamReader = new InputStreamReader(inputStream, charset);
@@ -327,7 +322,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
     @Override
     public Long recovery(String gridFSId) {
         GridFSFile gridFSFile = getGridFSFile(gridFSId);
-        if (gridFSFile == null || gridFSFile.getMetadata() == null) {
+        if (gridFSFile.getMetadata() == null) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         String fileId = gridFSFile.getFilename();
@@ -352,7 +347,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
             FileUtil.writeFromStream(inputStream, file);
             Query query = new Query().addCriteria(Criteria.where("_id").is(fileId));
             Update update = new Update();
-            update.set("updateDate", time);
+            update.set(UPDATE_DATE, time);
             mongoTemplate.updateFirst(query, update, FileDocument.class);
             luceneService.pushCreateIndexQueue(fileId);
         } catch (IOException e) {
@@ -364,7 +359,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
     @Override
     public ResponseEntity<InputStreamResource> readHistoryFile(String gridFSId) {
         GridFSFile gridFSFile = getGridFSFile(gridFSId);
-        if (gridFSFile == null || gridFSFile.getMetadata() == null) {
+        if (gridFSFile.getMetadata() == null) {
             return ResponseEntity.notFound().build();
         }
         try (InputStream inputStream = getInputStream(gridFSFile)) {

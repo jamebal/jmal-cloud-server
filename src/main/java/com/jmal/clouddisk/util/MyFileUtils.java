@@ -1,16 +1,22 @@
 package com.jmal.clouddisk.util;
 
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.digest.DigestAlgorithm;
 import com.jmal.clouddisk.service.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.mozilla.universalchardet.UniversalDetector;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -28,8 +34,13 @@ public class MyFileUtils {
 
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
         System.out.println(extName("file"));
+        File file1 = new File("/Users/jmal/Downloads/归档.zip");
+        File file2 = new File("/Users/jmal/Downloads/归档.zip");
+        TimeInterval timer = new TimeInterval();
+        System.out.println(hashEquals(file1.getAbsolutePath(), file2.getAbsolutePath()));
+        System.out.println(timer.interval());
     }
 
     public static String extName(File file) {
@@ -125,6 +136,38 @@ public class MyFileUtils {
 
     public static boolean hasContentFile(String type) {
         return hasContentTypes.contains(type);
+    }
+
+    public static MessageDigest digest;
+
+    static {
+        try {
+            digest = MessageDigest.getInstance(DigestAlgorithm.MD5.getValue());
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static String calculateHash(String filePath) throws IOException {
+        try (FileInputStream fis = new FileInputStream(filePath)) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = fis.read(buffer)) != -1) {
+                digest.update(buffer, 0, bytesRead);
+            }
+        }
+        byte[] hashBytes = digest.digest();
+        StringBuilder sb = new StringBuilder();
+        for (byte b : hashBytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    public static boolean hashEquals(String filePath1, String filePath2) throws IOException {
+        String hash1 = calculateHash(filePath1);
+        String hash2 = calculateHash(filePath2);
+        return hash1.equals(hash2);
     }
 }
 

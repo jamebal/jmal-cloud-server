@@ -1735,7 +1735,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             Update update = new Update();
             update.set("name", newFileName);
             update.set(Constants.SUFFIX, MyFileUtils.extName(newFileName));
-            update.set("updateDate", LocalDateTime.now(TimeUntils.ZONE_ID));
+            setDateTime(file, update);
             mongoTemplate.upsert(query, update, COLLECTION_NAME);
         } else {
             return true;
