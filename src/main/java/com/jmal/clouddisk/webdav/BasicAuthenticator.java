@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.webdav;
 
+import cn.hutool.core.codec.Base64Decoder;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,13 +12,13 @@ import org.apache.catalina.authenticator.AuthenticatorBase;
 import org.apache.catalina.connector.Request;
 import org.apache.tomcat.util.buf.ByteChunk;
 import org.apache.tomcat.util.buf.MessageBytes;
-import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.Base64;
 
 @Component
 @Slf4j
@@ -190,7 +191,7 @@ public class BasicAuthenticator extends AuthenticatorBase {
         public BasicCredentials(ByteChunk input, Charset charset, boolean trimCredentials)
                 throws IllegalArgumentException {
             authorization = input;
-            initialOffset = input.getOffset();
+            initialOffset = input.getStart();
             this.charset = charset;
             this.trimCredentials = trimCredentials;
 
@@ -219,9 +220,14 @@ public class BasicAuthenticator extends AuthenticatorBase {
          * surrounding white space.
          */
         private byte[] parseBase64() throws IllegalArgumentException {
-            byte[] decoded = Base64.decodeBase64(authorization.getBuffer(), base64blobOffset, base64blobLength);
+            // 提取需要解码的子数组
+            byte[] subArray = new byte[base64blobLength];
+            System.arraycopy(authorization.getBuffer(), base64blobOffset, subArray, 0, base64blobLength);
+
+            // 使用Java内置的Base64解码器
+            byte[] decoded = Base64.getDecoder().decode(subArray);
             // restore original offset
-            authorization.setOffset(initialOffset);
+            authorization.setStart(initialOffset);
             if (decoded == null) {
                 throw new IllegalArgumentException(sm.getString("basicAuthenticator.notBase64"));
             }
