@@ -10,6 +10,7 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -640,5 +641,10 @@ public class TimeUntils {
 
     public static String getLocalDateTime(LocalDateTime date) {
         return date.format(FORMAT_TIME);
+    }
+
+    public static boolean isWithinOneSecond(LocalDateTime time1, LocalDateTime time2) {
+        long secondsDifference = Math.abs(time1.until(time2, ChronoUnit.SECONDS));
+        return secondsDifference < 1;
     }
 }

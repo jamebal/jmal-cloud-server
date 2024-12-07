@@ -603,7 +603,6 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
         File file = Paths.get(fileProperties.getRootDir(), username, fileDocument.getPath(), fileDocument.getName()).toFile();
         FileUtil.writeString(fileDocument.getContentText(), file, StandardCharsets.UTF_8);
-
         Update update = new Update();
         update.unset(Constants.DRAFT);
         mongoTemplate.upsert(query, update, CommonFileService.COLLECTION_NAME);
@@ -639,7 +638,6 @@ public class MarkdownServiceImpl implements IMarkdownService {
         String userId = upload.getUserId();
         commonFileService.checkPermissionUserId(userId, upload.getOperationPermissionList(), OperationPermission.PUT);
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
-        commonFileService.modifyFile(upload.getUsername(), file);
         return ResultUtil.success();
     }
 

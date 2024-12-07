@@ -44,6 +44,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.jmal.clouddisk.service.Constants.UPDATE_DATE;
+
 /**
  * @author jmal
  * <p>
@@ -536,7 +538,7 @@ public class LuceneService {
         }
         // 创建排序规则
         SortField sortField;
-        if ("updateDate".equals(searchDTO.getSortProp())) {
+        if (UPDATE_DATE.equals(searchDTO.getSortProp())) {
             sortField = new SortField("modified", SortField.Type.LONG, "descending".equalsIgnoreCase(searchDTO.getSortOrder()));
         } else if ("size".equals(searchDTO.getSortProp())) {
             sortField = new SortField("size", SortField.Type.LONG, "descending".equalsIgnoreCase(searchDTO.getSortOrder()));

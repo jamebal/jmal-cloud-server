@@ -58,6 +58,8 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import static com.jmal.clouddisk.service.Constants.UPDATE_DATE;
+
 /**
  * @author jmal
  * @Description 文件版本管理
@@ -352,7 +354,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
             FileUtil.writeFromStream(inputStream, file);
             Query query = new Query().addCriteria(Criteria.where("_id").is(fileId));
             Update update = new Update();
-            update.set("updateDate", time);
+            update.set(UPDATE_DATE, time);
             mongoTemplate.updateFirst(query, update, FileDocument.class);
             luceneService.pushCreateIndexQueue(fileId);
         } catch (IOException e) {
