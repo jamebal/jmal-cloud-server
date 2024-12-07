@@ -28,7 +28,6 @@ import org.apache.catalina.connector.ClientAbortException;
 import org.apache.commons.io.IOUtils;
 import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Sort;
@@ -159,10 +158,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
      */
     public InputStream readFileVersion(String gridFSId) throws IOException {
         GridFSFile gridFSFile = getGridFSFile(gridFSId);
-        if (gridFSFile != null) {
-            return getInputStream(gridFSFile);
-        }
-        return null;
+        return getInputStream(gridFSFile);
     }
 
     private InputStream getInputStream(GridFSFile gridFSFile) throws IOException {
@@ -229,7 +225,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
     @Override
     public FileDocument getFileById(String gridFSId) {
         GridFSFile gridFSFile = getGridFSFile(gridFSId);
-        if (gridFSFile == null || gridFSFile.getMetadata() == null) {
+        if (gridFSFile.getMetadata() == null) {
             return null;
         }
         String fileId = gridFSFile.getFilename();
@@ -263,9 +259,6 @@ public class FileVersionServiceImpl implements IFileVersionService {
     public StreamingResponseBody getStreamFileById(String gridFSId) {
         return outputStream -> {
             GridFSFile gridFSFile = getGridFSFile(gridFSId);
-            if (gridFSFile == null) {
-                return;
-            }
             Charset charset = getCharset(gridFSFile);
             try (InputStream inputStream = getInputStream(gridFSFile);
                  InputStreamReader inputStreamReader = new InputStreamReader(inputStream, charset);
@@ -329,7 +322,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
     @Override
     public Long recovery(String gridFSId) {
         GridFSFile gridFSFile = getGridFSFile(gridFSId);
-        if (gridFSFile == null || gridFSFile.getMetadata() == null) {
+        if (gridFSFile.getMetadata() == null) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         String fileId = gridFSFile.getFilename();
@@ -366,7 +359,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
     @Override
     public ResponseEntity<InputStreamResource> readHistoryFile(String gridFSId) {
         GridFSFile gridFSFile = getGridFSFile(gridFSId);
-        if (gridFSFile == null || gridFSFile.getMetadata() == null) {
+        if (gridFSFile.getMetadata() == null) {
             return ResponseEntity.notFound().build();
         }
         try (InputStream inputStream = getInputStream(gridFSFile)) {

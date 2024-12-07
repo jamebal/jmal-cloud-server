@@ -26,7 +26,6 @@ public class BasicAuthenticator extends AuthenticatorBase {
 
     private Charset charset = StandardCharsets.ISO_8859_1;
     private String charsetString = null;
-    private boolean trimCredentials = true;
 
     private final FileProperties fileProperties;
 
@@ -50,6 +49,7 @@ public class BasicAuthenticator extends AuthenticatorBase {
 
 
     public boolean getTrimCredentials() {
+        boolean trimCredentials = true;
         return trimCredentials;
     }
 
