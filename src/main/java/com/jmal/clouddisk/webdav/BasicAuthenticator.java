@@ -49,8 +49,7 @@ public class BasicAuthenticator extends AuthenticatorBase {
 
 
     public boolean getTrimCredentials() {
-        boolean trimCredentials = true;
-        return trimCredentials;
+        return true;
     }
 
 
