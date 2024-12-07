@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.PrefixQuery;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -110,6 +111,8 @@ public class RebuildIndexTaskService {
 
     private Timer DELAY_DELETE_TAG_TIMER;
 
+    private final ReentrantLock deleteDocWithDeleteFlagLock = new ReentrantLock();
+
     @PostConstruct
     public void init() {
         // 启动时检测是否存在菜单，不存在则初始化
@@ -155,6 +158,8 @@ public class RebuildIndexTaskService {
                 rebuildingIndex(username, canPath);
             } finally {
                 SYNC_FILE_LOCK.unlock();
+                setPercentMap(100d, 100d);
+                pushMessage();
             }
         });
     }
@@ -251,9 +256,16 @@ public class RebuildIndexTaskService {
         DELAY_DELETE_TAG_TIMER.schedule(new TimerTask() {
             @Override
             public void run() {
-                commonFileService.deleteDocWithDeleteFlag();
+                if (!deleteDocWithDeleteFlagLock.tryLock()) {
+                    return;
+                }
+                try {
+                    commonFileService.deleteDocWithDeleteFlag();
+                } finally {
+                    deleteDocWithDeleteFlagLock.unlock();
+                }
             }
-        }, 60000 * 3);
+        }, 3000);
     }
 
     public void rebuildingIndexCompleted() {
@@ -395,14 +407,16 @@ public class RebuildIndexTaskService {
             return NumberUtil.round(processCount.get() / totalCount * 100, 2).doubleValue();
         }
 
+        @NotNull
         @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+        public FileVisitResult visitFileFailed(Path file, @NotNull IOException exc) throws IOException {
             log.error(exc.getMessage(), exc);
             return super.visitFileFailed(file, exc);
         }
 
+        @NotNull
         @Override
-        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult preVisitDirectory(Path dir, @NotNull BasicFileAttributes attrs) throws IOException {
             // 跳过临时文件目录
             FileVisitResult skipTempDirectory = skipTempDirectory(dir);
             if (skipTempDirectory != null) return skipTempDirectory;
@@ -415,8 +429,9 @@ public class RebuildIndexTaskService {
             return super.preVisitDirectory(dir, attrs);
         }
 
+        @NotNull
         @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult visitFile(Path file, @NotNull BasicFileAttributes attrs) throws IOException {
             // 判断文件名是否在monitorIgnoreFilePrefix中
             if (fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(file.getFileName()::startsWith)) {
                 log.info("忽略文件:{}", file.getFileName());
@@ -473,8 +488,9 @@ public class RebuildIndexTaskService {
             return count.get();
         }
 
+        @NotNull
         @Override
-        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult preVisitDirectory(Path dir, @NotNull BasicFileAttributes attrs) throws IOException {
             // 跳过临时文件目录
             FileVisitResult skipTempDirectory = skipTempDirectory(dir);
             if (skipTempDirectory != null) return skipTempDirectory;
@@ -486,8 +502,9 @@ public class RebuildIndexTaskService {
             return super.preVisitDirectory(dir, attrs);
         }
 
+        @NotNull
         @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult visitFile(Path file, @NotNull BasicFileAttributes attrs) throws IOException {
             count.addAndGet(1);
             return super.visitFile(file, attrs);
         }

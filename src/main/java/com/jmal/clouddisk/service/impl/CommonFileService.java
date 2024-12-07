@@ -7,6 +7,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -33,7 +34,6 @@ import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
@@ -83,6 +83,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static com.jmal.clouddisk.service.Constants.UPDATE_DATE;
 import static com.jmal.clouddisk.service.Constants.UPLOAD_DATE;
+import static com.jmal.clouddisk.service.IUserService.USER_ID;
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Aggregates.group;
 import static com.mongodb.client.model.Aggregates.match;
@@ -961,6 +962,51 @@ public class CommonFileService {
         return operationPermissionList == null || !operationPermissionList.contains(operationPermission);
     }
 
+    public void deleteDependencies(String username, List<String> fileIds, boolean sweep) {
+        if (sweep) {
+            // delete history version
+            fileVersionService.deleteAll(fileIds);
+            // delete video cache
+            videoProcessService.deleteVideoCacheByIds(username, fileIds);
+        }
+        // delete share
+        Query shareQuery = new Query();
+        shareQuery.addCriteria(Criteria.where(Constants.FILE_ID).in(fileIds));
+        mongoTemplate.remove(shareQuery, ShareDO.class);
+        // delete index
+        luceneService.deleteIndexDocuments(fileIds);
+    }
+
+    public Query getAllByFolderQuery(FileDocument fileDocument) {
+        Query query1 = new Query();
+        query1.addCriteria(Criteria.where(USER_ID).is(fileDocument.getUserId()));
+        query1.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName())));
+        return query1;
+    }
+
+    public void deleteFile(String username, File file) {
+        String fileAbsolutePath = file.getAbsolutePath();
+        String fileName = file.getName();
+        String relativePath = fileAbsolutePath.substring(fileProperties.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
+        String userId = userService.getUserIdByUserName(username);
+        if (CharSequenceUtil.isBlank(userId)) {
+            return;
+        }
+        Query query = new Query();
+        // 文件是否存在
+        FileDocument fileDocument = getFileDocument(userId, fileName, relativePath, query);
+        if (fileDocument != null) {
+            deleteDependencies(username, Collections.singletonList(fileDocument.getId()), false);
+            mongoTemplate.remove(query, COLLECTION_NAME);
+            if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
+                // 删除文件夹及其下的所有文件
+                mongoTemplate.remove(getAllByFolderQuery(fileDocument), FileDocument.class);
+                luceneService.deleteIndexDocuments(Collections.singletonList(fileDocument.getId()));
+            }
+        }
+        pushMessage(username, relativePath, Constants.DELETE_FILE);
+    }
+
     public void modifyFile(String username, File file) {
         // 判断文件是否存在
         if (!file.exists()) {
@@ -974,14 +1020,12 @@ public class CommonFileService {
             return;
         }
         Query query = new Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        query.addCriteria(Criteria.where("path").is(relativePath));
-        query.addCriteria(Criteria.where("name").is(fileName));
+        // 文件是否存在
+        FileDocument fileDocument = getFileDocument(userId, fileName, relativePath, query);
 
-        String suffix = MyFileUtils.extName(fileName);
+        String suffix = MyFileUtils.extName(file.getName());
         String contentType = FileContentTypeUtils.getContentType(suffix);
         // 文件是否存在
-        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
         if (fileDocument != null) {
             Update update = new Update();
             update.set("size", file.length());
@@ -1138,11 +1182,36 @@ public class CommonFileService {
      * 删除有删除标记的文档
      */
     public void deleteDocWithDeleteFlag() {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("delete").is(1));
-        DeleteResult deleteResult = mongoTemplate.remove(query, COLLECTION_NAME);
-        if (deleteResult.getDeletedCount() > 0) {
-            log.info("删除有删除标记的文档: {}", deleteResult.getDeletedCount());
+        try {
+            boolean run = true;
+            log.debug("开始删除有删除标记的文档");
+            while (run) {
+                Query query = new Query();
+                query.addCriteria(Criteria.where("delete").is(1));
+                long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
+                if (count == 0) {
+                    run = false;
+                }
+                List<org.bson.Document> pipeline = Arrays.asList(
+                        new org.bson.Document("$match", new org.bson.Document("delete", 1)),
+                        new org.bson.Document("$project", new org.bson.Document("_id", 1).append("name", 1).append("path", 1).append("userId", 1)),
+                        new org.bson.Document("$sort",new org.bson.Document("isFolder", 1L)),
+                        new org.bson.Document("$limit", 1));
+                AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
+                for (org.bson.Document document : aggregateIterable) {
+                    String userId = document.getString("userId");
+                    String username = userService.getUserNameById(userId);
+                    String name = document.getString("name");
+                    String path = document.getString("path");
+                    File file = new File(Paths.get(fileProperties.getRootDir(), username, path, name).toString());
+                    if (!file.exists()) {
+                        deleteFile(username, file);
+                        log.info("删除不存在的文档: {}", file.getAbsolutePath());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
         }
     }
 
