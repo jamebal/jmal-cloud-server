@@ -43,7 +43,7 @@ public class TesseractOcrConfig {
         paramConfig.setMostAngle(true);
         paramConfig.setPadding(50);
         paramConfig.setMaxSideLen(1024);
-        InferenceEngine engine = InferenceEngine.getInstance(Model.ONNX_PPOCR_V3);
+        InferenceEngine engine = InferenceEngine.getInstance(Model.NCNN_PPOCR_V3);
         return ThreadLocal.withInitial(() -> engine);
     }
 
