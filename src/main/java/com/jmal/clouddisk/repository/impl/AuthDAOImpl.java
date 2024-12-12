@@ -90,9 +90,10 @@ public class AuthDAOImpl implements IAuthDAO {
     }
 
     @Override
-    public void updateAccessToken(String username) {
+    public void updateAccessToken(String username, String token) {
         Query query = new Query();
         query.addCriteria(Criteria.where(USERNAME).is(username));
+        query.addCriteria(Criteria.where(ACCESS_TOKEN).is(token));
         Update update = new Update();
         update.set("lastActiveTime", LocalDateTime.now(TimeUntils.ZONE_ID));
         mongoTemplate.upsert(query, update,ACCESS_TOKEN_COLLECTION_NAME);

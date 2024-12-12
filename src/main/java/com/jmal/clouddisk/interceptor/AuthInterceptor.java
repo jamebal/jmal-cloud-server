@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.interceptor;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import com.alibaba.fastjson.JSON;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
@@ -13,6 +12,8 @@ import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TokenUtil;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -150,7 +151,9 @@ public class AuthInterceptor implements HandlerInterceptor {
             return null;
         }
         // access-token 认证通过 设置该身份的权限
-        ThreadUtil.execute(() -> authDAO.updateAccessToken(username));
+        Completable.fromAction(() -> authDAO.updateAccessToken(username, userAccessTokenDO.getAccessToken()))
+                .subscribeOn(Schedulers.io())
+                .subscribe();
         setAuthorities(username);
         return userAccessTokenDO.getUsername();
     }
