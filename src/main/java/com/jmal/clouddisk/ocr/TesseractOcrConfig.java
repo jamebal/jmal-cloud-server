@@ -1,5 +1,8 @@
 package com.jmal.clouddisk.ocr;
 
+import io.github.mymonstercat.Model;
+import io.github.mymonstercat.ocr.InferenceEngine;
+import io.github.mymonstercat.ocr.config.ParamConfig;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.TessAPI;
@@ -31,6 +34,17 @@ public class TesseractOcrConfig {
             tesseract.setPageSegMode(TessAPI.TessPageSegMode.PSM_AUTO);
             return tesseract;
         });
+    }
+
+    @Bean
+    public ThreadLocal<InferenceEngine> papidOcrThreadLocal() {
+        ParamConfig paramConfig = ParamConfig.getDefaultConfig();
+        paramConfig.setDoAngle(true);
+        paramConfig.setMostAngle(true);
+        paramConfig.setPadding(0);
+        paramConfig.setMaxSideLen(960);
+        InferenceEngine engine = InferenceEngine.getInstance(Model.ONNX_PPOCR_V3);
+        return ThreadLocal.withInitial(() -> engine);
     }
 
 }

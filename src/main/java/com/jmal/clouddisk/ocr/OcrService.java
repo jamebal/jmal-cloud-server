@@ -1,16 +1,17 @@
 package com.jmal.clouddisk.ocr;
 
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.ObjectId;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.media.FFMPEGCommand;
+import com.jmal.clouddisk.service.Constants;
+import io.github.mymonstercat.ocr.InferenceEngine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
-import net.sourceforge.tess4j.TesseractException;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -28,6 +29,8 @@ public class OcrService {
 
     private final ThreadLocal<Tesseract> tesseractThreadLocal;
 
+    private final ThreadLocal<InferenceEngine> papidOcrThreadLocal;
+
     private final FileProperties fileProperties;
 
     public String doOCR(String imagePath, String tempImagePath) {
@@ -43,10 +46,15 @@ public class OcrService {
             if (StrUtil.isBlank(preprocessedOCRImage)) {
                 return "";
             }
+            TimeInterval interval = new TimeInterval();
             File imageFile = new File(preprocessedOCRImage);
             ITesseract tesseract = tesseractThreadLocal.get();
-            return tesseract.doOCR(imageFile);
-        } catch (TesseractException e) {
+            String content = tesseract.doOCR(imageFile);
+            // InferenceEngine engine = papidOcrThreadLocal.get();
+            // String content = engine.runOcr(preprocessedOCRImage).getStrRes();
+            log.info("OCR time consuming: {}", interval.intervalMs());
+            return content;
+        } catch (Exception e) {
             log.warn("Error while performing OCR: {}", e.getMessage(), e);
         } finally {
             FileUtil.del(tempImagePath);
