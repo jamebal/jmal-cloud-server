@@ -10,7 +10,6 @@ import com.jmal.clouddisk.service.Constants;
 import io.github.mymonstercat.ocr.InferenceEngine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
 import org.springframework.stereotype.Service;
 
@@ -48,10 +47,11 @@ public class OcrService {
             }
             TimeInterval interval = new TimeInterval();
             File imageFile = new File(preprocessedOCRImage);
-            ITesseract tesseract = tesseractThreadLocal.get();
-            String content = tesseract.doOCR(imageFile);
-            // InferenceEngine engine = papidOcrThreadLocal.get();
-            // String content = engine.runOcr(preprocessedOCRImage).getStrRes();
+            // ITesseract tesseract = tesseractThreadLocal.get();
+            // String content = tesseract.doOCR(imageFile);
+            InferenceEngine engine = papidOcrThreadLocal.get();
+            String content = engine.runOcr(preprocessedOCRImage).getStrRes();
+            log.info("OCR result: {}", content);
             log.info("OCR time consuming: {}", interval.intervalMs());
             return content;
         } catch (Exception e) {
