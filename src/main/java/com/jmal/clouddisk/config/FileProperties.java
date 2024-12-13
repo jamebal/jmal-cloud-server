@@ -95,6 +95,11 @@ public class FileProperties {
      */
     private String ip2regionDbPath;
 
+    /**
+     * ocr-lite-onnx模型路径
+     */
+    private String ocrLiteONNXModelPath;
+
     public void setIp2regionDbPath(String path) {
         Path dbPath = Paths.get(path);
         if (!PathUtil.exists(dbPath, true)) {

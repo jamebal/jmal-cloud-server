@@ -29,4 +29,6 @@ file:
   web-dav-prefix: webDAV
   # ip2region.xdb path
   ip2region-db-path: /Users/jmal/studio/myProject/github/jmal-cloud-server/docker/ip2region.xdb
+  # OcrLiteOnnxModel path
+  ocr-lite-onnx-model-path: /Users/jmal/studio/myProject/github/jmal-cloud-server/docker/models
 

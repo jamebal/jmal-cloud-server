@@ -3,7 +3,7 @@ package com.jmal.clouddisk.lucene;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.media.VideoProcessService;
-import com.jmal.clouddisk.ocr.OcrService;
+import com.jmal.clouddisk.ocr.IOcrService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.FileContentUtil;
@@ -58,7 +58,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class ReadContentService {
 
-    private final OcrService ocrService;
+    private final IOcrService ocrService;
 
     public final CommonFileService commonFileService;
 
