@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.ocr;
 
-import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.RequiredArgsConstructor;
