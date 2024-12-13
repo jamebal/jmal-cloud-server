@@ -25,20 +25,25 @@ public class OcrLiteOnnxService implements IOcrService {
     public final FileProperties fileProperties;
 
     public String doOCR(String imagePath, String tempImagePath) {
+        String resultTxtPath = null;
         try {
             if (StrUtil.isBlank(imagePath)) {
                 return "";
             }
             TimeInterval interval = new TimeInterval();
-            String resultTxtPath = getResultText(imagePath, imagePath + "-result.txt");
-            String content = FileUtil.readUtf8String(resultTxtPath);
-            log.info("OcrLiteOnnx OCR result: {}", content);
-            log.info("OcrLiteOnnx OCR time consuming: {}", interval.intervalMs());
-            return content;
+            resultTxtPath = getResultText(imagePath, imagePath + "-result.txt");
+            if (!FileUtil.isFile(resultTxtPath)) {
+                return "";
+            }
+            log.info("OcrLiteOnnx OCR time consuming: {}ms", interval.intervalMs());
+            return FileUtil.readUtf8String(resultTxtPath);
         } catch (Exception e) {
             log.warn("Error while performing OCR: {}", e.getMessage(), e);
         } finally {
             FileUtil.del(tempImagePath);
+            if (FileUtil.isFile(resultTxtPath)) {
+                FileUtil.del(resultTxtPath);
+            }
         }
         return "";
     }
@@ -87,13 +92,13 @@ public class OcrLiteOnnxService implements IOcrService {
                 "--keys", "keys.txt",
                 "--image", inputPath,
                 "--numThread", "4",
-                "--padding", "0",
+                "--padding", "40",
                 "--maxSideLen", "1024",
                 "--boxScoreThresh", "0.6",
                 "--boxThresh", "0.3",
                 "--unClipRatio", "2.0",
-                "--doAngle", "1",
-                "--mostAngle", "1",
+                "--doAngle", "0",
+                "--mostAngle", "0",
                 "--outputResultImg", "0"
         );
         processBuilder.redirectErrorStream(true);

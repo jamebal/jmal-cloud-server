@@ -127,6 +127,7 @@ public class ReadContentService {
                     content.append(extractPageWithOCR(pdfRenderer, pageIndex, username));
                 }
             }
+            log.info("content: {}", content);
             return content.toString();
         } catch (IOException e) {
             FileContentUtil.readFailed(file, e);
