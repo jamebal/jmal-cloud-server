@@ -35,7 +35,7 @@ RUN apt-get update && \
     rm -rf /usr/local/ubuntu-22.04-amd64-bin && \
     rm -f ubuntu-22.04-${ARCH}-bin.7z && \
     rm -f models.7z && \
-    rm -rf /usr/local/__MACOSX/ \
+    rm -rf /usr/local/__MACOSX/
 
 # 将/usr/lib/jellyfin-ffmpeg添加到PATH
 ENV PATH=/usr/lib/jellyfin-ffmpeg:$PATH
