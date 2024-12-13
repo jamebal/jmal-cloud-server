@@ -30,12 +30,10 @@ public class OcrLiteOnnxService implements IOcrService {
             if (StrUtil.isBlank(imagePath)) {
                 return "";
             }
-            TimeInterval interval = new TimeInterval();
             resultTxtPath = getResultText(imagePath, imagePath + "-result.txt");
             if (!FileUtil.isFile(resultTxtPath)) {
                 return "";
             }
-            log.info("OcrLiteOnnx OCR time consuming: {}ms", interval.intervalMs());
             return FileUtil.readUtf8String(resultTxtPath);
         } catch (Exception e) {
             log.warn("Error while performing OCR: {}", e.getMessage(), e);
@@ -91,7 +89,7 @@ public class OcrLiteOnnxService implements IOcrService {
                 "--rec", "crnn_lite_lstm.onnx",
                 "--keys", "keys.txt",
                 "--image", inputPath,
-                "--numThread", "4",
+                "--numThread", "1",
                 "--padding", "40",
                 "--maxSideLen", "1024",
                 "--boxScoreThresh", "0.6",
