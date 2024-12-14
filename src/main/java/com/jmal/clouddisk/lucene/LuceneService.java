@@ -131,7 +131,7 @@ public class LuceneService {
                 processors = 1;
             }
             log.info("updateContentIndexTask 线程数: {}, maxProcessors: {}", processors, maxProcessors);
-            executorUpdateContentIndexService = ThreadUtil.newFixedExecutor(processors, 1, "updateContentIndexTask", true);
+            executorUpdateContentIndexService = ThreadUtil.newFixedExecutor(Math.min(processors, 8), 1, "updateContentIndexTask", true);
         }
         if (executorUpdateBigContentIndexService == null) {
             executorUpdateBigContentIndexService = ThreadUtil.newFixedExecutor(2, 100, "updateBigContentIndexTask", true);
