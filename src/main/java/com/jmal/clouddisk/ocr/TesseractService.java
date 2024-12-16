@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
-import java.util.concurrent.Semaphore;
 
 
 @Service("tesseract")

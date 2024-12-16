@@ -4,7 +4,6 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.http.HttpUtil;
 import com.jmal.clouddisk.ocr.DynamicOcrService;
-import com.jmal.clouddisk.ocr.IOcrService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
