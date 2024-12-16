@@ -15,26 +15,20 @@ import java.util.concurrent.Semaphore;
 import static com.jmal.clouddisk.util.FFMPEGUtils.getWaitingForResults;
 
 
-@Service
+@Service("ocrLiteOnnx")
 @RequiredArgsConstructor
 @Slf4j
 public class OcrLiteOnnxService implements IOcrService {
 
-    private final CommonOcrService commonOcrService;
-
     public final FileProperties fileProperties;
 
-    // 初始设置为1个并发请求
-    private final Semaphore semaphore = new Semaphore(1);
-
+    @Override
     public String doOCR(String imagePath, String tempImagePath) {
         if (StrUtil.isBlank(imagePath)) {
             return "";
         }
         String resultTxtPath = null;
         try {
-            // 获取许可，如果没有可用许可则会阻塞
-            semaphore.acquire();
             resultTxtPath = getResultText(imagePath, imagePath + "-result.txt");
             if (!FileUtil.isFile(resultTxtPath)) {
                 return "";
@@ -47,28 +41,8 @@ public class OcrLiteOnnxService implements IOcrService {
             if (FileUtil.isFile(resultTxtPath)) {
                 FileUtil.del(resultTxtPath);
             }
-            // 释放许可
-            semaphore.release();
         }
         return "";
-    }
-
-    /**
-     * 动态调整并发数量
-     * @param maxConcurrentRequests 最大并发请求数
-     */
-    public void setMaxConcurrentRequests(int maxConcurrentRequests) {
-        int currentPermits = semaphore.availablePermits();
-        if (maxConcurrentRequests > currentPermits) {
-            semaphore.release(maxConcurrentRequests - currentPermits);
-        } else if (maxConcurrentRequests < currentPermits) {
-            semaphore.drainPermits(); // 清空所有许可
-            semaphore.release(maxConcurrentRequests);
-        }
-    }
-
-    public String generateOrcTempImagePath(String username) {
-        return commonOcrService.generateOrcTempImagePath(username);
     }
 
     /**

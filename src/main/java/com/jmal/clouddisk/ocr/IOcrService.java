@@ -10,11 +10,4 @@ public interface IOcrService {
      */
     String doOCR(String imagePath, String tempImagePath);
 
-    /**
-     * 生成一个临时的图片路径
-     * @param username 用户名
-     * @return 临时图片路径
-     */
-    String generateOrcTempImagePath(String username);
-
 }

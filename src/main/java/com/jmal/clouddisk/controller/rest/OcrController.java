@@ -3,6 +3,7 @@ package com.jmal.clouddisk.controller.rest;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.http.HttpUtil;
+import com.jmal.clouddisk.ocr.DynamicOcrService;
 import com.jmal.clouddisk.ocr.IOcrService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class OcrController {
 
-    private final IOcrService ocrService;
+    private final DynamicOcrService ocrService;
     private final UserLoginHolder userLoginHolder;
 
     @GetMapping("/ocr")
@@ -28,7 +29,7 @@ public class OcrController {
             HttpUtil.downloadFile(fileUrl, tempImagePath);
             TimeInterval timeInterval = new TimeInterval();
             timeInterval.start();
-            String str = ocrService.doOCR(tempImagePath, null);
+            String str = ocrService.doOCR(tempImagePath, null, "tesseract");
             log.info("OCR time consuming: {}", timeInterval.intervalMs());
             return str;
         } finally {

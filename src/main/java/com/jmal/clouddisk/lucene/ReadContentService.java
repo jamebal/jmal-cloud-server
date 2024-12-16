@@ -3,7 +3,7 @@ package com.jmal.clouddisk.lucene;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.media.VideoProcessService;
-import com.jmal.clouddisk.ocr.IOcrService;
+import com.jmal.clouddisk.ocr.DynamicOcrService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.FileContentUtil;
@@ -58,7 +58,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class ReadContentService {
 
-    private final IOcrService ocrService;
+    private final DynamicOcrService ocrService;
 
     public final CommonFileService commonFileService;
 
@@ -143,7 +143,7 @@ public class ReadContentService {
             ImageIO.write(pageImage, "png", new File(tempImageFile));
             try {
                 // 使用 OCR 识别页面内容
-                return ocrService.doOCR(tempImageFile, ocrService.generateOrcTempImagePath(username));
+                return ocrService.doOCR(tempImageFile, ocrService.generateOrcTempImagePath(username), "ocrLiteOnnx");
             } finally {
                 FileUtil.del(tempImageFile);
             }
