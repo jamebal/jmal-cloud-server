@@ -122,16 +122,14 @@ public class LuceneService {
             int processors = Runtime.getRuntime().availableProcessors() - 2;
             // 获取jvm可用内存
             long maxMemory = Runtime.getRuntime().maxMemory();
-            // 设置线程数, 假设每个线程占用内存为50M
-            int maxProcessors = (int) (maxMemory / 50 / 1024 / 1024);
+            // 设置线程数, 假设每个线程占用内存为100M
+            int maxProcessors = (int) (maxMemory / 300 / 1024 / 1024);
             if (processors > maxProcessors) {
                 processors = maxProcessors;
             }
-            if (processors < 1) {
-                processors = 1;
-            }
+            processors = Math.max(processors, 1);
             log.info("updateContentIndexTask 线程数: {}, maxProcessors: {}", processors, maxProcessors);
-            executorUpdateContentIndexService = ThreadUtil.newFixedExecutor(processors, 1, "updateContentIndexTask", true);
+            executorUpdateContentIndexService = ThreadUtil.newFixedExecutor(processors, 20, "updateContentIndexTask", true);
         }
         if (executorUpdateBigContentIndexService == null) {
             executorUpdateBigContentIndexService = ThreadUtil.newFixedExecutor(2, 100, "updateBigContentIndexTask", true);

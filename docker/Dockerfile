@@ -20,13 +20,22 @@ RUN apt-get update && \
     chmod -R 777 /usr/local/mxcad/mxcadassembly && \
     chmod -R 777 /usr/local/mxcad/mx/so/* && \
     cp -r -f /usr/local/mxcad/mx/locale /usr/local/share/locale && \
+    # 安装 OcrLiteOnnx
+    wget https://github.com/jamebal/OcrLiteOnnx/releases/download/v.1.8.2/ubuntu-22.04-${ARCH}-bin.7z && \
+    wget https://github.com/jamebal/OcrLiteOnnx/releases/download/v.1.8.2/models.7z && \
+    7z x models.7z -o/jmalcloud/ && \
+    7z x ubuntu-22.04-${ARCH}-bin.7z -o/usr/local/ && \
+    mv /usr/local/ubuntu-22.04-${ARCH}-bin/Linux-BIN/OcrLiteOnnx /usr/local/bin/OcrLiteOnnx && \
     # 卸载 wget 并清理下载的文件和APT缓存
     apt-get remove -y wget unzip && \
     apt-get clean && \
     rm -f jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb && \
     rm -rf /var/lib/apt/lists/* && \
     rm -f /jmalcloud/mxcad_x86_64.zip && \
-    rm -rf /usr/local/__MACOSX/
+    rm -rf /usr/local/ubuntu-22.04-${ARCH}-bin && \
+    rm -f ubuntu-22.04-${ARCH}-bin.7z && \
+    rm -f models.7z && \
+    rm -rf /usr/local/__MACOSX
 
 # 将/usr/lib/jellyfin-ffmpeg添加到PATH
 ENV PATH=/usr/lib/jellyfin-ffmpeg:$PATH

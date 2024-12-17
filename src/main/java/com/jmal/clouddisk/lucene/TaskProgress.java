@@ -21,6 +21,10 @@ public class TaskProgress {
      */
     private String name;
     /**
+     * 文件路径
+     */
+    private String path;
+    /**
      * 任务状态
      */
     private String progress;

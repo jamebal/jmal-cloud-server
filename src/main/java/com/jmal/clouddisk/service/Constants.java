@@ -33,6 +33,8 @@ public class Constants {
 
     public static final String FFMPEG = "ffmpeg";
 
+    public static final String OCR_LITE_ONNX = "OcrLiteOnnx";
+
     public static final String HEIF_CONVERT = "heif-convert";
 
     public static final String DOCUMENT = "document";

@@ -44,11 +44,12 @@ public interface IAuthDAO {
      */
     List<UserAccessTokenDTO> accessTokenList(String username);
 
-    /***
+    /**
      * 更新accessToken最近访问时间
      * @param username 用户名
+     * @param token token
      */
-    void updateAccessToken(String username);
+    void updateAccessToken(String username, String token);
 
     /***
      * 删除accessToken

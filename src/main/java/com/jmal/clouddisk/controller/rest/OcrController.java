@@ -28,7 +28,7 @@ public class OcrController {
             HttpUtil.downloadFile(fileUrl, tempImagePath);
             TimeInterval timeInterval = new TimeInterval();
             timeInterval.start();
-            String str = ocrService.doOCR(tempImagePath, null);
+            String str = ocrService.doOCR(tempImagePath, null, "tesseract");
             log.info("OCR time consuming: {}", timeInterval.intervalMs());
             return str;
         } finally {

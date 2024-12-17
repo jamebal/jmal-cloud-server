@@ -60,6 +60,7 @@ public class TaskProgressService {
                 return;
             }
             taskProgress = new TaskProgress(taskId, username, taskType, file.getName(), progress);
+            taskProgress.setPath(commonFileService.getRelativePath(username, file.getAbsolutePath(), file.getName()));
         }
         addTaskProgress(taskProgress);
     }

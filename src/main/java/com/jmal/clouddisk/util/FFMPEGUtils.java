@@ -26,13 +26,13 @@ public class FFMPEGUtils {
     public static void printErrorInfo(ProcessBuilder processBuilder) {
         // 打印命令 用空格连接
         String command = String.join(" ", processBuilder.command());
-        log.error("ffmpeg 执行失败, command: \r\n{}", command);
+        log.error("命令 执行失败, command: \r\n{}", command);
     }
 
     public static void printSuccessInfo(ProcessBuilder processBuilder) {
         // 打印命令 用空格连接
         String command = String.join(" ", processBuilder.command());
-        log.info("ffmpeg 执行成功, command: \r\n{}", command);
+        log.info("命令 执行成功, command: \r\n{}", command);
     }
 
     /**

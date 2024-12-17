@@ -7,6 +7,7 @@ import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.ocr.OcrService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.MenuService;
 import com.jmal.clouddisk.service.impl.RoleService;
@@ -72,6 +73,8 @@ public class RebuildIndexTaskService {
     private SyncFileVisitor syncFileVisitor;
 
     private double totalCount;
+
+    private final OcrService ocrService;
 
     /**
      * 接收消息的用户
@@ -474,6 +477,9 @@ public class RebuildIndexTaskService {
         }
         PERCENT_MAP.put(SYNC_PERCENT, syncPercent);
         PERCENT_MAP.put(INDEXING_PERCENT, indexingPercent);
+        if (syncPercent >= 100 && indexingPercent >= 100) {
+            ocrService.setMaxConcurrentRequests(ocrService.getOcrConfig().getMaxTasks());
+        }
     }
 
     private void pushMessage() {
