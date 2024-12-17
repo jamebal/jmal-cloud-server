@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.lucene;
 
 import cn.hutool.crypto.SecureUtil;
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,8 @@ import java.util.concurrent.ConcurrentSkipListMap;
 public class TaskProgressService {
 
     private final CommonFileService commonFileService;
+
+    private final FileProperties fileProperties;
 
     private final UserServiceImpl userService;
 
@@ -60,6 +63,7 @@ public class TaskProgressService {
                 return;
             }
             taskProgress = new TaskProgress(taskId, username, taskType, file.getName(), progress);
+            taskProgress.setPath(commonFileService.getRelativePath(username, file.getAbsolutePath(), file.getName()));
         }
         addTaskProgress(taskProgress);
     }

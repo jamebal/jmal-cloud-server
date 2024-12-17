@@ -403,7 +403,7 @@ public class CommonFileService {
         }
     }
 
-    private String getRelativePath(String username, String fileAbsolutePath, String fileName) {
+    public String getRelativePath(String username, String fileAbsolutePath, String fileName) {
         int startIndex = fileProperties.getRootDir().length() + username.length() + 1;
         int endIndex = fileAbsolutePath.length() - fileName.length();
         if (startIndex >= endIndex) {

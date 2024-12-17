@@ -8,6 +8,8 @@ import com.jmal.clouddisk.lucene.TaskProgressService;
 import com.jmal.clouddisk.model.LdapConfigDTO;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.WebsiteSettingDTO;
+import com.jmal.clouddisk.ocr.OcrConfig;
+import com.jmal.clouddisk.ocr.OcrService;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.SettingService;
@@ -42,6 +44,8 @@ public class CloudSettingController {
 
     private final VideoProcessService videoProcessService;
 
+    private final OcrService ocrService;
+
     @Operation(summary = "重建索引-用户")
     @GetMapping("/user/setting/sync")
     @Permission(value = "cloud:file:upload")
@@ -65,11 +69,25 @@ public class CloudSettingController {
         return ResultUtil.success(videoProcessService.getTranscodeConfig());
     }
 
-    @Operation(summary = "设置视频转码配置")
+    @Operation(summary = "修改视频转码配置")
     @PutMapping("/cloud/setting/transcode/config")
     @Permission(value = "cloud:set:sync")
-    public ResponseResult<Object> getTranscodeConfig(@RequestBody @Validated TranscodeConfig transcodeConfig) {
+    public ResponseResult<Object> setTranscodeConfig(@RequestBody @Validated TranscodeConfig transcodeConfig) {
         return ResultUtil.success(videoProcessService.setTranscodeConfig(transcodeConfig));
+    }
+
+    @Operation(summary = "获取ocr配置")
+    @GetMapping("/cloud/setting/ocr/config")
+    @Permission(value = "cloud:set:sync")
+    public ResponseResult<OcrConfig> getOcrConfig() {
+        return ResultUtil.success(ocrService.getOcrConfig());
+    }
+
+    @Operation(summary = "修改ocr配置")
+    @PutMapping("/cloud/setting/ocr/config")
+    @Permission(value = "cloud:set:sync")
+    public ResponseResult<Object> setOcrConfig(@RequestBody @Validated OcrConfig ocrConfig) {
+        return ResultUtil.success(ocrService.setOcrConfig(ocrConfig));
     }
 
     @Operation(summary = "取消转码任务")

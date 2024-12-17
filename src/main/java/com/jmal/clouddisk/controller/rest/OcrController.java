@@ -3,7 +3,7 @@ package com.jmal.clouddisk.controller.rest;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.http.HttpUtil;
-import com.jmal.clouddisk.ocr.DynamicOcrService;
+import com.jmal.clouddisk.ocr.OcrService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class OcrController {
 
-    private final DynamicOcrService ocrService;
+    private final OcrService ocrService;
     private final UserLoginHolder userLoginHolder;
 
     @GetMapping("/ocr")

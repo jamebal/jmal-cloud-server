@@ -1,9 +1,8 @@
 package com.jmal.clouddisk.lucene;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.media.VideoProcessService;
-import com.jmal.clouddisk.ocr.DynamicOcrService;
+import com.jmal.clouddisk.ocr.OcrService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.FileContentUtil;
@@ -43,8 +42,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -58,11 +55,9 @@ import java.util.regex.Pattern;
 @Slf4j
 public class ReadContentService {
 
-    private final DynamicOcrService ocrService;
+    private final OcrService ocrService;
 
     public final CommonFileService commonFileService;
-
-    public final TaskProgressService taskProgressService;
 
     public final VideoProcessService videoProcessService;
 
@@ -123,34 +118,16 @@ public class ReadContentService {
                 }
                 // 如果页面包含图片或没有文字，则进行 OCR
                 if (checkPageContent(document, pageIndex) || text.isEmpty()) {
-                    taskProgressService.addTaskProgress(file, TaskType.OCR, pageNumber + "/" + document.getNumberOfPages());
-                    content.append(extractPageWithOCR(pdfRenderer, pageIndex, username));
+                    if (ocrService.getOcrConfig().getEnable()) {
+                        content.append(ocrService.extractPageWithOCR(file, pdfRenderer, pageIndex, document.getNumberOfPages(), username));
+                    }
                 }
             }
             return content.toString();
         } catch (IOException e) {
             FileContentUtil.readFailed(file, e);
-        } finally {
-            taskProgressService.removeTaskProgress(file);
         }
         return null;
-    }
-
-    private String extractPageWithOCR(PDFRenderer pdfRenderer, int pageIndex, String username) {
-        try {
-            BufferedImage pageImage = pdfRenderer.renderImageWithDPI(pageIndex, 300);
-            String tempImageFile = ocrService.generateOrcTempImagePath(username);
-            ImageIO.write(pageImage, "png", new File(tempImageFile));
-            try {
-                // 使用 OCR 识别页面内容
-                return ocrService.doOCR(tempImageFile, ocrService.generateOrcTempImagePath(username), "ocrLiteOnnx");
-            } finally {
-                FileUtil.del(tempImageFile);
-            }
-        } catch (Exception e) {
-            log.error("Error processing page {}", pageIndex + 1, e);
-            return "";
-        }
     }
 
     public String readEpubContent(File file, String fileId) {
