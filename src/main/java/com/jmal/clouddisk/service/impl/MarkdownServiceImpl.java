@@ -77,6 +77,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     private final LuceneService luceneService;
 
+    private final LogService logService;
+
 
     @Override
     public ResponseResult<FileDocument> getMarkDownOne(ArticleDTO articleDTO) {
@@ -638,6 +640,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
         String userId = upload.getUserId();
         commonFileService.checkPermissionUserId(userId, upload.getOperationPermissionList(), OperationPermission.PUT);
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
+        // 文件操作日志
+        logService.addLogFileOperation(upload.getUsername(), upload.getRelativePath(), "修改文件");
         return ResultUtil.success();
     }
 

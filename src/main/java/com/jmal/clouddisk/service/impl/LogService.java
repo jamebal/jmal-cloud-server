@@ -23,6 +23,8 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -84,21 +86,7 @@ public class LogService {
         if (!CharSequenceUtil.isBlank(username)) {
             logOperation.setShowName(userService.getShowNameByUserUsername(username));
         }
-        // UserAgent
-        UserAgent userAgent = UserAgentUtil.parse(request.getHeader("User-Agent"));
-        if (userAgent != null) {
-            logOperation.setOperatingSystem(userAgent.getOs().getName());
-            logOperation.setDeviceModel(userAgent.getPlatform().getName());
-            logOperation.setBrowser(userAgent.getBrowser().getName() + userAgent.getVersion());
-        }
-        // 请求地址
-        logOperation.setUrl(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
-        // 请求方式
-        logOperation.setMethod(request.getMethod());
-        // 客户端ip
-        String ip = getIpAddress(request);
-        logOperation.setIp(ip);
-        setIpInfo(logOperation, ip);
+        logOperation = getLogOperation(request, logOperation);
         // 返回结果
         logOperation.setStatus(0);
         ResponseResult<Object> responseResult;
@@ -115,7 +103,44 @@ public class LogService {
                 setStatus(logOperation, response);
             }
         }
-        ThreadUtil.execute(() -> addLog(logOperation));
+        addLog(logOperation);
+    }
+
+    public LogOperation getLogOperation() {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            return new LogOperation();
+        }
+        HttpServletRequest request = attributes.getRequest();
+        return getLogOperation(request, null);
+    }
+
+    public LogOperation getLogOperation(HttpServletRequest request, LogOperation logOperation) {
+        if (logOperation == null) {
+            logOperation = new LogOperation();
+            // 用户
+            String username = userLoginHolder.getUsername();
+            if (!CharSequenceUtil.isBlank(username)) {
+                logOperation.setShowName(userService.getShowNameByUserUsername(username));
+            }
+            logOperation.setUsername(username);
+        }
+        // UserAgent
+        UserAgent userAgent = UserAgentUtil.parse(request.getHeader("User-Agent"));
+        if (userAgent != null) {
+            logOperation.setOperatingSystem(userAgent.getOs().getName());
+            logOperation.setDeviceModel(userAgent.getPlatform().getName());
+            logOperation.setBrowser(userAgent.getBrowser().getName() + userAgent.getVersion());
+        }
+        // 请求地址
+        logOperation.setUrl(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
+        // 请求方式
+        logOperation.setMethod(request.getMethod());
+        // 客户端ip
+        String ip = getIpAddress(request);
+        logOperation.setIp(ip);
+        setIpInfo(logOperation, ip);
+        return logOperation;
     }
 
     private String getIpAddress(HttpServletRequest request) {
@@ -206,9 +231,37 @@ public class LogService {
         }
     }
 
+    /**
+     * 添加文件操作日志
+     * @param logOperation 日志
+     * @param fileUsername 文件所属用户
+     * @param filepath 文件路径
+     * @param desc 描述
+     */
+    public void addLogFileOperation(LogOperation logOperation, String fileUsername, String filepath, String desc) {
+        logOperation.setFileUserId(userService.getUserIdByUserName(fileUsername));
+        logOperation.setFilepath(filepath);
+        logOperation.setOperationFun(desc);
+        logOperation.setType(LogOperation.Type.OPERATION_FILE.name());
+        addLog(logOperation);
+    }
+
+    /**
+     * 添加文件操作日志
+     * @param fileUsername 文件所属用户
+     * @param filepath 文件路径
+     * @param desc 描述
+     */
+    public void addLogFileOperation(String fileUsername, String filepath, String desc) {
+        LogOperation logOperation = getLogOperation();
+        addLogFileOperation(logOperation, fileUsername, filepath, desc);
+    }
+
     public void addLog(LogOperation logOperation) {
-        logOperation.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
-        mongoTemplate.save(logOperation);
+        ThreadUtil.execute(() -> {
+            logOperation.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
+            mongoTemplate.save(logOperation);
+        });
     }
 
     public ResponseResult<List<LogOperation>> list(LogOperationDTO logOperationDTO) {

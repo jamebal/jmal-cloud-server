@@ -84,7 +84,6 @@ public class MarkDownController {
     @Operation(summary = "编辑文档(根据path)")
     @PostMapping("/markdown/edit1")
     @Permission("cloud:file:update")
-    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
     public ResponseResult<Object> editTextByPath(@RequestBody UploadApiParamDTO upload) {
         ResultUtil.checkParamIsNull(upload.getUsername(), upload.getUserId(), upload.getRelativePath(), upload.getContentText());
         if (!CharSequenceUtil.isBlank(upload.getMountFileId())) {
