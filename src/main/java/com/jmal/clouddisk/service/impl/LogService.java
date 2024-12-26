@@ -235,7 +235,7 @@ public class LogService {
     /**
      * 添加文件操作日志
      * @param logOperation 日志
-     * @param fileUsername 文件所属用户
+     * @param fileUsername 文件所属用户CommonFileService
      * @param filepath 文件路径
      * @param desc 描述
      */

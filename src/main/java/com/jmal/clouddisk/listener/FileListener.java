@@ -79,7 +79,7 @@ public class FileListener implements DirectoryChangeListener {
         }
 
         if (fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(eventPath.getFileName()::startsWith)) {
-            log.info("忽略文件:{}", eventPath.toFile().getAbsolutePath());
+            log.debug("忽略文件:{}", eventPath.toFile().getAbsolutePath());
             return;
         }
 
@@ -108,6 +108,7 @@ public class FileListener implements DirectoryChangeListener {
 
     /**
      * 文件创建执行
+     *
      * @param file 文件
      */
     public void onFileCreate(File file) {
@@ -125,6 +126,7 @@ public class FileListener implements DirectoryChangeListener {
 
     /**
      * 文件创建修改
+     *
      * @param file 文件
      */
     public void onFileChange(File file) {
@@ -136,12 +138,13 @@ public class FileListener implements DirectoryChangeListener {
             fileService.updateFile(username, file);
             log.info("用户:{},修改文件:{}", username, file.getAbsolutePath());
         } catch (Exception e) {
-            log.error("修改文件后续操作失败", e);
+            log.error("修改文件后续操作失败, fileAbsolutePath: {}", file.getAbsolutePath(), e);
         }
     }
 
     /**
      * 文件删除
+     *
      * @param file 文件
      */
     public void onFileDelete(File file) {
@@ -153,12 +156,13 @@ public class FileListener implements DirectoryChangeListener {
             fileService.deleteFile(username, file);
             log.info("用户:{},删除文件:{}", username, file.getAbsolutePath());
         } catch (Exception e) {
-            log.error("删除文件后续操作失败", e);
+            log.error("删除文件后续操作失败, fileAbsolutePath: {}", file.getAbsolutePath(), e);
         }
     }
 
     /**
      * 判断变化的文件属于哪个用户
+     *
      * @return username
      */
     private String ownerOfChangeFile(File file) {
@@ -170,7 +174,7 @@ public class FileListener implements DirectoryChangeListener {
             }
             username = file.toPath().subpath(rootPathCount, rootPathCount + 1).toString();
         } catch (Exception e) {
-            log.error("解析路径失败,fileAbsolutePath:{}", file.getAbsolutePath(), e);
+            log.error("解析路径失败, fileAbsolutePath: {}", file.getAbsolutePath(), e);
         }
         return username;
     }
