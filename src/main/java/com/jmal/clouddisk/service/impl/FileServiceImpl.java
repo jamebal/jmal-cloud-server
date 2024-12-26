@@ -1669,7 +1669,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 logService.addLogFileOperation(logOperation, toUsername, filepath, operation + "文件, 源文件: \"" + fromPath + "\"" + fromUserDesc);
                 if (!formUsername.equals(toUsername)) {
                     LogOperation newLogOperation = logOperation.clone();
-                    logService.addLogFileOperation(newLogOperation, formUsername, fromPath, "文件被" + operation + ", 目标文件:" + filepath + ", 目标用户: \"" + toUsername + "\"");
+                    logService.addLogFileOperation(newLogOperation, formUsername, fromPath, "文件被" + operation + ", 目标文件: \"" + filepath + "\", 目标用户: \"" + toUsername + "\"");
                 }
 
                 // 复制成功

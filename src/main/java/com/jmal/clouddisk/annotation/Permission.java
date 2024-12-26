@@ -19,7 +19,7 @@ public @interface Permission {
     String value() default "";
 
     /***
-     * @return 只有晚盘创建者才能通过
+     * @return 只有网盘创建者才能通过
      */
     boolean onlyCreator() default false;
 

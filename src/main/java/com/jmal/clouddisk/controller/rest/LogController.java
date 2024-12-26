@@ -6,10 +6,13 @@ import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.LogOperationDTO;
 import com.jmal.clouddisk.service.impl.LogService;
 import com.jmal.clouddisk.util.ResponseResult;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -21,10 +24,10 @@ import java.util.List;
 @RestController
 @RequestMapping("log")
 @Tag(name = "日志")
+@RequiredArgsConstructor
 public class LogController {
 
-    @Autowired
-    private LogService logService;
+    private final LogService logService;
 
     @Operation(summary = "日志查询")
     @GetMapping("/list")

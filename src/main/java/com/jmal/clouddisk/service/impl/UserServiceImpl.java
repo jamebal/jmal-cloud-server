@@ -84,7 +84,7 @@ public class UserServiceImpl implements IUserService {
             throw new CommonException(ExceptionType.WARNING.getCode(), "请使用其他用户名");
         }
         ConsumerDO consumerDO;
-        ConsumerDO user1 = getUserInfoByName(username);
+        ConsumerDO user1 = getUserInfoByUsername(username);
         if (user1 == null) {
             if (consumerDTO.getQuota() == null) {
                 consumerDTO.setQuota(10);
@@ -162,7 +162,7 @@ public class UserServiceImpl implements IUserService {
         } else {
             if (!CharSequenceUtil.isBlank(name)) {
                 query.addCriteria(Criteria.where(USERNAME).is(name));
-                consumerDO = getUserInfoByName(name);
+                consumerDO = getUserInfoByUsername(name);
             } else {
                 return ResultUtil.success();
             }
@@ -367,7 +367,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public String getUserIdByUserName(String username) {
-        ConsumerDO consumer = getUserInfoByName(username);
+        ConsumerDO consumer = getUserInfoByUsername(username);
         if (consumer != null) {
             return consumer.getId();
         }
@@ -375,7 +375,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     public String getShowNameByUserUsername(String username) {
-        ConsumerDO consumer = getUserInfoByName(username);
+        ConsumerDO consumer = getUserInfoByUsername(username);
         if (consumer == null) {
             return "";
         }
@@ -406,7 +406,7 @@ public class UserServiceImpl implements IUserService {
         if (CharSequenceUtil.isBlank(username)) {
             return null;
         }
-        ConsumerDO consumer = getUserInfoByName(username);
+        ConsumerDO consumer = getUserInfoByUsername(username);
         if (consumer == null) {
             return null;
         }
@@ -508,10 +508,11 @@ public class UserServiceImpl implements IUserService {
         return true;
     }
 
-    private ConsumerDO getUserInfoByName(String name) {
+    @Override
+    public ConsumerDO getUserInfoByUsername(String name) {
         ConsumerDO consumer = CaffeineUtil.getConsumerByUsernameCache(name);
         if (consumer == null) {
-            consumer = getUserInfoByUsername(name);
+            consumer = getUserInfo(name);
             if (consumer != null) {
                 CaffeineUtil.setConsumerByUsernameCache(name, consumer);
             }
@@ -523,8 +524,7 @@ public class UserServiceImpl implements IUserService {
         return mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
     }
 
-    @Override
-    public ConsumerDO getUserInfoByUsername(String username) {
+    private ConsumerDO getUserInfo(String username) {
         Query query = new Query();
         query.addCriteria(Criteria.where(USERNAME).is(username));
         return mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
@@ -541,7 +541,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public List<String> getAuthorities(String username) {
         List<String> authorities = new ArrayList<>();
-        ConsumerDO consumerDO = getUserInfoByName(username);
+        ConsumerDO consumerDO = getUserInfoByUsername(username);
         if (consumerDO == null) {
             return authorities;
         }
