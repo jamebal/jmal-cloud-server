@@ -3,7 +3,6 @@ package com.jmal.clouddisk.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -14,24 +13,23 @@ import java.time.LocalDateTime;
  */
 @Data
 @Document(collection = "log")
-@CompoundIndexes({
-        @CompoundIndex(name = "createTime_1", def = "{'createTime': 1}"),
-        @CompoundIndex(name = "time_1", def = "{'time': 1}"),
-        @CompoundIndex(name = "username_1", def = "{'username': 1}"),
-        @CompoundIndex(name = "showName_1", def = "{'showName': 1}"),
-        @CompoundIndex(name = "ip_1", def = "{'ip': 1}"),
-        @CompoundIndex(name = "cityIp_1", def = "{'cityIp': 1}"),
-        @CompoundIndex(name = "url_1", def = "{'url': 1}"),
-        @CompoundIndex(name = "status_1", def = "{'status': 1}"),
-        @CompoundIndex(name = "operationModule_1", def = "{'operationModule': 1}"),
-        @CompoundIndex(name = "operationFun_1", def = "{'operationFun': 1}"),
-        @CompoundIndex(name = "deviceModel_1", def = "{'deviceModel': 1}"),
-        @CompoundIndex(name = "operatingSystem_1", def = "{'operatingSystem': 1}"),
-        @CompoundIndex(name = "type_1", def = "{'type': 1}"),
-        @CompoundIndex(name = "type_createTime_1", def = "{'type': 1, 'createTime': 1}"),
-        @CompoundIndex(name = "type_username_1", def = "{'type': 1, 'username': 1}"),
-        @CompoundIndex(name = "type_username_createTime_1", def = "{'type': 1, 'username': 1, 'createTime': 1}"),
-})
+@CompoundIndex(name = "createTime_1", def = "{'createTime': 1}")
+@CompoundIndex(name = "time_1", def = "{'time': 1}")
+@CompoundIndex(name = "username_1", def = "{'username': 1}")
+@CompoundIndex(name = "showName_1", def = "{'showName': 1}")
+@CompoundIndex(name = "ip_1", def = "{'ip': 1}")
+@CompoundIndex(name = "cityIp_1", def = "{'cityIp': 1}")
+@CompoundIndex(name = "url_1", def = "{'url': 1}")
+@CompoundIndex(name = "status_1", def = "{'status': 1}")
+@CompoundIndex(name = "operationModule_1", def = "{'operationModule': 1}")
+@CompoundIndex(name = "operationFun_1", def = "{'operationFun': 1}")
+@CompoundIndex(name = "deviceModel_1", def = "{'deviceModel': 1}")
+@CompoundIndex(name = "operatingSystem_1", def = "{'operatingSystem': 1}")
+@CompoundIndex(name = "type_1", def = "{'type': 1}")
+@CompoundIndex(name = "type_createTime_1", def = "{'type': 1, 'createTime': 1}")
+@CompoundIndex(name = "type_username_1", def = "{'type': 1, 'username': 1}")
+@CompoundIndex(name = "type_username_createTime_1", def = "{'type': 1, 'username': 1, 'createTime': 1}")
+@CompoundIndex(name = "fileUserId_type_1", def = "{'fileUserId': 1, 'type': 1}")
 public class LogOperation {
     private String id;
     /***
@@ -98,6 +96,16 @@ public class LogOperation {
 
     private IpInfo ipInfo;
 
+    /**
+     * 文件路径
+     */
+    private String filepath;
+
+    /**
+     * 文件所属用户
+     */
+    private String fileUserId;
+
     @Data
     public static class IpInfo {
         /***
@@ -135,9 +143,13 @@ public class LogOperation {
          */
         BROWSE,
         /***
-         * 操作日志
+         * 系统操作日志
          */
         OPERATION,
+        /***
+         * 文件操作日志
+         */
+        OPERATION_FILE,
         /***
          * 文章访问日志
          */
@@ -146,5 +158,28 @@ public class LogOperation {
          * webdav
          */
         WEBDAV
+    }
+
+    public LogOperation clone() {
+        LogOperation logOperation = new LogOperation();
+        logOperation.setUsername(this.username);
+        logOperation.setShowName(this.showName);
+        logOperation.setIp(this.ip);
+        logOperation.setOperationModule(this.operationModule);
+        logOperation.setOperationFun(this.operationFun);
+        logOperation.setUrl(this.url);
+        logOperation.setMethod(this.method);
+        logOperation.setDeviceModel(this.deviceModel);
+        logOperation.setOperatingSystem(this.operatingSystem);
+        logOperation.setBrowser(this.browser);
+        logOperation.setTime(this.time);
+        logOperation.setStatus(this.status);
+        logOperation.setCreateTime(this.createTime);
+        logOperation.setRemarks(this.remarks);
+        logOperation.setType(this.type);
+        logOperation.setIpInfo(this.ipInfo);
+        logOperation.setFilepath(this.filepath);
+        logOperation.setFileUserId(this.fileUserId);
+        return logOperation;
     }
 }

@@ -7,13 +7,11 @@ import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.oss.web.WebOssCommonService;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
-import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -55,13 +53,7 @@ public class FileController {
     private WebOssService webOssService;
 
     @Autowired
-    AuthInterceptor authInterceptor;
-
-    @Autowired
     UserLoginHolder userLoginHolder;
-
-    @Autowired
-    IUserService service;
 
     @Operation(summary = "根据id获取文件信息")
     @GetMapping("/file_info")
@@ -127,7 +119,6 @@ public class FileController {
 
     @Operation(summary = "文件夹上传")
     @PostMapping("upload-folder")
-    @LogOperatingFun
     @Permission("cloud:file:upload")
     public ResponseResult<Object> uploadFolder(UploadApiParamDTO upload) {
         return fileService.uploadFolder(upload);
@@ -135,7 +126,6 @@ public class FileController {
 
     @Operation(summary = "新建文件夹")
     @PostMapping("new_folder")
-    @LogOperatingFun
     @Permission("cloud:file:upload")
     public ResponseResult<Object> newFolder(UploadApiParamDTO upload) {
         return fileService.newFolder(upload);
@@ -143,7 +133,6 @@ public class FileController {
 
     @Operation(summary = "检查文件/分片是否存在")
     @GetMapping("upload")
-    @LogOperatingFun(value = "文件上传")
     @Permission("cloud:file:upload")
     public ResponseResult<Object> checkUpload(UploadApiParamDTO upload) throws IOException {
         return fileService.checkChunkUploaded(upload);
@@ -154,12 +143,11 @@ public class FileController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     @Permission("cloud:file:upload")
     public ResponseResult<Object> checkFileExist(@RequestBody UploadApiParamDTO upload) throws IOException {
-        return fileService.checkFileExist(upload);
+        return fileService.checkChunkUploaded(upload);
     }
 
     @Operation(summary = "合并文件")
     @PostMapping("merge")
-    @LogOperatingFun
     @Permission("cloud:file:upload")
     public ResponseResult<Object> merge(UploadApiParamDTO upload) throws IOException {
         return fileService.merge(upload);
@@ -328,7 +316,6 @@ public class FileController {
 
     @Operation(summary = "删除文件")
     @DeleteMapping("/delete")
-    @LogOperatingFun
     @Permission("cloud:file:delete")
     public ResponseResult<Object> delete(@RequestParam String username, @RequestParam String[] fileIds, @RequestParam String currentDirectory, Boolean sweep) {
         if (fileIds != null && fileIds.length > 0) {
@@ -339,9 +326,8 @@ public class FileController {
         }
     }
 
-    @Operation(summary = "返回原处")
+    @Operation(summary = "放回原处")
     @PostMapping("/restore")
-    @LogOperatingFun
     @Permission("cloud:file:upload")
     public ResponseResult<Object> restore(@RequestParam String[] fileIds) {
         if (fileIds != null && fileIds.length > 0) {
@@ -354,7 +340,6 @@ public class FileController {
 
     @Operation(summary = "彻底删除")
     @DeleteMapping("/sweep")
-    @LogOperatingFun
     @Permission("cloud:file:delete")
     public ResponseResult<Object> sweep(@RequestParam String[] fileIds) {
         if (fileIds != null && fileIds.length > 0) {
@@ -395,7 +380,6 @@ public class FileController {
 
     @Operation(summary = "移动文件/文件夹")
     @GetMapping("/move")
-    @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> move(UploadApiParamDTO upload, @RequestParam String[] froms, String to) throws IOException {
         if (froms != null && froms.length > 0) {
@@ -408,7 +392,6 @@ public class FileController {
 
     @Operation(summary = "复制文件/文件夹")
     @GetMapping("/copy")
-    @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> copy(UploadApiParamDTO upload, @RequestParam String[] froms, String to) throws IOException {
         if (froms != null && froms.length > 0) {
@@ -421,7 +404,6 @@ public class FileController {
 
     @Operation(summary = "创建副本")
     @GetMapping("/duplicate")
-    @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> duplicate(@RequestParam String fileId, @RequestParam String newFilename) {
         return fileService.duplicate(fileId, newFilename);
@@ -429,7 +411,6 @@ public class FileController {
 
     @Operation(summary = "解压zip文件")
     @GetMapping("/unzip")
-    @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> unzip(@RequestParam String fileId, String destFileId) {
         return fileService.unzip(fileId, destFileId);
@@ -455,7 +436,6 @@ public class FileController {
 
     @Operation(summary = "根据path删除文件/文件夹")
     @DeleteMapping("/delFile")
-    @LogOperatingFun
     @Permission("cloud:file:delete")
     public ResponseResult<Object> delFile(@RequestParam String path, @RequestParam String username) {
         return fileService.delFile(URLUtil.decode(path), username);
@@ -463,7 +443,6 @@ public class FileController {
 
     @Operation(summary = "根据path重命名")
     @GetMapping("/rename/path")
-    @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> renameByPath(@RequestParam String newFileName, @RequestParam String username, @RequestParam String path) {
         return fileService.renameByPath(URLUtil.decode(newFileName), username, URLUtil.decode(path));
@@ -471,7 +450,6 @@ public class FileController {
 
     @Operation(summary = "根据path添加文件/文件夹")
     @PostMapping("/addfile")
-    @LogOperatingFun
     @Permission("cloud:file:upload")
     public ResponseResult<FileIntroVO> addFile(@RequestParam String fileName, @RequestParam Boolean isFolder, @RequestParam String username, @RequestParam String parentPath, String folder) {
         return fileService.addFile(URLUtil.decode(fileName), isFolder, username, URLUtil.decode(parentPath), folder);

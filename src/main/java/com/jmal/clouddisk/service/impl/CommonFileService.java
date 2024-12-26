@@ -307,7 +307,7 @@ public class CommonFileService {
      * @return fileId
      */
     public String createFile(String username, File file, String userId, Boolean isPublic) {
-        if (CaffeineUtil.hasUploadFileCache(file.getAbsolutePath())) {
+        if (Boolean.TRUE.equals(CaffeineUtil.hasUploadFileCache(file.getAbsolutePath()))) {
             return null;
         }
         if (CharSequenceUtil.isBlank(username)) {
@@ -398,7 +398,7 @@ public class CommonFileService {
         if (!contentType.equals(fileExists.getContentType())) {
             update.set(Constants.CONTENT_TYPE, contentType);
         }
-        if (StrUtil.isNotBlank(suffix) && !suffix.equals(fileExists.getSuffix())) {
+        if (CharSequenceUtil.isNotBlank(suffix) && !suffix.equals(fileExists.getSuffix())) {
             update.set(Constants.SUFFIX, suffix);
         }
     }
@@ -1054,7 +1054,8 @@ public class CommonFileService {
                 // 修改文件之后保存历史版本
                 fileVersionService.saveFileVersion(username, Paths.get(relativePath, file.getName()).toString(), userId);
             }
-            log.info("修改文件完成: {}", file.getAbsolutePath());
+        } else {
+            createFile(username, file, userId, null);
         }
     }
 

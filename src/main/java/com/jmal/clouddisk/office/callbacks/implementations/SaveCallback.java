@@ -8,7 +8,9 @@ import com.jmal.clouddisk.office.callbacks.Callback;
 import com.jmal.clouddisk.office.callbacks.Status;
 import com.jmal.clouddisk.office.model.Track;
 import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.LogService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.TimeUntils;
 import com.mongodb.client.result.UpdateResult;
@@ -42,6 +44,10 @@ public class SaveCallback implements Callback {
     private final MongoTemplate mongoTemplate;
 
     private final CommonFileService commonFileService;
+
+    private final LogService logService;
+
+    private final IUserService userService;
 
     @Override
     public int handle(Track body) {
@@ -78,6 +84,8 @@ public class SaveCallback implements Callback {
             fileDocument.setSize(size);
             fileDocument.setUpdateDate(updateDate);
             fileDocument.setMd5(md5);
+            // 修改文件日志
+            logService.addLogFileOperation(userService.getUserNameById(userId), Paths.get(fileDocument.getPath(), fileDocument.getName()).toString(), "修改文件");
             commonFileService.pushMessage(userLoginHolder.getUsername(), fileDocument, Constants.UPDATE_FILE);
         } catch (Exception e) {
             log.error(e.getMessage(), e);

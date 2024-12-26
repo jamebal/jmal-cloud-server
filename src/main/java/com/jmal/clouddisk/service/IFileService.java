@@ -105,14 +105,6 @@ public interface IFileService {
     ResponseResult<Object> checkChunkUploaded(UploadApiParamDTO upload) throws IOException;
 
     /**
-     * 检查文件/分片是否存在
-     * @param upload 上传参数
-     * @return ResponseResult<Object>
-     * @throws IOException IOException
-     */
-    ResponseResult<Object> checkFileExist(UploadApiParamDTO upload) throws IOException;
-
-    /**
      * 合并文件
      * @param upload 上传参数
      * @return ResponseResult<Object>

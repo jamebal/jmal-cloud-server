@@ -73,7 +73,6 @@ public class ShareController {
     @Operation(summary = "生成shareToken")
     @GetMapping("/share/generate/share-token")
     @Permission("cloud:file:list")
-    @LogOperatingFun
     public ResponseResult<Object> generateShareToken(@RequestParam String fileId) {
         return shareService.generateShareToken(fileId);
     }

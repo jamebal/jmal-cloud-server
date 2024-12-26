@@ -5,7 +5,6 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.IFileService;
 import io.methvin.watcher.DirectoryChangeEvent;
 import io.methvin.watcher.DirectoryChangeListener;
-import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.processors.FlowableProcessor;
 import io.reactivex.rxjava3.processors.PublishProcessor;
@@ -20,8 +19,8 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 
@@ -42,27 +41,18 @@ public class FileListener implements DirectoryChangeListener {
     private final FlowableProcessor<DirectoryChangeEvent> eventProcessor = PublishProcessor.<DirectoryChangeEvent>create().toSerialized();
     private Disposable eventSubscription;
 
+    // 使用 ConcurrentHashMap 来存储每个文件的最新事件
+    private final ConcurrentHashMap<Path, DirectoryChangeEvent.EventType> lastFileEvents = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
         eventSubscription = eventProcessor
-                .buffer(100, TimeUnit.MILLISECONDS, 100)
-                .filter(list -> !list.isEmpty())
-                .map(this::mergeEvents)
-                .flatMap(event -> Flowable.just(event)
-                        .subscribeOn(Schedulers.io()) // 在 IO 线程池中执行处理
+                .groupBy(DirectoryChangeEvent::path) // 根据文件路径分组
+                .flatMap(groupedFlowable -> groupedFlowable
+                        .debounce(100, TimeUnit.MILLISECONDS) // 对每个文件路径的事件进行 Debounce
                 )
+                .subscribeOn(Schedulers.io()) // 在 IO 线程池中执行处理
                 .subscribe(this::processEvent, throwable -> log.error("Error processing file event", throwable));
-    }
-
-    private DirectoryChangeEvent mergeEvents(List<DirectoryChangeEvent> events) {
-        if (events.size() == 1) {
-            return events.get(0);
-        }
-        // 对于同一文件的多个事件，保留最新的事件类型
-        DirectoryChangeEvent latestEvent = events.get(events.size() - 1);
-        log.debug("Merged {} events for path: {}", events.size(), latestEvent.path());
-        return latestEvent;
     }
 
     public void addFilterDir(Path path) {
@@ -81,11 +71,18 @@ public class FileListener implements DirectoryChangeListener {
     public void onEvent(DirectoryChangeEvent directoryChangeEvent) {
         Path eventPath = directoryChangeEvent.path();
         DirectoryChangeEvent.EventType eventType = directoryChangeEvent.eventType();
+
         // 检查是否为忽略路径
         if (filterDirSet.stream().anyMatch(eventPath::startsWith)) {
             log.debug("Ignore Event: {}, Path: {}", eventType, eventPath);
             return;
         }
+
+        if (fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(eventPath.getFileName()::startsWith)) {
+            log.info("忽略文件:{}", eventPath.toFile().getAbsolutePath());
+            return;
+        }
+
         log.debug("Received Event: {}, Path: {}", eventType, eventPath);
         eventProcessor.onNext(directoryChangeEvent);
     }
@@ -93,15 +90,16 @@ public class FileListener implements DirectoryChangeListener {
     private void processEvent(DirectoryChangeEvent directoryChangeEvent) {
         Path eventPath = directoryChangeEvent.path();
         DirectoryChangeEvent.EventType eventType = directoryChangeEvent.eventType();
+        File file = eventPath.toFile();
         switch (eventType) {
             case CREATE:
-                onFileCreate(eventPath.toFile());
+                onFileCreate(file);
                 break;
             case MODIFY:
-                onFileChange(eventPath.toFile());
+                onFileChange(file);
                 break;
             case DELETE:
-                onFileDelete(eventPath.toFile());
+                onFileDelete(file);
                 break;
             default:
                 break;
@@ -114,10 +112,6 @@ public class FileListener implements DirectoryChangeListener {
      */
     public void onFileCreate(File file) {
         try {
-            if (fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(file.getName()::startsWith)) {
-                log.info("忽略文件:{}", file.getAbsolutePath());
-                return;
-            }
             String username = ownerOfChangeFile(file);
             if (CharSequenceUtil.isBlank(username)) {
                 return;

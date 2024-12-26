@@ -48,6 +48,9 @@ public class MultipartUpload {
     @Autowired
     private WebOssService webOssService;
 
+    @Autowired
+    private LogService logService;
+
     /***
      * 断点恢复上传缓存(已上传的缓存)
      */
@@ -118,6 +121,10 @@ public class MultipartUpload {
             Files.createFile(outputFile);
         }
         PathUtil.move(file, outputFile, true);
+
+        // 文件操作日志
+        logService.addLogFileOperation(upload.getUsername(), commonFileService.getUserDirectoryFilePath(upload), "上传文件");
+
         uploadResponse.setUpload(true);
         CaffeineUtil.setUploadFileCache(outputFile.toFile().getAbsolutePath());
         commonFileService.createFile(upload.getUsername(), outputFile.toFile(), null, null);
