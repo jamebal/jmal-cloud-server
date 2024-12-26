@@ -44,6 +44,10 @@ public class UploadApiParamDTO {
      * 文件或文件夹名
      */
     String filename;
+    /**
+     * 文件最后修改时间
+     */
+    Long lastModified;
     /***
      * 文件Id
      */

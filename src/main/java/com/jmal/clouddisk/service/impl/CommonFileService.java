@@ -75,6 +75,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.text.Collator;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -137,14 +138,7 @@ public class CommonFileService {
 
     public ResponseEntity<Object> getObjectResponseEntity(FileDocument fileDocument) {
         if (fileDocument != null) {
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + UriUtils.encode(fileDocument.getName(), StandardCharsets.UTF_8))
-                    .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
-                    .header(HttpHeaders.CONNECTION, "close")
-                    .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent() != null ? fileDocument.getContent().length : 0))
-                    .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
-                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
-                    .body(fileDocument.getContent());
+            return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + UriUtils.encode(fileDocument.getName(), StandardCharsets.UTF_8)).header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType()).header(HttpHeaders.CONNECTION, "close").header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent() != null ? fileDocument.getContent().length : 0)).header(HttpHeaders.CONTENT_ENCODING, "utf-8").header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800").body(fileDocument.getContent());
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件");
         }
@@ -350,6 +344,7 @@ public class CommonFileService {
                 updateExifInfo(file, fileExists, contentType, suffix, update);
                 updateVideoInfo(file, fileExists, contentType, update);
                 updateOtherInfo(fileExists, contentType, suffix, update);
+                updateLastModifiedTime(file, fileExists, update);
                 if (!update.getUpdateObject().isEmpty()) {
                     mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
                 }
@@ -358,7 +353,8 @@ public class CommonFileService {
             }
             Update update = new Update();
             // 设置创建时间和修改时间
-            setDateTime(file, update);
+            update.set(UPLOAD_DATE, LocalDateTime.now(TimeUntils.ZONE_ID));
+            update.set(UPDATE_DATE, getFileLastModifiedTime(file));
             update.set("_id", objectId);
             update.set(IUserService.USER_ID, userId);
             update.set("name", fileName);
@@ -381,7 +377,7 @@ public class CommonFileService {
             // 添加文件索引
             luceneService.pushCreateIndexQueue(fileId);
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            log.error("{} file: {}", e.getMessage(), file.getAbsoluteFile(), e);
         } finally {
             if (lock != null) {
                 lock.unlock();
@@ -392,6 +388,35 @@ public class CommonFileService {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return fileId;
+    }
+
+    /**
+     * 修改文件的最后修改时间
+     * @param file 文件
+     * @param fileExists FileDocument
+     * @param update Update
+     */
+    private void updateLastModifiedTime(File file, FileDocument fileExists, Update update) {
+        LocalDateTime lastModifiedTime = getFileLastModifiedTime(file);
+        // 判断 fileExists.getUpdateDate() 和 lastModifiedTime是否在1ms内
+        if (fileExists.getUpdateDate() != null &&  lastModifiedTime.isEqual(fileExists.getUpdateDate())) {
+            update.set(UPDATE_DATE, lastModifiedTime);
+        }
+    }
+
+    /**
+     * 设置文件的最后修改时间
+     * @param filePath 文件路径
+     * @param lastModified 最后修改时间
+     * @throws IOException IO异常
+     */
+    public static void setLastModifiedTime(Path filePath, Long lastModified) throws IOException {
+        if (lastModified == null) {
+            return;
+        }
+        Instant instant = Instant.ofEpochMilli(lastModified);
+        FileTime fileTime = FileTime.from(instant);
+        Files.setLastModifiedTime(filePath, fileTime);
     }
 
     private void updateOtherInfo(FileDocument fileExists, String contentType, String suffix, Update update) {
@@ -448,22 +473,14 @@ public class CommonFileService {
         }
     }
 
-    public static LocalDateTime setDateTime(File file, Update update) {
-        LocalDateTime updateDateTime;
-        LocalDateTime uploadDateTime;
+    public static LocalDateTime getFileLastModifiedTime(File file) {
         try {
             Map<String, Object> attributes = Files.readAttributes(file.toPath(), "lastModifiedTime,creationTime", LinkOption.NOFOLLOW_LINKS);
             FileTime lastModifiedTime = (FileTime) attributes.get("lastModifiedTime");
-            FileTime creationTime = (FileTime) attributes.get("creationTime");
-            uploadDateTime = LocalDateTimeUtil.of(creationTime.toInstant());
-            updateDateTime = LocalDateTimeUtil.of(lastModifiedTime.toInstant());
+            return LocalDateTimeUtil.of(lastModifiedTime.toInstant());
         } catch (IOException e) {
-            uploadDateTime = LocalDateTime.now(TimeUntils.ZONE_ID);
-            updateDateTime = uploadDateTime;
+            return LocalDateTime.now(TimeUntils.ZONE_ID);
         }
-        update.set(UPLOAD_DATE, uploadDateTime);
-        update.set(UPDATE_DATE, updateDateTime);
-        return updateDateTime;
     }
 
     public FileDocument getFileDocument(String userId, String fileName, String relativePath, Query query) {
@@ -650,9 +667,7 @@ public class CommonFileService {
     }
 
     public void pushMessage(String username, Object message, String url) {
-        Completable.fromAction(() -> pushMessageSync(username, message, url))
-                .subscribeOn(Schedulers.io())
-                .subscribe();
+        Completable.fromAction(() -> pushMessageSync(username, message, url)).subscribeOn(Schedulers.io()).subscribe();
     }
 
     /**
@@ -760,15 +775,12 @@ public class CommonFileService {
     }
 
     public Single<Long> getOccupiedSpaceAsync(String userId, String collectionName) {
-        return Single.fromCallable(() -> getOccupiedSpace(userId, collectionName))
-                .subscribeOn(Schedulers.io());
+        return Single.fromCallable(() -> getOccupiedSpace(userId, collectionName)).subscribeOn(Schedulers.io());
     }
 
     private long getOccupiedSpace(String userId, String collectionName) {
         long space = 0;
-        List<Bson> list = Arrays.asList(
-                match(eq(IUserService.USER_ID, userId)),
-                group(new BsonNull(), sum(Constants.TOTAL_SIZE, "$size")));
+        List<Bson> list = Arrays.asList(match(eq(IUserService.USER_ID, userId)), group(new BsonNull(), sum(Constants.TOTAL_SIZE, "$size")));
         AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(collectionName).aggregate(list);
         Document doc = aggregateIterable.first();
         if (doc != null) {
@@ -1032,7 +1044,7 @@ public class CommonFileService {
             update.set(Constants.SUFFIX, suffix);
             String fileContentType = getContentType(file, contentType);
             update.set(Constants.CONTENT_TYPE, fileContentType);
-            LocalDateTime updateTime = setDateTime(file, update);
+            LocalDateTime updateTime = getFileLastModifiedTime(file);
             // 如果size相同，不更新,且更新时间在1秒内,则不更新
             if (fileDocument.getSize() == file.length() && TimeUntils.isWithinOneSecond(fileDocument.getUpdateDate(), updateTime)) {
                 return;
@@ -1193,11 +1205,7 @@ public class CommonFileService {
                 if (count == 0) {
                     run = false;
                 }
-                List<org.bson.Document> pipeline = Arrays.asList(
-                        new org.bson.Document("$match", new org.bson.Document("delete", 1)),
-                        new org.bson.Document("$project", new org.bson.Document("_id", 1).append("name", 1).append("path", 1).append("userId", 1)),
-                        new org.bson.Document("$sort",new org.bson.Document("isFolder", 1L)),
-                        new org.bson.Document("$limit", 1));
+                List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match", new org.bson.Document("delete", 1)), new org.bson.Document("$project", new org.bson.Document("_id", 1).append("name", 1).append("path", 1).append("userId", 1)), new org.bson.Document("$sort", new org.bson.Document("isFolder", 1L)), new org.bson.Document("$limit", 1));
                 AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
                 for (org.bson.Document document : aggregateIterable) {
                     String userId = document.getString("userId");

@@ -1761,7 +1761,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Update update = new Update();
         update.set("name", newFileName);
         update.set(Constants.SUFFIX, MyFileUtils.extName(newFileName));
-        setDateTime(file, update);
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
         boolean isRename = false;
         try {
@@ -1770,7 +1769,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             if (!isRename) {
                 update.set("name", file.getName());
                 update.set(Constants.SUFFIX, MyFileUtils.extName(file.getName()));
-                setDateTime(file, update);
                 mongoTemplate.upsert(query, update, COLLECTION_NAME);
             }
         }
@@ -1817,6 +1815,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             upload.setContentType(file.getContentType());
             upload.setSuffix(MyFileUtils.extName(filename));
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
+            // 设置文件最后修改时间
+            CommonFileService.setLastModifiedTime(chunkFile.toPath(), upload.getLastModified());
             // 文件操作日志
             logService.addLogFileOperation(upload.getUsername(), userDirectoryFilePath, "上传文件");
             uploadFile(upload.getUsername(), chunkFile);
