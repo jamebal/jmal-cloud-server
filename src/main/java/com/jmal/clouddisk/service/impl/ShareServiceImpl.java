@@ -81,7 +81,7 @@ public class ShareServiceImpl implements IShareService {
             if (Boolean.TRUE.equals(share.getIsPrivacy())) {
                 share.setExtractionCode(generateExtractionCode());
             }
-            share.setShortId(generateShortId());
+            share.setShortId(generateShortId(share));
             shareDO = mongoTemplate.save(share, COLLECTION_NAME);
         } else {
             setShortId(share, shareDO);
@@ -108,7 +108,7 @@ public class ShareServiceImpl implements IShareService {
 
     private void setShortId(ShareDO share, ShareDO shareDO) {
         if (shareDO.getShortId() == null) {
-            String shortId = generateShortId();
+            String shortId = generateShortId(share);
             share.setShortId(shortId);
             shareDO.setShortId(shortId);
         } else {
@@ -120,14 +120,25 @@ public class ShareServiceImpl implements IShareService {
      * 生成5-8位短链接字符串
      * @return 链接字符串
      */
-    private String generateShortId() {
+    private String generateShortId(ShareDO share) {
+        if (CharSequenceUtil.isNotBlank(share.getShortId())) {
+            // 检测是否已经存在
+            if (isExistsShareShortId(share.getShortId())) {
+                throw new CommonException(ExceptionType.WARNING.getCode(), "地址 \"" + share.getShortId() + "\" 已存在");
+            }
+            return share.getShortId();
+        }
         String shortId = Base62.encode(Convert.toStr(RandomUtil.randomInt(1000, 1000000)));
-        Query query = new Query();
-        query.addCriteria(Criteria.where(Constants.SHORT_ID).is(shortId));
-        if (mongoTemplate.exists(query, ShareDO.class, COLLECTION_NAME)) {
-            return generateShortId();
+        if (isExistsShareShortId(shortId)) {
+            return generateShortId(share);
         }
         return shortId;
+    }
+
+    private boolean isExistsShareShortId(String shortId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(Constants.SHORT_ID).is(shortId));
+        return mongoTemplate.exists(query, ShareDO.class, COLLECTION_NAME);
     }
 
     private void checkOssPath(ShareDO share, String userId, FileDocument file) {
@@ -282,12 +293,10 @@ public class ShareServiceImpl implements IShareService {
         if (shareDO == null || BooleanUtil.isFalse(shareDO.getIsPrivacy())) {
             return ResultUtil.warning("分享不存在或不是私密分享");
         }
-        if (!fileDocument.getUserId().equals(userLoginHolder.getUserId())) {
-            // 非本人判断是否有挂载
-            if (!existsMountFile(shareDO.getFileId(), userLoginHolder.getUserId())) {
+        if (!fileDocument.getUserId().equals(userLoginHolder.getUserId()) && !existsMountFile(shareDO.getFileId(), userLoginHolder.getUserId())) {
                 return ResultUtil.error(ExceptionType.PERMISSION_DENIED);
             }
-        }
+
         // 生成share-token, share-token有效期等于分享有效期
         String shareToken = TokenUtil.createToken(shareDO.getId(), shareDO.getExpireDate());
         return ResultUtil.success(shareToken);

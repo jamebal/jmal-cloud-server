@@ -17,11 +17,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableCaching
 @EnableScheduling
 @Slf4j
-public class ClouddiskApplication {
+public class JmalCloudApplication {
 
     public static void main(String[] args) {
         SecureUtil.disableBouncyCastle();
-        SpringApplication application = new SpringApplication(ClouddiskApplication.class);
+        SpringApplication application = new SpringApplication(JmalCloudApplication.class);
         // 允许循环引用
         application.setAllowCircularReferences(true);
 
