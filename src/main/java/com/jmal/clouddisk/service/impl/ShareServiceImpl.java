@@ -31,8 +31,10 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.jmal.clouddisk.controller.rest.ShareController.SHARE_EXPIRED;
+import static com.jmal.clouddisk.webdav.MyWebdavServlet.PATH_DELIMITER;
 
 /**
  * @Description 分享
@@ -118,6 +120,7 @@ public class ShareServiceImpl implements IShareService {
 
     /**
      * 生成5-8位短链接字符串
+     *
      * @return 链接字符串
      */
     private String generateShortId(ShareDO share) {
@@ -294,12 +297,43 @@ public class ShareServiceImpl implements IShareService {
             return ResultUtil.warning("分享不存在或不是私密分享");
         }
         if (!fileDocument.getUserId().equals(userLoginHolder.getUserId()) && !existsMountFile(shareDO.getFileId(), userLoginHolder.getUserId())) {
-                return ResultUtil.error(ExceptionType.PERMISSION_DENIED);
-            }
+            return ResultUtil.error(ExceptionType.PERMISSION_DENIED);
+        }
 
         // 生成share-token, share-token有效期等于分享有效期
         String shareToken = TokenUtil.createToken(shareDO.getId(), shareDO.getExpireDate());
         return ResultUtil.success(shareToken);
+    }
+
+    @Override
+    public Map<String, String> getMountFileInfo(String fileId, String fileUsername) {
+        // 1.获取文件信息
+        FileDocument fileDocument = fileService.getById(fileId);
+        // 2. 获取分享信息
+        ShareDO shareDO = getShare(fileDocument.getShareId());
+        // 3. 获取基础分享文件信息
+        FileDocument shareBaseFile = fileService.getById(shareDO.getFileId());
+        // 4.获取挂载信息
+        FileDocument mountFile = getMountFile(shareDO.getFileId(), userLoginHolder.getUserId());
+        if (mountFile == null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "挂载文件不存在");
+        }
+        // 5.获取文件上父级目录信息
+        String parentName = Paths.get(fileDocument.getPath()).toFile().getName();
+        String parentPath = Paths.get(fileDocument.getPath()).getParent().toString();
+        if (parentPath.length() > 1) {
+            parentPath = parentPath + PATH_DELIMITER;
+        }
+        FileDocument folderInfo = fileService.getFileDocumentByPathAndName(parentPath, parentName, fileUsername);
+        if (folderInfo == null) {
+            return Map.of();
+        }
+        String path = mountFile.getPath() + fileDocument.getPath().substring(shareBaseFile.getPath().length());
+        String folder = folderInfo.getId();
+        return Map.of(
+                "path", path,
+                "folder", folder
+        );
     }
 
     public void validShare(String shareToken, ShareDO shareDO) {
@@ -360,6 +394,7 @@ public class ShareServiceImpl implements IShareService {
 
     /**
      * 分享验证失败·
+     *
      * @param shareDO 分享信息
      */
     private static void shareValidFailed(ShareDO shareDO) {
@@ -371,10 +406,20 @@ public class ShareServiceImpl implements IShareService {
     }
 
     private boolean existsMountFile(String fileId, String userId) {
+        Query query = getMountQuery(fileId, userId);
+        return mongoTemplate.exists(query, FileDocument.class);
+    }
+
+    private FileDocument getMountFile(String fileId, String userId) {
+        Query query = getMountQuery(fileId, userId);
+        return mongoTemplate.findOne(query, FileDocument.class);
+    }
+
+    private static Query getMountQuery(String fileId, String userId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("mountFileId").is(fileId));
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        return mongoTemplate.exists(query, FileDocument.class);
+        return query;
     }
 
     @Override
@@ -395,6 +440,7 @@ public class ShareServiceImpl implements IShareService {
 
     /**
      * 检查是否过期
+     *
      * @param shareDO 分享信息
      * @return 是否过期 true:过期 false:未过期
      */
@@ -496,6 +542,7 @@ public class ShareServiceImpl implements IShareService {
 
     /**
      * 移除share属性
+     *
      * @param shareDO ShareDO
      */
     private void removeShareProperty(ShareDO shareDO) {
