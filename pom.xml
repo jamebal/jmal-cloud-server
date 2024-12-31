@@ -398,7 +398,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.jmal.clouddisk.ClouddiskApplication</mainClass>
+                    <mainClass>com.jmal.clouddisk.JmalCloudApplication</mainClass>
                     <executable>true</executable>
                     <layout>ZIP</layout>
                     <includes>
