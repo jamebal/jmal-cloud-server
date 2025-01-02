@@ -126,4 +126,13 @@ public interface IShareService {
      * @return ResponseResult
      */
     Map<String, String> getMountFileInfo(String fileId, String fileUsername);
+
+    /**
+     * 获取挂载文件夹id
+     * @param path 需要查询的路径
+     * @param fileUsername 文件拥有者
+     * @param otherFileId 其他文件id(用于查询基础分享文件夹)
+     * @return 文件夹id
+     */
+    String getMountFolderId(String path, String fileUsername, String otherFileId);
 }

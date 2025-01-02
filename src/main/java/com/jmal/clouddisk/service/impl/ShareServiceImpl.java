@@ -336,6 +336,33 @@ public class ShareServiceImpl implements IShareService {
         );
     }
 
+    @Override
+    public String getMountFolderId(String path, String fileUsername, String otherFileId) {
+        try {
+            // 1. 获取其他文件信息
+            FileDocument otherFileDocument = fileService.getById(otherFileId);
+            // 2. 获取分享信息
+            ShareDO shareDO = getShare(otherFileDocument.getShareId());
+            // 3. 获取基础分享文件信息
+            FileDocument shareBaseFile = fileService.getById(shareDO.getFileId());
+            // 4. 获取挂载信息
+            FileDocument mountFile = getMountFile(shareDO.getFileId(), userLoginHolder.getUserId());
+            if (mountFile == null) {
+                return "";
+            }
+            String folderName = Paths.get(path).toFile().getName();
+            String folderPath = shareBaseFile.getPath() + path.substring(mountFile.getPath().length());
+            folderPath = folderPath.substring(0, folderPath.length() - folderName.length());
+            FileDocument folderInfo = fileService.getFileDocumentByPathAndName(folderPath, folderName, fileUsername);
+            if (folderInfo == null) {
+                return "";
+            }
+            return folderInfo.getId();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     public void validShare(String shareToken, ShareDO shareDO) {
         if (checkWhetherExpired(shareDO)) {
             throw new CommonException(ExceptionType.WARNING.getCode(), SHARE_EXPIRED);
