@@ -8,6 +8,7 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.web.WebOssService;
@@ -16,6 +17,7 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
+import com.mongodb.client.result.UpdateResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Sort;
@@ -56,6 +58,8 @@ public class ShareServiceImpl implements IShareService {
     private final WebOssService webOssService;
 
     private final UserLoginHolder userLoginHolder;
+
+    private final LuceneService luceneService;
 
     @Override
     public ResponseResult<Object> generateLink(ShareDO share) {
@@ -282,8 +286,12 @@ public class ShareServiceImpl implements IShareService {
         fileDocument.setUpdateDate(fromFileDocument.getUpdateDate());
         fileDocument.setMountFileId(fromFileDocument.getId());
         Update update = MongoUtil.getUpdate(fileDocument);
+        update.set("remark", "挂载 mount");
         Query query = CommonFileService.getQuery(fileDocument);
-        mongoTemplate.upsert(query, update, FileDocument.class);
+        UpdateResult updateResult = mongoTemplate.upsert(query, update, FileDocument.class);
+        if (null != updateResult.getUpsertedId()) {
+            luceneService.pushCreateIndexQueue(updateResult.getUpsertedId().asObjectId().getValue().toHexString());
+        }
     }
 
     @Override
