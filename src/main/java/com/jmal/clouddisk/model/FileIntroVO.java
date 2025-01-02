@@ -102,6 +102,10 @@ public class FileIntroVO extends FileBase {
     private String mountFileId;
     private List<Tag> tags;
     /**
+     * 备注, 主要用于全文检索
+     */
+    private String remark;
+    /**
      * 操作权限
      */
     private List<OperationPermission> operationPermissionList;
