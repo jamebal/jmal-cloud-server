@@ -7,6 +7,7 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.ResponseResult;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Description IShareService
@@ -117,4 +118,21 @@ public interface IShareService {
      * @return ResponseResult
      */
     ResponseResult<Object> generateShareToken(String fileId);
+
+    /**
+     * 获取挂载文件信息
+     * @param fileId fileId
+     * @param fileUsername fileUsername
+     * @return ResponseResult
+     */
+    Map<String, String> getMountFileInfo(String fileId, String fileUsername);
+
+    /**
+     * 获取挂载文件夹id
+     * @param path 需要查询的路径
+     * @param fileUsername 文件拥有者
+     * @param otherFileId 其他文件id(用于查询基础分享文件夹)
+     * @return 文件夹id
+     */
+    String getMountFolderId(String path, String fileUsername, String otherFileId);
 }

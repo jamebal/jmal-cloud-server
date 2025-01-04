@@ -202,6 +202,11 @@ public class FileDocument extends FileBase {
     private Boolean showCover;
 
     /**
+     * 备注, 主要用于全文检索
+     */
+    private String remark;
+
+    /**
      * 操作权限
      */
     private List<OperationPermission> operationPermissionList;

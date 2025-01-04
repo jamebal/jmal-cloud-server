@@ -8,6 +8,7 @@ import cn.hutool.http.useragent.UserAgentUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.LogOperationDTO;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -234,15 +235,18 @@ public class LogService {
     /**
      * 添加文件操作日志
      * @param logOperation 日志
-     * @param fileUsername 文件所属用户
+     * @param fileUsername 文件所属用户CommonFileService
      * @param filepath 文件路径
      * @param desc 描述
      */
     public void addLogFileOperation(LogOperation logOperation, String fileUsername, String filepath, String desc) {
         logOperation.setFileUserId(userService.getUserIdByUserName(fileUsername));
-        logOperation.setFilepath(filepath);
+        String affiliated = !fileUsername.equals(logOperation.getUsername()) ? ", 所属用户: \"" + fileUsername + "\"" : "";
+        logOperation.setFilepath(filepath + affiliated);
         logOperation.setOperationFun(desc);
         logOperation.setType(LogOperation.Type.OPERATION_FILE.name());
+        logOperation.setStatus(0);
+        logOperation.setOperationModule("文件管理");
         addLog(logOperation);
     }
 
@@ -303,6 +307,10 @@ public class LogService {
         String type = logOperationDTO.getType();
         if (!CharSequenceUtil.isBlank(type)) {
             query.addCriteria(Criteria.where("type").is(type));
+        }
+        ConsumerDO consumerDO = userService.getUserInfoByUsername(userLoginHolder.getUsername());
+        if (consumerDO.getCreator() == null || !consumerDO.getCreator()) {
+            query.addCriteria(Criteria.where("fileUserId").is(userLoginHolder.getUserId()));
         }
         Long startTime = logOperationDTO.getStartTime();
         Long endTime = logOperationDTO.getEndTime();

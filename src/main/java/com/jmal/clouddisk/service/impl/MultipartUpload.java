@@ -122,6 +122,9 @@ public class MultipartUpload {
         }
         PathUtil.move(file, outputFile, true);
 
+        // 设置文件最后修改时间
+        CommonFileService.setLastModifiedTime(outputFile, upload.getLastModified());
+
         // 文件操作日志
         logService.addLogFileOperation(upload.getUsername(), commonFileService.getUserDirectoryFilePath(upload), "上传文件");
 

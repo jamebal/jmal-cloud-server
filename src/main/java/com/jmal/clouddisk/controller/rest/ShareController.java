@@ -283,4 +283,18 @@ public class ShareController {
         return ResultUtil.success(fileService.getById(fileId));
     }
 
+    @Operation(summary = "挂用户获取分享文件信息")
+    @GetMapping("/mount/file_info")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseResult<Map<String, String>> getMountFileInfo(@RequestParam String fileId, @RequestParam String fileUsername) {
+        return ResultUtil.success(shareService.getMountFileInfo(fileId, fileUsername));
+    }
+
+    @Operation(summary = "挂用户获取目录Id")
+    @GetMapping("/mount/folder/id")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseResult<String> getMountFolderId(@RequestParam String otherFileId, @RequestParam String fileUsername, @RequestParam String path) {
+        return ResultUtil.success(shareService.getMountFolderId(path, fileUsername, otherFileId));
+    }
+
 }

@@ -19,6 +19,7 @@ public class FileIndex {
         this.path = fileIntroVO.getPath();
         this.isFolder = fileIntroVO.getIsFolder();
         this.isFavorite = fileIntroVO.getIsFavorite();
+        this.remark = fileIntroVO.getRemark();
     }
 
 
@@ -34,5 +35,6 @@ public class FileIndex {
     private Long size;
     private Boolean isFolder;
     private Boolean isFavorite;
+    private String remark;
 
 }

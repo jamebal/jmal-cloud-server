@@ -8,6 +8,7 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.web.WebOssService;
@@ -16,6 +17,7 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
+import com.mongodb.client.result.UpdateResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Sort;
@@ -31,8 +33,10 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.jmal.clouddisk.controller.rest.ShareController.SHARE_EXPIRED;
+import static com.jmal.clouddisk.webdav.MyWebdavServlet.PATH_DELIMITER;
 
 /**
  * @Description 分享
@@ -54,6 +58,8 @@ public class ShareServiceImpl implements IShareService {
     private final WebOssService webOssService;
 
     private final UserLoginHolder userLoginHolder;
+
+    private final LuceneService luceneService;
 
     @Override
     public ResponseResult<Object> generateLink(ShareDO share) {
@@ -81,7 +87,7 @@ public class ShareServiceImpl implements IShareService {
             if (Boolean.TRUE.equals(share.getIsPrivacy())) {
                 share.setExtractionCode(generateExtractionCode());
             }
-            share.setShortId(generateShortId());
+            share.setShortId(generateShortId(share));
             shareDO = mongoTemplate.save(share, COLLECTION_NAME);
         } else {
             setShortId(share, shareDO);
@@ -108,7 +114,7 @@ public class ShareServiceImpl implements IShareService {
 
     private void setShortId(ShareDO share, ShareDO shareDO) {
         if (shareDO.getShortId() == null) {
-            String shortId = generateShortId();
+            String shortId = generateShortId(share);
             share.setShortId(shortId);
             shareDO.setShortId(shortId);
         } else {
@@ -118,16 +124,28 @@ public class ShareServiceImpl implements IShareService {
 
     /**
      * 生成5-8位短链接字符串
+     *
      * @return 链接字符串
      */
-    private String generateShortId() {
+    private String generateShortId(ShareDO share) {
+        if (CharSequenceUtil.isNotBlank(share.getShortId())) {
+            // 检测是否已经存在
+            if (isExistsShareShortId(share.getShortId())) {
+                throw new CommonException(ExceptionType.WARNING.getCode(), "地址 \"" + share.getShortId() + "\" 已存在");
+            }
+            return share.getShortId();
+        }
         String shortId = Base62.encode(Convert.toStr(RandomUtil.randomInt(1000, 1000000)));
-        Query query = new Query();
-        query.addCriteria(Criteria.where(Constants.SHORT_ID).is(shortId));
-        if (mongoTemplate.exists(query, ShareDO.class, COLLECTION_NAME)) {
-            return generateShortId();
+        if (isExistsShareShortId(shortId)) {
+            return generateShortId(share);
         }
         return shortId;
+    }
+
+    private boolean isExistsShareShortId(String shortId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(Constants.SHORT_ID).is(shortId));
+        return mongoTemplate.exists(query, ShareDO.class, COLLECTION_NAME);
     }
 
     private void checkOssPath(ShareDO share, String userId, FileDocument file) {
@@ -268,8 +286,12 @@ public class ShareServiceImpl implements IShareService {
         fileDocument.setUpdateDate(fromFileDocument.getUpdateDate());
         fileDocument.setMountFileId(fromFileDocument.getId());
         Update update = MongoUtil.getUpdate(fileDocument);
+        update.set("remark", "挂载 mount");
         Query query = CommonFileService.getQuery(fileDocument);
-        mongoTemplate.upsert(query, update, FileDocument.class);
+        UpdateResult updateResult = mongoTemplate.upsert(query, update, FileDocument.class);
+        if (null != updateResult.getUpsertedId()) {
+            luceneService.pushCreateIndexQueue(updateResult.getUpsertedId().asObjectId().getValue().toHexString());
+        }
     }
 
     @Override
@@ -282,15 +304,71 @@ public class ShareServiceImpl implements IShareService {
         if (shareDO == null || BooleanUtil.isFalse(shareDO.getIsPrivacy())) {
             return ResultUtil.warning("分享不存在或不是私密分享");
         }
-        if (!fileDocument.getUserId().equals(userLoginHolder.getUserId())) {
-            // 非本人判断是否有挂载
-            if (!existsMountFile(shareDO.getFileId(), userLoginHolder.getUserId())) {
-                return ResultUtil.error(ExceptionType.PERMISSION_DENIED);
-            }
+        if (!fileDocument.getUserId().equals(userLoginHolder.getUserId()) && !existsMountFile(shareDO.getFileId(), userLoginHolder.getUserId())) {
+            return ResultUtil.error(ExceptionType.PERMISSION_DENIED);
         }
+
         // 生成share-token, share-token有效期等于分享有效期
         String shareToken = TokenUtil.createToken(shareDO.getId(), shareDO.getExpireDate());
         return ResultUtil.success(shareToken);
+    }
+
+    @Override
+    public Map<String, String> getMountFileInfo(String fileId, String fileUsername) {
+        // 1.获取文件信息
+        FileDocument fileDocument = fileService.getById(fileId);
+        // 2. 获取分享信息
+        ShareDO shareDO = getShare(fileDocument.getShareId());
+        // 3. 获取基础分享文件信息
+        FileDocument shareBaseFile = fileService.getById(shareDO.getFileId());
+        // 4.获取挂载信息
+        FileDocument mountFile = getMountFile(shareDO.getFileId(), userLoginHolder.getUserId());
+        if (mountFile == null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "挂载文件不存在");
+        }
+        // 5.获取文件上父级目录信息
+        String parentName = Paths.get(fileDocument.getPath()).toFile().getName();
+        String parentPath = Paths.get(fileDocument.getPath()).getParent().toString();
+        if (parentPath.length() > 1) {
+            parentPath = parentPath + PATH_DELIMITER;
+        }
+        FileDocument folderInfo = fileService.getFileDocumentByPathAndName(parentPath, parentName, fileUsername);
+        if (folderInfo == null) {
+            return Map.of();
+        }
+        String path = mountFile.getPath() + fileDocument.getPath().substring(shareBaseFile.getPath().length());
+        String folder = folderInfo.getId();
+        return Map.of(
+                "path", path,
+                "folder", folder
+        );
+    }
+
+    @Override
+    public String getMountFolderId(String path, String fileUsername, String otherFileId) {
+        try {
+            // 1. 获取其他文件信息
+            FileDocument otherFileDocument = fileService.getById(otherFileId);
+            // 2. 获取分享信息
+            ShareDO shareDO = getShare(otherFileDocument.getShareId());
+            // 3. 获取基础分享文件信息
+            FileDocument shareBaseFile = fileService.getById(shareDO.getFileId());
+            // 4. 获取挂载信息
+            FileDocument mountFile = getMountFile(shareDO.getFileId(), userLoginHolder.getUserId());
+            if (mountFile == null) {
+                return "";
+            }
+            String folderName = Paths.get(path).toFile().getName();
+            String folderPath = shareBaseFile.getPath() + path.substring(mountFile.getPath().length());
+            folderPath = folderPath.substring(0, folderPath.length() - folderName.length());
+            FileDocument folderInfo = fileService.getFileDocumentByPathAndName(folderPath, folderName, fileUsername);
+            if (folderInfo == null) {
+                return "";
+            }
+            return folderInfo.getId();
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     public void validShare(String shareToken, ShareDO shareDO) {
@@ -351,6 +429,7 @@ public class ShareServiceImpl implements IShareService {
 
     /**
      * 分享验证失败·
+     *
      * @param shareDO 分享信息
      */
     private static void shareValidFailed(ShareDO shareDO) {
@@ -362,10 +441,20 @@ public class ShareServiceImpl implements IShareService {
     }
 
     private boolean existsMountFile(String fileId, String userId) {
+        Query query = getMountQuery(fileId, userId);
+        return mongoTemplate.exists(query, FileDocument.class);
+    }
+
+    private FileDocument getMountFile(String fileId, String userId) {
+        Query query = getMountQuery(fileId, userId);
+        return mongoTemplate.findOne(query, FileDocument.class);
+    }
+
+    private static Query getMountQuery(String fileId, String userId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("mountFileId").is(fileId));
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        return mongoTemplate.exists(query, FileDocument.class);
+        return query;
     }
 
     @Override
@@ -386,6 +475,7 @@ public class ShareServiceImpl implements IShareService {
 
     /**
      * 检查是否过期
+     *
      * @param shareDO 分享信息
      * @return 是否过期 true:过期 false:未过期
      */
@@ -487,6 +577,7 @@ public class ShareServiceImpl implements IShareService {
 
     /**
      * 移除share属性
+     *
      * @param shareDO ShareDO
      */
     private void removeShareProperty(ShareDO shareDO) {

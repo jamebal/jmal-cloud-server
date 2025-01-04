@@ -3,8 +3,8 @@ package com.jmal.clouddisk.lucene;
 import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.query.SearchDTO;
@@ -39,7 +39,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -70,7 +69,7 @@ public class LuceneService {
     private final ReadContentService readContentService;
     private final RebuildIndexTaskService rebuildIndexTaskService;
 
-    public final static String MONGO_INDEX_FIELD = "index";
+    public static final String MONGO_INDEX_FIELD = "index";
     private final UserLoginHolder userLoginHolder;
 
     /**
@@ -94,7 +93,7 @@ public class LuceneService {
     /**
      * 新建索引文件缓冲队列大小
      */
-    private final static int CREATE_INDEX_QUEUE_SIZE = 40960;
+    private static final int CREATE_INDEX_QUEUE_SIZE = 40960;
 
     /**
      * 新建索引文件缓冲队列
@@ -142,13 +141,14 @@ public class LuceneService {
      * @param fileId fileId
      */
     public void pushCreateIndexQueue(String fileId) {
-        if (StrUtil.isBlank(fileId)) {
+        if (CharSequenceUtil.isBlank(fileId)) {
             return;
         }
         try {
             getIndexFileQueue().put(fileId);
         } catch (InterruptedException e) {
             log.error("推送新建索引队列失败, fileId: {}, {}", fileId, e.getMessage(), e);
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -158,13 +158,14 @@ public class LuceneService {
      * @param fileId fileId
      */
     public void pushCreateIndexContentQueue(String fileId) {
-        if (StrUtil.isBlank(fileId)) {
+        if (CharSequenceUtil.isBlank(fileId)) {
             return;
         }
         try {
             getIndexFileContentQueue().put(fileId);
         } catch (InterruptedException e) {
             log.error("推送新建索引内容队列失败, fileId: {}, {}", fileId, e.getMessage(), e);
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -190,8 +191,8 @@ public class LuceneService {
      * 新建索引文件任务
      */
     private void createIndexFileTask() {
-        ArrayBlockingQueue<String> indexFileQueue = getIndexFileQueue();
-        ArrayBlockingQueue<String> indexFileContentQueue = getIndexFileContentQueue();
+        getIndexFileQueue();
+        getIndexFileContentQueue();
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 List<String> fileIdList = new ArrayList<>(indexFileQueue.size());
@@ -247,13 +248,13 @@ public class LuceneService {
             String content = null;
             if (readContent) {
                 content = readFileContent(file, fileIntroVO.getId());
-                if (StrUtil.isBlank(content)) {
+                if (CharSequenceUtil.isBlank(content)) {
                     updateIndexStatus(fileIntroVO, IndexStatus.INDEXED);
                     return;
                 }
             }
             updateIndexDocument(indexWriter, fileIndex, content);
-            if (StrUtil.isNotBlank(content)) {
+            if (CharSequenceUtil.isNotBlank(content)) {
                 log.debug("添加索引, filepath: {}", file.getAbsoluteFile());
                 startProcessFilesToBeIndexed();
             }
@@ -313,12 +314,12 @@ public class LuceneService {
         String fileName = file.getName();
         String suffix = MyFileUtils.extName(fileName);
         fileIndex.setType(Constants.OTHER);
-        if (StrUtil.isBlank(suffix)) {
+        if (CharSequenceUtil.isBlank(suffix)) {
             fileIndex.setType(Constants.OTHER);
             return;
         }
         String contentType = FileContentTypeUtils.getContentType(suffix);
-        if (StrUtil.isBlank(contentType)) {
+        if (CharSequenceUtil.isBlank(contentType)) {
             fileIndex.setType(Constants.OTHER);
             return;
         }
@@ -364,13 +365,15 @@ public class LuceneService {
                 case "xls", "xlsx" -> {
                     return readContentService.readExcelContent(file);
                 }
-            }
-            if (fileProperties.getSimText().contains(type)) {
-                String charset = UniversalDetector.detectCharset(file);
-                if (StrUtil.isBlank(charset)) {
-                    charset = String.valueOf(CharsetDetector.detect(file, StandardCharsets.UTF_8));
+                default -> {
+                    if (fileProperties.getSimText().contains(type)) {
+                        String charset = UniversalDetector.detectCharset(file);
+                        if (CharSequenceUtil.isBlank(charset)) {
+                            charset = String.valueOf(CharsetDetector.detect(file, StandardCharsets.UTF_8));
+                        }
+                        return FileUtil.readString(file, Charset.forName(charset));
+                    }
                 }
-                return FileUtil.readString(file, Charset.forName(charset));
             }
         } catch (Exception e) {
             log.error("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
@@ -422,7 +425,7 @@ public class LuceneService {
     public void updateIndexDocument(IndexWriter indexWriter, FileIndex fileIndex, String content) {
         String fileId = fileIndex.getFileId();
         try {
-            String fileName = fileIndex.getName();
+            String fileName = (fileIndex.getName() == null ? "" : fileIndex.getName()) + " " + fileIndex.getRemark();
             String tagName = fileIndex.getTagName();
             Boolean isFolder = fileIndex.getIsFolder();
             Boolean isFavorite = fileIndex.getIsFavorite();
@@ -433,7 +436,7 @@ public class LuceneService {
             if (fileIndex.getType() != null) {
                 newDocument.add(new StringField("type", fileIndex.getType(), Field.Store.NO));
             }
-            if (StrUtil.isNotBlank(fileName)) {
+            if (CharSequenceUtil.isNotBlank(fileName)) {
                 fileName = fileName.toLowerCase();
                 newDocument.add(new StringField("name", fileName, Field.Store.NO));
                 newDocument.add(new TextField("content", fileName, Field.Store.NO));
@@ -447,12 +450,12 @@ public class LuceneService {
             if (path != null) {
                 newDocument.add(new StringField("path", path, Field.Store.NO));
             }
-            if (StrUtil.isNotBlank(tagName)) {
+            if (CharSequenceUtil.isNotBlank(tagName)) {
                 tagName = tagName.toLowerCase();
                 newDocument.add(new StringField("tag", tagName, Field.Store.NO));
                 newDocument.add(new TextField("content", tagName, Field.Store.NO));
             }
-            if (StrUtil.isNotBlank(content)) {
+            if (CharSequenceUtil.isNotBlank(content)) {
                 newDocument.add(new TextField("content", content, Field.Store.NO));
             }
             if (fileIndex.getModified() != null) {
@@ -508,11 +511,10 @@ public class LuceneService {
             }
             List<FileIntroVO> fileIntroVOList = getFileIntroVOs(seenIds);
             long now = System.currentTimeMillis();
-            fileIntroVOList = fileIntroVOList.parallelStream().peek(fileIntroVO -> {
-                LocalDateTime updateDate = fileIntroVO.getUpdateDate();
-                long update = TimeUntils.getMilli(updateDate);
-                fileIntroVO.setAgoTime(now - update);
-            }).toList();
+            fileIntroVOList.forEach(fileIntroVO -> {
+                long updateMilli = TimeUntils.getMilli(fileIntroVO.getUpdateDate());
+                fileIntroVO.setAgoTime(now - updateMilli);
+            });
             result.setData(fileIntroVOList);
             result.setCount(count);
             return result;
@@ -531,7 +533,7 @@ public class LuceneService {
     private static Sort getSort(SearchDTO searchDTO) {
         String sortProp = searchDTO.getSortProp();
         String sortOrder = searchDTO.getSortOrder();
-        if (StrUtil.isBlank(sortProp) || StrUtil.isBlank(sortOrder)) {
+        if (CharSequenceUtil.isBlank(sortProp) || CharSequenceUtil.isBlank(sortOrder)) {
             return new Sort(SortField.FIELD_SCORE);
         }
         // 创建排序规则
@@ -614,11 +616,12 @@ public class LuceneService {
 
     /**
      * 查询前置处理
+     *
      * @param searchDTO searchDTO
      */
     private void beforeQuery(SearchDTO searchDTO) {
         String folder = searchDTO.getFolder();
-        if (StrUtil.isNotBlank(folder)) {
+        if (CharSequenceUtil.isNotBlank(folder)) {
             // 挂载点查询
             org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
             query.addCriteria(Criteria.where("_id").is(folder));
@@ -632,13 +635,13 @@ public class LuceneService {
 
 
     private void otherQueryParams(SearchDTO searchDTO, BooleanQuery.Builder builder) {
-        boolean queryPath = StrUtil.isNotBlank(searchDTO.getCurrentDirectory()) && searchDTO.getCurrentDirectory().length() > 1;
+        boolean queryPath = CharSequenceUtil.isNotBlank(searchDTO.getCurrentDirectory()) && searchDTO.getCurrentDirectory().length() > 1;
         if (queryPath) {
             Term prefixTerm = new Term("path", searchDTO.getCurrentDirectory());
             PrefixQuery prefixQuery = new PrefixQuery(prefixTerm);
             builder.add(prefixQuery, BooleanClause.Occur.MUST);
         }
-        if (!queryPath && StrUtil.isNotBlank(searchDTO.getType())) {
+        if (!queryPath && CharSequenceUtil.isNotBlank(searchDTO.getType())) {
             builder.add(new TermQuery(new Term("type", searchDTO.getType())), BooleanClause.Occur.MUST);
         }
         if (!queryPath && searchDTO.getTagId() != null) {
@@ -648,10 +651,10 @@ public class LuceneService {
             }
         }
         if (!queryPath && searchDTO.getIsFolder() != null) {
-            builder.add(IntPoint.newExactQuery("isFolder", searchDTO.getIsFolder() ? 1 : 0), BooleanClause.Occur.MUST);
+            builder.add(IntPoint.newExactQuery("isFolder", Boolean.TRUE.equals(searchDTO.getIsFolder()) ? 1 : 0), BooleanClause.Occur.MUST);
         }
         if (!queryPath && searchDTO.getIsFavorite() != null) {
-            builder.add(IntPoint.newExactQuery("isFavorite", searchDTO.getIsFavorite() ? 1 : 0), BooleanClause.Occur.MUST);
+            builder.add(IntPoint.newExactQuery("isFavorite", Boolean.TRUE.equals(searchDTO.getIsFavorite()) ? 1 : 0), BooleanClause.Occur.MUST);
         }
     }
 
