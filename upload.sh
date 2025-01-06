@@ -261,6 +261,7 @@ else
 
     if [ $TOTAL_SIZE -le $CHUNK_SIZE ]; then
         # 小文件直接上传
+        TOTAL_CHUNKS=1
         upload_chunk "$FILE_PATH" 1 "$TOTAL_SIZE" > /dev/null
         if [ $? -ne 0 ]; then
             echo "文件上传失败"
