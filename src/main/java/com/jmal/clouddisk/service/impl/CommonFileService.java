@@ -1045,6 +1045,7 @@ public class CommonFileService {
             String fileContentType = getContentType(file, contentType);
             update.set(Constants.CONTENT_TYPE, fileContentType);
             LocalDateTime updateTime = getFileLastModifiedTime(file);
+            update.set(UPDATE_DATE, updateTime);
             // 如果size相同，不更新,且更新时间在1秒内,则不更新
             if (fileDocument.getSize() == file.length() && TimeUntils.isWithinOneSecond(fileDocument.getUpdateDate(), updateTime)) {
                 return;
