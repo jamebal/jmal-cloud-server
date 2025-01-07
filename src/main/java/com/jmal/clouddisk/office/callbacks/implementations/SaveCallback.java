@@ -13,13 +13,9 @@ import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.LogService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.TimeUntils;
-import com.mongodb.client.result.UpdateResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -64,22 +60,12 @@ public class SaveCallback implements Callback {
             List<OperationPermission> operationPermissionList = fileDocument.getOperationPermissionList();
             commonFileService.checkPermissionUserId(userId, operationPermissionList, OperationPermission.PUT);
 
-            Path path = Paths.get(fileProperties.getRootDir(), userLoginHolder.getUsername(), fileDocument.getPath(), fileDocument.getName());
+            Path path = Paths.get(fileProperties.getRootDir(), userService.getUserNameById(userId), fileDocument.getPath(), fileDocument.getName());
 
             // 下载最新的文件
             long size = HttpUtil.downloadFile(body.getUrl(), path.toString());
             String md5 = size + "/" + fileDocument.getName();
             LocalDateTime updateDate = LocalDateTime.now(TimeUntils.ZONE_ID);
-            // 修改数据库
-            Query query = new Query().addCriteria(Criteria.where("_id").is(body.getFileId()));
-            Update update = new Update();
-            update.set("size", size);
-            update.set("md5", md5);
-            update.set(Constants.UPDATE_DATE, updateDate);
-            UpdateResult updateResult = mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
-            if (updateResult.getModifiedCount() != 1) {
-                result =  1;
-            }
             // 推送修改文件的通知
             fileDocument.setSize(size);
             fileDocument.setUpdateDate(updateDate);

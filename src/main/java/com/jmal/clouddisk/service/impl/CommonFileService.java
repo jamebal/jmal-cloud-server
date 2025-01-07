@@ -1041,13 +1041,14 @@ public class CommonFileService {
         if (fileDocument != null) {
             Update update = new Update();
             update.set("size", file.length());
+            update.set("md5", file.length() + "/" + fileDocument.getName());
             update.set(Constants.SUFFIX, suffix);
             String fileContentType = getContentType(file, contentType);
             update.set(Constants.CONTENT_TYPE, fileContentType);
             LocalDateTime updateTime = getFileLastModifiedTime(file);
             update.set(UPDATE_DATE, updateTime);
             // 如果size相同，不更新,且更新时间在1秒内,则不更新
-            if (fileDocument.getSize() == file.length() && TimeUntils.isWithinOneSecond(fileDocument.getUpdateDate(), updateTime)) {
+            if (TimeUntils.isWithinOneSecond(fileDocument.getUpdateDate(), updateTime)) {
                 return;
             }
             UpdateResult updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
@@ -1063,7 +1064,7 @@ public class CommonFileService {
                 luceneService.pushCreateIndexQueue(fileDocument.getId());
             }
             // 判断文件类型中是否包含utf-8
-            if (fileContentType.contains("utf-8")) {
+            if (fileContentType.contains("utf-8") || fileContentType.contains("office")) {
                 // 修改文件之后保存历史版本
                 fileVersionService.saveFileVersion(username, Paths.get(relativePath, file.getName()).toString(), userId);
             }
