@@ -432,4 +432,11 @@ public interface IFileService {
      * @return ResponseResult<Object>
      */
     ResponseResult<Object> sweep(List<String> fileIds, String username);
+
+    /**
+     * 是否允许下载
+     * @param fileIds 文件id列表
+     * @return ResponseResult<Object>
+     */
+    ResponseResult<Object> isAllowDownload(List<String> fileIds);
 }

@@ -2130,6 +2130,30 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     }
 
     @Override
+    public ResponseResult<Object> isAllowDownload(List<String> fileIds) {
+        if (fileIds.isEmpty()) {
+            return ResultUtil.error("文件不存在");
+        }
+        LogOperation logOperation = logService.getLogOperation();
+        Single.create(emitter -> {
+            // 文件操作日志
+            FileDocument fileDocument = getById(fileIds.get(0));
+            if (fileDocument == null) {
+                return;
+            }
+            String fileUsername = userService.getUserNameById(fileDocument.getUserId());
+            String desc;
+            if (fileIds.size() > 1) {
+                desc = fileDocument.getPath() + fileDocument.getName() + ",等" + fileIds.size() + "个文件";
+            } else {
+                desc = fileDocument.getPath() + fileDocument.getName();
+            }
+            logService.addLogFileOperation(logOperation, fileUsername, desc, "下载文件");
+        }).subscribeOn(Schedulers.io()).subscribe();
+        return ResultUtil.success(true);
+    }
+
+    @Override
     public ResponseResult<Object> clearTrash(String username) {
         LogOperation logOperation = logService.getLogOperation();
         logOperation.setOperationFun("清空回收站");

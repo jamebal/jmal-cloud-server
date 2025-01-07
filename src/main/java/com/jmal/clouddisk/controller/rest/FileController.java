@@ -213,15 +213,13 @@ public class FileController {
 
     @Operation(summary = "是否允许下载")
     @GetMapping("/isAllowDownload")
-    @Permission("cloud:file:download")
-    public ResponseResult<Object> isAllowDownload() {
-        return ResultUtil.success(true);
+    public ResponseResult<Object> isAllowDownload(@RequestParam List<String> fileIds) {
+        return fileService.isAllowDownload(fileIds);
     }
 
     @Operation(summary = "打包下载")
     @GetMapping("/packageDownload")
     @LogOperatingFun
-    @Permission("cloud:file:download")
     public void packageDownload(HttpServletRequest request, HttpServletResponse response, @RequestParam String[] fileIds) {
         if (fileIds != null && fileIds.length > 0) {
             List<String> fileIdList = Arrays.asList(fileIds);
