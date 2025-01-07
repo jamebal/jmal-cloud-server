@@ -75,6 +75,7 @@ public class SaveCallback implements Callback {
             commonFileService.pushMessage(userLoginHolder.getUsername(), fileDocument, Constants.UPDATE_FILE);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+            return 1;
         }
         return result;
     }
