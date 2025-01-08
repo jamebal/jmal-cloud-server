@@ -29,7 +29,7 @@ public class CategoryDTO implements Comparable<CategoryDTO> {
     private String userId;
 
     @NotNull(message = "分类名称不能为空")
-    @Schema(name = "name", title = "分类名称", required = true , example = "新建分类")
+    @Schema(name = "name", title = "分类名称", example = "新建分类", requiredMode = Schema.RequiredMode.REQUIRED)
     private String name;
 
     /***

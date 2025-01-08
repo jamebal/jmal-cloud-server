@@ -33,15 +33,17 @@ public class RoleController {
     @GetMapping("/list")
     @Permission("sys:role:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<List<RoleDTO>> list(QueryRoleDTO queryDTO){
-        return roleService.list(queryDTO);
+    public ResponseResult<List<RoleDTO>> list(String name, @ModelAttribute QueryRoleDTO queryRoleDTO) {
+        queryRoleDTO.setName(name);
+        return roleService.list(queryRoleDTO);
     }
 
     @Operation(summary = "添加角色")
     @PostMapping("/add")
     @LogOperatingFun
     @Permission("sys:role:add")
-    public ResponseResult<Object> add(@ModelAttribute @Validated RoleDTO roleDTO){
+    public ResponseResult<Object> add(@RequestParam String name, @ModelAttribute @Validated RoleDTO roleDTO) {
+        roleDTO.setName(name);
         return roleService.add(roleDTO);
     }
 
@@ -49,8 +51,9 @@ public class RoleController {
     @PutMapping("/update")
     @LogOperatingFun
     @Permission("sys:role:update")
-    public ResponseResult<Object> update(@RequestBody @ModelAttribute @Validated RoleDTO roleDTO){
-        if(roleDTO.getId() == null){
+    public ResponseResult<Object> update(@RequestParam String name, @RequestBody @ModelAttribute @Validated RoleDTO roleDTO) {
+        roleDTO.setName(name);
+        if (roleDTO.getId() == null) {
             return ResultUtil.warning("缺少参数roleId");
         }
         return roleService.update(roleDTO);
@@ -60,7 +63,7 @@ public class RoleController {
     @DeleteMapping("/delete")
     @LogOperatingFun
     @Permission("sys:role:delete")
-    public ResponseResult<Object> delete(@RequestParam String[] roleIds){
+    public ResponseResult<Object> delete(@RequestParam String[] roleIds) {
         roleService.delete(roleIds);
         return ResultUtil.success();
     }

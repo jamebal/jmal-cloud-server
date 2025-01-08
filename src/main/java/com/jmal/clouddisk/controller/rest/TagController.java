@@ -39,7 +39,6 @@ public class TagController {
 
     @Operation(summary = "标签信息")
     @GetMapping("/tag/info")
-    @ResponseBody
     @Permission("website:set:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<TagDTO> tagInfo(@RequestParam String tagId) {
@@ -55,16 +54,17 @@ public class TagController {
     @PostMapping("/tag/add")
     @Permission("website:set:add")
     @LogOperatingFun
-    public ResponseResult<Object> add(@ModelAttribute @Validated TagDTO tagDTO) {
+    public ResponseResult<Object> add(@RequestParam String name, @ModelAttribute @Validated TagDTO tagDTO) {
+        tagDTO.setName(name);
         return tagService.add(tagDTO);
     }
 
     @Operation(summary = "更新标签")
     @PutMapping("/tag/update")
-    @ResponseBody
     @Permission("website:set:update")
     @LogOperatingFun
-    public ResponseResult<Object> update(@ModelAttribute @Validated TagDTO tagDTO) {
+    public ResponseResult<Object> update(@RequestParam String name, @ModelAttribute @Validated TagDTO tagDTO) {
+        tagDTO.setName(name);
         return tagService.update(tagDTO);
     }
 

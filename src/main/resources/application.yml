@@ -6,6 +6,7 @@ server:
       charset: UTF-8
       enabled: true
   forward-headers-strategy: native
+  shutdown: immediate
 version: 2.11.0
 tess4j:
   data-path: /Users/jmal/studio/myProject/github/jmal-cloud-server/tess4j/datapath
