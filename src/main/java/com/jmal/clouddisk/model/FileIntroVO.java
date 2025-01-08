@@ -56,6 +56,7 @@ public class FileIntroVO extends FileBase {
     private String contentText;
 
     private Boolean shareBase;
+    private Boolean subShare;
     /***
      * 分享有效期
      */

@@ -27,6 +27,9 @@ public class ShareVO {
 
     private String fileName;
 
+    private Boolean shareBase;
+    private Boolean subShare;
+
     private Boolean isFolder;
     private String contentType;
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm")

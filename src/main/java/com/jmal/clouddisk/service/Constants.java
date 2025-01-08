@@ -16,11 +16,13 @@ public class Constants {
     public static final String REGION_DEFAULT = "0";
     public static final String EXTRACTION_CODE = "extractionCode";
     public static final String IS_PRIVACY = "isPrivacy";
+    public static final String EXPIRE_DATE = "expireDate";
     public static final String OPERATION_PERMISSION_LIST = "operationPermissionList";
     public static final String SHARE_ID = "shareId";
     public static final String SHORT_ID = "shortId";
     public static final String IS_SHARE = "isShare";
     public static final String SHARE_BASE = "shareBase";
+    public static final String SUB_SHARE = "subShare";
 
     public static final String EXPIRES_AT = "expiresAt";
 
