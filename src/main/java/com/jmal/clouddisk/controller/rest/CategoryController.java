@@ -48,7 +48,6 @@ public class CategoryController {
 
     @Operation(summary = "分类信息")
     @GetMapping("/category/info")
-    @ResponseBody
     @Permission("website:set:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<CategoryDTO> categoryInfo(@RequestParam String categoryId) {
@@ -64,15 +63,16 @@ public class CategoryController {
     @PostMapping("/category/add")
     @LogOperatingFun
     @Permission("website:set:add")
-    public ResponseResult<Object> add(@ModelAttribute @Validated CategoryDTO categoryDTO) {
+    public ResponseResult<Object> add(@RequestParam String name, @ModelAttribute @Validated CategoryDTO categoryDTO) {
+        categoryDTO.setName(name);
         return categoryService.add(categoryDTO);
     }
 
     @Operation(summary = "更新分类")
     @PutMapping("/category/update")
-    @ResponseBody
     @Permission("website:set:update")
-    public ResponseResult<Object> update(@ModelAttribute CategoryDTO categoryDTO) {
+    public ResponseResult<Object> update(@RequestParam String name, @ModelAttribute CategoryDTO categoryDTO) {
+        categoryDTO.setName(name);
         return categoryService.update(categoryDTO);
     }
 

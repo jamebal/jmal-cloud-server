@@ -36,13 +36,13 @@ public class MenuController {
     @Operation(summary = "菜单树")
     @GetMapping("/tree")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<List<MenuDTO>> tree(QueryMenuDTO queryDTO) {
+    public ResponseResult<List<MenuDTO>> tree(String name, QueryMenuDTO queryDTO) {
+        queryDTO.setName(name);
         return ResultUtil.success(menuService.tree(queryDTO));
     }
 
     @Operation(summary = "菜单信息")
     @GetMapping("/info")
-    @ResponseBody
     @Permission("sys:menu:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<MenuDTO> info(@RequestParam String menuId) {
@@ -56,7 +56,6 @@ public class MenuController {
 
     @Operation(summary = "权限标识列表")
     @GetMapping("/authorities")
-    @ResponseBody
     @Permission("sys:menu:list")
     public ResponseResult<List<String>> authorities() {
         return ResultUtil.success(AnnoManageUtil.AUTHORITIES);
@@ -66,16 +65,17 @@ public class MenuController {
     @PostMapping("/add")
     @LogOperatingFun
     @Permission("sys:menu:add")
-    public ResponseResult<Object> add(@ModelAttribute @Validated MenuDTO menuDTO) {
+    public ResponseResult<Object> add(@RequestParam String name, @ModelAttribute @Validated MenuDTO menuDTO) {
+        menuDTO.setName(name);
         return menuService.add(menuDTO);
     }
 
     @Operation(summary = "更新菜单")
     @PutMapping("/update")
-    @ResponseBody
     @LogOperatingFun
     @Permission("sys:menu:update")
-    public ResponseResult<Object> update(@ModelAttribute MenuDTO menuDTO) {
+    public ResponseResult<Object> update(@RequestParam String name, @ModelAttribute MenuDTO menuDTO) {
+        menuDTO.setName(name);
         if(menuDTO.getId() == null){
             return ResultUtil.warning("缺少参数menuId");
         }
