@@ -118,6 +118,7 @@ public class FileDocument extends FileBase {
      * shareBase
      */
     private Boolean shareBase;
+    private Boolean subShare;
     /***
      * 分享有效期
      */

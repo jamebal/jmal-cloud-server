@@ -943,6 +943,7 @@ public class CommonFileService {
         Update update = new Update();
         update.unset(Constants.SHARE_ID);
         update.unset(Constants.IS_SHARE);
+        update.unset(Constants.SUB_SHARE);
         update.unset(Constants.EXPIRES_AT);
         update.unset(Constants.IS_PRIVACY);
         update.unset(Constants.OPERATION_PERMISSION_LIST);

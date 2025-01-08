@@ -67,7 +67,8 @@ public class ShareServiceImpl implements IShareService {
         share.setCreateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
         FileDocument file = fileService.getById(share.getFileId());
         if (BooleanUtil.isTrue(file.getIsShare()) && !BooleanUtil.isTrue(file.getShareBase())) {
-            throw new CommonException(ExceptionType.WARNING.getCode(), "该文件已经分享过了");
+            // 设置子分享,继承上级分享
+            return subShare(share.getShortId(), file);
         }
         long expireAt = Long.MAX_VALUE;
         if (share.getExpireDate() != null) {
@@ -81,8 +82,6 @@ public class ShareServiceImpl implements IShareService {
         share.setContentType(file.getContentType());
         share.setIsPrivacy(BooleanUtil.isTrue(share.getIsPrivacy()));
 
-        ShareVO shareVO = new ShareVO();
-
         if (shareDO == null) {
             if (Boolean.TRUE.equals(share.getIsPrivacy())) {
                 share.setExtractionCode(generateExtractionCode());
@@ -95,6 +94,50 @@ public class ShareServiceImpl implements IShareService {
         }
         file.setShareBase(shareDO.getShareBase());
 
+        ShareVO shareVO = getShareVO(share, shareDO);
+        shareVO.setShareBase(true);
+        // 判断要分享的文件是否为oss文件
+        checkOssPath(share, shareDO.getUserId(), file);
+        // 设置文件的分享属性
+        fileService.setShareFile(file, expireAt, share);
+        return ResultUtil.success(shareVO);
+    }
+
+    private ResponseResult<Object> subShare(String shortId, FileDocument file) {
+        ShareDO share = new ShareDO();
+        ShareDO fatherShare = getShare(file.getShareId());
+        if (fatherShare == null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "遇到一点问题, 请稍后再试");
+        }
+        BeanUtils.copyProperties(fatherShare, share);
+        share.setId(null);
+        share.setShortId(shortId);
+        share.setFileId(file.getId());
+
+        ShareDO shareDO = findByFileId(file.getId());
+
+        // 创建子分享
+        share.setFatherShareId(file.getShareId());
+        if (shareDO == null) {
+            share.setShortId(generateShortId(share));
+            share.setCreateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
+            share.setIsFolder(share.getIsFolder());
+            share.setFileName(file.getName());
+            share.setContentType(file.getContentType());
+            shareDO = mongoTemplate.save(share, COLLECTION_NAME);
+        } else {
+            setShortId(share, shareDO);
+            updateShare(share, shareDO, file);
+        }
+        // 添加subShare属性
+        setSubShare(file.getId());
+        ShareVO shareVO = getShareVO(share, shareDO);
+        shareVO.setSubShare(true);
+        return ResultUtil.success(shareVO);
+    }
+
+    private static ShareVO getShareVO(ShareDO share, ShareDO shareDO) {
+        ShareVO shareVO = new ShareVO();
         if (share.getOperationPermissionList() == null) {
             shareVO.setOperationPermissionList(shareDO.getOperationPermissionList());
         } else {
@@ -105,11 +148,7 @@ public class ShareServiceImpl implements IShareService {
         if (Boolean.TRUE.equals(share.getIsPrivacy())) {
             shareVO.setExtractionCode(share.getExtractionCode());
         }
-        // 判断要分享的文件是否为oss文件
-        checkOssPath(share, shareDO.getUserId(), file);
-        // 设置文件的分享属性
-        fileService.setShareFile(file, expireAt, share);
-        return ResultUtil.success(shareVO);
+        return shareVO;
     }
 
     private void setShortId(ShareDO share, ShareDO shareDO) {
@@ -178,9 +217,9 @@ public class ShareServiceImpl implements IShareService {
         update.set("fileName", file.getName());
         update.set(Constants.SHORT_ID, share.getShortId());
         if (share.getExpireDate() != null) {
-            update.set("expireDate", share.getExpireDate());
+            update.set(Constants.EXPIRE_DATE, share.getExpireDate());
         } else {
-            update.unset("expireDate");
+            update.unset(Constants.EXPIRE_DATE);
         }
         if (share.getOperationPermissionList() != null) {
             update.set(Constants.OPERATION_PERMISSION_LIST, share.getOperationPermissionList());
@@ -198,6 +237,19 @@ public class ShareServiceImpl implements IShareService {
         }
         share.setId(shareDO.getId());
         mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
+        // 更新子分享
+        updateSubShare(share, shareDO);
+    }
+
+    private void updateSubShare(ShareDO share, ShareDO shareDO) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("fatherShareId").is(shareDO.getId()));
+        Update update = new Update();
+        update.set(Constants.EXPIRE_DATE, share.getExpireDate());
+        update.set(Constants.IS_PRIVACY, share.getIsPrivacy());
+        update.set(Constants.EXTRACTION_CODE, share.getExtractionCode());
+        update.set(Constants.OPERATION_PERMISSION_LIST, share.getOperationPermissionList());
+        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
     }
 
     /***
@@ -581,6 +633,15 @@ public class ShareServiceImpl implements IShareService {
      * @param shareDO ShareDO
      */
     private void removeShareProperty(ShareDO shareDO) {
+        if (shareDO.getFatherShareId() != null) {
+            // 移除SUB_SHARE
+            unsetSubShare(shareDO.getFileId());
+            return;
+        }
+
+        // 删除subShare
+        removeSubSare(shareDO);
+
         String fileId = shareDO.getFileId();
         FileDocument fileDocument = fileService.getById(shareDO.getFileId());
         if (fileDocument == null) {
@@ -608,6 +669,36 @@ public class ShareServiceImpl implements IShareService {
         Query query = new Query();
         query.addCriteria(Criteria.where("mountFileId").is(fileId));
         mongoTemplate.remove(query, FileDocument.class);
+    }
+
+    private void removeSubSare(ShareDO shareDO) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("fatherShareId").is(shareDO.getId()));
+        mongoTemplate.remove(query, ShareDO.class, COLLECTION_NAME);
+    }
+
+    /**
+     * 添加subShare属性
+     * @param fileId fileId
+     */
+    private void setSubShare(String fileId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        Update update = new Update();
+        update.set(Constants.SUB_SHARE, true);
+        mongoTemplate.updateFirst(query, update, FileDocument.class);
+    }
+
+    /**
+     * 移除subShare属性
+     * @param fileId fileId
+     */
+    private void unsetSubShare(String fileId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        Update update = new Update();
+        update.unset(Constants.SUB_SHARE);
+        mongoTemplate.updateFirst(query, update, FileDocument.class);
     }
 
     @Override

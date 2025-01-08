@@ -70,7 +70,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.jmal.clouddisk.service.IUserService.USER_ID;
 
@@ -132,21 +131,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 default -> Criteria.where("path").is(currentDirectory);
             };
         } else {
-            criteria = Criteria.where("path").is(currentDirectory);
-            if (currentDirectory.length() < 2) {
-                Boolean isFolder = upload.getIsFolder();
-                if (isFolder != null) {
-                    criteria = Criteria.where(Constants.IS_FOLDER).is(isFolder);
-                }
-                Boolean isFavorite = upload.getIsFavorite();
-                if (isFavorite != null) {
-                    criteria = Criteria.where(Constants.IS_FAVORITE).is(isFavorite);
-                }
-                String tagId = upload.getTagId();
-                if (StrUtil.isNotBlank(tagId)) {
-                    criteria = Criteria.where("tags.tagId").is(tagId);
-                }
-            }
+            criteria = getOtherCriteria(upload, currentDirectory);
         }
         List<FileIntroVO> list = getFileDocuments(upload, criteria);
         result.setData(list);
@@ -155,6 +140,26 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             result.setProps(upload.getProps());
         }
         return result;
+    }
+
+    private static Criteria getOtherCriteria(UploadApiParamDTO upload, String currentDirectory) {
+        Criteria criteria;
+        criteria = Criteria.where("path").is(currentDirectory);
+        if (currentDirectory.length() < 2) {
+            Boolean isFolder = upload.getIsFolder();
+            if (isFolder != null) {
+                criteria = Criteria.where(Constants.IS_FOLDER).is(isFolder);
+            }
+            Boolean isFavorite = upload.getIsFavorite();
+            if (isFavorite != null) {
+                criteria = Criteria.where(Constants.IS_FAVORITE).is(isFavorite);
+            }
+            String tagId = upload.getTagId();
+            if (CharSequenceUtil.isNotBlank(tagId)) {
+                criteria = Criteria.where("tags.tagId").is(tagId);
+            }
+        }
+        return criteria;
     }
 
     /**
@@ -256,9 +261,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
      * @param fileDocument FileDocument
      */
     private static boolean showFolderSize(UploadApiParamDTO upload, FileDocument fileDocument) {
-        // if (BooleanUtil.isTrue(upload.getIsTrash())) {
-        //     return false;
-        // }
         return BooleanUtil.isTrue(fileDocument.getIsFolder()) && BooleanUtil.isTrue(upload.getShowFolderSize());
     }
 
@@ -319,9 +321,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         searchDTO.setTagId(upload.getTagId());
         searchDTO.setFolder(upload.getFolder());
         return luceneService.searchFile(searchDTO);
-        // ResponseResult<Object> result = ResultUtil.genResult();
-        // Criteria criteria1 = Criteria.where("name").regex(keyword, "i");
-        // return getCountResponseResult(upload, result, criteria1);
     }
 
     private ResponseResult<Object> getCountResponseResult(UploadApiParamDTO upload, ResponseResult<Object> result, Criteria... criteriaList) {
@@ -425,6 +424,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public ResponseResult<Object> queryFileTree(UploadApiParamDTO upload, String fileId) {
+        // 设置是否只显示文件夹
         upload.setJustShowFolder(true);
         if (!CharSequenceUtil.isBlank(fileId) && BooleanUtil.isFalse(upload.getHideMountFile())) {
             Path path = Paths.get(fileId);
@@ -436,7 +436,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
         String currentDirectory = getUserDirectory(null);
         if (!CharSequenceUtil.isBlank(fileId)) {
-            FileDocument fileDocument = mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
+            FileDocument fileDocument = getById(fileId);
             if (fileDocument != null) {
                 if (fileDocument.getOssFolder() != null && BooleanUtil.isFalse(upload.getHideMountFile())) {
                     Path path = Paths.get(upload.getUsername(), fileDocument.getOssFolder());
@@ -955,13 +955,15 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         query.addCriteria(Criteria.where("name").in(fromFilenameList));
         List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
         // 只保留name, path, suffix
-        fileDocuments = fileDocuments.stream().peek(fileDocument -> {
+        fileDocuments.forEach(fileDocument -> {
             fileDocument.setIsShare(null);
+            fileDocument.setShareId(null);
+            fileDocument.setShareBase(null);
             fileDocument.setIsFavorite(null);
             fileDocument.setTags(null);
             fileDocument.setMountFileId(null);
             fileDocument.setOssFolder(null);
-        }).toList();
+        });
         return ResultUtil.success(fileDocuments).setCount(fileDocuments.size());
     }
 
@@ -1642,7 +1644,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             }
             Path pathFrom = Paths.get(formFileDocument.getPath(), formFileDocument.getName());
             if (toFileDocument != null) {
-
                 String toUsername = userService.getUserNameById(toFileDocument.getUserId());
                 if (!upload.getUsername().equals(toUsername)) {
                     checkPermissionUsername(toUsername, toFileDocument.getOperationPermissionList(), OperationPermission.UPLOAD);
@@ -1662,7 +1663,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                     FileUtil.copy(fromFilePath, toFilePath, isOverride);
                 }
                 String operation = move ? "移动" : "复制";
-
                 // 文件操作日志
                 String fromUserDesc = formUsername.equals(toUsername) ? "" : ", 源用户: \"" + formUsername + "\"";
                 String filepath = Paths.get(toFileDocument.getPath(), toFileDocument.getName(), formFileDocument.getName()).toString();
@@ -1671,7 +1671,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                     LogOperation newLogOperation = logOperation.clone();
                     logService.addLogFileOperation(newLogOperation, formUsername, fromPath, "文件被" + operation + ", 目标文件: \"" + filepath + "\", 目标用户: \"" + toUsername + "\"");
                 }
-
                 // 复制成功
                 pushMessageOperationFileSuccess(pathFrom.toString(), pathTo.toString(), upload.getUsername(), operation);
                 return ResultUtil.success();
@@ -1989,7 +1988,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             // 删除文件夹及其下的所有文件
             List<FileDocument> delFileDocumentList = mongoTemplate.findAllAndRemove(getAllByFolderQuery(fileDocument), FileDocument.class, COLLECTION_NAME);
             // 提取出delFileDocumentList中文件id
-            List<String> delFileIds = delFileDocumentList.stream().map(FileDocument::getId).collect(Collectors.toList());
+            List<String> delFileIds = delFileDocumentList.stream().map(FileDocument::getId).toList();
             deleteDependencies(username, delFileIds, false);
             pushMessage(username, fileDocument.getPath(), Constants.DELETE_FILE);
         }
@@ -2022,21 +2021,15 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                     isDel = true;
                 }
             }
-            if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
-                // 删除文件夹及其下的所有文件
-                List<FileDocument> delFileDocumentList = mongoTemplate.findAllAndRemove(getAllByFolderQuery(fileDocument), FileDocument.class, COLLECTION_NAME);
-                if (!sweep) {
-                    // 移动到回收站
-                    moveToTrash(username, delFileDocumentList, true);
-                }
-                // 提取出delFileDocumentList中文件id
-                List<String> delFileIds = delFileDocumentList.stream().map(FileDocument::getId).collect(Collectors.toList());
-                deleteDependencies(username, delFileIds, sweep);
-                isDel = true;
-            }
+            isDel = delFolder(username, sweep, fileDocument, isDel);
             pushMessage(username, fileDocument.getPath(), Constants.DELETE_FILE);
             deleteFileLog(isDel, username, sweep, fileDocument);
         }
+        delDependencies(username, fileIds, sweep, isDel, query);
+        return ResultUtil.success();
+    }
+
+    private void delDependencies(String username, List<String> fileIds, boolean sweep, boolean isDel, Query query) {
         OperationTips operationTips = OperationTips.builder().operation(sweep ? "删除" : "移动到回收站").build();
         if (isDel) {
             if (sweep) {
@@ -2052,7 +2045,22 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             operationTips.setSuccess(false);
         }
         pushMessage(username, operationTips, Constants.OPERATION_TIPS);
-        return ResultUtil.success();
+    }
+
+    private boolean delFolder(String username, boolean sweep, FileDocument fileDocument, boolean isDel) {
+        if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
+            // 删除文件夹及其下的所有文件
+            List<FileDocument> delFileDocumentList = mongoTemplate.findAllAndRemove(getAllByFolderQuery(fileDocument), FileDocument.class, COLLECTION_NAME);
+            if (!sweep) {
+                // 移动到回收站
+                moveToTrash(username, delFileDocumentList, true);
+            }
+            // 提取出delFileDocumentList中文件id
+            List<String> delFileIds = delFileDocumentList.stream().map(FileDocument::getId).toList();
+            deleteDependencies(username, delFileIds, sweep);
+            isDel = true;
+        }
+        return isDel;
     }
 
     /**
@@ -2165,7 +2173,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             List<String> fileIds = trashList.stream().map(Trash::getId).toList();
             deleteDependencies(username, fileIds, true);
             Path trashPath = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, fileProperties.getJmalcloudTrashDir());
-            FileUtil.del(trashPath);
+            PathUtil.del(trashPath);
             deleteFileLog(logOperation, true, username, true, null);
             OperationTips operationTips = OperationTips.builder().success(true).operation("清空回收站").build();
             pushMessage(username, operationTips, Constants.OPERATION_TIPS);

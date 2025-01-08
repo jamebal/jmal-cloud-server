@@ -20,6 +20,10 @@ import java.util.List;
 public class ShareDO {
     @Id
     private String id;
+    /**
+     * 父级分享Id
+     */
+    private String fatherShareId;
     private String shortId;
     private Boolean shareBase;
     /**
