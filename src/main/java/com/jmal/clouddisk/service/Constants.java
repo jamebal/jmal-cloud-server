@@ -19,6 +19,7 @@ public class Constants {
     public static final String EXPIRE_DATE = "expireDate";
     public static final String OPERATION_PERMISSION_LIST = "operationPermissionList";
     public static final String SHARE_ID = "shareId";
+    public static final String FATHER_SHARE_ID = "fatherShareId";
     public static final String SHORT_ID = "shortId";
     public static final String IS_SHARE = "isShare";
     public static final String SHARE_BASE = "shareBase";

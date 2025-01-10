@@ -911,6 +911,8 @@ public class CommonFileService {
         }
         if (BooleanUtil.isTrue(isPrivacy)) {
             update.set(Constants.EXTRACTION_CODE, extractionCode);
+        } else {
+            update.unset(Constants.EXTRACTION_CODE);
         }
     }
 
