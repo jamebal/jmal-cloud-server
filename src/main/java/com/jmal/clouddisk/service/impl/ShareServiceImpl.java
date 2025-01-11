@@ -116,10 +116,7 @@ public class ShareServiceImpl implements IShareService {
     private List<String> getSubShare(FileDocument file) {
         if (Boolean.TRUE.equals(file.getIsFolder())) {
             // 共享文件夹及其下的所有文件
-            Query query = new Query();
-            query.addCriteria(Criteria.where(USER_ID).is(file.getUserId()));
-            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
-            query.addCriteria(Criteria.where(Constants.SHARE_BASE).is(true));
+            Query query = getFolderSubShareQuery(file);
             List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class);
             if (fileDocumentList.isEmpty()) {
                 return Collections.emptyList();
@@ -328,6 +325,29 @@ public class ShareServiceImpl implements IShareService {
         Query query = new Query();
         query.addCriteria(Criteria.where(Constants.FATHER_SHARE_ID).in(shareIdList));
         return mongoTemplate.exists(query, COLLECTION_NAME);
+    }
+
+    @Override
+    public boolean folderSubShare(String fileId) {
+        FileDocument fileDocument = fileService.getById(fileId);
+        if (fileDocument == null || BooleanUtil.isFalse(fileDocument.getIsFolder())) {
+            return false;
+        }
+        Query query = getFolderSubShareQuery(fileDocument);
+        return mongoTemplate.exists(query, FileDocument.class);
+    }
+
+    /**
+     * 获取文件夹下的子分享的查询条件
+     * @param fileDocument 要分享的文件夹
+     * @return Query
+     */
+    private static Query getFolderSubShareQuery(FileDocument fileDocument) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(USER_ID).is(fileDocument.getUserId()));
+        query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName())));
+        query.addCriteria(Criteria.where(Constants.SHARE_BASE).is(true));
+        return query;
     }
 
     public void validShare(String shareToken, String shareId) {
