@@ -6,6 +6,7 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.lucene.LuceneService;
@@ -32,10 +33,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static com.jmal.clouddisk.controller.rest.ShareController.SHARE_EXPIRED;
+import static com.jmal.clouddisk.service.IUserService.USER_ID;
 import static com.jmal.clouddisk.webdav.MyWebdavServlet.PATH_DELIMITER;
 
 /**
@@ -98,9 +101,47 @@ public class ShareServiceImpl implements IShareService {
         shareVO.setShareBase(true);
         // 判断要分享的文件是否为oss文件
         checkOssPath(share, shareDO.getUserId(), file);
+
+        // 修改文件夹下已经分享的文件
+        List<String> subShareFileIdList = getSubShare(file);
+
         // 设置文件的分享属性
         fileService.setShareFile(file, expireAt, share);
+
+        // 修改文件夹下已经分享的文件
+        updateSubShare(shareDO, subShareFileIdList);
         return ResultUtil.success(shareVO);
+    }
+
+    private List<String> getSubShare(FileDocument file) {
+        if (Boolean.TRUE.equals(file.getIsFolder())) {
+            // 共享文件夹及其下的所有文件
+            Query query = getFolderSubShareQuery(file);
+            List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class);
+            if (fileDocumentList.isEmpty()) {
+                return Collections.emptyList();
+            }
+            return fileDocumentList.stream().map(FileDocument::getId).toList();
+        }
+        return Collections.emptyList();
+    }
+
+    private void updateSubShare(ShareDO shareDO, List<String> subShareFileIdList) {
+        if (subShareFileIdList == null || subShareFileIdList.isEmpty()) {
+            return;
+        }
+        // 修改共享配置
+        Query query = new Query();
+        query.addCriteria(Criteria.where("fileId").in(subShareFileIdList));
+        Update update = new Update();
+        update.set(Constants.FATHER_SHARE_ID, shareDO.getId());
+        update.set(Constants.IS_PRIVACY, shareDO.getIsPrivacy());
+        if (Boolean.TRUE.equals(shareDO.getIsPrivacy())) {
+            update.set(Constants.EXTRACTION_CODE, shareDO.getExtractionCode());
+        } else {
+            update.unset(Constants.EXTRACTION_CODE);
+        }
+        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
     }
 
     private ResponseResult<Object> subShare(String shortId, FileDocument file) {
@@ -243,9 +284,13 @@ public class ShareServiceImpl implements IShareService {
 
     private void updateSubShare(ShareDO share, ShareDO shareDO) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("fatherShareId").is(shareDO.getId()));
+        query.addCriteria(Criteria.where(Constants.FATHER_SHARE_ID).is(shareDO.getId()));
         Update update = new Update();
-        update.set(Constants.EXPIRE_DATE, share.getExpireDate());
+        if (share.getExpireDate() == null) {
+            update.unset(Constants.EXPIRE_DATE);
+        } else {
+            update.set(Constants.EXPIRE_DATE, share.getExpireDate());
+        }
         update.set(Constants.IS_PRIVACY, share.getIsPrivacy());
         update.set(Constants.EXTRACTION_CODE, share.getExtractionCode());
         update.set(Constants.OPERATION_PERMISSION_LIST, share.getOperationPermissionList());
@@ -273,6 +318,36 @@ public class ShareServiceImpl implements IShareService {
             return ResultUtil.success(shareToken);
         }
         return ResultUtil.warning("提取码有误");
+    }
+
+    @Override
+    public boolean hasSubShare(List<String> shareIdList) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(Constants.FATHER_SHARE_ID).in(shareIdList));
+        return mongoTemplate.exists(query, COLLECTION_NAME);
+    }
+
+    @Override
+    public boolean folderSubShare(String fileId) {
+        FileDocument fileDocument = fileService.getById(fileId);
+        if (fileDocument == null || BooleanUtil.isFalse(fileDocument.getIsFolder())) {
+            return false;
+        }
+        Query query = getFolderSubShareQuery(fileDocument);
+        return mongoTemplate.exists(query, FileDocument.class);
+    }
+
+    /**
+     * 获取文件夹下的子分享的查询条件
+     * @param fileDocument 要分享的文件夹
+     * @return Query
+     */
+    private static Query getFolderSubShareQuery(FileDocument fileDocument) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(USER_ID).is(fileDocument.getUserId()));
+        query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName())));
+        query.addCriteria(Criteria.where(Constants.SHARE_BASE).is(true));
+        return query;
     }
 
     public void validShare(String shareToken, String shareId) {
@@ -673,7 +748,7 @@ public class ShareServiceImpl implements IShareService {
 
     private void removeSubSare(ShareDO shareDO) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("fatherShareId").is(shareDO.getId()));
+        query.addCriteria(Criteria.where(Constants.FATHER_SHARE_ID).is(shareDO.getId()));
         mongoTemplate.remove(query, ShareDO.class, COLLECTION_NAME);
     }
 

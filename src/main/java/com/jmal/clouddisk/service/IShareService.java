@@ -100,6 +100,20 @@ public interface IShareService {
      */
     ResponseResult<Object> validShareCode(String shareId, String shareCode);
 
+    /**
+     * 是否有子分享
+     * @param shareIdList shareIdList
+     * @return Object
+     */
+    boolean hasSubShare(List<String> shareIdList);
+
+    /**
+     * 文件夹下是否有子分享
+     * @param fileId 文件夹id
+     * @return Boolean
+     */
+    boolean folderSubShare(String fileId);
+
     void validShareCode(String shareToken, ShareDO shareDO);
 
     void validShare(String shareToken, ShareDO shareDO);
@@ -135,4 +149,5 @@ public interface IShareService {
      * @return 文件夹id
      */
     String getMountFolderId(String path, String fileUsername, String otherFileId);
+
 }

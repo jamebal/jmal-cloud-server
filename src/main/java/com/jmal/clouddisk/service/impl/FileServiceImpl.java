@@ -1408,6 +1408,12 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
             // 设置共享属性
             setShareAttribute(file, expiresAt, share, query);
+            // 修改文件夹下已经共享的文件
+            query.addCriteria(Criteria.where(Constants.SHARE_BASE).is(true));
+            Update update = new Update();
+            update.unset(Constants.SHARE_BASE);
+            update.set(Constants.SUB_SHARE, true);
+            mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         } else {
             query.addCriteria(Criteria.where("_id").is(file.getId()));
             // 设置共享属性
