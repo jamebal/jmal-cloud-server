@@ -323,6 +323,13 @@ public class ShareServiceImpl implements IShareService {
         return ResultUtil.warning("提取码有误");
     }
 
+    @Override
+    public boolean hasSubShare(List<String> shareIdList) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(Constants.FATHER_SHARE_ID).in(shareIdList));
+        return mongoTemplate.exists(query, COLLECTION_NAME);
+    }
+
     public void validShare(String shareToken, String shareId) {
         ShareDO shareDO = getShare(shareId);
         if (shareDO == null) {

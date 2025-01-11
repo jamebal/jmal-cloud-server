@@ -93,6 +93,13 @@ public class ShareController {
         return ResultUtil.success(shareService.getShareByFileId(fileId));
     }
 
+    @Operation(summary = "是否含有子分享")
+    @GetMapping("/share/has-sub-share")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseResult<Boolean> hasSubShare(@RequestParam List<String> shareIds) {
+        return ResultUtil.success(shareService.hasSubShare(shareIds));
+    }
+
     @Operation(summary = "取消分享")
     @DeleteMapping("/share/cancel")
     @Permission("cloud:file:delete")
