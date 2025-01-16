@@ -309,7 +309,7 @@ public class LogService {
             query.addCriteria(Criteria.where("type").is(type));
         }
         ConsumerDO consumerDO = userService.getUserInfoByUsername(userLoginHolder.getUsername());
-        if (consumerDO.getCreator() == null || !consumerDO.getCreator()) {
+        if ((consumerDO.getCreator() == null || !consumerDO.getCreator()) && LogOperation.Type.OPERATION_FILE.name().equals(logOperationDTO.getType())) {
             query.addCriteria(Criteria.where("fileUserId").is(userLoginHolder.getUserId()));
         }
         Long startTime = logOperationDTO.getStartTime();
