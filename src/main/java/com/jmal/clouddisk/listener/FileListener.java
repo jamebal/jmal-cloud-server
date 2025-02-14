@@ -1,14 +1,12 @@
 package com.jmal.clouddisk.listener;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.IFileService;
 import io.methvin.watcher.DirectoryChangeEvent;
 import io.methvin.watcher.DirectoryChangeListener;
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.processors.FlowableProcessor;
-import io.reactivex.rxjava3.processors.PublishProcessor;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
@@ -20,8 +18,9 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -38,21 +37,28 @@ public class FileListener implements DirectoryChangeListener {
     @Getter
     private final Set<Path> filterDirSet = new CopyOnWriteArraySet<>();
 
-    private final FlowableProcessor<DirectoryChangeEvent> eventProcessor = PublishProcessor.<DirectoryChangeEvent>create().toSerialized();
-    private Disposable eventSubscription;
+    private final Cache<Path, DirectoryChangeEvent> eventCache = Caffeine.newBuilder()
+            .expireAfterWrite(100, TimeUnit.MILLISECONDS)
+            .maximumSize(100000)
+            .build();
 
-    // 使用 ConcurrentHashMap 来存储每个文件的最新事件
-    private final ConcurrentHashMap<Path, DirectoryChangeEvent.EventType> lastFileEvents = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     @PostConstruct
     public void init() {
-        eventSubscription = eventProcessor
-                .groupBy(DirectoryChangeEvent::path) // 根据文件路径分组
-                .flatMap(groupedFlowable -> groupedFlowable
-                        .debounce(100, TimeUnit.MILLISECONDS) // 对每个文件路径的事件进行 Debounce
-                )
-                .subscribeOn(Schedulers.io()) // 在 IO 线程池中执行处理
-                .subscribe(this::processEvent, throwable -> log.error("Error processing file event", throwable));
+        // 定期处理缓存中的事件
+        scheduler.scheduleAtFixedRate(this::processCache, 100, 100, TimeUnit.MILLISECONDS);
+    }
+
+    private void processCache() {
+        eventCache.asMap().values().forEach(event -> {
+            try {
+                processEvent(event);
+            } catch (Exception e) {
+                log.error("Error processing event", e);
+            }
+        });
+        eventCache.cleanUp();
     }
 
     public void addFilterDir(Path path) {
@@ -84,7 +90,7 @@ public class FileListener implements DirectoryChangeListener {
         }
 
         log.debug("Received Event: {}, Path: {}", eventType, eventPath);
-        eventProcessor.onNext(directoryChangeEvent);
+        eventCache.put(eventPath, directoryChangeEvent);
     }
 
     private void processEvent(DirectoryChangeEvent directoryChangeEvent) {
@@ -196,8 +202,6 @@ public class FileListener implements DirectoryChangeListener {
 
     @PreDestroy
     public void shutdown() {
-        if (eventSubscription != null && !eventSubscription.isDisposed()) {
-            eventSubscription.dispose();
-        }
+        scheduler.shutdownNow();
     }
 }

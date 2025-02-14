@@ -1728,7 +1728,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             String formUsername = userService.getUserNameById(fileDocumentFrom.getUserId());
             from = formUsername + MyWebdavServlet.PATH_DELIMITER + fileDocumentFrom.getOssFolder() + MyWebdavServlet.PATH_DELIMITER;
         }
-        if (fileDocumentTo != null) {
+        if (fileDocumentTo != null && !Constants.REGION_DEFAULT.equals(to)) {
             to = fileDocumentTo.getId();
         }
         if (fileDocumentTo != null && fileDocumentTo.getOssFolder() != null) {
