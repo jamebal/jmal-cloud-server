@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.ocr;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.media.FFMPEGCommand;
 import com.jmal.clouddisk.service.Constants;
@@ -23,7 +23,7 @@ public class OcrLiteOnnxService implements IOcrService {
 
     @Override
     public String doOCR(String imagePath, String tempImagePath) {
-        if (StrUtil.isBlank(imagePath)) {
+        if (CharSequenceUtil.isBlank(imagePath)) {
             return "";
         }
         String resultTxtPath = null;
@@ -63,7 +63,7 @@ public class OcrLiteOnnxService implements IOcrService {
             return getWaitingForResults(outputPath, processBuilder, process, 60);
         } catch (InterruptedException e) {
             log.error(e.getMessage(), e);
-            return null;
+            Thread.currentThread().interrupt();
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
@@ -85,7 +85,7 @@ public class OcrLiteOnnxService implements IOcrService {
                 "--image", inputPath,
                 "--numThread", "1",
                 "--padding", "40",
-                "--maxSideLen", "1024",
+                "--maxSideLen", "2048",
                 "--boxScoreThresh", "0.6",
                 "--boxThresh", "0.3",
                 "--unClipRatio", "2.0",

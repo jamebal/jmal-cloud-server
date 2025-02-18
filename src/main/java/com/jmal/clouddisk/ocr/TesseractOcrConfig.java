@@ -2,7 +2,7 @@ package com.jmal.clouddisk.ocr;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import net.sourceforge.tess4j.TessAPI;
+import net.sourceforge.tess4j.ITessAPI;
 import net.sourceforge.tess4j.Tesseract;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -27,8 +27,8 @@ public class TesseractOcrConfig {
             tesseract.setDatapath(dataPath);
             // 设置为中文简体
             tesseract.setLanguage("chi_sim");
-            tesseract.setOcrEngineMode(TessAPI.TessOcrEngineMode.OEM_LSTM_ONLY);
-            tesseract.setPageSegMode(TessAPI.TessPageSegMode.PSM_AUTO);
+            tesseract.setOcrEngineMode(ITessAPI.TessOcrEngineMode.OEM_LSTM_ONLY);
+            tesseract.setPageSegMode(ITessAPI.TessPageSegMode.PSM_AUTO);
             return tesseract;
         });
     }

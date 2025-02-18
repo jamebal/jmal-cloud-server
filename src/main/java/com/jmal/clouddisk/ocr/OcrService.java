@@ -1,13 +1,16 @@
 package com.jmal.clouddisk.ocr;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.lucene.TaskProgressService;
 import com.jmal.clouddisk.lucene.TaskType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
@@ -55,7 +58,7 @@ public class OcrService {
 
             taskProgressService.addTaskProgress(file, TaskType.OCR, pageIndex + 1 + "/" + totalPages + " - 识别中...");
 
-            BufferedImage pageImage = pdfRenderer.renderImageWithDPI(pageIndex, 300);
+            BufferedImage pageImage = pdfRenderer.renderImage(pageIndex, 4, ImageType.GRAY);
             String tempImageFile = generateOrcTempImagePath(username);
             ImageIO.write(pageImage, "png", new File(tempImageFile));
             try {
@@ -67,18 +70,21 @@ public class OcrService {
                 // 释放许可
                 semaphore.release();
             }
-        } catch (Exception e) {
+        } catch (InterruptedException e) {
+            log.error(e.getMessage(), e);
+            Thread.currentThread().interrupt();
+        }  catch (Exception e) {
             log.error("Error processing page {}", pageIndex + 1, e);
-            return "";
         }
+        return "";
     }
 
     public String doOCR(String imagePath, String tempImagePath, String ocrEngine) {
         OcrConfig config = getOcrConfig();
-        if (!config.getEnable()) {
+        if (Boolean.FALSE.equals(config.getEnable())) {
             return "";
         }
-        if (StrUtil.isBlank(ocrEngine)) {
+        if (CharSequenceUtil.isBlank(ocrEngine)) {
             ocrEngine = config.getOcrEngine();
         }
         IOcrService ocrService = ocrServiceMap.get(ocrEngine);
@@ -128,7 +134,7 @@ public class OcrService {
      */
     public long setOcrConfig(OcrConfig config) {
         if (config == null) {
-            return 0;
+            throw new CommonException(ExceptionType.PARAMETERS_VALUE);
         }
         Query query = new Query();
         OcrConfig ocrConfig = mongoTemplate.findOne(query, OcrConfig.class);

@@ -1,7 +1,8 @@
 package com.jmal.clouddisk.ocr;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.text.CharSequenceUtil;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.ITesseract;
@@ -24,16 +25,16 @@ public class TesseractService implements IOcrService {
 
     @Override
     public String doOCR(String imagePath, String tempImagePath) {
-        if (StrUtil.isBlank(imagePath)) {
+        if (CharSequenceUtil.isBlank(imagePath)) {
             return "";
         }
         try {
-            if (StrUtil.isBlank(tempImagePath)) {
+            if (CharSequenceUtil.isBlank(tempImagePath)) {
                 tempImagePath = commonOcrService.generateOrcTempImagePath(null);
             }
             // 预处理后的图片
             String preprocessedOCRImage = CommonOcrService.getPreprocessedOCRImage(imagePath, tempImagePath);
-            if (StrUtil.isBlank(preprocessedOCRImage)) {
+            if (CharSequenceUtil.isBlank(preprocessedOCRImage)) {
                 return "";
             }
             File imageFile = new File(preprocessedOCRImage);
@@ -45,5 +46,10 @@ public class TesseractService implements IOcrService {
             FileUtil.del(tempImagePath);
         }
         return "";
+    }
+
+    @PreDestroy
+    public void unload() {
+        tesseractThreadLocal.remove();
     }
 }
