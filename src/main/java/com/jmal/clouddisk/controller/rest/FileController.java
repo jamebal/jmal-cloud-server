@@ -290,6 +290,22 @@ public class FileController {
         return fileService.setTag(editTagDTO);
     }
 
+    @Operation(summary = "设置文件标签颜色")
+    @PutMapping("/updateTag")
+    @LogOperatingFun
+    @Permission("cloud:file:update")
+    public ResponseResult<Object> updateTag(@RequestParam String tagId, @RequestParam String name, @RequestParam String color) {
+        return fileService.setTag(tagId, name, color);
+    }
+
+    @Operation(summary = "删除文件标签")
+    @DeleteMapping("/deleteTag")
+    @LogOperatingFun
+    @Permission("cloud:file:update")
+    public ResponseResult<Object> deleteTag(@RequestParam String tagId) {
+        return fileService.deleteTag(tagId);
+    }
+
     @Operation(summary = "设为公共文件")
     @PutMapping("/setPublic")
     @LogOperatingFun

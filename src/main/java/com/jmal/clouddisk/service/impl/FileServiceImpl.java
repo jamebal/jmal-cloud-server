@@ -1573,7 +1573,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         Update update = new Update();
         String userId = userLoginHolder.getUserId();
         if (editTagDTO.getRemoveTagIds() == null || editTagDTO.getRemoveTagIds().isEmpty()) {
-            log.info("修改标签, fileIds: {}, tagList: {}", editTagDTO.getFileIds(), editTagDTO.getTagList());
+            log.debug("修改标签, fileIds: {}, tagList: {}", editTagDTO.getFileIds(), editTagDTO.getTagList());
             editTagDTO.getFileIds().forEach(fileId -> luceneService.pushCreateIndexQueue(fileId));
         } else {
             // 删除标签并修改相关文件
@@ -1589,6 +1589,46 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         pushMessage(userLoginHolder.getUsername(), tagService.list(userId), "updateTags");
 
         return ResultUtil.success();
+    }
+
+    @Override
+    public ResponseResult<Object> setTag(String tagId, String tagName, String color) {
+        TagDO tagDO = tagService.getTagInfo(tagId);
+        if (tagDO == null) {
+            return ResultUtil.error("标签不存在");
+        }
+        TagDTO tagDTO = tagDO.toTagDTO();
+        if (CharSequenceUtil.isNotBlank(tagName)) {
+            tagDTO.setName(tagName);
+        }
+        if (CharSequenceUtil.isNotBlank(color)) {
+            tagDTO.setColor(color);
+        }
+        tagService.update(tagDTO);
+        List<TagDTO> tagList = List.of(tagDTO);
+        EditTagDTO editTagDTO = new EditTagDTO();
+        editTagDTO.setTagList(tagList);
+        editTagDTO.setFileIds(getFileIdListByTagId(tagId));
+        setTag(editTagDTO);
+        return ResultUtil.success();
+    }
+
+    @Override
+    public ResponseResult<Object> deleteTag(String tagId) {
+        deleteTgs(List.of(tagId));
+        pushMessage(userLoginHolder.getUsername(), tagService.list(userLoginHolder.getUserId()), "updateTags");
+        return ResultUtil.success();
+    }
+
+    private List<String> getFileIdListByTagId(String tagId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("tags.tagId").is(tagId));
+        query.fields().include("_id");
+        List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+        if (fileDocumentList.isEmpty()) {
+            return Lists.newArrayList();
+        }
+        return new ArrayList<>(fileDocumentList.stream().map(FileDocument::getId).toList());
     }
 
     /**

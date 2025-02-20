@@ -1,12 +1,11 @@
 package com.jmal.clouddisk.model;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import java.text.Collator;
 import java.util.Comparator;
 
@@ -18,7 +17,7 @@ import java.util.Comparator;
 @Data
 @Schema
 @Valid
-public class TagDTO  implements Comparable<TagDTO>{
+public class TagDTO implements Comparable<TagDTO> {
 
     @Id
     @Schema(hidden = true)
@@ -46,9 +45,15 @@ public class TagDTO  implements Comparable<TagDTO>{
     @Schema(hidden = true, name = "fontSize", title = "标签字体大小")
     Long fontSize;
 
+    @Schema(hidden = true, name = "sort", title = "排序")
+    Integer sort;
+
     @Override
-    public int compareTo(TagDTO tagDTO) {
-        Comparator<Object> cmp = Collator.getInstance(java.util.Locale.CHINA);
-        return cmp.compare(getName(), tagDTO.getName());
+    public int compareTo(@org.jetbrains.annotations.NotNull TagDTO tagDTO) {
+        if (this.sort == null || tagDTO.sort == null) {
+            Comparator<Object> cmp = Collator.getInstance(java.util.Locale.CHINA);
+            return cmp.compare(getName(), tagDTO.getName());
+        }
+        return this.sort - tagDTO.sort;
     }
 }
