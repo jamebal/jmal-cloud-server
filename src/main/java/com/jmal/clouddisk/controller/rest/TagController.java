@@ -77,4 +77,13 @@ public class TagController {
         tagService.delete(tagIdList);
         return ResultUtil.success();
     }
+
+    @Operation(summary = "修改标签排序")
+    @PostMapping("/tag/sort")
+    @LogOperatingFun
+    @Permission("cloud:file:update")
+    public ResponseResult<Object> updateTagSort(@RequestBody List<String> tagIdList) {
+        tagService.updateTagSort(tagIdList);
+        return ResultUtil.success();
+    }
 }

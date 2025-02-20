@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.TagDO;
 import com.jmal.clouddisk.model.TagDTO;
@@ -248,8 +247,8 @@ public class TagService {
             tag = new TagDO();
             tag.setId(new ObjectId().toHexString());
         } else {
-            boolean tagChange = StrUtil.isNotBlank(color) && !color.equals(tag.getColor());
-            if (StrUtil.isNotBlank(tagName) && !tagName.equals(tag.getName())) {
+            boolean tagChange = CharSequenceUtil.isNotBlank(color) && !color.equals(tag.getColor());
+            if (CharSequenceUtil.isNotBlank(tagName) && !tagName.equals(tag.getName())) {
                 tagChange = true;
             }
             if (tagChange) {
@@ -257,10 +256,10 @@ public class TagService {
                 updateFilDocumentTag(color, tagName, tag);
             }
         }
-        if (StrUtil.isNotBlank(userId)) {
+        if (CharSequenceUtil.isNotBlank(userId)) {
             tag.setUserId(userId);
         }
-        if (StrUtil.isNotBlank(color)) {
+        if (CharSequenceUtil.isNotBlank(color)) {
             tag.setColor(color);
         }
         tag.setName(tagName);
@@ -297,5 +296,29 @@ public class TagService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(tagIds));
         return mongoTemplate.find(query, TagDO.class, COLLECTION_NAME);
+    }
+
+    /**
+     * 更新标签排序
+     * @param tagIdList 标签Id列表
+     */
+    public void updateTagSort(List<String> tagIdList) {
+        if (tagIdList == null || tagIdList.isEmpty()) {
+            return;
+        }
+        List<TagDTO> tagDTOList = new ArrayList<>();
+        for (int i = 0; i < tagIdList.size(); i++) {
+            TagDTO tagDTO = new TagDTO();
+            tagDTO.setSort(i);
+            tagDTO.setId(tagIdList.get(i));
+            tagDTOList.add(tagDTO);
+        }
+        tagDTOList.parallelStream().forEach(tagDTO -> {
+            Query query = new Query();
+            query.addCriteria(Criteria.where("_id").is(tagDTO.getId()));
+            Update update = new Update();
+            update.set("sort", tagDTO.getSort());
+            mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
+        });
     }
 }

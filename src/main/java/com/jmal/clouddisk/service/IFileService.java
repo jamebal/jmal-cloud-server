@@ -403,12 +403,20 @@ public interface IFileService {
     ResponseResult<Object> setTag(EditTagDTO editTagDTO);
 
     /**
-     * 删除文件所有依赖
-     * @param username 用户名
-     * @param fileIds 文件id列表
-     * @param sweep  是否硬删除, 否则就是移动到回收站
+     * 修改标签颜色或名称
+     * @param tagId 标签id
+     * @param tagName 标签名
+     * @param color 标签颜色
+     * @return ResponseResult<Object>
      */
-    void deleteDependencies(String username, List<String> fileIds, boolean sweep);
+    ResponseResult<Object> setTag(String tagId, String tagName, String color);
+
+    /**
+     * 删除文件标签
+     * @param tagId 标签id
+     * @return ResponseResult<Object>
+     */
+    ResponseResult<Object> deleteTag(String tagId);
 
     /**
      * 返回原处
