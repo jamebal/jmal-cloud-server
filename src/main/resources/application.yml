@@ -7,7 +7,7 @@ server:
       enabled: true
   forward-headers-strategy: native
   shutdown: immediate
-version: 2.12.0
+version: 2.12.1
 tess4j:
   data-path: /Users/jmal/studio/myProject/github/jmal-cloud-server/tess4j/datapath
 spring:
