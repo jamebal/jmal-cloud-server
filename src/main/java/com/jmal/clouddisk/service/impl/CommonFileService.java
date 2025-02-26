@@ -79,6 +79,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -128,6 +129,8 @@ public class CommonFileService {
     public LuceneService luceneService;
 
     private final Cache<String, Map<String, ThrottleExecutor>> throttleExecutorCache = Caffeine.newBuilder().build();
+
+    private final Cache<String, Long> userSpaceCache = Caffeine.newBuilder().expireAfterWrite(1, TimeUnit.SECONDS).build();
 
     /**
      * 上传文件夹的写入锁缓存
@@ -775,17 +778,22 @@ public class CommonFileService {
     }
 
     public Single<Long> getOccupiedSpaceAsync(String userId, String collectionName) {
-        return Single.fromCallable(() -> getOccupiedSpace(userId, collectionName)).subscribeOn(Schedulers.io());
+        return Single.fromCallable(() -> getOccupiedSpace(userId, collectionName)).subscribeOn(Schedulers.io()).doOnError(e -> log.error(e.getMessage(), e));
     }
 
-    private long getOccupiedSpace(String userId, String collectionName) {
-        long space = 0;
+    public long getOccupiedSpace(String userId, String collectionName) {
+        Long space = userSpaceCache.getIfPresent(userId);
+        if (space != null) {
+            return space;
+        }
+        space = 0L;
         List<Bson> list = Arrays.asList(match(eq(IUserService.USER_ID, userId)), group(new BsonNull(), sum(Constants.TOTAL_SIZE, "$size")));
         AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(collectionName).aggregate(list);
         Document doc = aggregateIterable.first();
         if (doc != null) {
             space = Convert.toLong(doc.get(Constants.TOTAL_SIZE), 0L);
         }
+        userSpaceCache.put(userId, space);
         return space;
     }
 
