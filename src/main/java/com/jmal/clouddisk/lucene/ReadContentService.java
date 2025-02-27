@@ -137,8 +137,10 @@ public class ReadContentService {
             if ((checkPageContent(document, pageIndex) || text.isEmpty()) && Boolean.TRUE.equals(ocrService.getOcrConfig().getEnable())) {
                 content.append(ocrService.extractPageWithOCR(file, pdfRenderer, pageIndex, document.getNumberOfPages(), username));
             }
+        } catch (IOException e) {
+            log.error("提取文字失败, {}, 页数: {}", file.getName(), pageIndex, e);
         } catch (Exception e) {
-            log.error("Failed to extract text from PDF page: {}", pageIndex, e);
+            log.error("提取文字失败1, {}, 页数: {}", file.getName(), pageIndex, e);
         }
     }
 
