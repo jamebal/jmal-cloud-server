@@ -395,21 +395,23 @@ public class CommonFileService {
 
     /**
      * 修改文件的最后修改时间
-     * @param file 文件
+     *
+     * @param file       文件
      * @param fileExists FileDocument
-     * @param update Update
+     * @param update     Update
      */
     private void updateLastModifiedTime(File file, FileDocument fileExists, Update update) {
         LocalDateTime lastModifiedTime = getFileLastModifiedTime(file);
         // 判断 fileExists.getUpdateDate() 和 lastModifiedTime是否在1ms内
-        if (fileExists.getUpdateDate() != null &&  lastModifiedTime.isEqual(fileExists.getUpdateDate())) {
+        if (fileExists.getUpdateDate() != null && lastModifiedTime.isEqual(fileExists.getUpdateDate())) {
             update.set(UPDATE_DATE, lastModifiedTime);
         }
     }
 
     /**
      * 设置文件的最后修改时间
-     * @param filePath 文件路径
+     *
+     * @param filePath     文件路径
      * @param lastModified 最后修改时间
      * @throws IOException IO异常
      */
@@ -756,7 +758,10 @@ public class CommonFileService {
     }
 
     public long occupiedSpace(String userId) {
-        long space = calculateTotalOccupiedSpace(userId).blockingGet();
+        Long space = userSpaceCache.get(userId, key -> calculateTotalOccupiedSpace(userId).blockingGet());
+        if (space == null) {
+            space = 0L;
+        }
         ConsumerDO consumerDO = userService.userInfoById(userId);
         if (consumerDO != null && consumerDO.getQuota() != null) {
             if (space >= consumerDO.getQuota() * 1024L * 1024L * 1024L) {
@@ -782,18 +787,13 @@ public class CommonFileService {
     }
 
     public long getOccupiedSpace(String userId, String collectionName) {
-        Long space = userSpaceCache.getIfPresent(userId);
-        if (space != null) {
-            return space;
-        }
-        space = 0L;
+        Long space = 0L;
         List<Bson> list = Arrays.asList(match(eq(IUserService.USER_ID, userId)), group(new BsonNull(), sum(Constants.TOTAL_SIZE, "$size")));
         AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(collectionName).aggregate(list);
         Document doc = aggregateIterable.first();
         if (doc != null) {
             space = Convert.toLong(doc.get(Constants.TOTAL_SIZE), 0L);
         }
-        userSpaceCache.put(userId, space);
         return space;
     }
 
