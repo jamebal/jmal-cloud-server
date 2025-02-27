@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.lucene;
 
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.ocr.OcrService;
 import com.jmal.clouddisk.service.Constants;
@@ -71,7 +71,7 @@ public class ReadContentService {
     public String dwg2mxweb(File file, String fileId) {
         String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
         // 生成封面图像
-        if (StrUtil.isNotBlank(fileId)) {
+        if (CharSequenceUtil.isNotBlank(fileId)) {
             String outputName = file.getName() + Constants.MXWEB_SUFFIX;
             FileContentUtil.dwgConvert(file.getAbsolutePath(), videoProcessService.getVideoCacheDir(username, fileId), outputName);
         }
@@ -80,8 +80,14 @@ public class ReadContentService {
 
     public static boolean checkPageContent(PDDocument document, int pageIndex) throws IOException {
         PDPage page = document.getPage(pageIndex); // 获取页面
-        // 检查图片内容
+        if (page == null) {
+            return false;
+        }
+        // 检查是否含有图片
         PDResources resources = page.getResources();
+        if (resources == null) {
+            return false;
+        }
         for (COSName xObjectName : resources.getXObjectNames()) {
             PDXObject xObject = resources.getXObject(xObjectName);
             if (xObject instanceof PDImageXObject) {
@@ -97,7 +103,7 @@ public class ReadContentService {
             String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
 
             // 生成封面图像
-            if (StrUtil.isNotBlank(fileId)) {
+            if (CharSequenceUtil.isNotBlank(fileId)) {
                 File coverFile = FileContentUtil.pdfCoverImage(file, document, videoProcessService.getVideoCacheDir(username, fileId));
                 commonFileService.updateCoverFileDocument(fileId, coverFile);
             }
@@ -107,27 +113,33 @@ public class ReadContentService {
             PDFTextStripper pdfStripper = new PDFTextStripper();
 
             for (int pageIndex = 0; pageIndex < document.getNumberOfPages(); pageIndex++) { // 使用 0-based 索引
-                int pageNumber = pageIndex + 1;
-                pdfStripper.setStartPage(pageNumber); // PDFTextStripper 使用 1-based 索引
-                pdfStripper.setEndPage(pageNumber);
-                String text = pdfStripper.getText(document).trim();
-
-                // 如果页面包含文字，添加提取的文字
-                if (!text.isEmpty()) {
-                    content.append(text);
-                }
-                // 如果页面包含图片或没有文字，则进行 OCR
-                if (checkPageContent(document, pageIndex) || text.isEmpty()) {
-                    if (ocrService.getOcrConfig().getEnable()) {
-                        content.append(ocrService.extractPageWithOCR(file, pdfRenderer, pageIndex, document.getNumberOfPages(), username));
-                    }
-                }
+                readPdfOfPage(file, pageIndex, pdfStripper, document, content, pdfRenderer, username);
             }
             return content.toString();
         } catch (IOException e) {
             FileContentUtil.readFailed(file, e);
         }
         return null;
+    }
+
+    private void readPdfOfPage(File file, int pageIndex, PDFTextStripper pdfStripper, PDDocument document, StringBuilder content, PDFRenderer pdfRenderer, String username) {
+        try {
+            int pageNumber = pageIndex + 1;
+            pdfStripper.setStartPage(pageNumber); // PDFTextStripper 使用 1-based 索引
+            pdfStripper.setEndPage(pageNumber);
+            String text = pdfStripper.getText(document).trim();
+
+            // 如果页面包含文字，添加提取的文字
+            if (!text.isEmpty()) {
+                content.append(text);
+            }
+            // 如果页面包含图片或没有文字，则进行 OCR
+            if ((checkPageContent(document, pageIndex) || text.isEmpty()) && Boolean.TRUE.equals(ocrService.getOcrConfig().getEnable())) {
+                content.append(ocrService.extractPageWithOCR(file, pdfRenderer, pageIndex, document.getNumberOfPages(), username));
+            }
+        } catch (Exception e) {
+            log.error("Failed to extract text from PDF page: {}", pageIndex, e);
+        }
     }
 
     public String readEpubContent(File file, String fileId) {
@@ -138,7 +150,7 @@ public class ReadContentService {
 
             // 生成封面图像
             String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
-            if (StrUtil.isNotBlank(fileId)) {
+            if (CharSequenceUtil.isNotBlank(fileId)) {
                 File coverFile = FileContentUtil.epubCoverImage(book, videoProcessService.getVideoCacheDir(username, fileId));
                 commonFileService.updateCoverFileDocument(fileId, coverFile);
             }
@@ -206,6 +218,7 @@ public class ReadContentService {
             }
         }
     }
+
     public String readWordContent(File file) {
         try (FileInputStream fis = new FileInputStream(file)) {
             try {
