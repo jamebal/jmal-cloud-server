@@ -3,7 +3,7 @@ package com.jmal.clouddisk.listener;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.HeartwingsDO;
@@ -78,7 +78,7 @@ public class FileMonitor {
     }
 
     @PostConstruct
-    public void init() throws Exception {
+    public void init() throws IOException {
         // 检测新版本
         newVersion = SystemUtil.getNewVersion();
         // 判断是否开启文件监控
@@ -155,37 +155,51 @@ public class FileMonitor {
         for (File username : FileUtil.ls(tempPath.toString())) {
             if (username.isDirectory()) {
                 for (File file : FileUtil.ls(username.getAbsolutePath())) {
-                    // 是否为三天前的文件
-                    boolean sevenDayAgo = file.lastModified() < (System.currentTimeMillis() - DateUnit.DAY.getMillis() * 3);
-                    // 是否为视频转码缓存目录
-                    boolean videoCache = fileProperties.getVideoTranscodeCache().equals(file.getName()) || fileProperties.getLuceneIndexDir().equals(file.getParentFile().getName());
-                    if (videoCache) {
-                        if (file.listFiles() != null) {
-                            for (File f : Objects.requireNonNull(file.listFiles())) {
-                                FileDocument fileDocument = fileService.getById(f.getName());
-                                if (fileDocument == null || f.isFile()) {
-                                    FileUtil.del(f);
-                                    log.info("删除视频转码缓存文件: {}", f.getAbsolutePath());
-                                }
-                            }
-                        }
-                        return;
-                    }
-                    // 回收站
-                    boolean trash = fileProperties.getJmalcloudTrashDir().equals(file.getName());
-                    if (trash) {
-                        return;
-                    }
-                    if (sevenDayAgo) {
-                        FileUtil.del(file);
-                    }
+                    clearUserCache(file);
+                }
+            }
+        }
+    }
+
+    /**
+     * 清理用户缓存文件
+     * @param file 需要清理的文件
+     */
+    private void clearUserCache(File file) {
+        // 是否为三天前的文件
+        boolean sevenDayAgo = file.lastModified() < (System.currentTimeMillis() - DateUnit.DAY.getMillis() * 3);
+        // 是否为视频转码缓存目录
+        boolean videoCache = fileProperties.getVideoTranscodeCache().equals(file.getName()) || fileProperties.getLuceneIndexDir().equals(file.getParentFile().getName());
+        // 回收站
+        boolean trash = fileProperties.getJmalcloudTrashDir().equals(file.getName());
+        if (videoCache || trash) {
+            clearVideoCache(file, videoCache);
+            return;
+        }
+        if (sevenDayAgo) {
+            FileUtil.del(file);
+        }
+    }
+
+    /**
+     * 清理视频转码缓存目录
+     * @param file 需要清理的文件
+     * @param videoCache 是否为视频转码缓存目录
+     */
+    private void clearVideoCache(File file, boolean videoCache) {
+        if (videoCache && file.listFiles() != null) {
+            for (File f : Objects.requireNonNull(file.listFiles())) {
+                FileDocument fileDocument = fileService.getById(f.getName());
+                if (fileDocument == null || f.isFile()) {
+                    FileUtil.del(f);
+                    log.info("删除视频转码缓存文件: {}", f.getAbsolutePath());
                 }
             }
         }
     }
 
     public String hasNewVersion() {
-        if (StrUtil.isBlank(newVersion)) {
+        if (CharSequenceUtil.isBlank(newVersion)) {
             return null;
         }
         // 判断是否有新版本, 比较newVersion和version
