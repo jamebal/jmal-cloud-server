@@ -42,4 +42,24 @@ public class SearchDTO extends QueryBaseDTO {
      * 查询的文件夹
      */
     String folder;
+
+    /**
+     * 修改时间范围开始
+     */
+    Long modifyStart;
+
+    /**
+     * 修改时间范围结束
+     */
+    Long modifyEnd;
+
+    /**
+     * 文件大小范围最小
+     */
+    Long sizeMin;
+
+    /**
+     * 文件大小范围最大
+     */
+    Long sizeMax;
 }
