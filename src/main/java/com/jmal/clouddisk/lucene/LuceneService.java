@@ -43,8 +43,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.jmal.clouddisk.service.Constants.UPDATE_DATE;
-
 /**
  * @author jmal
  * <p>
@@ -531,21 +529,39 @@ public class LuceneService {
      * @return Sort
      */
     private static Sort getSort(SearchDTO searchDTO) {
+        // 如果 searchDTO 为 null，返回默认相关度倒序排序
+        if (searchDTO == null) {
+            return Sort.RELEVANCE;
+        }
+
         String sortProp = searchDTO.getSortProp();
         String sortOrder = searchDTO.getSortOrder();
+
+        // 如果排序属性或顺序为空，默认按相关度倒序排序
         if (CharSequenceUtil.isBlank(sortProp) || CharSequenceUtil.isBlank(sortOrder)) {
-            return new Sort(SortField.FIELD_SCORE);
+            return Sort.RELEVANCE;
         }
-        // 创建排序规则
+
+        // 确定排序方向
+        boolean reverse = "descending".equalsIgnoreCase(sortOrder);
+
+        // 根据排序属性创建对应的 SortField
         SortField sortField;
-        if (UPDATE_DATE.equals(searchDTO.getSortProp())) {
-            sortField = new SortField("modified", SortField.Type.LONG, "descending".equalsIgnoreCase(searchDTO.getSortOrder()));
-        } else if ("size".equals(searchDTO.getSortProp())) {
-            sortField = new SortField("size", SortField.Type.LONG, "descending".equalsIgnoreCase(searchDTO.getSortOrder()));
-        } else {
-            // 默认按相关性得分排序
-            sortField = SortField.FIELD_SCORE;
+        switch (sortProp.toLowerCase()) {
+            case "modified":
+                sortField = new SortField("modified", SortField.Type.LONG, reverse);
+                break;
+            case "size":
+                sortField = new SortField("size", SortField.Type.LONG, reverse);
+                break;
+            case "score":  // 显式支持相关度排序
+                // 注意：FIELD_SCORE 本身是降序的，如果要求升序需要特殊处理
+                return reverse ? Sort.RELEVANCE : new Sort(new SortField(null, SortField.Type.SCORE, true));
+            default:
+                // 对于不支持的排序字段，默认按相关度倒序
+                return Sort.RELEVANCE;
         }
+
         return new Sort(sortField);
     }
 
@@ -636,25 +652,48 @@ public class LuceneService {
 
     private void otherQueryParams(SearchDTO searchDTO, BooleanQuery.Builder builder) {
         boolean queryPath = CharSequenceUtil.isNotBlank(searchDTO.getCurrentDirectory()) && searchDTO.getCurrentDirectory().length() > 1;
-        if (queryPath) {
+
+        if (!queryPath) {
             Term prefixTerm = new Term("path", searchDTO.getCurrentDirectory());
             PrefixQuery prefixQuery = new PrefixQuery(prefixTerm);
             builder.add(prefixQuery, BooleanClause.Occur.MUST);
         }
-        if (!queryPath && CharSequenceUtil.isNotBlank(searchDTO.getType())) {
+
+        // 文件类型
+        if (CharSequenceUtil.isNotBlank(searchDTO.getType())) {
             builder.add(new TermQuery(new Term("type", searchDTO.getType())), BooleanClause.Occur.MUST);
         }
-        if (!queryPath && searchDTO.getTagId() != null) {
+
+        // 标签
+        if (searchDTO.getTagId() != null) {
             TagDO tagDO = tagService.getTagInfo(searchDTO.getTagId());
             if (tagDO != null) {
                 builder.add(new RegexpQuery(new Term("tag", ".*" + tagDO.getName() + ".*")), BooleanClause.Occur.MUST);
             }
         }
-        if (!queryPath && searchDTO.getIsFolder() != null) {
+
+        // 是否文件夹
+        if (searchDTO.getIsFolder() != null) {
             builder.add(IntPoint.newExactQuery("isFolder", Boolean.TRUE.equals(searchDTO.getIsFolder()) ? 1 : 0), BooleanClause.Occur.MUST);
         }
-        if (!queryPath && searchDTO.getIsFavorite() != null) {
+
+        // 是否收藏
+        if (searchDTO.getIsFavorite() != null) {
             builder.add(IntPoint.newExactQuery("isFavorite", Boolean.TRUE.equals(searchDTO.getIsFavorite()) ? 1 : 0), BooleanClause.Occur.MUST);
+        }
+
+        // 更新时间范围查询
+        if (searchDTO.getModifyStart() != null || searchDTO.getModifyEnd() != null) {
+            long start = searchDTO.getModifyStart() != null ? searchDTO.getModifyStart() : Long.MIN_VALUE;
+            long end = searchDTO.getModifyEnd() != null ? searchDTO.getModifyEnd() : Long.MAX_VALUE;
+            builder.add(LongPoint.newRangeQuery("modify", start, end), BooleanClause.Occur.MUST);
+        }
+
+        // 文件大小范围查询
+        if (searchDTO.getSizeMin() != null || searchDTO.getSizeMax() != null) {
+            long minSize = searchDTO.getSizeMin() != null ? searchDTO.getSizeMin() : Long.MIN_VALUE;
+            long maxSize = searchDTO.getSizeMax() != null ? searchDTO.getSizeMax() : Long.MAX_VALUE;
+            builder.add(LongPoint.newRangeQuery("size", minSize, maxSize), BooleanClause.Occur.MUST);
         }
     }
 
