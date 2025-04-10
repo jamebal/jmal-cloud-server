@@ -320,6 +320,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         searchDTO.setIsFavorite(upload.getIsFavorite());
         searchDTO.setTagId(upload.getTagId());
         searchDTO.setFolder(upload.getFolder());
+        searchDTO.setModifyStart(upload.getQueryModifyStart());
+        searchDTO.setModifyEnd(upload.getQueryModifyEnd());
+        searchDTO.setSizeMin(upload.getQuerySizeMin());
+        searchDTO.setSizeMax(upload.getQuerySizeMax());
         return luceneService.searchFile(searchDTO);
     }
 

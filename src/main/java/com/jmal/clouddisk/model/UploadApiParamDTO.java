@@ -210,6 +210,26 @@ public class UploadApiParamDTO {
      */
     String targetPath;
 
+    /**
+     * 修改时间范围开始
+     */
+    Long queryModifyStart;
+
+    /**
+     * 修改时间范围结束
+     */
+    Long queryModifyEnd;
+
+    /**
+     * 文件大小范围最小
+     */
+    Long querySizeMin;
+
+    /**
+     * 文件大小范围最大
+     */
+    Long querySizeMax;
+
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime uploadDate;
@@ -247,4 +267,5 @@ public class UploadApiParamDTO {
         }
         return URLUtil.decode(folderPath);
     }
+
 }
