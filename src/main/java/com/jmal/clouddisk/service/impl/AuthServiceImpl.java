@@ -146,7 +146,7 @@ public class AuthServiceImpl implements IAuthService {
         if (dn == null || dn.trim().isEmpty()) {
             return true;
         }
-
+        dn = dn.toLowerCase();
         // 支持常见的LDAP属性类型
         String attrTypes = "(uid|cn|ou|dc|o|l|st|c)";
         // 属性值允许包含除逗号外的任意字符
