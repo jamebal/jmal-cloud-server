@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * @author jmal
@@ -146,18 +147,13 @@ public class AuthServiceImpl implements IAuthService {
         if (dn == null || dn.trim().isEmpty()) {
             return true;
         }
-        dn = dn.toLowerCase();
-        // 支持常见的LDAP属性类型
-        String attrTypes = "(uid|cn|ou|dc|o|l|st|c)";
-        // 属性值允许包含除逗号外的任意字符
-        String attrValue = "([^,]+)";
-        // 完整的RDN(Relative Distinguished Name)格式
-        String rdn = attrTypes + "=" + attrValue;
-        // 完整的DN格式：一个或多个RDN，用逗号分隔
-        String regex = rdn + "(,\\s*" + rdn + ")*";
-
-        return !dn.matches(regex);
+        return !VALID_DN_PATTERN.matcher(dn.trim().toLowerCase()).matches();
     }
+
+    // 静态常量定义正则表达式，只允许逗号分隔
+    private static final Pattern VALID_DN_PATTERN = Pattern.compile(
+            "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$|^(uid|cn|ou|dc|o|l|st|c)=([^,]*),(uid|cn|ou|dc|o|l|st|c)=([^,]*)((,(uid|cn|ou|dc|o|l|st|c)=([^,]*))*)(,)?$"
+    );
 
     @Override
     public ResponseResult<Object> logout(String token, HttpServletResponse response) {
