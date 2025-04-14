@@ -1,8 +1,6 @@
 package com.jmal.clouddisk.config;
 
-import com.jmal.clouddisk.interceptor.AuthInterceptor;
-import com.jmal.clouddisk.interceptor.FileInterceptor;
-import com.jmal.clouddisk.interceptor.HeaderLocaleChangeInterceptor;
+import com.jmal.clouddisk.interceptor.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -33,15 +31,21 @@ public class WebConfig implements WebMvcConfigurer {
 
     private final FileInterceptor fileInterceptor;
 
+    private final ShareFileInterceptor shareFileInterceptor;
+
     /**
      * 注册拦截器
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(localeChangeInterceptor());
+
 		registry.addInterceptor(authInterceptor).addPathPatterns("/**").
-				excludePathPatterns("/login/**", "/public/**", "/articles/**", "/error/**", "/file/**" , "/files/**","/swagger-ui/**");
+				excludePathPatterns("/login/**", "/public/**", "/articles/**", "/error/**", "/file/**" , "/share-file/**", "/files/**","/swagger-ui/**");
+
         registry.addInterceptor(fileInterceptor).addPathPatterns("/file/**").addPathPatterns("/files/**");
+
+        registry.addInterceptor(shareFileInterceptor).addPathPatterns("/share-file/{shareId}/{token}/**");
     }
 
     @Override
