@@ -1,0 +1,152 @@
+package com.jmal.clouddisk.interceptor;
+
+import cn.hutool.core.lang.UUID;
+import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.crypto.digest.DigestUtil;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.ShareDO;
+import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.service.IFileService;
+import com.jmal.clouddisk.service.IShareService;
+import com.jmal.clouddisk.service.IUserService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * @author jmal
+ * @Description
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class ShareFileInterceptor implements HandlerInterceptor {
+
+    private final IShareService shareService;
+
+    private final IFileService fileService;
+
+    private final IUserService userService;
+
+    private static final Cache<String, String> INTERNAL_TOKEN_CACHE = Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.SECONDS).build();
+
+    public static void setInternalTokenCache(String requestId, String token) {
+        INTERNAL_TOKEN_CACHE.put(requestId, token);
+    }
+
+    public static boolean isValidInternalTokenCache(String requestId, String token) {
+        if (CharSequenceUtil.isBlank(token)) {
+            return false;
+        }
+        if (token.equals(INTERNAL_TOKEN_CACHE.getIfPresent(requestId))) {
+            INTERNAL_TOKEN_CACHE.invalidate(requestId);
+            return true;
+        } else {
+            INTERNAL_TOKEN_CACHE.invalidate(requestId);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) throws IOException {
+        String uri = request.getRequestURI();
+        String[] pathSegments = uri.split("/");
+
+        // 验证路径格式
+        if (pathSegments.length < 4 || !"share-file".equals(pathSegments[1])) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return false;
+        }
+        String fileId = pathSegments[2];
+        String shareToken = null;
+        if (pathSegments.length == 5) {
+            shareToken = pathSegments[3];
+        }
+        if (CharSequenceUtil.isBlank(fileId)) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return false;
+        }
+        FileDocument fileDocument = fileService.getById(fileId);
+        if (fileDocument == null) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return false;
+        }
+
+        if (isNotAllowAccess(fileDocument, shareToken, request)) {
+            return false;
+        }
+
+        // 生成临时 token
+        String requestId = UUID.fastUUID().toString(true) + fileId;
+        String internalToken = DigestUtil.sha256Hex(requestId + System.currentTimeMillis());
+        request.setAttribute("requestId", requestId);
+        request.setAttribute("internalToken", internalToken);
+        setInternalTokenCache(requestId, internalToken);
+
+        // 构造内部路径
+        String filepath = "/file/" + userService.getUserNameById(fileDocument.getUserId()) + fileDocument.getPath() + "/" + fileDocument.getName();
+        try {
+            request.getRequestDispatcher(filepath).forward(request, response);
+        } catch (Exception e) {
+            log.error("Failed to forward request to {}", filepath, e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("Internal server error");
+            return false;
+        }
+        // 阻止原始请求继续处理
+        return false;
+    }
+
+    private boolean isNotAllowAccess(FileDocument fileDocument, String shareToken, HttpServletRequest request) {
+        if (BooleanUtil.isTrue(fileDocument.getIsShare())) {
+            return validShareFile(fileDocument, shareToken, request);
+        }
+        return true;
+    }
+
+    public boolean validShareFile(FileDocument fileDocument, String shareToken, HttpServletRequest request) {
+        if (System.currentTimeMillis() >= fileDocument.getExpiresAt()) {
+            // 过期了
+            return true;
+        }
+        if (fileDocument.getShareId() == null) {
+            // 未分享
+            return true;
+        }
+        ShareDO shareDO = shareService.getShare(fileDocument.getShareId());
+        if (shareDO == null) {
+            // 分享不存在
+            return true;
+        }
+        if (BooleanUtil.isFalse(shareDO.getIsPrivacy())) {
+            return false;
+        }
+        if (request == null) {
+            // 未登录
+            return true;
+        }
+        if (CharSequenceUtil.isBlank(shareToken)) {
+            shareToken = request.getHeader(Constants.SHARE_TOKEN);
+            if (CharSequenceUtil.isBlank(shareToken)) {
+                shareToken = request.getParameter(Constants.SHARE_TOKEN);
+            }
+        }
+        if (CharSequenceUtil.isBlank(shareToken)) {
+            // 未携带share-token
+            return true;
+        }
+        shareService.validShare(shareToken, shareDO.getId());
+        return false;
+    }
+
+}

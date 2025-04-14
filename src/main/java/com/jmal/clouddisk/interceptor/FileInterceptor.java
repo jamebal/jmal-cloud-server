@@ -6,11 +6,8 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.oss.web.WebOssService;
-import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
-import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.MyFileUtils;
@@ -92,12 +89,15 @@ public class FileInterceptor implements HandlerInterceptor {
 
     private final AuthInterceptor authInterceptor;
 
-    private final IShareService shareService;
+    private final ShareFileInterceptor shareFileInterceptor;
 
     private final WebOssService webOssService;
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
+
+        if (internalValid(request, response)) return true;
+
         if (fileAuthError(request, response)) {
             return false;
         }
@@ -130,6 +130,19 @@ public class FileInterceptor implements HandlerInterceptor {
             return !previewOssFile(request, response, path, encodedFilename);
         }
         return true;
+    }
+
+    private static boolean internalValid(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
+        String requestId = (String) request.getAttribute("requestId");
+        String internalToken = (String) request.getAttribute("internalToken");
+
+        if (CharSequenceUtil.isNotBlank(requestId) && CharSequenceUtil.isNotBlank(internalToken)) {
+            if (!ShareFileInterceptor.isValidInternalTokenCache(requestId, internalToken)) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            }
+            return true;
+        }
+        return false;
     }
 
     private void setCacheControl(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
@@ -218,35 +231,9 @@ public class FileInterceptor implements HandlerInterceptor {
         }
         // 分享文件
         if (BooleanUtil.isTrue(fileDocument.getIsShare())) {
-            return validShareFile(fileDocument, request);
+            return shareFileInterceptor.validShareFile(fileDocument, null, request);
         }
         return true;
-    }
-
-    private boolean validShareFile(FileDocument fileDocument, HttpServletRequest request) {
-        if (System.currentTimeMillis() >= fileDocument.getExpiresAt()) {
-            // 过期了
-            return true;
-        }
-        if (fileDocument.getShareId() == null) {
-            return true;
-        }
-        ShareDO shareDO = shareService.getShare(fileDocument.getShareId());
-        if (shareDO == null) {
-            return true;
-        }
-        if (BooleanUtil.isFalse(shareDO.getIsPrivacy())) {
-            return false;
-        }
-        if (request == null) {
-            return true;
-        }
-        String shareToken = request.getHeader(Constants.SHARE_TOKEN);
-        if (CharSequenceUtil.isBlank(shareToken)) {
-            shareToken = request.getParameter(Constants.SHARE_TOKEN);
-        }
-        shareService.validShare(shareToken, shareDO.getId());
-        return false;
     }
 
     private void webp(HttpServletRequest request, HttpServletResponse response) {
