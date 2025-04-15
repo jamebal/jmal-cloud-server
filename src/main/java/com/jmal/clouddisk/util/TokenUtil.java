@@ -1,35 +1,24 @@
 package com.jmal.clouddisk.util;
 
 
-import cn.hutool.core.util.HexUtil;
-import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
  * @author jmal
  */
-@Component
 public class TokenUtil {
-
-    private static String secret = null;
-
-    private TokenUtil() {
-        secret = HexUtil.encodeHexStr(SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue()).getEncoded());
-    }
 
     /**
      * 生成token
@@ -44,33 +33,14 @@ public class TokenUtil {
     }
 
     private static String generateToken(String key, String password, LocalDateTime localDataTime) {
-        Map<String, Object> map = new HashMap<>(3);
-        map.put("alg", "HS256");
-        map.put("typ", "JWT");
         JWTCreator.Builder builder = JWT.create();
-        builder.withHeader(map)
-                // payload
-                .withClaim("iss", "Service")
-                // sign time
-                .withClaim("aud", "WEB").withClaim("username", key);
+        builder.withClaim("username", key);
         if (localDataTime != null) {
             builder.withExpiresAt(Date.from(localDataTime.atZone(ZoneId.systemDefault()).toInstant()));
         }
-        return builder.sign(Algorithm.HMAC256(password));
-    }
+        byte[] keyBytes = password.getBytes(StandardCharsets.UTF_8);
+        return builder.sign(Algorithm.HMAC256(keyBytes));
 
-    /**
-     * 生成token
-     *
-     * @param key token key
-     * @return token
-     */
-    public static String createToken(String key, LocalDateTime localDateTime) {
-        return generateToken(key, secret, localDateTime);
-    }
-
-    public static String getTokenKey(String token) {
-        return getTokenKey(token, secret);
     }
 
     public static String getTokenKey(String token, String password) {
