@@ -567,7 +567,8 @@ public class ShareServiceImpl implements IShareService {
         throw new CommonException(ExceptionType.SYSTEM_SUCCESS, shareDO);
     }
 
-    private boolean existsMountFile(String fileId, String userId) {
+    @Override
+    public boolean existsMountFile(String fileId, String userId) {
         Query query = getMountQuery(fileId, userId);
         return mongoTemplate.exists(query, FileDocument.class);
     }

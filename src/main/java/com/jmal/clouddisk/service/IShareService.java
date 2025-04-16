@@ -150,4 +150,11 @@ public interface IShareService {
      */
     String getMountFolderId(String path, String fileUsername, String otherFileId);
 
+    /**
+     * 判断是否是挂载文件
+     * @param mountFileId fileId
+     * @param userId userId
+     */
+    boolean existsMountFile(String mountFileId, String userId);
+
 }
