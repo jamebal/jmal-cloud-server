@@ -12,6 +12,7 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class ShareFileInterceptor implements HandlerInterceptor {
     private final IUserService userService;
 
     private static final Cache<String, String> INTERNAL_TOKEN_CACHE = Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.SECONDS).build();
+    private final UserLoginHolder userLoginHolder;
 
     public static void setInternalTokenCache(String requestId, String token) {
         INTERNAL_TOKEN_CACHE.put(requestId, token);
@@ -136,6 +138,11 @@ public class ShareFileInterceptor implements HandlerInterceptor {
             return true;
         }
         if (CharSequenceUtil.isBlank(shareToken)) {
+            // 判断是否为挂载文件
+            String userId = userLoginHolder.getUserId();
+            if (CharSequenceUtil.isNotBlank(userId)) {
+                return !shareService.existsMountFile(shareDO.getFileId(), userId);
+            }
             shareToken = request.getHeader(Constants.SHARE_TOKEN);
             if (CharSequenceUtil.isBlank(shareToken)) {
                 shareToken = request.getParameter(Constants.SHARE_TOKEN);

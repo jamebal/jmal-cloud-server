@@ -224,7 +224,23 @@ public class CommonFileService {
      * @return FileDocument
      */
     public FileDocument getFileDocumentByPath(String path, String filename, String userId) {
+        return getFileDocumentByPath(path, filename, userId, true);
+    }
+
+    /**
+     * 获取文件信息
+     *
+     * @param path     文件的相对路径
+     * @param filename 文件名称
+     * @param userId   userId
+     * @return FileDocument
+     */
+    public FileDocument getFileDocumentByPath(String path, String filename, String userId, boolean excludeContent) {
         Query query = getQuery(path, filename, userId);
+        if (excludeContent) {
+            query.fields().exclude("content");
+        }
+        query.fields().exclude("contentText");
         return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
     }
 

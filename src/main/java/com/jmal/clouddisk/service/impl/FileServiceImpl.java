@@ -385,17 +385,23 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         }
     }
 
-    private FileDocument getFileDocumentById(String fileId) {
+    private FileDocument getFileDocumentById(String fileId, boolean excludeContent) {
         if (CharSequenceUtil.isBlank(fileId) || Constants.REGION_DEFAULT.equals(fileId)) {
             return null;
         }
-        return mongoTemplate.findById(fileId, FileDocument.class, COLLECTION_NAME);
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        if (excludeContent) {
+            query.fields().exclude("content");
+        }
+        query.fields().exclude("contentText");
+        return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
     }
 
     private FileDocument getOriginalFileDocumentById(String fileId) {
-        FileDocument fileDocument = getFileDocumentById(fileId);
+        FileDocument fileDocument = getFileDocumentById(fileId, true);
         if (fileDocument != null && fileDocument.getMountFileId() != null) {
-            fileDocument = mongoTemplate.findById(fileDocument.getMountFileId(), FileDocument.class, COLLECTION_NAME);
+            fileDocument = getFileDocumentById(fileDocument.getMountFileId(), true);
         }
         return fileDocument;
     }
@@ -552,11 +558,16 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public FileDocument getFileDocumentByPathAndName(String path, String name, String username) {
+        return getFileDocumentByPathAndName(path, name, username, true);
+    }
+
+    @Override
+    public FileDocument getFileDocumentByPathAndName(String path, String name, String username, boolean excludeContent) {
         String userId = userService.getUserIdByUserName(username);
         if (userId == null) {
             return null;
         }
-        return getFileDocumentByPath(path, name, userId);
+        return getFileDocumentByPath(path, name, userId, excludeContent);
     }
 
     @Override
@@ -664,7 +675,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public Optional<FileDocument> coverOfMedia(String id, String username) throws CommonException {
-        FileDocument fileDocument = getFileDocumentById(id);
+        FileDocument fileDocument = getFileDocumentById(id, false);
         if (fileDocument != null && fileDocument.getContent() != null) {
             return Optional.of(fileDocument);
         }
@@ -1035,7 +1046,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     private String getOssFileCurrentDirectory(UploadApiParamDTO upload, List<String> froms) {
         String currentDirectory = "/";
         String from = froms.get(0);
-        FileDocument fileDocumentFrom = getFileDocumentById(from);
+        FileDocument fileDocumentFrom = getFileDocumentById(from, true);
         if (fileDocumentFrom != null && fileDocumentFrom.getOssFolder() != null) {
             from = upload.getUsername() + MyWebdavServlet.PATH_DELIMITER + fileDocumentFrom.getOssFolder() + MyWebdavServlet.PATH_DELIMITER;
         }
@@ -1117,7 +1128,12 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public FileDocument getById(String fileId) {
-        FileDocument fileDocument = getFileDocumentById(fileId);
+        return getById(fileId, true);
+    }
+
+    @Override
+    public FileDocument getById(String fileId, boolean excludeContent) {
+        FileDocument fileDocument = getFileDocumentById(fileId, excludeContent);
         if (fileDocument != null) {
             return fileDocument;
         }
@@ -1549,7 +1565,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             }
             return webOssCopyFileService.copyOssToOss(ossPath, fileId, ossPath, to, false);
         }
-        FileDocument fileDocument = getFileDocumentById(fileId);
+        FileDocument fileDocument = getFileDocumentById(fileId, true);
         if (fileDocument == null) {
             return ResultUtil.error("文件不存在");
         }
@@ -1988,7 +2004,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             }
             return;
         }
-        FileDocument fileDocument = getFileDocumentById(fileId);
+        FileDocument fileDocument = getFileDocumentById(fileId, true);
         if (fileDocument != null && fileDocument.getOssFolder() != null) {
             // oss根目录
             String userId = fileDocument.getUserId();

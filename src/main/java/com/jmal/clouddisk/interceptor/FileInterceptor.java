@@ -266,7 +266,7 @@ public class FileInterceptor implements HandlerInterceptor {
         if (uriPath.getNameCount() < MIN_COUNT) {
             return;
         }
-        FileDocument fileDocument = getFileDocument(uriPath);
+        FileDocument fileDocument = getFileDocument(uriPath, false);
         Path relativePath = uriPath.subpath(1, uriPath.getNameCount());
         if (fileDocument != null) {
             if (fileDocument.getContent() == null) {
@@ -279,14 +279,18 @@ public class FileInterceptor implements HandlerInterceptor {
         }
     }
 
-    private FileDocument getFileDocument(Path uriPath) {
+    private FileDocument getFileDocument(Path uriPath, boolean excludeContent) {
         String username = uriPath.getName(1).toString();
         String path = File.separator;
         if (uriPath.getNameCount() > MIN_COUNT + 1) {
             path = File.separator + uriPath.subpath(MIN_COUNT, uriPath.getNameCount()).getParent().toString() + File.separator;
         }
         String name = uriPath.getFileName().toString();
-        return fileService.getFileDocumentByPathAndName(path, name, username);
+        return fileService.getFileDocumentByPathAndName(path, name, username, excludeContent);
+    }
+
+    private FileDocument getFileDocument(Path uriPath) {
+        return getFileDocument(uriPath, true);
     }
 
     private void handleCrop(HttpServletRequest request, HttpServletResponse response) {

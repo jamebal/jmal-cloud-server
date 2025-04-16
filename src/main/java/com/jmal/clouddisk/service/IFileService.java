@@ -38,6 +38,8 @@ public interface IFileService {
 
     FileDocument getFileDocumentByPathAndName(String path, String name, String username);
 
+    FileDocument getFileDocumentByPathAndName(String path, String name, String username, boolean excludeContent);
+
     /**
      * 根据path读取simText文件
      * @param path 文件路径
@@ -260,6 +262,8 @@ public interface IFileService {
      * @return FileDocument
      */
     FileDocument getById(String fileId);
+
+    FileDocument getById(String fileId, boolean excludeContent);
 
     /**
      * 创建文件/文件夹(mongodb)
