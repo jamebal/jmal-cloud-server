@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.interceptor;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -108,7 +109,7 @@ public class FileInterceptor implements HandlerInterceptor {
         if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD -> {
-                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + path.getFileName());
+                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + encodedFilename);
                     Path prePth = path.subpath(1, path.getNameCount());
                     String ossPath = CaffeineUtil.getOssPath(prePth);
                     if (ossPath != null) {
@@ -412,7 +413,7 @@ public class FileInterceptor implements HandlerInterceptor {
 
     private static double parseQuality(String q) {
         try {
-            double quality = Double.parseDouble(q);
+            double quality = Convert.toDouble(q, 0.8);
             return (quality >= 0 && quality <= 1) ? quality : 0.8;
         } catch (NumberFormatException e) {
             return 0.8;
@@ -421,7 +422,7 @@ public class FileInterceptor implements HandlerInterceptor {
 
     private static int parseDimension(String dim) {
         try {
-            return Integer.parseInt(dim);
+            return Convert.toInt(dim, -1);
         } catch (NumberFormatException e) {
             return -1;
         }
