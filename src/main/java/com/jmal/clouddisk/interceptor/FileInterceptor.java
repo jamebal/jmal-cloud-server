@@ -5,6 +5,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.URLUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.oss.web.WebOssService;
@@ -12,6 +13,7 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.MyFileUtils;
+import com.jmal.clouddisk.util.UrlEncodingChecker;
 import com.luciad.imageio.webp.WebPWriteParam;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,7 +37,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -103,13 +104,16 @@ public class FileInterceptor implements HandlerInterceptor {
             return false;
         }
         Path path = Paths.get(request.getRequestURI());
-        String encodedFilename = URLEncoder.encode(String.valueOf(path.getFileName()), StandardCharsets.UTF_8);
+        String filename = String.valueOf(path.getFileName());
+        if (!UrlEncodingChecker.isUrlEncoded(filename)) {
+            filename = URLUtil.encode(filename, StandardCharsets.UTF_8);
+        }
         String operation = request.getParameter(OPERATION);
         setCacheControl(request, response);
         if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD -> {
-                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + encodedFilename);
+                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
                     Path prePth = path.subpath(1, path.getNameCount());
                     String ossPath = CaffeineUtil.getOssPath(prePth);
                     if (ossPath != null) {
@@ -118,7 +122,7 @@ public class FileInterceptor implements HandlerInterceptor {
                     }
                 }
                 case PREVIEW -> {
-                    if (previewOssFile(request, response, path, encodedFilename)) return false;
+                    if (previewOssFile(request, response, path, filename)) return false;
                 }
                 case CROP -> handleCrop(request, response);
                 case THUMBNAIL -> thumbnail(request, response);
@@ -128,9 +132,13 @@ public class FileInterceptor implements HandlerInterceptor {
                 }
             }
         } else {
-            return !previewOssFile(request, response, path, encodedFilename);
+            return !previewOssFile(request, response, path, filename);
         }
         return true;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(URLUtil.encode("未命名文件 副本.txt", StandardCharsets.UTF_8));
     }
 
     private static boolean internalValid(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {

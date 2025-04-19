@@ -5,12 +5,12 @@ import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.TagService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.*;
@@ -42,6 +42,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.jmal.clouddisk.service.impl.CommonFileService.COLLECTION_NAME;
 
 /**
  * @author jmal
@@ -277,7 +279,7 @@ public class LuceneService {
         query.addCriteria(Criteria.where("_id").is(fileIntroVO.getId()));
         Update update = new Update();
         update.set(MONGO_INDEX_FIELD, indexStatus.getStatus());
-        mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
+        mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
     }
 
     private String getTagName(FileIntroVO fileDocument) {
@@ -617,17 +619,105 @@ public class LuceneService {
             combinedQueryBuilder.add(nameQuery, BooleanClause.Occur.SHOULD);
         }
 
+        // 其他通用搜索选项
+        BooleanQuery otherQuery = getOtherOption(searchDTO);
+
         BooleanQuery combinedQuery = combinedQueryBuilder.build();
 
         // 创建最终查询（AND关系）
-        BooleanQuery.Builder finalQueryBuilder = new BooleanQuery.Builder()
+        BooleanQuery.Builder fileQueryBuilder = new BooleanQuery.Builder()
                 .add(new TermQuery(new Term(IUserService.USER_ID, searchDTO.getUserId())), BooleanClause.Occur.MUST)
                 .add(combinedQuery, BooleanClause.Occur.MUST);
+        if (!otherQuery.clauses().isEmpty()) {
+            fileQueryBuilder.add(otherQuery, BooleanClause.Occur.MUST);
+        }
 
-        // 添加其他查询条件
-        otherQueryParams(searchDTO, finalQueryBuilder);
+        // 添加其他不通用查询条件
+        otherQueryParams(searchDTO, fileQueryBuilder);
+
+        // or 挂载点查询
+        Query mountQuery = getMountQueryBuilder(searchDTO, combinedQuery, otherQuery);
+
+        // 构建最终查询
+        BooleanQuery.Builder finalQueryBuilder = new BooleanQuery.Builder().add(fileQueryBuilder.build(), BooleanClause.Occur.SHOULD);
+        if (mountQuery != null) {
+            finalQueryBuilder.add(mountQuery, BooleanClause.Occur.SHOULD);
+        }
 
         return finalQueryBuilder.build();
+    }
+
+    private static BooleanQuery getOtherOption(SearchDTO searchDTO) {
+        BooleanQuery.Builder otherOptionBuilder = new BooleanQuery.Builder();
+        // 文件类型
+        if (CharSequenceUtil.isNotBlank(searchDTO.getType())) {
+            otherOptionBuilder.add(new TermQuery(new Term("type", searchDTO.getType())), BooleanClause.Occur.MUST);
+        }
+
+        // 是否文件夹
+        if (searchDTO.getIsFolder() != null) {
+            otherOptionBuilder.add(IntPoint.newExactQuery("isFolder", searchDTO.getIsFolder() ? 1 : 0), BooleanClause.Occur.MUST);
+        }
+
+        // 更新时间范围查询
+        if (searchDTO.getModifyStart() != null || searchDTO.getModifyEnd() != null) {
+            long start = searchDTO.getModifyStart() != null ? searchDTO.getModifyStart() : Long.MIN_VALUE;
+            long end = searchDTO.getModifyEnd() != null ? searchDTO.getModifyEnd() : Long.MAX_VALUE;
+            otherOptionBuilder.add(NumericDocValuesField.newSlowRangeQuery("modified", start, end), BooleanClause.Occur.MUST);
+        }
+
+        // 文件大小范围查询
+        if (searchDTO.getSizeMin() != null || searchDTO.getSizeMax() != null) {
+            long minSize = searchDTO.getSizeMin() != null ? searchDTO.getSizeMin() : Long.MIN_VALUE;
+            long maxSize = searchDTO.getSizeMax() != null ? searchDTO.getSizeMax() : Long.MAX_VALUE;
+            otherOptionBuilder.add(NumericDocValuesField.newSlowRangeQuery("size", minSize, maxSize), BooleanClause.Occur.MUST);
+        }
+        return otherOptionBuilder.build();
+    }
+
+    /**
+     * 获取挂载点查询
+     * @param searchDTO searchDTO
+     * @param combinedQuery 共用查询
+     * @return mountQueryBuilder
+     */
+    private BooleanQuery getMountQueryBuilder(SearchDTO searchDTO, BooleanQuery combinedQuery, BooleanQuery otherQuery) {
+        BooleanQuery.Builder mountQueryBuilder;
+        if (BooleanUtil.isTrue(searchDTO.getSearchMount())) {
+            mountQueryBuilder = new BooleanQuery.Builder();
+            org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+            query.addCriteria(Criteria.where("userId").is(searchDTO.getUserId()));
+            query.addCriteria(Criteria.where("mountFileId").exists(true));
+            query.fields().exclude("content");
+            query.fields().exclude("video");
+            query.fields().exclude("music");
+            query.fields().exclude("contentText");
+            query.fields().exclude("exif");
+            List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class);
+            fileDocumentList.parallelStream().forEach(fileDocument -> {
+                BooleanQuery.Builder mountQueryBuilderItem = new BooleanQuery.Builder();
+                org.springframework.data.mongodb.core.query.Query query1 = new org.springframework.data.mongodb.core.query.Query();
+                query1.fields().include("userId");
+                query1.fields().include("path");
+                query1.fields().include("name");
+                FileDocument fileBase = mongoTemplate.findById(fileDocument.getMountFileId(), FileDocument.class);
+                if (fileBase != null) {
+                    // userId
+                    mountQueryBuilderItem.add(new TermQuery(new Term(IUserService.USER_ID, fileBase.getUserId())), BooleanClause.Occur.MUST);
+                    // path
+                    mountQueryBuilderItem.add(getPathQueryBuilder(fileBase.getPath() + fileBase.getName()), BooleanClause.Occur.MUST);
+                    // other
+                    mountQueryBuilderItem.add(combinedQuery, BooleanClause.Occur.MUST);
+                    if (!otherQuery.clauses().isEmpty()) {
+                        mountQueryBuilderItem.add(otherQuery, BooleanClause.Occur.MUST);
+                    }
+                }
+                mountQueryBuilder.add(mountQueryBuilderItem.build(), BooleanClause.Occur.SHOULD);
+            });
+        } else {
+            mountQueryBuilder = null;
+        }
+        return mountQueryBuilder == null ? null : mountQueryBuilder.build();
     }
 
     /**
@@ -654,14 +744,7 @@ public class LuceneService {
         boolean queryPath = CharSequenceUtil.isNotBlank(searchDTO.getCurrentDirectory()) && searchDTO.getCurrentDirectory().length() > 1;
 
         if (queryPath) {
-            Term prefixTerm = new Term("path", searchDTO.getCurrentDirectory());
-            PrefixQuery prefixQuery = new PrefixQuery(prefixTerm);
-            builder.add(prefixQuery, BooleanClause.Occur.MUST);
-        }
-
-        // 文件类型
-        if (CharSequenceUtil.isNotBlank(searchDTO.getType())) {
-            builder.add(new TermQuery(new Term("type", searchDTO.getType())), BooleanClause.Occur.MUST);
+            builder.add(getPathQueryBuilder(searchDTO.getCurrentDirectory()), BooleanClause.Occur.MUST);
         }
 
         // 标签
@@ -672,29 +755,21 @@ public class LuceneService {
             }
         }
 
-        // 是否文件夹
-        if (searchDTO.getIsFolder() != null) {
-            builder.add(IntPoint.newExactQuery("isFolder", Boolean.TRUE.equals(searchDTO.getIsFolder()) ? 1 : 0), BooleanClause.Occur.MUST);
-        }
-
         // 是否收藏
         if (searchDTO.getIsFavorite() != null) {
-            builder.add(IntPoint.newExactQuery("isFavorite", Boolean.TRUE.equals(searchDTO.getIsFavorite()) ? 1 : 0), BooleanClause.Occur.MUST);
+            builder.add(IntPoint.newExactQuery("isFavorite", searchDTO.getIsFavorite() ? 1 : 0), BooleanClause.Occur.MUST);
         }
+    }
 
-        // 更新时间范围查询
-        if (searchDTO.getModifyStart() != null || searchDTO.getModifyEnd() != null) {
-            long start = searchDTO.getModifyStart() != null ? searchDTO.getModifyStart() : Long.MIN_VALUE;
-            long end = searchDTO.getModifyEnd() != null ? searchDTO.getModifyEnd() : Long.MAX_VALUE;
-            builder.add(NumericDocValuesField.newSlowRangeQuery("modified", start, end), BooleanClause.Occur.MUST);
-        }
-
-        // 文件大小范围查询
-        if (searchDTO.getSizeMin() != null || searchDTO.getSizeMax() != null) {
-            long minSize = searchDTO.getSizeMin() != null ? searchDTO.getSizeMin() : Long.MIN_VALUE;
-            long maxSize = searchDTO.getSizeMax() != null ? searchDTO.getSizeMax() : Long.MAX_VALUE;
-            builder.add(NumericDocValuesField.newSlowRangeQuery("size", minSize, maxSize), BooleanClause.Occur.MUST);
-        }
+    private static BooleanQuery getPathQueryBuilder(String path) {
+        // 检查path最后一个字符是否有/, 如果没有，则添加
+        path = path.endsWith("/") ? path : path + "/";
+        BooleanQuery.Builder pathQueryBuilder = new BooleanQuery.Builder();
+        Term pathTerm = new Term("path", path);
+        PrefixQuery prefixQuery = new PrefixQuery(pathTerm);
+        pathQueryBuilder.add(new TermQuery(pathTerm), BooleanClause.Occur.SHOULD);
+        pathQueryBuilder.add(prefixQuery, BooleanClause.Occur.SHOULD);
+        return pathQueryBuilder.build();
     }
 
     public List<FileIntroVO> getFileIntroVOs(List<String> fileIdList) {
@@ -714,7 +789,7 @@ public class LuceneService {
                         new org.bson.Document("order", 0L)
                                 .append("contentText", 0L)));
 
-        AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
+        AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(pipeline);
 
         List<FileIntroVO> results = new ArrayList<>();
         for (org.bson.Document document : aggregateIterable) {
@@ -727,7 +802,7 @@ public class LuceneService {
     public FileIntroVO getFileIntroVO(String fileId) {
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
-        return mongoTemplate.findOne(query, FileIntroVO.class, CommonFileService.COLLECTION_NAME);
+        return mongoTemplate.findOne(query, FileIntroVO.class, COLLECTION_NAME);
     }
 
     /**
@@ -741,7 +816,7 @@ public class LuceneService {
         query.addCriteria(Criteria.where("_id").in(fielIdList));
         Update update = new Update();
         update.set(MONGO_INDEX_FIELD, IndexStatus.NOT_INDEX.getStatus());
-        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
         // 添加待索引标记
         startProcessFilesToBeIndexed();
     }
@@ -755,14 +830,14 @@ public class LuceneService {
         while (run) {
             org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
             query.addCriteria(Criteria.where(MONGO_INDEX_FIELD).is(IndexStatus.NOT_INDEX.getStatus()));
-            long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
+            long count = mongoTemplate.count(query, COLLECTION_NAME);
             if (count == 0) {
                 log.debug("待索引文件处理完成");
                 rebuildIndexTaskService.rebuildingIndexCompleted();
                 run = false;
             }
             List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match", new org.bson.Document("index", 0)), new org.bson.Document("$project", new org.bson.Document("_id", 1)), new org.bson.Document("$limit", 8));
-            AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
+            AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(pipeline);
             for (org.bson.Document document : aggregateIterable) {
                 String fileId = document.getObjectId("_id").toHexString();
                 FileIntroVO fileIntroVO = getFileIntroVO(fileId);
@@ -784,7 +859,7 @@ public class LuceneService {
         } else {
             // 根据文件大小选择多线程处理
             if (size > 20 * 1024 * 1024) {
-                // 大文件，使用专门线程池处理
+                // 大文件，使用特定线程池处理
                 executorUpdateBigContentIndexService.execute(() -> updateIndex(true, fileIntroVO));
             } else {
                 // 小文件，使用普通线程池处理

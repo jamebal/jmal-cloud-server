@@ -324,6 +324,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         searchDTO.setModifyEnd(upload.getQueryModifyEnd());
         searchDTO.setSizeMin(upload.getQuerySizeMin());
         searchDTO.setSizeMax(upload.getQuerySizeMax());
+        searchDTO.setSearchMount(upload.getSearchMount());
         return luceneService.searchFile(searchDTO);
     }
 
@@ -827,7 +828,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 filename = "download";
             }
             String filePath = startPath + filename;
-            if (size == 1 && Boolean.TRUE.equals(!fileDocument.getIsFolder())) {
+            if (size == 1 && !fileDocument.getIsFolder()) {
                 // 单个文件
                 fileDocument.setPath(filePath);
             } else {

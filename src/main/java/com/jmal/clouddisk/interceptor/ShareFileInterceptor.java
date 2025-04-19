@@ -9,9 +9,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
-import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -21,7 +19,6 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,9 +32,7 @@ public class ShareFileInterceptor implements HandlerInterceptor {
 
     private final IShareService shareService;
 
-    private final IFileService fileService;
-
-    private final IUserService userService;
+    private final PreFileInterceptor preFileInterceptor;
 
     private static final Cache<String, String> INTERNAL_TOKEN_CACHE = Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.SECONDS).build();
     private final UserLoginHolder userLoginHolder;
@@ -60,7 +55,7 @@ public class ShareFileInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) throws IOException {
+    public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
         String uri = request.getRequestURI();
         String[] pathSegments = uri.split("/");
 
@@ -69,21 +64,18 @@ public class ShareFileInterceptor implements HandlerInterceptor {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return false;
         }
-        String fileId = pathSegments[2];
         String shareToken = null;
         if (pathSegments.length == 5) {
             shareToken = pathSegments[3];
         }
-        if (CharSequenceUtil.isBlank(fileId)) {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            return false;
-        }
-        FileDocument fileDocument = fileService.getById(fileId);
+
+        String fileId = pathSegments[2];
+        FileDocument fileDocument = preFileInterceptor.getFileDocument(response, fileId);
         if (fileDocument == null) {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             return false;
         }
 
+        // 验证权限
         if (isNotAllowAccess(fileDocument, shareToken, request)) {
             return false;
         }
@@ -96,15 +88,8 @@ public class ShareFileInterceptor implements HandlerInterceptor {
         setInternalTokenCache(requestId, internalToken);
 
         // 构造内部路径
-        String filepath = "/file/" + userService.getUserNameById(fileDocument.getUserId()) + fileDocument.getPath() + "/" + fileDocument.getName();
-        try {
-            request.getRequestDispatcher(filepath).forward(request, response);
-        } catch (Exception e) {
-            log.error("Failed to forward request to {}", filepath, e);
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write("Internal server error");
-            return false;
-        }
+        preFileInterceptor.internalFilePath(request, response, fileDocument);
+
         // 阻止原始请求继续处理
         return false;
     }

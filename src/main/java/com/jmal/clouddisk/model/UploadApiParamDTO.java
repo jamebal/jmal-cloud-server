@@ -230,6 +230,11 @@ public class UploadApiParamDTO {
      */
     Long querySizeMax;
 
+    /**
+     * 是否搜索挂载盘
+     */
+    Boolean searchMount;
+
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime uploadDate;

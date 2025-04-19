@@ -62,4 +62,9 @@ public class SearchDTO extends QueryBaseDTO {
      * 文件大小范围最大
      */
     Long sizeMax;
+
+    /**
+     * 是否搜索挂载盘
+     */
+    Boolean searchMount;
 }
