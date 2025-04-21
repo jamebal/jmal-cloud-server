@@ -3,8 +3,6 @@ FROM nvidia/cuda:11.7.1-base-ubuntu22.04 AS base
 # 设置非交互式安装，避免 tzdata 等包的配置暂停
 ENV DEBIAN_FRONTEND=noninteractive
 
-COPY docker/mxcad_x86_64.zip /jmalcloud/
-
 # 安装 wget 和 tesseract，并配置时区和 locales
 RUN apt-get update && \
     apt-get install -y --no-install-recommends wget unzip locales tesseract-ocr p7zip-full unrar libheif-examples && \
@@ -14,8 +12,9 @@ RUN apt-get update && \
     ARCH=$(dpkg --print-architecture) && \
     wget https://repo.jellyfin.org/files/ffmpeg/ubuntu/latest-5.x/${ARCH}/jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb && \
     dpkg -i jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb || apt-get install -fy && \
-    # 安装 mxcad
-    unzip -o /jmalcloud/mxcad_x86_64.zip -d /usr/local/ && \
+    # 安装 mxcad \
+    wget https://github.com/jamebal/jmal-cloud-server/releases/download/v2.12.0/mxcad_x86_64.zip && \
+    unzip -o mxcad_x86_64.zip -d /usr/local/ && \
     mv /usr/local/x86_64/ /usr/local/mxcad && \
     chmod -R 777 /usr/local/mxcad/mxcadassembly && \
     chmod -R 777 /usr/local/mxcad/mx/so/* && \
@@ -31,7 +30,7 @@ RUN apt-get update && \
     apt-get clean && \
     rm -f jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb && \
     rm -rf /var/lib/apt/lists/* && \
-    rm -f /jmalcloud/mxcad_x86_64.zip && \
+    rm -f mxcad_x86_64.zip && \
     rm -rf /usr/local/ubuntu-22.04-${ARCH}-bin && \
     rm -f ubuntu-22.04-${ARCH}-bin.7z && \
     rm -f models.7z && \
