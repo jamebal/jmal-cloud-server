@@ -104,10 +104,9 @@ public class FileInterceptor implements HandlerInterceptor {
             return false;
         }
         Path path = Paths.get(request.getRequestURI());
-        String filename = String.valueOf(path.getFileName());
-        if (!UrlEncodingChecker.isUrlEncoded(filename)) {
-            filename = URLUtil.encode(filename, StandardCharsets.UTF_8);
-        }
+
+        String filename = getDownloadFilename(request, path);
+
         String operation = request.getParameter(OPERATION);
         setCacheControl(request, response);
         if (!CharSequenceUtil.isBlank(operation)) {
@@ -135,6 +134,29 @@ public class FileInterceptor implements HandlerInterceptor {
             return !previewOssFile(request, response, path, filename);
         }
         return true;
+    }
+
+    /**
+     * 获取下载文件名, 适配不同的浏览器
+     * @param request request
+     * @param path path
+     * @return filename
+     */
+    private static String getDownloadFilename(HttpServletRequest request, Path path) {
+        String filename = String.valueOf(path.getFileName());
+        if (UrlEncodingChecker.isUrlEncoded(filename)) {
+            filename = URLUtil.decode(filename, StandardCharsets.UTF_8);
+        }
+
+        String gecko = "Gecko";
+        String webKit = "WebKit";
+        String userAgent = request.getHeader("User-Agent");
+        if (userAgent.contains(gecko) || userAgent.contains(webKit)) {
+            filename = new String(filename.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1);
+        } else {
+            filename = URLUtil.encode(filename, StandardCharsets.UTF_8);
+        }
+        return filename;
     }
 
     public static void main(String[] args) {
