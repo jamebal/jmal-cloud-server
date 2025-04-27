@@ -1,24 +1,30 @@
 package com.jmal.clouddisk.model.query;
 
-import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.BooleanUtil;
-import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
  * @author jmal
  * @Description Lucene search param
- * @Date 2021/4/27 5:22 下午
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Builder
-@Schema
-public class SearchDTO extends QueryBaseDTO {
+@Document(collection = "searchOptionHistory")
+public class SearchOptionHistoryDO extends QueryBaseDTO {
 
     String id;
+
+    /**
+     * 搜索时间
+     */
+    Long searchTime;
+    /**
+     * 执行搜索操作的用户id
+     */
+    String searchUserId;
 
     String userId;
     /**
@@ -80,15 +86,8 @@ public class SearchDTO extends QueryBaseDTO {
      */
     Boolean searchOverall;
 
-    public String getCurrentDirectory() {
-        if (BooleanUtil.isTrue(searchOverall) && CharSequenceUtil.isBlank(folder)) {
-            return null;
-        }
-        return currentDirectory;
-    }
-
-    public SearchOptionHistoryDO toSearchOptionDO() {
-        SearchOptionHistoryDO.SearchOptionHistoryDOBuilder builder = SearchOptionHistoryDO.builder();
+    public SearchDTO toSearchDTO() {
+        SearchDTO.SearchDTOBuilder builder = SearchDTO.builder();
         builder.id(id)
                 .userId(userId)
                 .keyword(keyword)

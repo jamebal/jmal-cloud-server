@@ -235,6 +235,11 @@ public class UploadApiParamDTO {
      */
     Boolean searchMount;
 
+    /**
+     * 是否全盘搜索(用户根目录)
+     */
+    Boolean searchOverall;
+
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime uploadDate;
