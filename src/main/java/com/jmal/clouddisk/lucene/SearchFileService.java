@@ -365,7 +365,7 @@ public class SearchFileService {
             org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
             query.addCriteria(Criteria.where("_id").is(folder));
             FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
-            if (fileDocument != null) {
+            if (fileDocument != null && BooleanUtil.isFalse(searchDTO.getSearchOverall())) {
                 searchDTO.setCurrentDirectory(fileDocument.getPath() + fileDocument.getName());
                 searchDTO.setUserId(fileDocument.getUserId());
             }

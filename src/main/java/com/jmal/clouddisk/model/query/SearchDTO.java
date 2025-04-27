@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.model.query;
 
-import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -81,7 +80,7 @@ public class SearchDTO extends QueryBaseDTO {
     Boolean searchOverall;
 
     public String getCurrentDirectory() {
-        if (BooleanUtil.isTrue(searchOverall) && CharSequenceUtil.isBlank(folder)) {
+        if (BooleanUtil.isTrue(searchOverall)) {
             return null;
         }
         return currentDirectory;
