@@ -1,15 +1,17 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
-import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson2.JSON;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -22,6 +24,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,6 +34,7 @@ import java.util.stream.Collectors;
  * @Date 2021/1/7 7:45 下午
  */
 @Service
+@Slf4j
 public class RoleService {
 
     /***
@@ -280,14 +284,28 @@ public class RoleService {
      * 初始化角色数据
      */
     public void initRoles() {
+
+        TimeInterval timeInterval = new TimeInterval();
+        List<RoleDO> roleDOList = getRoleDOListByConfigJSON();
+        if (roleDOList.isEmpty()) return;
+        roleDOList.parallelStream().forEach(roleDO -> {
+            Query query = new Query();
+            query.addCriteria(Criteria.where("_id").is(roleDO.getId()));
+            boolean exists = mongoTemplate.exists(query, COLLECTION_NAME);
+            if (!exists) {
+                mongoTemplate.insert(roleDO);
+            }
+        });
+        log.info("更新菜单， 耗时:{}ms", timeInterval.intervalMs());
+    }
+
+    private static List<RoleDO> getRoleDOListByConfigJSON() {
         InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("db/role.json");
         if(inputStream == null){
-            return;
+            return Collections.emptyList();
         }
         String json = new String(IoUtil.readBytes(inputStream), StandardCharsets.UTF_8);
-        List<RoleDO> roleDOList = JSONArray.parseArray(json,RoleDO.class);
-        mongoTemplate.dropCollection(COLLECTION_NAME);
-        mongoTemplate.insertAll(roleDOList);
+        return JSON.parseArray(json, RoleDO.class);
     }
 
     /***
