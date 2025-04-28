@@ -1,9 +1,11 @@
 package com.jmal.clouddisk.interceptor;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.URLUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.oss.web.WebOssService;
@@ -11,6 +13,7 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.MyFileUtils;
+import com.jmal.clouddisk.util.UrlEncodingChecker;
 import com.luciad.imageio.webp.WebPWriteParam;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,7 +37,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -102,13 +104,15 @@ public class FileInterceptor implements HandlerInterceptor {
             return false;
         }
         Path path = Paths.get(request.getRequestURI());
-        String encodedFilename = URLEncoder.encode(String.valueOf(path.getFileName()), StandardCharsets.UTF_8);
+
+        String filename = getDownloadFilename(request, path);
+
         String operation = request.getParameter(OPERATION);
         setCacheControl(request, response);
         if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD -> {
-                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + path.getFileName());
+                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
                     Path prePth = path.subpath(1, path.getNameCount());
                     String ossPath = CaffeineUtil.getOssPath(prePth);
                     if (ossPath != null) {
@@ -117,7 +121,7 @@ public class FileInterceptor implements HandlerInterceptor {
                     }
                 }
                 case PREVIEW -> {
-                    if (previewOssFile(request, response, path, encodedFilename)) return false;
+                    if (previewOssFile(request, response, path, filename)) return false;
                 }
                 case CROP -> handleCrop(request, response);
                 case THUMBNAIL -> thumbnail(request, response);
@@ -127,9 +131,36 @@ public class FileInterceptor implements HandlerInterceptor {
                 }
             }
         } else {
-            return !previewOssFile(request, response, path, encodedFilename);
+            return !previewOssFile(request, response, path, filename);
         }
         return true;
+    }
+
+    /**
+     * 获取下载文件名, 适配不同的浏览器
+     * @param request request
+     * @param path path
+     * @return filename
+     */
+    private static String getDownloadFilename(HttpServletRequest request, Path path) {
+        String filename = String.valueOf(path.getFileName());
+        if (UrlEncodingChecker.isUrlEncoded(filename)) {
+            filename = URLUtil.decode(filename, StandardCharsets.UTF_8);
+        }
+
+        String gecko = "Gecko";
+        String webKit = "WebKit";
+        String userAgent = request.getHeader("User-Agent");
+        if (userAgent.contains(gecko) || userAgent.contains(webKit)) {
+            filename = new String(filename.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1);
+        } else {
+            filename = URLUtil.encode(filename, StandardCharsets.UTF_8);
+        }
+        return filename;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(URLUtil.encode("未命名文件 副本.txt", StandardCharsets.UTF_8));
     }
 
     private static boolean internalValid(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
@@ -412,7 +443,7 @@ public class FileInterceptor implements HandlerInterceptor {
 
     private static double parseQuality(String q) {
         try {
-            double quality = Double.parseDouble(q);
+            double quality = Convert.toDouble(q, 0.8);
             return (quality >= 0 && quality <= 1) ? quality : 0.8;
         } catch (NumberFormatException e) {
             return 0.8;
@@ -421,7 +452,7 @@ public class FileInterceptor implements HandlerInterceptor {
 
     private static int parseDimension(String dim) {
         try {
-            return Integer.parseInt(dim);
+            return Convert.toInt(dim, -1);
         } catch (NumberFormatException e) {
             return -1;
         }

@@ -17,6 +17,7 @@ import cn.hutool.crypto.symmetric.AES;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
+import com.jmal.clouddisk.lucene.SearchFileService;
 import com.jmal.clouddisk.media.VideoInfo;
 import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.model.*;
@@ -99,6 +100,9 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
     @Autowired
     TagService tagService;
 
+    @Autowired
+    private SearchFileService searchFileService;
+
     private static final AES aes = SecureUtil.aes();
 
     @Autowired
@@ -150,9 +154,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             if (isFolder != null) {
                 criteria = Criteria.where(Constants.IS_FOLDER).is(isFolder);
             }
-            Boolean isFavorite = upload.getIsFavorite();
-            if (isFavorite != null) {
-                criteria = Criteria.where(Constants.IS_FAVORITE).is(isFavorite);
+            if (BooleanUtil.isTrue(upload.getIsFavorite())) {
+                criteria = Criteria.where(Constants.IS_FAVORITE).is(upload.getIsFavorite());
+            }
+            if (BooleanUtil.isTrue(upload.getIsMount())) {
+                criteria = Criteria.where("mountFileId").exists(true);
             }
             String tagId = upload.getTagId();
             if (CharSequenceUtil.isNotBlank(tagId)) {
@@ -307,24 +313,29 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
 
     @Override
     public ResponseResult<List<FileIntroVO>> searchFile(UploadApiParamDTO upload, String keyword) throws CommonException {
-        SearchDTO searchDTO = new SearchDTO();
-        searchDTO.setKeyword(keyword);
+        SearchDTO.SearchDTOBuilder builder = SearchDTO.builder();
+        builder.keyword(keyword) // 直接在builder上调用方法，而不是在searchDTO上调用set
+                .userId(userLoginHolder.getUserId())
+                .currentDirectory(upload.getCurrentDirectory())
+                .isFolder(upload.getIsFolder())
+                .type(upload.getQueryFileType())
+                .isFavorite(upload.getIsFavorite())
+                .isMount(upload.getIsMount())
+                .tagId(upload.getTagId())
+                .folder(upload.getFolder())
+                .modifyStart(upload.getQueryModifyStart())
+                .modifyEnd(upload.getQueryModifyEnd())
+                .sizeMin(upload.getQuerySizeMin())
+                .sizeMax(upload.getQuerySizeMax())
+                .searchMount(upload.getSearchMount())
+                .searchOverall(upload.getSearchOverall())
+                .build();
+        SearchDTO searchDTO = builder.build();
         searchDTO.setPage(upload.getPageIndex());
         searchDTO.setPageSize(upload.getPageSize());
         searchDTO.setSortProp(upload.getSortableProp());
         searchDTO.setSortOrder(upload.getOrder());
-        searchDTO.setUserId(userLoginHolder.getUserId());
-        searchDTO.setCurrentDirectory(upload.getCurrentDirectory());
-        searchDTO.setIsFolder(upload.getIsFolder());
-        searchDTO.setType(upload.getQueryFileType());
-        searchDTO.setIsFavorite(upload.getIsFavorite());
-        searchDTO.setTagId(upload.getTagId());
-        searchDTO.setFolder(upload.getFolder());
-        searchDTO.setModifyStart(upload.getQueryModifyStart());
-        searchDTO.setModifyEnd(upload.getQueryModifyEnd());
-        searchDTO.setSizeMin(upload.getQuerySizeMin());
-        searchDTO.setSizeMax(upload.getQuerySizeMax());
-        return luceneService.searchFile(searchDTO);
+        return searchFileService.searchFile(searchDTO);
     }
 
     private ResponseResult<Object> getCountResponseResult(UploadApiParamDTO upload, ResponseResult<Object> result, Criteria... criteriaList) {
@@ -827,7 +838,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 filename = "download";
             }
             String filePath = startPath + filename;
-            if (size == 1 && Boolean.TRUE.equals(!fileDocument.getIsFolder())) {
+            if (size == 1 && !fileDocument.getIsFolder()) {
                 // 单个文件
                 fileDocument.setPath(filePath);
             } else {

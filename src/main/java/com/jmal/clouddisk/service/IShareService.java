@@ -136,10 +136,10 @@ public interface IShareService {
     /**
      * 获取挂载文件信息
      * @param fileId fileId
-     * @param fileUsername fileUsername
+     * @param fileUserId fileUserId
      * @return ResponseResult
      */
-    Map<String, String> getMountFileInfo(String fileId, String fileUsername);
+    Map<String, String> getMountFileInfo(String fileId, String fileUserId);
 
     /**
      * 获取挂载文件夹id

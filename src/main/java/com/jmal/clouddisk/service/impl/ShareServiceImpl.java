@@ -270,7 +270,7 @@ public class ShareServiceImpl implements IShareService {
             shareDO.setExtractionCode(generateExtractionCode());
             update.set(Constants.EXTRACTION_CODE, shareDO.getExtractionCode());
         }
-        if (Boolean.TRUE.equals(!share.getIsPrivacy()) && shareDO.getExtractionCode() != null) {
+        if (!share.getIsPrivacy() && shareDO.getExtractionCode() != null) {
             update.unset(Constants.EXTRACTION_CODE);
         }
         if (shareDO.getExtractionCode() != null) {
@@ -440,7 +440,7 @@ public class ShareServiceImpl implements IShareService {
     }
 
     @Override
-    public Map<String, String> getMountFileInfo(String fileId, String fileUsername) {
+    public Map<String, String> getMountFileInfo(String fileId, String fileUserId) {
         // 1.获取文件信息
         FileDocument fileDocument = fileService.getById(fileId);
         // 2. 获取分享信息
@@ -458,6 +458,7 @@ public class ShareServiceImpl implements IShareService {
         if (parentPath.length() > 1) {
             parentPath = parentPath + PATH_DELIMITER;
         }
+        String fileUsername = userService.getUserNameById(fileUserId);
         FileDocument folderInfo = fileService.getFileDocumentByPathAndName(parentPath, parentName, fileUsername);
         if (folderInfo == null) {
             return Map.of();

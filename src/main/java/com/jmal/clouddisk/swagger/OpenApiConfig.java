@@ -4,7 +4,6 @@ import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.headers.Header;
-import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.media.StringSchema;
@@ -32,9 +31,8 @@ public class OpenApiConfig {
                 .components(new Components().addHeaders("jmal-token", new Header().description("myHeader2 header"))
                 .addParameters("myGlobalHeader", new HeaderParameter().required(true).name("jmal-token").description("").schema(new StringSchema()).required(false)))
                 .info(new Info().title("JmalCloud API")
-                        .description("JmalCloud application")
+                        .description("")
                         .version(appVersion)
-                        .contact(new Contact().name("jmal").url("https://blog.jmal.top").email("zhushilun084@gmail.com"))
                         .license(new License().name("MIT license").url("https://github.com/jamebal/jmal-cloud-view/blob/master/LICENSE")))
                         .externalDocs(new ExternalDocumentation());
     }

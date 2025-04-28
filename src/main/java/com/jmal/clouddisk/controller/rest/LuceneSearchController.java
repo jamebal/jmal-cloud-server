@@ -1,14 +1,16 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.lucene.SearchFileService;
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.query.SearchDTO;
-import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,11 +29,24 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LuceneSearchController {
 
-    private final LuceneService luceneService;
+    private final SearchFileService searchFileService;
 
     @Operation(summary = "搜索")
     @GetMapping("/")
     public ResponseResult<List<FileIntroVO>> list(SearchDTO searchDTO) throws IOException, ParseException, InvalidTokenOffsetsException {
-        return luceneService.searchFile(searchDTO);
+        return searchFileService.searchFile(searchDTO);
+    }
+
+    @Operation(summary = "最近搜索记录")
+    @GetMapping("/recentlySearchHistory")
+    public ResponseResult<List<SearchDTO>> recentlySearchHistory() {
+        return ResultUtil.success(searchFileService.recentlySearchHistory());
+    }
+
+    @Operation(summary = "删除搜索记录")
+    @DeleteMapping("/deleteSearchHistory")
+    public ResponseResult<String> deleteSearchHistory(String id) {
+        searchFileService.deleteSearchHistory(id);
+        return ResultUtil.success();
     }
 }

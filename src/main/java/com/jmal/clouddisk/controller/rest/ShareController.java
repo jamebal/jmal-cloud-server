@@ -300,8 +300,8 @@ public class ShareController {
     @Operation(summary = "挂用户获取分享文件信息")
     @GetMapping("/mount/file_info")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Map<String, String>> getMountFileInfo(@RequestParam String fileId, @RequestParam String fileUsername) {
-        return ResultUtil.success(shareService.getMountFileInfo(fileId, fileUsername));
+    public ResponseResult<Map<String, String>> getMountFileInfo(@RequestParam String fileId, @RequestParam String fileUserId) {
+        return ResultUtil.success(shareService.getMountFileInfo(fileId, fileUserId));
     }
 
     @Operation(summary = "挂用户获取目录Id")

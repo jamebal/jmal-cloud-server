@@ -163,10 +163,14 @@ public class UploadApiParamDTO {
      * 是否已发布
      */
     Boolean isRelease;
-    /***
+    /**
      * 是否收藏
      */
     Boolean isFavorite;
+    /**
+     * 是否为挂载目录
+     */
+    Boolean isMount;
     /**
      * tagId
      */
@@ -229,6 +233,16 @@ public class UploadApiParamDTO {
      * 文件大小范围最大
      */
     Long querySizeMax;
+
+    /**
+     * 是否搜索挂载盘
+     */
+    Boolean searchMount;
+
+    /**
+     * 是否全盘搜索(用户根目录)
+     */
+    Boolean searchOverall;
 
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
