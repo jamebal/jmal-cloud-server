@@ -756,6 +756,20 @@
   },
   {
     "authority": "",
+    "component": "/mount/index",
+    "createTime": 1744709930702,
+    "hide": false,
+    "icon": "guazai",
+    "id": "67fe292abbce134e261943b0",
+    "menuType": 0,
+    "name": "menu.mount",
+    "parentId": "",
+    "path": "/mount",
+    "sortNumber": 8,
+    "updateTime": 1745820901742
+  },
+  {
+    "authority": "",
     "component": "/trash/index",
     "createTime": 1719912060104,
     "hide": false,
@@ -765,7 +779,7 @@
     "name": "menu.trash",
     "parentId": "",
     "path": "/trash",
-    "sortNumber": 8,
+    "sortNumber": 9,
     "updateTime": 1719912071511
   }
 ]
