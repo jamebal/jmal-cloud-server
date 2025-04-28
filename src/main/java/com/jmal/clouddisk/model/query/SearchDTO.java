@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model.query;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -21,6 +22,10 @@ public class SearchDTO extends QueryBaseDTO {
 
     String userId;
     /**
+     * 挂载盘用户id
+     */
+    String mountUserId;
+    /**
      * 要查询的关键字
      */
     String keyword;
@@ -40,6 +45,10 @@ public class SearchDTO extends QueryBaseDTO {
      * 是否是收藏
      */
     Boolean isFavorite;
+    /**
+     * 是否挂载
+     */
+    Boolean isMount;
     /**
      * tagId
      */
@@ -79,11 +88,44 @@ public class SearchDTO extends QueryBaseDTO {
      */
     Boolean searchOverall;
 
+    public String getSearchUserId() {
+        if (CharSequenceUtil.isEmpty(mountUserId)) {
+            return userId;
+        }
+        return isSearchMountSubFolder() ? mountUserId : userId;
+    }
+
+    /**
+     * 是否搜索挂载子目录
+     */
+    public boolean isSearchMountSubFolder() {
+        if (BooleanUtil.isTrue(searchMount)) {
+            return false;
+        }
+        String path = getCurrentDirectory();
+        return CharSequenceUtil.isNotEmpty(folder) && !"/".equals(path);
+    }
+
+    /**
+     * 是否只搜索所有挂载盘
+     */
+    public boolean onlySearchMount() {
+        return BooleanUtil.isTrue(isMount) && !isSearchMountSubFolder();
+    }
+
     public String getCurrentDirectory() {
         if (BooleanUtil.isTrue(searchOverall)) {
             return null;
         }
         return currentDirectory;
+    }
+
+    public String getTagId() {
+        String path = getCurrentDirectory();
+        if (CharSequenceUtil.isNotEmpty(path) && !"/".equals(path)) {
+            return null;
+        }
+        return tagId;
     }
 
     public SearchOptionHistoryDO toSearchOptionDO() {

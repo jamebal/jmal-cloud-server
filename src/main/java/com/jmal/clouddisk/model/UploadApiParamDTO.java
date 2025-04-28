@@ -163,10 +163,14 @@ public class UploadApiParamDTO {
      * 是否已发布
      */
     Boolean isRelease;
-    /***
+    /**
      * 是否收藏
      */
     Boolean isFavorite;
+    /**
+     * 是否为挂载目录
+     */
+    Boolean isMount;
     /**
      * tagId
      */

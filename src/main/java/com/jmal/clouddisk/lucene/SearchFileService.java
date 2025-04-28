@@ -258,7 +258,7 @@ public class SearchFileService {
 
         // 创建最终查询（AND关系）
         BooleanQuery.Builder fileQueryBuilder = new BooleanQuery.Builder()
-                .add(new TermQuery(new Term(IUserService.USER_ID, searchDTO.getUserId())), BooleanClause.Occur.MUST)
+                .add(new TermQuery(new Term(IUserService.USER_ID, searchDTO.getSearchUserId())), BooleanClause.Occur.MUST)
                 .add(combinedQuery, BooleanClause.Occur.MUST);
         if (!otherQuery.clauses().isEmpty()) {
             fileQueryBuilder.add(otherQuery, BooleanClause.Occur.MUST);
@@ -271,7 +271,14 @@ public class SearchFileService {
         Query mountQuery = getMountQueryBuilder(searchDTO, combinedQuery, otherQuery);
 
         // 构建最终查询
-        BooleanQuery.Builder finalQueryBuilder = new BooleanQuery.Builder().add(fileQueryBuilder.build(), BooleanClause.Occur.SHOULD);
+        BooleanQuery.Builder finalQueryBuilder = new BooleanQuery.Builder();
+
+        // 是否仅搜索挂载文件
+        if (!searchDTO.onlySearchMount()) {
+            finalQueryBuilder.add(fileQueryBuilder.build(), BooleanClause.Occur.SHOULD);
+        }
+
+        // 是否搜索挂载文件
         if (mountQuery != null) {
             finalQueryBuilder.add(mountQuery, BooleanClause.Occur.SHOULD);
         }
@@ -316,7 +323,7 @@ public class SearchFileService {
      */
     private BooleanQuery getMountQueryBuilder(SearchDTO searchDTO, BooleanQuery combinedQuery, BooleanQuery otherQuery) {
         BooleanQuery.Builder mountQueryBuilder;
-        if (BooleanUtil.isTrue(searchDTO.getSearchMount())) {
+        if (BooleanUtil.isTrue(searchDTO.getSearchMount()) || searchDTO.onlySearchMount()) {
             mountQueryBuilder = new BooleanQuery.Builder();
             org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
             query.addCriteria(Criteria.where("userId").is(searchDTO.getUserId()));
@@ -367,7 +374,7 @@ public class SearchFileService {
             FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
             if (fileDocument != null && BooleanUtil.isFalse(searchDTO.getSearchOverall())) {
                 searchDTO.setCurrentDirectory(fileDocument.getPath() + fileDocument.getName());
-                searchDTO.setUserId(fileDocument.getUserId());
+                searchDTO.setMountUserId(fileDocument.getUserId());
             }
         }
     }
@@ -389,7 +396,7 @@ public class SearchFileService {
         }
 
         // 是否收藏
-        if (searchDTO.getIsFavorite() != null) {
+        if (searchDTO.getIsFavorite() != null && !queryPath) {
             builder.add(IntPoint.newExactQuery("isFavorite", searchDTO.getIsFavorite() ? 1 : 0), BooleanClause.Occur.MUST);
         }
     }

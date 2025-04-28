@@ -154,9 +154,11 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             if (isFolder != null) {
                 criteria = Criteria.where(Constants.IS_FOLDER).is(isFolder);
             }
-            Boolean isFavorite = upload.getIsFavorite();
-            if (isFavorite != null) {
-                criteria = Criteria.where(Constants.IS_FAVORITE).is(isFavorite);
+            if (BooleanUtil.isTrue(upload.getIsFavorite())) {
+                criteria = Criteria.where(Constants.IS_FAVORITE).is(upload.getIsFavorite());
+            }
+            if (BooleanUtil.isTrue(upload.getIsMount())) {
+                criteria = Criteria.where("mountFileId").exists(true);
             }
             String tagId = upload.getTagId();
             if (CharSequenceUtil.isNotBlank(tagId)) {
@@ -318,6 +320,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 .isFolder(upload.getIsFolder())
                 .type(upload.getQueryFileType())
                 .isFavorite(upload.getIsFavorite())
+                .isMount(upload.getIsMount())
                 .tagId(upload.getTagId())
                 .folder(upload.getFolder())
                 .modifyStart(upload.getQueryModifyStart())
