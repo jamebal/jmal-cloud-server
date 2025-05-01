@@ -124,13 +124,13 @@ public class MultipartUpload {
 
         // 设置文件最后修改时间
         CommonFileService.setLastModifiedTime(outputFile, upload.getLastModified());
-
-        // 文件操作日志
-        logService.addLogFileOperation(upload.getUsername(), commonFileService.getUserDirectoryFilePath(upload), "上传文件");
-
         uploadResponse.setUpload(true);
         CaffeineUtil.setUploadFileCache(outputFile.toFile().getAbsolutePath());
         commonFileService.createFile(upload.getUsername(), outputFile.toFile(), null, null);
+
+        // 文件操作日志
+        logService.syncAddLogFileOperation(upload.getUsername(), commonFileService.getUserDirectoryFilePath(upload), "上传文件");
+
         return uploadResponse;
     }
 

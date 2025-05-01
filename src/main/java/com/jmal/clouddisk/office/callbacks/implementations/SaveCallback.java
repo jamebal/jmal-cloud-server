@@ -71,7 +71,7 @@ public class SaveCallback implements Callback {
             fileDocument.setUpdateDate(updateDate);
             fileDocument.setMd5(md5);
             // 修改文件日志
-            logService.addLogFileOperation(userService.getUserNameById(userId), Paths.get(fileDocument.getPath(), fileDocument.getName()).toString(), "修改文件");
+            logService.asyncAddLogFileOperation(userService.getUserNameById(userId), Paths.get(fileDocument.getPath(), fileDocument.getName()).toString(), "修改文件");
             commonFileService.pushMessage(userLoginHolder.getUsername(), fileDocument, Constants.UPDATE_FILE);
         } catch (Exception e) {
             log.error(e.getMessage(), e);

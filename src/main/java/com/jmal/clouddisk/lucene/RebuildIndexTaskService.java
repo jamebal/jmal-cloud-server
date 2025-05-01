@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
@@ -412,14 +413,14 @@ public class RebuildIndexTaskService {
 
         @NotNull
         @Override
-        public FileVisitResult visitFileFailed(Path file, @NotNull IOException exc) throws IOException {
+        public FileVisitResult visitFileFailed(@NotNull Path file, @NotNull IOException exc) throws IOException {
             log.error(exc.getMessage(), exc);
             return super.visitFileFailed(file, exc);
         }
 
         @NotNull
         @Override
-        public FileVisitResult preVisitDirectory(Path dir, @NotNull BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult preVisitDirectory(@NotNull Path dir, @NotNull BasicFileAttributes attrs) throws IOException {
             // 跳过临时文件目录
             FileVisitResult skipTempDirectory = skipTempDirectory(dir);
             if (skipTempDirectory != null) return skipTempDirectory;
@@ -459,7 +460,9 @@ public class RebuildIndexTaskService {
                 commonFileService.createFile(username, file.toFile(), null, null);
             } catch (Exception e) {
                 log.error("createFile error {}{}", e.getMessage(), file, e);
-                FileDocument fileDocument = commonFileService.getFileDocument(username, file.toFile().getAbsolutePath());
+                Query query = new Query();
+                query.fields().include("_id");
+                FileDocument fileDocument = commonFileService.getFileDocument(username, file.toFile().getAbsolutePath(), query);
                 if (fileDocument != null) {
                     // 需要移除删除标记
                     removeDeletedFlag(Collections.singletonList(fileDocument.getId()));
@@ -496,7 +499,7 @@ public class RebuildIndexTaskService {
 
         @NotNull
         @Override
-        public FileVisitResult preVisitDirectory(Path dir, @NotNull BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult preVisitDirectory(@NotNull Path dir, @NotNull BasicFileAttributes attrs) throws IOException {
             // 跳过临时文件目录
             FileVisitResult skipTempDirectory = skipTempDirectory(dir);
             if (skipTempDirectory != null) return skipTempDirectory;
@@ -510,7 +513,7 @@ public class RebuildIndexTaskService {
 
         @NotNull
         @Override
-        public FileVisitResult visitFile(Path file, @NotNull BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult visitFile(@NotNull Path file, @NotNull BasicFileAttributes attrs) throws IOException {
             count.addAndGet(1);
             return super.visitFile(file, attrs);
         }

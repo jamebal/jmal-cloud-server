@@ -320,7 +320,7 @@ public class CommonFileService {
      * @return fileId
      */
     public String createFile(String username, File file, String userId, Boolean isPublic) {
-        if (Boolean.TRUE.equals(CaffeineUtil.hasUploadFileCache(file.getAbsolutePath()))) {
+        if (CaffeineUtil.hasUploadFileCache(file.getAbsolutePath())) {
             return null;
         }
         if (CharSequenceUtil.isBlank(username)) {
@@ -512,7 +512,7 @@ public class CommonFileService {
         return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
     }
 
-    public FileDocument getFileDocument(String username, String fileAbsolutePath) {
+    public FileDocument getFileDocument(String username, String fileAbsolutePath, Query query) {
         String userId = userService.getUserIdByUserName(username);
         if (CharSequenceUtil.isBlank(userId)) {
             return null;
@@ -523,7 +523,7 @@ public class CommonFileService {
         }
         String fileName = file.getName();
         String relativePath = fileAbsolutePath.substring(fileProperties.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
-        return getFileDocument(userId, fileName, relativePath, new Query());
+        return getFileDocument(userId, fileName, relativePath, query);
     }
 
     public FileDocument getFileDocument(String userId, String fileName, String relativePath) {
@@ -1124,11 +1124,11 @@ public class CommonFileService {
      * @param f2 f2
      */
     public int compareByFileName(FileBase f1, FileBase f2) {
-        if (Boolean.TRUE.equals(f1.getIsFolder()) && Boolean.TRUE.equals(!f2.getIsFolder())) {
+        if (Boolean.TRUE.equals(f1.getIsFolder()) && !f2.getIsFolder()) {
             return -1;
         } else if (f1.getIsFolder() && f2.getIsFolder()) {
             return compareByName(f1, f2);
-        } else if (Boolean.TRUE.equals(!f1.getIsFolder()) && Boolean.TRUE.equals(f2.getIsFolder())) {
+        } else if (!f1.getIsFolder() && Boolean.TRUE.equals(f2.getIsFolder())) {
             return 1;
         } else {
             return compareByName(f1, f2);
@@ -1205,7 +1205,7 @@ public class CommonFileService {
     private static String getLockFilePath(File file, String rooDir, String username) {
         Path absolutePath = file.toPath();
         Path relativePath = absolutePath.subpath(Paths.get(rooDir, username).getNameCount(), absolutePath.getNameCount());
-        return MyWebdavServlet.PATH_DELIMITER + relativePath + (Boolean.TRUE.equals(file.isDirectory()) ? MyWebdavServlet.PATH_DELIMITER : "");
+        return MyWebdavServlet.PATH_DELIMITER + relativePath + (file.isDirectory() ? MyWebdavServlet.PATH_DELIMITER : "");
     }
 
     public static void setPage(Integer pageSize, Integer pageIndex, Query query) {

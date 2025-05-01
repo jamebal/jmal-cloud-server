@@ -926,7 +926,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             pushMessage(operator, fileDocument, Constants.CREATE_FILE);
 
             // 记录日志
-            logService.addLogFileOperation(logOperation, username, Paths.get(fileDocument.getPath(), fileDocument.getName()).toString(), "重命名, 从\"" + oldName + "\"到\"" + newFileName + "\"");
+            logService.syncAddLogFileOperation(logOperation, username, Paths.get(fileDocument.getPath(), fileDocument.getName()).toString(), "重命名, 从\"" + oldName + "\"到\"" + newFileName + "\"");
 
         } else {
             pushMessageOperationFileError(operator, "重命名失败", "重命名");
@@ -1241,7 +1241,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             }
             CompressUtils.decompress(filePath, destDir, isWrite);
             if (isWrite) {
-                logService.addLogFileOperation(username, Paths.get(fileDocument.getPath(), fileDocument.getName()).toString(), desc);
+                logService.asyncAddLogFileOperation(username, Paths.get(fileDocument.getPath(), fileDocument.getName()).toString(), desc);
             }
             return ResultUtil.success(listFile(username, destDir, !isWrite));
         } catch (CommonException e) {
@@ -1311,7 +1311,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         }
         PathUtil.del(p);
         // 文件操作日志
-        logService.addLogFileOperation(username, path, "彻底删除文件");
+        logService.asyncAddLogFileOperation(username, path, "彻底删除文件");
         deleteFile(username, p.toFile());
         return ResultUtil.success();
     }
@@ -1372,8 +1372,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             } else {
                 Files.createFile(path);
             }
-            // 文件操作日志
-            logService.addLogFileOperation(username, Paths.get(parentPath, fileName).toString(), "新建文件" + (BooleanUtil.isTrue(isFolder) ? "夹" : ""));
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             return ResultUtil.error("新建文件失败");
@@ -1387,6 +1385,8 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         fileIntroVO.setSuffix(MyFileUtils.extName(fileName));
         String fileId = uploadFile(username, path.toFile());
         fileIntroVO.setId(fileId);
+        // 文件操作日志
+        logService.syncAddLogFileOperation(username, Paths.get(parentPath, fileName).toString(), "新建文件" + (BooleanUtil.isTrue(isFolder) ? "夹" : ""));
         return ResultUtil.success(fileIntroVO);
     }
 
@@ -1591,7 +1591,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         // 复制文件
         PathUtil.copyFile(fromFilePath, toFilePath);
         // 文件操作日志
-        logService.addLogFileOperation(username, Paths.get(toParentPath, newFilename).toString(), "创建副本, 源文件: \"" + path + "\"");
+        logService.syncAddLogFileOperation(username, Paths.get(toParentPath, newFilename).toString(), "创建副本, 源文件: \"" + path + "\"");
         // 保存文件信息
         uploadFile(username, toFilePath.toFile());
         return ResultUtil.success();
@@ -1740,16 +1740,18 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                     FileUtil.copy(fromFilePath, toFilePath, isOverride);
                 }
                 String operation = move ? "移动" : "复制";
-                // 文件操作日志
-                String fromUserDesc = formUsername.equals(toUsername) ? "" : ", 源用户: \"" + formUsername + "\"";
-                String filepath = Paths.get(toFileDocument.getPath(), toFileDocument.getName(), formFileDocument.getName()).toString();
-                logService.addLogFileOperation(logOperation, toUsername, filepath, operation + "文件, 源文件: \"" + fromPath + "\"" + fromUserDesc);
-                if (!formUsername.equals(toUsername)) {
-                    LogOperation newLogOperation = logOperation.clone();
-                    logService.addLogFileOperation(newLogOperation, formUsername, fromPath, "文件被" + operation + ", 目标文件: \"" + filepath + "\", 目标用户: \"" + toUsername + "\"");
+                if (isOverride) {
+                    // 文件操作日志
+                    String fromUserDesc = formUsername.equals(toUsername) ? "" : ", 源用户: \"" + formUsername + "\"";
+                    String filepath = Paths.get(toFileDocument.getPath(), toFileDocument.getName(), formFileDocument.getName()).toString();
+                    logService.syncAddLogFileOperation(logOperation, toUsername, filepath, operation + "文件, 源文件: \"" + fromPath + "\"" + fromUserDesc);
+                    if (!formUsername.equals(toUsername)) {
+                        LogOperation newLogOperation = logOperation.clone();
+                        logService.syncAddLogFileOperation(newLogOperation, formUsername, fromPath, "文件被" + operation + ", 目标文件: \"" + filepath + "\", 目标用户: \"" + toUsername + "\"");
+                    }
+                    // 复制成功
+                    pushMessageOperationFileSuccess(pathFrom.toString(), pathTo.toString(), upload.getUsername(), operation);
                 }
-                // 复制成功
-                pushMessageOperationFileSuccess(pathFrom.toString(), pathTo.toString(), upload.getUsername(), operation);
                 return ResultUtil.success();
             }
         }
@@ -1762,7 +1764,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 throw new CommonException(ExceptionType.WARNING.getCode(), "目标文件夹不能为空");
             }
             String username = userService.getUserNameById(upload.getUserId());
-            FileDocument fileDocument = getFileDocument(username, Paths.get(fileProperties.getRootDir(), username, upload.getTargetPath()).toString());
+            FileDocument fileDocument = getFileDocument(username, Paths.get(fileProperties.getRootDir(), username, upload.getTargetPath()).toString(), new Query());
             if (fileDocument == null) {
                 if (getPreOssPath(upload, to) != null) {
                     return null;
@@ -1893,10 +1895,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             FileUtil.writeFromStream(file.getInputStream(), chunkFile);
             // 设置文件最后修改时间
             CommonFileService.setLastModifiedTime(chunkFile.toPath(), upload.getLastModified());
-            // 文件操作日志
-            logService.addLogFileOperation(upload.getUsername(), userDirectoryFilePath, "上传文件");
             uploadFile(upload.getUsername(), chunkFile);
             uploadResponse.setUpload(true);
+            // 文件操作日志
+            logService.syncAddLogFileOperation(upload.getUsername(), userDirectoryFilePath, "上传文件");
         } else {
             // 上传分片
             multipartUpload.uploadChunkFile(upload, uploadResponse, md5, file);
@@ -1916,7 +1918,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         }
         createFolder(upload);
         // 文件操作日志
-        logService.addLogFileOperation(upload.getUsername(), getUserDirectoryFilePath(upload), "上传文件夹");
+        logService.syncAddLogFileOperation(upload.getUsername(), getUserDirectoryFilePath(upload), "上传文件夹");
         return ResultUtil.success();
     }
 
@@ -1960,7 +1962,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             FileUtil.mkdir(dir);
         }
         // 文件操作日志
-        logService.addLogFileOperation(upload.getUsername(), getUserDirectoryFilePath(upload), "创建文件夹");
+        logService.syncAddLogFileOperation(upload.getUsername(), getUserDirectoryFilePath(upload), "创建文件夹");
         return ResultUtil.success(uploadFile(upload.getUsername(), dir));
     }
 
@@ -2163,7 +2165,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (CharSequenceUtil.isBlank(desc)) {
             desc = sweep ? "彻底删除" + folder : "移动到回收站";
         }
-        logService.addLogFileOperation(logOperation, username, filepath, desc);
+        logService.asyncAddLogFileOperation(logOperation, username, filepath, desc);
     }
 
     private void deleteFileLog(boolean isDel, String username, boolean sweep, FileDocument fileDocument) {
@@ -2233,7 +2235,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
             } else {
                 desc = fileDocument.getPath() + fileDocument.getName();
             }
-            logService.addLogFileOperation(logOperation, fileUsername, desc, "下载文件");
+            logService.asyncAddLogFileOperation(logOperation, fileUsername, desc, "下载文件");
         }).subscribeOn(Schedulers.io()).subscribe();
         return ResultUtil.success(true);
     }

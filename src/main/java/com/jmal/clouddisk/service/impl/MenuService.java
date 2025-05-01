@@ -265,7 +265,7 @@ public class MenuService {
     private static List<MenuDO> getMenuDOListByConfigJSON() {
         InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("db/menu.json");
         if(inputStream == null){
-            return Collections.emptyList();
+                return Collections.emptyList();
         }
         String json = new String(IoUtil.readBytes(inputStream), StandardCharsets.UTF_8);
         return JSON.parseArray(json,MenuDO.class);
