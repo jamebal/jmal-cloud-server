@@ -344,13 +344,15 @@ public class LogService {
         if (fileDocument == null) {
             return null;
         }
+        String fileUserId = fileDocument.getUserId();
+        String requestUserId = userLoginHolder.getUserId();
         // 构造 filepath
         String filepath = fileDocument.getPath() + fileDocument.getName();
         // 构造第二个 filepath（去掉开头的斜杠，模拟 "新建文件夹/新建文件夹/新建文件夹/未命名文件.txt"）
         String filepathWithoutSlash = fileDocument.getPath().replaceFirst("^/", "") + fileDocument.getName();
 
         Query query = new Query();
-        query.addCriteria(Criteria.where("fileUserId").is(fileDocument.getUserId()));
+        query.addCriteria(Criteria.where("fileUserId").is(fileUserId));
         // 创建 $or 条件
         Criteria orCriteria = new Criteria().orOperator(
                 Criteria.where("filepath").is(filepath), // filepath 精确匹配第一个路径
@@ -358,6 +360,10 @@ public class LogService {
                 Criteria.where("filepath").is(filepathWithoutSlash), // filepath 精确匹配第二个路径（无开头的斜杠）
                 Criteria.where("operationFun").regex(Pattern.quote(filepath) + "\"$") // operationFun 正则匹配（以 filepath+" 结尾）
         );
+        if (!fileUserId.equals(requestUserId)) {
+            // 如果文件不是自己则只能看自己的操作
+            query.addCriteria(Criteria.where("username").is(userService.getUserNameById(requestUserId)));
+        }
         query.addCriteria(orCriteria);
         query.addCriteria(Criteria.where("type").is(LogOperation.Type.OPERATION_FILE.name()));
         query.with(Sort.by(Sort.Direction.DESC, "createTime"));
