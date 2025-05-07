@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.controller.rest;
 
-import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.LogOperationDTO;
@@ -9,10 +8,7 @@ import com.jmal.clouddisk.util.ResponseResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -29,12 +25,18 @@ public class LogController {
 
     private final LogService logService;
 
-    @Operation(summary = "日志查询")
+    @Operation(summary = "查询日志")
     @GetMapping("/list")
     @Permission("sys:log:list")
-    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<List<LogOperation>> list(@ModelAttribute LogOperationDTO logOperationDTO){
+    public ResponseResult<List<LogOperation>> list(@ModelAttribute LogOperationDTO logOperationDTO) {
         return logService.list(logOperationDTO);
+    }
+
+    @Operation(summary = "查询文件操作记录")
+    @GetMapping("/getFileOperationHistory")
+    @Permission("sys:log:list")
+    public ResponseResult<List<LogOperationDTO>> getFileOperationHistory(@ModelAttribute LogOperationDTO logOperationDTO, @RequestParam String fileId) {
+        return logService.getFileOperationHistory(logOperationDTO, fileId);
     }
 
 }

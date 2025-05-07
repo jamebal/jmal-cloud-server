@@ -382,6 +382,14 @@ public class UserServiceImpl implements IUserService {
         return consumer.getShowName();
     }
 
+    public String getAvatarByUsername(String username) {
+        ConsumerDO consumer = getUserInfoByUsername(username);
+        if (consumer == null) {
+            return "";
+        }
+        return consumer.getAvatar();
+    }
+
     public static String getDecryptStrByUser(String secret, ConsumerDO consumer) {
         String key = getPwdKey(consumer);
         if (key == null) return "";

@@ -572,7 +572,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             currentDirectory = commonFileService.getUserDirectory(docPaths.toString());
         }
         // 文档为草稿时，文件名使用草稿的文件名
-        if (Boolean.TRUE.equals(!StrUtil.isBlankIfStr(upload.getIsDraft()) && upload.getIsDraft()) && !CharSequenceUtil.isBlank(fileDocument.getName())) {
+        if (!StrUtil.isBlankIfStr(upload.getIsDraft()) && upload.getIsDraft() && !CharSequenceUtil.isBlank(fileDocument.getName())) {
             filename = fileDocument.getName();
         }
         File file = Paths.get(fileProperties.getRootDir(), upload.getUsername(), currentDirectory, filename).toFile();
@@ -641,7 +641,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         commonFileService.checkPermissionUserId(userId, upload.getOperationPermissionList(), OperationPermission.PUT);
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
         // 文件操作日志
-        logService.addLogFileOperation(upload.getUsername(), upload.getRelativePath(), "修改文件");
+        logService.asyncAddLogFileOperation(upload.getUsername(), upload.getRelativePath(), "修改文件");
         return ResultUtil.success();
     }
 

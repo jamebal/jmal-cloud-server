@@ -6,6 +6,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.http.useragent.UserAgent;
 import cn.hutool.http.useragent.UserAgentUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.LogOperationDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -13,6 +14,8 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,7 +32,10 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * @author jmal
@@ -104,7 +110,7 @@ public class LogService {
                 setStatus(logOperation, response);
             }
         }
-        addLog(logOperation);
+        asyncAddLog(logOperation);
     }
 
     public LogOperation getLogOperation() {
@@ -233,15 +239,35 @@ public class LogService {
     }
 
     /**
-     * 添加文件操作日志
+     * 添加文件操作日志(异步)
      * @param logOperation 日志
      * @param fileUsername 文件所属用户CommonFileService
      * @param filepath 文件路径
      * @param desc 描述
      */
-    public void addLogFileOperation(LogOperation logOperation, String fileUsername, String filepath, String desc) {
-        logOperation.setFileUserId(userService.getUserIdByUserName(fileUsername));
+    public void asyncAddLogFileOperation(LogOperation logOperation, String fileUsername, String filepath, String desc) {
+        Completable.fromAction(() -> addLogFileOperation(logOperation, fileUsername, filepath, desc)).subscribeOn(Schedulers.io()).subscribe();
+    }
+
+    /**
+     * 添加文件操作日志(同步)
+     * @param logOperation 日志
+     * @param fileUsername 文件所属用户CommonFileService
+     * @param filepath 文件路径
+     * @param desc 描述
+     */
+    public void syncAddLogFileOperation(LogOperation logOperation, String fileUsername, String filepath, String desc) {
+        addLogFileOperation(logOperation, fileUsername, filepath, desc);
+    }
+
+    private void addLogFileOperation(LogOperation logOperation, String fileUsername, String filepath, String desc) {
+        String fileUserId = userService.getUserIdByUserName(fileUsername);
+        logOperation.setFileUserId(fileUserId);
         String affiliated = !fileUsername.equals(logOperation.getUsername()) ? ", 所属用户: \"" + fileUsername + "\"" : "";
+        // 判断filepath开头是否为/, 不是则添加/
+        if (!filepath.startsWith("/")) {
+            filepath = "/" + filepath;
+        }
         logOperation.setFilepath(filepath + affiliated);
         logOperation.setOperationFun(desc);
         logOperation.setType(LogOperation.Type.OPERATION_FILE.name());
@@ -251,21 +277,35 @@ public class LogService {
     }
 
     /**
-     * 添加文件操作日志
+     * 添加文件操作日志(异步)
      * @param fileUsername 文件所属用户
      * @param filepath 文件路径
      * @param desc 描述
      */
-    public void addLogFileOperation(String fileUsername, String filepath, String desc) {
-        LogOperation logOperation = getLogOperation();
-        addLogFileOperation(logOperation, fileUsername, filepath, desc);
+    public void asyncAddLogFileOperation(String fileUsername, String filepath, String desc) {
+        asyncAddLogFileOperation(getLogOperation(), fileUsername, filepath, desc);
     }
 
-    public void addLog(LogOperation logOperation) {
+    /**
+     * 添加文件操作日志(同步)
+     * @param fileUsername 文件所属用户
+     * @param filepath 文件路径
+     * @param desc 描述
+     */
+    public void syncAddLogFileOperation(String fileUsername, String filepath, String desc) {
+        syncAddLogFileOperation(getLogOperation(), fileUsername, filepath, desc);
+    }
+
+    public void asyncAddLog(LogOperation logOperation) {
         ThreadUtil.execute(() -> {
             logOperation.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             mongoTemplate.save(logOperation);
         });
+    }
+
+    public void addLog(LogOperation logOperation) {
+        logOperation.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
+        mongoTemplate.save(logOperation);
     }
 
     public ResponseResult<List<LogOperation>> list(LogOperationDTO logOperationDTO) {
@@ -273,6 +313,61 @@ public class LogService {
         long count = mongoTemplate.count(query, LogOperation.class);
         List<LogOperation> logOperationList = getLogList(logOperationDTO, query);
         return ResultUtil.success(logOperationList).setCount(count);
+    }
+
+    public ResponseResult<List<LogOperationDTO>> getFileOperationHistory(LogOperationDTO logOperationDTO, String fileId) {
+        List<LogOperationDTO> logOperationDTOList;
+        Query query = getFileOperationHistoryQuery(fileId);
+        if (query == null) {
+            logOperationDTOList = Collections.emptyList();
+            return ResultUtil.success(logOperationDTOList).setCount(0);
+        }
+        long count = mongoTemplate.count(query, LogOperation.class);
+        List<LogOperation> logOperationList = getLogList(logOperationDTO, query);
+        // 加入userId
+        logOperationDTOList = logOperationList.parallelStream().map(logOperation -> {
+            LogOperationDTO fileOperationLog = new LogOperationDTO();
+            fileOperationLog.setShowName(userService.getShowNameByUserUsername(logOperation.getUsername()));
+            fileOperationLog.setAvatar(userService.getAvatarByUsername(logOperation.getUsername()));
+            fileOperationLog.setCreateTime(logOperation.getCreateTime());
+            fileOperationLog.setOperationFun(logOperation.getOperationFun());
+            return fileOperationLog;
+        }).collect(Collectors.toList());
+        return ResultUtil.success(logOperationDTOList).setCount(count);
+    }
+
+    private Query getFileOperationHistoryQuery(String fileId) {
+        Query fileQuery = new Query();
+        fileQuery.addCriteria(Criteria.where("_id").is(fileId));
+        fileQuery.fields().include("name", "path", "userId");
+        FileDocument fileDocument = mongoTemplate.findOne(fileQuery, FileDocument.class);
+        if (fileDocument == null) {
+            return null;
+        }
+        String fileUserId = fileDocument.getUserId();
+        String requestUserId = userLoginHolder.getUserId();
+        // 构造 filepath
+        String filepath = fileDocument.getPath() + fileDocument.getName();
+        // 构造第二个 filepath（去掉开头的斜杠，模拟 "新建文件夹/新建文件夹/新建文件夹/未命名文件.txt"）
+        String filepathWithoutSlash = fileDocument.getPath().replaceFirst("^/", "") + fileDocument.getName();
+
+        Query query = new Query();
+        query.addCriteria(Criteria.where("fileUserId").is(fileUserId));
+        // 创建 $or 条件
+        Criteria orCriteria = new Criteria().orOperator(
+                Criteria.where("filepath").is(filepath), // filepath 精确匹配第一个路径
+                Criteria.where("filepath").regex("^" + Pattern.quote(filepath)), // filepath 正则匹配（以 filepath 开头）
+                Criteria.where("filepath").is(filepathWithoutSlash), // filepath 精确匹配第二个路径（无开头的斜杠）
+                Criteria.where("operationFun").regex(Pattern.quote(filepath) + "\"$") // operationFun 正则匹配（以 filepath+" 结尾）
+        );
+        if (!fileUserId.equals(requestUserId)) {
+            // 如果文件不是自己则只能看自己的操作
+            query.addCriteria(Criteria.where("username").is(userService.getUserNameById(requestUserId)));
+        }
+        query.addCriteria(orCriteria);
+        query.addCriteria(Criteria.where("type").is(LogOperation.Type.OPERATION_FILE.name()));
+        query.with(Sort.by(Sort.Direction.DESC, "createTime"));
+        return query;
     }
 
     /***
