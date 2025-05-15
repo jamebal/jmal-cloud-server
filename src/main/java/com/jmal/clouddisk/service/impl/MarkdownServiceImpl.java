@@ -395,7 +395,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
     private static boolean setProperty(ArticleDTO articleDTO, Query query) {
         boolean isDraft = false;
         query.addCriteria(Criteria.where(Constants.SUFFIX).is("md"));
-        query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape("/Document")));
+        query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape("/Document/")));
         if (!CharSequenceUtil.isBlank(articleDTO.getUserId())) {
             query.addCriteria(Criteria.where(IUserService.USER_ID).is(articleDTO.getUserId()));
         }
