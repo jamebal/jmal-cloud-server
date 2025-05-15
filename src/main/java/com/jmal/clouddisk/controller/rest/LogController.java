@@ -34,7 +34,6 @@ public class LogController {
 
     @Operation(summary = "查询文件操作记录")
     @GetMapping("/getFileOperationHistory")
-    @Permission("sys:log:list")
     public ResponseResult<List<LogOperationDTO>> getFileOperationHistory(@ModelAttribute LogOperationDTO logOperationDTO, @RequestParam String fileId) {
         return logService.getFileOperationHistory(logOperationDTO, fileId);
     }
