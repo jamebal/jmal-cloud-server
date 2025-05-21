@@ -903,7 +903,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 String searchPath = currentDirectory + fileDocument.getName();
                 String newPath = currentDirectory + newFileName;
                 query.addCriteria(Criteria.where(USER_ID).is(userService.getUserIdByUserName(username)));
-                query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(searchPath)));
+                query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(searchPath + "/")));
                 List<FileDocument> documentList = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
                 // 修改该文件夹下的所有文件的path
                 documentList.parallelStream().forEach(rep -> {
@@ -1436,7 +1436,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (Boolean.TRUE.equals(file.getIsFolder())) {
             // 共享文件夹及其下的所有文件
             query.addCriteria(Criteria.where(USER_ID).is(userLoginHolder.getUserId()));
-            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
+            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName() + "/")));
             // 设置共享属性
             setShareAttribute(file, expiresAt, share, query);
             // 修改文件夹下已经共享的文件
@@ -1468,7 +1468,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (Boolean.TRUE.equals(file.getIsFolder())) {
             // 解除共享文件夹及其下的所有文件
             query.addCriteria(Criteria.where(USER_ID).is(userLoginHolder.getUserId()));
-            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName())));
+            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName() + "/")));
             // 解除共享属性
             unsetShareAttribute(file, query);
         } else {

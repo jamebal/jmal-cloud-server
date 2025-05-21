@@ -23,7 +23,7 @@ public class OssConfigDTO {
     @Schema(name = "folderName", title = "folderName", requiredMode = Schema.RequiredMode.REQUIRED, example = "aliyunoss")
     private String folderName;
     @NotNull(message = "endpoint 不能为空")
-    @Schema(name = "endpoint", title = "endpoint", requiredMode = Schema.RequiredMode.REQUIRED, example = "")
+    @Schema(name = "endpoint", title = "endpoint", requiredMode = Schema.RequiredMode.REQUIRED)
     private String endpoint;
     @NotNull(message = "accessKey 不能为空")
     @Schema(name = "accessKey", title = "accessKey", requiredMode = Schema.RequiredMode.REQUIRED, example = " ")
@@ -31,8 +31,7 @@ public class OssConfigDTO {
     @NotNull(message = "secretKey 不能为空")
     @Schema(name = "secretKey", title = "secretKey", requiredMode = Schema.RequiredMode.REQUIRED, example = " ")
     private String secretKey;
-    @NotNull(message = "region 不能为空")
-    @Schema(name = "region", title = "region", requiredMode = Schema.RequiredMode.REQUIRED, example = "region")
+    @Schema(name = "region", title = "region", example = "region")
     private String region;
     @NotNull(message = "bucket 不能为空")
     @Schema(name = "bucket", title = "bucket", requiredMode = Schema.RequiredMode.REQUIRED, example = "bucket name")

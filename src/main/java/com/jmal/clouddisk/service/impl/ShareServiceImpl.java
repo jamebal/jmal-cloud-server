@@ -345,7 +345,7 @@ public class ShareServiceImpl implements IShareService {
     private static Query getFolderSubShareQuery(FileDocument fileDocument) {
         Query query = new Query();
         query.addCriteria(Criteria.where(USER_ID).is(fileDocument.getUserId()));
-        query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName())));
+        query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName() + "/")));
         query.addCriteria(Criteria.where(Constants.SHARE_BASE).is(true));
         return query;
     }

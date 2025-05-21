@@ -1019,7 +1019,7 @@ public class CommonFileService {
     public Query getAllByFolderQuery(FileDocument fileDocument) {
         Query query1 = new Query();
         query1.addCriteria(Criteria.where(USER_ID).is(fileDocument.getUserId()));
-        query1.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName())));
+        query1.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName() + "/")));
         return query1;
     }
 
