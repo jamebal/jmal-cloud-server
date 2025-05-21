@@ -115,7 +115,7 @@ public class AuthServiceImpl implements IAuthService {
         map.put("jmalToken", jmalToken);
         map.put("username", username);
         map.put("userId", consumerDO.getId());
-        AuthInterceptor.setRefreshCookie(response, hashPassword, username, rememberMe);
+        AuthInterceptor.setRefreshCookie(response, hashPassword, consumerDO.getId(), username, rememberMe, jmalToken);
         return ResultUtil.success(map);
     }
 
