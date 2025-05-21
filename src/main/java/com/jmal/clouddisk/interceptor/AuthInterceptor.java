@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.interceptor;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
 import com.jmal.clouddisk.model.rbac.UserLoginContext;
@@ -214,7 +214,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     public static String generateJmalToken(String hashPassword, String username) {
         LocalDateTime jmalTokenExpiration = LocalDateTime.now();
         // jmal-token 期限为2小时
-        jmalTokenExpiration = jmalTokenExpiration.plusSeconds(10);
+        jmalTokenExpiration = jmalTokenExpiration.plusSeconds(7200);
         return TokenUtil.createToken(username, hashPassword, jmalTokenExpiration);
     }
 
@@ -229,7 +229,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     public static void setRefreshCookie(HttpServletResponse response, String hashPassword, String userId, String username, boolean rememberMe, String jmalToken) {
         LocalDateTime refreshTokenExpiration = LocalDateTime.now();
         // 如果用户勾选了记住我, refreshToken期限为30天, 否则为1天
-        int refreshMaxAge = rememberMe ? 30 * 24 * 3600 : 24 * 3600;
+        int refreshMaxAge = rememberMe ? 2592000 : 86400;
         refreshTokenExpiration = refreshTokenExpiration.plusSeconds(refreshMaxAge);
         Cookie refresCookie = new Cookie(AuthInterceptor.REFRESH_TOKEN, TokenUtil.createToken(username, hashPassword, refreshTokenExpiration));
         refresCookie.setMaxAge(refreshMaxAge);
@@ -241,28 +241,36 @@ public class AuthInterceptor implements HandlerInterceptor {
     }
 
     private static void setOtherCookie(HttpServletResponse response, String jmalToken, String userId, String username, boolean rememberMe, int refreshMaxAge) {
-        Cookie tokenCookie = new Cookie(JMAL_TOKEN, jmalToken);
-        tokenCookie.setMaxAge(refreshMaxAge);
-        tokenCookie.setPath("/");
-        response.addCookie(tokenCookie);
 
-        Cookie consumerIdCookie = new Cookie("consumerId", userId);
-        consumerIdCookie.setMaxAge(refreshMaxAge);
-        consumerIdCookie.setPath("/");
-        response.addCookie(consumerIdCookie);
+        setCookie(response, JMAL_TOKEN, jmalToken, refreshMaxAge);
 
-        Cookie usernameCookie = new Cookie("username", username);
-        usernameCookie.setMaxAge(refreshMaxAge);
-        usernameCookie.setPath("/");
-        response.addCookie(usernameCookie);
+        setCookie(response, "consumerId", userId, refreshMaxAge);
+
+        setCookie(response, "username", username, refreshMaxAge);
 
         if (rememberMe) {
-            Cookie rememberMeCookie = new Cookie("rememberMe", username);
-            rememberMeCookie.setMaxAge(31536000);
-            rememberMeCookie.setPath("/");
-            response.addCookie(rememberMeCookie);
+            setCookie(response, "rememberName", username, 31536000);
         }
+    }
 
+    private static void setCookie(HttpServletResponse response, String key, String value, int expiry) {
+        Cookie rememberMeCookie = new Cookie(key, value);
+        rememberMeCookie.setMaxAge(expiry);
+        rememberMeCookie.setPath("/");
+        response.addCookie(rememberMeCookie);
+    }
+
+    public static void removeAllCookies(HttpServletResponse response) {
+        removeCookies(response, AuthInterceptor.REFRESH_TOKEN, AuthInterceptor.JMAL_TOKEN, "username", "consumerId", "rememberName");
+    }
+
+    private static void removeCookies(HttpServletResponse response, String ...keys) {
+        for (String key : keys) {
+            Cookie cookie = new Cookie(key, null);
+            cookie.setMaxAge(0);
+            cookie.setPath("/");
+            response.addCookie(cookie);
+        }
     }
 
     public static String getCookie(HttpServletRequest request, String name) {
@@ -285,6 +293,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             out = response.getOutputStream();
             ResponseResult<Object> result = ResultUtil.error(ExceptionType.LOGIN_EXCEPTION.getCode(), ExceptionType.LOGIN_EXCEPTION.getMsg());
             out.write(JSON.toJSONString(result).getBytes());
+            AuthInterceptor.removeAllCookies(response);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         } finally {
