@@ -46,6 +46,11 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     public static final String REFRESH_TOKEN = "refresh-token";
 
+    private static final int TWO_HOURS_IN_SECONDS = 2 * 60 * 60; // 7200
+
+    private static final int SECONDS_IN_DAY = 24 * 60 * 60; // 86400
+    private static final int THIRTY_DAYS_IN_SECONDS = 30 * SECONDS_IN_DAY; // 2592000
+
     private final IAuthDAO authDAO;
 
     private final UserServiceImpl userService;
@@ -202,11 +207,11 @@ public class AuthInterceptor implements HandlerInterceptor {
             boolean rememberMe = name.equals(getCookie(request, "rememberName"));
             String jmalToken = generateJmalToken(hashPassword, username);
 
-            Cookie tokenCoolie = new Cookie(JMAL_TOKEN, jmalToken);
-            tokenCoolie.setMaxAge(7200);
-            tokenCoolie.setHttpOnly(true);
-            tokenCoolie.setPath("/");
-            response.addCookie(tokenCoolie);
+            Cookie tokenCookie = new Cookie(JMAL_TOKEN, jmalToken);
+            tokenCookie.setMaxAge(TWO_HOURS_IN_SECONDS);
+            tokenCookie.setHttpOnly(true);
+            tokenCookie.setPath("/");
+            response.addCookie(tokenCookie);
             response.addHeader(JMAL_TOKEN, jmalToken);
 
             setRefreshCookie(response, hashPassword, username, rememberMe);
@@ -224,7 +229,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     public static String generateJmalToken(String hashPassword, String username) {
         LocalDateTime jmalTokenExpiration = LocalDateTime.now();
         // jmal-token 期限为2小时
-        jmalTokenExpiration = jmalTokenExpiration.plusSeconds(7200);
+        jmalTokenExpiration = jmalTokenExpiration.plusSeconds(TWO_HOURS_IN_SECONDS);
         return TokenUtil.createToken(username, hashPassword, jmalTokenExpiration);
     }
 
@@ -239,7 +244,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     public static void setRefreshCookie(HttpServletResponse response, String hashPassword, String username, boolean rememberMe) {
         LocalDateTime refreshTokenExpiration = LocalDateTime.now();
         // 如果用户勾选了记住我, refreshToken期限为30天, 否则为1天
-        int refreshMaxAge = rememberMe ? 2592000 : 86400;
+        int refreshMaxAge = rememberMe ? THIRTY_DAYS_IN_SECONDS : SECONDS_IN_DAY;
         refreshTokenExpiration = refreshTokenExpiration.plusSeconds(refreshMaxAge);
         Cookie refreshCookie = new Cookie(REFRESH_TOKEN, TokenUtil.createToken(username, hashPassword, refreshTokenExpiration));
         refreshCookie.setMaxAge(refreshMaxAge);
