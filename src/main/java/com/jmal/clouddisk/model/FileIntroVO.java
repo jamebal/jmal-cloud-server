@@ -110,4 +110,8 @@ public class FileIntroVO extends FileBase {
      * 操作权限
      */
     private List<OperationPermission> operationPermissionList;
+    /**
+     * 文件的etag
+     */
+    private String etag;
 }

@@ -17,6 +17,7 @@ import com.jmal.clouddisk.controller.sse.Message;
 import com.jmal.clouddisk.controller.sse.SseController;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.lucene.EtagService;
 import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.lucene.RebuildIndexTaskService;
 import com.jmal.clouddisk.media.HeifUtils;
@@ -127,6 +128,9 @@ public class CommonFileService {
 
     @Autowired
     public LuceneService luceneService;
+
+    @Autowired
+    EtagService etagService;
 
     private final Cache<String, Map<String, ThrottleExecutor>> throttleExecutorCache = Caffeine.newBuilder().build();
 
@@ -395,6 +399,9 @@ public class CommonFileService {
             pushMessage(username, update.getUpdateObject(), Constants.CREATE_FILE);
             // 添加文件索引
             luceneService.pushCreateIndexQueue(fileId);
+            if (file.isDirectory()) {
+                etagService.handleNewFolderCreationAsync(username, file);
+            }
         } catch (Exception e) {
             log.error("{} file: {}", e.getMessage(), file.getAbsoluteFile(), e);
         } finally {
