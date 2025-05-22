@@ -13,7 +13,6 @@ import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -112,10 +111,10 @@ public class AuthServiceImpl implements IAuthService {
         String hashPassword = consumerDO.getPassword();
         boolean rememberMe = BooleanUtil.isTrue(userDTO.getRememberMe());
         String jmalToken = AuthInterceptor.generateJmalToken(hashPassword, username);
-        map.put("jmalToken", jmalToken);
-        map.put("username", username);
-        map.put("userId", consumerDO.getId());
-        AuthInterceptor.setRefreshCookie(response, hashPassword, username, rememberMe);
+        map.put(AuthInterceptor.JMAL_TOKEN, jmalToken);
+        map.put(IUserService.USERNAME, username);
+        map.put(IUserService.USER_ID, consumerDO.getId());
+        AuthInterceptor.setRefreshCookie(response, hashPassword, username, rememberMe, jmalToken);
         return ResultUtil.success(map);
     }
 
@@ -157,10 +156,7 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public ResponseResult<Object> logout(String token, HttpServletResponse response) {
-        Cookie cookie = new Cookie(AuthInterceptor.REFRESH_TOKEN, null);
-        cookie.setMaxAge(0);
-        cookie.setPath("/");
-        response.addCookie(cookie);
+        AuthInterceptor.removeAllCookies(response);
         String username = userLoginHolder.getUsername();
         CaffeineUtil.removeAuthoritiesCache(username);
         CaffeineUtil.removeUserIdCache(username);
