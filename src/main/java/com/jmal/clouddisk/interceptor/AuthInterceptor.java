@@ -206,17 +206,18 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (name.equals(username)) {
             boolean rememberMe = name.equals(getCookie(request, "rememberName"));
             String jmalToken = generateJmalToken(hashPassword, username);
-
-            Cookie tokenCookie = new Cookie(JMAL_TOKEN, jmalToken);
-            tokenCookie.setMaxAge(TWO_HOURS_IN_SECONDS);
-            tokenCookie.setHttpOnly(true);
-            tokenCookie.setPath("/");
-            response.addCookie(tokenCookie);
-            response.addHeader(JMAL_TOKEN, jmalToken);
-
-            setRefreshCookie(response, hashPassword, username, rememberMe);
+            setRefreshCookie(response, hashPassword, username, rememberMe, jmalToken);
         }
         return username;
+    }
+
+    private static void setJmalTokenCookie(HttpServletResponse response, String jmalToken) {
+        Cookie tokenCookie = new Cookie(JMAL_TOKEN, jmalToken);
+        tokenCookie.setMaxAge(TWO_HOURS_IN_SECONDS);
+        tokenCookie.setHttpOnly(true);
+        tokenCookie.setPath("/");
+        response.addCookie(tokenCookie);
+        response.addHeader(JMAL_TOKEN, jmalToken);
     }
 
     /**
@@ -241,7 +242,7 @@ public class AuthInterceptor implements HandlerInterceptor {
      * @param username     username
      * @param rememberMe   rememberMe
      */
-    public static void setRefreshCookie(HttpServletResponse response, String hashPassword, String username, boolean rememberMe) {
+    public static void setRefreshCookie(HttpServletResponse response, String hashPassword, String username, boolean rememberMe, String jmalToken) {
         LocalDateTime refreshTokenExpiration = LocalDateTime.now();
         // 如果用户勾选了记住我, refreshToken期限为30天, 否则为1天
         int refreshMaxAge = rememberMe ? THIRTY_DAYS_IN_SECONDS : SECONDS_IN_DAY;
@@ -251,6 +252,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         refreshCookie.setHttpOnly(true);
         refreshCookie.setPath("/");
         response.addCookie(refreshCookie);
+        setJmalTokenCookie(response, jmalToken);
     }
 
     public static void removeAllCookies(HttpServletResponse response) {
