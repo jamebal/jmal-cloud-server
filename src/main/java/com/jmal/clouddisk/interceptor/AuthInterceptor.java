@@ -82,6 +82,9 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (CharSequenceUtil.isBlank(name)) {
             name = request.getParameter(NAME_HEADER);
         }
+        if (CharSequenceUtil.isBlank(name)) {
+            name = request.getParameter(IUserService.USERNAME);
+        }
         if (CharSequenceUtil.isBlank(jmalToken)) {
             jmalToken = getCookie(request, JMAL_TOKEN);
         }
@@ -198,8 +201,15 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (name.equals(username)) {
             boolean rememberMe = name.equals(getCookie(request, "rememberName"));
             String jmalToken = generateJmalToken(hashPassword, username);
-            String userId = userService.getUserIdByUserName(username);
-            setRefreshCookie(response, hashPassword, userId, username, rememberMe, jmalToken);
+
+            Cookie tokenCoolie = new Cookie(JMAL_TOKEN, jmalToken);
+            tokenCoolie.setMaxAge(7200);
+            tokenCoolie.setHttpOnly(true);
+            tokenCoolie.setPath("/");
+            response.addCookie(tokenCoolie);
+            response.addHeader(JMAL_TOKEN, jmalToken);
+
+            setRefreshCookie(response, hashPassword, username, rememberMe);
         }
         return username;
     }
@@ -226,42 +236,20 @@ public class AuthInterceptor implements HandlerInterceptor {
      * @param username     username
      * @param rememberMe   rememberMe
      */
-    public static void setRefreshCookie(HttpServletResponse response, String hashPassword, String userId, String username, boolean rememberMe, String jmalToken) {
+    public static void setRefreshCookie(HttpServletResponse response, String hashPassword, String username, boolean rememberMe) {
         LocalDateTime refreshTokenExpiration = LocalDateTime.now();
         // 如果用户勾选了记住我, refreshToken期限为30天, 否则为1天
         int refreshMaxAge = rememberMe ? 2592000 : 86400;
         refreshTokenExpiration = refreshTokenExpiration.plusSeconds(refreshMaxAge);
-        Cookie refresCookie = new Cookie(AuthInterceptor.REFRESH_TOKEN, TokenUtil.createToken(username, hashPassword, refreshTokenExpiration));
-        refresCookie.setMaxAge(refreshMaxAge);
-        refresCookie.setHttpOnly(true);
-        refresCookie.setPath("/");
-        response.addCookie(refresCookie);
-        // 删除其他cookie
-        setOtherCookie(response, jmalToken, userId, username, rememberMe, refreshMaxAge);
-    }
-
-    private static void setOtherCookie(HttpServletResponse response, String jmalToken, String userId, String username, boolean rememberMe, int refreshMaxAge) {
-
-        setCookie(response, JMAL_TOKEN, jmalToken, refreshMaxAge);
-
-        setCookie(response, "consumerId", userId, refreshMaxAge);
-
-        setCookie(response, "username", username, refreshMaxAge);
-
-        if (rememberMe) {
-            setCookie(response, "rememberName", username, 31536000);
-        }
-    }
-
-    private static void setCookie(HttpServletResponse response, String key, String value, int expiry) {
-        Cookie rememberMeCookie = new Cookie(key, value);
-        rememberMeCookie.setMaxAge(expiry);
-        rememberMeCookie.setPath("/");
-        response.addCookie(rememberMeCookie);
+        Cookie refreshCookie = new Cookie(REFRESH_TOKEN, TokenUtil.createToken(username, hashPassword, refreshTokenExpiration));
+        refreshCookie.setMaxAge(refreshMaxAge);
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setPath("/");
+        response.addCookie(refreshCookie);
     }
 
     public static void removeAllCookies(HttpServletResponse response) {
-        removeCookies(response, AuthInterceptor.REFRESH_TOKEN, AuthInterceptor.JMAL_TOKEN, "username", "consumerId", "rememberName");
+        removeCookies(response, AuthInterceptor.REFRESH_TOKEN, AuthInterceptor.JMAL_TOKEN);
     }
 
     private static void removeCookies(HttpServletResponse response, String ...keys) {
