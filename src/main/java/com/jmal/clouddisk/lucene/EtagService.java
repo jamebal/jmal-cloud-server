@@ -328,6 +328,7 @@ public class EtagService {
             List<FileDocument> tasks = mongoTemplate.find(findQuery, FileDocument.class);
 
             if (tasks.isEmpty()) {
+                run = false;
                 continue;
             }
             log.info("[Worker {}] Found {} folders marked for ETag update. Processing...", workerId, tasks.size());
