@@ -29,7 +29,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * EtagService
@@ -52,12 +52,12 @@ public class EtagService {
     private static final String EMPTY_FOLDER_ETAG_BASE_STRING = "EMPTY_FOLDER_REPRESENTATION_MONGO_V2";
     private static final int MAX_ETAG_UPDATE_ATTEMPTS = 5; // 最大失败重试次数
 
+    private final AtomicBoolean processingScheduled = new AtomicBoolean(false);
+
     /**
      * 处理文件夹Etag的线程池
      */
     private ExecutorService executorMarkedFoldersService;
-
-    private final ReentrantLock processMarkedFoldersLock = new ReentrantLock();
 
     @PostConstruct
     public void init() {
@@ -70,13 +70,12 @@ public class EtagService {
             long countOfFoldersWithoutEtag = mongoTemplate.count(queryNoEtagQuery, FileDocument.class);
             if (countOfFoldersWithoutEtag > 0) {
                 log.info("{} folders found without ETag. Marking them for ETag calculation.", countOfFoldersWithoutEtag);
-                Update update = new Update().set(Constants.NEEDS_ETAG_UPDATE_FIELD, true)
-                        .currentDate(Constants.LAST_ETAG_UPDATE_REQUEST_AT_FIELD);
-                queryNoEtagQuery.addCriteria(Criteria.where(Constants.IS_FOLDER).is(true));
+                Update update = new Update().set(Constants.NEEDS_ETAG_UPDATE_FIELD, true).currentDate(Constants.LAST_ETAG_UPDATE_REQUEST_AT_FIELD);
                 mongoTemplate.updateMulti(queryNoEtagQuery, update, FileDocument.class);
             }
             processRootFolderFiles();
-            startProcessMarkedFolders();
+            log.info("Initial ETag setup finished. Ensuring ETag processing worker is active if needed.");
+            ensureProcessingMarkedFolders();
         });
     }
 
@@ -95,15 +94,50 @@ public class EtagService {
         }
     }
 
-    private void startProcessMarkedFolders() {
-        executorMarkedFoldersService.execute(() -> {
-            processMarkedFoldersLock.lock();
-            try {
-                processMarkedFolders("markedFoldersWorker-" + Thread.currentThread().getName());
-            } finally {
-                processMarkedFoldersLock.unlock();
-            }
-        });
+    /**
+     * 确保 ETag 处理任务已调度或正在运行。
+     * 如果当前没有任务在执行或计划执行，则提交一个新任务到执行器。
+     * 这个方法是幂等的，多次调用（如果任务已调度）不会产生副作用。
+     */
+    private void ensureProcessingMarkedFolders() {
+        // 使用 compareAndSet 来原子性地检查并设置标志
+        // 如果 processingScheduled 为 false，则将其设置为 true 并执行提交逻辑
+        if (processingScheduled.compareAndSet(false, true)) {
+            log.info("ETag processing task for marked folders is being scheduled.");
+            executorMarkedFoldersService.execute(() -> {
+                String workerId = "markedFoldersWorker-" + Thread.currentThread().getName();
+                try {
+                    // 调用实际的循环处理逻辑
+                    processMarkedFoldersLoop(workerId);
+                } finally {
+                    // 当任务完成（无论是正常结束还是异常结束）后，
+                    // 将标志重置为 false，允许后续的 ensureProcessingMarkedFolders 调用再次调度任务。
+                    processingScheduled.set(false);
+                    log.debug("[Worker {}] ETag processing task finished. Resetting schedule flag.", workerId);
+
+                    // 关键：检查在本次处理运行期间是否有新的文件夹被标记
+                    // 如果有，则再次尝试调度，确保它们得到处理
+                    if (hasMoreMarkedFoldersInDb()) {
+                        log.info("[Worker {}] New folders were marked during or after the last processing run. Re-triggering ETag processing.", workerId);
+                        ensureProcessingMarkedFolders();
+                    } else {
+                        log.info("[Worker {}] No more marked folders found after processing run. ETag worker will rest until new marks.", workerId);
+                    }
+                }
+            });
+        } else {
+            // 如果 processingScheduled 已经是 true，说明任务已在队列中或正在运行
+            log.debug("ETag processing task is already scheduled or running. This trigger call is a no-op.");
+        }
+    }
+
+    /**
+     * 检查数据库中是否还有需要更新ETag的文件夹。
+     */
+    private boolean hasMoreMarkedFoldersInDb() {
+        Query query = Query.query(Criteria.where(Constants.NEEDS_ETAG_UPDATE_FIELD).is(true).and(Constants.IS_FOLDER).is(true));
+        query.limit(1); // 只需要知道是否存在，不需要完整计数
+        return mongoTemplate.exists(query, FileDocument.class);
     }
 
     /**
@@ -279,23 +313,18 @@ public class EtagService {
     }
 
     /**
-     * 由后台Worker调用，处理标记为需要更新ETag的文件夹。
-     * 每次处理一定数量的文件夹。
+     * 实际处理标记为需要更新ETag的文件夹的循环。
+     * 此方法由 ensureProcessingMarkedFolders 提交的任务在 EtagWorker 线程中执行。
      *
-     * @param workerId 当前worker的唯一标识，用于任务锁定（如果实现）
+     * @param workerId 当前worker的唯一标识
      */
-    private void processMarkedFolders(String workerId) {
+    private void processMarkedFoldersLoop(String workerId) {
         boolean run = true;
-        while (run) {
+        while (run && !Thread.currentThread().isInterrupted()) {
             Query findQuery = Query.query(Criteria.where(Constants.NEEDS_ETAG_UPDATE_FIELD).is(true).and(Constants.IS_FOLDER).is(true)).with(Sort.by(Sort.Direction.ASC, Constants.LAST_ETAG_UPDATE_REQUEST_AT_FIELD)).limit(16);
-            findQuery.fields().include(Constants.PATH_FIELD, Constants.FILENAME_FIELD, IUserService.USER_ID, Constants.ETAG);
-            long count = mongoTemplate.count(findQuery, FileDocument.class);
-            if (count == 0) {
-                log.info("[Worker {}] No folders marked for ETag update. Exiting.", workerId);
-                run = false;
-            }
+            findQuery.fields().include(Constants.PATH_FIELD, Constants.FILENAME_FIELD, IUserService.USER_ID, Constants.ETAG, "_id");
 
-            // 简单的任务获取，没有复杂的锁定机制，适合单worker实例或能接受少量重复计算的场景
+
             List<FileDocument> tasks = mongoTemplate.find(findQuery, FileDocument.class);
 
             if (tasks.isEmpty()) {
@@ -304,6 +333,12 @@ public class EtagService {
             log.info("[Worker {}] Found {} folders marked for ETag update. Processing...", workerId, tasks.size());
 
             for (FileDocument folderDoc : tasks) {
+                if (Thread.currentThread().isInterrupted()) {
+                    log.warn("[Worker {}] ETag processing loop was interrupted.", workerId);
+                    run = false; // 尊重中断信号
+                    break;
+                }
+
                 String folderPath = folderDoc.getPath();
                 String docId = folderDoc.getId();
                 String userId = folderDoc.getUserId();
@@ -312,10 +347,8 @@ public class EtagService {
                 try {
                     boolean etagActuallyChanged = calculateAndUpdateSingleFolderEtagInternal(folderDoc, workerId);
 
-                    // 清除标记 (无论ETag是否变化，只要处理过程没有抛出不可恢复的异常)
                     Query clearMarkQuery = Query.query(Criteria.where("_id").is(docId));
-                    Update clearMarkUpdate = new Update().set(Constants.NEEDS_ETAG_UPDATE_FIELD, false).unset(Constants.ETAG_UPDATE_FAILED_ATTEMPTS_FIELD) // 成功后清除失败尝试
-                            .unset(Constants.LAST_ETAG_UPDATE_ERROR_FIELD);
+                    Update clearMarkUpdate = new Update().set(Constants.NEEDS_ETAG_UPDATE_FIELD, false).unset(Constants.ETAG_UPDATE_FAILED_ATTEMPTS_FIELD).unset(Constants.LAST_ETAG_UPDATE_ERROR_FIELD);
                     mongoTemplate.updateFirst(clearMarkQuery, clearMarkUpdate, FileDocument.class);
                     log.debug("[Worker {}] Cleared ETag update mark for folder: {}", workerId, folderPath);
 
@@ -323,19 +356,20 @@ public class EtagService {
                         // 如果ETag变化了，标记其父文件夹
                         markFolderForEtagUpdate(userId, folderPath);
                     }
-                } catch (Exception e) { // 捕获所有可能的异常，防止worker线程中断
+                } catch (Exception e) {
                     log.error("[Worker {}] Critical error processing ETag for folder {}: {}", workerId, folderPath, e.getMessage(), e);
                     handleProcessingError(docId, folderPath, e, workerId);
                 }
             }
             log.debug("[Worker {}] Finished processing batch of {} folders.", workerId, tasks.size());
         }
+        log.info("[Worker {}] ETag processing loop finished or paused.", workerId);
     }
 
     /**
      * 标记指定文件夹需要ETag更新
      *
-     * @param userId          用户ID
+     * @param userId            用户ID
      * @param currentFolderPath 当前文件夹路径
      */
     private void markFolderForEtagUpdate(String userId, String currentFolderPath) {
@@ -351,7 +385,7 @@ public class EtagService {
             UpdateResult result = mongoTemplate.updateFirst(query, update, FileDocument.class);
             if (result.getModifiedCount() > 0 || result.getMatchedCount() > 0) { // 即使已经是true也更新时间戳
                 log.info("Marked folder for ETag update: {}", currentFolderPath);
-                startProcessMarkedFolders();
+                ensureProcessingMarkedFolders();
             } else {
                 log.warn("Folder not found to mark for ETag update: {}", currentFolderPath);
             }
