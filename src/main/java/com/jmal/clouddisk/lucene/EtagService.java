@@ -25,7 +25,6 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -234,7 +233,7 @@ public class EtagService {
             boolean hasChildren = mongoTemplate.exists(childrenQuery, FileDocument.class);
             if (!hasChildren) {
                 // 如果没有内容，则设置初始ETag
-                String initialEtag = hashString(EMPTY_FOLDER_ETAG_BASE_STRING);
+                String initialEtag = SecureUtil.sha256(EMPTY_FOLDER_ETAG_BASE_STRING);
                 Query query = getQueryByPath(userId, relativePath, fileName);
                 Update update = new Update().set(Constants.ETAG, initialEtag).set(Constants.NEEDS_ETAG_UPDATE_FIELD, false);
                 mongoTemplate.updateFirst(query, update, FileDocument.class);
@@ -242,8 +241,6 @@ public class EtagService {
             }
             // 标记父文件夹需要更新ETag
             markFolderForEtagUpdate(userService.getUserIdByUserName(username), relativePath);
-        } catch (NoSuchAlgorithmException e) {
-            log.error("Algorithm error setting initial ETag for folder {}: {}", relativePath, e.getMessage(), e);
         } catch (DataAccessException e) {
             log.error("Database error setting initial ETag for folder {}: {}", relativePath, e.getMessage(), e);
         }
@@ -401,7 +398,7 @@ public class EtagService {
      *
      * @return true 如果ETag实际发生了变化并被更新
      */
-    private boolean calculateAndUpdateSingleFolderEtagInternal(FileDocument folderDoc, String workerId) throws NoSuchAlgorithmException {
+    private boolean calculateAndUpdateSingleFolderEtagInternal(FileDocument folderDoc, String workerId) {
         String folderPath = folderDoc.getPath();
         String oldEtag = folderDoc.getEtag();
         String userId = folderDoc.getUserId();
@@ -414,7 +411,7 @@ public class EtagService {
         List<FileDocument> children = mongoTemplate.find(childrenQuery, FileDocument.class);
 
         if (children.isEmpty()) {
-            newCalculatedEtag = hashString(EMPTY_FOLDER_ETAG_BASE_STRING);
+            newCalculatedEtag = SecureUtil.sha256(EMPTY_FOLDER_ETAG_BASE_STRING);
         } else {
             List<String> childRepresentations = children.stream().sorted(Comparator.comparing(FileDocument::getName)) // 按名称排序
                     .map(child -> formatChildRepresentation(workerId, child)).toList();
@@ -427,7 +424,7 @@ public class EtagService {
                     combinedRepresentation.append(rep).append(";");
                 }
             }
-            newCalculatedEtag = hashString(combinedRepresentation.toString());
+            newCalculatedEtag = SecureUtil.sha256(combinedRepresentation.toString());
         }
 
         if (!newCalculatedEtag.equals(oldEtag)) {
@@ -511,10 +508,6 @@ public class EtagService {
             }
         }
         return child.getName() + ":" + child.getEtag();
-    }
-
-    private String hashString(String input) throws NoSuchAlgorithmException {
-        return SecureUtil.sha256(input);
     }
 
     @PreDestroy
