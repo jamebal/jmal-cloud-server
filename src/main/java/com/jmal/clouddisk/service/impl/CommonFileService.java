@@ -338,7 +338,7 @@ public class CommonFileService {
         }
         String fileName = file.getName();
         String suffix = MyFileUtils.extName(fileName);
-        String contentType = getContentType(file, FileContentTypeUtils.getContentType(suffix));
+        String contentType = getContentType(file, FileContentTypeUtils.getContentType(file, suffix));
         if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE)) {
             // 换成webp格式的图片
             file = replaceWebp(userId, file, username);
@@ -631,10 +631,18 @@ public class CommonFileService {
                 String charset = UniversalDetector.detectCharset(file);
                 if (StrUtil.isNotBlank(charset)) {
                     if (StandardCharsets.UTF_8.name().equals(charset)) {
-                        contentType = contentType + ";charset=utf-8";
-                    } else {
-                        if (file.length() < 128 * 1024 * 1024 && CharsetDetector.detect(file).equals(StandardCharsets.UTF_8)) {
+                        if (FileContentTypeUtils.DEFAULT_CONTENT_TYPE.equals(contentType)) {
+                            contentType = "text/plan;charset=utf-8";
+                        } else {
                             contentType = contentType + ";charset=utf-8";
+                        }
+                    } else {
+                        if (file.length() < FileContentTypeUtils.MAX_DETECT_FILE_SIZE && CharsetDetector.detect(file).equals(StandardCharsets.UTF_8)) {
+                            if (FileContentTypeUtils.DEFAULT_CONTENT_TYPE.equals(contentType)) {
+                                contentType = "text/plan;charset=utf-8";
+                            } else {
+                                contentType = contentType + ";charset=utf-8";
+                            }
                         } else {
                             contentType = contentType + ";charset=" + charset;
                         }
@@ -1070,7 +1078,7 @@ public class CommonFileService {
         FileDocument fileDocument = getFileDocument(userId, fileName, relativePath, query);
 
         String suffix = MyFileUtils.extName(file.getName());
-        String contentType = FileContentTypeUtils.getContentType(suffix);
+        String contentType = FileContentTypeUtils.getContentType(file, suffix);
         // 文件是否存在
         if (fileDocument != null) {
             Update update = new Update();

@@ -97,18 +97,16 @@ public class FileInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
-
         if (internalValid(request, response)) return true;
 
         if (fileAuthError(request, response)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return false;
         }
         Path path = Paths.get(request.getRequestURI());
-
         String filename = getDownloadFilename(request, path);
-
         String operation = request.getParameter(OPERATION);
-        setCacheControl(request, response);
+
         if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD -> {
@@ -133,7 +131,17 @@ public class FileInterceptor implements HandlerInterceptor {
         } else {
             return !previewOssFile(request, response, path, filename);
         }
+        setHeader(request, response);
         return true;
+    }
+
+    private void setHeader(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
+        FileDocument fileDocument = getFileDocument(Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8)));
+        response.setContentType(fileDocument.getContentType());
+        if (fileDocument.getEtag() != null) {
+            response.setHeader(HttpHeaders.ETAG, fileDocument.getEtag());
+        }
+        setCacheControl(request, response);
     }
 
     /**
@@ -163,7 +171,7 @@ public class FileInterceptor implements HandlerInterceptor {
         System.out.println(URLUtil.encode("未命名文件 副本.txt", StandardCharsets.UTF_8));
     }
 
-    private static boolean internalValid(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
+    private boolean internalValid(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
         String requestId = (String) request.getAttribute("requestId");
         String internalToken = (String) request.getAttribute("internalToken");
 
@@ -171,6 +179,7 @@ public class FileInterceptor implements HandlerInterceptor {
             if (!ShareFileInterceptor.isValidInternalTokenCache(requestId, internalToken)) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             }
+            setHeader(request, response);
             return true;
         }
         return false;
@@ -179,7 +188,7 @@ public class FileInterceptor implements HandlerInterceptor {
     private void setCacheControl(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
         File file = getFileByRequest(request);
         if (MyFileUtils.checkNoCacheFile(file)) {
-            response.setHeader(HttpHeaders.CACHE_CONTROL, "no-cache");
+            response.setHeader(HttpHeaders.CACHE_CONTROL, "max-age=300");
         } else {
             response.setHeader(HttpHeaders.CACHE_CONTROL, "max-age=2592000");
         }
