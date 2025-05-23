@@ -156,10 +156,10 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public ResponseResult<Object> logout(String token, HttpServletResponse response) {
-        AuthInterceptor.removeAllCookies(response);
         String username = userLoginHolder.getUsername();
         CaffeineUtil.removeAuthoritiesCache(username);
         CaffeineUtil.removeUserIdCache(username);
+        AuthInterceptor.removeCookies(response, AuthInterceptor.JMAL_TOKEN, AuthInterceptor.REFRESH_TOKEN);
         return ResultUtil.success();
     }
 

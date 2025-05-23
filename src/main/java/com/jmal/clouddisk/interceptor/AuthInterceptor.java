@@ -97,6 +97,11 @@ public class AuthInterceptor implements HandlerInterceptor {
             name = getCookie(request, IUserService.USERNAME);
         }
         if (CharSequenceUtil.isBlank(jmalToken)) {
+            String refreshToken = getCookie(request, REFRESH_TOKEN);
+            if (CharSequenceUtil.isNotBlank(refreshToken)) {
+                // 自动续token
+                return renewJmalToken(request, response, refreshToken);
+            }
             return getUserNameByAccessToken(request);
         }
         return getUserNameByJmalToken(request, response, jmalToken, name);
@@ -207,8 +212,21 @@ public class AuthInterceptor implements HandlerInterceptor {
             boolean rememberMe = name.equals(getCookie(request, "rememberName"));
             String jmalToken = generateJmalToken(hashPassword, username);
             setRefreshCookie(response, hashPassword, username, rememberMe, jmalToken);
+            return username;
         }
-        return username;
+        return null;
+    }
+
+    private String renewJmalToken(HttpServletRequest request, HttpServletResponse response, String refreshToken) {
+        String username = TokenUtil.getUsername(refreshToken);
+        if (CharSequenceUtil.isBlank(username)) {
+            return null;
+        }
+        String hashPassword = userService.getHashPasswordUserName(username);
+        if (CharSequenceUtil.isBlank(hashPassword)) {
+            return null;
+        }
+        return renewJmalToken(request, response, username, hashPassword, refreshToken);
     }
 
     private static void setJmalTokenCookie(HttpServletResponse response, String jmalToken) {
@@ -255,11 +273,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         setJmalTokenCookie(response, jmalToken);
     }
 
-    public static void removeAllCookies(HttpServletResponse response) {
-        removeCookies(response, AuthInterceptor.REFRESH_TOKEN, AuthInterceptor.JMAL_TOKEN);
-    }
-
-    private static void removeCookies(HttpServletResponse response, String ...keys) {
+    public static void removeCookies(HttpServletResponse response, String ...keys) {
         for (String key : keys) {
             Cookie cookie = new Cookie(key, null);
             cookie.setMaxAge(0);
@@ -288,7 +302,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             out = response.getOutputStream();
             ResponseResult<Object> result = ResultUtil.error(ExceptionType.LOGIN_EXCEPTION.getCode(), ExceptionType.LOGIN_EXCEPTION.getMsg());
             out.write(JSON.toJSONString(result).getBytes());
-            AuthInterceptor.removeAllCookies(response);
+            removeCookies(response, AuthInterceptor.JMAL_TOKEN);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         } finally {
