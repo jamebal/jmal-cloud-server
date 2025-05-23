@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.util;
 
 
+import cn.hutool.jwt.JWTUtil;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.JWTVerifier;
@@ -41,6 +42,15 @@ public class TokenUtil {
         byte[] keyBytes = password.getBytes(StandardCharsets.UTF_8);
         return builder.sign(Algorithm.HMAC256(keyBytes));
 
+    }
+
+    public static String getUsername(String token) {
+        try {
+            cn.hutool.jwt.JWT jwt = JWTUtil.parseToken(token);
+            return jwt.getPayload().getClaimsJson().getStr("username");
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public static String getTokenKey(String token, String password) {
