@@ -1,12 +1,13 @@
 package com.jmal.clouddisk.model;
 
-import com.jmal.clouddisk.service.impl.FileServiceImpl;
 import com.jmal.clouddisk.media.VideoInfoDO;
+import com.jmal.clouddisk.service.impl.FileServiceImpl;
 import lombok.Data;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -31,6 +32,7 @@ import java.util.Objects;
         @CompoundIndex(name = "user_isFavorite", def = "{'userId': 1, 'isFavorite': 1}"),
         @CompoundIndex(name = "user_contentType", def = "{'userId': 1, 'contentType': 1}"),
         @CompoundIndex(name = "doc_tags", def = "{'tags.tagId': 1}"),
+        @CompoundIndex(name = "process_marked_folders", def = "{ 'needsEtagUpdate': 1, 'isFolder': 1, 'lastEtagUpdateRequestAt': 1 }"),
 })
 public class FileDocument extends FileBase {
     private String userId;
@@ -211,6 +213,31 @@ public class FileDocument extends FileBase {
      * 操作权限
      */
     private List<OperationPermission> operationPermissionList;
+
+    /**
+     * 文件的 ETag
+     */
+    private String etag;
+
+    /**
+     * ETag 更新失败次数
+     */
+    private Integer etagUpdateFailedAttempts;
+
+    /**
+     * 是否需要更新 ETag
+     */
+    private Boolean needsEtagUpdate;
+
+    /**
+     * 最后Etag更新请求时间
+     */
+    private LocalDateTime lastEtagUpdateRequestAt;
+
+    /**
+     * 最后Etag更新错误
+     */
+    private String lastEtagUpdateError;
 
     @Override
     public boolean equals(Object obj) {

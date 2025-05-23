@@ -1,6 +1,14 @@
 package com.jmal.clouddisk.service;
 
 public class Constants {
+
+    public static final String NEEDS_ETAG_UPDATE_FIELD = "needsEtagUpdate";
+    public static final String LAST_ETAG_UPDATE_REQUEST_AT_FIELD = "lastEtagUpdateRequestAt";
+    public static final String ETAG_UPDATE_FAILED_ATTEMPTS_FIELD = "etagUpdateFailedAttempts";
+    public static final String LAST_ETAG_UPDATE_ERROR_FIELD = "lastEtagUpdateError";
+
+    private Constants() { }
+
     public static final String CONTENT_TYPE = "contentType";
     public static final String SUFFIX = "suffix";
     public static final String RELEASE = "release";
@@ -10,8 +18,10 @@ public class Constants {
     public static final String IS_FAVORITE = "isFavorite";
     public static final String TAG_IDS = "tagIds";
     public static final String TOTAL_SIZE = "totalSize"; //totalSize
+    public static final String ETAG = "etag";
+    public static final String PATH_FIELD = "path";
+    public static final String FILENAME_FIELD = "name";
 
-    private Constants() { }
 
     public static final String REGION_DEFAULT = "0";
     public static final String EXTRACTION_CODE = "extractionCode";

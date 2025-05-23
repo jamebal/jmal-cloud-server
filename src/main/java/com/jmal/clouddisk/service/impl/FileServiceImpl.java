@@ -1196,6 +1196,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 luceneService.deleteIndexDocuments(Collections.singletonList(fileDocument.getId()));
             }
         }
+
+        // update parent folder etag
+        etagService.handleItemDeletionAsync(username, file);
+
         pushMessage(username, relativePath, Constants.DELETE_FILE);
     }
 

@@ -62,6 +62,7 @@ public class LuceneService {
     private final ReadContentService readContentService;
     private final RebuildIndexTaskService rebuildIndexTaskService;
     private final SearchFileService searchFileService;
+    private final EtagService esTagService;
 
     public static final String MONGO_INDEX_FIELD = "index";
 
@@ -226,8 +227,7 @@ public class LuceneService {
 
     private void updateIndex(boolean readContent, FileIntroVO fileIntroVO) {
         try {
-            String username = userService.getUserNameById(fileIntroVO.getUserId());
-            File file = Paths.get(fileProperties.getRootDir(), username, fileIntroVO.getPath(), fileIntroVO.getName()).toFile();
+            File file = getFileByFileIntroVO(fileIntroVO);
             boolean isContent = checkFileContent(file);
             if (!readContent && isContent) {
                 pushCreateIndexContentQueue(fileIntroVO.getId());
@@ -252,7 +252,7 @@ public class LuceneService {
                 startProcessFilesToBeIndexed();
             }
         } catch (Exception e) {
-            log.warn("updateIndexError: {}", e.getMessage());
+            log.warn("updateIndexError: {}", e.getMessage(), e);
         } finally {
             updateIndexStatus(fileIntroVO, IndexStatus.INDEXED);
             if (readContent) {
@@ -273,11 +273,20 @@ public class LuceneService {
         Update update = new Update();
         update.set(MONGO_INDEX_FIELD, indexStatus.getStatus());
         mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
+
+        // set etag
+        String username = userService.getUserNameById(fileIntroVO.getUserId());
+        esTagService.updateFileEtagAsync(username, getFileByFileIntroVO(fileIntroVO));
     }
 
-    private String getTagName(FileIntroVO fileDocument) {
-        if (fileDocument != null && fileDocument.getTags() != null && !fileDocument.getTags().isEmpty()) {
-            return fileDocument.getTags().stream().map(Tag::getName).reduce((a, b) -> a + " " + b).orElse("");
+    private File getFileByFileIntroVO(FileIntroVO fileIntroVO) {
+        String username = userService.getUserNameById(fileIntroVO.getUserId());
+        return Paths.get(fileProperties.getRootDir(), username, fileIntroVO.getPath(), fileIntroVO.getName()).toFile();
+    }
+
+    private String getTagName(FileIntroVO fileIntroVO) {
+        if (fileIntroVO != null && fileIntroVO.getTags() != null && !fileIntroVO.getTags().isEmpty()) {
+            return fileIntroVO.getTags().stream().map(Tag::getName).reduce((a, b) -> a + " " + b).orElse("");
         }
         return null;
     }
@@ -466,6 +475,7 @@ public class LuceneService {
     public FileIntroVO getFileIntroVO(String fileId) {
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
+        query.fields().include("id", "name", "userId", "path", "isFolder", "isFavorite", "remark", "tags", "etag");
         return mongoTemplate.findOne(query, FileIntroVO.class, COLLECTION_NAME);
     }
 
