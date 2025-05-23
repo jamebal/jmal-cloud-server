@@ -632,14 +632,14 @@ public class CommonFileService {
                 if (StrUtil.isNotBlank(charset)) {
                     if (StandardCharsets.UTF_8.name().equals(charset)) {
                         if (FileContentTypeUtils.DEFAULT_CONTENT_TYPE.equals(contentType)) {
-                            contentType = "txt/plan;charset=utf-8";
+                            contentType = "text/plan;charset=utf-8";
                         } else {
                             contentType = contentType + ";charset=utf-8";
                         }
                     } else {
                         if (file.length() < FileContentTypeUtils.MAX_DETECT_FILE_SIZE && CharsetDetector.detect(file).equals(StandardCharsets.UTF_8)) {
                             if (FileContentTypeUtils.DEFAULT_CONTENT_TYPE.equals(contentType)) {
-                                contentType = "txt/plan;charset=utf-8";
+                                contentType = "text/plan;charset=utf-8";
                             } else {
                                 contentType = contentType + ";charset=utf-8";
                             }
