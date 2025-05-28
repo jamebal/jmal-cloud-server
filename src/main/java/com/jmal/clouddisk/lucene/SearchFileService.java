@@ -226,11 +226,9 @@ public class SearchFileService {
         Query regExpQuery = new BoostQuery(regexpQueryBuilder.build(), 10.0f);
 
         // 对 content 字段进行完全匹配
-        BooleanQuery.Builder contentQueryBuilder = new BooleanQuery.Builder();
         QueryParser contentParser = new QueryParser("content", analyzer);
         contentParser.setDefaultOperator(QueryParser.Operator.AND);
         Query contentQuery = contentParser.parse(keyword.trim());
-        contentQueryBuilder.add(new BoostQuery(contentQuery, boosts.get("content")), BooleanClause.Occur.MUST);
 
         // 如何keyword中有空格，将其拆分为多个关键字，这多个关键字之间是AND关系,在name字段
         Query nameQuery = null;

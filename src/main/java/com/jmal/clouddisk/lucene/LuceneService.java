@@ -37,7 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.jmal.clouddisk.service.impl.CommonFileService.COLLECTION_NAME;
 
@@ -99,10 +99,7 @@ public class LuceneService {
      */
     private ArrayBlockingQueue<String> indexFileContentQueue;
 
-    /**
-     * 处理待索引文件锁, 防止多次处理
-     */
-    private final ReentrantLock toBeIndexedLock = new ReentrantLock();
+    private final AtomicBoolean processingUnIndexedScheduled = new AtomicBoolean(false);
 
     @PostConstruct
     public void init() {
@@ -116,7 +113,7 @@ public class LuceneService {
             // 获取jvm可用内存
             long maxMemory = Runtime.getRuntime().maxMemory();
             // 设置线程数, 假设每个线程占用内存为100M
-            int maxProcessors = (int) (maxMemory / 300 / 1024 / 1024);
+            int maxProcessors = (int) (maxMemory / 500 / 1024 / 1024);
             if (processors > maxProcessors) {
                 processors = maxProcessors;
             }
@@ -502,10 +499,7 @@ public class LuceneService {
         boolean run = true;
         log.debug("开始处理待索引文件");
         while (run) {
-            org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-            query.addCriteria(Criteria.where(MONGO_INDEX_FIELD).is(IndexStatus.NOT_INDEX.getStatus()));
-            long count = mongoTemplate.count(query, COLLECTION_NAME);
-            if (count == 0) {
+            if (!hasUnIndexFile()) {
                 log.debug("待索引文件处理完成");
                 rebuildIndexTaskService.rebuildingIndexCompleted();
                 run = false;
@@ -522,6 +516,16 @@ public class LuceneService {
                 }
             }
         }
+    }
+
+    /**
+     * 是否存在待索引文件
+     */
+    private boolean hasUnIndexFile() {
+        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+        query.addCriteria(Criteria.where(MONGO_INDEX_FIELD).is(IndexStatus.NOT_INDEX.getStatus()));
+        long count = mongoTemplate.count(query, COLLECTION_NAME);
+        return count > 0;
     }
 
     private void processFileThreaded(FileIntroVO fileIntroVO) {
@@ -543,20 +547,17 @@ public class LuceneService {
     }
 
     private void startProcessFilesToBeIndexed() {
-        executorCreateIndexService.execute(() -> {
-            if (!toBeIndexedLock.tryLock()) {
-                return;
-            }
-            try {
+        if (processingUnIndexedScheduled.compareAndSet(false, true)) {
+            executorCreateIndexService.execute(() -> {
                 try {
                     processFilesToBeIndexed();
                 } catch (IOException e) {
                     log.error("处理待索引文件内容失败", e);
+                } finally {
+                    processingUnIndexedScheduled.set(false);
                 }
-            } finally {
-                toBeIndexedLock.unlock();
-            }
-        });
+            });
+        }
     }
 
     @PreDestroy
