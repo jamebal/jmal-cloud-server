@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.model;
 
-import cn.hutool.core.util.StrUtil;
 import lombok.Data;
 
 import java.util.List;
@@ -107,6 +106,8 @@ public class WebsiteSettingDTO {
      */
     String iframe;
 
+    Boolean exactSearch;
+
     @Data
     public static class OperatingButton {
         /***
@@ -123,11 +124,4 @@ public class WebsiteSettingDTO {
         String url;
     }
 
-    public boolean isShowAlonePage(String page){
-        return alonePages.contains(page);
-    }
-
-    public boolean isShowBeian(){
-        return !StrUtil.isBlank(networkRecordNumberStr);
-    }
 }

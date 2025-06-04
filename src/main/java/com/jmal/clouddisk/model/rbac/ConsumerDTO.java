@@ -63,4 +63,6 @@ public class ConsumerDTO extends ConsumerBase {
 
     String iframe;
 
+    Boolean exactSearch;
+
 }

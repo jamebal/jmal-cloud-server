@@ -100,6 +100,11 @@ public class FileProperties {
      */
     private String ocrLiteONNXModelPath;
 
+    /**
+     * 是否开启精确搜索
+     */
+    private Boolean exactSearch = false;
+
     public void setIp2regionDbPath(String path) {
         Path dbPath = Paths.get(path);
         if (!PathUtil.exists(dbPath, true)) {
