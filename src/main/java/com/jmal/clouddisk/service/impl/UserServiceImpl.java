@@ -256,6 +256,7 @@ public class UserServiceImpl implements IUserService {
             consumerDTO.setNetdiskName(websiteSettingDO.getNetdiskName());
             consumerDTO.setNetdiskLogo(websiteSettingDO.getNetdiskLogo());
             consumerDTO.setIframe(websiteSettingDO.getIframe());
+            consumerDTO.setExactSearch(fileProperties.getExactSearch());
         }
         String newVersion = fileMonitor.hasNewVersion();
         if (!StrUtil.isBlank(newVersion)) {

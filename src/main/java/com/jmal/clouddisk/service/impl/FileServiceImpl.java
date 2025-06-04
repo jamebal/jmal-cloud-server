@@ -329,6 +329,10 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
                 .sizeMax(upload.getQuerySizeMax())
                 .searchMount(upload.getSearchMount())
                 .searchOverall(upload.getSearchOverall())
+                .exactSearch(upload.getExactSearch())
+                .includeTagName(upload.getIncludeTagName())
+                .includeFileName(upload.getIncludeFileName())
+                .includeFileContent(upload.getIncludeFileContent())
                 .build();
         SearchDTO searchDTO = builder.build();
         searchDTO.setPage(upload.getPageIndex());

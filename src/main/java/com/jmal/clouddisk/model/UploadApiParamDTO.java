@@ -244,6 +244,26 @@ public class UploadApiParamDTO {
      */
     Boolean searchOverall;
 
+    /**
+     * 是否精确匹配
+     */
+    Boolean exactSearch;
+
+    /**
+     * 是否包含标签名称
+     */
+    Boolean includeTagName;
+
+    /**
+     * 是否包含文件名
+     */
+    Boolean includeFileName;
+
+    /**
+     * 是否包含文件内容
+     */
+    Boolean includeFileContent;
+
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime uploadDate;

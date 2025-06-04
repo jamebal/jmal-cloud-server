@@ -11,6 +11,7 @@ import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.MyFileUtils;
 import com.mongodb.client.AggregateIterable;
@@ -100,6 +101,18 @@ public class LuceneService {
     private ArrayBlockingQueue<String> indexFileContentQueue;
 
     private final AtomicBoolean processingUnIndexedScheduled = new AtomicBoolean(false);
+
+    public static final String FIELD_CONTENT_NGRAM = "content_ngram";
+    public static final String FIELD_FILENAME_NGRAM = "filename_ngram";
+    public static final String FIELD_TAG_NAME_NGRAM = "tagName_ngram";
+
+    public static final String FIELD_CONTENT_FUZZY = "content";
+    public static final String FIELD_FILENAME_FUZZY = "filename";
+    public static final String FIELD_TAG_NAME_FUZZY = "tagName";
+
+    // 定义分段大小
+    private static final int CHUNK_SIZE_CHARS = 1024; // 例如，每 1KB 左右一个块，或者按行数
+    private static final int CHUNK_OVERLAP_CHARS = 7; // 段落间的重叠字符数，防止边界切割问题 (NGramTokenFilter本身可能处理部分边界，但显式重叠更保险)
 
     @PostConstruct
     public void init() {
@@ -372,6 +385,10 @@ public class LuceneService {
                         }
                         return FileUtil.readString(file, Charset.forName(charset));
                     }
+                    String contentType = CommonFileService.getContentType(file, FileContentTypeUtils.getContentType(file, MyFileUtils.extName(file.getName())));
+                    if (contentType.contains("charset=utf-8")) {
+                        return FileUtil.readString(file, StandardCharsets.UTF_8);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -431,32 +448,43 @@ public class LuceneService {
             String path = fileIndex.getPath();
             org.apache.lucene.document.Document newDocument = new org.apache.lucene.document.Document();
             newDocument.add(new StringField("id", fileId, Field.Store.YES));
-            newDocument.add(new StringField("userId", fileIndex.getUserId(), Field.Store.NO));
+            newDocument.add(new StringField(IUserService.USER_ID, fileIndex.getUserId(), Field.Store.NO));
             if (fileIndex.getType() != null) {
                 newDocument.add(new StringField("type", fileIndex.getType(), Field.Store.NO));
             }
             if (CharSequenceUtil.isNotBlank(fileName)) {
-                fileName = fileName.toLowerCase();
-                newDocument.add(new StringField("name", fileName, Field.Store.NO));
-                newDocument.add(new TextField("content", fileName, Field.Store.NO));
+                newDocument.add(new Field(FIELD_FILENAME_NGRAM, fileName, TextField.TYPE_NOT_STORED));
+                newDocument.add(new TextField(FIELD_FILENAME_FUZZY, fileName, Field.Store.NO));
             }
             if (isFolder != null) {
-                newDocument.add(new IntPoint("isFolder", isFolder ? 1 : 0));
+                newDocument.add(new IntPoint(Constants.IS_FOLDER, isFolder ? 1 : 0));
             }
             if (isFavorite != null) {
-                newDocument.add(new IntPoint("isFavorite", isFavorite ? 1 : 0));
+                newDocument.add(new IntPoint(Constants.IS_FAVORITE, isFavorite ? 1 : 0));
             }
             if (path != null) {
-                newDocument.add(new StringField("path", path, Field.Store.NO));
+                newDocument.add(new StringField(Constants.PATH_FIELD, path, Field.Store.NO));
             }
             if (CharSequenceUtil.isNotBlank(tagName)) {
-                tagName = tagName.toLowerCase();
-                newDocument.add(new StringField("tag", tagName, Field.Store.NO));
-                newDocument.add(new TextField("content", tagName, Field.Store.NO));
+                newDocument.add(new Field(FIELD_TAG_NAME_NGRAM, tagName, TextField.TYPE_NOT_STORED));
+                newDocument.add(new TextField(FIELD_TAG_NAME_FUZZY, tagName, Field.Store.NO));
             }
             if (CharSequenceUtil.isNotBlank(content)) {
-                newDocument.add(new TextField("content", content, Field.Store.NO));
+                newDocument.add(new TextField(FIELD_CONTENT_FUZZY, content, Field.Store.NO));
             }
+
+            // 为精确子串匹配处理 content_ngram
+            if (CharSequenceUtil.isNotBlank(content) && fileProperties.getExactSearch()) {
+                // 1. 分段逻辑 (保持不变)
+                List<String> chunks = segmentContent(content);
+
+                for (String chunk : chunks) {
+                    if (CharSequenceUtil.isNotBlank(chunk)) {
+                        newDocument.add(new Field(FIELD_CONTENT_NGRAM, chunk, TextField.TYPE_NOT_STORED));
+                    }
+                }
+            }
+
             if (fileIndex.getModified() != null) {
                 newDocument.add(new NumericDocValuesField("modified", fileIndex.getModified()));
             }
@@ -469,10 +497,34 @@ public class LuceneService {
         }
     }
 
+    private List<String> segmentContent(String content) {
+        List<String> chunks = new ArrayList<>();
+        if (content == null || content.isEmpty()) {
+            return chunks;
+        }
+        int length = content.length();
+        if (length <= CHUNK_SIZE_CHARS) { // 如果内容本身小于或等于块大小，则作为一个块
+            chunks.add(content);
+            return chunks;
+        }
+
+        // 确保步进大于0
+        int step = CHUNK_SIZE_CHARS - CHUNK_OVERLAP_CHARS;
+
+        for (int i = 0; i < length; i += step) {
+            int end = Math.min(i + CHUNK_SIZE_CHARS, length);
+            chunks.add(content.substring(i, end));
+            if (end == length) {
+                break; // 已到达内容末尾
+            }
+        }
+        return chunks;
+    }
+
     public FileIntroVO getFileIntroVO(String fileId) {
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
-        query.fields().include("id", "name", "userId", "path", "isFolder", "isFavorite", "remark", "tags", "etag");
+        query.fields().include("id", "name", "userId", "path", "isFolder", "isFavorite", "remark", "tags", "etag", "size");
         return mongoTemplate.findOne(query, FileIntroVO.class, COLLECTION_NAME);
     }
 
@@ -504,7 +556,7 @@ public class LuceneService {
                 rebuildIndexTaskService.rebuildingIndexCompleted();
                 run = false;
             }
-            List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match", new org.bson.Document("index", 0)), new org.bson.Document("$project", new org.bson.Document("_id", 1)), new org.bson.Document("$limit", 8));
+            List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match", new org.bson.Document(MONGO_INDEX_FIELD, IndexStatus.NOT_INDEX.getStatus())), new org.bson.Document("$project", new org.bson.Document("_id", 1)), new org.bson.Document("$limit", 8));
             AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(pipeline);
             for (org.bson.Document document : aggregateIterable) {
                 String fileId = document.getObjectId("_id").toHexString();
@@ -536,7 +588,7 @@ public class LuceneService {
             updateIndex(true, fileIntroVO);
         } else {
             // 根据文件大小选择多线程处理
-            if (size > 20 * 1024 * 1024) {
+            if (size > 10 * 1024 * 1024) {
                 // 大文件，使用特定线程池处理
                 executorUpdateBigContentIndexService.execute(() -> updateIndex(true, fileIntroVO));
             } else {

@@ -107,6 +107,8 @@ public class WebsiteSettingDTO {
      */
     String iframe;
 
+    Boolean exactSearch;
+
     @Data
     public static class OperatingButton {
         /***

@@ -2,6 +2,7 @@ package com.jmal.clouddisk.lucene;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.FileDocument;
@@ -14,7 +15,6 @@ import com.jmal.clouddisk.service.impl.TagService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import com.jmal.clouddisk.util.StringUtil;
 import com.jmal.clouddisk.util.TimeUntils;
 import com.mongodb.client.AggregateIterable;
 import io.reactivex.rxjava3.core.Completable;
@@ -45,6 +45,7 @@ import static com.jmal.clouddisk.service.impl.CommonFileService.COLLECTION_NAME;
 public class SearchFileService {
 
     private final Analyzer analyzer;
+    private final FileProperties fileProperties;
     private final SearcherManager searcherManager;
     private final UserLoginHolder userLoginHolder;
     private final TagService tagService;
@@ -138,11 +139,15 @@ public class SearchFileService {
         mongoTemplate.insert(searchOptionHistoryDO);
     }
 
-    public List<SearchDTO> recentlySearchHistory() {
+    public List<SearchDTO> recentlySearchHistory(String keyword) {
         // 最近8条搜索记录
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where("searchUserId").is(userLoginHolder.getUserId()));
+        if (CharSequenceUtil.isNotBlank(keyword)) {
+            query.addCriteria(Criteria.where("keyword").regex(keyword));
+        }
         query.with(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "searchTime"));
+        query.limit(6);
         List<SearchOptionHistoryDO> searchOptionHistoryDOList = mongoTemplate.find(query, SearchOptionHistoryDO.class);
         return searchOptionHistoryDOList.stream().map(SearchOptionHistoryDO::toSearchDTO).toList();
     }
@@ -153,6 +158,15 @@ public class SearchFileService {
         }
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where("_id").is(id));
+        mongoTemplate.remove(query, SearchOptionHistoryDO.class);
+    }
+
+    public void deleteAllSearchHistory(String userId) {
+        if (CharSequenceUtil.isBlank(userId)) {
+            throw new CommonException(ExceptionType.MISSING_PARAMETERS);
+        }
+        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
         mongoTemplate.remove(query, SearchOptionHistoryDO.class);
     }
 
@@ -207,46 +221,45 @@ public class SearchFileService {
      * @throws ParseException ParseException
      */
     private Query getQuery(SearchDTO searchDTO) throws ParseException {
-        String[] fields = {"name", "tag", "content"};
-        Map<String, Float> boosts = Map.of("name", 3.0f, "tag", 2.0f, "content", 1.0f);
+        // 精确搜索时，通常不希望对用户输入做过多改动
+        String exactKeyword = searchDTO.getKeyword().toLowerCase();
 
-        // 将关键字转为小写并去掉空格
-        String keyword = searchDTO.getKeyword().toLowerCase().trim();
+        // 模糊搜索将关键字中的特殊字符转义
+        String fuzzyKeyword = QueryParser.escape(searchDTO.getKeyword().toLowerCase().trim());
 
-        // 将关键字中的特殊字符转义
-        keyword = StringUtil.escape(keyword);
-
-        // 创建正则表达式查询
-        BooleanQuery.Builder regexpQueryBuilder = new BooleanQuery.Builder();
-        for (String field : fields) {
-            if (!"content".equals(field)) {
-                regexpQueryBuilder.add(new BoostQuery(new RegexpQuery(new Term(field, ".*" + keyword + ".*")), boosts.get(field)), BooleanClause.Occur.SHOULD);
-            }
+        // filename 和 tag Name  进行 NGram 匹配
+        BooleanQuery.Builder nameAndTagQueryBuilder = new BooleanQuery.Builder();
+        if (BooleanUtil.isTrue(searchDTO.getIncludeFileName())) {
+            BooleanQuery.Builder filenameBooleanQueryBuilder = getBooleanQueryFieldBuilder(LuceneService.FIELD_FILENAME_NGRAM, LuceneService.FIELD_FILENAME_FUZZY, exactKeyword, fuzzyKeyword, searchDTO);
+            nameAndTagQueryBuilder.add(filenameBooleanQueryBuilder.build(), BooleanClause.Occur.SHOULD);
         }
-        Query regExpQuery = new BoostQuery(regexpQueryBuilder.build(), 10.0f);
+        if (BooleanUtil.isTrue(searchDTO.getIncludeTagName())) {
+            BooleanQuery.Builder tagNameBooleanQueryBuilder = getBooleanQueryFieldBuilder(LuceneService.FIELD_TAG_NAME_NGRAM, LuceneService.FIELD_TAG_NAME_FUZZY, exactKeyword, fuzzyKeyword, searchDTO);
+            nameAndTagQueryBuilder.add(tagNameBooleanQueryBuilder.build(), BooleanClause.Occur.SHOULD);
+        }
 
-        // 对 content 字段进行完全匹配
-        QueryParser contentParser = new QueryParser("content", analyzer);
-        contentParser.setDefaultOperator(QueryParser.Operator.AND);
-        Query contentQuery = contentParser.parse(keyword.trim());
+        Query boostQuery = new BoostQuery(nameAndTagQueryBuilder.build(), 3.0f);
 
-        // 如何keyword中有空格，将其拆分为多个关键字，这多个关键字之间是AND关系,在name字段
-        Query nameQuery = null;
-        if (keyword.contains(" ")) {
-            BooleanQuery.Builder nameQueryBuilder = new BooleanQuery.Builder();
-            for (String key : keyword.split(" ")) {
-                nameQueryBuilder.add(new BoostQuery(new RegexpQuery(new Term("name", ".*" + key + ".*")), 3.0f), BooleanClause.Occur.MUST);
-            }
-            nameQuery = nameQueryBuilder.build();
+        Query contentQuery = null;
+        if (BooleanUtil.isTrue(searchDTO.getIncludeFileContent())) {
+            BooleanQuery.Builder contentBooleanQueryBuilder = getBooleanQueryFieldBuilder(LuceneService.FIELD_CONTENT_NGRAM, LuceneService.FIELD_CONTENT_FUZZY, exactKeyword, fuzzyKeyword, searchDTO);
+            contentQuery = contentBooleanQueryBuilder.build();
+        }
+
+        // 如果keyword中有空格，将其拆分为多个关键字，这多个关键字之间是AND关系,在name或tag字段
+        Query nameAndTagQuery = null;
+        if (!BooleanUtil.isTrue(searchDTO.getExactSearch())) {
+            nameAndTagQuery = getMultipleKeywordsQuery(searchDTO, fuzzyKeyword);
         }
 
         // 将正则表达式查询、短语查询和分词匹配查询组合成一个查询（OR关系）
-        BooleanQuery.Builder combinedQueryBuilder = new BooleanQuery.Builder()
-                .add(regExpQuery, BooleanClause.Occur.SHOULD)
-                .add(contentQuery, BooleanClause.Occur.SHOULD);
+        BooleanQuery.Builder combinedQueryBuilder = new BooleanQuery.Builder().add(boostQuery, BooleanClause.Occur.SHOULD);
+        if (contentQuery != null) {
+            combinedQueryBuilder.add(contentQuery, BooleanClause.Occur.SHOULD);
+        }
 
-        if (nameQuery != null) {
-            combinedQueryBuilder.add(nameQuery, BooleanClause.Occur.SHOULD);
+        if (nameAndTagQuery != null) {
+            combinedQueryBuilder.add(nameAndTagQuery, BooleanClause.Occur.SHOULD);
         }
 
         // 其他通用搜索选项
@@ -255,9 +268,12 @@ public class SearchFileService {
         BooleanQuery combinedQuery = combinedQueryBuilder.build();
 
         // 创建最终查询（AND关系）
-        BooleanQuery.Builder fileQueryBuilder = new BooleanQuery.Builder()
-                .add(new TermQuery(new Term(IUserService.USER_ID, searchDTO.getSearchUserId())), BooleanClause.Occur.MUST)
-                .add(combinedQuery, BooleanClause.Occur.MUST);
+        BooleanQuery.Builder fileQueryBuilder = new BooleanQuery.Builder().add(new TermQuery(new Term(IUserService.USER_ID, searchDTO.getSearchUserId())), BooleanClause.Occur.MUST);
+
+        if (!combinedQuery.clauses().isEmpty()) {
+            fileQueryBuilder.add(combinedQuery, BooleanClause.Occur.MUST);
+        }
+
         if (!otherQuery.clauses().isEmpty()) {
             fileQueryBuilder.add(otherQuery, BooleanClause.Occur.MUST);
         }
@@ -282,6 +298,101 @@ public class SearchFileService {
         }
 
         return finalQueryBuilder.build();
+    }
+
+    /**
+     * 创建字段查询
+     * @param fieldNameExact 精准查询字段名
+     * @param fieldNameFuzzy 模糊查询字段名
+     * @param exactKeyword 精准查询关键字
+     * @param fuzzyKeyword 模糊查询关键字
+     * @param searchDTO 查询参数
+     */
+    private BooleanQuery.Builder getBooleanQueryFieldBuilder(String fieldNameExact, String fieldNameFuzzy, String exactKeyword, String fuzzyKeyword, SearchDTO searchDTO) throws ParseException {
+        BooleanQuery.Builder booleanQueryFieldBuilder = new BooleanQuery.Builder();
+        Query fuzzyQuery = null;
+        Query  exactQuery = null;
+        if (fileProperties.getExactSearch()) {
+            exactQuery = getExactQuery(fieldNameExact, exactKeyword);
+            if (!BooleanUtil.isTrue(searchDTO.getExactSearch())) {
+                fuzzyQuery = getFuzzyQuery(fieldNameFuzzy, fuzzyKeyword);
+            }
+        } else {
+            if (LuceneService.FIELD_CONTENT_FUZZY.equals(fieldNameFuzzy)) {
+                fuzzyQuery = getFuzzyQuery(fieldNameFuzzy, fuzzyKeyword);
+            } else {
+                fuzzyQuery = getFuzzyQuery(fieldNameFuzzy, fuzzyKeyword);
+                exactQuery = getExactQuery(fieldNameExact, exactKeyword);
+            }
+        }
+        if (fuzzyQuery != null) {
+            booleanQueryFieldBuilder.add(fuzzyQuery, BooleanClause.Occur.SHOULD);
+        }
+        if (exactQuery != null) {
+            booleanQueryFieldBuilder.add(exactQuery, BooleanClause.Occur.SHOULD);
+        }
+        return booleanQueryFieldBuilder;
+    }
+
+    private Query getMultipleKeywordsQuery(SearchDTO searchDTO, String fuzzyKeyword) {
+        if (fuzzyKeyword.contains(" ") && BooleanUtil.isTrue(searchDTO.getIncludeFileName())) {
+            BooleanQuery.Builder nameAndTagMultipleWordsQueryBuilder = new BooleanQuery.Builder();
+            for (String key : fuzzyKeyword.split(" ")) {
+
+                if (BooleanUtil.isTrue(searchDTO.getIncludeFileName())) {
+                    Query filenameQuery = getExactQuery(LuceneService.FIELD_FILENAME_NGRAM, key);
+                    nameAndTagMultipleWordsQueryBuilder.add(filenameQuery, BooleanClause.Occur.SHOULD);
+                }
+                if (BooleanUtil.isTrue(searchDTO.getIncludeTagName())) {
+                    Query tagNameQuery = getExactQuery(LuceneService.FIELD_TAG_NAME_NGRAM, key);
+                    nameAndTagMultipleWordsQueryBuilder.add(tagNameQuery, BooleanClause.Occur.SHOULD);
+                }
+
+            }
+            return nameAndTagMultipleWordsQueryBuilder.build();
+        }
+        return null;
+    }
+
+    private Query getFuzzyQuery(String fieldNameFuzzy, String fuzzyKeyword) throws ParseException {
+        Query contentQuery;
+        QueryParser contentParser = new QueryParser(fieldNameFuzzy, analyzer);
+        contentParser.setDefaultOperator(QueryParser.Operator.AND);
+        contentQuery = contentParser.parse(QueryParser.escape(fuzzyKeyword.trim()));
+        return contentQuery;
+    }
+
+    private static Query getExactQuery(String fieldName, String exactSearchTerm) {
+        Query contentQuery;
+        if (CharSequenceUtil.isBlank(exactSearchTerm)) {
+            contentQuery = new MatchNoDocsQuery();
+        }  else if (exactSearchTerm.length() <= LuceneConfig.NGRAM_MAX_SIZE) {
+            Term term = new Term(fieldName, exactSearchTerm);
+            contentQuery = new TermQuery(term);
+        } else {
+            // 如果用户输入长度大于 maxGramSize，则分解查询字符串
+            BooleanQuery.Builder decomposedQueryBuilder = new BooleanQuery.Builder();
+            boolean hasValidSubTerms = false;
+
+            // 生成重叠的、长度为 maxGram 的子串
+            // 滑动窗口：从索引 0 开始，每次取长度为 maxGram 的子串，然后窗口向右移动一个字符
+            for (int i = 0; i <= exactSearchTerm.length() - LuceneConfig.NGRAM_MAX_SIZE; i++) {
+                String subTerm = exactSearchTerm.substring(i, i + LuceneConfig.NGRAM_MAX_SIZE);
+                if (CharSequenceUtil.isNotBlank(subTerm)) { // 理论上 subTerm 不会为空，但作为防御
+                    decomposedQueryBuilder.add(new TermQuery(new Term(fieldName, subTerm)), BooleanClause.Occur.MUST);
+                    hasValidSubTerms = true;
+                }
+            }
+            if (hasValidSubTerms) {
+                contentQuery = decomposedQueryBuilder.build();
+                log.debug("{} 精确子串搜索 (长查询分解后): {}", fieldName, contentQuery.toString());
+            } else {
+                // 如果分解后没有有效的子查询（例如，原始字符串非常特殊或maxGram设置不当导致无法分解）
+                // 虽然理论上 exactSearchTerm.length() > maxGram 应该总能分解出至少一个，但作为防御
+                contentQuery = new MatchNoDocsQuery();
+            }
+        }
+        return contentQuery;
     }
 
     private static BooleanQuery getOtherOption(SearchDTO searchDTO) {
@@ -418,14 +529,13 @@ public class SearchFileService {
         List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match",
                         new org.bson.Document("_id",
                                 new org.bson.Document("$in", objectIds))),
+                new org.bson.Document("$project", new org.bson.Document("order", 0L).append("contentText", 0L).append("content", 0L)),
                 new org.bson.Document("$addFields",
                         new org.bson.Document("order",
                                 new org.bson.Document("$indexOfArray", Arrays.asList(objectIds, "$_id")))),
                 new org.bson.Document("$sort",
-                        new org.bson.Document("order", 1L)),
-                new org.bson.Document("$project",
-                        new org.bson.Document("order", 0L)
-                                .append("contentText", 0L)));
+                        new org.bson.Document("order", 1L))
+                );
 
         AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(pipeline);
 

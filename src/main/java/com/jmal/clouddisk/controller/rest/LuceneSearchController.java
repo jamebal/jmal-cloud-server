@@ -10,10 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -39,14 +36,21 @@ public class LuceneSearchController {
 
     @Operation(summary = "最近搜索记录")
     @GetMapping("/recentlySearchHistory")
-    public ResponseResult<List<SearchDTO>> recentlySearchHistory() {
-        return ResultUtil.success(searchFileService.recentlySearchHistory());
+    public ResponseResult<List<SearchDTO>> recentlySearchHistory(String keyword) {
+        return ResultUtil.success(searchFileService.recentlySearchHistory(keyword));
     }
 
     @Operation(summary = "删除搜索记录")
     @DeleteMapping("/deleteSearchHistory")
     public ResponseResult<String> deleteSearchHistory(String id) {
         searchFileService.deleteSearchHistory(id);
+        return ResultUtil.success();
+    }
+
+    @Operation(summary = "删除所有搜索记录")
+    @DeleteMapping("/deleteAllSearchHistory")
+    public ResponseResult<String> deleteAllSearchHistory(@RequestParam String userId) {
+        searchFileService.deleteAllSearchHistory(userId);
         return ResultUtil.success();
     }
 }

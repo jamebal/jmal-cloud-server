@@ -88,6 +88,26 @@ public class SearchDTO extends QueryBaseDTO {
      */
     Boolean searchOverall;
 
+    /**
+     * 是否精确匹配
+     */
+    Boolean exactSearch;
+
+    /**
+     * 是否包含标签名称
+     */
+    Boolean includeTagName;
+
+    /**
+     * 是否包含文件名
+     */
+    Boolean includeFileName;
+
+    /**
+     * 是否包含文件内容
+     */
+    Boolean includeFileContent;
+
     public String getSearchUserId() {
         if (CharSequenceUtil.isEmpty(mountUserId)) {
             return userId;
@@ -144,7 +164,11 @@ public class SearchDTO extends QueryBaseDTO {
                 .sizeMin(sizeMin)
                 .sizeMax(sizeMax)
                 .searchMount(searchMount)
-                .searchOverall(searchOverall);
+                .searchOverall(searchOverall)
+                .exactSearch(exactSearch)
+                .includeTagName(includeTagName)
+                .includeFileName(includeFileName)
+                .includeFileContent(includeFileContent);
         return builder.build();
     }
 }
