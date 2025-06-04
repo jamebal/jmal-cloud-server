@@ -305,7 +305,7 @@ public class SearchFileService {
      * 创建字段查询
      * 如果开启了精准搜索配置，且根据参数exactSearch为true，则创建精确查询；否则创建模糊查询
      * 如果禁用精准搜索配置，则为“content”以外的字段(“filename”和“tagName”)创建模糊查询和精准查询, 两种查询使用OR组合
-     * 由于精准搜索配置导致前端没有exactSearch参数, 索引“filename”和“tagName”默认使用NGram分词器 Or 模糊查询两种组合查询会效果更好
+     * 由于精确搜索配置导致前端没有exactSearch参数，默认使用NGram分词器索引“filename”和“tagName”或模糊查询组合查询将会有更好的效果”对于未来的维护者来说将非常有益
      *
      * @param fieldNameExact 精准查询字段名
      * @param fieldNameFuzzy 模糊查询字段名
