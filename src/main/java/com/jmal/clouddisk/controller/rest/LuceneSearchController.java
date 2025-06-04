@@ -49,8 +49,8 @@ public class LuceneSearchController {
 
     @Operation(summary = "删除所有搜索记录")
     @DeleteMapping("/deleteAllSearchHistory")
-    public ResponseResult<String> deleteAllSearchHistory(@RequestParam String userId) {
-        searchFileService.deleteAllSearchHistory(userId);
+    public ResponseResult<String> deleteAllSearchHistory() {
+        searchFileService.deleteAllSearchHistory();
         return ResultUtil.success();
     }
 }

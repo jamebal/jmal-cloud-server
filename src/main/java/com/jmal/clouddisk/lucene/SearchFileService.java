@@ -161,7 +161,8 @@ public class SearchFileService {
         mongoTemplate.remove(query, SearchOptionHistoryDO.class);
     }
 
-    public void deleteAllSearchHistory(String userId) {
+    public void deleteAllSearchHistory() {
+        String userId = userLoginHolder.getUserId();
         if (CharSequenceUtil.isBlank(userId)) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS);
         }
@@ -246,7 +247,7 @@ public class SearchFileService {
             contentQuery = contentBooleanQueryBuilder.build();
         }
 
-        // 如果keyword中有空格，将其拆分为多个关键字，这多个关键字之间是AND关系,在name或tag字段
+        // 如果keyword中有空格，将其拆分为多个关键字，这多个关键字之间是OR关系,在name或tag字段
         Query nameAndTagQuery = null;
         if (!BooleanUtil.isTrue(searchDTO.getExactSearch())) {
             nameAndTagQuery = getMultipleKeywordsQuery(searchDTO, fuzzyKeyword);
@@ -303,7 +304,8 @@ public class SearchFileService {
     /**
      * 创建字段查询
      * 如果开启了精准搜索配置，且根据参数exactSearch为true，则创建精确查询；否则创建模糊查询
-     * 如果没有开启精准搜索配置，则为“content”以外的字段创建模糊查询和精准查询, 两种查询使用OR组合
+     * 如果禁用精准搜索配置，则为“content”以外的字段(“filename”和“tagName”)创建模糊查询和精准查询, 两种查询使用OR组合
+     * 由于精准搜索配置导致前端没有exactSearch参数, 索引“filename”和“tagName”默认使用NGram分词器 Or 模糊查询两种组合查询会效果更好
      *
      * @param fieldNameExact 精准查询字段名
      * @param fieldNameFuzzy 模糊查询字段名
@@ -338,7 +340,7 @@ public class SearchFileService {
     }
 
     private Query getMultipleKeywordsQuery(SearchDTO searchDTO, String fuzzyKeyword) {
-        if (fuzzyKeyword.contains(" ") && BooleanUtil.isTrue(searchDTO.getIncludeFileName())) {
+        if (fuzzyKeyword.contains(" ") && (BooleanUtil.isTrue(searchDTO.getIncludeFileName()) || BooleanUtil.isTrue(searchDTO.getIncludeTagName()))) {
             BooleanQuery.Builder nameAndTagMultipleWordsQueryBuilder = new BooleanQuery.Builder();
             for (String key : fuzzyKeyword.split(" ")) {
 
