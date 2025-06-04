@@ -302,6 +302,9 @@ public class SearchFileService {
 
     /**
      * 创建字段查询
+     * 如果开启了精准搜索配置，且根据参数exactSearch为true，则创建精确查询；否则创建模糊查询
+     * 如果没有开启精准搜索配置，则为“content”以外的字段创建模糊查询和精准查询, 两种查询使用OR组合
+     *
      * @param fieldNameExact 精准查询字段名
      * @param fieldNameFuzzy 模糊查询字段名
      * @param exactKeyword 精准查询关键字
