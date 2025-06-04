@@ -44,9 +44,6 @@ public class SettingService {
     FileProperties fileProperties;
 
     @Autowired
-    CommonFileService commonFileService;
-
-    @Autowired
     private MongoTemplate mongoTemplate;
 
     protected static final String COLLECTION_NAME_WEBSITE_SETTING = "websiteSetting";
