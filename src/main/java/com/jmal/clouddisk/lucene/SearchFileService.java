@@ -140,7 +140,7 @@ public class SearchFileService {
     }
 
     public List<SearchDTO> recentlySearchHistory(String keyword) {
-        // 最近8条搜索记录
+        // 最近6条搜索记录
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where("searchUserId").is(userLoginHolder.getUserId()));
         if (CharSequenceUtil.isNotBlank(keyword)) {
@@ -250,7 +250,7 @@ public class SearchFileService {
         // 如果keyword中有空格，将其拆分为多个关键字，这多个关键字之间是OR关系,在name或tag字段
         Query nameAndTagQuery = null;
         if (!BooleanUtil.isTrue(searchDTO.getExactSearch())) {
-            nameAndTagQuery = getMultipleKeywordsQuery(searchDTO, fuzzyKeyword);
+            nameAndTagQuery = getMultipleKeywordsQuery(searchDTO, exactKeyword);
         }
 
         // 将正则表达式查询、短语查询和分词匹配查询组合成一个查询（OR关系）
@@ -339,10 +339,10 @@ public class SearchFileService {
         return booleanQueryFieldBuilder;
     }
 
-    private Query getMultipleKeywordsQuery(SearchDTO searchDTO, String fuzzyKeyword) {
-        if (fuzzyKeyword.contains(" ") && (BooleanUtil.isTrue(searchDTO.getIncludeFileName()) || BooleanUtil.isTrue(searchDTO.getIncludeTagName()))) {
+    private Query getMultipleKeywordsQuery(SearchDTO searchDTO, String exactKeyword) {
+        if (exactKeyword.contains(" ") && (BooleanUtil.isTrue(searchDTO.getIncludeFileName()) || BooleanUtil.isTrue(searchDTO.getIncludeTagName()))) {
             BooleanQuery.Builder nameAndTagMultipleWordsQueryBuilder = new BooleanQuery.Builder();
-            for (String key : fuzzyKeyword.split(" ")) {
+            for (String key : exactKeyword.split(" ")) {
 
                 if (BooleanUtil.isTrue(searchDTO.getIncludeFileName())) {
                     Query filenameQuery = getExactQuery(LuceneService.FIELD_FILENAME_NGRAM, key);
