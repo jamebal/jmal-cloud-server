@@ -269,7 +269,7 @@ public class RebuildIndexTaskService {
                     deleteDocWithDeleteFlagLock.unlock();
                 }
             }
-        }, 3000);
+        }, 10000);
     }
 
     public void rebuildingIndexCompleted() {
@@ -438,7 +438,7 @@ public class RebuildIndexTaskService {
         public FileVisitResult visitFile(Path file, @NotNull BasicFileAttributes attrs) throws IOException {
             // 判断文件名是否在monitorIgnoreFilePrefix中
             if (fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(file.getFileName()::startsWith)) {
-                log.info("忽略文件:{}", file.getFileName());
+                log.debug("忽略文件:{}", file.getFileName());
                 return super.visitFile(file, attrs);
             }
             processCount.incrementAndGet();
