@@ -1258,7 +1258,7 @@ public class CommonFileService {
                     String name = document.getString("name");
                     String path = document.getString("path");
                     File file = new File(Paths.get(fileProperties.getRootDir(), username, path, name).toString());
-                    if (!file.exists()) {
+                    if (!file.exists() || fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(file.getName()::startsWith)) {
                         deleteFile(username, file);
                         log.info("删除不存在的文档: {}", file.getAbsolutePath());
                     } else {
@@ -1267,8 +1267,10 @@ public class CommonFileService {
                         removeDeletequery.addCriteria(Criteria.where("_id").in(fileId).and("delete").is(1));
                         Update update = new Update();
                         update.unset("delete");
-                        mongoTemplate.updateMulti(removeDeletequery, update, CommonFileService.COLLECTION_NAME);
-
+                        UpdateResult result = mongoTemplate.updateMulti(removeDeletequery, update, CommonFileService.COLLECTION_NAME);
+                        if (result.getModifiedCount() == 0) {
+                            log.error("Failed to unset delete flag for file: {}", file.getAbsolutePath());
+                        }
                     }
                 }
             }
