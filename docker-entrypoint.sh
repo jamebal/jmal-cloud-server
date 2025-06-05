@@ -3,8 +3,7 @@ set -e
 
 USER_UID=${PUID:-0}
 USER_GID=${PGID:-0}
-JVM_OPTS="${JVM_OPTS:-}"
-FINAL_JVM_OPTS=""
+TZ=${TZ:-Asia/Shanghai}
 
 mkdir -p /log
 
@@ -14,16 +13,8 @@ chown ${USER_UID}:${USER_GID} /usr/local/clouddisk-${VERSION}.jar
 chown -R ${USER_UID}:${USER_GID} /usr/local/clouddisk-lib
 chown -R ${USER_UID}:${USER_GID} log
 
-# 如果EXACT_SEARCH为true, 则JVM_OPTS为空
-if [ "${EXACT_SEARCH}" = "true" ]; then
-  FINAL_JVM_OPTS=""
-else
-  FINAL_JVM_OPTS="${JVM_OPTS}"
-fi
-
-echo "Final JVM_OPTS to be used: '${FINAL_JVM_OPTS}'"
-
-exec gosu ${USER_UID}:${USER_GID} java ${FINAL_JVM_OPTS} \
+exec gosu ${USER_UID}:${USER_GID} java ${JVM_OPTS} \
+ -Duser.timezone=${TZ} \
  -Dfile.encoding=UTF-8 \
  -Dloader.path=/usr/local/clouddisk-lib \
  -jar /usr/local/clouddisk-${VERSION}.jar \
