@@ -217,7 +217,7 @@ public class LuceneService {
             } catch (Exception e) {
                 log.error("创建索引失败", e);
             }
-        }, 0, 200, TimeUnit.MILLISECONDS);
+        }, 0, 1000, TimeUnit.MILLISECONDS);
     }
 
     /**
