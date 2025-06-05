@@ -117,12 +117,12 @@ public class LuceneService {
     @PostConstruct
     public void init() {
         if (executorCreateIndexService == null) {
-            int processors = Runtime.getRuntime().availableProcessors() - 1;
+            int processors = Runtime.getRuntime().availableProcessors() - 2;
             executorCreateIndexService = ThreadUtil.newFixedExecutor(Math.max(processors, 3), 100, "createIndexFileTask", true);
         }
         if (executorUpdateContentIndexService == null) {
             // 获取可用处理器数量
-            int processors = Runtime.getRuntime().availableProcessors() - 2;
+            int processors = Runtime.getRuntime().availableProcessors() - 3;
             // 获取jvm可用内存
             long maxMemory = Runtime.getRuntime().maxMemory();
             // 设置线程数, 假设每个线程占用内存为100M
@@ -177,7 +177,7 @@ public class LuceneService {
         if (indexFileQueue == null) {
             indexFileQueue = new ArrayBlockingQueue<>(CREATE_INDEX_QUEUE_SIZE);
             if (scheduler == null) {
-                scheduler = Executors.newScheduledThreadPool(1);
+                scheduler = new ScheduledThreadPoolExecutor(1, ThreadUtil.createThreadFactory("luceneScheduler"));
             }
             createIndexFileTask();
         }
