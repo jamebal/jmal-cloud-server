@@ -1252,6 +1252,7 @@ public class CommonFileService {
                 List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match", new org.bson.Document("delete", 1)), new org.bson.Document("$project", new org.bson.Document("_id", 1).append("name", 1).append("path", 1).append("userId", 1)), new org.bson.Document("$sort", new org.bson.Document("isFolder", 1L)), new org.bson.Document("$limit", 1));
                 AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
                 for (org.bson.Document document : aggregateIterable) {
+                    String fileId = document.getObjectId("_id").toHexString();
                     String userId = document.getString("userId");
                     String username = userService.getUserNameById(userId);
                     String name = document.getString("name");
@@ -1260,6 +1261,14 @@ public class CommonFileService {
                     if (!file.exists()) {
                         deleteFile(username, file);
                         log.info("删除不存在的文档: {}", file.getAbsolutePath());
+                    } else {
+                        log.warn("需要删除的文件: {}", file.getAbsolutePath());
+                        Query removeDeletequery = new Query();
+                        removeDeletequery.addCriteria(Criteria.where("_id").in(fileId).and("delete").is(1));
+                        Update update = new Update();
+                        update.unset("delete");
+                        mongoTemplate.updateMulti(removeDeletequery, update, CommonFileService.COLLECTION_NAME);
+
                     }
                 }
             }
