@@ -229,12 +229,19 @@ public class AuthInterceptor implements HandlerInterceptor {
         return renewJmalToken(request, response, username, hashPassword, refreshToken);
     }
 
-    private static void setJmalTokenCookie(HttpServletResponse response, String jmalToken) {
+    private static void setJmalTokenCookie(HttpServletResponse response, String username, String jmalToken) {
         Cookie tokenCookie = new Cookie(JMAL_TOKEN, jmalToken);
         tokenCookie.setMaxAge(TWO_HOURS_IN_SECONDS);
         tokenCookie.setHttpOnly(true);
         tokenCookie.setPath("/");
         response.addCookie(tokenCookie);
+
+        Cookie nameCookie = new Cookie(IUserService.USERNAME, username);
+        nameCookie.setMaxAge(TWO_HOURS_IN_SECONDS);
+        nameCookie.setHttpOnly(true);
+        nameCookie.setPath("/");
+        response.addCookie(nameCookie);
+
         response.addHeader(JMAL_TOKEN, jmalToken);
     }
 
@@ -270,7 +277,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         refreshCookie.setHttpOnly(true);
         refreshCookie.setPath("/");
         response.addCookie(refreshCookie);
-        setJmalTokenCookie(response, jmalToken);
+        setJmalTokenCookie(response, username, jmalToken);
     }
 
     public static void removeCookies(HttpServletResponse response, String ...keys) {
@@ -302,7 +309,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             out = response.getOutputStream();
             ResponseResult<Object> result = ResultUtil.error(ExceptionType.LOGIN_EXCEPTION.getCode(), ExceptionType.LOGIN_EXCEPTION.getMsg());
             out.write(JSON.toJSONString(result).getBytes());
-            removeCookies(response, AuthInterceptor.JMAL_TOKEN);
+            removeCookies(response, IUserService.USERNAME, AuthInterceptor.JMAL_TOKEN);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         } finally {

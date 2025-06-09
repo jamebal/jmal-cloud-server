@@ -320,7 +320,20 @@
     "path": "",
     "sortNumber": 103,
     "updateTime": 1610431881591
-  },
+  },{
+  "authority": "cloud:file:packageDownload",
+  "component": "",
+  "createTime": 1749449364061,
+  "hide": false,
+  "icon": "",
+  "id": "6846798fd910ad3d1894e333",
+  "menuType": 1,
+  "name": "menu.packageDownload",
+  "parentId": "",
+  "path": "",
+  "sortNumber": 105,
+  "updateTime": 1749449364061
+},
   {
     "authority": "cloud:file:upload",
     "component": "",
