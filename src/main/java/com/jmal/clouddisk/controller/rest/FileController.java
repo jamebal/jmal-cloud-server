@@ -213,12 +213,21 @@ public class FileController {
 
     @Operation(summary = "是否允许下载")
     @GetMapping("/isAllowDownload")
+    @Permission("cloud:file:download")
     public ResponseResult<Object> isAllowDownload(@RequestParam List<String> fileIds) {
+        return fileService.isAllowDownload(fileIds);
+    }
+
+    @Operation(summary = "是否允许批量下载")
+    @GetMapping("/isAllowPackageDownload")
+    @Permission("cloud:file:packageDownload")
+    public ResponseResult<Object> isAllowPackageDownload(@RequestParam List<String> fileIds) {
         return fileService.isAllowDownload(fileIds);
     }
 
     @Operation(summary = "打包下载")
     @GetMapping("/packageDownload")
+    @Permission("cloud:file:packageDownload")
     @LogOperatingFun
     public void packageDownload(HttpServletRequest request, HttpServletResponse response, @RequestParam String[] fileIds) {
         if (fileIds != null && fileIds.length > 0) {
