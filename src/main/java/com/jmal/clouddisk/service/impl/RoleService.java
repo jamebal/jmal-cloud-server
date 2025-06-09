@@ -296,7 +296,7 @@ public class RoleService {
                 mongoTemplate.insert(roleDO);
             }
         });
-        log.info("更新菜单， 耗时:{}ms", timeInterval.intervalMs());
+        log.info("更新角色， 耗时:{}ms", timeInterval.intervalMs());
     }
 
     private static List<RoleDO> getRoleDOListByConfigJSON() {
