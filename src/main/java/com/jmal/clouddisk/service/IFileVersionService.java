@@ -8,6 +8,7 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -21,11 +22,19 @@ public interface IFileVersionService {
 
     /**
      * 保存当前文件为历史文件
-     * @param username username
+     * @param fileUsername 文件所属用户
      * @param relativePath 文件的相对路径
      * @param userId userId
      */
-    void saveFileVersion(String username, String relativePath, String userId);
+    void saveFileVersion(String fileUsername, String relativePath, String userId);
+
+    /**
+     * 保存当前文件为历史文件
+     * @param fileUsername 文件所属用户
+     * @param file file 操作的文件
+     * @param operator 操作用户
+     */
+    void asyncSaveFileVersion(String fileUsername, File file, String operator);
 
     /**
      * 保存当前文件为历史文件

@@ -19,6 +19,7 @@ import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
@@ -75,9 +76,12 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     private final CommonFileService commonFileService;
 
+    private final IFileVersionService fileVersionService;
+
     private final LuceneService luceneService;
 
     private final LogService logService;
+    private final UserLoginHolder userLoginHolder;
 
 
     @Override
@@ -642,6 +646,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
         // 文件操作日志
         logService.asyncAddLogFileOperation(upload.getUsername(), upload.getRelativePath(), "修改文件");
+        // 修改文件之后保存历史版本
+        fileVersionService.asyncSaveFileVersion(upload.getUsername(), file, userLoginHolder.getUsername());
         return ResultUtil.success();
     }
 

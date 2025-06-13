@@ -6,6 +6,8 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.URLUtil;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -18,10 +20,13 @@ import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IFileVersionService;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.mongodb.client.gridfs.model.GridFSFile;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
@@ -54,6 +59,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -83,45 +89,75 @@ public class FileVersionServiceImpl implements IFileVersionService {
 
     private final UserLoginHolder userLoginHolder;
 
+    private final IUserService userService;
+
     private final LuceneService luceneService;
 
+    private final Cache<String, Object> fileLocks = Caffeine.newBuilder()
+            .expireAfterAccess(10, TimeUnit.MINUTES) // 例如：10分钟不访问就过期
+            .maximumSize(10_000) // 例如：最多缓存10000个文件路径的锁
+            .build();
+
     @Override
-    public void saveFileVersion(String username, String relativePath, String userId) {
-        File file = new File(Paths.get(fileProperties.getRootDir(), username, relativePath).toString());
-        String filepath = Paths.get(username, relativePath).toString();
-        if (CaffeineUtil.hasFileHistoryCache(filepath)) {
-            return;
-        }
-        FileDocument fileDocument = commonFileService.getFileDocumentByPath(filepath, userId);
-        long size = file.length();
-        String updateDate = fileDocument.getUpdateDate().format(DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
-        Metadata metadata = setMetadata(size, filepath, file.getName(), updateDate, userLoginHolder.getUsername());
-        if (metadata == null) return;
-        try (InputStream inputStream = new FileInputStream(file);
-             InputStream gzipInputStream = gzipCompress(inputStream, metadata)) {
-            gridFsTemplate.store(gzipInputStream, fileDocument.getId(), metadata);
-            CaffeineUtil.setFileHistoryCache(filepath);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
+    public void saveFileVersion(String fileUsername, String relativePath, String userId) {
+        saveFileVersion(fileUsername, relativePath, userId, userLoginHolder.getUsername());
+    }
+
+    private void saveFileVersion(String fileUsername, String relativePath, String userId, String operator) {
+        File file = new File(Paths.get(fileProperties.getRootDir(), fileUsername, relativePath).toString());
+        String filepath = Paths.get(fileUsername, relativePath).toString();
+        Object lock = fileLocks.get(filepath, k -> new Object());
+        if (lock != null) {
+            synchronized (lock) {
+                if (CaffeineUtil.hasFileHistoryCache(filepath)) {
+                    return;
+                }
+                FileDocument fileDocument = commonFileService.getFileDocumentByPath(filepath, userId);
+                long size = file.length();
+                String updateDate = fileDocument.getUpdateDate().format(DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
+                Metadata metadata = setMetadata(size, filepath, file.getName(), updateDate, operator);
+                if (metadata == null) return;
+                try (InputStream inputStream = new FileInputStream(file);
+                     InputStream gzipInputStream = gzipCompress(inputStream, metadata)) {
+                    gridFsTemplate.store(gzipInputStream, fileDocument.getId(), metadata);
+                    CaffeineUtil.setFileHistoryCache(filepath);
+                } catch (IOException e) {
+                    log.error(e.getMessage(), e);
+                }
+            }
         }
     }
 
     @Override
+    public void asyncSaveFileVersion(String fileUsername, File file, String operator) {
+        Path physicalPath = file.toPath();
+        Path userRootPath = Paths.get(fileProperties.getRootDir(), fileUsername);
+        Path relativeNioPath = userRootPath.relativize(physicalPath);
+        Completable.fromAction(() -> saveFileVersion(fileUsername, relativeNioPath.toString(), userService.getUserIdByUserName(fileUsername), operator)).subscribeOn(Schedulers.io()).subscribe();
+    }
+
+
+    @Override
     public void saveFileVersion(AbstractOssObject abstractOssObject, String fileId) {
-        if (CaffeineUtil.hasFileHistoryCache(fileId)) {
-            return;
-        }
-        long size = abstractOssObject.getContentLength();
-        String filename = Paths.get(abstractOssObject.getKey()).getFileName().toString();
-        String updateDate = DateUtil.format(abstractOssObject.getFileInfo().getLastModified(), DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
-        Metadata metadata = setMetadata(size, fileId, filename, updateDate, userLoginHolder.getUsername());
-        if (metadata == null) return;
-        try (InputStream inputStream = abstractOssObject.getInputStream();
-             InputStream gzipInputStream = gzipCompress(inputStream, metadata)) {
-            gridFsTemplate.store(gzipInputStream, fileId, metadata);
-            CaffeineUtil.setFileHistoryCache(fileId);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
+        Object lock = fileLocks.get(fileId, k -> new Object());
+        if (lock != null) {
+            synchronized (lock) {
+                if (CaffeineUtil.hasFileHistoryCache(fileId)) {
+                    return;
+                }
+                long size = abstractOssObject.getContentLength();
+                String filename = Paths.get(abstractOssObject.getKey()).getFileName().toString();
+                String updateDate = DateUtil.format(abstractOssObject.getFileInfo().getLastModified(), DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
+                Metadata metadata = setMetadata(size, fileId, filename, updateDate, userLoginHolder.getUsername());
+                if (metadata == null) return;
+                try (InputStream inputStream = abstractOssObject.getInputStream();
+                     InputStream gzipInputStream = gzipCompress(inputStream, metadata)) {
+                    gridFsTemplate.store(gzipInputStream, fileId, metadata);
+                    CaffeineUtil.setFileHistoryCache(fileId);
+                } catch (IOException e) {
+                    log.error(e.getMessage(), e);
+                }
+            }
         }
     }
 

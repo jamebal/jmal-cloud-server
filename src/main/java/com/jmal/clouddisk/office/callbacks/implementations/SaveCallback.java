@@ -8,6 +8,7 @@ import com.jmal.clouddisk.office.callbacks.Callback;
 import com.jmal.clouddisk.office.callbacks.Status;
 import com.jmal.clouddisk.office.model.Track;
 import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.LogService;
@@ -45,6 +46,8 @@ public class SaveCallback implements Callback {
 
     private final IUserService userService;
 
+    private final IFileVersionService fileVersionService;
+
     @Override
     public int handle(Track body) {
         int result = 0;
@@ -57,10 +60,11 @@ public class SaveCallback implements Callback {
 
             // 检查权限
             String userId = fileDocument.getUserId();
+            String fileUsername = userService.getUserNameById(userId);
             List<OperationPermission> operationPermissionList = fileDocument.getOperationPermissionList();
             commonFileService.checkPermissionUserId(userId, operationPermissionList, OperationPermission.PUT);
 
-            Path path = Paths.get(fileProperties.getRootDir(), userService.getUserNameById(userId), fileDocument.getPath(), fileDocument.getName());
+            Path path = Paths.get(fileProperties.getRootDir(), fileUsername, fileDocument.getPath(), fileDocument.getName());
 
             // 下载最新的文件
             long size = HttpUtil.downloadFile(body.getUrl(), path.toString());
@@ -71,8 +75,13 @@ public class SaveCallback implements Callback {
             fileDocument.setUpdateDate(updateDate);
             fileDocument.setMd5(md5);
             // 修改文件日志
-            logService.asyncAddLogFileOperation(userService.getUserNameById(userId), Paths.get(fileDocument.getPath(), fileDocument.getName()).toString(), "修改文件");
+            logService.asyncAddLogFileOperation(fileUsername, Paths.get(fileDocument.getPath(), fileDocument.getName()).toString(), "修改文件");
             commonFileService.pushMessage(userLoginHolder.getUsername(), fileDocument, Constants.UPDATE_FILE);
+
+            // 修改文件之后保存历史版本
+            String relativePath = Paths.get(fileDocument.getPath(), fileDocument.getName()).toString();
+            fileVersionService.saveFileVersion(fileUsername, relativePath, userId);
+
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return 1;
