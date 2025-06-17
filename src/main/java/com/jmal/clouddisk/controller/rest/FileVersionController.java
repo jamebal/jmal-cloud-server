@@ -4,6 +4,7 @@ import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.GridFSBO;
 import com.jmal.clouddisk.model.LogOperation;
+import com.jmal.clouddisk.office.OfficeHistory;
 import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -37,6 +38,14 @@ public class FileVersionController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<List<GridFSBO>> list(String fileId, @RequestParam Integer pageSize, @RequestParam Integer pageIndex) {
         return fileVersionService.listFileVersion(fileId, pageSize, pageIndex);
+    }
+
+    @Operation(summary = "office历史文件列表(根据fileId)")
+    @GetMapping("/office/list")
+    @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseResult<List<OfficeHistory>> officeList(String fileId, @RequestParam Integer pageSize, @RequestParam Integer pageIndex) {
+        return fileVersionService.officeListFileVersion(fileId, pageSize, pageIndex);
     }
 
     @Operation(summary = "历史文件列表(根据filepath)")

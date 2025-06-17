@@ -15,6 +15,7 @@ import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.GridFSBO;
 import com.jmal.clouddisk.model.Metadata;
+import com.jmal.clouddisk.office.OfficeHistory;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
@@ -227,6 +228,27 @@ public class FileVersionServiceImpl implements IFileVersionService {
         query.with(Sort.by(Sort.Direction.DESC, Constants.UPLOAD_DATE));
         gridFSBOList = mongoTemplate.find(query, GridFSBO.class, COLLECTION_NAME);
         return ResultUtil.success(gridFSBOList).setCount(count);
+    }
+
+    public ResponseResult<List<OfficeHistory>> officeListFileVersion(String path, Integer pageSize, Integer pageIndex) {
+        ResponseResult<List<GridFSBO>> result = listFileVersion(path, pageSize, pageIndex);
+        List<OfficeHistory> officeHistoryList = result.getData().stream().map(gridFSBO -> {
+            OfficeHistory officeHistory = new OfficeHistory();
+            officeHistory.setCreated(gridFSBO.getMetadata().getTime());
+            officeHistory.setKey(gridFSBO.getId());
+            // 将时间设置为版本号, 格式转换为MM-dd
+            officeHistory.setVersion(gridFSBO.getUploadDate().format(DateTimeFormatter.ofPattern("MM-dd")));
+            OfficeHistory.User user = new OfficeHistory.User();
+            String username = gridFSBO.getMetadata().getOperator();
+            if (CharSequenceUtil.isBlank(username)) {
+                username = "Unknown";
+            }
+            user.setId(username);
+            user.setName(username);
+            officeHistory.setUser(user);
+            return officeHistory;
+        }).toList();
+        return ResultUtil.success(officeHistoryList).setCount(result.getCount());
     }
 
     @Override

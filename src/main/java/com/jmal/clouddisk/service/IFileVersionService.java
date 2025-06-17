@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service;
 
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.GridFSBO;
+import com.jmal.clouddisk.office.OfficeHistory;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.util.ResponseResult;
 import org.springframework.core.io.InputStreamResource;
@@ -59,6 +60,15 @@ public interface IFileVersionService {
      * @return ResponseResult<List<GridFSBO>>
      */
     ResponseResult<List<GridFSBO>> listFileVersion(String fileId, Integer pageSize, Integer pageIndex);
+
+    /**
+     * 列出文件历史版本(用于office)
+     * @param fileId 文件id
+     * @param pageSize 每页条数
+     * @param pageIndex 页数
+     * @return ResponseResult<List<OfficeHistory>>
+     */
+    ResponseResult<List<OfficeHistory>> officeListFileVersion(String fileId, Integer pageSize, Integer pageIndex);
 
     /**
      * 列出文件的历史版本(根据filepath)
