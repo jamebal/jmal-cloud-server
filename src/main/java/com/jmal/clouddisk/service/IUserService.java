@@ -93,6 +93,13 @@ public interface IUserService {
      */
     String getUserIdByUserName(String username);
 
+    /**
+     * 获取用户头像
+     * @param username  username
+     * @return 头像的文件id
+     */
+    String getAvatarByUsername(String username);
+
     /***
      * 是否有用户
      * @return ResponseResult
@@ -181,11 +188,5 @@ public interface IUserService {
      * @return 用户信息
      */
     ConsumerDO getUserInfoByUsername(String username);
-
-    /**
-     * 获取所有用户名列表
-     * @return 用户名列表
-     */
-    List<String> getAllUsernameList();
 
 }

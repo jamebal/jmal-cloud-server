@@ -12,6 +12,7 @@ import com.jmal.clouddisk.oss.web.WebOssCommonService;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
+import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -20,7 +21,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -44,16 +45,16 @@ import java.util.Optional;
  */
 @Tag(name = "文件管理")
 @RestController
+@RequiredArgsConstructor
 public class FileController {
 
-    @Autowired
-    private IFileService fileService;
+    private final IFileService fileService;
 
-    @Autowired
-    private WebOssService webOssService;
+    private final WebOssService webOssService;
 
-    @Autowired
-    UserLoginHolder userLoginHolder;
+    private final UserLoginHolder userLoginHolder;
+
+    private final IUserService userService;
 
     @Operation(summary = "根据id获取文件信息")
     @GetMapping("/file_info")
@@ -258,6 +259,15 @@ public class FileController {
         }
         Optional<FileDocument> file = fileService.thumbnail(id, showCover);
         return file.map(fileService::getObjectResponseEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+    }
+
+    @Operation(summary = "显示缩略图")
+    @GetMapping("/view/thumbnail/user/{username}")
+    @Permission("cloud:file:list")
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseEntity<Object> thumbnailByUsername(@PathVariable String username, Boolean showCover) {
+        String avatar = userService.getAvatarByUsername(username);
+        return thumbnail(avatar, showCover);
     }
 
     @Operation(summary = "显示缩略图")

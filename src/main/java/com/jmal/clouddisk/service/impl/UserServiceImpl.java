@@ -383,6 +383,7 @@ public class UserServiceImpl implements IUserService {
         return consumer.getShowName();
     }
 
+    @Override
     public String getAvatarByUsername(String username) {
         ConsumerDO consumer = getUserInfoByUsername(username);
         if (consumer == null) {
@@ -537,14 +538,6 @@ public class UserServiceImpl implements IUserService {
         Query query = new Query();
         query.addCriteria(Criteria.where(USERNAME).is(username));
         return mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
-    }
-
-    @Override
-    public List<String> getAllUsernameList() {
-        Query query = new Query();
-        query.fields().include(USERNAME);
-        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
-        return userList.stream().map(ConsumerDO::getUsername).toList();
     }
 
     @Override

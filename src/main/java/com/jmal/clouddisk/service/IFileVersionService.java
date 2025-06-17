@@ -2,12 +2,14 @@ package com.jmal.clouddisk.service;
 
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.GridFSBO;
+import com.jmal.clouddisk.office.OfficeHistory;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.util.ResponseResult;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -21,11 +23,19 @@ public interface IFileVersionService {
 
     /**
      * 保存当前文件为历史文件
-     * @param username username
+     * @param fileUsername 文件所属用户
      * @param relativePath 文件的相对路径
      * @param userId userId
      */
-    void saveFileVersion(String username, String relativePath, String userId);
+    void saveFileVersion(String fileUsername, String relativePath, String userId);
+
+    /**
+     * 保存当前文件为历史文件
+     * @param fileUsername 文件所属用户
+     * @param file file 操作的文件
+     * @param operator 操作用户
+     */
+    void asyncSaveFileVersion(String fileUsername, File file, String operator);
 
     /**
      * 保存当前文件为历史文件
@@ -50,6 +60,15 @@ public interface IFileVersionService {
      * @return ResponseResult<List<GridFSBO>>
      */
     ResponseResult<List<GridFSBO>> listFileVersion(String fileId, Integer pageSize, Integer pageIndex);
+
+    /**
+     * 列出文件历史版本(用于office)
+     * @param fileId 文件id
+     * @param pageSize 每页条数
+     * @param pageIndex 页数
+     * @return ResponseResult<List<OfficeHistory>>
+     */
+    ResponseResult<List<OfficeHistory>> officeListFileVersion(String fileId, Integer pageSize, Integer pageIndex);
 
     /**
      * 列出文件的历史版本(根据filepath)
