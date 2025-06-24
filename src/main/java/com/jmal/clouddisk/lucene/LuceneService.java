@@ -134,7 +134,7 @@ public class LuceneService {
             executorUpdateContentIndexService = ThreadUtil.newFixedExecutor(smallProcessors, 20, "updateContentIndexTask", true);
         }
         if (executorUpdateBigContentIndexService == null) {
-            // 设置线程数, 假设每个线程占用内存为2G
+            // 设置线程数, 假设每个线程占用内存为4G
             int bigProcessors = Math.toIntExact(maxMemory / 1024 / 1024 / 4096);
             bigProcessors = Math.max(bigProcessors, 1);
             executorUpdateBigContentIndexService = ThreadUtil.newFixedExecutor(bigProcessors, 100, "updateBigContentIndexTask", true);
