@@ -7,8 +7,6 @@ TZ=${TZ:-Asia/Shanghai}
 
 mkdir -p /log
 
-chown -R ${USER_UID}:${USER_GID} /jmalcloud
-
 chown ${USER_UID}:${USER_GID} /usr/local/clouddisk-${VERSION}.jar
 chown -R ${USER_UID}:${USER_GID} /usr/local/clouddisk-lib
 chown -R ${USER_UID}:${USER_GID} log
