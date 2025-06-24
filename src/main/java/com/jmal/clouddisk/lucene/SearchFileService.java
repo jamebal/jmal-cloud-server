@@ -367,11 +367,11 @@ public class SearchFileService {
         return contentQuery;
     }
 
-    private static Query getExactQuery(String fieldName, String exactSearchTerm) {
+    private Query getExactQuery(String fieldName, String exactSearchTerm) {
         Query contentQuery;
         if (CharSequenceUtil.isBlank(exactSearchTerm)) {
             contentQuery = new MatchNoDocsQuery();
-        }  else if (exactSearchTerm.length() <= LuceneConfig.NGRAM_MAX_SIZE) {
+        }  else if (exactSearchTerm.length() <= fileProperties.getNgramMaxSize()) {
             Term term = new Term(fieldName, exactSearchTerm);
             contentQuery = new TermQuery(term);
         } else {
@@ -381,8 +381,8 @@ public class SearchFileService {
 
             // 生成重叠的、长度为 maxGram 的子串
             // 滑动窗口：从索引 0 开始，每次取长度为 maxGram 的子串，然后窗口向右移动一个字符
-            for (int i = 0; i <= exactSearchTerm.length() - LuceneConfig.NGRAM_MAX_SIZE; i++) {
-                String subTerm = exactSearchTerm.substring(i, i + LuceneConfig.NGRAM_MAX_SIZE);
+            for (int i = 0; i <= exactSearchTerm.length() - fileProperties.getNgramMaxSize(); i++) {
+                String subTerm = exactSearchTerm.substring(i, i + fileProperties.getNgramMaxSize());
                 if (CharSequenceUtil.isNotBlank(subTerm)) { // 理论上 subTerm 不会为空，但作为防御
                     decomposedQueryBuilder.add(new TermQuery(new Term(fieldName, subTerm)), BooleanClause.Occur.MUST);
                     hasValidSubTerms = true;

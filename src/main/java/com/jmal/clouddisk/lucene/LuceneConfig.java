@@ -46,8 +46,6 @@ public class LuceneConfig {
     private IndexWriter indexWriterInstance; // 用于存储 IndexWriter Bean 的实例
     private SearcherManager searcherManagerInstance; // 用于存储 SearcherManager Bean 的实例
 
-    public static final int NGRAM_MIN_SIZE = 2; // 用户可能搜索的最短精确片段长度 (可调)
-    public static final int NGRAM_MAX_SIZE = 8; // 用户可能搜索的最长精确片段长度 (可调)
     public static final boolean IGNORE_CASE_FOR_NGRAM = true; // 是否忽略大小写 (可调)
 
     /**
@@ -87,7 +85,7 @@ public class LuceneConfig {
                 }
 
                 // 从这个 (可能已小写的) 大 Token 中生成 N-Grams
-                stream = new NGramTokenFilter(stream, NGRAM_MIN_SIZE, NGRAM_MAX_SIZE, false);
+                stream = new NGramTokenFilter(stream, fileProperties.getNgramMinSize(), fileProperties.getNgramMaxSize(), false);
 
                 return new TokenStreamComponents(tokenizer, stream);
             }
