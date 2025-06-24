@@ -123,20 +123,21 @@ public class FileProperties {
         this.ip2regionDbPath = path;
     }
 
-    public int getNgramMaxContentLength() {
-        // 当可用内存小于4G，需要设置更小的ngramMaxContentLengthMB
-        long maxMemory = Runtime.getRuntime().maxMemory();
-        if (maxMemory < 4096L * 1024 * 1024 && ngramMaxContentLengthMB >= 3.0) {
-            if (maxMemory < 1024L * 1024 * 1024) {
-                ngramMaxContentLengthMB = 0.1;
-            } else if (maxMemory < 2048L * 1024 * 1024) {
-                ngramMaxContentLengthMB = 1.0;
-            } else {
-                ngramMaxContentLengthMB = 2.0;
-            }
+public int getNgramMaxContentLength() {
+    // 当可用内存小于4G，需要设置更小的ngramMaxContentLengthMB
+    long maxMemory = Runtime.getRuntime().maxMemory();
+    double effectiveNgramMaxContentLengthMB = this.ngramMaxContentLengthMB;
+    if (maxMemory < 4096L * 1024 * 1024 && effectiveNgramMaxContentLengthMB >= 3.0) {
+        if (maxMemory < 1024L * 1024 * 1024) {
+            effectiveNgramMaxContentLengthMB = 0.1;
+        } else if (maxMemory < 2048L * 1024 * 1024) {
+            effectiveNgramMaxContentLengthMB = 1.0;
+        } else {
+            effectiveNgramMaxContentLengthMB = 2.0;
         }
-        return (int) (ngramMaxContentLengthMB * 1024 * 1024);
     }
+    return (int) (effectiveNgramMaxContentLengthMB * 1024 * 1024);
+}
 
     public void setMonitorIgnoreFilePrefix(String monitorIgnoreFilePrefix) {
         if (monitorIgnoreFilePrefix != null && !monitorIgnoreFilePrefix.isEmpty()) {
