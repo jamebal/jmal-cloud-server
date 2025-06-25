@@ -7,6 +7,8 @@ TZ=${TZ:-Asia/Shanghai}
 
 mkdir -p /log
 
+chown ${USER_UID}:${USER_GID} /jmalcloud
+
 chown -R ${USER_UID}:${USER_GID} /jmalcloud/models
 chown -R ${USER_UID}:${USER_GID} /jmalcloud/tess4j
 chown ${USER_UID}:${USER_GID} /jmalcloud/ip2region.xdb
