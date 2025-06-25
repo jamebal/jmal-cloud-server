@@ -36,3 +36,9 @@ springdoc:
   swagger-ui:
     path: /public/api
     doc-expansion: none
+logging:
+  level:
+    nl:
+      siegmann:
+        epublib:
+          epub: OFF
