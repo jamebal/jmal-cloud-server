@@ -114,6 +114,10 @@ public class LuceneService {
     private static final int CHUNK_SIZE_CHARS = 1024; // 例如，每 1KB 左右一个块，或者按行数
     private static final int CHUNK_OVERLAP_CHARS = 7; // 段落间的重叠字符数，防止边界切割问题 (NGramTokenFilter本身可能处理部分边界，但显式重叠更保险)
 
+    private static final long BYTES_PER_MB = 1024L * 1024L;
+    private static final long MEMORY_PER_SMALL_THREAD_MB = 500;
+    private static final long MEMORY_PER_BIG_THREAD_MB = 4096;
+
     @PostConstruct
     public void init() {
         if (executorCreateIndexService == null) {
@@ -126,8 +130,7 @@ public class LuceneService {
         int smallProcessors = Runtime.getRuntime().availableProcessors() - 3;
         if (executorUpdateContentIndexService == null) {
             // 设置线程数, 假设每个线程占用内存为500M
-            final long MEMORY_PER_SMALL_THREAD_MB = 500;
-            int maxSmallProcessors = (int) ((maxMemory / 1024 / 1024) / MEMORY_PER_SMALL_THREAD_MB);
+            int maxSmallProcessors = (int) ((maxMemory / BYTES_PER_MB) / MEMORY_PER_SMALL_THREAD_MB);
             if (smallProcessors > maxSmallProcessors) {
                 smallProcessors = maxSmallProcessors;
             }
@@ -136,8 +139,7 @@ public class LuceneService {
         }
         if (executorUpdateBigContentIndexService == null) {
             // 设置线程数, 假设每个线程占用内存为4G
-            final long MEMORY_PER_BIG_THREAD_MB = 4096;
-            int bigProcessors = Math.toIntExact((maxMemory / 1024 / 1024) / MEMORY_PER_BIG_THREAD_MB);
+            int bigProcessors = Math.toIntExact((maxMemory / BYTES_PER_MB) / MEMORY_PER_BIG_THREAD_MB);
             bigProcessors = Math.max(bigProcessors, 1);
             executorUpdateBigContentIndexService = ThreadUtil.newFixedExecutor(bigProcessors, 100, "updateBigContentIndexTask", true);
         }

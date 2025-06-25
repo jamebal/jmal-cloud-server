@@ -108,7 +108,7 @@ public class FileProperties {
     /**
      * ngram最大内容长度
      */
-    private Double ngramMaxContentLengthMB;
+    private Double ngramMaxContentLengthMB = 5.0;
     private Integer ngramMinSize = 2;
     private Integer ngramMaxSize = 6;
 
