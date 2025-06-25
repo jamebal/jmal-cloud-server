@@ -133,10 +133,12 @@ public int getNgramMaxContentLength() {
     long maxMemory = Runtime.getRuntime().maxMemory();
     double effectiveNgramMaxContentLengthMB = this.ngramMaxContentLengthMB;
     final long GIGABYTE = 1024L * 1024 * 1024;
+    final double NGRAM_THRESHOLD_MB = 3.0;
+    final int MAX_MEMORY_GB = 4;
     final double ONE_GB_CONFIG = 0.1;
     final double TWO_GB_CONFIG = 1.0;
     final double THREE_GB_CONFIG = 2.0;
-    if (maxMemory < 4 * GIGABYTE && effectiveNgramMaxContentLengthMB >= 3.0) {
+    if (maxMemory < MAX_MEMORY_GB * GIGABYTE && effectiveNgramMaxContentLengthMB >= NGRAM_THRESHOLD_MB) {
         if (maxMemory < GIGABYTE) {
             effectiveNgramMaxContentLengthMB = ONE_GB_CONFIG;
         } else if (maxMemory < 2 * GIGABYTE) {

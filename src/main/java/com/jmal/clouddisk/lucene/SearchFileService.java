@@ -113,8 +113,9 @@ public class SearchFileService {
 
     /**
      * 添加搜索历史
+     *
      * @param searchUserId searchUserId
-     * @param searchDTO searchDTO
+     * @param searchDTO    searchDTO
      */
     private void addSearchHistory(String searchUserId, SearchDTO searchDTO) {
         if (CharSequenceUtil.isBlank(searchUserId) || searchDTO == null) {
@@ -309,14 +310,14 @@ public class SearchFileService {
      *
      * @param fieldNameExact 精准查询字段名
      * @param fieldNameFuzzy 模糊查询字段名
-     * @param exactKeyword 精准查询关键字
-     * @param fuzzyKeyword 模糊查询关键字
-     * @param searchDTO 查询参数
+     * @param exactKeyword   精准查询关键字
+     * @param fuzzyKeyword   模糊查询关键字
+     * @param searchDTO      查询参数
      */
     private BooleanQuery.Builder getBooleanQueryFieldBuilder(String fieldNameExact, String fieldNameFuzzy, String exactKeyword, String fuzzyKeyword, SearchDTO searchDTO) throws ParseException {
         BooleanQuery.Builder booleanQueryFieldBuilder = new BooleanQuery.Builder();
         Query fuzzyQuery = null;
-        Query  exactQuery = null;
+        Query exactQuery = null;
         if (fileProperties.getExactSearch()) {
             exactQuery = getExactQuery(fieldNameExact, exactKeyword);
             if (!BooleanUtil.isTrue(searchDTO.getExactSearch())) {
@@ -367,11 +368,11 @@ public class SearchFileService {
         return contentQuery;
     }
 
-private Query getExactQuery(String fieldName, String exactSearchTerm) {
+    private Query getExactQuery(String fieldName, String exactSearchTerm) {
         Query contentQuery;
         if (CharSequenceUtil.isBlank(exactSearchTerm)) {
             contentQuery = new MatchNoDocsQuery();
-        }  else if (exactSearchTerm.length() <= fileProperties.getNgramMaxSize()) {
+        } else if (exactSearchTerm.length() <= fileProperties.getNgramMaxSize()) {
             Term term = new Term(fieldName, exactSearchTerm);
             contentQuery = new TermQuery(term);
         } else {
@@ -540,7 +541,7 @@ private Query getExactQuery(String fieldName, String exactSearchTerm) {
                                 new org.bson.Document("$indexOfArray", Arrays.asList(objectIds, "$_id")))),
                 new org.bson.Document("$sort",
                         new org.bson.Document("order", 1L))
-                );
+        );
 
         AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(pipeline);
 
