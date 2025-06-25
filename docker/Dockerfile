@@ -13,9 +13,9 @@ RUN apt-get update && \
     wget https://repo.jellyfin.org/files/ffmpeg/ubuntu/latest-5.x/${ARCH}/jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb && \
     dpkg -i jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb || apt-get install -fy && \
     # 安装 mxcad https://www.mxdraw.com/download.html
-    wget https://github.com/jamebal/jmal-cloud-server/releases/download/v2.14.0/mxcad_$(ARCH).zip && \
-    unzip -o mxcad_$(ARCH).zip -d /usr/local/ && \
-    mv /usr/local/mxcad_$(ARCH)/ /usr/local/mxcad && \
+    wget https://github.com/jamebal/jmal-cloud-server/releases/download/v2.14.0/mxcad_${ARCH}.zip && \
+    unzip -o mxcad_${ARCH}.zip -d /usr/local/ && \
+    mv /usr/local/mxcad_${ARCH}/ /usr/local/mxcad && \
     chmod -R 777 /usr/local/mxcad/mxcadassembly && \
     chmod -R 777 /usr/local/mxcad/mx/so/* && \
     cp -r -f /usr/local/mxcad/mx/locale /usr/local/share/locale && \
