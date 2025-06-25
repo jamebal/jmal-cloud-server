@@ -109,7 +109,13 @@ public class FileProperties {
      * ngram最大内容长度
      */
     private Double ngramMaxContentLengthMB = 5.0;
+    /**
+     * ngram最小长度
+     */
     private Integer ngramMinSize = 2;
+    /**
+     * ngram最大长度
+     */
     private Integer ngramMaxSize = 6;
 
     public void setIp2regionDbPath(String path) {
@@ -127,13 +133,16 @@ public int getNgramMaxContentLength() {
     long maxMemory = Runtime.getRuntime().maxMemory();
     double effectiveNgramMaxContentLengthMB = this.ngramMaxContentLengthMB;
     final long GIGABYTE = 1024L * 1024 * 1024;
+    double oneGIGABYTEConfig = 0.1;
+    double twoGIGABYTEConfig = 1.0;
+    double threeGIGABYTEConfig = 2.0;
     if (maxMemory < 4 * GIGABYTE && effectiveNgramMaxContentLengthMB >= 3.0) {
         if (maxMemory < GIGABYTE) {
-            effectiveNgramMaxContentLengthMB = 0.1;
+            effectiveNgramMaxContentLengthMB = oneGIGABYTEConfig;
         } else if (maxMemory < 2 * GIGABYTE) {
-            effectiveNgramMaxContentLengthMB = 1.0;
+            effectiveNgramMaxContentLengthMB = twoGIGABYTEConfig;
         } else {
-            effectiveNgramMaxContentLengthMB = 2.0;
+            effectiveNgramMaxContentLengthMB = threeGIGABYTEConfig;
         }
     }
     return (int) (effectiveNgramMaxContentLengthMB * 1024 * 1024);

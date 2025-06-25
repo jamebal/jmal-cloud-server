@@ -28,8 +28,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -507,16 +506,18 @@ public class LuceneService {
     }
 
     private String getContentForNgram(String fullContent, FileIndex fileIndex) {
-        // 示例：对于N-Gram，只取文件的前NgramMaxContentLength内容
         int maxContentLengthInBytes = fileProperties.getNgramMaxContentLength();
         byte[] contentBytes = fullContent.getBytes(StandardCharsets.UTF_8);
 
         if (contentBytes.length > maxContentLengthInBytes) {
-            log.warn("截断内容以进行N-Gram索引（原始长度：{}MB，文件大小：{}MB）, 文件: {}", contentBytes.length / 1024.0 / 1024.0, fileIndex.getSize() / 1024.0 / 1024.0, Paths.get(fileIndex.getUsername(), fileIndex.getPath(), fileIndex.getName()));
-            // Truncate by byte length. Creating a new String from the truncated byte array
-            // is a safe way to do this, as it will handle any broken multi-byte characters gracefully.
-            return new String(contentBytes, 0, maxContentLengthInBytes, StandardCharsets.UTF_8);
+            log.warn("截断内容以进行N-Gram索引（原始长度：{}MB，文件大小：{}MB）, 文件: {}", contentBytes.length / BYTES_PER_MB, fileIndex.getSize() / BYTES_PER_MB, Paths.get(fileIndex.getUsername(), fileIndex.getPath(), fileIndex.getName()));
+            int effectiveLength = maxContentLengthInBytes;
+            while (effectiveLength > 0 && (contentBytes[effectiveLength - 1] & 0xC0) == 0x80) {
+                effectiveLength--;
+            }
+            return new String(contentBytes, 0, effectiveLength, StandardCharsets.UTF_8);
         }
+
         return fullContent;
     }
 
