@@ -13,9 +13,9 @@ RUN apt-get update && \
     wget https://repo.jellyfin.org/files/ffmpeg/ubuntu/latest-5.x/${ARCH}/jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb && \
     dpkg -i jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb || apt-get install -fy && \
     # 安装 mxcad https://www.mxdraw.com/download.html
-    wget https://github.com/jamebal/jmal-cloud-server/releases/download/v2.12.0/mxcad_x86_64.zip && \
-    unzip -o mxcad_x86_64.zip -d /usr/local/ && \
-    mv /usr/local/x86_64/ /usr/local/mxcad && \
+    wget https://github.com/jamebal/jmal-cloud-server/releases/download/v2.14.0/mxcad_$(dpkg --print-architecture).zip && \
+    unzip -o mxcad_$(dpkg --print-architecture).zip -d /usr/local/ && \
+    mv /usr/local/mxcad_$(dpkg --print-architecture)/ /usr/local/mxcad && \
     chmod -R 777 /usr/local/mxcad/mxcadassembly && \
     chmod -R 777 /usr/local/mxcad/mx/so/* && \
     cp -r -f /usr/local/mxcad/mx/locale /usr/local/share/locale && \
@@ -30,7 +30,7 @@ RUN apt-get update && \
     apt-get clean && \
     rm -f jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb && \
     rm -rf /var/lib/apt/lists/* && \
-    rm -f mxcad_x86_64.zip && \
+    rm -f mxcad_${ARCH}.zip && \
     rm -rf /usr/local/ubuntu-22.04-${ARCH}-bin && \
     rm -f ubuntu-22.04-${ARCH}-bin.7z && \
     rm -f models.7z && \
