@@ -2,6 +2,7 @@ package com.jmal.clouddisk.config;
 
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.util.StrUtil;
+import com.jmal.clouddisk.lucene.LuceneService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -128,27 +129,28 @@ public class FileProperties {
         this.ip2regionDbPath = path;
     }
 
-public int getNgramMaxContentLength() {
-    // 当可用内存小于4G，需要设置更小的ngramMaxContentLengthMB
-    long maxMemory = Runtime.getRuntime().maxMemory();
-    double effectiveNgramMaxContentLengthMB = this.ngramMaxContentLengthMB;
-    final long GIGABYTE = 1024L * 1024 * 1024;
-    final double NGRAM_THRESHOLD_MB = 3.0;
-    final int MAX_MEMORY_GB = 4;
-    final double ONE_GB_CONFIG = 0.1;
-    final double TWO_GB_CONFIG = 1.0;
-    final double THREE_GB_CONFIG = 2.0;
-    if (maxMemory < MAX_MEMORY_GB * GIGABYTE && effectiveNgramMaxContentLengthMB >= NGRAM_THRESHOLD_MB) {
-        if (maxMemory < GIGABYTE) {
-            effectiveNgramMaxContentLengthMB = ONE_GB_CONFIG;
-        } else if (maxMemory < 2 * GIGABYTE) {
-            effectiveNgramMaxContentLengthMB = TWO_GB_CONFIG;
-        } else {
-            effectiveNgramMaxContentLengthMB = THREE_GB_CONFIG;
+    private static final long GIGABYTE = 1024L * 1024 * 1024;
+    private static  double NGRAM_THRESHOLD_MB = 3.0;
+    private static  int MAX_MEMORY_GB = 4;
+    private static  double ONE_GB_CONFIG = 0.1;
+    private static  double TWO_GB_CONFIG = 1.0;
+    private static  double THREE_GB_CONFIG = 2.0;
+
+    public int getNgramMaxContentLength() {
+        // 当可用内存小于4G，需要设置更小的ngramMaxContentLengthMB
+        long maxMemory = Runtime.getRuntime().maxMemory();
+        double effectiveNgramMaxContentLengthMB = this.ngramMaxContentLengthMB;
+        if (maxMemory < MAX_MEMORY_GB * GIGABYTE && effectiveNgramMaxContentLengthMB >= NGRAM_THRESHOLD_MB) {
+            if (maxMemory < GIGABYTE) {
+                effectiveNgramMaxContentLengthMB = ONE_GB_CONFIG;
+            } else if (maxMemory < 2 * GIGABYTE) {
+                effectiveNgramMaxContentLengthMB = TWO_GB_CONFIG;
+            } else {
+                effectiveNgramMaxContentLengthMB = THREE_GB_CONFIG;
+            }
         }
+        return (int) (effectiveNgramMaxContentLengthMB * LuceneService.BYTES_PER_MB);
     }
-    return (int) (effectiveNgramMaxContentLengthMB * 1024 * 1024);
-}
 
     public void setMonitorIgnoreFilePrefix(String monitorIgnoreFilePrefix) {
         if (monitorIgnoreFilePrefix != null && !monitorIgnoreFilePrefix.isEmpty()) {
@@ -180,6 +182,7 @@ public int getNgramMaxContentLength() {
 
     /**
      * 判断用户名是否不允许使用
+     *
      * @param username 用户名
      * @return true: 不允许使用
      */

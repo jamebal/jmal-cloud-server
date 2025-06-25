@@ -113,7 +113,7 @@ public class LuceneService {
     private static final int CHUNK_SIZE_CHARS = 1024; // 例如，每 1KB 左右一个块，或者按行数
     private static final int CHUNK_OVERLAP_CHARS = 7; // 段落间的重叠字符数，防止边界切割问题 (NGramTokenFilter本身可能处理部分边界，但显式重叠更保险)
 
-    private static final long BYTES_PER_MB = 1024L * 1024L;
+    public static final int BYTES_PER_MB = 1024 * 1024;
     private static final long MEMORY_PER_SMALL_THREAD_MB = 500;
     private static final long MEMORY_PER_BIG_THREAD_MB = 4096;
 
