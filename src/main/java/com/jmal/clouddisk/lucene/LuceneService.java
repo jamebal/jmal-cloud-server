@@ -125,9 +125,9 @@ public class LuceneService {
         }
         // 获取jvm可用内存
         long maxMemory = Runtime.getRuntime().maxMemory();
-        // 获取可用处理器数量
-        int smallProcessors = Runtime.getRuntime().availableProcessors() - 3;
         if (executorUpdateContentIndexService == null) {
+            // 获取可用处理器数量
+            int smallProcessors = Runtime.getRuntime().availableProcessors() - 3;
             // 设置线程数, 假设每个线程占用内存为500M
             int maxSmallProcessors = (int) ((maxMemory / BYTES_PER_MB) / MEMORY_PER_SMALL_THREAD_MB);
             if (smallProcessors > maxSmallProcessors) {
