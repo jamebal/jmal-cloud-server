@@ -130,11 +130,11 @@ public class FileProperties {
     }
 
     private static final long GIGABYTE = 1024L * 1024 * 1024;
-    private static  double NGRAM_THRESHOLD_MB = 3.0;
-    private static  int MAX_MEMORY_GB = 4;
-    private static  double ONE_GB_CONFIG = 0.1;
-    private static  double TWO_GB_CONFIG = 1.0;
-    private static  double THREE_GB_CONFIG = 2.0;
+    private static final double NGRAM_THRESHOLD_MB = 3.0;
+    private static final int MAX_MEMORY_GB = 4;
+    private static final double ONE_GB_CONFIG = 0.1;
+    private static final double TWO_GB_CONFIG = 1.0;
+    private static final double THREE_GB_CONFIG = 2.0;
 
     public int getNgramMaxContentLength() {
         // 当可用内存小于4G，需要设置更小的ngramMaxContentLengthMB
