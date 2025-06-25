@@ -137,6 +137,11 @@ public class FileProperties {
     private static final double THREE_GB_CONFIG = 2.0;
 
     public int getNgramMaxContentLength() {
+        double effectiveNgramMaxContentLengthMB = determineEffectiveNGramLength();
+        return (int) (effectiveNgramMaxContentLengthMB * LuceneService.BYTES_PER_MB);
+    }
+
+    private double determineEffectiveNGramLength() {
         // 当可用内存小于4G，需要设置更小的ngramMaxContentLengthMB
         long maxMemory = Runtime.getRuntime().maxMemory();
         double effectiveNgramMaxContentLengthMB = this.ngramMaxContentLengthMB;
@@ -149,7 +154,7 @@ public class FileProperties {
                 effectiveNgramMaxContentLengthMB = THREE_GB_CONFIG;
             }
         }
-        return (int) (effectiveNgramMaxContentLengthMB * LuceneService.BYTES_PER_MB);
+        return effectiveNgramMaxContentLengthMB;
     }
 
     public void setMonitorIgnoreFilePrefix(String monitorIgnoreFilePrefix) {
