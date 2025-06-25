@@ -367,7 +367,7 @@ public class SearchFileService {
         return contentQuery;
     }
 
-    private Query getExactQuery(String fieldName, String exactSearchTerm) {
+private Query getExactQuery(String fieldName, String exactSearchTerm) {
         Query contentQuery;
         if (CharSequenceUtil.isBlank(exactSearchTerm)) {
             contentQuery = new MatchNoDocsQuery();

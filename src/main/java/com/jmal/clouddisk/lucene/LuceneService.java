@@ -134,7 +134,7 @@ public class LuceneService {
             executorUpdateContentIndexService = ThreadUtil.newFixedExecutor(smallProcessors, 20, "updateContentIndexTask", true);
         }
         if (executorUpdateBigContentIndexService == null) {
-            // 设置线程数, 假设每个线程占用内存为2G
+            // 设置线程数, 假设每个线程占用内存为4G
             int bigProcessors = Math.toIntExact(maxMemory / 1024 / 1024 / 4096);
             bigProcessors = Math.max(bigProcessors, 1);
             executorUpdateBigContentIndexService = ThreadUtil.newFixedExecutor(bigProcessors, 100, "updateBigContentIndexTask", true);
@@ -505,7 +505,7 @@ public class LuceneService {
     private String getContentForNgram(String fullContent, FileIndex fileIndex) {
         // 示例：对于N-Gram，只取文件的前NgramMaxContentLength内容
         if (fullContent.length() > fileProperties.getNgramMaxContentLength()) {
-            log.warn("截断内容以进行N-Gram索引（原始长度：{}MB，文件大小：{}MB）, 文件: {}", fullContent.length() / 1024 / 1024, fileIndex.getSize() / 1024 / 1024, fileIndex.getUsername() + fileIndex.getPath() + fileIndex.getName());
+            log.warn("截断内容以进行N-Gram索引（原始长度：{}MB，文件大小：{}MB）, 文件: {}", fullContent.length() / 1024 / 1024, fileIndex.getSize() / 1024 / 1024, Paths.get(fileIndex.getUsername(), fileIndex.getPath(), fileIndex.getName()));
             return fullContent.substring(0, fileProperties.getNgramMaxContentLength());
         }
         return fullContent;
