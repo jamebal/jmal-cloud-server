@@ -436,7 +436,7 @@ public class LuceneService {
      *
      * @param indexWriter indexWriter
      * @param fileIndex   FileIndex
-     * @param content     content
+     * @param fullContent fullContent
      */
     public void updateIndexDocument(IndexWriter indexWriter, FileIndex fileIndex, String fullContent) {
         String fileId = fileIndex.getFileId();
@@ -492,6 +492,9 @@ public class LuceneService {
                 try (InputStream contentStream = new ByteArrayInputStream(fullContent.getBytes(StandardCharsets.UTF_8))) {
                     // 调用内存高效的流式截断方法
                     contentForNgram = getContentForNgram(contentStream, fileIndex);
+                } catch (IOException e) {
+                    log.error("Error creating ByteArrayInputStream: {}", e.getMessage(), e);
+                    return;
                 }
 
                 if (CharSequenceUtil.isNotBlank(contentForNgram)) {
