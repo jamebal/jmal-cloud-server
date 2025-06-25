@@ -9,6 +9,9 @@ ENV LOG_LEVEL warn
 
 # 是否开启精确搜索
 ENV EXACT_SEARCH false
+ENV NGRAM_MAX_CONTENT_LENGTH_MB "5"
+ENV NGRAM_MIN_SIZE "2"
+ENV NGRAM_MAX_SIZE "6"
 
 ENV FILE_MONITOR true
 ENV MONITOR_IGNORE_FILE_PREFIX ".DS_Store,._"
@@ -38,5 +41,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8088
+
+# FTP Server
+EXPOSE 8089
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

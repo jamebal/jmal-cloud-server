@@ -2,6 +2,7 @@ package com.jmal.clouddisk.config;
 
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.util.StrUtil;
+import com.jmal.clouddisk.lucene.LuceneService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -105,6 +106,19 @@ public class FileProperties {
      */
     private Boolean exactSearch = false;
 
+    /**
+     * ngram最大内容长度
+     */
+    private Double ngramMaxContentLengthMB = 5.0;
+    /**
+     * ngram最小长度
+     */
+    private Integer ngramMinSize = 2;
+    /**
+     * ngram最大长度
+     */
+    private Integer ngramMaxSize = 6;
+
     public void setIp2regionDbPath(String path) {
         Path dbPath = Paths.get(path);
         if (!PathUtil.exists(dbPath, true)) {
@@ -113,6 +127,34 @@ public class FileProperties {
             return;
         }
         this.ip2regionDbPath = path;
+    }
+
+    private static final long GIGABYTE = 1024L * 1024 * 1024;
+    private static final double NGRAM_THRESHOLD_MB = 3.0;
+    private static final int MAX_MEMORY_GB = 4;
+    private static final double ONE_GB_CONFIG = 0.1;
+    private static final double TWO_GB_CONFIG = 1.0;
+    private static final double THREE_GB_CONFIG = 2.0;
+
+    public int getNgramMaxContentLength() {
+        double effectiveNgramMaxContentLengthMB = determineEffectiveNGramLength();
+        return (int) (effectiveNgramMaxContentLengthMB * LuceneService.BYTES_PER_MB);
+    }
+
+    private double determineEffectiveNGramLength() {
+        // 当可用内存小于4G，需要设置更小的ngramMaxContentLengthMB
+        long maxMemory = Runtime.getRuntime().maxMemory();
+        double effectiveNgramMaxContentLengthMB = this.ngramMaxContentLengthMB;
+        if (maxMemory < MAX_MEMORY_GB * GIGABYTE && effectiveNgramMaxContentLengthMB >= NGRAM_THRESHOLD_MB) {
+            if (maxMemory < GIGABYTE) {
+                effectiveNgramMaxContentLengthMB = ONE_GB_CONFIG;
+            } else if (maxMemory < 2 * GIGABYTE) {
+                effectiveNgramMaxContentLengthMB = TWO_GB_CONFIG;
+            } else {
+                effectiveNgramMaxContentLengthMB = THREE_GB_CONFIG;
+            }
+        }
+        return effectiveNgramMaxContentLengthMB;
     }
 
     public void setMonitorIgnoreFilePrefix(String monitorIgnoreFilePrefix) {
@@ -145,6 +187,7 @@ public class FileProperties {
 
     /**
      * 判断用户名是否不允许使用
+     *
      * @param username 用户名
      * @return true: 不允许使用
      */

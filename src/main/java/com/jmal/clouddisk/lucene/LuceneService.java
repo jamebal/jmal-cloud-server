@@ -114,29 +114,36 @@ public class LuceneService {
     private static final int CHUNK_SIZE_CHARS = 1024; // 例如，每 1KB 左右一个块，或者按行数
     private static final int CHUNK_OVERLAP_CHARS = 7; // 段落间的重叠字符数，防止边界切割问题 (NGramTokenFilter本身可能处理部分边界，但显式重叠更保险)
 
+    public static final int BYTES_PER_MB = 1024 * 1024;
+    private static final long MEMORY_PER_SMALL_THREAD_MB = 500;
+    private static final long MEMORY_PER_BIG_THREAD_MB = 4096;
+
     @PostConstruct
     public void init() {
         if (executorCreateIndexService == null) {
             int processors = Runtime.getRuntime().availableProcessors() - 2;
             executorCreateIndexService = ThreadUtil.newFixedExecutor(Math.max(processors, 3), 100, "createIndexFileTask", true);
         }
+        // 获取jvm可用内存
+        long maxMemory = Runtime.getRuntime().maxMemory();
         if (executorUpdateContentIndexService == null) {
             // 获取可用处理器数量
-            int processors = Runtime.getRuntime().availableProcessors() - 3;
-            // 获取jvm可用内存
-            long maxMemory = Runtime.getRuntime().maxMemory();
-            // 设置线程数, 假设每个线程占用内存为100M
-            int maxProcessors = (int) (maxMemory / 500 / 1024 / 1024);
-            if (processors > maxProcessors) {
-                processors = maxProcessors;
+            int smallProcessors = Runtime.getRuntime().availableProcessors() - 3;
+            // 设置线程数, 假设每个线程占用内存为500M
+            int maxSmallProcessors =  Math.toIntExact((maxMemory / BYTES_PER_MB) / MEMORY_PER_SMALL_THREAD_MB);
+            if (smallProcessors > maxSmallProcessors) {
+                smallProcessors = maxSmallProcessors;
             }
-            processors = Math.max(processors, 1);
-            log.info("updateContentIndexTask 线程数: {}, maxProcessors: {}", processors, maxProcessors);
-            executorUpdateContentIndexService = ThreadUtil.newFixedExecutor(processors, 20, "updateContentIndexTask", true);
+            smallProcessors = Math.max(smallProcessors, 1);
+            executorUpdateContentIndexService = ThreadUtil.newFixedExecutor(smallProcessors, 20, "updateContentIndexTask", true);
         }
         if (executorUpdateBigContentIndexService == null) {
-            executorUpdateBigContentIndexService = ThreadUtil.newFixedExecutor(2, 100, "updateBigContentIndexTask", true);
+            // 设置线程数, 假设每个线程占用内存为4G
+            int bigProcessors = Math.toIntExact((maxMemory / BYTES_PER_MB) / MEMORY_PER_BIG_THREAD_MB);
+            bigProcessors = Math.max(bigProcessors, 1);
+            executorUpdateBigContentIndexService = ThreadUtil.newFixedExecutor(bigProcessors, 100, "updateBigContentIndexTask", true);
         }
+        log.info("NGRAM_MAX_CONTENT_LENGTH_MB:{}, NGRAM_MIN_SIZE: {}, ngramMaxSize: {}", fileProperties.getNgramMaxContentLengthMB(), fileProperties.getNgramMinSize(), fileProperties.getNgramMaxSize());
     }
 
     /**
@@ -475,12 +482,14 @@ public class LuceneService {
 
             // 为精确子串匹配处理 content_ngram
             if (CharSequenceUtil.isNotBlank(content) && fileProperties.getExactSearch()) {
-                // 1. 分段逻辑 (保持不变)
-                List<String> chunks = segmentContent(content);
-
-                for (String chunk : chunks) {
-                    if (CharSequenceUtil.isNotBlank(chunk)) {
-                        newDocument.add(new Field(FIELD_CONTENT_NGRAM, chunk, TextField.TYPE_NOT_STORED));
+                // 对非常大的文件，跳过N-Gram或只处理一部分
+                String contentForNgram = getContentForNgram(content, fileIndex);
+                if (CharSequenceUtil.isNotBlank(contentForNgram)) {
+                    List<String> chunks = segmentContent(contentForNgram);
+                    for (String chunk : chunks) {
+                        if (CharSequenceUtil.isNotBlank(chunk)) {
+                            newDocument.add(new Field(FIELD_CONTENT_NGRAM, chunk, TextField.TYPE_NOT_STORED));
+                        }
                     }
                 }
             }
@@ -495,6 +504,22 @@ public class LuceneService {
         } catch (IOException e) {
             log.error("更新索引失败, fileId: {}, {}", fileId, e.getMessage(), e);
         }
+    }
+
+    private String getContentForNgram(String fullContent, FileIndex fileIndex) {
+        int maxContentLengthInBytes = fileProperties.getNgramMaxContentLength();
+        byte[] contentBytes = fullContent.getBytes(StandardCharsets.UTF_8);
+
+        if (contentBytes.length > maxContentLengthInBytes) {
+            log.warn("截断内容以进行N-Gram索引（原始长度：{}MB，文件大小：{}MB）, 文件: {}", contentBytes.length / BYTES_PER_MB, fileIndex.getSize() / BYTES_PER_MB, Paths.get(fileIndex.getUsername(), fileIndex.getPath(), fileIndex.getName()));
+            int effectiveLength = maxContentLengthInBytes;
+            while (effectiveLength > 0 && (contentBytes[effectiveLength - 1] & 0xC0) == 0x80) {
+                effectiveLength--;
+            }
+            return new String(contentBytes, 0, effectiveLength, StandardCharsets.UTF_8);
+        }
+
+        return fullContent;
     }
 
     private List<String> segmentContent(String content) {

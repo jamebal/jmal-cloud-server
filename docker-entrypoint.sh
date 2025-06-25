@@ -20,6 +20,9 @@ exec gosu ${USER_UID}:${USER_GID} java ${JVM_OPTS} \
  --spring.data.mongodb.uri=${MONGODB_URI} \
  --tess4j.data-path=${TESS4J_DATA_PATH} \
  --file.exactSearch=${EXACT_SEARCH} \
+ --file.ngramMaxContentLengthMB=${NGRAM_MAX_CONTENT_LENGTH_MB} \
+ --file.ngramMinSize=${NGRAM_MIN_SIZE} \
+ --file.ngramMaxSize=${NGRAM_MAX_SIZE} \
  --file.monitor=${FILE_MONITOR} \
  --file.rootDir=${FILE_ROOT_DIR} \
  --file.monitorIgnoreFilePrefix=${MONITOR_IGNORE_FILE_PREFIX} \
