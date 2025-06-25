@@ -126,7 +126,8 @@ public class LuceneService {
         int smallProcessors = Runtime.getRuntime().availableProcessors() - 3;
         if (executorUpdateContentIndexService == null) {
             // 设置线程数, 假设每个线程占用内存为500M
-            int maxSmallProcessors = (int) ((maxMemory / 1024 / 1024) / 500);
+            final long MEMORY_PER_SMALL_THREAD_MB = 500;
+            int maxSmallProcessors = (int) ((maxMemory / 1024 / 1024) / MEMORY_PER_SMALL_THREAD_MB);
             if (smallProcessors > maxSmallProcessors) {
                 smallProcessors = maxSmallProcessors;
             }
@@ -135,7 +136,8 @@ public class LuceneService {
         }
         if (executorUpdateBigContentIndexService == null) {
             // 设置线程数, 假设每个线程占用内存为4G
-            int bigProcessors = Math.toIntExact(maxMemory / 1024 / 1024 / 4096);
+            final long MEMORY_PER_BIG_THREAD_MB = 4096;
+            int bigProcessors = Math.toIntExact((maxMemory / 1024 / 1024) / MEMORY_PER_BIG_THREAD_MB);
             bigProcessors = Math.max(bigProcessors, 1);
             executorUpdateBigContentIndexService = ThreadUtil.newFixedExecutor(bigProcessors, 100, "updateBigContentIndexTask", true);
         }
@@ -504,9 +506,14 @@ public class LuceneService {
 
     private String getContentForNgram(String fullContent, FileIndex fileIndex) {
         // 示例：对于N-Gram，只取文件的前NgramMaxContentLength内容
-        if (fullContent.length() > fileProperties.getNgramMaxContentLength()) {
-            log.warn("截断内容以进行N-Gram索引（原始长度：{}MB，文件大小：{}MB）, 文件: {}", fullContent.length() / 1024 / 1024, fileIndex.getSize() / 1024 / 1024, Paths.get(fileIndex.getUsername(), fileIndex.getPath(), fileIndex.getName()));
-            return fullContent.substring(0, fileProperties.getNgramMaxContentLength());
+        int maxContentLengthInBytes = fileProperties.getNgramMaxContentLength();
+        byte[] contentBytes = fullContent.getBytes(StandardCharsets.UTF_8);
+
+        if (contentBytes.length > maxContentLengthInBytes) {
+            log.warn("截断内容以进行N-Gram索引（原始长度：{}MB，文件大小：{}MB）, 文件: {}", contentBytes.length / 1024.0 / 1024.0, fileIndex.getSize() / 1024.0 / 1024.0, Paths.get(fileIndex.getUsername(), fileIndex.getPath(), fileIndex.getName()));
+            // Truncate by byte length. Creating a new String from the truncated byte array
+            // is a safe way to do this, as it will handle any broken multi-byte characters gracefully.
+            return new String(contentBytes, 0, maxContentLengthInBytes, StandardCharsets.UTF_8);
         }
         return fullContent;
     }

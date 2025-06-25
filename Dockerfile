@@ -42,4 +42,7 @@ RUN apt-get update && \
 
 EXPOSE 8088
 
+# FTP Server
+EXPOSE 8089
+
 ENTRYPOINT ["/docker-entrypoint.sh"]

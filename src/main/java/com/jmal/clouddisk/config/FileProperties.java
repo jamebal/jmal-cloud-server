@@ -109,7 +109,6 @@ public class FileProperties {
      * ngram最大内容长度
      */
     private Double ngramMaxContentLengthMB;
-    private Integer ngramMaxContentLength;
     private Integer ngramMinSize = 2;
     private Integer ngramMaxSize = 6;
 
@@ -127,10 +126,11 @@ public int getNgramMaxContentLength() {
     // 当可用内存小于4G，需要设置更小的ngramMaxContentLengthMB
     long maxMemory = Runtime.getRuntime().maxMemory();
     double effectiveNgramMaxContentLengthMB = this.ngramMaxContentLengthMB;
-    if (maxMemory < 4096L * 1024 * 1024 && effectiveNgramMaxContentLengthMB >= 3.0) {
-        if (maxMemory < 1024L * 1024 * 1024) {
+    final long GIGABYTE = 1024L * 1024 * 1024;
+    if (maxMemory < 4 * GIGABYTE && effectiveNgramMaxContentLengthMB >= 3.0) {
+        if (maxMemory < GIGABYTE) {
             effectiveNgramMaxContentLengthMB = 0.1;
-        } else if (maxMemory < 2048L * 1024 * 1024) {
+        } else if (maxMemory < 2 * GIGABYTE) {
             effectiveNgramMaxContentLengthMB = 1.0;
         } else {
             effectiveNgramMaxContentLengthMB = 2.0;
