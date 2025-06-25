@@ -10,7 +10,7 @@ mkdir -p /log
 chown -R ${USER_UID}:${USER_GID} /jmalcloud/models
 chown -R ${USER_UID}:${USER_GID} /jmalcloud/tess4j
 chown ${USER_UID}:${USER_GID} /jmalcloud/ip2region.xdb
-chow -R ${USER_UID}:${USER_GID} /usr/local/mxcad
+chown -R ${USER_UID}:${USER_GID} /usr/local/mxcad
 chown ${USER_UID}:${USER_GID} /usr/local/clouddisk-${VERSION}.jar
 chown -R ${USER_UID}:${USER_GID} /usr/local/clouddisk-lib
 chown -R ${USER_UID}:${USER_GID} log
