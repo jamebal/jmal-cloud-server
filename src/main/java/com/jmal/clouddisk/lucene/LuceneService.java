@@ -28,8 +28,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -130,7 +129,7 @@ public class LuceneService {
             // 获取可用处理器数量
             int smallProcessors = Runtime.getRuntime().availableProcessors() - 3;
             // 设置线程数, 假设每个线程占用内存为500M
-            int maxSmallProcessors =  Math.toIntExact((maxMemory / BYTES_PER_MB) / MEMORY_PER_SMALL_THREAD_MB);
+            int maxSmallProcessors = Math.toIntExact((maxMemory / BYTES_PER_MB) / MEMORY_PER_SMALL_THREAD_MB);
             if (smallProcessors > maxSmallProcessors) {
                 smallProcessors = maxSmallProcessors;
             }
@@ -255,19 +254,23 @@ public class LuceneService {
             FileIndex fileIndex = new FileIndex(file, fileIntroVO);
             fileIndex.setTagName(getTagName(fileIntroVO));
             setFileIndex(fileIndex);
-            String content = null;
             if (readContent) {
-                content = readFileContent(file, fileIntroVO.getId());
-                if (CharSequenceUtil.isBlank(content)) {
-                    updateIndexStatus(fileIntroVO, IndexStatus.INDEXED);
-                    return;
+                try (StringWriter contentWriter = new StringWriter()) {
+                    readFileContent(file, fileIntroVO.getId(), contentWriter);
+                    String fullContent = contentWriter.toString();
+
+                    if (CharSequenceUtil.isBlank(fullContent)) {
+                        updateIndexStatus(fileIntroVO, IndexStatus.INDEXED);
+                        return;
+                    }
+                    // 调用改造后的 updateIndexDocument
+                    updateIndexDocument(indexWriter, fileIndex, fullContent);
+                    startProcessFilesToBeIndexed();
                 }
+            } else {
+                updateIndexDocument(indexWriter, fileIndex, null);
             }
-            updateIndexDocument(indexWriter, fileIndex, content);
-            if (CharSequenceUtil.isNotBlank(content)) {
-                log.debug("添加索引, filepath: {}", file.getAbsoluteFile());
-                startProcessFilesToBeIndexed();
-            }
+            log.debug("添加索引, filepath: {}", file.getAbsoluteFile());
         } catch (Exception e) {
             log.warn("updateIndexError: {}", e.getMessage(), e);
         } finally {
@@ -356,52 +359,42 @@ public class LuceneService {
         }
     }
 
-    private String readFileContent(File file, String fileId) {
+    private void readFileContent(File file, String fileId, Writer writer) {
         try {
-            if (file == null) {
-                return null;
-            }
-            if (!file.isFile() || file.length() < 1) {
-                return null;
+            if (file == null || !file.isFile() || file.length() < 1) {
+                return;
             }
             String type = FileTypeUtil.getType(file).toLowerCase();
             switch (type) {
-                case "pdf" -> {
-                    return readContentService.readPdfContent(file, fileId);
-                }
-                case "dwg" -> {
-                    return readContentService.dwg2mxweb(file, fileId);
-                }
-                case "epub" -> {
-                    return readContentService.readEpubContent(file, fileId);
-                }
-                case "ppt", "pptx" -> {
-                    return readContentService.readPPTContent(file);
-                }
-                case "doc", "docx" -> {
-                    return readContentService.readWordContent(file);
-                }
-                case "xls", "xlsx" -> {
-                    return readContentService.readExcelContent(file);
-                }
+                case "pdf" -> readContentService.readPdfContent(file, fileId, writer);
+                case "dwg" -> readContentService.dwg2mxweb(file, fileId);
+                case "epub" -> readContentService.readEpubContent(file, fileId, writer);
+                case "ppt", "pptx" -> readContentService.readPPTContent(file, writer);
+                case "doc", "docx" -> readContentService.readWordContent(file, writer);
+                case "xls", "xlsx" -> readContentService.readExcelContent(file, writer);
                 default -> {
                     if (fileProperties.getSimText().contains(type)) {
                         String charset = UniversalDetector.detectCharset(file);
                         if (CharSequenceUtil.isBlank(charset)) {
                             charset = String.valueOf(CharsetDetector.detect(file, StandardCharsets.UTF_8));
                         }
-                        return FileUtil.readString(file, Charset.forName(charset));
-                    }
-                    String contentType = CommonFileService.getContentType(file, FileContentTypeUtils.getContentType(file, MyFileUtils.extName(file.getName())));
-                    if (contentType.contains("charset=utf-8")) {
-                        return FileUtil.readString(file, StandardCharsets.UTF_8);
+                        // 对于纯文本，可以流式读取
+                        try (Reader reader = new InputStreamReader(new FileInputStream(file), Charset.forName(charset))) {
+                            reader.transferTo(writer);
+                        }
+                    } else {
+                        String contentType = CommonFileService.getContentType(file, FileContentTypeUtils.getContentType(file, MyFileUtils.extName(file.getName())));
+                        if (contentType.contains("charset=utf-8")) {
+                            try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
+                                reader.transferTo(writer);
+                            }
+                        }
                     }
                 }
             }
         } catch (Exception e) {
             log.error("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
         }
-        return null;
     }
 
     private boolean checkFileContent(File file) {
@@ -443,9 +436,9 @@ public class LuceneService {
      *
      * @param indexWriter indexWriter
      * @param fileIndex   FileIndex
-     * @param content     content
+     * @param fullContent fullContent
      */
-    public void updateIndexDocument(IndexWriter indexWriter, FileIndex fileIndex, String content) {
+    public void updateIndexDocument(IndexWriter indexWriter, FileIndex fileIndex, String fullContent) {
         String fileId = fileIndex.getFileId();
         try {
             String fileName = (fileIndex.getName() == null ? "" : fileIndex.getName()) + " " + fileIndex.getRemark();
@@ -476,14 +469,34 @@ public class LuceneService {
                 newDocument.add(new Field(FIELD_TAG_NAME_NGRAM, tagName, TextField.TYPE_NOT_STORED));
                 newDocument.add(new TextField(FIELD_TAG_NAME_FUZZY, tagName, Field.Store.NO));
             }
-            if (CharSequenceUtil.isNotBlank(content)) {
-                newDocument.add(new TextField(FIELD_CONTENT_FUZZY, content, Field.Store.NO));
+            if (CharSequenceUtil.isNotBlank(fullContent)) {
+                newDocument.add(new TextField(FIELD_CONTENT_FUZZY, fullContent, Field.Store.NO));
             }
 
             // 为精确子串匹配处理 content_ngram
-            if (CharSequenceUtil.isNotBlank(content) && fileProperties.getExactSearch()) {
-                // 对非常大的文件，跳过N-Gram或只处理一部分
-                String contentForNgram = getContentForNgram(content, fileIndex);
+            // if (CharSequenceUtil.isNotBlank(fullContent) && fileProperties.getExactSearch()) {
+            //     // 对非常大的文件，跳过N-Gram或只处理一部分
+            //     String contentForNgram = getContentForNgram(content, fileIndex);
+            //     if (CharSequenceUtil.isNotBlank(contentForNgram)) {
+            //         List<String> chunks = segmentContent(contentForNgram);
+            //         for (String chunk : chunks) {
+            //             if (CharSequenceUtil.isNotBlank(chunk)) {
+            //                 newDocument.add(new Field(FIELD_CONTENT_NGRAM, chunk, TextField.TYPE_NOT_STORED));
+            //             }
+            //         }
+            //     }
+            // }
+            if (CharSequenceUtil.isNotBlank(fullContent) && fileProperties.getExactSearch()) {
+                String contentForNgram;
+                // 将完整内容字符串转换为内存中的输入流
+                try (InputStream contentStream = new ByteArrayInputStream(fullContent.getBytes(StandardCharsets.UTF_8))) {
+                    // 调用内存高效的流式截断方法
+                    contentForNgram = getContentForNgram(contentStream, fileIndex);
+                } catch (IOException e) {
+                    log.error("Error creating ByteArrayInputStream: {}", e.getMessage(), e);
+                    return;
+                }
+
                 if (CharSequenceUtil.isNotBlank(contentForNgram)) {
                     List<String> chunks = segmentContent(contentForNgram);
                     for (String chunk : chunks) {
@@ -506,20 +519,45 @@ public class LuceneService {
         }
     }
 
-    private String getContentForNgram(String fullContent, FileIndex fileIndex) {
+    /**
+     * 从输入流中高效地截取用于N-Gram的内容，避免OOM。
+     *
+     * @param contentStream 内容的输入流
+     * @param fileIndex     文件元数据，用于日志记录
+     * @return 截断后的UTF-8字符串
+     * @throws IOException 读取流异常
+     */
+    private String getContentForNgram(InputStream contentStream, FileIndex fileIndex) throws IOException {
         int maxContentLengthInBytes = fileProperties.getNgramMaxContentLength();
-        byte[] contentBytes = fullContent.getBytes(StandardCharsets.UTF_8);
+        byte[] buffer = new byte[8192]; // 8KB的读取缓冲区
+        int bytesRead;
 
-        if (contentBytes.length > maxContentLengthInBytes) {
-            log.warn("截断内容以进行N-Gram索引（原始长度：{}MB，文件大小：{}MB）, 文件: {}", contentBytes.length / BYTES_PER_MB, fileIndex.getSize() / BYTES_PER_MB, Paths.get(fileIndex.getUsername(), fileIndex.getPath(), fileIndex.getName()));
-            int effectiveLength = maxContentLengthInBytes;
+        // 使用 ByteArrayOutputStream 来存储截取的结果
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream(maxContentLengthInBytes)) {
+            while ((bytesRead = contentStream.read(buffer)) != -1) {
+                int remainingCapacity = maxContentLengthInBytes - baos.size();
+                if (bytesRead > remainingCapacity) {
+                    baos.write(buffer, 0, remainingCapacity);
+                    log.warn("内容已截断以进行N-Gram索引（截断至 {} 字节）, 文件大小: {}MB 文件: {}", maxContentLengthInBytes, fileIndex.getSize() / BYTES_PER_MB, Paths.get(fileIndex.getPath(), fileIndex.getName()));
+                    break; // 已达到上限
+                }
+                baos.write(buffer, 0, bytesRead);
+            }
+
+            byte[] contentBytes = baos.toByteArray();
+
+            // 进行UTF-8字符边界检查，防止乱码
+            int effectiveLength = contentBytes.length;
             while (effectiveLength > 0 && (contentBytes[effectiveLength - 1] & 0xC0) == 0x80) {
                 effectiveLength--;
             }
+
+            if (effectiveLength == 0) {
+                return "";
+            }
+
             return new String(contentBytes, 0, effectiveLength, StandardCharsets.UTF_8);
         }
-
-        return fullContent;
     }
 
     private List<String> segmentContent(String content) {
