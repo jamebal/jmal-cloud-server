@@ -5,12 +5,13 @@ import com.jmal.clouddisk.webdav.resource.FileResourceSet;
 import org.apache.tomcat.util.descriptor.web.LoginConfig;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
 import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
+import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletPath;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.DispatcherServlet;
 
 
 @Configuration
@@ -24,20 +25,30 @@ public class WebdavConfig {
 
     private final MyWebdavServlet myWebdavServlet;
 
-    private static ApplicationContext context;
-
-    public WebdavConfig(FileProperties fileProperties, MyRealm myRealm, WebdavAuthenticator webdavAuthenticator, MyWebdavServlet myWebdavServlet, ApplicationContext context) {
+    public WebdavConfig(FileProperties fileProperties, MyRealm myRealm, WebdavAuthenticator webdavAuthenticator, MyWebdavServlet myWebdavServlet) {
         this.fileProperties = fileProperties;
         this.myRealm = myRealm;
         this.webdavAuthenticator = webdavAuthenticator;
         this.myWebdavServlet = myWebdavServlet;
-        WebdavConfig.context = context;
     }
 
-    public static <T> T getBean(Class<T> requiredType) {
-        return context.getBean(requiredType);
+    /**
+     * 手动注册 DispatcherServlet，并强制其在启动时立即初始化。
+     * @param dispatcherServlet Spring Boot 自动配置好的 DispatcherServlet 实例
+     * @return ServletRegistrationBean
+     */
+    @Bean
+    public ServletRegistrationBean<DispatcherServlet> dispatcherServletRegistration(DispatcherServlet dispatcherServlet) {
+        ServletRegistrationBean<DispatcherServlet> registration = new ServletRegistrationBean<>(dispatcherServlet);
+        registration.addUrlMappings("/");
+        registration.setLoadOnStartup(1);
+        return registration;
     }
 
+    @Bean
+    public DispatcherServletPath dispatcherServletPath() {
+        return () -> "/";
+    }
     @Bean
     public ServletRegistrationBean<MyWebdavServlet> webdavServlet() {
         ServletRegistrationBean<MyWebdavServlet> registration = new ServletRegistrationBean<>(myWebdavServlet, fileProperties.getWebDavPrefixPath() + "/*");
