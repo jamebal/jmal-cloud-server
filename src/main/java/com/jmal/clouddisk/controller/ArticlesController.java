@@ -74,6 +74,11 @@ public class ArticlesController {
         return fileService.getSitemapTxt();
     }
 
+    @GetMapping("/")
+    public String redirectToArticles() {
+        return "redirect:/articles";
+    }
+
     @GetMapping("/articles")
     @LogOperatingFun(value = "文章列表", logType = LogOperation.Type.ARTICLE)
     public String index(HttpServletRequest request, Model map) {
@@ -337,7 +342,7 @@ public class ArticlesController {
     }
 
     private WebsiteSettingDTO getSetting(HttpServletRequest request, Model map) {
-        WebsiteSettingDTO websiteSettingDTO = getWebsiteSetting(request);
+        WebsiteSettingDTO websiteSettingDTO = getWebsiteSetting();
         setOperatingButtonList(websiteSettingDTO);
         List<MarkdownVO> markdownVOList = fileService.getAlonePages();
         map.addAttribute("alonePages", markdownVOList);
@@ -404,13 +409,13 @@ public class ArticlesController {
         if (!isPjax) {
             getSetting(request, map);
         } else {
-            map.addAttribute("setting", getWebsiteSetting(request));
+            map.addAttribute("setting", getWebsiteSetting());
         }
         map.addAttribute("mark", viewName);
         return isPjax;
     }
 
-    private WebsiteSettingDTO getWebsiteSetting(HttpServletRequest request) {
+    private WebsiteSettingDTO getWebsiteSetting() {
         WebsiteSettingDTO websiteSettingDTO = settingService.getWebsiteSetting();
         if (StrUtil.isNotBlank(websiteSettingDTO.getSiteUrl())) {
             String siteUrl = websiteSettingDTO.getSiteUrl();
