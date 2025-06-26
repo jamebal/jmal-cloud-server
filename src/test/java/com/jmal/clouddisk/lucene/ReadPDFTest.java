@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.File;
+import java.io.StringWriter;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -25,9 +26,10 @@ public class ReadPDFTest {
         assertNotNull(file, "File should not be null");
         assertTrue(file.exists(), "File should exist");
 
-        String content = readContentService.readPdfContent(file, null);
-        assertNotNull(content, "Content should not be null");
-        assertFalse(content.isEmpty(), "Content should not be empty");
+        StringWriter writer = new StringWriter();
+        readContentService.readPdfContent(file, null, writer);
+        assertNotNull(writer.toString(), "Content should not be null");
+        assertFalse(writer.toString().isEmpty(), "Content should not be empty");
 
         // Assuming you expect some specific content
         // assertTrue(content.contains("Expected Content"), "Content should contain expected text");
@@ -39,10 +41,10 @@ public class ReadPDFTest {
         File file = new File("/Users/jmal/Downloads/h11ssl-nc.pdf");
         assertNotNull(file, "File should not be null");
         assertTrue(file.exists(), "File should exist");
-
-        String content = readContentService.readPdfContent(file, null);
-        assertNotNull(content, "Content should not be null");
-        assertFalse(content.isEmpty(), "Content should not be empty");
+        StringWriter writer = new StringWriter();
+        readContentService.readPdfContent(file, null, writer);
+        assertNotNull(writer.toString(), "Content should not be null");
+        assertFalse(writer.toString().isEmpty(), "Content should not be empty");
 
         // Assuming you expect some specific content
         // assertTrue(content.contains("Expected Content"), "Content should contain expected text");

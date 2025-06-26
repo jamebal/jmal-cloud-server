@@ -45,4 +45,7 @@ EXPOSE 8088
 # FTP Server
 EXPOSE 8089
 
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:8088/public/health > /dev/null || exit 1
+
 ENTRYPOINT ["/docker-entrypoint.sh"]
