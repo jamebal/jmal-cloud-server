@@ -7,6 +7,9 @@ server:
       enabled: true
   forward-headers-strategy: native
   shutdown: immediate
+  tomcat:
+    max-part-count: -1
+    max-part-header-size: 16KB
 version: 2.14.0
 tess4j:
   data-path: /Users/jmal/studio/myProject/github/jmal-cloud-server/tess4j/datapath
