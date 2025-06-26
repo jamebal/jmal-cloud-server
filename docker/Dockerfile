@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # 安装 wget 和 tesseract，并配置时区和 locales
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends wget unzip locales tesseract-ocr p7zip-full unrar libheif-examples && \
+    apt-get install -y --no-install-recommends wget unzip curl locales tesseract-ocr p7zip-full unrar libheif-examples && \
     locale-gen en_US.UTF-8 && \
     update-locale LANG=en_US.UTF-8 && \
     # 下载并安装 jellyfin-ffmpeg
