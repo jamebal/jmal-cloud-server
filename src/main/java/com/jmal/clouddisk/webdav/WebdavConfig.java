@@ -33,6 +33,17 @@ public class WebdavConfig {
         this.myWebdavServlet = myWebdavServlet;
     }
 
+    /**
+     * 自定义 DispatcherServlet 的注册，以确保关键应用程序行为。
+     * <ul>
+     * <li>确保 DispatcherServlet 处理所有根路径（"/"）请求。</li>
+     * <li>通过设置 loadOnStartup = 1 强制立即初始化，解决初始请求延迟问题。</li>
+     * <li>注入并设置 MultipartConfigElement，以确保文件上传功能在不同环境下的稳定性，避免自动配置更改带来的影响。</li>
+     * </ul>
+     * @param dispatcherServlet Spring Boot 自动配置的 DispatcherServlet 实例。
+     * @param multipartConfig Spring Boot 根据 multipart 属性自动创建的 Multipart 配置。
+     * @return DispatcherServlet 的注册 Bean。
+     */
     @Bean
     public ServletRegistrationBean<DispatcherServlet> dispatcherServletRegistration( DispatcherServlet dispatcherServlet, MultipartConfigElement multipartConfig) {
         ServletRegistrationBean<DispatcherServlet> registration = new ServletRegistrationBean<>(dispatcherServlet);
