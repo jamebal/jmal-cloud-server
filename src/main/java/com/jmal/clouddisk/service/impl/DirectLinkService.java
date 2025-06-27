@@ -79,11 +79,13 @@ public class DirectLinkService {
     }
 
     private String generateMark() {
-        String mark = Base64.encodeUrlSafe(new SecureRandom().generateSeed(12));
-        if (isExistsMark(mark)) {
-            return generateMark();
+        String mark;
+        while (true) {
+            mark = Base64.encodeUrlSafe(new SecureRandom().generateSeed(12));
+            if (!isExistsMark(mark)) {
+                return mark;
+            }
         }
-        return mark;
     }
 
     private boolean isExistsMark(String mark) {
@@ -92,9 +94,9 @@ public class DirectLinkService {
         return mongoTemplate.exists(query, DirectLink.class, COLLECTION_NAME);
     }
 
-    private DirectLink getDirectLink(String FileId) {
+    private DirectLink getDirectLink(String fileId) {
         Query query = new Query();
-        query.addCriteria(Criteria.where(Constants.FILE_ID).is(FileId));
+        query.addCriteria(Criteria.where(Constants.FILE_ID).is(fileId));
         return mongoTemplate.findOne(query, DirectLink.class, COLLECTION_NAME);
     }
 

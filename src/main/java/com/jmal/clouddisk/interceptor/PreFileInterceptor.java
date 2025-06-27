@@ -42,13 +42,10 @@ public class PreFileInterceptor implements HandlerInterceptor {
         if (CharSequenceUtil.isBlank(token)) {
             return false;
         }
-        if (token.equals(INTERNAL_TOKEN_CACHE.getIfPresent(requestId))) {
-            INTERNAL_TOKEN_CACHE.invalidate(requestId);
-            return true;
-        } else {
-            INTERNAL_TOKEN_CACHE.invalidate(requestId);
-            return false;
-        }
+        String cachedToken = INTERNAL_TOKEN_CACHE.getIfPresent(requestId);
+        boolean isValid = token.equals(cachedToken);
+        INTERNAL_TOKEN_CACHE.invalidate(requestId);
+        return isValid;
     }
 
 
