@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.codec.Base62;
+import cn.hutool.core.codec.Base64;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -215,7 +215,7 @@ public class ShareServiceImpl implements IShareService {
             }
             return share.getShortId();
         }
-        String shortId = Base62.encode(Convert.toStr(RandomUtil.randomInt(1000, 1000000)));
+        String shortId = Base64.encodeUrlSafe(Convert.toStr(RandomUtil.randomInt(1000, 1000000)));
         if (isExistsShareShortId(shortId)) {
             return generateShortId(share);
         }

@@ -1,6 +1,10 @@
 package com.jmal.clouddisk.interceptor;
 
+import cn.hutool.core.lang.UUID;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.crypto.digest.DigestUtil;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
@@ -13,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author jmal
@@ -26,6 +31,22 @@ public class PreFileInterceptor implements HandlerInterceptor {
     private final IFileService fileService;
 
     private final IUserService userService;
+
+    private static final Cache<String, String> INTERNAL_TOKEN_CACHE = Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.SECONDS).build();
+
+    private static void setInternalTokenCache(String requestId, String token) {
+        INTERNAL_TOKEN_CACHE.put(requestId, token);
+    }
+
+    public static boolean isValidInternalTokenCache(String requestId, String token) {
+        if (CharSequenceUtil.isBlank(token)) {
+            return false;
+        }
+        String cachedToken = INTERNAL_TOKEN_CACHE.getIfPresent(requestId);
+        boolean isValid = token.equals(cachedToken);
+        INTERNAL_TOKEN_CACHE.invalidate(requestId);
+        return isValid;
+    }
 
 
     @Override
@@ -52,6 +73,7 @@ public class PreFileInterceptor implements HandlerInterceptor {
     }
 
     public void internalFilePath(HttpServletRequest request, HttpServletResponse response, FileDocument fileDocument) {
+        setInternal(request, fileDocument.getId());
         String internalFilePath = constructInternalFilePath(fileDocument);
         try {
             request.setAttribute("forward", true);
@@ -59,6 +81,15 @@ public class PreFileInterceptor implements HandlerInterceptor {
         } catch (Exception e) {
             handleForwardException(response, internalFilePath, e);
         }
+    }
+
+    private static void setInternal(HttpServletRequest request, String fileId) {
+        // 生成临时 token
+        String requestId = UUID.fastUUID().toString(true) + fileId;
+        String internalToken = DigestUtil.sha256Hex(requestId + System.currentTimeMillis());
+        request.setAttribute("requestId", requestId);
+        request.setAttribute("internalToken", internalToken);
+        setInternalTokenCache(requestId, internalToken);
     }
 
     public FileDocument getFileDocument(HttpServletResponse response, String fileId) {

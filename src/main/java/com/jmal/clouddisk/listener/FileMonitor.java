@@ -6,8 +6,6 @@ import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.HeartwingsDO;
-import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.SystemUtil;
 import io.methvin.watcher.DirectoryWatcher;
@@ -15,15 +13,16 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.data.mapping.context.MappingContext;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.IndexOperations;
-import org.springframework.data.mongodb.core.index.IndexResolver;
 import org.springframework.data.mongodb.core.index.MongoPersistentEntityIndexResolver;
-import org.springframework.data.mongodb.core.mapping.MongoPersistentEntity;
-import org.springframework.data.mongodb.core.mapping.MongoPersistentProperty;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -60,21 +59,30 @@ public class FileMonitor {
 
     @EventListener(ContextRefreshedEvent.class)
     public void initIndicesAfterStartup() {
+        // 1. 获取映射上下文，这一步不变
+        MongoMappingContext mappingContext = (MongoMappingContext) mongoTemplate.getConverter().getMappingContext();
 
-        MappingContext<? extends MongoPersistentEntity<?>, MongoPersistentProperty> mappingContext = mongoTemplate
-                .getConverter().getMappingContext();
+        // 2. 创建索引解析器，这一步不变
+        MongoPersistentEntityIndexResolver resolver = new MongoPersistentEntityIndexResolver(mappingContext);
 
-        IndexResolver resolver = new MongoPersistentEntityIndexResolver(mappingContext);
+        // 3. 使用 Spring 的类路径扫描器自动发现所有 @Document 注解的类
+        ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
+        provider.addIncludeFilter(new AnnotationTypeFilter(Document.class));
 
-        // 创建fileDocument索引
-        IndexOperations fileDocument = mongoTemplate.indexOps(FileDocument.class);
-        resolver.resolveIndexFor(FileDocument.class).forEach(fileDocument::ensureIndex);
-        // 创建log索引
-        IndexOperations log = mongoTemplate.indexOps(LogOperation.class);
-        resolver.resolveIndexFor(LogOperation.class).forEach(log::ensureIndex);
-        // 创建heartwings索引
-        IndexOperations heartwings = mongoTemplate.indexOps(HeartwingsDO.class);
-        resolver.resolveIndexFor(HeartwingsDO.class).forEach(heartwings::ensureIndex);
+        // 替换为你的实体类所在的包名
+        String basePackage = "com.jmal.clouddisk.model";
+
+        for (BeanDefinition beanDefinition : provider.findCandidateComponents(basePackage)) {
+            try {
+                Class<?> entityClass = Class.forName(beanDefinition.getBeanClassName());
+                // 获取对应实体类的 IndexOperations
+                IndexOperations indexOps = mongoTemplate.indexOps(entityClass);
+                resolver.resolveIndexFor(entityClass).forEach(indexOps::createIndex);
+            } catch (ClassNotFoundException e) {
+                // 处理异常
+                log.error("Error loading class: {}", e.getMessage(), e);
+            }
+        }
     }
 
     @PostConstruct

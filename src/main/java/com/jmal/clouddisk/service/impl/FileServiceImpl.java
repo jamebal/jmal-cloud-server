@@ -764,7 +764,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         packageDownload(request, response, fileIdList, username);
     }
 
-    private void packageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList, String username) {
+    public void packageDownload(HttpServletRequest request, HttpServletResponse response, List<String> fileIdList, String username) {
         FileDocument fileDocument = getFileInfoBeforeDownload(fileIdList, username);
         if (fileDocument == null) {
             return;

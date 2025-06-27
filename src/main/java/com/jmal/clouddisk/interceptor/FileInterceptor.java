@@ -110,13 +110,7 @@ public class FileInterceptor implements HandlerInterceptor {
         if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD -> {
-                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
-                    Path prePth = path.subpath(1, path.getNameCount());
-                    String ossPath = CaffeineUtil.getOssPath(prePth);
-                    if (ossPath != null) {
-                        webOssService.download(ossPath, prePth, request, response);
-                        return false;
-                    }
+                    if (downloadOssFile(request, response, filename, path)) return false;
                 }
                 case PREVIEW -> {
                     if (previewOssFile(request, response, path, filename)) return false;
@@ -146,8 +140,9 @@ public class FileInterceptor implements HandlerInterceptor {
 
     /**
      * 获取下载文件名, 适配不同的浏览器
+     *
      * @param request request
-     * @param path path
+     * @param path    path
      * @return filename
      */
     private static String getDownloadFilename(HttpServletRequest request, Path path) {
@@ -176,10 +171,24 @@ public class FileInterceptor implements HandlerInterceptor {
         String internalToken = (String) request.getAttribute("internalToken");
 
         if (CharSequenceUtil.isNotBlank(requestId) && CharSequenceUtil.isNotBlank(internalToken)) {
-            if (!ShareFileInterceptor.isValidInternalTokenCache(requestId, internalToken)) {
+            if (!PreFileInterceptor.isValidInternalTokenCache(requestId, internalToken)) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             }
+            Path path = Paths.get(request.getRequestURI());
+            String filename = getDownloadFilename(request, path);
+            if (downloadOssFile(request, response, filename, path)) return false;
             setHeader(request, response);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean downloadOssFile(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, String filename, Path path) {
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
+        Path prePth = path.subpath(1, path.getNameCount());
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            webOssService.download(ossPath, prePth, request, response);
             return true;
         }
         return false;
