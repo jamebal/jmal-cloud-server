@@ -33,6 +33,8 @@ public class WebConfig implements WebMvcConfigurer {
 
     private final ShareFileInterceptor shareFileInterceptor;
 
+    private final DirectFileInterceptor directFileInterceptor;
+
     private final PreFileInterceptor preFileInterceptor;
 
     /**
@@ -43,11 +45,13 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(localeChangeInterceptor());
 
 		registry.addInterceptor(authInterceptor).addPathPatterns("/**").
-				excludePathPatterns("/login/**", "/public/**", "/articles/**", "/error/**", "/file/**" , "/pre-file/**" , "/share-file/**", "/files/**","/swagger-ui/**");
+				excludePathPatterns("/login/**", "/public/**", "/articles/**", "/error/**", "/file/**" , "/pre-file/**" , "/share-file/**", "/direct-file/**" , "/files/**","/swagger-ui/**");
 
         registry.addInterceptor(fileInterceptor).addPathPatterns("/file/**").addPathPatterns("/files/**");
 
         registry.addInterceptor(shareFileInterceptor).addPathPatterns("/share-file/{fileId}/{token}/**");
+
+        registry.addInterceptor(directFileInterceptor).addPathPatterns("/direct-file/{mark}/{filename}");
 
         registry.addInterceptor(preFileInterceptor).addPathPatterns("/pre-file/{fileId}/**");
     }

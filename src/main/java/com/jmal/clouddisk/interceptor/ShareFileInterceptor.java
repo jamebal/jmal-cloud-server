@@ -1,11 +1,7 @@
 package com.jmal.clouddisk.interceptor;
 
-import cn.hutool.core.lang.UUID;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.crypto.digest.DigestUtil;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.service.Constants;
@@ -18,8 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author jmal
@@ -34,25 +28,7 @@ public class ShareFileInterceptor implements HandlerInterceptor {
 
     private final PreFileInterceptor preFileInterceptor;
 
-    private static final Cache<String, String> INTERNAL_TOKEN_CACHE = Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.SECONDS).build();
     private final UserLoginHolder userLoginHolder;
-
-    public static void setInternalTokenCache(String requestId, String token) {
-        INTERNAL_TOKEN_CACHE.put(requestId, token);
-    }
-
-    public static boolean isValidInternalTokenCache(String requestId, String token) {
-        if (CharSequenceUtil.isBlank(token)) {
-            return false;
-        }
-        if (token.equals(INTERNAL_TOKEN_CACHE.getIfPresent(requestId))) {
-            INTERNAL_TOKEN_CACHE.invalidate(requestId);
-            return true;
-        } else {
-            INTERNAL_TOKEN_CACHE.invalidate(requestId);
-            return false;
-        }
-    }
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
@@ -79,13 +55,6 @@ public class ShareFileInterceptor implements HandlerInterceptor {
         if (isNotAllowAccess(fileDocument, shareToken, request)) {
             return false;
         }
-
-        // 生成临时 token
-        String requestId = UUID.fastUUID().toString(true) + fileId;
-        String internalToken = DigestUtil.sha256Hex(requestId + System.currentTimeMillis());
-        request.setAttribute("requestId", requestId);
-        request.setAttribute("internalToken", internalToken);
-        setInternalTokenCache(requestId, internalToken);
 
         // 构造内部路径
         preFileInterceptor.internalFilePath(request, response, fileDocument);
