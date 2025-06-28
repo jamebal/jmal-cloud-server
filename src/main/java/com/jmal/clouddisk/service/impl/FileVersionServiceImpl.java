@@ -423,7 +423,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
         try (InputStream inputStream = getInputStream(gridFSFile)) {
             String filename = gridFSFile.getMetadata().getString(Constants.FILENAME);
             HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + UriUtils.encode(filename, StandardCharsets.UTF_8));
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline;filename=" + UriUtils.encode(filename, StandardCharsets.UTF_8));
             return ResponseEntity.ok()
                     .headers(headers)
                     .contentType(MediaType.parseMediaType("application/octet-stream"))

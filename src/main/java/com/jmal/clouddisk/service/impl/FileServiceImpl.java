@@ -53,6 +53,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -807,7 +808,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         } else {
             downloadName = URLEncoder.encode(downloadName, StandardCharsets.UTF_8);
         }
-        response.setHeader("Content-Disposition", "attachment;fileName=\"" + downloadName + "\"");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;fileName=\"" + downloadName + "\"");
     }
 
     /**

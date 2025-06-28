@@ -634,7 +634,7 @@ public class WebOssService extends WebOssCommonService {
         BucketInfo bucketInfo = CaffeineUtil.getOssDiameterPrefixCache(ossPath);
         Path path = Paths.get(ossPath);
         try {
-            if (Boolean.TRUE.equals(isFolder)) {
+            if (BooleanUtil.isTrue(isFolder)) {
                 ossService.mkdir(objectName);
                 fileInfo = BaseOssService.newFileInfo(objectName, bucketInfo.getBucketName());
             } else {
@@ -680,7 +680,7 @@ public class WebOssService extends WebOssCommonService {
         notifyUpdateFile(ossPath, objectName, contentText.length());
     }
 
-    public void download(String ossPath, Path prePth, HttpServletRequest request, HttpServletResponse response) {
+    public void download(String ossPath, Path prePth, HttpServletRequest request, HttpServletResponse response, String downloadFilename) {
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, false);
         try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName);
@@ -689,6 +689,9 @@ public class WebOssService extends WebOssCommonService {
              OutputStream outputStream = response.getOutputStream()) {
             FileInfo fileInfo = ossService.getFileInfo(objectName);
             String encodedFilename = URLEncoder.encode(fileInfo.getName(), StandardCharsets.UTF_8);
+            if (CharSequenceUtil.isNotBlank(downloadFilename)) {
+                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + downloadFilename);
+            }
             String suffix = FileUtil.getSuffix(encodedFilename);
             // 设置响应头
             response.setContentType(FileContentTypeUtils.getContentType(suffix));

@@ -23,12 +23,10 @@ import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
-import org.springframework.web.util.UriUtils;
 
 import javax.imageio.*;
 import javax.imageio.stream.FileCacheImageOutputStream;
@@ -110,10 +108,11 @@ public class FileInterceptor implements HandlerInterceptor {
         if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD -> {
+                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + filename);
                     if (downloadOssFile(request, response, filename, path)) return false;
                 }
                 case PREVIEW -> {
-                    if (previewOssFile(request, response, path, filename)) return false;
+                    if (previewOssFile(request, response, path)) return false;
                 }
                 case CROP -> handleCrop(request, response);
                 case THUMBNAIL -> thumbnail(request, response);
@@ -123,7 +122,7 @@ public class FileInterceptor implements HandlerInterceptor {
                 }
             }
         } else {
-            return !previewOssFile(request, response, path, filename);
+            return !previewOssFile(request, response, path);
         }
         setHeader(request, response);
         return true;
@@ -147,6 +146,10 @@ public class FileInterceptor implements HandlerInterceptor {
      */
     private static String getDownloadFilename(HttpServletRequest request, Path path) {
         String filename = String.valueOf(path.getFileName());
+        return getFilename(request, filename);
+    }
+
+    private static String getFilename(HttpServletRequest request, String filename) {
         if (UrlEncodingChecker.isUrlEncoded(filename)) {
             filename = URLUtil.decode(filename, StandardCharsets.UTF_8);
         }
@@ -184,11 +187,10 @@ public class FileInterceptor implements HandlerInterceptor {
     }
 
     private boolean downloadOssFile(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, String filename, Path path) {
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
         Path prePth = path.subpath(1, path.getNameCount());
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
-            webOssService.download(ossPath, prePth, request, response);
+            webOssService.download(ossPath, prePth, request, response, filename);
             return true;
         }
         return false;
@@ -206,12 +208,11 @@ public class FileInterceptor implements HandlerInterceptor {
     /**
      * 预览oss文件
      */
-    private boolean previewOssFile(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, Path path, String encodedFilename) {
+    private boolean previewOssFile(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, Path path) {
         Path prePth = path.subpath(1, path.getNameCount());
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (CharSequenceUtil.isNotBlank(ossPath)) {
-            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "filename=" + encodedFilename);
-            webOssService.download(ossPath, prePth, request, response);
+            webOssService.download(ossPath, prePth, request, response, null);
             return true;
         }
         return false;
@@ -370,8 +371,6 @@ public class FileInterceptor implements HandlerInterceptor {
 
     private void responseHeader(HttpServletResponse response, String fileName, byte[] img) {
         if (!CharSequenceUtil.isBlank(fileName)) {
-            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + ContentDisposition.builder("attachment")
-                    .filename(UriUtils.encode(fileName, StandardCharsets.UTF_8)));
             response.setHeader(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(MyFileUtils.extName(fileName)));
         }
         if (img != null) {
