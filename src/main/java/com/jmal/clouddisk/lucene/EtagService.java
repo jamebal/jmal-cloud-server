@@ -167,7 +167,7 @@ public class EtagService {
                 Update update = new Update().set(Constants.ETAG, newEtag);
                 // 如果有版本控制字段，这里也应该更新
                 mongoTemplate.updateFirst(query, update, FileDocument.class);
-                log.info("File ETag updated for {}: {} -> {}", relativePath + fileName, oldEtag, newEtag);
+                log.debug("File ETag updated for {}: {} -> {}", relativePath + fileName, oldEtag, newEtag);
 
                 // 标记父文件夹需要更新ETag
                 markFolderForEtagUpdate(userId, relativePath);
@@ -436,7 +436,7 @@ public class EtagService {
             UpdateResult result = mongoTemplate.updateFirst(updateQuery, update, FileDocument.class);
 
             if (result.getModifiedCount() > 0) {
-                log.info("[Worker {}] Folder ETag updated for {}: {} -> {}", workerId, folderPath + folderDoc.getName(), oldEtag, newCalculatedEtag);
+                log.debug("[Worker {}] Folder ETag updated for {}: {} -> {}", workerId, folderPath + folderDoc.getName(), oldEtag, newCalculatedEtag);
                 return true;
             } else {
                 // 可能在计算和写入之间，该文档被其他worker处理了（如果ETag已更新为相同值）或版本冲突
