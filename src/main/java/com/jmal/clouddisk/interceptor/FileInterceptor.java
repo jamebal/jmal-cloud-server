@@ -132,7 +132,7 @@ public class FileInterceptor implements HandlerInterceptor {
         FileDocument fileDocument = getFileDocument(Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8)));
         response.setContentType(fileDocument.getContentType());
         if (fileDocument.getEtag() != null) {
-            response.setHeader(HttpHeaders.ETAG, fileDocument.getEtag());
+            response.setHeader(HttpHeaders.ETAG, "\"" + fileDocument.getEtag() + "\"");
         }
         setCacheControl(request, response);
     }
