@@ -43,5 +43,7 @@ logging:
   level:
     nl:
       siegmann:
-        epublib:
-          epub: OFF
+        epublib: off
+    org:
+      apache:
+        pdfbox: off
