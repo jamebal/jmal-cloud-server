@@ -58,7 +58,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.util.UriUtils;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -145,7 +144,7 @@ public class CommonFileService {
 
     public ResponseEntity<Object> getObjectResponseEntity(FileDocument fileDocument) {
         if (fileDocument != null) {
-            return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + UriUtils.encode(fileDocument.getName(), StandardCharsets.UTF_8)).header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType()).header(HttpHeaders.CONNECTION, "close").header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent() != null ? fileDocument.getContent().length : 0)).header(HttpHeaders.CONTENT_ENCODING, "utf-8").header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800").body(fileDocument.getContent());
+            return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType()).header(HttpHeaders.CONNECTION, "close").header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent() != null ? fileDocument.getContent().length : 0)).header(HttpHeaders.CONTENT_ENCODING, "utf-8").header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800").body(fileDocument.getContent());
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件");
         }

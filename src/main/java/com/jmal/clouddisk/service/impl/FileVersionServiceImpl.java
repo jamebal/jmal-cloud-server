@@ -48,7 +48,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-import org.springframework.web.util.UriUtils;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -421,9 +420,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
             return ResponseEntity.notFound().build();
         }
         try (InputStream inputStream = getInputStream(gridFSFile)) {
-            String filename = gridFSFile.getMetadata().getString(Constants.FILENAME);
             HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + UriUtils.encode(filename, StandardCharsets.UTF_8));
             return ResponseEntity.ok()
                     .headers(headers)
                     .contentType(MediaType.parseMediaType("application/octet-stream"))
