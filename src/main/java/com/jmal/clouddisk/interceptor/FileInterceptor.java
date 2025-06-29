@@ -130,7 +130,10 @@ public class FileInterceptor implements HandlerInterceptor {
 
     private void setHeader(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
         FileDocument fileDocument = getFileDocument(Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8)));
-        response.setContentType(fileDocument.getContentType());
+        String contentType = fileDocument.getContentType();
+        if (CharSequenceUtil.isNotBlank(contentType) && contentType.contains("/")) {
+            response.setHeader(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType());
+        }
         if (fileDocument.getEtag() != null) {
             response.setHeader(HttpHeaders.ETAG, "\"" + fileDocument.getEtag() + "\"");
         }

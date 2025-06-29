@@ -576,7 +576,7 @@ public class FileContentTypeUtils {
         CONTENT_TYPE_MAP.put("sav", "application/x-spss-sav");
         CONTENT_TYPE_MAP.put("scm", "text/x-scheme");
         CONTENT_TYPE_MAP.put("sda", "application/vnd.stardivision.draw");
-        CONTENT_TYPE_MAP.put("drawio", "drawio");
+        CONTENT_TYPE_MAP.put("drawio", "application/vnd.jgraph.mxfile");
         CONTENT_TYPE_MAP.put("sdc", "application/vnd.stardivision.calc");
         CONTENT_TYPE_MAP.put("sdd", "application/vnd.stardivision.impress");
         CONTENT_TYPE_MAP.put("sdp", "application/sdp");
