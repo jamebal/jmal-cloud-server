@@ -690,7 +690,7 @@ public class WebOssService extends WebOssCommonService {
             FileInfo fileInfo = ossService.getFileInfo(objectName);
             String encodedFilename = URLEncoder.encode(fileInfo.getName(), StandardCharsets.UTF_8);
             if (CharSequenceUtil.isNotBlank(downloadFilename)) {
-                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + downloadFilename);
+                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=\"" + downloadFilename + "\"");
             }
             String suffix = FileUtil.getSuffix(encodedFilename);
             // 设置响应头
@@ -729,7 +729,6 @@ public class WebOssService extends WebOssCommonService {
         long end = ranges[1] == -1 ? fileSize - 1 : ranges[1];
         try (AbstractOssObject rangeObject = ossService.getAbstractOssObject(objectName, start, end);
              InputStream rangeIn = rangeObject.getInputStream()) {
-            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "inline;filename=" + encodedFilename);
             response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
             String contentRange = "bytes " + start + "-" + end + "/" + fileSize;
             response.setHeader(HttpHeaders.CONTENT_RANGE, contentRange);

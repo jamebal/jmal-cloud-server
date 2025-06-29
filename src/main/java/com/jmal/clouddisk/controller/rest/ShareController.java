@@ -20,15 +20,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-import org.springframework.web.util.UriUtils;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -241,8 +238,6 @@ public class ShareController {
         }
         return file.<ResponseEntity<Object>>map(fileDocument ->
                 ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "fileName=" + ContentDisposition.builder("attachment")
-                                .filename(UriUtils.encode(fileDocument.getName(), StandardCharsets.UTF_8)))
                         .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
                         .header(HttpHeaders.CONNECTION, "close")
                         .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent().length))

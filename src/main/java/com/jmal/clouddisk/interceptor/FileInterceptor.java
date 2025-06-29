@@ -108,7 +108,7 @@ public class FileInterceptor implements HandlerInterceptor {
         if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD -> {
-                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + filename);
+                    response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=\"" + filename + "\"");
                     if (downloadOssFile(request, response, filename, path)) return false;
                 }
                 case PREVIEW -> {

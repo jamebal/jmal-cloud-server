@@ -808,7 +808,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         } else {
             downloadName = URLEncoder.encode(downloadName, StandardCharsets.UTF_8);
         }
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;fileName=\"" + downloadName + "\"");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=\"" + downloadName + "\"");
     }
 
     /**
