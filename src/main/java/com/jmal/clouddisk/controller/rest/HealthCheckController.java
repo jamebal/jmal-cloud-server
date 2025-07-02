@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Tag(name = "healthCheck")
+@Tag(name = "健康检查")
 public class HealthCheckController {
 
     @GetMapping("/public/health")
