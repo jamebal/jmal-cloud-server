@@ -45,7 +45,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(localeChangeInterceptor());
 
 		registry.addInterceptor(authInterceptor).addPathPatterns("/**").
-				excludePathPatterns("/login/**", "/public/**", "/articles/**", "/error/**", "/file/**" , "/pre-file/**" , "/share-file/**", "/direct-file/**" , "/files/**","/swagger-ui/**");
+				excludePathPatterns("/", "/login/**", "/public/**", "/articles/**", "/error/**", "/file/**" , "/pre-file/**" , "/share-file/**", "/direct-file/**" , "/files/**","/swagger-ui/**");
 
         registry.addInterceptor(fileInterceptor).addPathPatterns("/file/**").addPathPatterns("/files/**");
 
