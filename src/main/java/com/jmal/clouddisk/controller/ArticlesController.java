@@ -76,7 +76,7 @@ public class ArticlesController {
 
     @GetMapping("/")
     public String redirectToArticles() {
-        return "redirect:/articles";
+        return "redirect:/public/api";
     }
 
     @GetMapping("/articles")

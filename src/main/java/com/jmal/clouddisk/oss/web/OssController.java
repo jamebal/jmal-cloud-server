@@ -18,7 +18,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("oss")
-@Tag(name = "oss Controller")
+@Tag(name = "OSS管理")
 @RequiredArgsConstructor
 public class OssController {
 

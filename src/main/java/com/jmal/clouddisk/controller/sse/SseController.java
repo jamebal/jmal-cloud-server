@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.sse;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,6 +15,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 @RestController
 @Slf4j
+@Tag(name = "SSE")
 public class SseController {
 
     private static final long SSE_TIMEOUT = 30 * 60 * 1000L; // 30分钟
