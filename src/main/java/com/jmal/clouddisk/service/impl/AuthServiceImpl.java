@@ -1,7 +1,9 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import com.jmal.clouddisk.controller.record.LoginResponse;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
@@ -49,9 +51,11 @@ public class AuthServiceImpl implements IAuthService {
 
     private final UserLoginHolder userLoginHolder;
 
-    private final IUserService userService;
+    private final UserServiceImpl userService;
 
     private final MessageUtil messageUtil;
+
+    private final TotpService totpService;
 
     public String loginError() {
         return messageUtil.getMessage("login.error");
@@ -99,10 +103,34 @@ public class AuthServiceImpl implements IAuthService {
         } else {
             String hashPassword = consumerDO.getPassword();
             if (!CharSequenceUtil.isBlank(password) && PasswordHash.validatePassword(password, hashPassword)) {
-                return loginValidSuccess(response, consumerDTO, consumerDO);
+                // 密码正确, 检查MFA状态
+                if (BooleanUtil.isTrue(consumerDO.getMfaEnabled())) {
+                    // 需要MFA验证。生成一个短期的、有范围的“预授权Token”
+                    String mfaToken = TokenUtil.createToken(consumerDTO.getUsername(), hashPassword, LocalDateTimeUtil.now().plusMinutes(5));
+                    return ResultUtil.success(new LoginResponse(null, true, mfaToken));
+                } else {
+                    // 无需MFA，直接登录成功
+                    return loginValidSuccess(response, consumerDTO, consumerDO);
+                }
             }
         }
         return ResultUtil.error(loginError());
+    }
+
+    @Override
+    public ResponseResult<Object> verifyTotp(HttpServletResponse response, ConsumerDTO consumerDTO) {
+        // 验证预授权Token
+        String hashPassword = userService.getHashPasswordUserName(consumerDTO.getUsername());
+        String username = TokenUtil.getTokenKey(consumerDTO.getMfaToken(), hashPassword);
+        if (CharSequenceUtil.isBlank(username) || !consumerDTO.getUsername().equals(username)) {
+            return ResultUtil.error(messageUtil.getMessage("login.mfaError"));
+        }
+        // 验证TOTP码
+        if (totpService.isCodeInvalid(consumerDTO.getMfaCode(), consumerDTO.getUsername())) {
+            return ResultUtil.error(messageUtil.getMessage("login.mfaError"));
+        }
+        ConsumerDO consumerDO = userService.getUserInfoByUsername(consumerDTO.getUsername());
+        return loginValidSuccess(response, consumerDTO, consumerDO);
     }
 
     private static ResponseResult<Object> loginValidSuccess(HttpServletResponse response, ConsumerDTO userDTO, ConsumerDO consumerDO) {

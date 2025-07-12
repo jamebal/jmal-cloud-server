@@ -36,8 +36,15 @@ public class AuthController {
     @Operation(summary = "登录")
     @LogOperatingFun(logType = LogOperation.Type.LOGIN)
     @PostMapping("/login")
-    public ResponseResult<Object> login(@RequestBody ConsumerDTO userDTO, HttpServletResponse response) {
-        return authService.login(response, userDTO);
+    public ResponseResult<Object> login(@RequestBody ConsumerDTO consumerDTO, HttpServletResponse response) {
+        return authService.login(response, consumerDTO);
+    }
+
+    @Operation(summary = "验证TOTP")
+    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
+    @PostMapping("/public/verify-totp")
+    public ResponseResult<Object> verifyTotp(@RequestBody ConsumerDTO consumerDTO, HttpServletResponse response) {
+        return authService.verifyTotp(response, consumerDTO);
     }
 
     @Operation(summary = "校验旧密码")

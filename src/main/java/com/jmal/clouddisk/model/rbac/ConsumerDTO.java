@@ -61,8 +61,17 @@ public class ConsumerDTO extends ConsumerBase {
     @Schema(name = "newVersion", title = "新版本", hidden = true)
     String newVersion;
 
+    @Schema(name = "iframe", title = "iframe", hidden = true)
     String iframe;
 
+    @Schema(name = "exactSearch", title = "exactSearch", hidden = true)
     Boolean exactSearch;
+
+    @Schema(name = "mfaToken", title = "mfaToken", hidden = true)
+    String mfaToken;
+
+    @Schema(name = "mfaCode", title = "mfaCode", hidden = true)
+    String mfaCode;
+
 
 }

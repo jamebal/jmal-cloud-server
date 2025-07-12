@@ -22,6 +22,14 @@ public interface IAuthService {
     ResponseResult<Object> login(HttpServletResponse response, ConsumerDTO userDTO);
 
     /**
+     * 验证TOTP码
+     * @param response HttpServletResponse
+     * @param consumerDTO ConsumerDTO
+     * @return ResponseResult
+     */
+    ResponseResult<Object> verifyTotp(HttpServletResponse response, ConsumerDTO consumerDTO);
+
+    /**
      * 登出
      * @param token token
      * @param response HttpServletResponse

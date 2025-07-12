@@ -189,4 +189,15 @@ public interface IUserService {
      */
     ConsumerDO getUserInfoByUsername(String username);
 
+    /**
+     * 是否开启mfa
+     * @param username username
+     * @return 是否开启MFA
+     */
+    boolean isMfaEnabled(String username);
+
+    void enableMfa(String userId, String secret);
+
+    void disableMfa(String userId);
+
 }

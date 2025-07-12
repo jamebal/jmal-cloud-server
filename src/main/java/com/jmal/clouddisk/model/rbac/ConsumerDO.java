@@ -48,4 +48,10 @@ public class ConsumerDO extends ConsumerBase {
     @Schema(name = "creator", title = "网盘创建者", hidden = true)
     Boolean creator;
 
+    @Schema(name = "mfaEnabled", title = "mfa_enabled")
+    Boolean mfaEnabled;
+
+    @Schema(name = "mfaSecret", title = "encrypted_mfa_secret")
+    String mfaSecret;
+
 }

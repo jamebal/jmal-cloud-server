@@ -7,7 +7,6 @@ import com.itextpdf.styledxmlparser.jsoup.select.Elements;
 import com.spire.doc.Document;
 import com.spire.doc.FileFormat;
 import com.spire.doc.documents.ImageType;
-import fr.opensagres.poi.xwpf.converter.xhtml.XHTMLConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
@@ -62,7 +61,6 @@ public class WordCoverTest {
         XWPFDocument document = new XWPFDocument(input);
         List<XWPFPictureData> list = document.getAllPictures();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        XHTMLConverter.getInstance().convert(document, outputStream, null);
         String s = outputStream.toString();
         return setImg(s, list);
     }
