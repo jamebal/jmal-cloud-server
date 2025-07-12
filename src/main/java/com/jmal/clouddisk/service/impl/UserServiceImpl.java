@@ -554,7 +554,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public void disableMfa(String userId, String rawSecret) {
+    public void disableMfa(String userId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(userId));
         Update update = new Update();

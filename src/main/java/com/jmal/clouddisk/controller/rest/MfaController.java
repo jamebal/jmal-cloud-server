@@ -70,12 +70,12 @@ public class MfaController {
         }
 
         // 对用户输入的code进行验证
-        if (totpService.isNotCodeValid(request.code(), userLoginHolder.getUsername())) {
+        if (totpService.isCodeInvalid(request.code(), userLoginHolder.getUsername())) {
             return ResultUtil.error(messageUtil.getMessage("login.mfaError"));
         }
 
         // 验证成功！禁用MFA
-        userService.disableMfa(userLoginHolder.getUserId(), request.secret());
+        userService.disableMfa(userLoginHolder.getUserId());
 
         return ResultUtil.success();
     }

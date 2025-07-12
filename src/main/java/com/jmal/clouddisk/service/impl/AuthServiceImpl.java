@@ -126,7 +126,7 @@ public class AuthServiceImpl implements IAuthService {
             return ResultUtil.error(messageUtil.getMessage("login.mfaError"));
         }
         // 验证TOTP码
-        if (totpService.isNotCodeValid(consumerDTO.getMfaCode(), consumerDTO.getUsername())) {
+        if (totpService.isCodeInvalid(consumerDTO.getMfaCode(), consumerDTO.getUsername())) {
             return ResultUtil.error(messageUtil.getMessage("login.mfaError"));
         }
         ConsumerDO consumerDO = userService.getUserInfoByUsername(consumerDTO.getUsername());

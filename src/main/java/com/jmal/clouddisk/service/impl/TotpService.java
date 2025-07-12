@@ -63,8 +63,11 @@ public class TotpService {
      * @param code 用户输入的6位数字码
      * @return 如果验证通过则返回true，否则返回false
      */
-    public boolean isNotCodeValid(String code, String username) {
+    public boolean isCodeInvalid(String code, String username) {
         ConsumerDO consumerDO = userService.getUserInfoByUsername(username);
+        if (consumerDO == null) {
+            return true;
+        }
         if (BooleanUtil.isTrue(consumerDO.getMfaEnabled())) {
             String decryptedSecret = textEncryptor.decrypt(consumerDO.getMfaSecret());
             return !codeVerifier.isValidCode(decryptedSecret, code);

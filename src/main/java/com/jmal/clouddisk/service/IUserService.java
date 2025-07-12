@@ -198,6 +198,6 @@ public interface IUserService {
 
     void enableMfa(String userId, String secret);
 
-    void disableMfa(String userId, String secret);
+    void disableMfa(String userId);
 
 }
