@@ -59,4 +59,6 @@ file:
   ngramMaxContentLengthMB: 5
   ngramMinSize: 2
   ngramMaxSize: 6
+  encryptionSecretKey: ${ENCRYPTION_SECRET_KEY}
+  encryptionSalt: ${ENCRYPTION_SALT}
 

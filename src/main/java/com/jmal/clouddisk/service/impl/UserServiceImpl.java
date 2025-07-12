@@ -3,6 +3,7 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.HexUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
@@ -30,6 +31,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -76,6 +78,9 @@ public class UserServiceImpl implements IUserService {
 
     @Autowired
     private FileMonitor fileMonitor;
+
+    @Autowired
+    private TextEncryptor textEncryptor;
 
     @Override
     public synchronized ConsumerDO add(ConsumerDTO consumerDTO) {
@@ -208,9 +213,7 @@ public class UserServiceImpl implements IUserService {
         LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
         update.set("updateTime", now);
         consumerDO.setUpdateTime(now);
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
-        // 更新用户缓存
-        CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
+        updateConsumer(userId, query, update);
         if (user.getRoles() != null) {
             // 修改用户角色后更新相关角色用户的权限缓存
             ThreadUtil.execute(() -> roleService.updateUserCacheByRole(user.getRoles()));
@@ -356,14 +359,13 @@ public class UserServiceImpl implements IUserService {
         LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
         update.set("password", password);
         update.set("updateTime", now);
+        updateConsumer(userId, query, update);
+    }
+
+    private void updateConsumer(String userId, Query query, Update update) {
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
-        // 更新用户缓存
         ConsumerDO consumerDO = getUserInfoById(userId);
-        if (consumerDO != null) {
-            consumerDO.setPassword(password);
-            consumerDO.setUpdateTime(now);
-            CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
-        }
+        CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
     }
 
     @Override
@@ -504,7 +506,7 @@ public class UserServiceImpl implements IUserService {
         query.addCriteria(Criteria.where("_id").is(userId));
         Update update = new Update();
         update.set("webpDisabled", disabled);
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        updateConsumer(userId, query, update);
     }
 
     @Override
@@ -528,6 +530,37 @@ public class UserServiceImpl implements IUserService {
             }
         }
         return consumer;
+    }
+
+    @Override
+    public boolean isMfaEnabled(String username) {
+        ConsumerDO consumerDO = getUserInfoByUsername(username);
+        if (consumerDO == null) {
+            return false;
+        }
+        return BooleanUtil.isTrue(consumerDO.getMfaEnabled());
+    }
+
+    @Override
+    public void enableMfa(String userId, String rawSecret) {
+        // 加密密钥
+        String encryptedSecret = textEncryptor.encrypt(rawSecret);
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(userId));
+        Update update = new Update();
+        update.set("mfaSecret", encryptedSecret);
+        update.set("mfaEnabled", true);
+        updateConsumer(userId, query, update);
+    }
+
+    @Override
+    public void disableMfa(String userId, String rawSecret) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(userId));
+        Update update = new Update();
+        update.unset("mfaSecret");
+        update.unset("mfaEnabled");
+        updateConsumer(userId, query, update);
     }
 
     public ConsumerDO getUserInfoById(String userId) {
