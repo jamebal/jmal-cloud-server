@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.lucene;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
@@ -99,7 +100,7 @@ public class EtagService {
         long totalSize = 0;
         Document doc = result.first();
         if (doc != null) {
-            totalSize = doc.getLong(Constants.TOTAL_SIZE);
+            totalSize = Convert.toLong(doc.get(Constants.TOTAL_SIZE), 0L);
         }
         return totalSize;
     }
