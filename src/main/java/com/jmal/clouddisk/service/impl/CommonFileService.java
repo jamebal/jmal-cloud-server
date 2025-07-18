@@ -89,6 +89,7 @@ import static com.jmal.clouddisk.service.IUserService.USER_ID;
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Aggregates.group;
 import static com.mongodb.client.model.Aggregates.match;
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 
 /**
@@ -413,6 +414,13 @@ public class CommonFileService {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return fileId;
+    }
+
+    /**
+     * 统计文件夹的大小
+     */
+    public long getFolderSize(String collectionName, String userId, String path) {
+        return etagService.getFolderSize(collectionName, userId, path);
     }
 
     /**
@@ -818,7 +826,7 @@ public class CommonFileService {
 
     public long getOccupiedSpace(String userId, String collectionName) {
         Long space = 0L;
-        List<Bson> list = Arrays.asList(match(eq(IUserService.USER_ID, userId)), group(new BsonNull(), sum(Constants.TOTAL_SIZE, "$size")));
+        List<Bson> list = Arrays.asList(match(and(eq(IUserService.USER_ID, userId), eq(Constants.IS_FOLDER, false))), group(new BsonNull(), sum(Constants.TOTAL_SIZE, "$size")));
         AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(collectionName).aggregate(list);
         Document doc = aggregateIterable.first();
         if (doc != null) {

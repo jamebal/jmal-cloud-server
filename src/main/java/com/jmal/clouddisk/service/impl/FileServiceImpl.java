@@ -30,7 +30,6 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
-import com.mongodb.client.AggregateIterable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,9 +40,6 @@ import org.apache.commons.compress.utils.Lists;
 import org.apache.tika.mime.MimeType;
 import org.apache.tika.mime.MimeTypeException;
 import org.apache.tika.mime.MimeTypes;
-import org.bson.BsonNull;
-import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mozilla.universalchardet.ReaderFactory;
@@ -237,7 +233,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         } else {
             query.with(Sort.by(Sort.Direction.DESC, Constants.IS_FOLDER));
         }
-        query.fields().exclude("content").exclude("music.coverBase64");
+        query.fields().exclude("content").exclude("music.coverBase64").exclude("contentText");
         String collectionName = BooleanUtil.isTrue(upload.getIsTrash()) ? TRASH_COLLECTION_NAME : COLLECTION_NAME;
         if (TRASH_COLLECTION_NAME.equals(collectionName)) {
             query.addCriteria(Criteria.where("hidden").is(false));
@@ -515,23 +511,6 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         if (path.getNameCount() > rootPathCount + 1) {
             loopCreateDir(username, rootPathCount, path.getParent());
         }
-    }
-
-    /***
-     * 统计文件夹的大小
-     */
-    private long getFolderSize(String collectionName, String userId, String path) {
-        List<Bson> list = Arrays.asList(new Document("$match", new Document(USER_ID, userId).append(Constants.IS_FOLDER, false).append("path", new Document("$regex", "^" + ReUtil.escape(path)))), new Document("$group", new Document("_id", new BsonNull()).append(Constants.TOTAL_SIZE, new Document("$sum", "$size"))));
-        AggregateIterable<Document> result = mongoTemplate.getCollection(collectionName).aggregate(list);
-        long totalSize = 0;
-        Document doc = result.first();
-        if (doc != null) {
-            Object object = doc.get(Constants.TOTAL_SIZE);
-            if (object != null) {
-                totalSize = Long.parseLong(object.toString());
-            }
-        }
-        return totalSize;
     }
 
     @Override

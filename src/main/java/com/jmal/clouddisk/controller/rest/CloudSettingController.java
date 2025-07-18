@@ -62,6 +62,14 @@ public class CloudSettingController {
         return rebuildIndexTaskService.sync(username, null);
     }
 
+    @Operation(summary = "重新计算文件夹大小")
+    @GetMapping("/cloud/setting/recalculateFolderSize")
+    @Permission(value = "cloud:set:sync")
+    @LogOperatingFun
+    public ResponseResult<Object> recalculateFolderSize() {
+        return settingService.recalculateFolderSize();
+    }
+
     @Operation(summary = "获取视频转码配置")
     @GetMapping("/cloud/setting/transcode/config")
     @Permission(value = "cloud:set:sync")

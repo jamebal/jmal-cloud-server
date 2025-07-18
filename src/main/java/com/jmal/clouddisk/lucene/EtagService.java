@@ -1,18 +1,24 @@
 package com.jmal.clouddisk.lucene;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.ReUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.FileServiceImpl;
+import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.result.UpdateResult;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -25,10 +31,17 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static com.jmal.clouddisk.service.IUserService.USER_ID;
+import static com.mongodb.client.model.Accumulators.sum;
+import static com.mongodb.client.model.Aggregates.group;
+import static com.mongodb.client.model.Aggregates.match;
+import static com.mongodb.client.model.Filters.*;
 
 /**
  * EtagService
@@ -76,6 +89,20 @@ public class EtagService {
             log.info("Initial ETag setup finished. Ensuring ETag processing worker is active if needed.");
             ensureProcessingMarkedFolders();
         });
+    }
+
+    /**
+     * 统计文件夹的大小
+     */
+    public long getFolderSize(String collectionName, String userId, String path) {
+        List<Bson> list = Arrays.asList(match(and(eq(USER_ID, userId), eq(Constants.IS_FOLDER, false), regex("path", "^" + ReUtil.escape(path)))), group(null, sum(Constants.TOTAL_SIZE, "$size")));
+        AggregateIterable<Document> result = mongoTemplate.getCollection(collectionName).aggregate(list);
+        long totalSize = 0;
+        Document doc = result.first();
+        if (doc != null) {
+            totalSize = Convert.toLong(doc.get(Constants.TOTAL_SIZE), 0L);
+        }
+        return totalSize;
     }
 
     /**
@@ -291,7 +318,7 @@ public class EtagService {
                 run = false;
             }
 
-            // 获取根据下所有的文件
+            // 获取根目录下所有的文件
             List<FileDocument> tasks = mongoTemplate.find(findQuery, FileDocument.class);
 
             if (tasks.isEmpty()) {
@@ -409,7 +436,7 @@ public class EtagService {
         childrenQuery.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
         childrenQuery.fields().include(Constants.FILENAME_FIELD).include(Constants.ETAG).include(Constants.IS_FOLDER).include(IUserService.USER_ID).include(Constants.PATH_FIELD);
         List<FileDocument> children = mongoTemplate.find(childrenQuery, FileDocument.class);
-
+        long folderSize = 0;
         if (children.isEmpty()) {
             newCalculatedEtag = SecureUtil.sha256(EMPTY_FOLDER_ETAG_BASE_STRING);
         } else {
@@ -425,6 +452,9 @@ public class EtagService {
                 }
             }
             newCalculatedEtag = SecureUtil.sha256(combinedRepresentation.toString());
+
+            // 计算文件夹大小
+            folderSize = getFolderSize(FileServiceImpl.COLLECTION_NAME, userId, currentFolderNormalizedPath);
         }
 
         if (!newCalculatedEtag.equals(oldEtag)) {
@@ -432,6 +462,8 @@ public class EtagService {
             // 如果使用乐观锁，这里也需要检查版本号
             // query.addCriteria(Criteria.where("_version").is(folderDoc.getVersion()));
             Update update = new Update().set(Constants.ETAG, newCalculatedEtag);
+            // 更新文件夹大小
+            update.set(Constants.SIZE, folderSize);
             // update.inc("_version", 1);
             UpdateResult result = mongoTemplate.updateFirst(updateQuery, update, FileDocument.class);
 
