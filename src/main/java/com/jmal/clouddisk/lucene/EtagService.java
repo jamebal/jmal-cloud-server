@@ -16,7 +16,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.dao.DataAccessException;
@@ -38,6 +37,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.jmal.clouddisk.service.IUserService.USER_ID;
+import static com.mongodb.client.model.Accumulators.sum;
+import static com.mongodb.client.model.Aggregates.group;
+import static com.mongodb.client.model.Aggregates.match;
+import static com.mongodb.client.model.Filters.*;
 
 /**
  * EtagService
@@ -91,15 +94,12 @@ public class EtagService {
      * 统计文件夹的大小
      */
     public long getFolderSize(String collectionName, String userId, String path) {
-        List<Bson> list = Arrays.asList(new Document("$match", new Document(USER_ID, userId).append(Constants.IS_FOLDER, false).append("path", new Document("$regex", "^" + ReUtil.escape(path)))), new Document("$group", new Document("_id", new BsonNull()).append(Constants.TOTAL_SIZE, new Document("$sum", "$size"))));
+        List<Bson> list = Arrays.asList(match(and(eq(USER_ID, userId), eq(Constants.IS_FOLDER, false), regex("path", "^" + ReUtil.escape(path)))), group(null, sum(Constants.TOTAL_SIZE, "$size")));
         AggregateIterable<Document> result = mongoTemplate.getCollection(collectionName).aggregate(list);
         long totalSize = 0;
         Document doc = result.first();
         if (doc != null) {
-            Object object = doc.get(Constants.TOTAL_SIZE);
-            if (object != null) {
-                totalSize = Long.parseLong(object.toString());
-            }
+            totalSize = doc.getLong(Constants.TOTAL_SIZE);
         }
         return totalSize;
     }
@@ -462,7 +462,7 @@ public class EtagService {
             // query.addCriteria(Criteria.where("_version").is(folderDoc.getVersion()));
             Update update = new Update().set(Constants.ETAG, newCalculatedEtag);
             // 更新文件夹大小
-            update.set("size", folderSize);
+            update.set(Constants.SIZE, folderSize);
             // update.inc("_version", 1);
             UpdateResult result = mongoTemplate.updateFirst(updateQuery, update, FileDocument.class);
 

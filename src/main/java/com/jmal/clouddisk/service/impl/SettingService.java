@@ -80,6 +80,16 @@ public class SettingService {
     private final AtomicLong calculateFolderSizeProcessedCount = new AtomicLong(0);
 
     /**
+     * 每次处理的延迟时间，单位毫秒
+     */
+    private final static long THROTTLE_DELAY_MS = 100;
+
+    /**
+     * 每次处理的文件夹数量
+     */
+    private final static int FOLDER_BATCH_SIZE = 16;
+
+    /**
      * 上传网盘logo
      *
      * @param file logo文件
@@ -290,9 +300,9 @@ public class SettingService {
                 try {
                     // 清除之前的文件夹大小数据
                     clearFolderSizInDb();
-                    long totalSize = totalSizNeedUpdateSizeInDb();
+                    long totalSize = totalSizeNeedUpdateSizeInDb();
                     calculateFolderSizeProcessedCount.set(0);
-                    HybridThrottleExecutor hybridThrottleExecutor = new HybridThrottleExecutor(50);
+                    HybridThrottleExecutor hybridThrottleExecutor = new HybridThrottleExecutor(THROTTLE_DELAY_MS);
                     // 调用实际的循环处理逻辑
                     processCalculateFolderSizeLoop(totalSize, hybridThrottleExecutor, notifyUsername);
                     hybridThrottleExecutor.shutdown();
@@ -313,7 +323,7 @@ public class SettingService {
         boolean run = true;
         while (run && !Thread.currentThread().isInterrupted()) {
             // 查询所有需要更新大小的文件夹
-            Query query = Query.query(Criteria.where(Constants.IS_FOLDER).is(true).and(Constants.SIZE).exists(false)).limit(16);
+            Query query = Query.query(Criteria.where(Constants.IS_FOLDER).is(true).and(Constants.SIZE).exists(false)).limit(FOLDER_BATCH_SIZE);
             List<FileDocument> tasks = mongoTemplate.find(query, FileDocument.class);
             if (tasks.isEmpty()) {
                 run = false;
@@ -334,7 +344,10 @@ public class SettingService {
                     mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(folderDoc.getId())), update, FileDocument.class);
                     calculateFolderSizeProcessedCount.getAndIncrement();
                     // 推送进度
-                    hybridThrottleExecutor.execute(() -> commonFileService.pushMessage(notifyUsername, NumberUtil.round((double) calculateFolderSizeProcessedCount.get() / totalSize * 100, 2), "calculateFolderSizeProcessed"));
+                    hybridThrottleExecutor.execute(() -> {
+                        double progress = (totalSize > 0) ? (double) calculateFolderSizeProcessedCount.get() / totalSize * 100 : 100.0;
+                        commonFileService.pushMessage(notifyUsername, NumberUtil.round(progress, 2), "calculateFolderSizeProcessed");
+                    });
 
                 } catch (Exception e) {
                     log.error("计算文件夹大小失败: {}", currentFolderNormalizedPath, e);
@@ -356,7 +369,7 @@ public class SettingService {
      * 获取需要更新大小的文件夹总数
      * @return long
      */
-    private long totalSizNeedUpdateSizeInDb() {
+    private long totalSizeNeedUpdateSizeInDb() {
         Query query = Query.query(Criteria.where(Constants.IS_FOLDER).is(true).and(Constants.SIZE).exists(false));
         return mongoTemplate.count(query, FileDocument.class);
     }
