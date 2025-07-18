@@ -75,6 +75,8 @@ public class Constants {
 
     public static final String FILE_ID = "fileId";
 
+    public static final String SIZE = "size";
+
     public static final String DELETE_FILE = "deleteFile";
 
     public static final String UPDATE_FILE = "updateFile";

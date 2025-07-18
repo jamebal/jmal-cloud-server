@@ -4,22 +4,23 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.NumberUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.lucene.EtagService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.util.MongoUtil;
-import com.jmal.clouddisk.util.MyFileUtils;
-import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,8 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author jmal
@@ -62,6 +65,19 @@ public class SettingService {
 
     @Autowired
     UserLoginHolder userLoginHolder;
+
+    @Autowired
+    private EtagService etagService;
+
+    @Autowired
+    CommonFileService commonFileService;
+
+    private final AtomicBoolean calculateFolderSizeScheduled = new AtomicBoolean(false);
+
+    /**
+     * 已处理的数量
+     */
+    private final AtomicLong calculateFolderSizeProcessedCount = new AtomicLong(0);
 
     /**
      * 上传网盘logo
@@ -252,4 +268,107 @@ public class SettingService {
         update.set("iframe", websiteSettingDTO.getIframe());
         mongoTemplate.upsert(new Query(), update, COLLECTION_NAME_WEBSITE_SETTING);
     }
+
+    /**
+     * 重新计算文件夹大小
+     * @return ResponseResult
+     */
+    public ResponseResult<Object> recalculateFolderSize() {
+        if (calculateFolderSizeScheduled.get()) {
+            return ResultUtil.success();
+        } else {
+            // 确保计算文件夹大小的任务被调度
+            ensureProcessCalculateFolderSize();
+        }
+        return ResultUtil.success();
+    }
+
+    private void ensureProcessCalculateFolderSize() {
+        if (calculateFolderSizeScheduled.compareAndSet(false, true)) {
+            String notifyUsername = userLoginHolder.getUsername();
+            ThreadUtil.execute(() -> {
+                try {
+                    // 清除之前的文件夹大小数据
+                    clearFolderSizInDb();
+                    long totalSize = totalSizNeedUpdateSizeInDb();
+                    calculateFolderSizeProcessedCount.set(0);
+                    HybridThrottleExecutor hybridThrottleExecutor = new HybridThrottleExecutor(50);
+                    // 调用实际的循环处理逻辑
+                    processCalculateFolderSizeLoop(totalSize, hybridThrottleExecutor, notifyUsername);
+                    hybridThrottleExecutor.shutdown();
+                } finally {
+                    calculateFolderSizeScheduled.set(false);
+                    // 关键：检查在本次处理运行期间是否有新的文件夹被标记
+                    // 如果有，则再次尝试调度，确保它们得到处理
+                    if (hasNeedUpdateSizeInDb()) {
+                        ensureProcessCalculateFolderSize();
+                    }
+                }
+
+            });
+        }
+    }
+
+    private void processCalculateFolderSizeLoop(long totalSize, HybridThrottleExecutor hybridThrottleExecutor, String notifyUsername) {
+        boolean run = true;
+        while (run && !Thread.currentThread().isInterrupted()) {
+            // 查询所有需要更新大小的文件夹
+            Query query = Query.query(Criteria.where(Constants.IS_FOLDER).is(true).and(Constants.SIZE).exists(false)).limit(16);
+            List<FileDocument> tasks = mongoTemplate.find(query, FileDocument.class);
+            if (tasks.isEmpty()) {
+                run = false;
+                continue;
+            }
+            for (FileDocument folderDoc : tasks) {
+                if (Thread.currentThread().isInterrupted()) {
+                    run = false;
+                    break;
+                }
+                String currentFolderNormalizedPath = folderDoc.getPath() + folderDoc.getName() + "/";
+                try {
+                    // 计算文件夹大小
+                    long size = etagService.getFolderSize(FileServiceImpl.COLLECTION_NAME, folderDoc.getUserId(), currentFolderNormalizedPath);
+                    // 更新数据库中的大小
+                    Update update = new Update();
+                    update.set(Constants.SIZE, size);
+                    mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(folderDoc.getId())), update, FileDocument.class);
+                    calculateFolderSizeProcessedCount.getAndIncrement();
+                    // 推送进度
+                    hybridThrottleExecutor.execute(() -> commonFileService.pushMessage(notifyUsername, NumberUtil.round((double) calculateFolderSizeProcessedCount.get() / totalSize * 100, 2), "calculateFolderSizeProcessed"));
+
+                } catch (Exception e) {
+                    log.error("计算文件夹大小失败: {}", currentFolderNormalizedPath, e);
+                }
+            }
+        }
+    }
+
+    /**
+     * 检查数据库中是否还有需要更新siz的文件夹
+     */
+    private boolean hasNeedUpdateSizeInDb() {
+        Query query = Query.query(Criteria.where(Constants.IS_FOLDER).is(true).and(Constants.SIZE).exists(false));
+        query.limit(1); // 只需要知道是否存在，不需要完整计数
+        return mongoTemplate.exists(query, FileDocument.class);
+    }
+
+    /**
+     * 获取需要更新大小的文件夹总数
+     * @return long
+     */
+    private long totalSizNeedUpdateSizeInDb() {
+        Query query = Query.query(Criteria.where(Constants.IS_FOLDER).is(true).and(Constants.SIZE).exists(false));
+        return mongoTemplate.count(query, FileDocument.class);
+    }
+
+    /**
+     * 清除数据库中所有文件夹的大小字段
+     */
+    private void clearFolderSizInDb() {
+        Query query = Query.query(Criteria.where(Constants.IS_FOLDER).is(true));
+        Update update = new Update();
+        update.unset(Constants.SIZE);
+        mongoTemplate.updateMulti(query, update, FileDocument.class);
+    }
+
 }
