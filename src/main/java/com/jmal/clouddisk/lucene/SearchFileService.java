@@ -508,7 +508,7 @@ public class SearchFileService {
         if (searchDTO.getTagId() != null) {
             TagDO tagDO = tagService.getTagInfo(searchDTO.getTagId());
             if (tagDO != null) {
-                builder.add(new RegexpQuery(new Term(FIELD_TAG_NAME_FUZZY, tagDO.getName())), BooleanClause.Occur.MUST);
+                builder.add(new TermQuery(new Term(FIELD_TAG_NAME_FUZZY, tagDO.getName())), BooleanClause.Occur.MUST);
             }
         }
 
