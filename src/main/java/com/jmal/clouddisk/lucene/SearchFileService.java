@@ -10,6 +10,7 @@ import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.TagDO;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.model.query.SearchOptionHistoryDO;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.TagService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.*;
 
+import static com.jmal.clouddisk.lucene.LuceneService.FIELD_TAG_NAME_FUZZY;
 import static com.jmal.clouddisk.service.impl.CommonFileService.COLLECTION_NAME;
 
 @Service
@@ -236,7 +238,7 @@ public class SearchFileService {
             nameAndTagQueryBuilder.add(filenameBooleanQueryBuilder.build(), BooleanClause.Occur.SHOULD);
         }
         if (BooleanUtil.isTrue(searchDTO.getIncludeTagName())) {
-            BooleanQuery.Builder tagNameBooleanQueryBuilder = getBooleanQueryFieldBuilder(LuceneService.FIELD_TAG_NAME_NGRAM, LuceneService.FIELD_TAG_NAME_FUZZY, exactKeyword, fuzzyKeyword, searchDTO);
+            BooleanQuery.Builder tagNameBooleanQueryBuilder = getBooleanQueryFieldBuilder(LuceneService.FIELD_TAG_NAME_NGRAM, FIELD_TAG_NAME_FUZZY, exactKeyword, fuzzyKeyword, searchDTO);
             nameAndTagQueryBuilder.add(tagNameBooleanQueryBuilder.build(), BooleanClause.Occur.SHOULD);
         }
 
@@ -506,13 +508,13 @@ public class SearchFileService {
         if (searchDTO.getTagId() != null) {
             TagDO tagDO = tagService.getTagInfo(searchDTO.getTagId());
             if (tagDO != null) {
-                builder.add(new RegexpQuery(new Term("tag", ".*" + tagDO.getName() + ".*")), BooleanClause.Occur.MUST);
+                builder.add(new TermQuery(new Term(FIELD_TAG_NAME_FUZZY, tagDO.getName())), BooleanClause.Occur.MUST);
             }
         }
 
         // 是否收藏
         if (searchDTO.getIsFavorite() != null && !queryPath) {
-            builder.add(IntPoint.newExactQuery("isFavorite", searchDTO.getIsFavorite() ? 1 : 0), BooleanClause.Occur.MUST);
+            builder.add(IntPoint.newExactQuery(Constants.IS_FAVORITE, searchDTO.getIsFavorite() ? 1 : 0), BooleanClause.Occur.MUST);
         }
     }
 
