@@ -26,9 +26,9 @@ services:
       #PUID: 0
       #PGID: 0
       # 请务必修改此默认值(openssl rand -hex 32)
-      ENCRYPTION_SECRET_KEY: 3df759ce9f6dab43580830785b67a6afa934a18cd70f7b17ae17e81ee685c02e
+      ENCRYPTION_SECRET_KEY: 'openssl rand -hex 32'
       # 请务必修改此默认值(openssl rand -hex 16)
-      ENCRYPTION_SALT: 2b4f6681ea2167b33630e1fd283cade9
+      ENCRYPTION_SALT: 'openssl rand -hex 16'
     volumes:
       - ./docker/jmalcloud/files:/jmalcloud/files/
     restart: unless-stopped
