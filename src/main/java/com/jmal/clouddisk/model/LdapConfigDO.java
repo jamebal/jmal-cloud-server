@@ -1,9 +1,8 @@
 package com.jmal.clouddisk.model;
 
-import com.jmal.clouddisk.model.rbac.ConsumerDO;
-import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.security.crypto.encrypt.TextEncryptor;
 
 import java.util.List;
 
@@ -47,12 +46,12 @@ public class LdapConfigDO {
 
     String userId;
 
-    public LdapConfigDTO toLdapConfigDTO(ConsumerDO consumerDO) {
+    public LdapConfigDTO toLdapConfigDTO(TextEncryptor textEncryptor) {
         LdapConfigDTO ldapConfigDTO = new LdapConfigDTO();
         ldapConfigDTO.setEnable(this.enable);
         ldapConfigDTO.setLdapServer(this.ldapServer);
         ldapConfigDTO.setDefaultRoleList(this.defaultRoleList);
-        ldapConfigDTO.setPassword(UserServiceImpl.getDecryptStrByUser(this.password, consumerDO));
+        ldapConfigDTO.setPassword(textEncryptor.decrypt(this.password));
         ldapConfigDTO.setBaseDN(this.baseDN);
         ldapConfigDTO.setUserDN(this.userDN);
         ldapConfigDTO.setLoginName(this.loginName);

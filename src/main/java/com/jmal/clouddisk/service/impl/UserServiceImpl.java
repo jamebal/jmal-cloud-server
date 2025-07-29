@@ -4,10 +4,7 @@ import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.HexUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
-import cn.hutool.crypto.symmetric.SymmetricCrypto;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
@@ -24,7 +21,6 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -394,26 +390,6 @@ public class UserServiceImpl implements IUserService {
         return consumer.getAvatar();
     }
 
-    public static String getDecryptStrByUser(String secret, ConsumerDO consumer) {
-        String key = getPwdKey(consumer);
-        if (key == null) return "";
-        return getAES(key).decryptStr(secret);
-    }
-
-    @Nullable
-    private static String getPwdKey(ConsumerDO consumer) {
-        if (consumer == null) {
-            return null;
-        }
-        if (consumer.getPassword() == null) {
-            return null;
-        }
-        if (consumer.getPassword().split(":").length < 2) {
-            return null;
-        }
-        return consumer.getPassword().split(":")[2];
-    }
-
     public String getHashPasswordUserName(String username) {
         if (CharSequenceUtil.isBlank(username)) {
             return null;
@@ -471,15 +447,6 @@ public class UserServiceImpl implements IUserService {
     private static void encryption(ConsumerBase user, String originalPwd) {
         String password = PasswordHash.createHash(originalPwd);
         user.setPassword(password);
-    }
-
-    public static String getEncryptPwd(String originalPwd, String password) {
-        return getAES(password.split(":")[2]).encryptHex(originalPwd);
-    }
-
-
-    private static SymmetricCrypto getAES(String key) {
-        return new SymmetricCrypto(SymmetricAlgorithm.AES, HexUtil.decodeHex(key));
     }
 
     @Override

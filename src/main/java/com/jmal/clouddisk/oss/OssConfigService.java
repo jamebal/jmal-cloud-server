@@ -21,11 +21,13 @@ import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -41,6 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class OssConfigService {
 
     public static final String COLLECTION_NAME = "OssConfig";
@@ -53,12 +56,8 @@ public class OssConfigService {
 
     private final MongoTemplate mongoTemplate;
 
-    public OssConfigService(FileProperties fileProperties, UserServiceImpl userService, MongoTemplate mongoTemplate, FileMonitor fileMonitor) {
-        this.userService = userService;
-        this.mongoTemplate = mongoTemplate;
-        this.fileProperties = fileProperties;
-        this.fileMonitor = fileMonitor;
-    }
+    private final TextEncryptor textEncryptor;
+
 
     @PostConstruct
     public void init() {
@@ -71,7 +70,7 @@ public class OssConfigService {
                 if (consumerDO == null) {
                     continue;
                 }
-                OssConfigDTO ossConfigDTO = ossConfigDO.toOssConfigDTO(userService.userInfoById(userId));
+                OssConfigDTO ossConfigDTO = ossConfigDO.toOssConfigDTO(textEncryptor);
                 ossConfigDTO.setUsername(consumerDO.getUsername());
                 IOssService ossService = null;
                 try {
@@ -80,7 +79,7 @@ public class OssConfigService {
                         setBucketInfoCache(ossConfigDO.getPlatform(), ossConfigDTO, ossService);
                     }
                 } catch (Exception e) {
-                    log.error(ossConfigDO.getPlatform().getValue() + " 配置加载失败!");
+                    log.error("{} 配置加载失败!", ossConfigDO.getPlatform().getValue());
                     log.error(e.getMessage(), e);
                     if (ossService != null) {
                         ossService.close();
@@ -177,7 +176,7 @@ public class OssConfigService {
         destroyOldConfig(ossConfigDTO, userId, consumerDO, query);
 
         // 配置转换 DTO -> DO
-        OssConfigDO ossConfigDO = ossConfigDTO.toOssConfigDO(consumerDO.getPassword());
+        OssConfigDO ossConfigDO = ossConfigDTO.toOssConfigDO(textEncryptor);
 
         String configErr = "配置有误 或者 Access Key 没有权限";
         try {
@@ -230,10 +229,10 @@ public class OssConfigService {
             // 销毁 old OssService
             destroyOssService(webPathPrefix);
             if (ossConfigDTO.getAccessKey().contains("*")) {
-                ossConfigDTO.setAccessKey(UserServiceImpl.getDecryptStrByUser(oldOssConfigDO.getAccessKey(), consumerDO));
+                ossConfigDTO.setAccessKey(textEncryptor.decrypt(oldOssConfigDO.getAccessKey()));
             }
             if (ossConfigDTO.getSecretKey().contains("*")) {
-                ossConfigDTO.setSecretKey(UserServiceImpl.getDecryptStrByUser(oldOssConfigDO.getSecretKey(), consumerDO));
+                ossConfigDTO.setSecretKey(textEncryptor.decrypt(oldOssConfigDO.getSecretKey()));
             }
         }
         if (existFolder && oldOssConfigDO == null) {
