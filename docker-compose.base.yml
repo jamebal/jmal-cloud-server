@@ -1,7 +1,7 @@
 services:
   mongo:
     container_name: jmalcloud_mongodb
-    image: mongo:4.4
+    image: mongo:7.0
     environment:
       TZ: "Asia/Shanghai"
     volumes:
@@ -9,7 +9,7 @@ services:
       - ./docker/jmalcloud/mongodb/backup:/dump
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -21,13 +21,19 @@ services:
     environment:
       MONGODB_URI: "mongodb://mongo:27017/jmalcloud"
       TZ: "Asia/Shanghai"
-      JVM_OPTS: "-Xms256m -Xmx1024m"
+      JVM_OPTS: "-Xms512m -Xmx4g"
+      #EXACT_SEARCH: false
+      #PUID: 0
+      #PGID: 0
+      # 如果为空系统会自动生成(位置在/jmalcloud/files/.env)(openssl rand -hex 32)
+      ENCRYPTION_SECRET_KEY: ""
+      # 如果为空系统会自动生成(位置在/jmalcloud/files/.env)(openssl rand -hex 16)
+      ENCRYPTION_SALT: ""
     volumes:
       - ./docker/jmalcloud/files:/jmalcloud/files/
     restart: unless-stopped
-    depends_on:
-      mongo:
-        condition: service_healthy
+    ports:
+      - 7072:8088
 
   nginx:
     container_name: jmalcloud_nginx
@@ -37,14 +43,14 @@ services:
       - 7071:8089
     environment:
       TZ: "Asia/Shanghai"
+    restart: unless-stopped
     links:
       - jmalcloud
       - office
-    restart: unless-stopped
 
   office: # Optional
     container_name: jmalcloud_office
-    image: onlyoffice/documentserver:8.0.1
+    image: onlyoffice/documentserver:9.0
     environment:
       TZ: "Asia/Shanghai"
       JWT_SECRET: "my_secret"
