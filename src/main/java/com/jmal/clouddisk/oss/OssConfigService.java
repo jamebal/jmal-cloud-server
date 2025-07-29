@@ -229,10 +229,10 @@ public class OssConfigService {
             // 销毁 old OssService
             destroyOssService(webPathPrefix);
             if (ossConfigDTO.getAccessKey().contains("*")) {
-                ossConfigDTO.setAccessKey(textEncryptor.decrypt(ossConfigDTO.getAccessKey()));
+                ossConfigDTO.setAccessKey(textEncryptor.decrypt(oldOssConfigDO.getAccessKey()));
             }
             if (ossConfigDTO.getSecretKey().contains("*")) {
-                ossConfigDTO.setSecretKey(textEncryptor.decrypt(ossConfigDTO.getSecretKey()));
+                ossConfigDTO.setSecretKey(textEncryptor.decrypt(oldOssConfigDO.getSecretKey()));
             }
         }
         if (existFolder && oldOssConfigDO == null) {
