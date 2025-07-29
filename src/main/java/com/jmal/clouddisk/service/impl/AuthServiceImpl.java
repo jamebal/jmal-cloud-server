@@ -26,6 +26,7 @@ import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.ldap.query.LdapQuery;
 import org.springframework.ldap.query.LdapQueryBuilder;
+import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -57,6 +58,8 @@ public class AuthServiceImpl implements IAuthService {
 
     private final TotpService totpService;
 
+    private final TextEncryptor textEncryptor;
+
     public String loginError() {
         return messageUtil.getMessage("login.error");
     }
@@ -66,7 +69,7 @@ public class AuthServiceImpl implements IAuthService {
         LdapConfigDO ldapConfigDO = mongoTemplate.findOne(new Query(), LdapConfigDO.class);
         if (ldapConfigDO != null) {
             ConsumerDO consumerDO = userService.getUserInfoById(ldapConfigDO.getUserId());
-            LdapConfigDTO ldapConfigDTO = ldapConfigDO.toLdapConfigDTO(consumerDO);
+            LdapConfigDTO ldapConfigDTO = ldapConfigDO.toLdapConfigDTO(textEncryptor);
             LdapContextSource ldapContextSource = loadLdapConfig(ldapConfigDTO);
             ldapTemplate = new LdapTemplate(ldapContextSource);
             ldapEnable = ldapConfigDTO.getEnable();
@@ -215,7 +218,7 @@ public class AuthServiceImpl implements IAuthService {
         if (BooleanUtil.isFalse(consumerDO.getCreator())) {
             throw new CommonException(ExceptionType.PERMISSION_DENIED);
         }
-        LdapConfigDO ldapConfigDO = ldapConfigDTO.toLdapConfigDO(consumerDO);
+        LdapConfigDO ldapConfigDO = ldapConfigDTO.toLdapConfigDO(consumerDO.getId(), textEncryptor);
         mongoTemplate.save(ldapConfigDO);
         // 重新加载ldap配置
         init();

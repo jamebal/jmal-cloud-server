@@ -1,11 +1,10 @@
 package com.jmal.clouddisk.oss.web.model;
 
 import com.jmal.clouddisk.oss.PlatformOSS;
-import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+import org.springframework.security.crypto.encrypt.TextEncryptor;
 
 /**
  * @author jmal
@@ -44,7 +43,7 @@ public class OssConfigDTO {
     @Schema(hidden = true)
     private String id;
 
-    public OssConfigDO toOssConfigDO(String password) {
+    public OssConfigDO toOssConfigDO(TextEncryptor textEncryptor) {
         OssConfigDO ossConfigDO = new OssConfigDO();
         ossConfigDO.setEndpoint(this.endpoint);
         ossConfigDO.setPlatform(PlatformOSS.getPlatform(this.platform));
@@ -52,8 +51,8 @@ public class OssConfigDTO {
         ossConfigDO.setBucket(this.bucket);
         ossConfigDO.setRegion(this.region);
         ossConfigDO.setUserId(this.userId);
-        ossConfigDO.setAccessKey(UserServiceImpl.getEncryptPwd(this.accessKey, password));
-        ossConfigDO.setSecretKey(UserServiceImpl.getEncryptPwd(this.secretKey, password));
+        ossConfigDO.setAccessKey(textEncryptor.encrypt(accessKey));
+        ossConfigDO.setSecretKey(textEncryptor.encrypt(secretKey));
         return ossConfigDO;
     }
 }

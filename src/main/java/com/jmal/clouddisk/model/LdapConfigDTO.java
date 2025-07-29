@@ -1,12 +1,11 @@
 package com.jmal.clouddisk.model;
 
-import com.jmal.clouddisk.model.rbac.ConsumerDO;
-import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+import org.springframework.security.crypto.encrypt.TextEncryptor;
+
 import java.util.List;
 
 /**
@@ -27,7 +26,7 @@ public class LdapConfigDTO {
     String ldapServer;
 
     @NotNull(message = "默认角色不能为空")
-    @Schema(name = "defaultRoleList", title = "默认角色", example = "")
+    @Schema(name = "defaultRoleList", title = "默认角色")
     List<String> defaultRoleList;
 
     @NotNull(message = "账号密码不能为空")
@@ -46,17 +45,17 @@ public class LdapConfigDTO {
     @Schema(name = "loginName", title = "登录名", example = "uid")
     String loginName;
 
-    public LdapConfigDO toLdapConfigDO(ConsumerDO consumerDO) {
+    public LdapConfigDO toLdapConfigDO(String userId, TextEncryptor textEncryptor) {
         LdapConfigDO ldapConfigDO = new LdapConfigDO();
         ldapConfigDO.setId("6458f8c5bb943e3cf1db5f29");
         ldapConfigDO.setEnable(this.enable);
         ldapConfigDO.setLdapServer(this.ldapServer);
         ldapConfigDO.setDefaultRoleList(this.defaultRoleList);
-        ldapConfigDO.setPassword(UserServiceImpl.getEncryptPwd(this.password, consumerDO.getPassword()));
+        ldapConfigDO.setPassword(textEncryptor.encrypt(password));
         ldapConfigDO.setBaseDN(this.baseDN);
         ldapConfigDO.setUserDN(this.userDN);
         ldapConfigDO.setLoginName(this.loginName);
-        ldapConfigDO.setUserId(consumerDO.getId());
+        ldapConfigDO.setUserId(userId);
         return ldapConfigDO;
     }
 

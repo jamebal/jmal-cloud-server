@@ -1,12 +1,11 @@
 package com.jmal.clouddisk.oss.web.model;
 
-import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.PlatformOSS;
-import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import lombok.Data;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.security.crypto.encrypt.TextEncryptor;
 
 /**
  * @author jmal
@@ -27,7 +26,7 @@ public class OssConfigDO {
     private String bucket;
     private String userId;
 
-    public OssConfigDTO toOssConfigDTO(ConsumerDO consumerDO) {
+    public OssConfigDTO toOssConfigDTO(TextEncryptor textEncryptor) {
         OssConfigDTO ossConfigDTO = new OssConfigDTO();
         ossConfigDTO.setEndpoint(this.endpoint);
         ossConfigDTO.setBucket(this.bucket);
@@ -35,8 +34,8 @@ public class OssConfigDO {
         ossConfigDTO.setPlatform(this.platform.name());
         ossConfigDTO.setRegion(this.region);
         ossConfigDTO.setUserId(this.userId);
-        ossConfigDTO.setAccessKey(UserServiceImpl.getDecryptStrByUser(this.accessKey, consumerDO));
-        ossConfigDTO.setSecretKey(UserServiceImpl.getDecryptStrByUser(this.secretKey, consumerDO));
+        ossConfigDTO.setAccessKey(textEncryptor.decrypt(accessKey));
+        ossConfigDTO.setSecretKey(textEncryptor.decrypt(secretKey));
         return ossConfigDTO;
     }
 
