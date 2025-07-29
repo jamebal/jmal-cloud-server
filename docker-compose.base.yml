@@ -25,10 +25,10 @@ services:
       #EXACT_SEARCH: false
       #PUID: 0
       #PGID: 0
-      # 请务必修改此默认值(openssl rand -hex 32)
-      ENCRYPTION_SECRET_KEY: 'openssl rand -hex 32'
-      # 请务必修改此默认值(openssl rand -hex 16)
-      ENCRYPTION_SALT: 'openssl rand -hex 16'
+      # 如果为空系统会自动生成(位置在/jmalcloud/files/.env)(openssl rand -hex 32)
+      ENCRYPTION_SECRET_KEY: ""
+      # 如果为空系统会自动生成(位置在/jmalcloud/files/.env)(openssl rand -hex 16)
+      ENCRYPTION_SALT: ""
     volumes:
       - ./docker/jmalcloud/files:/jmalcloud/files/
     restart: unless-stopped
