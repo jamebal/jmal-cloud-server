@@ -12,7 +12,11 @@ import org.springframework.web.multipart.MultipartFile;
 public class UploadImageDTO {
     String username;
     String userId;
-    /***
+    /**
+     * markdown文件id
+     */
+    String fileId;
+    /**
      * 远程url图像
      */
     String url;
