@@ -1,5 +1,5 @@
-<footer xmlns:th="http://www.thymeleaf.org">
-    <div id="footer" th:if="${setting.footerHtml == null || setting.footerHtml.length == 0}">
+<footer id="footer" xmlns:th="http://www.thymeleaf.org">
+    <div th:if="${setting.footerHtml == null || setting.footerHtml.length == 0}">
         <br><br>
         <div class="copyright">
             <p><span th:text="${setting.copyright}"></span></p>

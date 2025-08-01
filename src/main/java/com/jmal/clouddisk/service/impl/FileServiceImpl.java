@@ -1278,6 +1278,7 @@ public class FileServiceImpl extends CommonFileService implements IFileService {
         List<FileDocument> fileDocuments = mongoTemplate.find(query, FileDocument.class);
         return fileDocuments.stream().map(fileDocument -> {
             FileIntroVO fileIntroVO = new FileIntroVO();
+            fileIntroVO.setId(fileDocument.getId());
             fileIntroVO.setName(fileDocument.getName());
             fileIntroVO.setSuffix(fileDocument.getSuffix());
             fileIntroVO.setContentType(fileDocument.getContentType());

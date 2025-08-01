@@ -18,10 +18,7 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
-import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IFileVersionService;
-import com.jmal.clouddisk.service.IMarkdownService;
-import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.*;
 import com.jmal.clouddisk.util.*;
 import com.mongodb.client.AggregateIterable;
 import lombok.RequiredArgsConstructor;
@@ -75,6 +72,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
     private final TagService tagService;
 
     private final CommonFileService commonFileService;
+
+    private final IFileService fileService;
 
     private final IFileVersionService fileVersionService;
 
@@ -671,7 +670,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         Map<String, String> map = new HashMap<>(2);
         String username = upload.getUsername();
         String userId = upload.getUserId();
-        Path docImagePaths = Paths.get(fileProperties.getDocumentImgDir(), TimeUntils.getFileTimeStrOfMonth());
+        Path docImagePaths = getDocImagePaths(upload);
         // docImagePaths 不存在则新建
         commonFileService.upsertFolder(docImagePaths, username, userId);
         File newFile;
@@ -715,7 +714,9 @@ public class MarkdownServiceImpl implements IMarkdownService {
     private Map<String, String> uploadImage(UploadImageDTO upload, MultipartFile multipartFile) {
         Map<String, String> map = new HashMap<>(2);
         String fileName = TimeUntils.getFileTimeStrOfDay() + multipartFile.getOriginalFilename();
-        Path docImagePaths = Paths.get(fileProperties.getDocumentImgDir(), TimeUntils.getFileTimeStrOfMonth());
+
+        Path docImagePaths = getDocImagePaths(upload);
+
         String username = upload.getUsername();
         String userId = upload.getUserId();
         // docImagePaths 不存在则新建
@@ -742,6 +743,22 @@ public class MarkdownServiceImpl implements IMarkdownService {
         map.put(Constants.FILENAME, fileName);
         map.put(Constants.FILE_PATH, filepath);
         return map;
+    }
+
+    @NotNull
+    private Path getDocImagePaths(UploadImageDTO upload) {
+        Path docImagePaths;
+        String markdownFileId = upload.getFileId();
+        if (CharSequenceUtil.isNotBlank(markdownFileId) && !"undefined".equals(markdownFileId)) {
+            FileDocument fileDocument = fileService.getById(markdownFileId);
+            if (fileDocument == null) {
+                throw new CommonException(ExceptionType.FILE_NOT_FIND);
+            }
+            docImagePaths = Paths.get(fileDocument.getPath());
+        } else {
+            docImagePaths = Paths.get(fileProperties.getDocumentImgDir(), TimeUntils.getFileTimeStrOfMonth());
+        }
+        return docImagePaths;
     }
 
 }

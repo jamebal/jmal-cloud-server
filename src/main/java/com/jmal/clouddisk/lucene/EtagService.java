@@ -412,7 +412,7 @@ public class EtagService {
                 log.debug("Marked folder for ETag update: {}", currentFolderPath);
                 ensureProcessingMarkedFolders();
             } else {
-                log.warn("Folder not found to mark for ETag update: {}", currentFolderPath);
+                log.debug("Folder not found to mark for ETag update: {}", currentFolderPath);
             }
         } catch (DataAccessException e) {
             log.error("DB error marking folder for ETag update {}: {}", currentFolderPath, e.getMessage(), e);
