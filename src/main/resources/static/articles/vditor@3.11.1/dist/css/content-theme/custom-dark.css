@@ -1,0 +1,520 @@
+
+/* --- 基础容器和背景 --- */
+.markdown-body {
+    background: linear-gradient(145deg, #111827 0%, #1f2937 100%); /* 深邃的渐变背景 */
+    color: #d1d5db; /* 柔和的亮灰色作为主文字颜色 */
+    border-radius: 1.5rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1); /* 添加一个微妙的边框 */
+}
+
+.markdown-body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4, #10b981);
+    border-radius: 20px 20px 0 0;
+}
+
+/* --- 标题样式 (暗黑版) --- */
+.markdown-body h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin: 0 0 3rem 0;
+    background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #22d3ee 100%); /* 提亮渐变色以增强对比 */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    text-align: center;
+    letter-spacing: -0.025em;
+}
+
+.markdown-body h1::after {
+    content: '';
+    position: absolute;
+    bottom: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 2px;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); /* 阴影作为光晕效果 */
+}
+
+.markdown-body h2 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 3.5rem 0 1.5rem 0;
+    color: #f9fafb; /* 使用更亮的白色以突出 */
+    position: relative;
+    padding-left: 24px;
+    border-bottom: 1px solid #374151; /* 替换下划线 */
+    padding-bottom: 0.5rem;
+}
+
+.markdown-body h2::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0.5rem; /* 匹配 padding-bottom */
+    width: 6px;
+    background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+    border-radius: 3px;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.markdown-body h3 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 2.5rem 0 1.2rem 0;
+    color: #e5e7eb;
+    position: relative;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.05); /* 使用半透明亮色叠加层 */
+    border-radius: 12px;
+    border-left: 4px solid #3b82f6;
+}
+
+.markdown-body h4 {
+    font-size: 1.375rem;
+    font-weight: 600;
+    margin: 2rem 0 1rem 0;
+    color: #d1d5db;
+    position: relative;
+    padding-left: 16px;
+}
+
+.markdown-body h4::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: #3b82f6;
+}
+
+.markdown-body h5,
+.markdown-body h6 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.8rem 0;
+    color: #9ca3af; /* 使用稍暗的亮灰色 */
+}
+
+/* --- 段落和文本 (暗黑版) --- */
+.markdown-body p {
+    margin: 1.5rem 0;
+    line-height: 1.8;
+    text-align: justify;
+}
+
+.markdown-body strong,
+.markdown-body b {
+    font-weight: 700;
+    color: #ffffff;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.markdown-body em {
+    font-style: italic;
+    color: #9ca3af;
+    background: rgba(139, 92, 246, 0.1);
+    padding: 1px 3px;
+    border-radius: 3px;
+}
+
+/* --- 链接 (暗黑版) --- */
+.markdown-body a {
+    color: #60a5fa; /* 使用更亮的蓝色 */
+    text-decoration: none;
+    position: relative;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.markdown-body a::before {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    transition: width 0.3s ease;
+    border-radius: 1px;
+}
+
+.markdown-body a:hover {
+    color: #93c5fd; /* 悬停时更亮 */
+    transform: translateY(-1px);
+}
+
+.markdown-body a:hover::before {
+    width: 100%;
+}
+
+/* --- 代码 (暗黑版) --- */
+.markdown-body :not(pre) > code,
+.markdown-body tt {
+    padding: 4px 8px;
+    background: #111827; /* 与代码块背景一致 */
+    border: 1px solid #374151;
+    border-radius: 8px;
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 0.9em;
+    color: #22d3ee; /* 使用炫酷的青色 */
+    font-weight: 600;
+}
+
+.markdown-body pre {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%); /* 已是暗色，保留 */
+    border: 1px solid #374151;
+    border-radius: 16px;
+    padding: 24px;
+    margin: 2rem 0;
+    overflow-x: auto;
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); /* 加深阴影 */
+}
+
+.markdown-body pre::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+}
+
+.markdown-body pre::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    width: 12px;
+    height: 12px;
+    background: #ef4444;
+    border-radius: 50%;
+    box-shadow: 20px 0 0 #f59e0b, 40px 0 0 #10b981;
+}
+
+.markdown-body pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 100%;
+    color: inherit; /* 颜色由语法高亮插件控制 */
+    font-weight: normal;
+    box-shadow: none;
+}
+
+/* --- 引用块 (暗黑版) --- */
+.markdown-body blockquote, .markdown-body .note-update-date {
+    margin: 2rem 0;
+    padding: 24px 32px;
+    background: rgba(255, 255, 255, 0.03); /* 使用更微妙的半透明叠加 */
+    border-left: 6px solid #3b82f6;
+    border-radius: 0 16px 16px 0;
+    color: #9ca3af;
+    font-style: italic;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.markdown-body blockquote::before {
+    content: '"';
+    position: absolute;
+    top: -12px;
+    left: 24px;
+    font-size: 4rem;
+    color: #3b82f6;
+    opacity: 0.2;
+    font-family: Georgia, serif;
+    line-height: 1;
+}
+
+.markdown-body blockquote p {
+    margin: 0.8rem 0;
+    position: relative;
+    z-index: 1;
+}
+
+/* --- 列表 (暗黑版) --- */
+.markdown-body ul,
+.markdown-body ol {
+    padding-left: 1rem;
+}
+
+.markdown-body ul li {
+    list-style: none;
+    position: relative;
+    margin: 0.5rem 0;
+    padding-left: 8px;
+}
+
+.markdown-body ul li:not(.vditor-task)::before {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 0.5rem;
+    width: 8px;
+    height: 8px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.markdown-body ul ul > li:not(.vditor-task)::before {
+    background: transparent; /* 透明背景，形成圆环 */
+    border: 2px solid #8b5cf6; /* 使用主题色中的紫色作为描边 */
+    box-shadow: none; /* 第二级不需要辉光效果，保持简洁 */
+    width: 8px; /* 尺寸微调以适应边框 */
+    height: 8px;
+    top: 0.5rem;
+}
+
+.markdown-body ul ul ul > li:not(.vditor-task)::before {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border: none;
+    border-radius: 2px;
+    width: 8px;
+    height: 8px;
+    top: 0.5rem;
+}
+
+.markdown-body ol li {
+    margin: 0.8rem 0;
+    counter-increment: list-counter;
+    position: relative;
+    padding-left: 8px;
+}
+
+.markdown-body ol {
+    counter-reset: list-counter;
+}
+
+.markdown-body ol li::marker {
+    color: #60a5fa; /* 使用更亮的蓝色 */
+    font-weight: 700;
+}
+
+/* --- 表格 (暗黑版) --- */
+.markdown-body table {
+    width: 100%;
+    margin: 3rem 0;
+    border-collapse: collapse;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    border: 1px solid #374151;
+}
+
+.markdown-body table th {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    font-weight: 700;
+    padding: 12px;
+    text-align: left;
+    border: none;
+    font-size: 0.95rem;
+    letter-spacing: 0.025em;
+}
+
+.markdown-body table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #374151;
+    border-right: 1px solid #374151;
+    background-color: #1f2937; /* 深色单元格 */
+    transition: all 0.2s ease;
+}
+
+.markdown-body table tr:nth-child(even) td {
+    background: #2b3546; /* 交错行使用略亮的深色 */
+}
+
+.markdown-body table tr:hover td {
+    background: rgba(255, 255, 255, 0.05); /* 悬停时高亮 */
+    transform: translateY(-1px);
+}
+
+.markdown-body table td:last-child,
+.markdown-body table th:last-child {
+    border-right: none;
+}
+
+/* --- 分割线 (暗黑版) --- */
+.markdown-body hr {
+    height: 4px;
+    background: linear-gradient(90deg, transparent, #3b82f6, #8b5cf6, #06b6d4, transparent);
+    border: none;
+    margin: 4rem 0;
+    border-radius: 2px;
+    position: relative;
+}
+
+.markdown-body hr::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background: #1f2937; /* 中心圆背景与周围环境匹配 */
+    border: 3px solid #3b82f6;
+    border-radius: 50%;
+    box-shadow: 0 0 0 6px #1f2937;
+}
+
+/* --- 图片 (暗黑版) --- */
+.markdown-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25), 0 0 30px rgba(59, 130, 246, 0.1); /* 黑色阴影+主题色辉光 */
+    margin: 3rem 0;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* --- 键盘按键 (暗黑版) --- */
+.markdown-body kbd {
+    background: #374151;
+    border: 1px solid #4b5563;
+    border-bottom-color: #6b7280;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 -2px 0 #6b7280; /* 内发光改为亮色 */
+    color: #e5e7eb;
+    display: inline-block;
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 0.85em;
+    font-weight: 600;
+    line-height: 1;
+    padding: 6px 8px;
+    vertical-align: middle;
+}
+
+/* 特殊效果 */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+    animation: slideInFromLeft 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.markdown-body p,
+.markdown-body blockquote,
+.markdown-body pre,
+.markdown-body table {
+    animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInFromLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .markdown-body {
+        font-size: 15px;
+        border-radius: 16px;
+    }
+
+    .markdown-body h1 {
+        font-size: 2.25rem;
+    }
+
+    .markdown-body h2 {
+        font-size: 1.875rem;
+    }
+
+    .markdown-body h3 {
+        font-size: 1.5rem;
+    }
+
+    .markdown-body table {
+        font-size: 0.9rem;
+    }
+
+    .markdown-body table th,
+    .markdown-body table td {
+        padding: 6px;
+    }
+
+    .markdown-body pre {
+        border-radius: 12px;
+        padding: 24px 0;
+    }
+}
+
+/* 1. 滚动条尺寸定义 */
+.markdown-body pre > code::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+}
+
+/* 2. 轨道 (Track) -> 永久透明 */
+.markdown-body pre > code::-webkit-scrollbar-track,
+.markdown-body pre > code::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* 3. 滑块 (Thumb) -> 核心魔法区域 */
+.markdown-body pre > code::-webkit-scrollbar-thumb {
+    /* a. 默认隐藏：通过透明的背景和边框实现 */
+    background-color: transparent;
+    border: 4px solid transparent;
+    background-clip: content-box;
+    border-radius: 8px;
+
+    /* b. 关键修正：在这里定义过渡效果，让浏览器提前准备好 */
+    transition: background-color 0.3s ease-in-out;
+}
+
+/* 4. 悬停状态 -> 优雅浮现 */
+/* 当鼠标悬停在 code 元素上时，滑块的背景色才变为可见的渐变色 */
+.markdown-body pre > code:hover::-webkit-scrollbar-thumb {
+    background-color: #3b82f6; /* 为了平滑过渡，先给一个纯色 */
+    background-image: linear-gradient(135deg, #3b82f6, #8b5cf6);
+}
+
+/* 5. 悬停在滑块上时，改变颜色 (可选，但推荐) */
+/* 这个选择器没有问题，因为此时 thumb 已经是可见的 */
+.markdown-body pre > code::-webkit-scrollbar-thumb:hover {
+    background-color: #1d4ed8; /* 同样，为了平滑过渡 */
+    background-image: linear-gradient(135deg, #1d4ed8, #7c3aed);
+}
+

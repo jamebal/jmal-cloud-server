@@ -41,7 +41,7 @@
         </div>
         <div class="body-wrapper">
             <el-main id="main_body" class="l_main article_l_main" style="width: 100%;">
-                <div id="preview" class="vditor-reset article-body" th:utext="${markdown.html}">
+                <div id="preview" class="vditor-reset article-body markdown-body" th:utext="${markdown.html}">
                 </div>
                 <div class="back-top" style="display: none">
                     <svg class="icon">
@@ -80,7 +80,7 @@
         </div>
     </div>
     <script th:inline="javascript">
-        $(document).ready(function(){
+        $(document).ready(function () {
             document.title = [[${titleName}]]
             // 是否为独立页面
             const isAlonePage = [[${markdown.alonePage}]]
@@ -99,15 +99,15 @@
             // 渲染目录
             // renderContents()
             // 添加更新时间
-            if(!isAlonePage){
+            if (!isAlonePage) {
                 addUpdateTime()
             }
 
             let lazyImages = $("#preview img");
 
             if ("IntersectionObserver" in window) {
-                let observer = new IntersectionObserver(function(entries, observer) {
-                    entries.forEach(function(entry) {
+                let observer = new IntersectionObserver(function (entries, observer) {
+                    entries.forEach(function (entry) {
                         if (entry.isIntersecting) {
                             let img = $(entry.target);
                             img.attr("src", img.data("src"));
@@ -124,13 +124,13 @@
                         }
                     });
                 });
-                lazyImages.each(function() {
+                lazyImages.each(function () {
                     observer.observe(this);
                 });
             } else {
                 // Fallback for browsers without IntersectionObserver support
                 function lazyLoad() {
-                    lazyImages.each(function() {
+                    lazyImages.each(function () {
                         let img = $(this);
                         if (img.offset().top <= $(window).scrollTop() + $(window).height() && img.offset().top + img.height() >= $(window).scrollTop()) {
                             img.attr("src", img.data("src"));
@@ -147,38 +147,46 @@
 
             const previewElement = document.getElementById('preview')
             Vditor.codeRender(previewElement);
-            Vditor.highlightRender({"enable":true,"lineNumber":true,"defaultLang":"","style":"github"}, previewElement, vditorResource);
+            Vditor.highlightRender({
+                "enable": true,
+                "lineNumber": true,
+                "defaultLang": "txt",
+                "style": "github"
+            }, previewElement, vditorResource);
             Vditor.mathRender(previewElement, {
                 cdn: vditorResource,
-                math: {"engine":"KaTeX","inlineDigit":false,"macros":{}},
+                math: {"engine": "KaTeX", "inlineDigit": false, "macros": {}},
             });
-            Vditor.mermaidRender(previewElement, vditorResource, 'classic');
-            Vditor.markmapRender(previewElement, vditorResource, 'classic');
+            const isDark = getThemeCSSName() === 'dark'
+            Vditor.mermaidRender(previewElement, vditorResource, isDark ? 'dark' : 'classic');
+            Vditor.markmapRender(previewElement, vditorResource);
             Vditor.flowchartRender(previewElement, vditorResource);
             Vditor.graphvizRender(previewElement, vditorResource);
-            Vditor.chartRender(previewElement, vditorResource, 'classic');
-            Vditor.mindmapRender(previewElement, vditorResource, 'classic');
+            Vditor.chartRender(previewElement, vditorResource, isDark ? 'dark' : 'classic');
+            Vditor.mindmapRender(previewElement, vditorResource, isDark ? 'dark' : 'classic');
             Vditor.abcRender(previewElement, vditorResource);
             Vditor.mediaRender(previewElement);
-            Vditor.speechRender(previewElement);
+            Vditor.SMILESRender(previewElement, vditorResource, 'dark');
+            Vditor.plantumlRender(previewElement, vditorResource);
+
 
             // 渲染目录
             renderContents()
 
             setContentTheme()
             // 添加更新时间
-            if(!isAlonePage){
+            if (!isAlonePage) {
                 // 添加文章尾部信息
                 document.getElementById('preview').append(document.getElementById('article_tail'))
             }
-            setTimeout(function (){
+            setTimeout(function () {
                 // 隐藏加载动画
                 $('#wrap-mask').hide()
                 // 外部连接使用新标签打开
                 updateLink()
             }, 0)
             justLoading = true
-            setTimeout(function (){
+            setTimeout(function () {
                 justLoading = false
                 keepTocVisible()
             }, 800)
@@ -188,24 +196,24 @@
              * 创建目录项
              * 根据最大号标题整体向前移, 例如: 最大号标题为h3,则h3为变为h1,h4变为h2
              */
-            function titleOneItem(index, $this, tagName, maxTitleNumber){
-                const h = tagName.substring(1,2) - maxTitleNumber
-                if(index === 0){
-                    return '<li first class="pl h-'+h+'" title="'+$this.text()+'"><a href="#'+$this.attr('id')+'"><xmp>'+$this.text()+'</xmp></a></li>'
+            function titleOneItem(index, $this, tagName, maxTitleNumber) {
+                const h = tagName.substring(1, 2) - maxTitleNumber
+                if (index === 0) {
+                    return '<li first class="pl h-' + h + '" title="' + $this.text() + '"><a href="#' + $this.attr('id') + '"><xmp>' + $this.text() + '</xmp></a></li>'
                 }
-                return '<li class="pl h-'+h+'" title="'+$this.text()+'"><a href="#'+$this.attr('id')+'"><xmp>'+$this.text()+'</xmp></a></li>'
+                return '<li class="pl h-' + h + '" title="' + $this.text() + '"><a href="#' + $this.attr('id') + '"><xmp>' + $this.text() + '</xmp></a></li>'
             }
 
             //监听整个页面的 copy 事件 去掉复制的代码末尾多余的空格
-            document.addEventListener('copy',function(e){
+            document.addEventListener('copy', function (e) {
                 // clipboardData 对象是为通过编辑菜单、快捷菜单和快捷键执行的编辑操作所保留的，也就是你复制或者剪切内容
                 let clipboardData = e.clipboardData || window.clipboardData;
                 // 如果 未复制或者未剪切，直接 return
-                if(!clipboardData) return ;
+                if (!clipboardData) return;
                 // Selection 对象 表示用户选择的文本范围或光标的当前位置。
                 // 声明一个变量接收 -- 用户输入的剪切或者复制的文本转化为字符串
                 let text = window.getSelection().toString();
-                if(text){
+                if (text) {
                     // 如果文本存在，首先取消默认行为
                     e.preventDefault();
                     // 通过调用 clipboardData 对象的 setData(format,data) 方法，设置相关文本
@@ -218,19 +226,19 @@
             /***
              * 在文章最前面添加更新时间
              */
-            function addUpdateTime(){
+            function addUpdateTime() {
                 let preview = document.getElementById('preview')
                 let p = document.createElement("p")
                 p.className = "note-update-date"
                 p.innerText = `本文最后更新于：${[[${markdown.updateTime()}]]}`
-                preview.insertBefore(p , preview.childNodes[0])
+                preview.insertBefore(p, preview.childNodes[0])
             }
 
             /***
              * 渲染目录
              */
             function renderContents() {
-                let headerList = ["H1","H2","H3","H4","H5","H6"];
+                let headerList = ["H1", "H2", "H3", "H4", "H5", "H6"];
                 let headers = []
                 const article = $('#preview').children()
                 article.each(function () {
@@ -239,20 +247,20 @@
                         headers.push($(this))
                     }
                 })
-                if(!headers || headers.length < 2){
+                if (!headers || headers.length < 2) {
                     return
                 }
                 main.css("width", '')
                 $('.body-wrapper').addClass('body-wrapper-offset')
                 // 显示目录按钮
-                if(window.innerWidth <= 768){
-                    $('.show-content').css('display','flex')
+                if (window.innerWidth <= 768) {
+                    $('.show-content').css('display', 'flex')
                 }
                 // 找出最大号的标题, 默认最小为6号标题(h6)
                 let maxTitleNumber = 6
                 headers.forEach(function (header) {
-                    const h = header.prop("tagName").substring(1,2)
-                    if(maxTitleNumber > h){
+                    const h = header.prop("tagName").substring(1, 2)
+                    if (maxTitleNumber > h) {
                         maxTitleNumber = h
                     }
                 })
@@ -267,19 +275,19 @@
                 }
                 // 去掉id为空的条目
                 contents = contents.filter(content => content && content.length > 0)
-                if(contents.length > 0){
+                if (contents.length > 0) {
                     rightBj.show()
-                    main.attr("content","show")
+                    main.attr("content", "show")
                     renderContentsAfter(contents)
                 } else {
-                    main.attr("content","hide")
+                    main.attr("content", "hide")
                 }
             }
 
             /***
              * 判断上滑还是下滑
              */
-            function checkDirection($this){
+            function checkDirection($this) {
                 let afterScrollTop = document.documentElement.scrollTop
                 let delta = afterScrollTop - beforeScrollTop
                 beforeScrollTop = afterScrollTop
@@ -299,21 +307,22 @@
                     afterDirection(delta > 0 ? "down" : "up")
                 }
             }
+
             /***
              * 上滑或下滑后执行的操作
              */
-            function afterDirection (direction) {
+            function afterDirection(direction) {
                 // 判断是上滑显示,下滑隐藏
                 const top = $('#top')
                 const toggleNav = $('#toggle-nav')
                 const body = document.getElementById("body")
-                if(direction === 'down'){
+                if (direction === 'down') {
                     top.removeClass('animateIn')
                     top.addClass('animateOut')
                     toggleNav.removeClass('animateRight')
                     toggleNav.addClass('animateLeft')
                 }
-                if(direction === 'up'){
+                if (direction === 'up') {
                     top.removeClass('animateOut')
                     top.addClass('animateIn')
                     toggleNav.removeClass('animateLeft')
@@ -324,12 +333,12 @@
             /***
              * 渲染目录后的操作
              */
-            function renderContentsAfter(){
+            function renderContentsAfter() {
                 let $root = $('html, body')
                 $('.j-titleList li').on("click", function () {
                     clickingToc = true
                     let top = 75
-                    if (typeof($(this).attr("first"))!=="undefined") {
+                    if (typeof ($(this).attr("first")) !== "undefined") {
                         // 点击第一个目录
                         top = 168
                     }
@@ -337,50 +346,42 @@
                     $root.animate({
                         scrollTop: $(href).offset().top - top
                     }, 400)
-                    setTimeout(function (){
+                    setTimeout(function () {
                         clickingToc = false
                     }, 450)
                     return false
                 })
                 // 滚动到响应的锚点
-                setTimeout(function (){
-                    if(window.location.hash){
+                setTimeout(function () {
+                    if (window.location.hash) {
                         $root.animate({
                             scrollTop: $(decodeURIComponent(window.location.hash)).offset().top - 75
                         }, 0)
                     }
-                },100)
+                }, 100)
             }
 
             /***
              * 显示返回顶部按钮
              */
             function showBackTop() {
-                if(document.documentElement.scrollTop > 300){
+                if (document.documentElement.scrollTop > 300) {
                     $('.back-top').fadeIn(500)
                 } else {
                     $('.back-top').fadeOut(500)
                 }
             }
-            showBackTop()
 
-            /***
-             * 设置目录的最大高度
-             */
-            function setTocMaxHeight(){
-                tocMaxHeight = document.documentElement.clientHeight - 180
-                document.body.querySelector('.right-bj .slimScrollDiv>.right-menu').style.maxHeight = tocMaxHeight + 'px'
-            }
-            setTocMaxHeight()
+            showBackTop()
 
             /***
              * 目录跟随滚动
              */
-            function followScrollToc(){
-                if(contents.length < 1){
+            function followScrollToc() {
+                if (contents.length < 1) {
                     return
                 }
-                if(rightBj.offset().top - $(window).scrollTop() <=0 ){
+                if (rightBj.offset().top - $(window).scrollTop() <= 0) {
                     $('#toc-affix').addClass('affix')
                 } else {
                     $('#toc-affix').removeClass('affix')
@@ -393,58 +394,61 @@
                     }
                     if ($(window).scrollTop() > contentItem.offset().top - 100 || $(this).scrollTop() + $(this).height() === $(document).height()) {
                         $('.j-titleList').find('li').eq(i).addClass('active').siblings('li').removeClass('active');
-                        tocAction.css('top', i * 34)
+                        tocAction.css('top', i * 34 + 15)
                     }
                 }
-                if(scrollAfterTimer != null){
+                if (scrollAfterTimer != null) {
                     clearTimeout(scrollAfterTimer)
                 }
-                scrollAfterTimer = setTimeout(function (){
+                scrollAfterTimer = setTimeout(function () {
                     pushHistory()
                     keepTocVisible()
                 }, 150)
             }
+
             /***
              * 重设window.history
              */
             function pushHistory() {
                 const hash = $('.j-titleList').find('li.active').find('a').attr('href')
                 const clientHeight = document.documentElement.clientHeight
-                if (hash && $(window).scrollTop() > clientHeight - clientHeight*0.7) {
+                if (hash && $(window).scrollTop() > clientHeight - clientHeight * 0.7) {
                     window.history.replaceState(null, null, document.location.pathname + hash)
                 } else {
                     window.history.replaceState(null, null, document.location.pathname)
                 }
             }
+
             /***
              * 保持目录当前相在可见范围内
              */
             function keepTocVisible() {
-                if(clickingToc || justLoading || contents.length < 1){
+                if (clickingToc || justLoading || contents.length < 1) {
                     return
                 }
                 const tocHeader = $('.toc-header')
-                if(tocHeader.length < 1){
+                if (tocHeader.length < 1) {
                     return
                 }
                 const tocAction = $('.j-bj')
-                const tocScroll = $('.slimScrollDiv')
+                const tocScroll = $('.j-titleList')
                 const tocScrollTop = tocScroll.scrollTop()
                 const tocHeaderTop = tocHeader.offset().top - $(window).scrollTop()
                 if (tocHeaderTop > 70 && window.innerWidth > 768) {
                     // 隐藏返回顶部按钮
                     $('.back-top').fadeOut(500)
                 }
-                const tocActionTop = tocAction.offset().top - $(window).scrollTop() - tocHeaderTop - 41
-                if (tocActionTop > (tocMaxHeight - 40)) {
+                // const tocActionTop = tocAction.offset().top - $(window).scrollTop() - tocHeaderTop - 41
+                const tocActionTop = tocAction.position().top
+                const tocHeight = tocScroll.innerHeight();
+                if (tocActionTop > tocHeight - 40) { // 如果激活项在可视区域下方
                     tocScroll.animate({
-                        scrollTop: tocScrollTop + (tocActionTop - tocMaxHeight) + 160
+                        scrollTop: tocScrollTop + tocActionTop - tocHeight + 80 // 滚动量调整
                     }, 300)
                 }
-                if (tocActionTop < 40) {
-                    let top = Math.abs(tocActionTop) + 160
+                if (tocActionTop < 40) { // 如果激活项在可视区域上方
                     tocScroll.animate({
-                        scrollTop: tocScrollTop - top
+                        scrollTop: tocScrollTop + tocActionTop - 80 // 滚动量调整
                     }, 300)
                 }
             }
@@ -452,14 +456,14 @@
             /***
              * 改变top bar 进度条
              */
-            function changeTopBar(){
+            function changeTopBar() {
                 let scrollHeight = $(document).height() - window.innerHeight
-                let progress = ((document.documentElement.scrollTop)/scrollHeight) * 100
-                document.querySelector(".scrollbar").style.width = progress +'%'
+                let progress = ((document.documentElement.scrollTop) / scrollHeight) * 100
+                document.querySelector(".scrollbar").style.width = progress + '%'
             }
 
-            function contentAfter(){
-                $(window).on('scroll', function (){
+            function contentAfter() {
+                $(window).on('scroll', function () {
                     changeTopBar()
                     // 判断是上滑还是下滑
                     checkDirection($(this))
@@ -469,32 +473,32 @@
                     followScrollToc()
                 })
 
-                const slimScrollDiv = $('.slimScrollDiv')
+                const scrollableList = $('.j-titleList');
                 let startY;
-                slimScrollDiv.on('touchstart',function(event){
+                scrollableList.on('touchstart', function (event) {
                     //滑动起点的坐标
                     startY = event.targetTouches[0].pageY
                 });
 
                 // 当目录滚动到达顶部/底部时，防止父元素滚动
-                slimScrollDiv.on('DOMMouseScroll mousewheel touchmove', function(ev) {
+                scrollableList.on('DOMMouseScroll mousewheel touchmove', function (ev) {
                     let scrollTop = this.scrollTop,
                         scrollHeight = this.scrollHeight,
                         height = $(this).innerHeight(),
                         delta = ev.originalEvent.wheelDelta;
-                    if (scrollHeight < tocMaxHeight) {
-                        return
+                    if (scrollHeight <= height) {
+                        return;
                     }
 
-                    if(ev.type === 'touchmove'){
+                    if (ev.type === 'touchmove') {
                         delta = ev.targetTouches[0].pageY - startY
                     }
                     let up = delta > 0
 
-                    let prevent = function() {
+                    let prevent = function () {
                         ev.stopPropagation();
                         ev.preventDefault();
-                        if(ev.type !== 'touchmove'){
+                        if (ev.type !== 'touchmove') {
                             ev.returnValue = false;
                         }
                         return false;
@@ -510,47 +514,41 @@
                     }
                 });
 
-                $(window).on("resize", function (){
-                    setTocMaxHeight()
+                $(window).on("resize", function () {
+                    // setTocMaxHeight()
                     setBackTopPosition()
                 })
 
                 /***
                  * 改变返回顶部按钮位置
                  */
-                function setBackTopPosition(){
-                    if(window.innerWidth > 768){
+                function setBackTopPosition() {
+                    if (window.innerWidth > 768) {
                         $('.back-top').css('left', main.width() + main.offset().left + 30)
                     } else {
                         $('.back-top').css('left', '')
                     }
                 }
+
                 setBackTopPosition()
 
                 // 点击回到顶部
-                $(".back-top").click(function(){
+                $(".back-top").click(function () {
                     $('html, body').animate({
                         scrollTop: 0
                     }, 400)
                 });
 
                 // 点击显示目录
-                $(".show-content").click(function (){
-                    let translateX = slimScrollDiv.css("transform")
-                    const reg = '\\((.+?)\\)'
-                    translateX = parseFloat(translateX.match(reg)[1].split(',')[4])
-                    if(translateX > 150){
-                        slimScrollDiv.css("transform", "translateX(0px)")
-                    }
-                    if(translateX < 150){
-                        slimScrollDiv.css("transform", "translateX(250px)")
-                    }
-                })
+                $(".show-content").click(function () {
+                    $('.slimScrollDiv').toggleClass('is-visible');
+                });
             }
-            function setContentTheme(){
+
+            function setContentTheme() {
                 const isDark = getThemeCSSName() === 'dark'
-                Vditor.setContentTheme(isDark ? 'dark': 'light', `${vditorResource}/dist/css/content-theme`)
-                Vditor.setCodeTheme(isDark ? 'androidstudio': 'androidstudio', vditorResource)
+                Vditor.setContentTheme(isDark ? 'custom-dark' : 'custom-light', `${vditorResource}/dist/css/content-theme`)
+                Vditor.setCodeTheme(isDark ? 'androidstudio' : 'androidstudio', vditorResource)
             }
 
             // common.js
@@ -558,11 +556,12 @@
              * 动态打字效果
              */
             let divTyping = $('#article-title')
-            let i = 0,timer = 0,str = divTyping.text()
-            function typing () {
+            let i = 0, timer = 0, str = divTyping.text()
+
+            function typing() {
                 if (i <= str.length) {
                     divTyping.text(str.slice(0, i++))
-                    if(divTyping.css('display') === 'none'){
+                    if (divTyping.css('display') === 'none') {
                         divTyping.css('display', 'contents')
                     }
                     timer = setTimeout(typing, 80)
@@ -570,13 +569,15 @@
                     clearTimeout(timer)
                 }
             }
+
             setTimeout(typing, 500)
             let labelIcon = $('.changeTheme i')
             let labelTitle = $('.changeTheme span')
+
             // 添加暗色主题
             function addDarkTheme() {
                 const themeDark = $('#theme-css-dark')
-                if(themeDark.length > 0){
+                if (themeDark.length > 0) {
                     return
                 }
                 let link = document.createElement('link');
@@ -589,16 +590,18 @@
                 labelIcon.addClass('fa-sun')
                 labelTitle.html('亮色')
             }
+
             // 删除暗色主题
             function removeDarkTheme() {
                 const themeDark = $('#theme-css-dark')
-                if(themeDark.length > 0){
+                if (themeDark.length > 0) {
                     themeDark.remove();
                     labelIcon.removeClass('fa-sun')
                     labelIcon.addClass('fa-moon')
                     labelTitle.html('暗色')
                 }
             }
+
             // 使用暗色主题(记录选择到cookie中)
             function useDarkTheme(useDark) {
                 setCookie('jmal-theme', useDark ? "dark" : "light");
@@ -609,11 +612,13 @@
                 }
                 setContentTheme()
             }
+
             // 获取cookie中选中的主题名称，没有就给个默认的
             function getThemeCSSName() {
                 return getCookie('jmal-theme') || "light";
             }
-            $('.changeTheme').click(function (){
+
+            $('.changeTheme').click(function () {
                 useDarkTheme(getThemeCSSName() === 'light')
                 // 记录切换主题的时间戳
                 setCookie('changeTheme', new Date().getTime())
@@ -621,9 +626,9 @@
             let media = window.matchMedia('(prefers-color-scheme: dark)');
             // 判断系统是否为深色模式
             if (media && media.matches) {
-                if(getCookie('changeTheme')){
+                if (getCookie('changeTheme')) {
                     // 上次切换主题的时间距离现在超过8小时就是使用系统默认主题
-                    if(new Date().getTime() - getCookie('changeTheme') > 3600 * 1000 * 8){
+                    if (new Date().getTime() - getCookie('changeTheme') > 3600 * 1000 * 8) {
                         useDarkTheme(true)
                     }
                 } else {
@@ -651,7 +656,7 @@
                 let name = cname + "=";
                 let decodedCookie = decodeURIComponent(document.cookie);
                 let ca = decodedCookie.split(';');
-                for(let i = 0; i <ca.length; i++) {
+                for (let i = 0; i < ca.length; i++) {
                     let c = ca[i];
                     while (c.charAt(0) === ' ') {
                         c = c.substring(1);
@@ -662,10 +667,11 @@
                 }
                 return "";
             }
+
             function updateLink() {
                 // 选择所有的a标签
-                document.querySelectorAll('a').forEach(function(link) {
-                    link.addEventListener('click', function(e) {
+                document.querySelectorAll('a').forEach(function (link) {
+                    link.addEventListener('click', function (e) {
                         // 获取链接的href属性
                         let href = link.getAttribute('href');
                         // 判断是否为外部链接
