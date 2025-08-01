@@ -749,7 +749,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
     private Path getDocImagePaths(UploadImageDTO upload) {
         Path docImagePaths;
         String markdownFileId = upload.getFileId();
-        if (CharSequenceUtil.isNotBlank(markdownFileId) || !"undefined".equals(markdownFileId)) {
+        if (CharSequenceUtil.isNotBlank(markdownFileId) && !"undefined".equals(markdownFileId)) {
             FileDocument fileDocument = fileService.getById(markdownFileId);
             if (fileDocument == null) {
                 throw new CommonException(ExceptionType.FILE_NOT_FIND);
