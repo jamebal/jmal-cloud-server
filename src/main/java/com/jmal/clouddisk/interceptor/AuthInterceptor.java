@@ -1,6 +1,8 @@
 package com.jmal.clouddisk.interceptor;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.BooleanUtil;
 import com.alibaba.fastjson2.JSON;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
@@ -40,6 +42,8 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     public static final String JMAL_TOKEN = "jmal-token";
 
+    public static final String REMEMBER_NAME = "rememberName";
+
     public static final String NAME_HEADER = "name";
 
     public static final String ACCESS_TOKEN = "access-token";
@@ -49,7 +53,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     private static final int TWO_HOURS_IN_SECONDS = 2 * 60 * 60; // 7200
 
     private static final int SECONDS_IN_DAY = 24 * 60 * 60; // 86400
-    private static final int THIRTY_DAYS_IN_SECONDS = 30 * SECONDS_IN_DAY; // 2592000
+    private static final int NINETY_DAYS_IN_SECONDS = 90 * SECONDS_IN_DAY; // 7776000
 
     private final IAuthDAO authDAO;
 
@@ -209,7 +213,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     private String renewJmalToken(HttpServletRequest request, HttpServletResponse response, String name, String hashPassword, String refreshToken) {
         String username = TokenUtil.getTokenKey(refreshToken, hashPassword);
         if (name.equals(username)) {
-            boolean rememberMe = name.equals(getCookie(request, "rememberName"));
+            boolean rememberMe = BooleanUtil.isTrue(Convert.toBool(getCookie(request, REMEMBER_NAME)));
             String jmalToken = generateJmalToken(hashPassword, username);
             setRefreshCookie(response, hashPassword, username, rememberMe, jmalToken);
             return username;
@@ -270,13 +274,21 @@ public class AuthInterceptor implements HandlerInterceptor {
     public static void setRefreshCookie(HttpServletResponse response, String hashPassword, String username, boolean rememberMe, String jmalToken) {
         LocalDateTime refreshTokenExpiration = LocalDateTime.now();
         // 如果用户勾选了记住我, refreshToken期限为30天, 否则为1天
-        int refreshMaxAge = rememberMe ? THIRTY_DAYS_IN_SECONDS : SECONDS_IN_DAY;
+        int refreshMaxAge = rememberMe ? NINETY_DAYS_IN_SECONDS : SECONDS_IN_DAY;
         refreshTokenExpiration = refreshTokenExpiration.plusSeconds(refreshMaxAge);
+
         Cookie refreshCookie = new Cookie(REFRESH_TOKEN, TokenUtil.createToken(username, hashPassword, refreshTokenExpiration));
         refreshCookie.setMaxAge(refreshMaxAge);
         refreshCookie.setHttpOnly(true);
         refreshCookie.setPath("/");
         response.addCookie(refreshCookie);
+
+        Cookie rememberNameCookie = new Cookie(REMEMBER_NAME, Convert.toStr(rememberMe));
+        rememberNameCookie.setMaxAge(refreshMaxAge);
+        rememberNameCookie.setHttpOnly(true);
+        rememberNameCookie.setPath("/");
+        response.addCookie(rememberNameCookie);
+
         setJmalTokenCookie(response, username, jmalToken);
     }
 

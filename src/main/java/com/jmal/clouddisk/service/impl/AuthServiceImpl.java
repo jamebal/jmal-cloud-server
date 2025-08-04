@@ -190,7 +190,7 @@ public class AuthServiceImpl implements IAuthService {
         String username = userLoginHolder.getUsername();
         CaffeineUtil.removeAuthoritiesCache(username);
         CaffeineUtil.removeUserIdCache(username);
-        AuthInterceptor.removeCookies(response, IUserService.USERNAME, AuthInterceptor.JMAL_TOKEN, AuthInterceptor.REFRESH_TOKEN);
+        AuthInterceptor.removeCookies(response, IUserService.USERNAME, AuthInterceptor.JMAL_TOKEN, AuthInterceptor.REFRESH_TOKEN, AuthInterceptor.REMEMBER_NAME);
         return ResultUtil.success();
     }
 
