@@ -15,6 +15,7 @@ import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -94,13 +95,13 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
-    public ResponseResult<Object> login(HttpServletResponse response, ConsumerDTO consumerDTO) {
+    public ResponseResult<Object> login(HttpServletRequest request, HttpServletResponse response, ConsumerDTO consumerDTO) {
         String password = consumerDTO.getPassword();
         ConsumerDO consumerDO = userService.getUserInfoByUsername(consumerDTO.getUsername());
         if (consumerDO == null) {
             if (ldapTemplate != null && BooleanUtil.isTrue(ldapEnable)) {
                 // ldap登录
-                return ldapLogin(response, consumerDTO);
+                return ldapLogin(request, response, consumerDTO);
             }
             return ResultUtil.error(loginError());
         } else {
@@ -113,7 +114,7 @@ public class AuthServiceImpl implements IAuthService {
                     return ResultUtil.success(new LoginResponse(null, true, mfaToken));
                 } else {
                     // 无需MFA，直接登录成功
-                    return loginValidSuccess(response, consumerDTO, consumerDO);
+                    return loginValidSuccess(request, response, consumerDTO, consumerDO);
                 }
             }
         }
@@ -121,7 +122,7 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
-    public ResponseResult<Object> verifyTotp(HttpServletResponse response, ConsumerDTO consumerDTO) {
+    public ResponseResult<Object> verifyTotp(HttpServletRequest request, HttpServletResponse response, ConsumerDTO consumerDTO) {
         // 验证预授权Token
         String hashPassword = userService.getHashPasswordUserName(consumerDTO.getUsername());
         String username = TokenUtil.getTokenKey(consumerDTO.getMfaToken(), hashPassword);
@@ -133,10 +134,10 @@ public class AuthServiceImpl implements IAuthService {
             return ResultUtil.error(messageUtil.getMessage("login.mfaError"));
         }
         ConsumerDO consumerDO = userService.getUserInfoByUsername(consumerDTO.getUsername());
-        return loginValidSuccess(response, consumerDTO, consumerDO);
+        return loginValidSuccess(request, response, consumerDTO, consumerDO);
     }
 
-    private static ResponseResult<Object> loginValidSuccess(HttpServletResponse response, ConsumerDTO userDTO, ConsumerDO consumerDO) {
+    private static ResponseResult<Object> loginValidSuccess(HttpServletRequest request, HttpServletResponse response, ConsumerDTO userDTO, ConsumerDO consumerDO) {
         Map<String, String> map = new HashMap<>(3);
         String username = userDTO.getUsername();
         String hashPassword = consumerDO.getPassword();
@@ -145,11 +146,11 @@ public class AuthServiceImpl implements IAuthService {
         map.put(AuthInterceptor.JMAL_TOKEN, jmalToken);
         map.put(IUserService.USERNAME, username);
         map.put(IUserService.USER_ID, consumerDO.getId());
-        AuthInterceptor.setRefreshCookie(response, hashPassword, username, rememberMe, jmalToken);
+        AuthInterceptor.setRefreshCookie(request, response, hashPassword, username, rememberMe, jmalToken);
         return ResultUtil.success(map);
     }
 
-    private ResponseResult<Object> ldapLogin(HttpServletResponse response, ConsumerDTO consumerDTO) {
+    private ResponseResult<Object> ldapLogin(HttpServletRequest request, HttpServletResponse response, ConsumerDTO consumerDTO) {
         try {
             LdapQuery query = LdapQueryBuilder.query().where(ldapLoginName).is(consumerDTO.getUsername());
             ldapTemplate.authenticate(query, consumerDTO.getPassword());
@@ -162,7 +163,7 @@ public class AuthServiceImpl implements IAuthService {
             consumerDTO.setRoles(ldapConfigDO.getDefaultRoleList());
             consumerDTO.setShowName(consumerDTO.getUsername());
             ConsumerDO consumerDO = userService.add(consumerDTO);
-            return loginValidSuccess(response, consumerDTO, consumerDO);
+            return loginValidSuccess(request, response, consumerDTO, consumerDO);
         }
         return ResultUtil.error(loginError());
     }
