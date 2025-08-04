@@ -277,7 +277,9 @@ public class AuthInterceptor implements HandlerInterceptor {
     private static void addHttpOnlyCookie(HttpServletRequest request, HttpServletResponse response, String name, String value, int maxAge) {
 
         String scheme = request.getHeader("X-Forwarded-Proto");
-        if (CharSequenceUtil.isBlank(scheme)) {
+        if (CharSequenceUtil.isNotBlank(scheme)) {
+            scheme = scheme.split(",")[0].trim();
+        } else {
             scheme = request.getScheme();
         }
         boolean isHttps = "https".equalsIgnoreCase(scheme);
@@ -287,6 +289,8 @@ public class AuthInterceptor implements HandlerInterceptor {
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         cookie.setSecure(isHttps);
+        // SameSite
+        cookie.setAttribute("SameSite", "Strict");
         response.addCookie(cookie);
     }
 
