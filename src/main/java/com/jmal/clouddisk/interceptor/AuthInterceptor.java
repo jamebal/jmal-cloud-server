@@ -270,7 +270,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         refreshTokenExpiration = refreshTokenExpiration.plusSeconds(refreshMaxAge);
 
         addHttpOnlyCookie(response, REFRESH_TOKEN, TokenUtil.createToken(username, hashPassword, refreshTokenExpiration), refreshMaxAge);
-        addHttpOnlyCookie(response, REMEMBER_NAME, TokenUtil.createToken(username, hashPassword, refreshTokenExpiration), refreshMaxAge);
+        addHttpOnlyCookie(response, REMEMBER_NAME, String.valueOf(rememberMe), refreshMaxAge);
 
         setJmalTokenCookie(response, username, jmalToken);
     }
