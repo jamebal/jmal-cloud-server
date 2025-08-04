@@ -40,6 +40,8 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     public static final String JMAL_TOKEN = "jmal-token";
 
+    public static final String REMEMBER_NAME = "rememberName";
+
     public static final String NAME_HEADER = "name";
 
     public static final String ACCESS_TOKEN = "access-token";
@@ -49,7 +51,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     private static final int TWO_HOURS_IN_SECONDS = 2 * 60 * 60; // 7200
 
     private static final int SECONDS_IN_DAY = 24 * 60 * 60; // 86400
-    private static final int THIRTY_DAYS_IN_SECONDS = 30 * SECONDS_IN_DAY; // 2592000
+    private static final int NINETY_DAYS_IN_SECONDS = 90 * SECONDS_IN_DAY; // 7776000
 
     private final IAuthDAO authDAO;
 
@@ -209,9 +211,9 @@ public class AuthInterceptor implements HandlerInterceptor {
     private String renewJmalToken(HttpServletRequest request, HttpServletResponse response, String name, String hashPassword, String refreshToken) {
         String username = TokenUtil.getTokenKey(refreshToken, hashPassword);
         if (name.equals(username)) {
-            boolean rememberMe = name.equals(getCookie(request, "rememberName"));
+            boolean rememberMe = Boolean.parseBoolean(getCookie(request, REMEMBER_NAME));
             String jmalToken = generateJmalToken(hashPassword, username);
-            setRefreshCookie(response, hashPassword, username, rememberMe, jmalToken);
+            setRefreshCookie(request, response, hashPassword, username, rememberMe, jmalToken);
             return username;
         }
         return null;
@@ -229,18 +231,10 @@ public class AuthInterceptor implements HandlerInterceptor {
         return renewJmalToken(request, response, username, hashPassword, refreshToken);
     }
 
-    private static void setJmalTokenCookie(HttpServletResponse response, String username, String jmalToken) {
-        Cookie tokenCookie = new Cookie(JMAL_TOKEN, jmalToken);
-        tokenCookie.setMaxAge(TWO_HOURS_IN_SECONDS);
-        tokenCookie.setHttpOnly(true);
-        tokenCookie.setPath("/");
-        response.addCookie(tokenCookie);
+    private static void setJmalTokenCookie(HttpServletRequest request, HttpServletResponse response, String username, String jmalToken) {
 
-        Cookie nameCookie = new Cookie(IUserService.USERNAME, username);
-        nameCookie.setMaxAge(TWO_HOURS_IN_SECONDS);
-        nameCookie.setHttpOnly(true);
-        nameCookie.setPath("/");
-        response.addCookie(nameCookie);
+        addHttpOnlyCookie(request, response, JMAL_TOKEN, jmalToken, TWO_HOURS_IN_SECONDS);
+        addHttpOnlyCookie(request, response, IUserService.USERNAME, username, TWO_HOURS_IN_SECONDS);
 
         response.addHeader(JMAL_TOKEN, jmalToken);
     }
@@ -262,22 +256,42 @@ public class AuthInterceptor implements HandlerInterceptor {
     /**
      * 设置 refreshToken
      *
+     * @param request      HttpServletRequest
      * @param response     HttpServletResponse
      * @param hashPassword hashPassword
      * @param username     username
      * @param rememberMe   rememberMe
      */
-    public static void setRefreshCookie(HttpServletResponse response, String hashPassword, String username, boolean rememberMe, String jmalToken) {
+    public static void setRefreshCookie(HttpServletRequest request, HttpServletResponse response, String hashPassword, String username, boolean rememberMe, String jmalToken) {
         LocalDateTime refreshTokenExpiration = LocalDateTime.now();
-        // 如果用户勾选了记住我, refreshToken期限为30天, 否则为1天
-        int refreshMaxAge = rememberMe ? THIRTY_DAYS_IN_SECONDS : SECONDS_IN_DAY;
+        // 如果用户勾选了记住我, refreshToken期限为90天, 否则为1天
+        int refreshMaxAge = rememberMe ? NINETY_DAYS_IN_SECONDS : SECONDS_IN_DAY;
         refreshTokenExpiration = refreshTokenExpiration.plusSeconds(refreshMaxAge);
-        Cookie refreshCookie = new Cookie(REFRESH_TOKEN, TokenUtil.createToken(username, hashPassword, refreshTokenExpiration));
-        refreshCookie.setMaxAge(refreshMaxAge);
-        refreshCookie.setHttpOnly(true);
-        refreshCookie.setPath("/");
-        response.addCookie(refreshCookie);
-        setJmalTokenCookie(response, username, jmalToken);
+
+        addHttpOnlyCookie(request, response, REFRESH_TOKEN, TokenUtil.createToken(username, hashPassword, refreshTokenExpiration), refreshMaxAge);
+        addHttpOnlyCookie(request, response, REMEMBER_NAME, String.valueOf(rememberMe), refreshMaxAge);
+
+        setJmalTokenCookie(request, response, username, jmalToken);
+    }
+
+    private static void addHttpOnlyCookie(HttpServletRequest request, HttpServletResponse response, String name, String value, int maxAge) {
+
+        String scheme = request.getHeader("X-Forwarded-Proto");
+        if (CharSequenceUtil.isNotBlank(scheme)) {
+            scheme = scheme.split(",")[0].trim();
+        } else {
+            scheme = request.getScheme();
+        }
+        boolean isHttps = "https".equalsIgnoreCase(scheme);
+
+        Cookie cookie = new Cookie(name, value);
+        cookie.setMaxAge(maxAge);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setSecure(isHttps);
+        // SameSite
+        cookie.setAttribute("SameSite", "Strict");
+        response.addCookie(cookie);
     }
 
     public static void removeCookies(HttpServletResponse response, String ...keys) {
