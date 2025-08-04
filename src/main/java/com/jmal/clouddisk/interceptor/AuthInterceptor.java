@@ -213,7 +213,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     private String renewJmalToken(HttpServletRequest request, HttpServletResponse response, String name, String hashPassword, String refreshToken) {
         String username = TokenUtil.getTokenKey(refreshToken, hashPassword);
         if (name.equals(username)) {
-            boolean rememberMe = BooleanUtil.isTrue(Convert.toBool(getCookie(request, REMEMBER_NAME)));
+            boolean rememberMe = BooleanUtil.isTrue(Convert.toBool(getCookie(request, REMEMBER_NAME), false));
             String jmalToken = generateJmalToken(hashPassword, username);
             setRefreshCookie(request, response, hashPassword, username, rememberMe, jmalToken);
             return username;
