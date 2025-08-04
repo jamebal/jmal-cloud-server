@@ -234,17 +234,9 @@ public class AuthInterceptor implements HandlerInterceptor {
     }
 
     private static void setJmalTokenCookie(HttpServletResponse response, String username, String jmalToken) {
-        Cookie tokenCookie = new Cookie(JMAL_TOKEN, jmalToken);
-        tokenCookie.setMaxAge(TWO_HOURS_IN_SECONDS);
-        tokenCookie.setHttpOnly(true);
-        tokenCookie.setPath("/");
-        response.addCookie(tokenCookie);
 
-        Cookie nameCookie = new Cookie(IUserService.USERNAME, username);
-        nameCookie.setMaxAge(TWO_HOURS_IN_SECONDS);
-        nameCookie.setHttpOnly(true);
-        nameCookie.setPath("/");
-        response.addCookie(nameCookie);
+        addHttpOnlyCookie(response, JMAL_TOKEN, jmalToken, TWO_HOURS_IN_SECONDS);
+        addHttpOnlyCookie(response, IUserService.USERNAME, username, TWO_HOURS_IN_SECONDS);
 
         response.addHeader(JMAL_TOKEN, jmalToken);
     }
@@ -277,19 +269,18 @@ public class AuthInterceptor implements HandlerInterceptor {
         int refreshMaxAge = rememberMe ? NINETY_DAYS_IN_SECONDS : SECONDS_IN_DAY;
         refreshTokenExpiration = refreshTokenExpiration.plusSeconds(refreshMaxAge);
 
-        Cookie refreshCookie = new Cookie(REFRESH_TOKEN, TokenUtil.createToken(username, hashPassword, refreshTokenExpiration));
-        refreshCookie.setMaxAge(refreshMaxAge);
-        refreshCookie.setHttpOnly(true);
-        refreshCookie.setPath("/");
-        response.addCookie(refreshCookie);
-
-        Cookie rememberNameCookie = new Cookie(REMEMBER_NAME, Convert.toStr(rememberMe));
-        rememberNameCookie.setMaxAge(refreshMaxAge);
-        rememberNameCookie.setHttpOnly(true);
-        rememberNameCookie.setPath("/");
-        response.addCookie(rememberNameCookie);
+        addHttpOnlyCookie(response, REFRESH_TOKEN, TokenUtil.createToken(username, hashPassword, refreshTokenExpiration), refreshMaxAge);
+        addHttpOnlyCookie(response, REMEMBER_NAME, TokenUtil.createToken(username, hashPassword, refreshTokenExpiration), refreshMaxAge);
 
         setJmalTokenCookie(response, username, jmalToken);
+    }
+
+    private static void addHttpOnlyCookie(HttpServletResponse response, String name, String value, int maxAge) {
+        Cookie cookie = new Cookie(name, value);
+        cookie.setMaxAge(maxAge);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        response.addCookie(cookie);
     }
 
     public static void removeCookies(HttpServletResponse response, String ...keys) {
