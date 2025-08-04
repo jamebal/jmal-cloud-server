@@ -1,8 +1,6 @@
 package com.jmal.clouddisk.interceptor;
 
-import cn.hutool.core.convert.Convert;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.BooleanUtil;
 import com.alibaba.fastjson2.JSON;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
@@ -213,7 +211,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     private String renewJmalToken(HttpServletRequest request, HttpServletResponse response, String name, String hashPassword, String refreshToken) {
         String username = TokenUtil.getTokenKey(refreshToken, hashPassword);
         if (name.equals(username)) {
-            boolean rememberMe = BooleanUtil.isTrue(Convert.toBool(getCookie(request, REMEMBER_NAME), false));
+            boolean rememberMe = Boolean.parseBoolean(getCookie(request, REMEMBER_NAME));
             String jmalToken = generateJmalToken(hashPassword, username);
             setRefreshCookie(request, response, hashPassword, username, rememberMe, jmalToken);
             return username;
@@ -279,7 +277,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     private static void addHttpOnlyCookie(HttpServletRequest request, HttpServletResponse response, String name, String value, int maxAge) {
 
         String scheme = request.getHeader("X-Forwarded-Proto");
-        if (scheme == null) {
+        if (CharSequenceUtil.isBlank(scheme)) {
             scheme = request.getScheme();
         }
         boolean isHttps = "https".equalsIgnoreCase(scheme);
