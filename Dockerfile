@@ -1,4 +1,4 @@
-FROM ghcr.io/jamebal/jdk17_ffmpeg_nvidia:latest
+FROM ghcr.io/jamebal/jdk17_ffmpeg:latest
 
 ARG VERSION
 

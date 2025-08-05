@@ -1,4 +1,4 @@
-name: Build jdk17_ffmpeg_nvidia Docker Image
+name: Build jdk17_ffmpeg Docker Image
 
 on:
   workflow_dispatch:
@@ -43,6 +43,6 @@ jobs:
           file: docker/Dockerfile
           push: true
           tags: |
-            jmal/jdk17_ffmpeg_nvidia:latest
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jdk17_ffmpeg_nvidia:latest
+            jmal/jdk17_ffmpeg:latest
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jdk17_ffmpeg:latest
           platforms: linux/amd64,linux/arm64

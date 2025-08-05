@@ -1,4 +1,4 @@
-name: Build test (nvidia)
+name: Build test
 
 on:
   push:
