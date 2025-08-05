@@ -919,7 +919,7 @@ html {
     background: linear-gradient(107deg, #3b82f6, #8b5cf6);
     position: absolute;
     left: 0;
-    top: 0;
+    top: 15px;
     width: 4px;
     height: 34px;
     border-radius: 2px;
