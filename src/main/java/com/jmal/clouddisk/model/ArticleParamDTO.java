@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.model;
 
-import cn.hutool.core.util.URLUtil;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.util.FileNameUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import lombok.Data;
@@ -29,7 +29,7 @@ public class ArticleParamDTO {
     String filename;
     String fileId;
     @NotNull(message = "contentText不能为空")
-    @Schema(name = "contentText", title = "markdown内容", required = true)
+    @Schema(name = "contentText", title = "markdown内容", requiredMode = Schema.RequiredMode.REQUIRED)
     String contentText;
     @Schema(name = "html", title = "html内容")
     String html;
@@ -59,13 +59,13 @@ public class ArticleParamDTO {
     private LocalDateTime uploadDate;
 
     public String getFilename() {
-        return URLUtil.decode(filename);
+        return FileNameUtils.safeDecode(filename);
     }
 
     public String getCurrentDirectory() {
         if (currentDirectory == null || "undefined".equals(currentDirectory)) {
             return null;
         }
-        return URLUtil.decode(currentDirectory);
+        return FileNameUtils.safeDecode(currentDirectory);
     }
 }

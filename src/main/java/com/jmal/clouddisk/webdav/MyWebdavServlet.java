@@ -2,7 +2,6 @@ package com.jmal.clouddisk.webdav;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.URLUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
@@ -13,13 +12,13 @@ import com.jmal.clouddisk.oss.OssInputStream;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
+import com.jmal.clouddisk.util.FileNameUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.apache.catalina.WebResource;
-import org.apache.catalina.connector.ClientAbortException;
 import org.apache.tomcat.util.http.parser.Ranges;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
@@ -138,31 +137,31 @@ public class MyWebdavServlet extends WebdavServlet {
 
     @Override
     protected void copy(InputStream is, ServletOutputStream outStream) throws IOException {
-        IOException exception;
         AbstractOssObject abstractOssObject = null;
+
         if (is instanceof OssInputStream ossInputStream) {
             abstractOssObject = ossInputStream.getAbstractOssObject();
         }
-        InputStream inStream = new BufferedInputStream(is, input);
-        exception = copyRange(inStream, outStream);
-        if (abstractOssObject != null) {
-            try {
-                abstractOssObject.closeObject();
-            } catch (IOException e) {
-                Console.error(e.getMessage());
-                exception = new ClientAbortException("Broken pipe");
-            } finally {
-                try {
-                    inStream.close();
-                } catch (IOException e) {
-                    exception = new ClientAbortException("Broken pipe");
-                }
+
+        try (InputStream inStream = new BufferedInputStream(is, input)) {
+            IOException copyException = copyRange(inStream, outStream);
+            if (copyException != null) {
+                throw copyException;
             }
-        } else {
-            inStream.close();
+        } finally {
+            // 确保OSS资源被清理
+            if (abstractOssObject != null) {
+                closeOssObjectQuietly(abstractOssObject);
+            }
         }
-        if (exception != null) {
-            throw exception;
+    }
+
+    private void closeOssObjectQuietly(AbstractOssObject ossObject) {
+        try {
+            ossObject.closeObject();
+        } catch (IOException e) {
+            // 静默处理，不影响主流程
+            Console.error("Failed to close OSS object: " + e.getMessage());
         }
     }
 
@@ -189,7 +188,7 @@ public class MyWebdavServlet extends WebdavServlet {
     }
 
     private void deleteFile(HttpServletRequest req, HttpServletResponse resp) {
-        String uri = URLUtil.decode(req.getRequestURI());
+        String uri = FileNameUtils.safeDecode(req.getRequestURI());
         Path uriPath = Paths.get(uri);
         if (uriPath.getNameCount() > 1) {
             String ossPath = CaffeineUtil.getOssPath(uriPath.subpath(1, uriPath.getNameCount()));
@@ -204,7 +203,7 @@ public class MyWebdavServlet extends WebdavServlet {
     }
 
     private void createFile(HttpServletRequest req, HttpServletResponse resp) {
-        String uri = URLUtil.decode(req.getRequestURI());
+        String uri = FileNameUtils.safeDecode(req.getRequestURI());
         Path uriPath = Paths.get(uri);
         if (uriPath.getNameCount() > 1) {
             String ossPath = CaffeineUtil.getOssPath(uriPath.subpath(1, uriPath.getNameCount()));

@@ -8,7 +8,6 @@ import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ReUtil;
-import cn.hutool.core.util.URLUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -20,10 +19,7 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
-import com.jmal.clouddisk.util.CaffeineUtil;
-import com.jmal.clouddisk.util.FileContentTypeUtils;
-import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -88,7 +84,7 @@ public class WebOssService extends WebOssCommonService {
                 name = name + "/";
             }
         }
-        return URLUtil.decode(name);
+        return FileNameUtils.safeDecode(name);
     }
 
     public ResponseResult<Object> searchFileAndOpenOssFolder(Path prePth, UploadApiParamDTO upload) {
@@ -699,7 +695,7 @@ public class WebOssService extends WebOssCommonService {
             String range = request.getHeader(HttpHeaders.RANGE);
             if (CharSequenceUtil.isNotBlank(range)) {
                 // 处理 Range 请求
-                handlerRange(response, ossService, objectName, outputStream, encodedFilename, fileSize, range);
+                handlerRange(response, ossService, objectName, outputStream, fileSize, range);
             } else {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentLengthLong(fileSize);
@@ -719,11 +715,10 @@ public class WebOssService extends WebOssCommonService {
      * @param ossService      IOssService
      * @param objectName      objectName
      * @param outputStream    response OutputStream
-     * @param encodedFilename 编码后的文件名
      * @param fileSize        文件总大小
      * @param range           header range 的 值
      */
-    private void handlerRange(HttpServletResponse response, IOssService ossService, String objectName, OutputStream outputStream, String encodedFilename, long fileSize, String range) {
+    private void handlerRange(HttpServletResponse response, IOssService ossService, String objectName, OutputStream outputStream, long fileSize, String range) {
         long[] ranges = parseRange(range, fileSize);
         long start = ranges[0];
         long end = ranges[1] == -1 ? fileSize - 1 : ranges[1];

@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.util;
 
-import cn.hutool.core.util.URLUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -256,7 +255,7 @@ public class CaffeineUtil {
      * @return oss path
      */
     public static String getOssPath(Path path) {
-        path = Paths.get(URLUtil.decode(path.toString()));
+        path = Paths.get(FileNameUtils.safeDecode(path.toString()));
         String prePath;
         if (path.getNameCount() >= 2) {
             prePath = MyWebdavServlet.PATH_DELIMITER + path.subpath(0, 2);

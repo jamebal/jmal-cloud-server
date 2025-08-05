@@ -2,7 +2,6 @@ package com.jmal.clouddisk.controller.rest;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.URLUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
@@ -15,6 +14,7 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.CaffeineUtil;
+import com.jmal.clouddisk.util.FileNameUtils;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -193,7 +193,7 @@ public class FileController {
         if (ossPath != null) {
             return ResultUtil.success(webOssService.readToText(ossPath, prePth, false));
         }
-        return ResultUtil.success(fileService.previewTextByPath(URLUtil.decode(path), username));
+        return ResultUtil.success(fileService.previewTextByPath(FileNameUtils.safeDecode(path), username));
     }
 
     @Operation(summary = "根据path流式读取simText文件")
@@ -207,7 +207,7 @@ public class FileController {
         if (ossPath != null) {
             responseBody = webOssService.readToTextStream(ossPath, prePth);
         } else {
-            responseBody = fileService.previewTextByPathStream(URLUtil.decode(path), username);
+            responseBody = fileService.previewTextByPathStream(FileNameUtils.safeDecode(path), username);
         }
         return new ResponseEntity<>(responseBody, HttpStatus.OK);
     }
@@ -396,7 +396,7 @@ public class FileController {
     @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> rename(@RequestParam String newFileName, @RequestParam String username, @RequestParam String id, String folder) {
-        return fileService.rename(URLUtil.decode(newFileName), username, id, folder);
+        return fileService.rename(FileNameUtils.safeDecode(newFileName), username, id, folder);
     }
 
     @Operation(summary = "移动或复制前检查目标目录是否存在要移动或复制的文件")
@@ -457,34 +457,34 @@ public class FileController {
         if (dir == null) {
             dir = false;
         }
-        return fileService.listFiles(URLUtil.decode(path), username, dir);
+        return fileService.listFiles(FileNameUtils.safeDecode(path), username, dir);
     }
 
     @Operation(summary = "获取上级文件列表")
     @GetMapping("/upper-level-list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> upperLevelList(@RequestParam String path, @RequestParam String username) {
-        return fileService.upperLevelList(URLUtil.decode(path), username);
+        return fileService.upperLevelList(FileNameUtils.safeDecode(path), username);
     }
 
     @Operation(summary = "根据path删除文件/文件夹")
     @DeleteMapping("/delFile")
     @Permission("cloud:file:delete")
     public ResponseResult<Object> delFile(@RequestParam String path, @RequestParam String username) {
-        return fileService.delFile(URLUtil.decode(path), username);
+        return fileService.delFile(FileNameUtils.safeDecode(path), username);
     }
 
     @Operation(summary = "根据path重命名")
     @GetMapping("/rename/path")
     @Permission("cloud:file:update")
     public ResponseResult<Object> renameByPath(@RequestParam String newFileName, @RequestParam String username, @RequestParam String path) {
-        return fileService.renameByPath(URLUtil.decode(newFileName), username, URLUtil.decode(path));
+        return fileService.renameByPath(FileNameUtils.safeDecode(newFileName), username, FileNameUtils.safeDecode(path));
     }
 
     @Operation(summary = "根据path添加文件/文件夹")
     @PostMapping("/addfile")
     @Permission("cloud:file:upload")
     public ResponseResult<FileIntroVO> addFile(@RequestParam String fileName, @RequestParam Boolean isFolder, @RequestParam String username, @RequestParam String parentPath, String folder) {
-        return fileService.addFile(URLUtil.decode(fileName), isFolder, username, URLUtil.decode(parentPath), folder);
+        return fileService.addFile(FileNameUtils.safeDecode(fileName), isFolder, username, FileNameUtils.safeDecode(parentPath), folder);
     }
 }

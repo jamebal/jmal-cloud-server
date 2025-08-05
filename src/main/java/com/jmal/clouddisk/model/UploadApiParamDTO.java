@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.model;
 
-import cn.hutool.core.util.URLUtil;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.util.FileNameUtils;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
@@ -269,7 +269,7 @@ public class UploadApiParamDTO {
     private LocalDateTime uploadDate;
 
     public String getFilename() {
-        return URLUtil.decode(filename);
+        return FileNameUtils.safeDecode(filename);
     }
 
     public String getRelativePath() {
@@ -277,7 +277,7 @@ public class UploadApiParamDTO {
             // Windows 系统
             relativePath = relativePath.replace("/", "\\");
         }
-        return URLUtil.decode(relativePath);
+        return FileNameUtils.safeDecode(relativePath);
     }
 
     public String getCurrentDirectory() {
@@ -288,7 +288,7 @@ public class UploadApiParamDTO {
             // Windows 系统
             currentDirectory = currentDirectory.replace("/", "\\");
         }
-        return URLUtil.decode(currentDirectory);
+        return FileNameUtils.safeDecode(currentDirectory);
     }
 
     public String getFolderPath() {
@@ -299,7 +299,7 @@ public class UploadApiParamDTO {
             // Windows 系统
             folderPath = folderPath.replace("/", "\\");
         }
-        return URLUtil.decode(folderPath);
+        return FileNameUtils.safeDecode(folderPath);
     }
 
 }
