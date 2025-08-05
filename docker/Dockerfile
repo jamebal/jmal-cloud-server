@@ -18,11 +18,13 @@ RUN wget https://repo.jellyfin.org/files/ffmpeg/ubuntu/latest-5.x/${ARCH}/jellyf
     wget https://github.com/jamebal/OcrLiteOnnx/releases/download/v.1.8.2/models.7z
 
 # --- 解压 mxcad 和 OcrLiteOnnx ---
-# 这部分内容将被干净地复制到最终镜像
-RUN mkdir -p /output/mxcad /output/ocrlite/bin /output/ocrlite/models
-RUN unzip -o mxcad_${ARCH}.zip -d /output/mxcad_tmp && mv /output/mxcad_tmp/mxcad_${ARCH} /output/mxcad && rm -rf /output/mxcad_tmp
-RUN 7z x ubuntu-22.04-${ARCH}-bin.7z -o/output/ocrlite_tmp && mv /output/ocrlite_tmp/ubuntu-22.04-${ARCH}-bin/Linux-BIN/OcrLiteOnnx /output/ocrlite/bin/ && rm -rf /output/ocrlite_tmp
-RUN 7z x models.7z -o/output/ocrlite/models
+RUN mkdir -p /output/ocrlite/bin /output/ocrlite/models && \
+    unzip -o mxcad_${ARCH}.zip -d /output && \
+    mv /output/mxcad_${ARCH} /output/mxcad && \
+    7z x ubuntu-22.04-${ARCH}-bin.7z -o/output/ocrlite_tmp && \
+    mv /output/ocrlite_tmp/ubuntu-22.04-${ARCH}-bin/Linux-BIN/OcrLiteOnnx /output/ocrlite/bin/ && \
+    rm -rf /output/ocrlite_tmp && \
+    7z x models.7z -o/output/ocrlite/models
 
 # --- 设置权限 ---
 RUN chmod -R 777 /output/mxcad/mxcadassembly && chmod -R 777 /output/mxcad/mx/so/* && chmod +x /output/ocrlite/bin/OcrLiteOnnx
