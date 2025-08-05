@@ -3,7 +3,7 @@ FROM ubuntu:22.04 AS builder
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    wget curl unzip p7zip-full update-ca-certificates && \
+    ca-certificates wget curl unzip p7zip-full update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
