@@ -1,70 +1,85 @@
-FROM nvidia/cuda:11.7.1-base-ubuntu22.04 AS base
+FROM ubuntu:22.04 AS builder
 
-# 设置非交互式安装，避免 tzdata 等包的配置暂停
 ENV DEBIAN_FRONTEND=noninteractive
-
-# 安装 wget 和 tesseract，并配置时区和 locales
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends wget unzip curl locales tesseract-ocr p7zip-full unrar libheif-examples && \
-    locale-gen en_US.UTF-8 && \
-    update-locale LANG=en_US.UTF-8 && \
-    # 下载并安装 jellyfin-ffmpeg
-    ARCH=$(dpkg --print-architecture) && \
-    wget https://repo.jellyfin.org/files/ffmpeg/ubuntu/latest-5.x/${ARCH}/jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb && \
-    dpkg -i jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb || apt-get install -fy && \
-    # 安装 mxcad https://www.mxdraw.com/download.html
+    apt-get install -y --no-install-recommends \
+    ca-certificates wget curl unzip p7zip-full && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+ARG TARGETARCH
+ENV ARCH=${TARGETARCH}
+
+RUN wget https://repo.jellyfin.org/files/ffmpeg/ubuntu/7.x/7.1.1-7/${ARCH}/jellyfin-ffmpeg7_7.1.1-7-jammy_${ARCH}.deb && \
     wget https://github.com/jamebal/jmal-cloud-server/releases/download/v2.14.0/mxcad_${ARCH}.zip && \
-    unzip -o mxcad_${ARCH}.zip -d /usr/local/ && \
-    mv /usr/local/mxcad_${ARCH}/ /usr/local/mxcad && \
-    chmod -R 777 /usr/local/mxcad/mxcadassembly && \
-    chmod -R 777 /usr/local/mxcad/mx/so/* && \
-    cp -r -f /usr/local/mxcad/mx/locale /usr/local/share/locale && \
-    # 安装 OcrLiteOnnx
     wget https://github.com/jamebal/OcrLiteOnnx/releases/download/v.1.8.2/ubuntu-22.04-${ARCH}-bin.7z && \
-    wget https://github.com/jamebal/OcrLiteOnnx/releases/download/v.1.8.2/models.7z && \
-    7z x models.7z -o/jmalcloud/ && \
-    7z x ubuntu-22.04-${ARCH}-bin.7z -o/usr/local/ && \
-    mv /usr/local/ubuntu-22.04-${ARCH}-bin/Linux-BIN/OcrLiteOnnx /usr/local/bin/OcrLiteOnnx && \
-    # 卸载 wget 并清理下载的文件和APT缓存
-    apt-get remove -y wget unzip && \
+    wget https://github.com/jamebal/OcrLiteOnnx/releases/download/v.1.8.2/models.7z
+
+RUN dpkg-deb -f jellyfin-ffmpeg7_7.1.1-7-jammy_${ARCH}.deb Depends | sed 's/,/ /g' | sed 's/|/ /g' | sed -E 's/\([^)]+\)//g' > ffmpeg_dependencies.txt
+
+# --- 解压 mxcad 和 OcrLiteOnnx ---
+RUN mkdir -p /output/ocrlite/bin /output/ocrlite/models && \
+    unzip -o mxcad_${ARCH}.zip -d /output && \
+    mv /output/mxcad_${ARCH} /output/mxcad && \
+    7z x ubuntu-22.04-${ARCH}-bin.7z -o/output/ocrlite_tmp && \
+    mv /output/ocrlite_tmp/ubuntu-22.04-${ARCH}-bin/Linux-BIN/OcrLiteOnnx /output/ocrlite/bin/ && \
+    rm -rf /output/ocrlite_tmp && \
+    7z x models.7z -o/output/ocrlite/models
+
+# --- 设置权限 ---
+RUN chmod -R 777 /output/mxcad/mxcadassembly && chmod -R 777 /output/mxcad/mx/so/* && chmod +x /output/ocrlite/bin/OcrLiteOnnx
+
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+# --- 1. 安装基础运行时依赖 ---
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl \
+    locales \
+    tesseract-ocr \
+    p7zip-full \
+    unrar \
+    libheif-examples && \
     apt-get clean && \
-    rm -f jellyfin-ffmpeg5_5.1.4-3-jammy_${ARCH}.deb && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -f mxcad_${ARCH}.zip && \
-    rm -rf /usr/local/ubuntu-22.04-${ARCH}-bin && \
-    rm -f ubuntu-22.04-${ARCH}-bin.7z && \
-    rm -f models.7z && \
-    rm -rf /usr/local/__MACOSX
+    rm -rf /var/lib/apt/lists/*
 
-# 将/usr/lib/jellyfin-ffmpeg添加到PATH
-ENV PATH=/usr/lib/jellyfin-ffmpeg:$PATH
+# --- 2. 安装 ffmpeg ---
+COPY --from=builder /build/ffmpeg_dependencies.txt /tmp/
+COPY --from=builder /build/jellyfin-ffmpeg7_7.1.1-7-jammy_*.deb /tmp/jellyfin-ffmpeg.deb
 
-# 环境变量
-ENV LANG=en_US.UTF-8 \
-    LANGUAGE=en_US:en \
-    LC_ALL=en_US.UTF-8 \
-    LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64 \
-    NVIDIA_DRIVER_CAPABILITIES=compute,utility,video \
-    NVIDIA_VISIBLE_DEVICES=all
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends $(cat /tmp/ffmpeg_dependencies.txt) && \
+    dpkg -i /tmp/jellyfin-ffmpeg.deb && \
+    # 清理工作
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/ffmpeg_dependencies.txt /tmp/jellyfin-ffmpeg.deb
 
-FROM eclipse-temurin:17-jre AS java-base
+# --- 3. 配置系统环境 (Locale, Timezone) ---
+RUN locale-gen en_US.UTF-8 && \
+    update-locale LANG=en_US.UTF-8 && \
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
-# 合并 CUDA 和 Java 环境
-FROM base AS final
-COPY --from=java-base /opt/java/openjdk /opt/java/openjdk
+# --- 4. 复制 Java 运行时 ---
+COPY --from=eclipse-temurin:17-jre /opt/java/openjdk /opt/java/openjdk
 
-# 设置时区
-RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+# --- 5. 从构建器阶段复制处理好的应用文件 ---
+COPY --from=builder /output/mxcad /usr/local/mxcad
+COPY --from=builder /output/mxcad/mx/locale /usr/local/share/locale
+COPY --from=builder /output/ocrlite/bin/OcrLiteOnnx /usr/local/bin/OcrLiteOnnx
+COPY --from=builder /output/ocrlite/models /jmalcloud/models
 
+# --- 6. 复制配置文件和数据 ---
 RUN mkdir -p /jmalcloud/files /jmalcloud/tess4j/datapath
-
-
 COPY docker/ip2region.xdb /jmalcloud/
-
 COPY tess4j/datapath/chi_sim.traineddata /jmalcloud/tess4j/datapath/
 COPY target/lib /usr/local/clouddisk-lib
 
-# 更新 PATH 和 LD_LIBRARY_PATH
-ENV PATH="/opt/java/openjdk/bin:${PATH}"
+# --- 7. 设置环境变量 ---
+ENV LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8 \
+    PATH="/opt/java/openjdk/bin:/usr/lib/jellyfin-ffmpeg:${PATH}"
 
 CMD ["bash"]
