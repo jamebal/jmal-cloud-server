@@ -19,7 +19,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.apache.catalina.WebResource;
-import org.apache.catalina.connector.ClientAbortException;
 import org.apache.tomcat.util.http.parser.Ranges;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
@@ -138,29 +137,31 @@ public class MyWebdavServlet extends WebdavServlet {
 
     @Override
     protected void copy(InputStream is, ServletOutputStream outStream) throws IOException {
-        IOException exception;
         AbstractOssObject abstractOssObject = null;
+
         if (is instanceof OssInputStream ossInputStream) {
             abstractOssObject = ossInputStream.getAbstractOssObject();
         }
-        InputStream inStream = new BufferedInputStream(is, input);
-        exception = copyRange(inStream, outStream);
-        if (abstractOssObject != null) {
-            try (inStream) {
-                try {
-                    abstractOssObject.closeObject();
-                } catch (IOException e) {
-                    Console.error(e.getMessage());
-                    exception = new ClientAbortException("Broken pipe");
-                }
-            } catch (IOException e) {
-                exception = new ClientAbortException("Broken pipe");
+
+        try (InputStream inStream = new BufferedInputStream(is, input)) {
+            IOException copyException = copyRange(inStream, outStream);
+            if (copyException != null) {
+                throw copyException;
             }
-        } else {
-            inStream.close();
+        } finally {
+            // 确保OSS资源被清理
+            if (abstractOssObject != null) {
+                closeOssObjectQuietly(abstractOssObject);
+            }
         }
-        if (exception != null) {
-            throw exception;
+    }
+
+    private void closeOssObjectQuietly(AbstractOssObject ossObject) {
+        try {
+            ossObject.closeObject();
+        } catch (IOException e) {
+            // 静默处理，不影响主流程
+            Console.error("Failed to close OSS object: " + e.getMessage());
         }
     }
 
