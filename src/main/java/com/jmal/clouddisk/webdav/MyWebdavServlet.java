@@ -2,7 +2,6 @@ package com.jmal.clouddisk.webdav;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.URLUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
@@ -13,6 +12,7 @@ import com.jmal.clouddisk.oss.OssInputStream;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
+import com.jmal.clouddisk.util.FileNameUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -146,17 +146,15 @@ public class MyWebdavServlet extends WebdavServlet {
         InputStream inStream = new BufferedInputStream(is, input);
         exception = copyRange(inStream, outStream);
         if (abstractOssObject != null) {
-            try {
-                abstractOssObject.closeObject();
-            } catch (IOException e) {
-                Console.error(e.getMessage());
-                exception = new ClientAbortException("Broken pipe");
-            } finally {
+            try (inStream) {
                 try {
-                    inStream.close();
+                    abstractOssObject.closeObject();
                 } catch (IOException e) {
+                    Console.error(e.getMessage());
                     exception = new ClientAbortException("Broken pipe");
                 }
+            } catch (IOException e) {
+                exception = new ClientAbortException("Broken pipe");
             }
         } else {
             inStream.close();
@@ -189,7 +187,7 @@ public class MyWebdavServlet extends WebdavServlet {
     }
 
     private void deleteFile(HttpServletRequest req, HttpServletResponse resp) {
-        String uri = URLUtil.decode(req.getRequestURI());
+        String uri = FileNameUtils.safeDecode(req.getRequestURI());
         Path uriPath = Paths.get(uri);
         if (uriPath.getNameCount() > 1) {
             String ossPath = CaffeineUtil.getOssPath(uriPath.subpath(1, uriPath.getNameCount()));
@@ -204,7 +202,7 @@ public class MyWebdavServlet extends WebdavServlet {
     }
 
     private void createFile(HttpServletRequest req, HttpServletResponse resp) {
-        String uri = URLUtil.decode(req.getRequestURI());
+        String uri = FileNameUtils.safeDecode(req.getRequestURI());
         Path uriPath = Paths.get(uri);
         if (uriPath.getNameCount() > 1) {
             String ossPath = CaffeineUtil.getOssPath(uriPath.subpath(1, uriPath.getNameCount()));

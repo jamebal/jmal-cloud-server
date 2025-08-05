@@ -5,7 +5,6 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.URLUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
@@ -23,6 +22,7 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
+import com.jmal.clouddisk.util.FileNameUtils;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.mongodb.client.gridfs.model.GridFSFile;
@@ -259,7 +259,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
         if (ossPath != null) {
             fileId = WebOssService.getObjectName(prePth, ossPath, false);
         } else {
-            Path filePath = Paths.get(URLUtil.decode(path));
+            Path filePath = Paths.get(FileNameUtils.safeDecode(path));
             String relativePath = File.separator;
             if (filePath.getNameCount() > 1) {
                 relativePath += filePath.subpath(0, filePath.getNameCount() - 1) + File.separator;
