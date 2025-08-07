@@ -10,11 +10,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
           cache: 'maven'
 
       - name: Build with Maven
@@ -43,6 +43,6 @@ jobs:
           file: docker/Dockerfile
           push: true
           tags: |
-            jmal/jdk17_ffmpeg:latest
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jdk17_ffmpeg:latest
+            jmal/jdk21_ffmpeg:latest
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jdk21_ffmpeg:latest
           platforms: linux/amd64,linux/arm64

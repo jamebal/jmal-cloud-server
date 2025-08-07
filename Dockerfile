@@ -1,4 +1,4 @@
-FROM ghcr.io/jamebal/jdk17_ffmpeg:latest
+FROM ghcr.io/jamebal/jdk21_ffmpeg:latest
 
 ARG VERSION
 

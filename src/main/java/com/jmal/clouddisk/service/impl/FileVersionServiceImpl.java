@@ -273,7 +273,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
                 fileId = fileDocument.getId();
             }
         }
-        if (CharSequenceUtil.isNotBlank(fileId)) {
+        if (CharSequenceUtil.isBlank(fileId)) {
             return ResultUtil.success(new ArrayList<>());
         }
         return listFileVersion(fileId, pageSize, pageIndex);

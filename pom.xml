@@ -16,10 +16,10 @@
     <packaging>jar</packaging>
 
     <properties>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
         <maven-jar-plugin.version>3.0.0</maven-jar-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <lucene.version>9.10.0</lucene.version>
+        <lucene.version>10.2.2</lucene.version>
         <zxing.version>3.5.3</zxing.version>
     </properties>
 
@@ -50,6 +50,12 @@
     </dependencyManagement>
 
     <dependencies>
+        <!--向后兼容-->
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-backward-codecs</artifactId>
+            <version>${lucene.version}</version>
+        </dependency>
         <!--lucene 核心包-->
         <dependency>
             <groupId>org.apache.lucene</groupId>
@@ -77,8 +83,8 @@
         <!-- smartcn中文分词器 -->
         <dependency>
             <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-analyzers-smartcn</artifactId>
-            <version>8.11.3</version>
+            <artifactId>lucene-analysis-smartcn</artifactId>
+            <version>${lucene.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
