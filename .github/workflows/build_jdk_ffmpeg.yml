@@ -1,4 +1,4 @@
-name: Build jdk17_ffmpeg Docker Image
+name: Build jdk21_ffmpeg Docker Image
 
 on:
   workflow_dispatch:
