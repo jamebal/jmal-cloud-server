@@ -68,7 +68,7 @@ COPY --from=eclipse-temurin:21-jre-jammy /opt/java/openjdk /opt/java/openjdk
 COPY --from=builder /output/mxcad /usr/local/mxcad
 COPY --from=builder /output/mxcad/mx/locale /usr/local/share/locale
 COPY --from=builder /output/ocrlite/bin/OcrLiteOnnx /usr/local/bin/OcrLiteOnnx
-COPY --from=builder /output/ocrlite/models /jmalcloud/models
+COPY --from=builder /output/ocrlite/models /jmalcloud/
 
 # --- 6. 复制配置文件和数据 ---
 RUN mkdir -p /jmalcloud/files /jmalcloud/tess4j/datapath
