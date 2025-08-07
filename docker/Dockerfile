@@ -62,7 +62,7 @@ RUN locale-gen en_US.UTF-8 && \
     ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 # --- 4. 复制 Java 运行时 ---
-COPY --from=eclipse-temurin:17-jre /opt/java/openjdk /opt/java/openjdk
+COPY --from=eclipse-temurin:21-jre-jammy /opt/java/openjdk /opt/java/openjdk
 
 # --- 5. 从构建器阶段复制处理好的应用文件 ---
 COPY --from=builder /output/mxcad /usr/local/mxcad

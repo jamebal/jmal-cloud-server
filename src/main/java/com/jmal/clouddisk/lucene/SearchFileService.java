@@ -23,9 +23,11 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -75,8 +77,6 @@ public class SearchFileService {
             IndexSearcher indexSearcher = searcherManager.acquire();
             Query query = getQuery(searchDTO);
             Sort sort = getSort(searchDTO);
-            log.info("搜索关键字: {}", query.toString());
-            log.info("排序规则: {}", sort);
             ScoreDoc lastScoreDoc = null;
             if (pageNum > 1) {
                 int totalHitsToSkip = (pageNum - 1) * pageSize;
@@ -87,9 +87,9 @@ public class SearchFileService {
             }
             int count = indexSearcher.count(query);
             TopDocs topDocs = indexSearcher.searchAfter(lastScoreDoc, query, pageSize, sort);
+            StoredFields storedFields = indexSearcher.storedFields();
             for (ScoreDoc hit : topDocs.scoreDocs) {
-                indexSearcher.storedFields().document(hit.doc);
-                Document doc = indexSearcher.storedFields().document(hit.doc);
+                Document doc = storedFields.document(hit.doc);
                 String id = doc.get("id");
                 seenIds.add(id);
             }

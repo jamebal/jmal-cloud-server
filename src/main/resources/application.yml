@@ -47,3 +47,4 @@ logging:
     org:
       apache:
         pdfbox: off
+        lucene.internal.vectorization.VectorizationProvider: ERROR
