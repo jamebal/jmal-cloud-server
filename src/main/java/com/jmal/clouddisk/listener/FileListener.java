@@ -1,8 +1,6 @@
 package com.jmal.clouddisk.listener;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.service.IFileService;
 import io.methvin.watcher.DirectoryChangeEvent;
@@ -17,11 +15,10 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
@@ -37,28 +34,138 @@ public class FileListener implements DirectoryChangeListener {
     @Getter
     private final Set<Path> filterDirSet = new CopyOnWriteArraySet<>();
 
-    private final Cache<Path, DirectoryChangeEvent> eventCache = Caffeine.newBuilder()
-            .expireAfterWrite(100, TimeUnit.MILLISECONDS)
-            .maximumSize(100000)
-            .build();
+    // 使用ConcurrentHashMap存储最新事件，确保每个路径只有一个最新事件
+    private final Map<Path, DirectoryChangeEvent> eventMap = new ConcurrentHashMap<>();
 
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    // 处理队列 - 用于实际处理事件的工作队列
+    private final BlockingQueue<DirectoryChangeEvent> processingQueue = new LinkedBlockingQueue<>(100000);
+
+    // 重试队列
+    private final BlockingQueue<DirectoryChangeEvent> retryQueue = new LinkedBlockingQueue<>();
+
+    // 统计
+    private final AtomicInteger processedCount = new AtomicInteger(0);
+    private final AtomicInteger failedCount = new AtomicInteger(0);
+    private final AtomicInteger mergedCount = new AtomicInteger(0);
+    private final AtomicInteger retryCount = new AtomicInteger(0);
+
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, r -> {
+        Thread t = new Thread(r, "event-scheduler-thread");
+        t.setDaemon(true);
+        return t;
+    });
+
+    private final ExecutorService processExecutor = Executors.newFixedThreadPool(
+            Runtime.getRuntime().availableProcessors(),
+            r -> {
+                Thread t = new Thread(r, "file-process-thread");
+                t.setDaemon(true);
+                return t;
+            });
 
     @PostConstruct
     public void init() {
-        // 定期处理缓存中的事件
-        scheduler.scheduleAtFixedRate(this::processCache, 100, 100, TimeUnit.MILLISECONDS);
+        // 定期将事件从Map转移到处理队列
+        scheduler.scheduleAtFixedRate(this::transferEventsToQueue, 200, 200, TimeUnit.MILLISECONDS);
+
+        // 启动消费者线程
+        startConsumerThreads();
+
+        // 启动重试线程
+        startRetryThread();
+
+        // 定期输出统计信息
+        startStatsReporter();
     }
 
-    private void processCache() {
-        eventCache.asMap().values().forEach(event -> {
-            try {
-                processEvent(event);
-            } catch (Exception e) {
-                log.error("Error processing event", e);
+    private void transferEventsToQueue() {
+        if (eventMap.isEmpty()) {
+            return;
+        }
+        // 快照当前事件Map并清空
+        Map<Path, DirectoryChangeEvent> currentEvents = new ConcurrentHashMap<>(eventMap);
+        eventMap.clear();
+
+        // 转移到处理队列
+        int transferCount = 0;
+        for (DirectoryChangeEvent event : currentEvents.values()) {
+            boolean offered = processingQueue.offer(event);
+            if (!offered) {
+                log.error("处理队列已满，无法添加事件: {}, 路径: {}", event.eventType(), event.path());
+                // 放回原Map以便下次尝试
+                eventMap.put(event.path(), event);
+            } else {
+                transferCount++;
             }
-        });
-        eventCache.cleanUp();
+        }
+
+        if (transferCount > 0) {
+            log.debug("转移了{}个事件到处理队列，当前队列大小: {}", transferCount, processingQueue.size());
+        }
+    }
+
+    private void startConsumerThreads() {
+        int processors = Runtime.getRuntime().availableProcessors();
+        for (int i = 0; i < processors; i++) {
+            processExecutor.submit(this::processQueueItems);
+        }
+    }
+
+    private void processQueueItems() {
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                DirectoryChangeEvent event = processingQueue.poll(100, TimeUnit.MILLISECONDS);
+                if (event != null) {
+                    try {
+                        processEvent(event);
+                        processedCount.incrementAndGet();
+                    } catch (Exception e) {
+                        log.error("处理事件失败: {}, 路径: {}", event.eventType(), event.path(), e);
+                        retryQueue.offer(event);
+                        failedCount.incrementAndGet();
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+    }
+
+    private void startRetryThread() {
+        Thread retryThread = new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    DirectoryChangeEvent event = retryQueue.poll(500, TimeUnit.MILLISECONDS);
+                    if (event != null) {
+                        try {
+                            log.info("重试处理文件事件: {}, 路径: {}", event.eventType(), event.path());
+                            processEvent(event);
+                            processedCount.incrementAndGet();
+                            retryCount.incrementAndGet();
+                        } catch (Exception e) {
+                            log.error("重试处理文件事件失败: {}, 路径: {}", event.eventType(), event.path(), e);
+                            // 等待一段时间后再次加入重试队列
+                            Thread.sleep(1000);
+                            retryQueue.offer(event);
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }, "file-retry-thread");
+        retryThread.setDaemon(true);
+        retryThread.start();
+    }
+
+    private void startStatsReporter() {
+        scheduler.scheduleAtFixedRate(() -> {
+            log.info("文件处理统计 - 已处理: {}, 失败: {}, 合并: {}, 重试成功: {}, 队列积压: {}, 重试队列: {}, 事件Map: {}",
+                    processedCount.get(), failedCount.get(), mergedCount.get(), retryCount.get(),
+                    processingQueue.size(), retryQueue.size(), eventMap.size());
+        }, 30, 30, TimeUnit.SECONDS);
     }
 
     public void addFilterDir(Path path) {
@@ -80,7 +187,7 @@ public class FileListener implements DirectoryChangeListener {
 
         // 检查是否为忽略路径
         if (filterDirSet.stream().anyMatch(eventPath::startsWith)) {
-            log.debug("Ignore Event: {}, Path: {}", eventType, eventPath);
+            log.debug("忽略事件: {}, 路径: {}", eventType, eventPath);
             return;
         }
 
@@ -89,8 +196,42 @@ public class FileListener implements DirectoryChangeListener {
             return;
         }
 
-        log.debug("Received Event: {}, Path: {}", eventType, eventPath);
-        eventCache.put(eventPath, directoryChangeEvent);
+        log.warn("接收到事件: {}, 路径: {}", eventType, eventPath);
+
+        // 智能事件合并
+        DirectoryChangeEvent previousEvent = eventMap.get(eventPath);
+        if (previousEvent != null) {
+            // CREATE + MODIFY = CREATE (优化为一次创建)
+            if (previousEvent.eventType() == DirectoryChangeEvent.EventType.CREATE &&
+                    directoryChangeEvent.eventType() == DirectoryChangeEvent.EventType.MODIFY) {
+                log.debug("优化事件: 创建+修改合并为创建, 路径: {}", eventPath);
+                eventMap.put(eventPath, directoryChangeEvent);
+                mergedCount.incrementAndGet();
+                return;
+            }
+
+            // 多次MODIFY = 最后一次MODIFY
+            if (previousEvent.eventType() == DirectoryChangeEvent.EventType.MODIFY &&
+                    directoryChangeEvent.eventType() == DirectoryChangeEvent.EventType.MODIFY) {
+                log.debug("优化事件: 合并多次修改, 路径: {}", eventPath);
+                eventMap.put(eventPath, directoryChangeEvent);
+                mergedCount.incrementAndGet();
+                return;
+            }
+
+            // DELETE会覆盖之前的任何事件
+            if (directoryChangeEvent.eventType() == DirectoryChangeEvent.EventType.DELETE) {
+                log.debug("优化事件: 删除事件覆盖之前的事件, 路径: {}", eventPath);
+                eventMap.put(eventPath, directoryChangeEvent);
+                mergedCount.incrementAndGet();
+                return;
+            }
+
+            mergedCount.incrementAndGet();
+        }
+
+        // 将事件放入Map
+        eventMap.put(eventPath, directoryChangeEvent);
     }
 
     private void processEvent(DirectoryChangeEvent directoryChangeEvent) {
@@ -127,6 +268,7 @@ public class FileListener implements DirectoryChangeListener {
             log.info("用户:{},新建文件:{}", username, file.getAbsolutePath());
         } catch (Exception e) {
             log.error("新建文件后续操作失败, {}", file.getAbsolutePath(), e);
+            throw e; // 重新抛出异常以触发重试机制
         }
     }
 
@@ -145,6 +287,7 @@ public class FileListener implements DirectoryChangeListener {
             log.info("用户:{},修改文件:{}", username, file.getAbsolutePath());
         } catch (Exception e) {
             log.error("修改文件后续操作失败, fileAbsolutePath: {}", file.getAbsolutePath(), e);
+            throw e; // 重新抛出异常以触发重试机制
         }
     }
 
@@ -163,6 +306,7 @@ public class FileListener implements DirectoryChangeListener {
             log.info("用户:{},删除文件:{}", username, file.getAbsolutePath());
         } catch (Exception e) {
             log.error("删除文件后续操作失败, fileAbsolutePath: {}", file.getAbsolutePath(), e);
+            throw e; // 重新抛出异常以触发重试机制
         }
     }
 
@@ -202,6 +346,17 @@ public class FileListener implements DirectoryChangeListener {
 
     @PreDestroy
     public void shutdown() {
-        scheduler.shutdownNow();
+        scheduler.shutdown();
+        processExecutor.shutdown();
+        try {
+            // 等待所有任务完成
+            if (!processExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+                log.warn("线程池未能在60秒内完全关闭，剩余任务数: {}", processingQueue.size() + retryQueue.size());
+                processExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            processExecutor.shutdownNow();
+        }
     }
 }
