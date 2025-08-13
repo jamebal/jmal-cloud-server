@@ -13,6 +13,7 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
+import com.jmal.clouddisk.util.HashUtil;
 import com.jmal.clouddisk.util.MyFileUtils;
 import com.mongodb.client.AggregateIterable;
 import jakarta.annotation.PostConstruct;
@@ -25,12 +26,14 @@ import org.apache.lucene.index.Term;
 import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -255,6 +258,7 @@ public class LuceneService {
             fileIndex.setTagName(getTagName(fileIntroVO));
             setFileIndex(fileIndex);
             if (readContent) {
+                String sha256 = HashUtil.sha256(file);
                 try (StringWriter contentWriter = new StringWriter()) {
                     readFileContent(file, fileIntroVO.getId(), contentWriter);
                     String fullContent = contentWriter.toString();
@@ -264,11 +268,11 @@ public class LuceneService {
                         return;
                     }
                     // 调用改造后的 updateIndexDocument
-                    updateIndexDocument(indexWriter, fileIndex, fullContent);
+                    updateIndexDocument(indexWriter, fileIndex, fullContent, fileIndex.getFileIndexHash(sha256));
                     startProcessFilesToBeIndexed();
                 }
             } else {
-                updateIndexDocument(indexWriter, fileIndex, null);
+                updateIndexDocument(indexWriter, fileIndex, null, fileIndex.getFileIndexHash(null));
             }
             log.debug("添加索引, filepath: {}", file.getAbsoluteFile());
         } catch (Exception e) {
@@ -288,7 +292,7 @@ public class LuceneService {
      * @param indexStatus IndexStatus
      */
     private void updateIndexStatus(FileIntroVO fileIntroVO, IndexStatus indexStatus) {
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+        Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileIntroVO.getId()));
         Update update = new Update();
         update.set(MONGO_INDEX_FIELD, indexStatus.getStatus());
@@ -360,6 +364,7 @@ public class LuceneService {
     }
 
     private void readFileContent(File file, String fileId, Writer writer) {
+        String charset = null;
         try {
             if (file == null || !file.isFile() || file.length() < 1) {
                 return;
@@ -374,9 +379,12 @@ public class LuceneService {
                 case "xls", "xlsx" -> readContentService.readExcelContent(file, writer);
                 default -> {
                     if (fileProperties.getSimText().contains(type)) {
-                        String charset = UniversalDetector.detectCharset(file);
+                        charset = UniversalDetector.detectCharset(file);
                         if (CharSequenceUtil.isBlank(charset)) {
                             charset = String.valueOf(CharsetDetector.detect(file, StandardCharsets.UTF_8));
+                        }
+                        if (CharSequenceUtil.isBlank(charset)) {
+                            return;
                         }
                         // 对于纯文本，可以流式读取
                         try (Reader reader = new InputStreamReader(new FileInputStream(file), Charset.forName(charset))) {
@@ -392,6 +400,8 @@ public class LuceneService {
                     }
                 }
             }
+        } catch (UnsupportedCharsetException unsupportedCharsetException) {
+            log.warn("不支持的字符集, charset: {}, file: {}, {}", file.getAbsolutePath(), charset, unsupportedCharsetException.getMessage());
         } catch (Exception e) {
             log.error("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
         }
@@ -437,18 +447,25 @@ public class LuceneService {
      * @param indexWriter indexWriter
      * @param fileIndex   FileIndex
      * @param fullContent fullContent
+     * @param fileIndexHash fileIndexHash 唯一索引标识
      */
-    public void updateIndexDocument(IndexWriter indexWriter, FileIndex fileIndex, String fullContent) {
+    public void updateIndexDocument(IndexWriter indexWriter, FileIndex fileIndex, String fullContent, String fileIndexHash) {
         String fileId = fileIndex.getFileId();
         try {
+            if (searchFileService.existsSha256(fileIndexHash)) {
+                return;
+            }
             String fileName = (fileIndex.getName() == null ? "" : fileIndex.getName()) + " " + fileIndex.getRemark();
             String tagName = fileIndex.getTagName();
             Boolean isFolder = fileIndex.getIsFolder();
             Boolean isFavorite = fileIndex.getIsFavorite();
             String path = fileIndex.getPath();
-            org.apache.lucene.document.Document newDocument = new org.apache.lucene.document.Document();
+            Document newDocument = new Document();
             newDocument.add(new StringField("id", fileId, Field.Store.YES));
             newDocument.add(new StringField(IUserService.USER_ID, fileIndex.getUserId(), Field.Store.NO));
+
+            newDocument.add(new StringField(Constants.ETAG, fileIndexHash, Field.Store.NO));
+
             if (fileIndex.getType() != null) {
                 newDocument.add(new StringField("type", fileIndex.getType(), Field.Store.NO));
             }
@@ -472,20 +489,6 @@ public class LuceneService {
             if (CharSequenceUtil.isNotBlank(fullContent)) {
                 newDocument.add(new TextField(FIELD_CONTENT_FUZZY, fullContent, Field.Store.NO));
             }
-
-            // 为精确子串匹配处理 content_ngram
-            // if (CharSequenceUtil.isNotBlank(fullContent) && fileProperties.getExactSearch()) {
-            //     // 对非常大的文件，跳过N-Gram或只处理一部分
-            //     String contentForNgram = getContentForNgram(content, fileIndex);
-            //     if (CharSequenceUtil.isNotBlank(contentForNgram)) {
-            //         List<String> chunks = segmentContent(contentForNgram);
-            //         for (String chunk : chunks) {
-            //             if (CharSequenceUtil.isNotBlank(chunk)) {
-            //                 newDocument.add(new Field(FIELD_CONTENT_NGRAM, chunk, TextField.TYPE_NOT_STORED));
-            //             }
-            //         }
-            //     }
-            // }
             if (CharSequenceUtil.isNotBlank(fullContent) && fileProperties.getExactSearch()) {
                 String contentForNgram;
                 // 将完整内容字符串转换为内存中的输入流
@@ -585,7 +588,7 @@ public class LuceneService {
     }
 
     public FileIntroVO getFileIntroVO(String fileId) {
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+        Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
         query.fields().include("id", "name", "userId", "path", "isFolder", "isFavorite", "remark", "tags", "etag", "size");
         return mongoTemplate.findOne(query, FileIntroVO.class, COLLECTION_NAME);
@@ -598,7 +601,7 @@ public class LuceneService {
         if (fielIdList.isEmpty()) {
             return;
         }
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+        Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fielIdList));
         Update update = new Update();
         update.set(MONGO_INDEX_FIELD, IndexStatus.NOT_INDEX.getStatus());
@@ -617,6 +620,7 @@ public class LuceneService {
             if (!hasUnIndexFile()) {
                 log.debug("待索引文件处理完成");
                 rebuildIndexTaskService.rebuildingIndexCompleted();
+                indexWriter.commit();
                 run = false;
             }
             List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match", new org.bson.Document(MONGO_INDEX_FIELD, IndexStatus.NOT_INDEX.getStatus())), new org.bson.Document("$project", new org.bson.Document("_id", 1)), new org.bson.Document("$limit", 8));
@@ -637,7 +641,7 @@ public class LuceneService {
      * 是否存在待索引文件
      */
     private boolean hasUnIndexFile() {
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+        Query query = new Query();
         query.addCriteria(Criteria.where(MONGO_INDEX_FIELD).is(IndexStatus.NOT_INDEX.getStatus()));
         long count = mongoTemplate.count(query, COLLECTION_NAME);
         return count > 0;
