@@ -59,8 +59,6 @@ public class FileListener implements DirectoryChangeListener {
 
     private final ExecutorService processExecutor = ThreadUtil.newFixedExecutor(Runtime.getRuntime().availableProcessors(), 10000, "file-process-thread", true);
 
-    private final ExecutorService scanExecutor = ThreadUtil.newSingleExecutor();
-
     @PostConstruct
     public void init() {
         // 定期将事件从Map转移到处理队列
@@ -203,23 +201,17 @@ public class FileListener implements DirectoryChangeListener {
             if (previousEvent.eventType() == DirectoryChangeEvent.EventType.CREATE &&
                     directoryChangeEvent.eventType() == DirectoryChangeEvent.EventType.MODIFY) {
                 log.debug("优化事件: 创建+修改合并为创建, 路径: {}", eventPath);
-                eventMap.put(eventPath, directoryChangeEvent);
-                return;
             }
 
             // 多次MODIFY = 最后一次MODIFY
             if (previousEvent.eventType() == DirectoryChangeEvent.EventType.MODIFY &&
                     directoryChangeEvent.eventType() == DirectoryChangeEvent.EventType.MODIFY) {
                 log.debug("优化事件: 合并多次修改, 路径: {}", eventPath);
-                eventMap.put(eventPath, directoryChangeEvent);
-                return;
             }
 
             // DELETE会覆盖之前的任何事件
             if (directoryChangeEvent.eventType() == DirectoryChangeEvent.EventType.DELETE) {
                 log.debug("优化事件: 删除事件覆盖之前的事件, 路径: {}", eventPath);
-                eventMap.put(eventPath, directoryChangeEvent);
-                return;
             }
         }
 
@@ -341,6 +333,5 @@ public class FileListener implements DirectoryChangeListener {
     public void shutdown() {
         scheduler.shutdown();
         processExecutor.shutdown();
-        scanExecutor.shutdown();
     }
 }
