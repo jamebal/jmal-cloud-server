@@ -51,7 +51,7 @@ public class CloudSettingController {
     @Permission(value = "cloud:file:upload")
     @LogOperatingFun
     public ResponseResult<Object> userSync(@RequestParam String username, String path) {
-        return rebuildIndexTaskService.sync(username, path);
+        return rebuildIndexTaskService.sync(username, path, true);
     }
 
     @Operation(summary = "重建索引-全盘")
@@ -59,7 +59,7 @@ public class CloudSettingController {
     @Permission(value = "cloud:set:sync")
     @LogOperatingFun
     public ResponseResult<Object> sync(@RequestParam String username) {
-        return rebuildIndexTaskService.sync(username, null);
+        return rebuildIndexTaskService.sync(username, null, true);
     }
 
     @Operation(summary = "重新计算文件夹大小")

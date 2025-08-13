@@ -3,6 +3,7 @@ package com.jmal.clouddisk.listener;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.lucene.RebuildIndexTaskService;
 import com.jmal.clouddisk.service.IFileService;
 import io.methvin.watcher.DirectoryChangeEvent;
 import io.methvin.watcher.DirectoryChangeListener;
@@ -31,6 +32,7 @@ public class FileListener implements DirectoryChangeListener {
 
     private final FileProperties fileProperties;
     private final IFileService fileService;
+    private final RebuildIndexTaskService rebuildIndexTaskService;
 
     /**
      * 需要过滤掉的目录列表
@@ -44,18 +46,12 @@ public class FileListener implements DirectoryChangeListener {
     // 处理队列 - 用于实际处理事件的工作队列
     private final BlockingQueue<DirectoryChangeEvent> processingQueue = new LinkedBlockingQueue<>(100000);
 
-    // 统计
-    private final AtomicInteger processedCount = new AtomicInteger(0);
-    private final AtomicInteger failedCount = new AtomicInteger(0);
-    private final AtomicInteger mergedCount = new AtomicInteger(0);
-    private final AtomicInteger scanAddedCount = new AtomicInteger(0);
-
     // 负载检测
     private final AtomicInteger eventBurstCounter = new AtomicInteger(0);
     private final AtomicBoolean highLoadDetected = new AtomicBoolean(false);
     private final AtomicBoolean scanningInProgress = new AtomicBoolean(false);
     private volatile Instant lastBurstTime = Instant.now();
-    private static final int EVENT_BURST_THRESHOLD = 10000; // 单位时间内事件数阈值
+    private static final int EVENT_BURST_THRESHOLD = 5000; // 单位时间内事件数阈值
     private static final Duration BURST_WINDOW = Duration.ofSeconds(10); // 事件计数窗口
     private static final Duration IDLE_THRESHOLD = Duration.ofSeconds(30); // 闲置时间阈值
 
@@ -73,16 +69,13 @@ public class FileListener implements DirectoryChangeListener {
         // 启动消费者线程
         startConsumerThreads();
 
-        // 定期输出统计信息
-        startStatsReporter();
-
-        // 定期检查是否需要执行增量扫描
+        // 定期检查是否需要执行全盘扫描
         scheduler.scheduleAtFixedRate(this::checkAndStartScan, 10, 10, TimeUnit.SECONDS);
 
         // 定期重置事件计数器
         scheduler.scheduleAtFixedRate(() -> {
             eventBurstCounter.set(0);
-            // 如果高负载标志已设置且已经过了一段闲置期，则进行一次增量扫描
+            // 如果高负载标志已设置且已经过了一段闲置期，则进行一次全盘扫描
             if (highLoadDetected.get() &&
                     Duration.between(lastBurstTime, Instant.now()).compareTo(IDLE_THRESHOLD) > 0) {
                 checkAndStartScan();
@@ -102,8 +95,16 @@ public class FileListener implements DirectoryChangeListener {
         if (!scanningInProgress.compareAndSet(false, true)) {
             return; // 已有扫描任务在运行
         }
+        // 延时执行，确保当前处理队列中的事件都被处理完
+        rebuildIndexTaskService.onSyncComplete(() -> {
+            log.info("执行增量文件扫描，确保100%处理...");
+            rebuildIndexTaskService.doSync(null, null, false);
 
-        log.info("开始执行增量文件扫描，确保100%处理...");
+            rebuildIndexTaskService.onSyncComplete(() -> {
+                scanningInProgress.set(false);
+                log.info("增量文件扫描完成，已添加到处理队列。");
+            });
+        });
     }
 
     private void transferEventsToQueue() {
@@ -146,7 +147,6 @@ public class FileListener implements DirectoryChangeListener {
                 if (event != null) {
                     try {
                         processEvent(event);
-                        processedCount.incrementAndGet();
                     } catch (Exception e) {
                         log.error("处理事件失败: {}, 路径: {}", event.eventType(), event.path(), e);
                     }
@@ -156,12 +156,6 @@ public class FileListener implements DirectoryChangeListener {
                 break;
             }
         }
-    }
-
-    private void startStatsReporter() {
-        scheduler.scheduleAtFixedRate(() -> log.info("文件处理统计 - 已处理: {}, 失败: {}, 合并: {}, 增量扫描: {}, 队列积压: {}, 事件Map: {}, 高负载: {}",
-                processedCount.get(), failedCount.get(), mergedCount.get(), scanAddedCount.get(),
-                processingQueue.size(), eventMap.size(), highLoadDetected.get()), 30, 30, TimeUnit.SECONDS);
     }
 
     public void addFilterDir(Path path) {
@@ -210,7 +204,6 @@ public class FileListener implements DirectoryChangeListener {
                     directoryChangeEvent.eventType() == DirectoryChangeEvent.EventType.MODIFY) {
                 log.debug("优化事件: 创建+修改合并为创建, 路径: {}", eventPath);
                 eventMap.put(eventPath, directoryChangeEvent);
-                mergedCount.incrementAndGet();
                 return;
             }
 
@@ -219,7 +212,6 @@ public class FileListener implements DirectoryChangeListener {
                     directoryChangeEvent.eventType() == DirectoryChangeEvent.EventType.MODIFY) {
                 log.debug("优化事件: 合并多次修改, 路径: {}", eventPath);
                 eventMap.put(eventPath, directoryChangeEvent);
-                mergedCount.incrementAndGet();
                 return;
             }
 
@@ -227,11 +219,8 @@ public class FileListener implements DirectoryChangeListener {
             if (directoryChangeEvent.eventType() == DirectoryChangeEvent.EventType.DELETE) {
                 log.debug("优化事件: 删除事件覆盖之前的事件, 路径: {}", eventPath);
                 eventMap.put(eventPath, directoryChangeEvent);
-                mergedCount.incrementAndGet();
                 return;
             }
-
-            mergedCount.incrementAndGet();
         }
 
         // 将事件放入Map

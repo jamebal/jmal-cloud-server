@@ -5,12 +5,12 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.ReUtil;
-import cn.hutool.crypto.SecureUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.FileServiceImpl;
+import com.jmal.clouddisk.util.HashUtil;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.result.UpdateResult;
 import jakarta.annotation.PostConstruct;
@@ -177,7 +177,7 @@ public class EtagService {
             if (!FileUtil.exist(file) || !FileUtil.isFile(file)) {
                 return null;
             }
-            String newEtag = SecureUtil.sha256(file);
+            String newEtag = HashUtil.sha256(file);
 
             String fileName = file.getName();
             String relativePath = getDbPath(username, file);
@@ -190,7 +190,7 @@ public class EtagService {
             FileDocument currentFileDoc = mongoTemplate.findOne(query, FileDocument.class);
             String oldEtag = (currentFileDoc != null) ? currentFileDoc.getEtag() : null;
 
-            if (newEtag != null && !newEtag.equals(oldEtag)) {
+            if (!newEtag.equals(oldEtag)) {
                 Update update = new Update().set(Constants.ETAG, newEtag);
                 // 如果有版本控制字段，这里也应该更新
                 mongoTemplate.updateFirst(query, update, FileDocument.class);
@@ -260,7 +260,7 @@ public class EtagService {
             boolean hasChildren = mongoTemplate.exists(childrenQuery, FileDocument.class);
             if (!hasChildren) {
                 // 如果没有内容，则设置初始ETag
-                String initialEtag = SecureUtil.sha256(EMPTY_FOLDER_ETAG_BASE_STRING);
+                String initialEtag = HashUtil.sha256(EMPTY_FOLDER_ETAG_BASE_STRING);
                 Query query = getQueryByPath(userId, relativePath, fileName);
                 Update update = new Update().set(Constants.ETAG, initialEtag).set(Constants.NEEDS_ETAG_UPDATE_FIELD, false);
                 mongoTemplate.updateFirst(query, update, FileDocument.class);
@@ -438,7 +438,7 @@ public class EtagService {
         List<FileDocument> children = mongoTemplate.find(childrenQuery, FileDocument.class);
         long folderSize = 0;
         if (children.isEmpty()) {
-            newCalculatedEtag = SecureUtil.sha256(EMPTY_FOLDER_ETAG_BASE_STRING);
+            newCalculatedEtag = HashUtil.sha256(EMPTY_FOLDER_ETAG_BASE_STRING);
         } else {
             List<String> childRepresentations = children.stream().sorted(Comparator.comparing(FileDocument::getName)) // 按名称排序
                     .map(child -> formatChildRepresentation(workerId, child)).toList();
@@ -451,7 +451,7 @@ public class EtagService {
                     combinedRepresentation.append(rep).append(";");
                 }
             }
-            newCalculatedEtag = SecureUtil.sha256(combinedRepresentation.toString());
+            newCalculatedEtag = HashUtil.sha256(combinedRepresentation.toString());
 
             // 计算文件夹大小
             folderSize = getFolderSize(FileServiceImpl.COLLECTION_NAME, userId, currentFolderNormalizedPath);

@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.util.HashUtil;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -37,4 +38,27 @@ public class FileIndex {
     private Boolean isFavorite;
     private String remark;
 
+    /**
+     * 获取文件ID的哈希值, 用于唯一索引标识, 用于避免重复索引
+     * @param fileSha256 文件的SHA-256哈希值
+     */
+    public String getFileIndexHash(String fileSha256) {
+        String delimiter = "|";
+        String hashSource =
+                safe(fileId) + delimiter +
+                        safe(userId) + delimiter +
+                        safe(path) + delimiter +
+                        safe(name) + delimiter +
+                        safe(tagName) + delimiter +
+                        isFavorite + delimiter +
+                        safe(remark) + delimiter +
+                        modified + delimiter +
+                        size + delimiter +
+                        safe(fileSha256);
+        return HashUtil.sha256(hashSource);
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
+    }
 }

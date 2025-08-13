@@ -1277,7 +1277,6 @@ public class CommonFileService {
                         log.info("删除不存在的文档: {}", file.getAbsolutePath());
                     } else {
                         if (fileId != null) {
-                            log.warn("需要删除的文件: {}", file.getAbsolutePath());
                             Query removeDeletequery = new Query();
                             removeDeletequery.addCriteria(Criteria.where("_id").in(fileId).and("delete").is(1));
                             Update update = new Update();

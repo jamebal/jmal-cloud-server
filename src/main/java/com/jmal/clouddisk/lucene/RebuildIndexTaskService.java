@@ -98,6 +98,8 @@ public class RebuildIndexTaskService {
      */
     private static final ReentrantLock SYNC_FILE_LOCK = new ReentrantLock();
 
+    private Runnable syncCompleteCallback;
+
     /**
      * 进度百分比
      */
@@ -126,7 +128,7 @@ public class RebuildIndexTaskService {
         }
         // 启动时检测是否存在lucene索引，不存在则初始化
         if (!checkIndexExists()) {
-            doSync(userService.getCreatorUsername(), null);
+            doSync(userService.getCreatorUsername(), null, true);
         }
         // 重置索引状态
         resetIndexStatus();
@@ -139,11 +141,15 @@ public class RebuildIndexTaskService {
         }
     }
 
-    public void doSync(String username, String path) {
+    public void doSync(String username, String path, boolean isDelIndex) {
         if (isSyncFile() || isIndexing()) {
             return;
         }
+        if (StrUtil.isBlank(username)) {
+            username = userService.getCreatorUsername();
+        }
         setPercentMap(0d, 0d);
+        String finalUsername = username;
         ThreadUtil.execute(() -> {
             if (!SYNC_FILE_LOCK.tryLock()) {
                 return;
@@ -159,7 +165,7 @@ public class RebuildIndexTaskService {
                     return;
                 }
                 getSyncFileVisitorService();
-                rebuildingIndex(username, canPath);
+                rebuildingIndex(finalUsername, canPath, isDelIndex);
             } finally {
                 SYNC_FILE_LOCK.unlock();
                 setPercentMap(100d, 100d);
@@ -173,8 +179,9 @@ public class RebuildIndexTaskService {
      *
      * @param recipient 接收消息的用户
      * @param path      要扫描的路径
+     * @param isDelIndex 是否删除索引
      */
-    private void rebuildingIndex(String recipient, Path path) {
+    private void rebuildingIndex(String recipient, Path path, boolean isDelIndex) {
         TimeInterval timeInterval = new TimeInterval();
         try {
             getRecipient(recipient);
@@ -187,7 +194,7 @@ public class RebuildIndexTaskService {
             // 先移除删除标记, 以免因为扫描路径的不同导致删除标记未移除
             removeDeletedFlag(null);
             // 添加删除标记, 扫描完后如果标记还在则删除
-            addDeleteFlagOfDoc(path);
+            addDeleteFlagOfDoc(path, isDelIndex);
             // 重置索引状态
             resetIndexStatus();
             FileCountVisitor fileCountVisitor = new FileCountVisitor();
@@ -272,12 +279,19 @@ public class RebuildIndexTaskService {
         }, 10000);
     }
 
+    public void onSyncComplete(Runnable callback) {
+        this.syncCompleteCallback = callback;
+    }
+
     public void rebuildingIndexCompleted() {
         if (!hasUnIndexedTasks() && NOT_INDEX_TASK_SIZE.get() > 0) {
             setPercentMap(100d, 100d);
             log.debug("重建索引完成, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", INDEXED_TASK_SIZE, NOT_INDEX_TASK_SIZE);
             restIndexedTasks();
             pushMessage();
+            if (syncCompleteCallback != null) {
+                syncCompleteCallback.run();
+            }
         }
     }
 
@@ -334,12 +348,13 @@ public class RebuildIndexTaskService {
      * 把文件同步到数据库
      * @param username 用户名
      * @param path 文件相对路径
+     * @param isDelIndex 是否删除索引
      */
-    public ResponseResult<Object> sync(String username, String path) {
+    public ResponseResult<Object> sync(String username, String path, boolean isDelIndex) {
         if (StrUtil.isNotBlank(path)) {
             path = Paths.get(fileProperties.getRootDir(), username, path).toString();
         }
-        doSync(username, path);
+        doSync(username, path, isDelIndex);
         return ResultUtil.success();
     }
 
@@ -393,7 +408,6 @@ public class RebuildIndexTaskService {
         }
         return NumberUtil.round((double) INDEXED_TASK_SIZE.get() / totalCount * 100, 2, RoundingMode.DOWN).doubleValue();
     }
-
 
     private class SyncFileVisitor extends SimpleFileVisitor<Path> {
 
@@ -563,7 +577,7 @@ public class RebuildIndexTaskService {
     /**
      * 添加删除标记
      */
-    private void addDeleteFlagOfDoc(Path filepath) {
+    private void addDeleteFlagOfDoc(Path filepath, boolean isDelIndex) {
         if (filepath == null) {
             return;
         }
@@ -599,8 +613,10 @@ public class RebuildIndexTaskService {
         // 添加删除标记用于在之后删除
         update.set("delete", 1);
         mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
-        // 删除索引
-        deleteAllIndex(path);
+        if (isDelIndex) {
+            // 删除索引
+            deleteAllIndex(path);
+        }
     }
 
     /**
