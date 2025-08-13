@@ -94,6 +94,7 @@ public class FileListener implements DirectoryChangeListener {
             return; // 已有扫描任务在运行
         }
         // 延时执行，确保当前处理队列中的事件都被处理完
+        rebuildIndexTaskService.doSync(null, null, false);
         rebuildIndexTaskService.onSyncComplete(() -> {
             log.info("执行增量文件扫描，确保100%处理...");
             rebuildIndexTaskService.doSync(null, null, false);
@@ -314,13 +315,17 @@ public class FileListener implements DirectoryChangeListener {
             if (!processExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
                 processExecutor.shutdownNow();
             }
+        } catch (InterruptedException e) {
+            processExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
+        try {
             // 等待调度器在指定时间内完成任务
             if (!scheduler.awaitTermination(1, TimeUnit.SECONDS)) {
                 scheduler.shutdownNow();
             }
         } catch (InterruptedException e) {
-            log.warn("Shutdown interrupted.", e);
-            processExecutor.shutdownNow();
             scheduler.shutdownNow();
             Thread.currentThread().interrupt();
         }
