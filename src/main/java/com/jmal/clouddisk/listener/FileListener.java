@@ -19,6 +19,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -110,13 +112,23 @@ public class FileListener implements DirectoryChangeListener {
         if (eventMap.isEmpty()) {
             return;
         }
-        // 快照当前事件Map并清空
-        Map<Path, DirectoryChangeEvent> currentEvents = new ConcurrentHashMap<>(eventMap);
-        eventMap.clear();
+
+        List<DirectoryChangeEvent> eventsToProcess = new ArrayList<>();
+        // 原子地将事件从map中取出，避免竞态条件
+        for (Path key : eventMap.keySet()) {
+            DirectoryChangeEvent event = eventMap.remove(key);
+            if (event != null) {
+                eventsToProcess.add(event);
+            }
+        }
+
+        if (eventsToProcess.isEmpty()) {
+            return;
+        }
 
         // 转移到处理队列
         int transferCount = 0;
-        for (DirectoryChangeEvent event : currentEvents.values()) {
+        for (DirectoryChangeEvent event : eventsToProcess) {
             boolean offered = processingQueue.offer(event);
             if (!offered) {
                 log.error("处理队列已满，无法添加事件: {}, 路径: {}", event.eventType(), event.path());
