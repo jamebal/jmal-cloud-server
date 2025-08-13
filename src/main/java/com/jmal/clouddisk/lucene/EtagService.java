@@ -4,6 +4,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
@@ -190,7 +191,7 @@ public class EtagService {
             FileDocument currentFileDoc = mongoTemplate.findOne(query, FileDocument.class);
             String oldEtag = (currentFileDoc != null) ? currentFileDoc.getEtag() : null;
 
-            if (!newEtag.equals(oldEtag)) {
+            if (ObjectUtil.equals(newEtag, oldEtag)) {
                 Update update = new Update().set(Constants.ETAG, newEtag);
                 // 如果有版本控制字段，这里也应该更新
                 mongoTemplate.updateFirst(query, update, FileDocument.class);

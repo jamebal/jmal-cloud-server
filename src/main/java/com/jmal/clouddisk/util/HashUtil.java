@@ -21,6 +21,6 @@ public class HashUtil {
     }
 
     public static String sha256(String str) {
-        return SHA256.hashUnencodedChars(str).toString();
+        return SHA256.hashString(str, java.nio.charset.StandardCharsets.UTF_8).toString();
     }
 }
