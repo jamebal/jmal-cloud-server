@@ -2,7 +2,6 @@ package com.jmal.clouddisk.util;
 
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
-import com.google.common.io.ByteSource;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,7 +12,7 @@ public class HashUtil {
 
     public static String sha256(File file) {
         try {
-            return ByteSource.wrap(com.google.common.io.Files.toByteArray(file))
+            return com.google.common.io.Files.asByteSource(file)
                     .hash(SHA256)
                     .toString();
         } catch (IOException e) {

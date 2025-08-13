@@ -194,27 +194,6 @@ public class FileListener implements DirectoryChangeListener {
 
         log.debug("接收到事件: {}, 路径: {}", eventType, eventPath);
 
-        // 智能事件合并
-        DirectoryChangeEvent previousEvent = eventMap.get(eventPath);
-        if (previousEvent != null) {
-            // CREATE + MODIFY = CREATE (优化为一次创建)
-            if (previousEvent.eventType() == DirectoryChangeEvent.EventType.CREATE &&
-                    directoryChangeEvent.eventType() == DirectoryChangeEvent.EventType.MODIFY) {
-                log.debug("优化事件: 创建+修改合并为创建, 路径: {}", eventPath);
-            }
-
-            // 多次MODIFY = 最后一次MODIFY
-            if (previousEvent.eventType() == DirectoryChangeEvent.EventType.MODIFY &&
-                    directoryChangeEvent.eventType() == DirectoryChangeEvent.EventType.MODIFY) {
-                log.debug("优化事件: 合并多次修改, 路径: {}", eventPath);
-            }
-
-            // DELETE会覆盖之前的任何事件
-            if (directoryChangeEvent.eventType() == DirectoryChangeEvent.EventType.DELETE) {
-                log.debug("优化事件: 删除事件覆盖之前的事件, 路径: {}", eventPath);
-            }
-        }
-
         // 将事件放入Map
         eventMap.put(eventPath, directoryChangeEvent);
     }
@@ -253,7 +232,6 @@ public class FileListener implements DirectoryChangeListener {
             log.info("用户:{},新建文件:{}", username, file.getAbsolutePath());
         } catch (Exception e) {
             log.error("新建文件后续操作失败, {}", file.getAbsolutePath(), e);
-            throw e;
         }
     }
 
@@ -272,7 +250,6 @@ public class FileListener implements DirectoryChangeListener {
             log.info("用户:{},修改文件:{}", username, file.getAbsolutePath());
         } catch (Exception e) {
             log.error("修改文件后续操作失败, fileAbsolutePath: {}", file.getAbsolutePath(), e);
-            throw e;
         }
     }
 
@@ -291,7 +268,6 @@ public class FileListener implements DirectoryChangeListener {
             log.info("用户:{},删除文件:{}", username, file.getAbsolutePath());
         } catch (Exception e) {
             log.error("删除文件后续操作失败, fileAbsolutePath: {}", file.getAbsolutePath(), e);
-            throw e;
         }
     }
 
