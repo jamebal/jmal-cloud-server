@@ -309,5 +309,20 @@ public class FileListener implements DirectoryChangeListener {
     public void shutdown() {
         scheduler.shutdown();
         processExecutor.shutdown();
+        try {
+            // 等待处理线程池在指定时间内完成任务
+            if (!processExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                processExecutor.shutdownNow();
+            }
+            // 等待调度器在指定时间内完成任务
+            if (!scheduler.awaitTermination(1, TimeUnit.SECONDS)) {
+                scheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            log.warn("Shutdown interrupted.", e);
+            processExecutor.shutdownNow();
+            scheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 }

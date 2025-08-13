@@ -191,7 +191,7 @@ public class EtagService {
             FileDocument currentFileDoc = mongoTemplate.findOne(query, FileDocument.class);
             String oldEtag = (currentFileDoc != null) ? currentFileDoc.getEtag() : null;
 
-            if (ObjectUtil.equals(newEtag, oldEtag)) {
+            if (!ObjectUtil.equals(newEtag, oldEtag)) {
                 Update update = new Update().set(Constants.ETAG, newEtag);
                 // 如果有版本控制字段，这里也应该更新
                 mongoTemplate.updateFirst(query, update, FileDocument.class);
