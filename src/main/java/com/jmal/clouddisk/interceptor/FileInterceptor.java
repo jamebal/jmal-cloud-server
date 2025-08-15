@@ -10,6 +10,7 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.IFileService;
+import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.MyFileUtils;
@@ -86,6 +87,8 @@ public class FileInterceptor implements HandlerInterceptor {
     private final FileProperties fileProperties;
 
     private final IFileService fileService;
+
+    private final CommonFileService commonFileService;
 
     private final AuthInterceptor authInterceptor;
 
@@ -255,7 +258,7 @@ public class FileInterceptor implements HandlerInterceptor {
     }
 
     private boolean validShareFile(HttpServletRequest request, Path uriPath, String shareKey) {
-        FileDocument fileDocument = fileService.getById(shareKey);
+        FileDocument fileDocument = commonFileService.getById(shareKey);
         if (!isNotAllowAccess(fileDocument, request)) {
             // 判断当前uri所属的文件是否为已分享的文件或其子文件
             FileDocument thisFile = getFileDocument(uriPath);

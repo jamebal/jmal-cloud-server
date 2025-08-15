@@ -54,9 +54,11 @@ public class ShareServiceImpl implements IShareService {
 
     private final IFileService fileService;
 
+    private final CommonFileService commonFileService;
+
     private final MongoTemplate mongoTemplate;
 
-    private final UserServiceImpl userService;
+    private final CommonUserService userService;
 
     private final WebOssService webOssService;
 
@@ -68,7 +70,7 @@ public class ShareServiceImpl implements IShareService {
     public ResponseResult<Object> generateLink(ShareDO share) {
         ShareDO shareDO = findByFileId(share.getFileId());
         share.setCreateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
-        FileDocument file = fileService.getById(share.getFileId());
+        FileDocument file = commonFileService.getById(share.getFileId());
         if (BooleanUtil.isTrue(file.getIsShare()) && !BooleanUtil.isTrue(file.getShareBase())) {
             // 设置子分享,继承上级分享
             return subShare(share.getShortId(), file);
@@ -329,7 +331,7 @@ public class ShareServiceImpl implements IShareService {
 
     @Override
     public boolean folderSubShare(String fileId) {
-        FileDocument fileDocument = fileService.getById(fileId);
+        FileDocument fileDocument = commonFileService.getById(fileId);
         if (fileDocument == null || BooleanUtil.isFalse(fileDocument.getIsFolder())) {
             return false;
         }
@@ -374,7 +376,7 @@ public class ShareServiceImpl implements IShareService {
         if (shareDO == null) {
             throw new CommonException(ExceptionType.WARNING.getCode(), Constants.LINK_FAILED);
         }
-        FileDocument fromFileDocument = fileService.getById(shareDO.getFileId());
+        FileDocument fromFileDocument = commonFileService.getById(shareDO.getFileId());
         if (fromFileDocument == null) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "分享文件不存在");
         }
@@ -389,7 +391,7 @@ public class ShareServiceImpl implements IShareService {
             toFileDocument.setName("");
             toFileDocument.setIsFolder(true);
         } else {
-            toFileDocument = fileService.getById(upload.getFileId());
+            toFileDocument = commonFileService.getById(upload.getFileId());
         }
 
         if (toFileDocument == null) {
@@ -423,7 +425,7 @@ public class ShareServiceImpl implements IShareService {
 
     @Override
     public ResponseResult<Object> generateShareToken(String fileId) {
-        FileDocument fileDocument = fileService.getById(fileId);
+        FileDocument fileDocument = commonFileService.getById(fileId);
         if (fileDocument == null || fileDocument.getShareId() == null) {
             return ResultUtil.warning("文件不存在");
         }
@@ -442,11 +444,11 @@ public class ShareServiceImpl implements IShareService {
     @Override
     public Map<String, String> getMountFileInfo(String fileId, String fileUserId) {
         // 1.获取文件信息
-        FileDocument fileDocument = fileService.getById(fileId);
+        FileDocument fileDocument = commonFileService.getById(fileId);
         // 2. 获取分享信息
         ShareDO shareDO = getShare(fileDocument.getShareId());
         // 3. 获取基础分享文件信息
-        FileDocument shareBaseFile = fileService.getById(shareDO.getFileId());
+        FileDocument shareBaseFile = commonFileService.getById(shareDO.getFileId());
         // 4.获取挂载信息
         FileDocument mountFile = getMountFile(shareDO.getFileId(), userLoginHolder.getUserId());
         if (mountFile == null) {
@@ -475,11 +477,11 @@ public class ShareServiceImpl implements IShareService {
     public String getMountFolderId(String path, String fileUsername, String otherFileId) {
         try {
             // 1. 获取其他文件信息
-            FileDocument otherFileDocument = fileService.getById(otherFileId);
+            FileDocument otherFileDocument = commonFileService.getById(otherFileId);
             // 2. 获取分享信息
             ShareDO shareDO = getShare(otherFileDocument.getShareId());
             // 3. 获取基础分享文件信息
-            FileDocument shareBaseFile = fileService.getById(shareDO.getFileId());
+            FileDocument shareBaseFile = commonFileService.getById(shareDO.getFileId());
             // 4. 获取挂载信息
             FileDocument mountFile = getMountFile(shareDO.getFileId(), userLoginHolder.getUserId());
             if (mountFile == null) {
@@ -513,7 +515,7 @@ public class ShareServiceImpl implements IShareService {
         uploadApiParamDTO.setUserId(shareDO.getUserId());
         if (Boolean.FALSE.equals(shareDO.getIsFolder())) {
             List<FileDocument> list = new ArrayList<>();
-            FileDocument fileDocument = fileService.getById(shareDO.getFileId());
+            FileDocument fileDocument = commonFileService.getById(shareDO.getFileId());
             if (fileDocument != null) {
                 list.add(fileDocument);
             }
@@ -720,7 +722,7 @@ public class ShareServiceImpl implements IShareService {
         removeSubSare(shareDO);
 
         String fileId = shareDO.getFileId();
-        FileDocument fileDocument = fileService.getById(shareDO.getFileId());
+        FileDocument fileDocument = commonFileService.getById(shareDO.getFileId());
         if (fileDocument == null) {
             return;
         }

@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -30,7 +31,7 @@ import java.time.LocalDateTime;
 @CompoundIndex(name = "type_username_1", def = "{'type': 1, 'username': 1}")
 @CompoundIndex(name = "type_username_createTime_1", def = "{'type': 1, 'username': 1, 'createTime': 1}")
 @CompoundIndex(name = "fileUserId_type_1", def = "{'fileUserId': 1, 'type': 1}")
-public class LogOperation {
+public class LogOperation implements Reflective {
     private String id;
     /***
      * 账号

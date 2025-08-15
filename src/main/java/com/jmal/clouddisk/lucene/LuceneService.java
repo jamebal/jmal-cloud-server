@@ -12,6 +12,7 @@ import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.HashUtil;
 import com.jmal.clouddisk.util.MyFileUtils;
@@ -24,6 +25,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.mozilla.universalchardet.UniversalDetector;
+import org.springframework.context.ApplicationListener;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -56,12 +58,12 @@ import static com.jmal.clouddisk.service.impl.CommonFileService.COLLECTION_NAME;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class LuceneService {
+public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent> {
 
     private final FileProperties fileProperties;
     private final MongoTemplate mongoTemplate;
     private final IndexWriter indexWriter;
-    private final IUserService userService;
+    private final CommonUserService userService;
     private final ReadContentService readContentService;
     private final RebuildIndexTaskService rebuildIndexTaskService;
     private final SearchFileService searchFileService;
@@ -146,6 +148,16 @@ public class LuceneService {
             executorUpdateBigContentIndexService = ThreadUtil.newFixedExecutor(bigProcessors, 100, "updateBigContentIndexTask", true);
         }
         log.info("NGRAM_MAX_CONTENT_LENGTH_MB:{}, NGRAM_MIN_SIZE: {}, ngramMaxSize: {}", fileProperties.getNgramMaxContentLengthMB(), fileProperties.getNgramMinSize(), fileProperties.getNgramMaxSize());
+    }
+
+    @Override
+    public void onApplicationEvent(LuceneIndexQueueEvent event) {
+        if (event.getFileId() != null) {
+            pushCreateIndexQueue(event.getFileId());
+        }
+        if (event.getDelFileIds() != null) {
+            deleteIndexDocuments(event.getDelFileIds());
+        }
     }
 
     /**

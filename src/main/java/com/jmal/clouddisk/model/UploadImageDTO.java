@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -9,7 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
  * @Date 2020/11/16 11:12 上午
  */
 @Data
-public class UploadImageDTO {
+public class UploadImageDTO implements Reflective {
     String username;
     String userId;
     /**

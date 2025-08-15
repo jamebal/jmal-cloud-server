@@ -7,6 +7,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.IFileService;
+import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.SystemUtil;
 import io.methvin.watcher.DirectoryWatcher;
 import jakarta.annotation.PostConstruct;
@@ -47,6 +48,8 @@ public class FileMonitor {
     final MongoTemplate mongoTemplate;
 
     final IFileService fileService;
+
+    private final CommonFileService commonFileService;
 
     final FileListener fileListener;
 
@@ -197,7 +200,7 @@ public class FileMonitor {
     private void clearVideoCache(File file, boolean videoCache) {
         if (videoCache && file.listFiles() != null) {
             for (File f : Objects.requireNonNull(file.listFiles())) {
-                FileDocument fileDocument = fileService.getById(f.getName());
+                FileDocument fileDocument = commonFileService.getById(f.getName());
                 if (fileDocument == null || f.isFile()) {
                     FileUtil.del(f);
                     log.info("删除视频转码缓存文件: {}", f.getAbsolutePath());

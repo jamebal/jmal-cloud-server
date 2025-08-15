@@ -1,10 +1,11 @@
 package com.jmal.clouddisk.lucene;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.jmal.clouddisk.media.VideoProcessService;
+import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.ocr.OcrService;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.ImageService;
+import com.jmal.clouddisk.service.impl.PathService;
 import com.jmal.clouddisk.util.FileContentUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,8 +39,13 @@ import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.apache.poi.xslf.usermodel.XSLFTextShape;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xwpf.usermodel.*;
+import org.bson.types.ObjectId;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -54,9 +60,11 @@ public class ReadContentService {
 
     private final OcrService ocrService;
 
-    public final CommonFileService commonFileService;
+    private final PathService pathService;
 
-    public final VideoProcessService videoProcessService;
+    private final ImageService imageService;
+
+    private final MongoTemplate mongoTemplate;
 
     /**
      * 将 DWG 文件转换为 MXWeb 文件
@@ -65,11 +73,11 @@ public class ReadContentService {
      * @param fileId 文件 ID
      */
     public void dwg2mxweb(File file, String fileId) {
-        String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
+        String username = pathService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
         // 生成封面图像
         if (CharSequenceUtil.isNotBlank(fileId)) {
             String outputName = file.getName() + Constants.MXWEB_SUFFIX;
-            FileContentUtil.dwgConvert(file.getAbsolutePath(), videoProcessService.getVideoCacheDir(username, fileId), outputName);
+            FileContentUtil.dwgConvert(file.getAbsolutePath(), pathService.getVideoCacheDir(username, fileId), outputName);
         }
     }
 
@@ -95,12 +103,12 @@ public class ReadContentService {
 
     public void readPdfContent(File file, String fileId, Writer writer) {
         try (PDDocument document = Loader.loadPDF(new RandomAccessReadBufferedFile(file))) {
-            String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
+            String username = pathService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
 
             // 生成封面图像
             if (CharSequenceUtil.isNotBlank(fileId)) {
-                File coverFile = FileContentUtil.pdfCoverImage(file, document, videoProcessService.getVideoCacheDir(username, fileId));
-                commonFileService.updateCoverFileDocument(fileId, coverFile);
+                File coverFile = FileContentUtil.pdfCoverImage(file, document, pathService.getVideoCacheDir(username, fileId));
+                updateCoverFileDocument(fileId, coverFile);
             }
 
             PDFRenderer pdfRenderer = new PDFRenderer(document);
@@ -146,10 +154,10 @@ public class ReadContentService {
             Book book = epubReader.readEpub(fileInputStream);
 
             // 生成封面图像
-            String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
+            String username = pathService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
             if (CharSequenceUtil.isNotBlank(fileId)) {
-                File coverFile = FileContentUtil.epubCoverImage(book, videoProcessService.getVideoCacheDir(username, fileId));
-                commonFileService.updateCoverFileDocument(fileId, coverFile);
+                File coverFile = FileContentUtil.epubCoverImage(book, pathService.getVideoCacheDir(username, fileId));
+                updateCoverFileDocument(fileId, coverFile);
             }
 
             // 获取章节内容
@@ -323,4 +331,23 @@ public class ReadContentService {
                 return "";
         }
     }
+
+    /**
+     * 更新文件封面
+     *
+     * @param fileId    文件Id
+     * @param coverFile 封面文件
+     */
+    public void updateCoverFileDocument(String fileId, File coverFile) {
+        if (coverFile == null || !coverFile.exists()) {
+            return;
+        }
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(new ObjectId(fileId)));
+        Update update = new Update();
+        imageService.generateThumbnail(coverFile, update);
+        update.set("showCover", true);
+        mongoTemplate.updateFirst(query, update, FileDocument.class);
+    }
+
 }

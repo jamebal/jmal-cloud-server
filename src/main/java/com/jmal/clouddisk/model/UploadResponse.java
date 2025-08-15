@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -12,7 +13,7 @@ import java.util.List;
  * @author jmal
  */
 @Data
-public class UploadResponse {
+public class UploadResponse implements Reflective {
 
     /***
      * 服务是否已经存在该文件,通过文件的md5校验

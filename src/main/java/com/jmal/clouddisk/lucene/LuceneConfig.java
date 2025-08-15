@@ -19,7 +19,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FSLockFactory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,7 +66,7 @@ public class LuceneConfig {
      */
     @Bean
     public Directory luceneDirectory() throws IOException {
-        return FSDirectory.open(getIndexDir());
+        return new NIOFSDirectory(getIndexDir(), FSLockFactory.getDefault());
     }
 
     /**

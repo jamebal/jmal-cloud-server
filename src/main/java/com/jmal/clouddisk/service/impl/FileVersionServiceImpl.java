@@ -10,7 +10,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.lucene.LuceneService;
+import com.jmal.clouddisk.lucene.LuceneIndexQueueEvent;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.GridFSBO;
 import com.jmal.clouddisk.model.Metadata;
@@ -18,9 +18,7 @@ import com.jmal.clouddisk.office.OfficeHistory;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IFileVersionService;
-import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileNameUtils;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -35,6 +33,7 @@ import org.apache.commons.io.IOUtils;
 import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
 import org.mozilla.universalchardet.UniversalDetector;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -77,7 +76,9 @@ public class FileVersionServiceImpl implements IFileVersionService {
 
     private static final String COLLECTION_NAME = "fs.files";
 
-    private final CommonFileService commonFileService;
+    private final CommonUserFileService commonUserFileService;
+
+    private final FileService fileService;
 
     private final GridFsTemplate gridFsTemplate;
 
@@ -85,13 +86,11 @@ public class FileVersionServiceImpl implements IFileVersionService {
 
     private final FileProperties fileProperties;
 
-    private final IFileService fileService;
-
     private final UserLoginHolder userLoginHolder;
 
-    private final IUserService userService;
+    private final CommonUserService userService;
 
-    private final LuceneService luceneService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final Cache<String, Object> fileLocks = Caffeine.newBuilder()
             .expireAfterAccess(10, TimeUnit.MINUTES) // 例如：10分钟不访问就过期
@@ -112,7 +111,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
                 if (CaffeineUtil.hasFileHistoryCache(filepath)) {
                     return;
                 }
-                FileDocument fileDocument = commonFileService.getFileDocumentByPath(filepath, userId);
+                FileDocument fileDocument = commonUserFileService.getFileDocumentByPath(filepath, userId);
                 long size = file.length();
                 String updateDate = fileDocument.getUpdateDate().format(DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
                 Metadata metadata = setMetadata(size, filepath, file.getName(), updateDate, operator);
@@ -265,7 +264,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
                 relativePath += filePath.subpath(0, filePath.getNameCount() - 1) + File.separator;
             }
             String userId = userLoginHolder.getUserId();
-            FileDocument fileDocument = commonFileService.getFileDocumentByPath(relativePath, filePath.getFileName().toString(), userId);
+            FileDocument fileDocument = commonUserFileService.getFileDocumentByPath(relativePath, filePath.getFileName().toString(), userId);
             if (fileDocument == null) {
                 return ResultUtil.success(new ArrayList<>());
             }
@@ -406,7 +405,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
             Update update = new Update();
             update.set(UPDATE_DATE, time);
             mongoTemplate.updateFirst(query, update, FileDocument.class);
-            luceneService.pushCreateIndexQueue(fileId);
+            eventPublisher.publishEvent(new LuceneIndexQueueEvent(this, fileId));
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }

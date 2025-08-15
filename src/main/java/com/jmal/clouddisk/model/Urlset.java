@@ -3,6 +3,7 @@ package com.jmal.clouddisk.model;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +16,7 @@ import java.util.List;
 
 @JacksonXmlRootElement(localName = "urlset")
 @Data
-public class Urlset {
+public class Urlset implements Reflective {
 
     @JacksonXmlElementWrapper(useWrapping = false)
     private List<Url> url = new ArrayList<>();

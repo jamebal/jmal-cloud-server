@@ -1,12 +1,12 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import io.swagger.v3.oas.annotations.media.Schema;
-
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import java.text.Collator;
 import java.util.Comparator;
 import java.util.List;
@@ -19,7 +19,7 @@ import java.util.List;
 @Data
 @Schema
 @Valid
-public class CategoryDTO implements Comparable<CategoryDTO> {
+public class CategoryDTO implements Comparable<CategoryDTO>, Reflective {
 
     @Id
     @Schema(hidden = true)

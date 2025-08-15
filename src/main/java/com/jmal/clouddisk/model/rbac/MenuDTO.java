@@ -1,12 +1,12 @@
 package com.jmal.clouddisk.model.rbac;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import io.swagger.v3.oas.annotations.media.Schema;
-
-import lombok.Data;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,7 +18,7 @@ import java.util.List;
 @Data
 @Valid
 @Schema
-public class MenuDTO implements Comparable<MenuDTO>{
+public class MenuDTO implements Comparable<MenuDTO>, Reflective {
     /***
      * 主键
      */

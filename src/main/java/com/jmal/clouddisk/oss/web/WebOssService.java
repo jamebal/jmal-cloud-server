@@ -11,6 +11,7 @@ import cn.hutool.core.util.ReUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.*;
@@ -53,6 +54,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class WebOssService extends WebOssCommonService {
 
 
+    private final FileProperties fileProperties;
+
     private final IFileVersionService fileVersionService;
 
     private final UserLoginHolder userLoginHolder;
@@ -89,7 +92,7 @@ public class WebOssService extends WebOssCommonService {
 
     public ResponseResult<Object> searchFileAndOpenOssFolder(Path prePth, UploadApiParamDTO upload) {
         String ossPath = CaffeineUtil.getOssPath(prePth);
-        commonFileService.pushMessage(upload.getUsername(), Constants.OSS_CHUNK_SIZE, Constants.UPLOADER_CHUNK_SIZE);
+        messageService.pushMessage(upload.getUsername(), Constants.OSS_CHUNK_SIZE, Constants.UPLOADER_CHUNK_SIZE);
         if (ossPath == null) {
             return ResultUtil.success().setData(new ArrayList<>(0)).setCode(0);
         }
@@ -143,7 +146,7 @@ public class WebOssService extends WebOssCommonService {
     private List<FileIntroVO> setAdditionalAttributes(String ossPath, UploadApiParamDTO upload, List<FileInfo> list, String objectName, String finalUserId) {
         List<FileIntroVO> fileIntroVOList;
         // 检测上级目录是否有分享属性
-        Document shareBaseDocument = commonFileService.getShareBaseDocument(getPath(list.get(0).getKey(), getOssRootFolderName(ossPath)));
+        Document shareBaseDocument = commonUserFileService.getShareBaseDocument(getPath(list.get(0).getKey(), getOssRootFolderName(ossPath)));
 
         List<FileDocument> fileDocumentList = getFileDocuments(ossPath, objectName);
 
@@ -756,23 +759,6 @@ public class WebOssService extends WebOssCommonService {
         } catch (NumberFormatException e) {
             return defaultValue;
         }
-    }
-
-    public FileDocument getFileDocumentByOssPath(String ossPath, String pathName) {
-        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
-        String objectName = pathName.substring(ossPath.length());
-        try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName)) {
-            if (abstractOssObject == null) {
-                return null;
-            }
-            FileInfo fileInfo = abstractOssObject.getFileInfo();
-            String username = getUsernameByOssPath(ossPath);
-            String userId = userService.getUserIdByUserName(username);
-            return fileInfo.toFileDocument(ossPath, userId);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-        return null;
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.service.impl.ShareServiceImpl;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -17,7 +18,7 @@ import java.util.List;
  */
 @Data
 @Document(collection = ShareServiceImpl.COLLECTION_NAME)
-public class ShareDO {
+public class ShareDO implements Reflective {
     @Id
     private String id;
     /**

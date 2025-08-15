@@ -19,9 +19,9 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lionsoul.ip2region.xdb.Searcher;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -44,21 +44,18 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class LogService {
 
     private static final int REGION_LENGTH = 5;
 
-    @Autowired
-    private MongoTemplate mongoTemplate;
+    private final MongoTemplate mongoTemplate;
 
-    @Autowired
-    private UserLoginHolder userLoginHolder;
+    private final UserLoginHolder userLoginHolder;
 
-    @Autowired
-    private UserServiceImpl userService;
+    private final CommonUserService userService;
 
-    @Autowired
-    private FileProperties fileProperties;
+    private final FileProperties fileProperties;
 
     private Searcher ipSearcher = null;
 
@@ -91,7 +88,7 @@ public class LogService {
         // 用户
         String username = logOperation.getUsername();
         if (!CharSequenceUtil.isBlank(username)) {
-            logOperation.setShowName(userService.getShowNameByUserUsername(username));
+            logOperation.setShowName(getShowNameByUserUsername(username));
         }
         logOperation = getLogOperation(request, logOperation);
         // 返回结果
@@ -113,6 +110,14 @@ public class LogService {
         asyncAddLog(logOperation);
     }
 
+    public String getShowNameByUserUsername(String username) {
+        ConsumerDO consumer = userService.getUserInfoByUsername(username);
+        if (consumer == null) {
+            return "";
+        }
+        return consumer.getShowName();
+    }
+
     public LogOperation getLogOperation() {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attributes == null) {
@@ -128,7 +133,7 @@ public class LogService {
             // 用户
             String username = userLoginHolder.getUsername();
             if (!CharSequenceUtil.isBlank(username)) {
-                logOperation.setShowName(userService.getShowNameByUserUsername(username));
+                logOperation.setShowName(getShowNameByUserUsername(username));
             }
             logOperation.setUsername(username);
         }
@@ -327,7 +332,7 @@ public class LogService {
         // 加入userId
         logOperationDTOList = logOperationList.parallelStream().map(logOperation -> {
             LogOperationDTO fileOperationLog = new LogOperationDTO();
-            fileOperationLog.setShowName(userService.getShowNameByUserUsername(logOperation.getUsername()));
+            fileOperationLog.setShowName(getShowNameByUserUsername(logOperation.getUsername()));
             fileOperationLog.setAvatar(userService.getAvatarByUsername(logOperation.getUsername()));
             fileOperationLog.setCreateTime(logOperation.getCreateTime());
             fileOperationLog.setOperationFun(logOperation.getOperationFun());

@@ -5,6 +5,7 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.service.IUserService;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.usermanager.impl.BaseUser;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,7 @@ import java.util.List;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class FTPServerConfig {
 
     private final FileProperties fileProperties;
@@ -27,12 +29,6 @@ public class FTPServerConfig {
     private final IUserService userService;
 
     private final MyPropertiesUserManager myPropertiesUserManager;
-
-    public FTPServerConfig(FileProperties fileProperties, IUserService userService, MyPropertiesUserManager myPropertiesUserManager) {
-        this.fileProperties = fileProperties;
-        this.userService = userService;
-        this.myPropertiesUserManager = myPropertiesUserManager;
-    }
 
     @PostConstruct
     public void startFTPServer() {

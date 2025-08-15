@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import lombok.Data;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @Schema
-public class LogOperationDTO {
+public class LogOperationDTO implements Reflective {
     /***
      * 页数
      */

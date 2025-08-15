@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model.rbac;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.service.Constants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -21,7 +22,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Schema
 @Valid
-public class ConsumerDTO extends ConsumerBase {
+public class ConsumerDTO extends ConsumerBase implements Reflective {
     @Id
     String id;
     @NotNull(message = "用户账号不能为空")

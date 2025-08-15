@@ -73,6 +73,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     private final CommonFileService commonFileService;
 
+    private final CommonUserFileService commonUserFileService;
+
     private final IFileService fileService;
 
     private final IFileVersionService fileVersionService;
@@ -571,7 +573,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         } else {
             Path docPaths = Paths.get(fileProperties.getDocumentDir(), TimeUntils.getFileTimeStrOfMonth(uploadDate));
             // docImagePaths 不存在则新建
-            commonFileService.upsertFolder(docPaths, upload.getUsername(), upload.getUserId());
+            commonUserFileService.upsertFolder(docPaths, upload.getUsername(), upload.getUserId());
             currentDirectory = commonFileService.getUserDirectory(docPaths.toString());
         }
         // 文档为草稿时，文件名使用草稿的文件名
@@ -672,7 +674,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         String userId = upload.getUserId();
         Path docImagePaths = getDocImagePaths(upload);
         // docImagePaths 不存在则新建
-        commonFileService.upsertFolder(docImagePaths, username, userId);
+        commonUserFileService.upsertFolder(docImagePaths, username, userId);
         File newFile;
         try (HttpResponse response = HttpRequest.get(upload.getUrl()).setFollowRedirects(true).executeAsync()) {
             if (!response.isOk()) {
@@ -686,12 +688,12 @@ public class MarkdownServiceImpl implements IMarkdownService {
                 newFile = new File(outFile.getPath());
             }
             BufferedImage image = ImageIO.read(response.bodyStream());
-            commonFileService.imageFileToWebp(newFile, image);
+            commonUserFileService.imageFileToWebp(newFile, image);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new CommonException(2, "上传失败");
         }
-        String fileId = commonFileService.createFile(username, newFile, userId, true);
+        String fileId = commonUserFileService.createFile(username, newFile, userId, true);
         map.put(Constants.FILE_ID, fileId);
         String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), newFile.getName()), StandardCharsets.UTF_8);
         map.put("url", filepath);
@@ -720,10 +722,10 @@ public class MarkdownServiceImpl implements IMarkdownService {
         String username = upload.getUsername();
         String userId = upload.getUserId();
         // docImagePaths 不存在则新建
-        commonFileService.upsertFolder(docImagePaths, username, userId);
+        commonUserFileService.upsertFolder(docImagePaths, username, userId);
         File newFile;
         try {
-            if (userService.getDisabledWebp(userId) || ("ico".equals(FileUtil.getSuffix(fileName)))) {
+            if (commonUserFileService.getDisabledWebp(userId) || ("ico".equals(FileUtil.getSuffix(fileName)))) {
                 newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
                 FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
             } else {
@@ -732,12 +734,12 @@ public class MarkdownServiceImpl implements IMarkdownService {
                 }
                 newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
                 BufferedImage image = ImageIO.read(multipartFile.getInputStream());
-                commonFileService.imageFileToWebp(newFile, image);
+                commonUserFileService.imageFileToWebp(newFile, image);
             }
         } catch (IOException e) {
             throw new CommonException(2, "上传失败");
         }
-        String fileId = commonFileService.createFile(username, newFile, userId, true);
+        String fileId = commonUserFileService.createFile(username, newFile, userId, true);
         map.put(Constants.FILE_ID, fileId);
         String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), fileName), StandardCharsets.UTF_8);
         map.put(Constants.FILENAME, fileName);
@@ -750,7 +752,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         Path docImagePaths;
         String markdownFileId = upload.getFileId();
         if (CharSequenceUtil.isNotBlank(markdownFileId) && !"undefined".equals(markdownFileId)) {
-            FileDocument fileDocument = fileService.getById(markdownFileId);
+            FileDocument fileDocument = commonFileService.getById(markdownFileId);
             if (fileDocument == null) {
                 throw new CommonException(ExceptionType.FILE_NOT_FIND);
             }

@@ -1,9 +1,10 @@
 package com.jmal.clouddisk.office;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 
 @Data
-public class OfficeHistory {
+public class OfficeHistory implements Reflective {
     private String created;
     private String key;
     private User user;

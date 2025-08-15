@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model.query;
 
+import com.jmal.clouddisk.config.Reflective;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -10,7 +11,7 @@ import lombok.Data;
  */
 @Data
 @Schema
-public class QueryBaseDTO {
+public class QueryBaseDTO implements Reflective {
     @Schema(name = "page", title = "当前页")
     Integer page;
     @Schema(name = "pageSize", title = "每页条数")

@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @Validated
-public class CommentDO {
+public class CommentDO implements Reflective {
     @Id
     String id;
 

@@ -1,8 +1,7 @@
 package com.jmal.clouddisk.lucene;
 
 import cn.hutool.crypto.SecureUtil;
-import com.jmal.clouddisk.service.impl.CommonFileService;
-import com.jmal.clouddisk.service.impl.UserServiceImpl;
+import com.jmal.clouddisk.service.impl.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,9 +16,11 @@ import java.util.concurrent.ConcurrentSkipListMap;
 @Slf4j
 public class TaskProgressService {
 
-    private final CommonFileService commonFileService;
+    private final PathService pathService;
 
-    private final UserServiceImpl userService;
+    private final MessageService messageService;
+
+    private final CommonUserService commonUserService;
 
     private final static Map<String, TaskProgress> TASK_PROGRESS_MAP = new ConcurrentSkipListMap<>();
 
@@ -38,7 +39,7 @@ public class TaskProgressService {
      * @param transcodeStatus 转码状态
      */
     public void pushTranscodeStatus(Map<String, Integer> transcodeStatus) {
-        commonFileService.pushMessage(getDefaultUsername(), transcodeStatus, MSG_TRANSCODE_STATUS);
+        messageService.pushMessage(getDefaultUsername(), transcodeStatus, MSG_TRANSCODE_STATUS);
     }
 
     /**
@@ -55,12 +56,12 @@ public class TaskProgressService {
             taskProgress = getTaskProgress(taskId);
             taskProgress.setProgress(progress);
         } else {
-            String username = commonFileService.getUsernameByAbsolutePath(file.toPath());
+            String username = pathService.getUsernameByAbsolutePath(file.toPath());
             if (username == null) {
                 return;
             }
             taskProgress = new TaskProgress(taskId, username, taskType, file.getName(), progress);
-            taskProgress.setPath(commonFileService.getRelativePath(username, file.getAbsolutePath(), file.getName()));
+            taskProgress.setPath(pathService.getRelativePath(username, file.getAbsolutePath(), file.getName()));
         }
         addTaskProgress(taskProgress);
     }
@@ -76,7 +77,7 @@ public class TaskProgressService {
 
     private String getDefaultUsername() {
         if (defaultUsername == null) {
-            defaultUsername = userService.getCreatorUsername();
+            defaultUsername = commonUserService.getCreatorUsername();
         }
         return defaultUsername;
     }
@@ -109,9 +110,9 @@ public class TaskProgressService {
 
     private void pushMessage(TaskProgress taskProgress) {
         if (!taskProgress.getUsername().equals(defaultUsername)) {
-            commonFileService.pushMessage(defaultUsername, taskProgress, MSG_TASK_PROGRESS);
+            messageService.pushMessage(defaultUsername, taskProgress, MSG_TASK_PROGRESS);
         }
-        commonFileService.pushMessage(taskProgress.getUsername(), taskProgress, MSG_TASK_PROGRESS);
+        messageService.pushMessage(taskProgress.getUsername(), taskProgress, MSG_TASK_PROGRESS);
     }
 
 }

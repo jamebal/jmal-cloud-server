@@ -5,7 +5,6 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
-import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -17,12 +16,11 @@ import com.jmal.clouddisk.model.rbac.ConsumerBase;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.repository.IAuthDAO;
-import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -33,7 +31,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -42,41 +39,34 @@ import java.util.List;
  * @Description UserServiceImpl
  */
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements IUserService {
 
     public static final String COLLECTION_NAME = "user";
 
-    public static final String ROLES = "roles";
+    private final MongoTemplate mongoTemplate;
 
-    @Autowired
-    private MongoTemplate mongoTemplate;
+    private final CommonUserService commonUserService;
 
-    @Autowired
-    private IFileService fileService;
+    private final UserFileService userFileService;
 
-    @Autowired
-    private IShareService shareService;
+    private final MessageService messageService;
 
-    @Autowired
-    private MenuService menuService;
+    private final IShareService shareService;
 
-    @Autowired
-    private RoleService roleService;
+    private final MenuService menuService;
 
-    @Autowired
-    private IAuthDAO authDAO;
+    private final RoleService roleService;
 
-    @Autowired
-    private FileProperties fileProperties;
+    private final IAuthDAO authDAO;
 
-    @Autowired
-    private UserLoginHolder userLoginHolder;
+    private final FileProperties fileProperties;
 
-    @Autowired
-    private FileMonitor fileMonitor;
+    private final UserLoginHolder userLoginHolder;
 
-    @Autowired
-    private TextEncryptor textEncryptor;
+    private final FileMonitor fileMonitor;
+
+    private final TextEncryptor textEncryptor;
 
     @Override
     public synchronized ConsumerDO add(ConsumerDTO consumerDTO) {
@@ -133,7 +123,7 @@ public class UserServiceImpl implements IUserService {
             userList.remove(creator);
         }
         // 删除关联文件
-        fileService.deleteAllByUser(userList);
+        userFileService.deleteAllByUser(userList);
         // 删除关联分享
         shareService.deleteAllByUser(userList);
         // 删除关联token
@@ -201,7 +191,7 @@ public class UserServiceImpl implements IUserService {
             consumerDO.setAvatar(fileId);
         }
         if (user.getRoles() != null) {
-            update.set(ROLES, user.getRoles());
+            update.set(RoleService.ROLES, user.getRoles());
             consumerDO.setRoles(user.getRoles());
         }
         // 设置用户头像
@@ -226,13 +216,13 @@ public class UserServiceImpl implements IUserService {
                 upload.setUsername(consumer.getUsername());
                 upload.setFilename("avatar-" + System.currentTimeMillis());
                 upload.setFile(blobAvatar);
-                fileId = fileService.uploadConsumerImage(upload);
+                fileId = userFileService.uploadConsumerImage(upload);
                 update.set("avatar", fileId);
                 consumerDO.setAvatar(fileId);
             }
         } else {
             // 设置头像文件为public
-            fileService.setPublic(fileId);
+            userFileService.setPublic(fileId);
         }
         return fileId;
     }
@@ -245,7 +235,7 @@ public class UserServiceImpl implements IUserService {
         }
         ConsumerDTO consumerDTO = new ConsumerDTO();
         BeanUtils.copyProperties(consumer, consumerDTO);
-        consumerDTO.setTakeUpSpace(fileService.takeUpSpace(consumerDTO.getId()));
+        consumerDTO.setTakeUpSpace(messageService.takeUpSpace(consumerDTO.getId()));
         consumerDTO.setPassword(null);
         if (consumerDTO.getAvatar() == null) {
             consumerDTO.setAvatar("");
@@ -274,10 +264,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public ConsumerDO userInfoById(String userId) {
-        if (CharSequenceUtil.isBlank(userId)) {
-            return null;
-        }
-        return mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
+        return getUserInfoById(userId);
     }
 
     @Override
@@ -307,7 +294,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public List<ConsumerDTO> userListAll() {
         Query query = new Query();
-        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
+        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class);
         return userList.parallelStream().map(consumerDO -> {
             ConsumerDTO consumerDTO = new ConsumerDTO();
             consumerDTO.setUsername(consumerDO.getUsername());
@@ -366,28 +353,12 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public String getUserIdByUserName(String username) {
-        ConsumerDO consumer = getUserInfoByUsername(username);
-        if (consumer != null) {
-            return consumer.getId();
-        }
-        return null;
-    }
-
-    public String getShowNameByUserUsername(String username) {
-        ConsumerDO consumer = getUserInfoByUsername(username);
-        if (consumer == null) {
-            return "";
-        }
-        return consumer.getShowName();
+        return commonUserService.getUserIdByUserName(username);
     }
 
     @Override
     public String getAvatarByUsername(String username) {
-        ConsumerDO consumer = getUserInfoByUsername(username);
-        if (consumer == null) {
-            return "";
-        }
-        return consumer.getAvatar();
+        return commonUserService.getAvatarByUsername(username);
     }
 
     public String getHashPasswordUserName(String username) {
@@ -451,20 +422,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public String getUserNameById(String userId) {
-        if (!CharSequenceUtil.isBlank(userId)) {
-            String username = CaffeineUtil.getUsernameCache(userId);
-            if (CharSequenceUtil.isBlank(username)) {
-                ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
-                if (consumer != null) {
-                    username = consumer.getUsername();
-                    CaffeineUtil.setUsernameCache(userId, username);
-                    return username;
-                }
-            } else {
-                return username;
-            }
-        }
-        return "";
+        return commonUserService.getUserNameById(userId);
     }
 
     @Override
@@ -477,26 +435,8 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public boolean getDisabledWebp(String userId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(userId));
-        ConsumerDO consumer = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
-        if (consumer != null && consumer.getWebpDisabled() != null) {
-            return consumer.getWebpDisabled();
-        }
-        return true;
-    }
-
-    @Override
     public ConsumerDO getUserInfoByUsername(String name) {
-        ConsumerDO consumer = CaffeineUtil.getConsumerByUsernameCache(name);
-        if (consumer == null) {
-            consumer = getUserInfo(name);
-            if (consumer != null) {
-                CaffeineUtil.setConsumerByUsernameCache(name, consumer);
-            }
-        }
-        return consumer;
+        return commonUserService.getUserInfoByUsername(name);
     }
 
     @Override
@@ -531,61 +471,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     public ConsumerDO getUserInfoById(String userId) {
-        return mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
-    }
-
-    private ConsumerDO getUserInfo(String username) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(USERNAME).is(username));
-        return mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
-    }
-
-    @Override
-    public List<String> getAuthorities(String username) {
-        List<String> authorities = new ArrayList<>();
-        ConsumerDO consumerDO = getUserInfoByUsername(username);
-        if (consumerDO == null) {
-            return authorities;
-        }
-        // 如果是创建者, 直接返回所有权限
-        if (consumerDO.getCreator() != null && consumerDO.getCreator()) {
-            return AnnoManageUtil.AUTHORITIES;
-        }
-        List<String> roleIdList = consumerDO.getRoles();
-        if (roleIdList == null || roleIdList.isEmpty()) {
-            return authorities;
-        }
-        return roleService.getAuthorities(roleIdList);
-    }
-
-    @Override
-    public List<String> getMenuIdList(String userId) {
-        List<String> menuIdList = new ArrayList<>();
-        ConsumerDO consumerDO = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
-        if (consumerDO == null || consumerDO.getRoles() == null) {
-            return menuIdList;
-        }
-        if (consumerDO.getCreator() != null && consumerDO.getCreator()) {
-            // 如果是创建者则返回所有菜单
-            return menuService.getAllMenuIdList();
-        }
-        return roleService.getMenuIdList(consumerDO.getRoles());
-    }
-
-    @Override
-    public List<String> getUserNameListByRole(String roleId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(ROLES).is(roleId));
-        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
-        return userList.stream().map(ConsumerDO::getUsername).toList();
-    }
-
-    @Override
-    public List<String> getUserNameListByRole(List<String> rolesIds) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(ROLES).in(rolesIds));
-        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
-        return userList.stream().map(ConsumerDO::getUsername).toList();
+        return commonUserService.getUserInfoById(userId);
     }
 
     @Override
@@ -627,12 +513,6 @@ public class UserServiceImpl implements IUserService {
      * @return 用户名
      */
     public String getCreatorUsername() {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("creator").is(true));
-        ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
-        if (consumerDO == null) {
-            return null;
-        }
-        return consumerDO.getUsername();
+        return commonUserService.getCreatorUsername();
     }
 }

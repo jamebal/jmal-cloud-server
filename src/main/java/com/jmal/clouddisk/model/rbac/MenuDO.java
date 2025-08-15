@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model.rbac;
 
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.service.impl.MenuService;
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @Document(collection = MenuService.COLLECTION_NAME)
-public class MenuDO {
+public class MenuDO implements Reflective {
     /***
      * 主键
      */

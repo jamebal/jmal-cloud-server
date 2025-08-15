@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.oss.web.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.oss.PlatformOSS;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -13,7 +14,7 @@ import org.springframework.security.crypto.encrypt.TextEncryptor;
  */
 @Data
 @Schema
-public class OssConfigDTO {
+public class OssConfigDTO implements Reflective {
 
     @NotNull(message = "platform 不能为空")
     @Schema(name = "platform", title = "platform", requiredMode = Schema.RequiredMode.REQUIRED, example = "aliyun")

@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import cn.hutool.core.util.StrUtil;
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.List;
  * @Date 2020/11/5 3:58 下午
  */
 @Data
-public class WebsiteSettingDTO {
+public class WebsiteSettingDTO implements Reflective {
     String userId;
     /***
      * 用户头像

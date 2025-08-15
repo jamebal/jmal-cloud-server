@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.util.FileNameUtils;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -19,7 +20,7 @@ import java.util.Map;
  * @author jmal
  */
 @Data
-public class UploadApiParamDTO {
+public class UploadApiParamDTO implements Reflective {
     /***
      * 当前是第几个分片
      */

@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -10,7 +11,7 @@ import java.time.LocalDateTime;
  * @Date 2020/9/30 10:34 上午
  */
 @Data
-public class UserAccessTokenDO {
+public class UserAccessTokenDO implements Reflective {
     String id;
     /***
      * 授权码名称

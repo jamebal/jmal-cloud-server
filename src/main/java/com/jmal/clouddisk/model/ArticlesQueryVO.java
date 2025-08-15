@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 
 /**
@@ -8,7 +9,7 @@ import lombok.Data;
  * @Date 2020/12/16 3:12 下午
  */
  @Data
-public class ArticlesQueryVO {
+public class ArticlesQueryVO implements Reflective {
     /***
      * 文章标题名
      */

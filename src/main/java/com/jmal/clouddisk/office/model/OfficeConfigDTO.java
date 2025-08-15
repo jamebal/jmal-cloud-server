@@ -3,6 +3,7 @@ package com.jmal.clouddisk.office.model;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.crypto.symmetric.SymmetricCrypto;
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.office.OfficeConfigService;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -13,7 +14,7 @@ import java.util.List;
 
 @Data
 @Valid
-public class OfficeConfigDTO {
+public class OfficeConfigDTO implements Reflective {
 
     @Pattern(
             regexp = "^(https?://)([\\w.-]+)(:[0-9]+)?(/.*)?$|^$",

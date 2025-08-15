@@ -12,8 +12,8 @@ import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.UploadResponse;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.util.CaffeineUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -37,19 +37,18 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class MultipartUpload {
 
-    @Autowired
-    private FileProperties fileProperties;
+    private final FileProperties fileProperties;
 
-    @Autowired
-    private CommonFileService commonFileService;
+    private final CommonFileService commonFileService;
 
-    @Autowired
-    private WebOssService webOssService;
+    private final CommonUserFileService commonUserFileService;
 
-    @Autowired
-    private LogService logService;
+    private final WebOssService webOssService;
+
+    private final LogService logService;
 
     /***
      * 断点恢复上传缓存(已上传的缓存)
@@ -109,7 +108,7 @@ public class MultipartUpload {
 
         String md5 = upload.getIdentifier();
         Path file = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), upload.getFilename());
-        Path outputFile = Paths.get(fileProperties.getRootDir(), upload.getUsername(), commonFileService.getUserDirectoryFilePath(upload));
+        Path outputFile = Paths.get(fileProperties.getRootDir(), upload.getUsername(), commonUserFileService.getUserDirectoryFilePath(upload));
         // 清除缓存
         resumeCache.invalidate(md5);
         writtenCache.invalidate(md5);
@@ -123,13 +122,13 @@ public class MultipartUpload {
         PathUtil.move(file, outputFile, true);
 
         // 设置文件最后修改时间
-        CommonFileService.setLastModifiedTime(outputFile, upload.getLastModified());
+        CommonUserFileService.setLastModifiedTime(outputFile, upload.getLastModified());
         uploadResponse.setUpload(true);
         CaffeineUtil.setUploadFileCache(outputFile.toFile().getAbsolutePath());
-        commonFileService.createFile(upload.getUsername(), outputFile.toFile(), null, null);
+        commonUserFileService.createFile(upload.getUsername(), outputFile.toFile(), null, null);
 
         // 文件操作日志
-        logService.syncAddLogFileOperation(upload.getUsername(), commonFileService.getUserDirectoryFilePath(upload), "上传文件");
+        logService.syncAddLogFileOperation(upload.getUsername(), commonUserFileService.getUserDirectoryFilePath(upload), "上传文件");
 
         return uploadResponse;
     }

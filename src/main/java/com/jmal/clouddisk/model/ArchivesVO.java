@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.util.TimeUntils;
 import lombok.Data;
 
@@ -12,7 +13,7 @@ import java.util.Date;
  * @Date 2020/11/15 7:33 下午
  */
 @Data
-public class ArchivesVO {
+public class ArchivesVO implements Reflective {
 
     /***
      * 归档id

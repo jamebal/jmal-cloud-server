@@ -6,13 +6,14 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.alibaba.fastjson2.JSON;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.MenuDTO;
-import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.util.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * @Description 菜单管理
@@ -35,21 +37,14 @@ import java.util.Locale;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class MenuService {
 
     public static final String COLLECTION_NAME = "menu";
 
-    @Autowired
-    private RoleService roleService;
+    private final MongoTemplate mongoTemplate;
 
-    @Autowired
-    private IUserService userService;
-
-    @Autowired
-    private MongoTemplate mongoTemplate;
-
-    @Autowired
-    private MessageUtil messageUtil;
+    private final MessageUtil messageUtil;
 
     /***
      * 菜单树
@@ -63,13 +58,13 @@ public class MenuService {
         }
         List<String> menuIdList = null;
         if(!CharSequenceUtil.isBlank(queryDTO.getUserId())){
-            menuIdList = userService.getMenuIdList(queryDTO.getUserId());
+            menuIdList = getMenuIdListByUserId(queryDTO.getUserId());
         }
         if(!CharSequenceUtil.isBlank(queryDTO.getRoleId())) {
             if(menuIdList != null){
-                menuIdList.addAll(roleService.getMenuIdList(queryDTO.getRoleId()));
+                menuIdList.addAll(getMenuIdListByRoleId(queryDTO.getRoleId()));
             } else {
-                menuIdList = roleService.getMenuIdList(queryDTO.getRoleId());
+                menuIdList = getMenuIdListByRoleId(queryDTO.getRoleId());
             }
         }
         if(menuIdList != null){
@@ -88,6 +83,50 @@ public class MenuService {
             return menuDTO;
         }).toList();
         return getSubMenu(null, menuDTOList);
+    }
+
+    /**
+     * 获取角色的菜单id列表
+     * @param roleId 角色id
+     * @return 菜单id列表
+     */
+    public List<String> getMenuIdListByRoleId(String roleId) {
+        List<String> menuIdList = new ArrayList<>();
+        RoleDO roleDO = mongoTemplate.findById(roleId, RoleDO.class);
+        if(roleDO != null && roleDO.getMenuIds() != null && !roleDO.getMenuIds().isEmpty()){
+            menuIdList = roleDO.getMenuIds();
+        }
+        return menuIdList;
+    }
+
+    public List<String> getMenuIdListByUserId(String userId) {
+        List<String> menuIdList = new ArrayList<>();
+        ConsumerDO consumerDO = mongoTemplate.findById(userId, ConsumerDO.class);
+        if (consumerDO == null || consumerDO.getRoles() == null) {
+            return menuIdList;
+        }
+        if (consumerDO.getCreator() != null && consumerDO.getCreator()) {
+            // 如果是创建者则返回所有菜单
+            return getAllMenuIdList();
+        }
+        return getMenuIdListByRoleIdList(consumerDO.getRoles());
+    }
+
+    /***
+     * 根据角色id列表获取菜单id列表
+     * @param roleIdList 角色id列表
+     * @return 菜单id列表
+     */
+    public List<String> getMenuIdListByRoleIdList(List<String> roleIdList) {
+        List<String> menuIdList = new ArrayList<>();
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(roleIdList));
+        List<RoleDO> roleDOList = mongoTemplate.find(query, RoleDO.class);
+        List<String> finalMenuIdList = menuIdList;
+        roleDOList.forEach(roleDO -> finalMenuIdList.addAll(roleDO.getMenuIds()));
+        // 去重
+        menuIdList = menuIdList.stream().distinct().collect(Collectors.toList());
+        return menuIdList;
     }
 
     /**

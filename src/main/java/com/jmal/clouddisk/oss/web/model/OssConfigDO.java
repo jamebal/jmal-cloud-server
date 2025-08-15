@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.oss.web.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.PlatformOSS;
 import lombok.Data;
@@ -15,7 +16,7 @@ import org.springframework.security.crypto.encrypt.TextEncryptor;
 @Data
 @Document(collection = OssConfigService.COLLECTION_NAME)
 @CompoundIndex(name = "userId_1", def = "{'userId': 1}")
-public class OssConfigDO {
+public class OssConfigDO implements Reflective {
     private String id;
     private PlatformOSS platform;
     private String folderName;

@@ -22,8 +22,6 @@ public class JmalCloudApplication {
     public static void main(String[] args) {
         SecureUtil.disableBouncyCastle();
         SpringApplication application = new SpringApplication(JmalCloudApplication.class);
-        // 允许循环引用
-        application.setAllowCircularReferences(true);
 
         // dev环境下设置tesseract的lib路径
         TesseractUtil.setTesseractLibPath();

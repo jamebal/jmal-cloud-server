@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
  * @Date 2020/11/5 2:45 下午
  */
 @Data
-public class WebsiteSettingDO {
+public class WebsiteSettingDO implements Reflective {
 
     /***
      * 站点背景大图

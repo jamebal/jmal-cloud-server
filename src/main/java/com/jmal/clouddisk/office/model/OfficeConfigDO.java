@@ -2,6 +2,7 @@ package com.jmal.clouddisk.office.model;
 
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.crypto.symmetric.SymmetricCrypto;
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -9,7 +10,7 @@ import java.util.List;
 
 @Data
 @Document(collection = "officeConfig")
-public class OfficeConfigDO {
+public class OfficeConfigDO implements Reflective {
 
     private String documentServer;
 

@@ -16,10 +16,10 @@
     <packaging>jar</packaging>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <maven-jar-plugin.version>3.0.0</maven-jar-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <lucene.version>10.2.2</lucene.version>
+        <lucene.version>9.10.0</lucene.version>
         <zxing.version>3.5.3</zxing.version>
     </properties>
 
@@ -176,13 +176,6 @@
                     <artifactId>commons-logging</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-
-        <!-- 反射-->
-        <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>0.10.2</version>
         </dependency>
 
         <!-- fastjson-->
@@ -440,36 +433,79 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>com.jmal.clouddisk.JmalCloudApplication</mainClass>
-                    <executable>true</executable>
-                    <layout>ZIP</layout>
-                    <includes>
-                        <include>
-                            <groupId>nothing</groupId>
-                            <artifactId>nothing</artifactId>
-                        </include>
-                    </includes>
-                </configuration>
-            </plugin>
-            <!-- 将第三方包拷贝到lib目录 -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
+                <!-- AOT 处理需要 spring-boot-maven-plugin 的执行 -->
                 <executions>
                     <execution>
-                        <id>copy-dependencies</id>
-                        <phase>package</phase>
+                        <id>process-aot</id>
                         <goals>
-                            <goal>copy-dependencies</goal>
+                            <goal>process-aot</goal>
                         </goals>
-                        <configuration><outputDirectory>${project.build.directory}/lib</outputDirectory>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.graalvm.buildtools</groupId>
+                <artifactId>native-maven-plugin</artifactId>
+                <configuration>
+                    <metadataRepository>
+                        <enabled>true</enabled>
+                    </metadataRepository>
+                </configuration>
+            </plugin>
+
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <extensions>true</extensions>
+                        <executions>
+                            <execution>
+                                <id>build-native</id>
+                                <goals>
+                                    <goal>compile-no-fork</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+
+                        <configuration>
+                            <buildArgs>
+<!--                                <buildArg>-H:+PrintAnalysisCallTree</buildArg>-->
+                                <buildArg>-Dorg.apache.lucene.store.MMapDirectory.enableMemorySegments=false</buildArg>
+
+                                <!-- 将之前的 cn.hutool.core 改为更具体的包，避免过度初始化 -->
+                                <buildArg>--initialize-at-build-time=cn.hutool.core.io.CharsetDetector</buildArg>
+                                <!-- 将 UUID 相关类设置为运行时初始化 -->
+                                <buildArg>--initialize-at-run-time=cn.hutool.core.lang.UUID,cn.hutool.core.lang.UUID$Holder</buildArg>
+                                <!-- 将 RandomUtil 也设置为运行时初始化 -->
+                                <buildArg>--initialize-at-run-time=cn.hutool.core.util.RandomUtil</buildArg>
+                                <buildArg>--initialize-at-build-time=com.spire.doc.packages</buildArg>
+                                <buildArg>--trace-object-instantiation=java.security.SecureRandom</buildArg>
+
+                                <buildArg>-H:+AddAllCharsets</buildArg>
+                                <buildArg>-H:+AllowIncompleteClasspath</buildArg>
+                                <buildArg>--enable-url-protocols=http,https</buildArg>
+                            </buildArgs>
+                        </configuration>
+
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 
 </project>

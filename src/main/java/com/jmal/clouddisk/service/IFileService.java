@@ -2,7 +2,6 @@ package com.jmal.clouddisk.service;
 
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.*;
-import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.ResponseResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -120,13 +119,6 @@ public interface IFileService {
      * @return ResponseResult<Object>
      */
     ResponseResult<Object> listFiles(UploadApiParamDTO upload);
-
-    /**
-     * 用户占用空间
-     * @param userId 用户id
-     * @return long
-     */
-    long takeUpSpace(String userId);
 
     /**
      * 搜索文件
@@ -250,22 +242,6 @@ public interface IFileService {
     ResponseResult<Object> copy(UploadApiParamDTO upload, List<String> froms, String to) throws IOException;
 
     /**
-     * 上传用户图片
-     * @param upload 上传参数
-     * @return String
-     */
-    String uploadConsumerImage(UploadApiParamDTO upload);
-
-    /**
-     * 根据文件Id获取文件信息
-     * @param fileId 文件Id
-     * @return FileDocument
-     */
-    FileDocument getById(String fileId);
-
-    FileDocument getById(String fileId, boolean excludeContent);
-
-    /**
      * 创建文件/文件夹(mongodb)
      * @param username 用户名
      * @param file 文件/文件夹
@@ -359,12 +335,6 @@ public interface IFileService {
     String publicViewFile(String relativePath, String userId);
 
     /***
-     * 删除用户的所有文件
-     * @param userList 用户列表
-     */
-    void deleteAllByUser(List<ConsumerDO> userList);
-
-    /***
      * 设置文件为分享文件
      * @param file FileDocument
      * @param expiresAt 过期时间
@@ -377,12 +347,6 @@ public interface IFileService {
      * @param file FileDocument
      */
     void unsetShareFile(FileDocument file);
-
-    /***
-     * 设为公共文件
-     * @param fileId 文件Id
-     */
-    void setPublic(String fileId);
 
     /**
      * 根据文件Id列表获取文件列表
