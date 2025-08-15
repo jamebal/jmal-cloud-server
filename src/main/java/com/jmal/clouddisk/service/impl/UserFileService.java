@@ -88,6 +88,9 @@ public class UserFileService {
     }
 
     public void setPublic(String fileId) {
+        if (fileId.isBlank()) {
+            return;
+        }
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
         Update update = new Update();

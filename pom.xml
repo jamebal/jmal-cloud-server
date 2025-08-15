@@ -486,14 +486,16 @@
 <!--                                <buildArg>-H:+PrintAnalysisCallTree</buildArg>-->
                                 <buildArg>-Dorg.apache.lucene.store.MMapDirectory.enableMemorySegments=false</buildArg>
 
-                                <!-- 将之前的 cn.hutool.core 改为更具体的包，避免过度初始化 -->
-                                <buildArg>--initialize-at-build-time=cn.hutool.core.io.CharsetDetector</buildArg>
-                                <!-- 将 UUID 相关类设置为运行时初始化 -->
-                                <buildArg>--initialize-at-run-time=cn.hutool.core.lang.UUID,cn.hutool.core.lang.UUID$Holder</buildArg>
+<!--                                <buildArg>&#45;&#45;initialize-at-build-time=cn.hutool.core.io.CharsetDetector</buildArg>-->
                                 <!-- 将 RandomUtil 也设置为运行时初始化 -->
-                                <buildArg>--initialize-at-run-time=cn.hutool.core.util.RandomUtil</buildArg>
+<!--                                <buildArg>&#45;&#45;initialize-at-run-time=cn.hutool.core.util.RandomUtil</buildArg>-->
                                 <buildArg>--initialize-at-build-time=com.spire.doc.packages</buildArg>
-                                <buildArg>--trace-object-instantiation=java.security.SecureRandom</buildArg>
+<!--                                <buildArg>&#45;&#45;trace-object-instantiation=java.security.SecureRandom</buildArg>-->
+
+                                <!-- PDFBox 相关配置 -->
+                                <buildArg>--initialize-at-build-time==org.apache.pdfbox</buildArg>
+
+<!--                                <buildArg>&#45;&#45;exact-reachability-metadata</buildArg>-->
 
                                 <buildArg>-H:+AddAllCharsets</buildArg>
                                 <buildArg>-H:+AllowIncompleteClasspath</buildArg>

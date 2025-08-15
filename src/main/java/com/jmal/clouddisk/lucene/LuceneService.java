@@ -413,7 +413,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
                 }
             }
         } catch (UnsupportedCharsetException unsupportedCharsetException) {
-            log.warn("不支持的字符集, charset: {}, file: {}, {}", file.getAbsolutePath(), charset, unsupportedCharsetException.getMessage());
+            log.warn("不支持的字符集, charset: {}, file: {}, {}", charset, file.getAbsolutePath(), unsupportedCharsetException.getMessage());
         } catch (Exception e) {
             log.error("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage(), e);
         }
