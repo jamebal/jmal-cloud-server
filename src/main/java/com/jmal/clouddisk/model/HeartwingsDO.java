@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
@@ -19,7 +20,7 @@ import java.time.LocalDateTime;
 @CompoundIndexes({
         @CompoundIndex(name = "createTime_1", def = "{'createTime': 1}"),
 })
-public class HeartwingsDO {
+public class HeartwingsDO implements Reflective {
 
     private String id;
 

@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -11,7 +12,7 @@ import java.time.LocalDateTime;
  * @date 2023/5/10 16:43
  */
 @Data
-public class GridFSBO {
+public class GridFSBO implements Reflective {
 
     String id;
 

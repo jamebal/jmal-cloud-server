@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.office.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,7 +12,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Track {
+public class Track implements Reflective {
 
     /**
      * 定义用户对文档进行操作时接收的对象数组。

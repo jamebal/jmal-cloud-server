@@ -1,12 +1,13 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 
 /**
  * @author jmal
  */
 @Data
-public class Music {
+public class Music implements Reflective {
     /***
      * 歌名
      */

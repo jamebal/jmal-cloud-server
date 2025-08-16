@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -9,7 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
  * @Date 2022/03/26 2:45 下午
  */
 @Data
-public class CloudSettingDTO {
+public class CloudSettingDTO implements Reflective {
     /**
      * 网盘名称
      */

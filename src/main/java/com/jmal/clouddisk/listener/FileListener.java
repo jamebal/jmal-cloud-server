@@ -103,7 +103,6 @@ public class FileListener implements DirectoryChangeListener {
 
             rebuildIndexTaskService.onSyncComplete(() -> {
                 scanningInProgress.set(false);
-                log.info("增量文件扫描完成，已添加到处理队列。");
             });
         });
     }
@@ -189,7 +188,7 @@ public class FileListener implements DirectoryChangeListener {
         // 增加事件计数器，检测高负载
         int currentCount = eventBurstCounter.incrementAndGet();
         lastBurstTime = Instant.now();
-        if (currentCount > EVENT_BURST_THRESHOLD) {
+        if (currentCount > EVENT_BURST_THRESHOLD && !highLoadDetected.get()) {
             highLoadDetected.set(true);
             log.warn("检测到高事件负载: {}事件/{}秒，标记为需要增量扫描", currentCount, BURST_WINDOW.getSeconds());
         }

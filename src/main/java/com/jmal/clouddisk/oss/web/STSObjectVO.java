@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.oss.web;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 
 /**
@@ -8,7 +9,7 @@ import lombok.Data;
  * @date 2023/4/4 16:00
  */
 @Data
-public class STSObjectVO {
+public class STSObjectVO implements Reflective {
     private String accessKeyId;
     private String accessKeySecret;
     private String securityToken;

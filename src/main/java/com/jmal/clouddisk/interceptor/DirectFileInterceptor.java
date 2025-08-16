@@ -6,6 +6,7 @@ import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.DirectLinkService;
 import com.jmal.clouddisk.service.impl.FileServiceImpl;
+import com.jmal.clouddisk.service.impl.RoleService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,8 @@ public class DirectFileInterceptor implements HandlerInterceptor {
 
     private final IUserService userService;
 
+    private final RoleService roleService;
+
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
         String uri = request.getRequestURI();
@@ -57,7 +60,7 @@ public class DirectFileInterceptor implements HandlerInterceptor {
         if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
             // 打包下载
             String username = userService.getUserNameById(fileDocument.getUserId());
-            List<String> authorities = userService.getAuthorities(username);
+            List<String> authorities = roleService.getAuthorities(username);
             if (!authorities.contains("cloud:file:packageDownload")) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 return false;

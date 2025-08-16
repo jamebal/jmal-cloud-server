@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.ocr;
 
+import com.jmal.clouddisk.config.Reflective;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -14,7 +15,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = "ocrConfig")
 @Valid
 @Schema
-public class OcrConfig {
+public class OcrConfig implements Reflective {
 
     @Schema(description = "是否启用orc, 默认开启")
     private Boolean enable;

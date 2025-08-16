@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -13,7 +14,7 @@ import java.util.List;
  * @Date 2020-03-17 16:28
  */
 @Data
-public class ShareVO {
+public class ShareVO implements Reflective {
     private String shareId;
     private String shortId;
     /***

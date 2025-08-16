@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model.rbac;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.service.Constants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -18,7 +19,7 @@ import java.util.List;
 @Data
 @Valid
 @Schema
-public class RoleDTO {
+public class RoleDTO implements Reflective {
     String id;
     @NotNull(message = "角色名称不能为空")
     @Schema(name = "name", title = "角色名称", requiredMode = Schema.RequiredMode.REQUIRED)

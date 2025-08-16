@@ -1,15 +1,13 @@
 package com.jmal.clouddisk.util;
 
+import com.jmal.clouddisk.lucene.PopplerPdfReader;
 import lombok.extern.slf4j.Slf4j;
 import nl.siegmann.epublib.domain.Book;
 import nl.siegmann.epublib.domain.Resource;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.rendering.ImageType;
-import org.apache.pdfbox.rendering.PDFRenderer;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,16 +27,15 @@ public class FileContentUtil {
         return new File(outputPath, "cover.jpg");
     }
 
-    public static File pdfCoverImage(File file, PDDocument document, String outputPath) {
+    public static File pdfCoverImage(File pdfFile, String outputDir) {
         try {
-            PDFRenderer pdfRenderer = new PDFRenderer(document);
-            BufferedImage coverImage = pdfRenderer.renderImageWithDPI(0, 128, ImageType.RGB);
-            // 将封面图像保存为JPEG文件
-            File coverImageFile = getCoverPath(outputPath);
-            ImageIO.write(coverImage, "JPEG", coverImageFile);
-            return coverImageFile;
+            Path outputPath = Paths.get(outputDir);
+            Files.createDirectories(outputPath);
+            Path coverPath = outputPath.resolve("cover.png");
+            PopplerPdfReader.executeCommand("pdftoppm", "-png", "-f", "1", "-l", "1", "-singlefile", pdfFile.getAbsolutePath(), coverPath.toString().replace(".png", ""));
+            return coverPath.toFile();
         } catch (Throwable e) {
-            log.warn("PDF 文件封面图像生成失败: {}, file: {}", e.getMessage(), file.getName());
+            log.warn("PDF 文件封面图像生成失败: {}, file: {}", e.getMessage(), pdfFile.getName());
             return null;
         }
     }

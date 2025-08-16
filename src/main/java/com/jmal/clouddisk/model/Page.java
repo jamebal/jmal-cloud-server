@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 import cn.hutool.core.util.PageUtil;
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -12,7 +13,7 @@ import java.util.ArrayList;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class Page<T> extends ArrayList<T> {
+public class Page<T> extends ArrayList<T> implements Reflective {
 
     public static final int DEFAULT_PAGE_SIZE = 10;
 

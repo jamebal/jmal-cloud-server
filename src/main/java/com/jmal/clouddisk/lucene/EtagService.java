@@ -10,7 +10,8 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.service.impl.FileServiceImpl;
+import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.util.HashUtil;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.result.UpdateResult;
@@ -60,7 +61,7 @@ public class EtagService {
 
     private final FileProperties fileProperties;
 
-    private final IUserService userService;
+    private final CommonUserService userService;
 
     private static final String EMPTY_FOLDER_ETAG_BASE_STRING = "EMPTY_FOLDER_REPRESENTATION_MONGO_V2";
     private static final int MAX_ETAG_UPDATE_ATTEMPTS = 5; // 最大失败重试次数
@@ -455,7 +456,7 @@ public class EtagService {
             newCalculatedEtag = HashUtil.sha256(combinedRepresentation.toString());
 
             // 计算文件夹大小
-            folderSize = getFolderSize(FileServiceImpl.COLLECTION_NAME, userId, currentFolderNormalizedPath);
+            folderSize = getFolderSize(CommonFileService.COLLECTION_NAME, userId, currentFolderNormalizedPath);
         }
 
         if (!newCalculatedEtag.equals(oldEtag)) {

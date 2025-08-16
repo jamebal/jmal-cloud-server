@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model.query;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -13,7 +14,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Data
 @Builder
 @Document(collection = "searchOptionHistory")
-public class SearchOptionHistoryDO extends QueryBaseDTO {
+public class SearchOptionHistoryDO extends QueryBaseDTO implements Reflective {
 
     String id;
 

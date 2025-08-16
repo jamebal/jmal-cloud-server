@@ -25,7 +25,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -94,7 +94,7 @@ public class IndexFiles {
         try {
             System.out.println("对目录 '" + indexPath + "' 编制索引... ");
 
-            Directory dir = FSDirectory.open(Paths.get(indexPath));
+            Directory dir = NIOFSDirectory.open(Paths.get(indexPath));
             Analyzer analyzer = new SmartChineseAnalyzer(true);
             IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
 

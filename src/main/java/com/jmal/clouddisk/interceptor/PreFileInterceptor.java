@@ -6,8 +6,8 @@ import cn.hutool.crypto.digest.DigestUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.CommonFileService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class PreFileInterceptor implements HandlerInterceptor {
 
-    private final IFileService fileService;
+    private final CommonFileService commonFileService;
 
     private final IUserService userService;
 
@@ -97,7 +97,7 @@ public class PreFileInterceptor implements HandlerInterceptor {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return null;
         }
-        FileDocument fileDocument = fileService.getById(fileId);
+        FileDocument fileDocument = commonFileService.getById(fileId);
         if (fileDocument == null) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             return null;

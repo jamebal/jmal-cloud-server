@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.util.FileNameUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -19,7 +20,7 @@ import java.time.LocalDateTime;
 @Schema
 @Data
 @Valid
-public class ArticleParamDTO {
+public class ArticleParamDTO implements Reflective {
 
     @NotNull(message = "userId不能为空")
     String userId;

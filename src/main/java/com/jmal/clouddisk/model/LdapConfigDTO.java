@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -16,7 +17,7 @@ import java.util.List;
 @Data
 @Schema
 @Valid
-public class LdapConfigDTO {
+public class LdapConfigDTO implements Reflective {
 
     @Schema(name = "enable", title = "是否启用", example = "true")
     Boolean enable;

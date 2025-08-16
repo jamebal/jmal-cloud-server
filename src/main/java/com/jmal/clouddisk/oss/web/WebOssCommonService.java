@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.oss.web;
 
 import cn.hutool.core.convert.Convert;
-import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.model.OperationPermission;
@@ -9,8 +8,10 @@ import com.jmal.clouddisk.oss.BaseOssService;
 import com.jmal.clouddisk.oss.BucketInfo;
 import com.jmal.clouddisk.oss.FileInfo;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.CommonUserFileService;
+import com.jmal.clouddisk.service.impl.CommonUserService;
+import com.jmal.clouddisk.service.impl.MessageService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import org.bson.Document;
@@ -35,10 +36,13 @@ public class WebOssCommonService {
     MongoTemplate mongoTemplate;
 
     @Autowired
-    FileProperties fileProperties;
+    CommonUserService userService;
 
     @Autowired
-    IUserService userService;
+    CommonUserFileService commonUserFileService;
+
+    @Autowired
+    MessageService messageService;
 
     @Autowired
     CommonFileService commonFileService;
@@ -47,7 +51,7 @@ public class WebOssCommonService {
         FileIntroVO fileIntroVO = new FileIntroVO();
         fileIntroVO.setPath(getPathByObjectName(ossRootFolderName, objectName));
         fileIntroVO.setName(Paths.get(objectName).getFileName().toString());
-        commonFileService.pushMessage(username, fileIntroVO, Constants.CREATE_FILE);
+        messageService.pushMessage(username, fileIntroVO, Constants.CREATE_FILE);
     }
 
     public void notifyUpdateFile(String ossPath, String objectName, long size) {
@@ -57,7 +61,7 @@ public class WebOssCommonService {
         fileIntroVO.setId(id);
         fileIntroVO.setSize(size);
         fileIntroVO.setUpdateDate(LocalDateTime.now());
-        commonFileService.pushMessage(username, fileIntroVO, Constants.UPDATE_FILE);
+        messageService.pushMessage(username, fileIntroVO, Constants.UPDATE_FILE);
     }
 
     public void notifyDeleteFile(String ossPath, String objectName) {
@@ -65,7 +69,7 @@ public class WebOssCommonService {
         String id = getFileId(getOssRootFolderName(ossPath), objectName, username);
         String filename = Paths.get(objectName).getFileName().toString();
         String path = id.substring(username.length(), id.length() - filename.length());
-        commonFileService.pushMessage(username, path, Constants.DELETE_FILE);
+        messageService.pushMessage(username, path, Constants.DELETE_FILE);
     }
 
     public static String getFileId(String rootName, String objectName, String username) {
@@ -114,7 +118,7 @@ public class WebOssCommonService {
         }
         String rootName = getOssRootFolderName(ossPath);
         Update update = new Update();
-        commonFileService.checkShareBase(update, getPath(objectName, rootName));
+        commonUserFileService.checkShareBase(update, getPath(objectName, rootName));
         Document updateObject = update.getUpdateObject();
         if (updateObject.get("$set") != null) {
             Document document = updateObject.get("$set", Document.class);

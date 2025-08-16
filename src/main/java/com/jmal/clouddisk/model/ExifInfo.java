@@ -2,6 +2,7 @@ package com.jmal.clouddisk.model;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -11,7 +12,7 @@ import java.time.LocalDateTime;
  * 照片EXIF信息
  */
 @Data
-public class ExifInfo {
+public class ExifInfo implements Reflective {
     /**
      * 设备制造商
      */

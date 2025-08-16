@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model.rbac;
 
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.service.impl.RoleService;
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -14,7 +15,7 @@ import java.util.List;
  */
 @Data
 @Document(collection = RoleService.COLLECTION_NAME)
-public class RoleDO {
+public class RoleDO implements Reflective {
     /***
      * 主键
      */

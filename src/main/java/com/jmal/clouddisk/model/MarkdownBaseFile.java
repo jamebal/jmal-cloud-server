@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -12,7 +13,7 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class MarkdownBaseFile extends FileBase {
+public class MarkdownBaseFile extends FileBase implements Reflective {
 
     private String username;
     /***

@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.oss;
 
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import lombok.Data;
 
@@ -9,7 +10,7 @@ import lombok.Data;
  * @date 2023/3/29 13:49
  */
 @Data
-public class BucketInfo {
+public class BucketInfo implements Reflective {
     String bucketName;
     String folderName;
     String username;

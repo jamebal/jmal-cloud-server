@@ -5,16 +5,16 @@ import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.oss.web.WebOssService;
-import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -30,19 +30,16 @@ import java.util.Arrays;
 @Controller
 @Tag(name = "markdown管理")
 @RestController
+@RequiredArgsConstructor
 public class MarkDownController {
 
-    @Autowired
-    private IMarkdownService markdownService;
+    private final IMarkdownService markdownService;
 
-    @Autowired
-    private WebOssService webOssService;
+    private final WebOssService webOssService;
 
-    @Autowired
-    private IFileService fileService;
+    private final CommonFileService commonFileService;
 
-    @Autowired
-    private IUserService userService;
+    private final IUserService userService;
 
     @Operation(summary = "获取markdown内容")
     @GetMapping("/markdown/p")
@@ -87,7 +84,7 @@ public class MarkDownController {
     public ResponseResult<Object> editTextByPath(@RequestBody UploadApiParamDTO upload) {
         ResultUtil.checkParamIsNull(upload.getUsername(), upload.getUserId(), upload.getRelativePath(), upload.getContentText());
         if (!CharSequenceUtil.isBlank(upload.getMountFileId())) {
-            FileDocument fileDocument = fileService.getById(upload.getMountFileId());
+            FileDocument fileDocument = commonFileService.getById(upload.getMountFileId());
             upload.setUserId(fileDocument.getUserId());
             upload.setUsername(userService.getUserNameById(fileDocument.getUserId()));
             upload.setRelativePath(fileDocument.getPath() + fileDocument.getName());

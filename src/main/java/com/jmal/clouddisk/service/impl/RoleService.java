@@ -7,13 +7,13 @@ import cn.hutool.core.thread.ThreadUtil;
 import com.alibaba.fastjson2.JSON;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
-import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class RoleService {
 
     /***
@@ -44,17 +45,15 @@ public class RoleService {
 
     public static final String COLLECTION_NAME = "role";
 
-    @Autowired
-    private MongoTemplate mongoTemplate;
+    public static final String ROLES = "roles";
 
-    @Autowired
-    private MenuService menuService;
+    private final MongoTemplate mongoTemplate;
 
-    @Autowired
-    private IUserService userService;
+    private final CommonUserService commonUserService;
 
-    @Autowired
-    private MessageUtil messageUtil;
+    private final MenuService menuService;
+
+    private final MessageUtil messageUtil;
 
     /***
      * 角色列表
@@ -163,8 +162,15 @@ public class RoleService {
             return;
         }
         // 根据角色获取用户名列表
-        List<String> usernameList = userService.getUserNameListByRole(roleDO.getId());
+        List<String> usernameList = getUserNameListByRole(roleDO.getId());
         updateUserCacheByNames(usernameList);
+    }
+
+    public List<String> getUserNameListByRole(String roleId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(ROLES).is(roleId));
+        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class);
+        return userList.stream().map(ConsumerDO::getUsername).toList();
     }
 
     /***
@@ -174,7 +180,7 @@ public class RoleService {
     private void updateUserCacheByNames(List<String> usernameList) {
         usernameList.forEach(username -> {
             // 获取该用户最新的权限列表
-            List<String> authorities = userService.getAuthorities(username);
+            List<String> authorities = getAuthorities(username);
             if(CaffeineUtil.existsAuthoritiesCache(username)){
                 CaffeineUtil.setAuthoritiesCache(username, authorities);
             }
@@ -186,8 +192,15 @@ public class RoleService {
      * @param rolesIds rolesIds
      */
     public void updateUserCacheByRole(List<String> rolesIds) {
-        List<String> usernameList = userService.getUserNameListByRole(rolesIds);
+        List<String> usernameList = getUserNameListByRole(rolesIds);
         updateUserCacheByNames(usernameList);
+    }
+
+    public List<String> getUserNameListByRole(List<String> rolesIds) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(ROLES).in(rolesIds));
+        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class);
+        return userList.stream().map(ConsumerDO::getUsername).toList();
     }
 
     /***
@@ -200,35 +213,21 @@ public class RoleService {
         mongoTemplate.remove(query, COLLECTION_NAME);
     }
 
-    /***
-     * 获取角色的菜单id列表
-     * @param roleId 角色id
-     * @return 菜单id列表
-     */
-    public List<String> getMenuIdList(String roleId) {
-        List<String> menuIdList = new ArrayList<>();
-        RoleDO roleDO = mongoTemplate.findById(roleId, RoleDO.class, COLLECTION_NAME);
-        if(roleDO != null && roleDO.getMenuIds() != null && !roleDO.getMenuIds().isEmpty()){
-            menuIdList = roleDO.getMenuIds();
+    public List<String> getAuthorities(String username) {
+        List<String> authorities = new ArrayList<>();
+        ConsumerDO consumerDO = commonUserService.getUserInfoByUsername(username);
+        if (consumerDO == null) {
+            return authorities;
         }
-        return menuIdList;
-    }
-
-    /***
-     * 根据角色id列表获取菜单id列表
-     * @param roleIdList 角色id列表
-     * @return 菜单id列表
-     */
-    public List<String> getMenuIdList(List<String> roleIdList) {
-        List<String> menuIdList = new ArrayList<>();
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(roleIdList));
-        List<RoleDO> roleDOList = mongoTemplate.find(query, RoleDO.class, COLLECTION_NAME);
-        List<String> finalMenuIdList = menuIdList;
-        roleDOList.forEach(roleDO -> finalMenuIdList.addAll(roleDO.getMenuIds()));
-        // 去重
-        menuIdList = menuIdList.stream().distinct().collect(Collectors.toList());
-        return menuIdList;
+        // 如果是创建者, 直接返回所有权限
+        if (consumerDO.getCreator() != null && consumerDO.getCreator()) {
+            return AnnoManageUtil.AUTHORITIES;
+        }
+        List<String> roleIdList = consumerDO.getRoles();
+        if (roleIdList == null || roleIdList.isEmpty()) {
+            return authorities;
+        }
+        return getAuthorities(roleIdList);
     }
 
     /***

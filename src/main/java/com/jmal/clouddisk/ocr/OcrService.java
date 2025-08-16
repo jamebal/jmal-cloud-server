@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.ocr;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -8,18 +7,17 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.lucene.TaskProgressService;
 import com.jmal.clouddisk.lucene.TaskType;
+import com.jmal.clouddisk.media.ImageMagickProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.pdfbox.rendering.ImageType;
-import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
-
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
@@ -30,7 +28,7 @@ public class OcrService {
 
     private final Map<String, IOcrService> ocrServiceMap;
 
-    private final CommonOcrService commonOcrService;
+    private final ImageMagickProcessor imageMagickProcessor;
 
     private final TaskProgressService taskProgressService;
 
@@ -43,12 +41,12 @@ public class OcrService {
 
     /**
      * 提取PDF页面并使用OCR识别
-     * @param pdfRenderer PDFRenderer
      * @param pageIndex 页码
+     * @param imageForOcr 渲染后的图片路径
+     * @param totalPages 总页数
      * @param username 用户名
-     * @return 识别结果
      */
-    public String extractPageWithOCR(File file, PDFRenderer pdfRenderer, int pageIndex, int totalPages, String username) {
+    public void extractPageWithOCR(Writer writer, File file, String imageForOcr, int pageIndex, int totalPages, String username) {
         try {
 
             taskProgressService.addTaskProgress(file, TaskType.OCR, pageIndex + 1 + "/" + totalPages + " - 等待识别");
@@ -58,14 +56,11 @@ public class OcrService {
 
             taskProgressService.addTaskProgress(file, TaskType.OCR, pageIndex + 1 + "/" + totalPages + " - 识别中...");
 
-            BufferedImage pageImage = pdfRenderer.renderImage(pageIndex, 4, ImageType.GRAY);
-            String tempImageFile = generateOrcTempImagePath(username);
-            ImageIO.write(pageImage, "png", new File(tempImageFile));
             try {
                 // 使用 OCR 识别页面内容
-                return doOCR(tempImageFile, generateOrcTempImagePath(username), null);
+                doOCR(writer, imageForOcr, imageMagickProcessor.generateOrcTempImagePath(username), null);
             } finally {
-                FileUtil.del(tempImageFile);
+                Files.delete(Path.of(imageForOcr));
                 taskProgressService.removeTaskProgress(file);
                 // 释放许可
                 semaphore.release();
@@ -76,13 +71,12 @@ public class OcrService {
         }  catch (Exception e) {
             log.error("Error processing page {}", pageIndex + 1, e);
         }
-        return "";
     }
 
-    public String doOCR(String imagePath, String tempImagePath, String ocrEngine) {
+    public void doOCR(Writer writer, String imagePath, String tempImagePath, String ocrEngine) {
         OcrConfig config = getOcrConfig();
         if (Boolean.FALSE.equals(config.getEnable())) {
-            return "";
+            return;
         }
         if (CharSequenceUtil.isBlank(ocrEngine)) {
             ocrEngine = config.getOcrEngine();
@@ -91,7 +85,7 @@ public class OcrService {
         if (ocrService == null) {
             throw new IllegalArgumentException("Unknown OCR engine: " + ocrEngine);
         }
-        return ocrService.doOCR(imagePath, tempImagePath);
+        ocrService.doOCR(writer, imagePath, tempImagePath);
     }
 
     /**
@@ -150,13 +144,6 @@ public class OcrService {
         }
         ocrConfigCache.put("ocrConfig", config);
         return 0;
-    }
-
-    /**
-     * 生成一个临时的图片路径
-     */
-    public String generateOrcTempImagePath(String username) {
-        return commonOcrService.generateOrcTempImagePath(username);
     }
 
 }

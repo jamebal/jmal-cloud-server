@@ -2,6 +2,7 @@ package com.jmal.clouddisk.model;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.service.impl.DirectLinkService;
 import lombok.Data;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -18,7 +19,7 @@ import java.time.LocalDateTime;
         @CompoundIndex(name = "fileId_1", def = "{'fileId': 1}"),
 
 })
-public class DirectLink {
+public class DirectLink implements Reflective {
     String id;
 
     String fileId;

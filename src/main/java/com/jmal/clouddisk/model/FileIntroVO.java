@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.media.VideoInfoDO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -13,7 +14,7 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class FileIntroVO extends FileBase {
+public class FileIntroVO extends FileBase implements Reflective {
     private String userId;
     private String username;
     /***

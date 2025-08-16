@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 
@@ -12,7 +13,7 @@ import java.util.Comparator;
  * @Date 2020/10/26 4:19 下午
  */
 @Data
-public class CategoryDO implements Comparable<CategoryDO> {
+public class CategoryDO implements Comparable<CategoryDO>, Reflective {
     @Id
     private String id;
     /***

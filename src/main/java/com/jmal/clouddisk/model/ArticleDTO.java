@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import lombok.Data;
@@ -14,7 +15,7 @@ import jakarta.validation.Valid;
 @Data
 @Schema
 @Valid
-public class ArticleDTO {
+public class ArticleDTO implements Reflective {
 
     @Schema(name = "mark", title = "文章id")
     String mark;

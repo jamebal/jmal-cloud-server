@@ -2,6 +2,7 @@ package com.jmal.clouddisk.oss.web;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.FileDocument;
@@ -14,6 +15,7 @@ import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.file.SimplePathVisitor;
 import org.springframework.stereotype.Service;
@@ -31,7 +33,10 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class WebOssCopyFileService extends WebOssCommonService {
+
+    private final FileProperties fileProperties;
 
     /**
      * 从 oss 复制 到 oss
@@ -236,7 +241,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
                 // 目标目录
                 Path destPath = Paths.get(destDirPath, relativePath);
                 PathUtil.mkdir(destPath);
-                commonFileService.createFile(destFileDocument.getUsername(), destPath.toFile(), null, null);
+                commonUserFileService.createFile(destFileDocument.getUsername(), destPath.toFile(), null, null);
             });
             // 再复制文件
             fileInfoList.stream().filter(fileInfo -> !fileInfo.isFolder()).parallel().forEach(fileInfo -> {
@@ -247,7 +252,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
                     // 目标文件
                     File destFile = Paths.get(destDirPath, relativePath).toFile();
                     FileUtil.writeFromStream(inputStream, destFile);
-                    commonFileService.createFile(destFileDocument.getUsername(), destFile, null, null);
+                    commonUserFileService.createFile(destFileDocument.getUsername(), destFile, null, null);
                 } catch (Exception e) {
                     throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
                 }
@@ -278,7 +283,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
             // 目标文件
             File destFile = Paths.get(destPath.toString(), Paths.get(objectNameFrom).getFileName().toString()).toFile();
             FileUtil.writeFromStream(inputStream, destFile);
-            commonFileService.createFile(destFileDocument.getUsername(), destFile, null, null);
+            commonUserFileService.createFile(destFileDocument.getUsername(), destFile, null, null);
         } catch (Exception e) {
             throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
         } finally {
