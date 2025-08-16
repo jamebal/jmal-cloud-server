@@ -128,6 +128,8 @@ public class LuceneConfig {
 
         IndexWriterConfig indexWriterConfig = new IndexWriterConfig(wrapperAnalyzer);
         indexWriterConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+        indexWriterConfig.setRAMBufferSizeMB(64); // 设置内存缓冲区大小，单位为MB
+        indexWriterConfig.setRAMPerThreadHardLimitMB(32); // 设置每个线程的内存限制，单位为MB
         this.indexWriterInstance = new IndexWriter(directory, indexWriterConfig);
         return this.indexWriterInstance;
     }

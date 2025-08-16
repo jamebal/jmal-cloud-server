@@ -1,12 +1,12 @@
 package com.jmal.clouddisk.interceptor;
 
-import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.URLUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.IFileService;
@@ -21,8 +21,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.coobird.thumbnailator.Thumbnails;
-import net.coobird.thumbnailator.tasks.UnsupportedFormatException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
@@ -31,15 +29,12 @@ import org.springframework.web.servlet.HandlerMapping;
 
 import javax.imageio.*;
 import javax.imageio.stream.FileCacheImageOutputStream;
-import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Iterator;
 
 /**
  * @author jmal
@@ -354,7 +349,7 @@ public class FileInterceptor implements HandlerInterceptor {
         String q = request.getParameter("q");
         String w = request.getParameter("w");
         String h = request.getParameter("h");
-        byte[] img = imageCrop(file, q, w, h);
+        byte[] img = ImageMagickProcessor.cropImage(file, q, w, h);
         if (img.length > 0) {
             responseWritImage(response, file.getName(), img);
         }
@@ -385,100 +380,6 @@ public class FileInterceptor implements HandlerInterceptor {
         response.setHeader(HttpHeaders.CONNECTION, "close");
         response.setHeader(HttpHeaders.CONTENT_ENCODING, "utf-8");
         response.setHeader(HttpHeaders.CACHE_CONTROL, "max-age=2592000");
-    }
-
-    /**
-     * 剪裁图片
-     *
-     * @param srcFile 源文件
-     * @param q       剪裁后的质量
-     * @param w       剪裁后的宽度
-     * @param h       剪裁后的高度
-     * @return 剪裁后的文件
-     */
-    public static byte[] imageCrop(File srcFile, String q, String w, String h) {
-        ByteArrayOutputStream out = null;
-        ImageInputStream iis = null;
-        try {
-            // 使用ImageInputStream来处理大文件
-            iis = ImageIO.createImageInputStream(srcFile);
-            Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
-            if (!readers.hasNext()) {
-                return new byte[0];
-            }
-            ImageReader reader = readers.next();
-            reader.setInput(iis, true);
-
-            // 获取图像元数据
-            BufferedImage bim = reader.read(0);
-            if (bim == null) {
-                return new byte[0];
-            }
-
-            int srcWidth = bim.getWidth();
-            int srcHeight = bim.getHeight();
-
-            // 处理质量参数
-            double quality = parseQuality(q);
-            int width = parseDimension(w);
-            int height = parseDimension(h);
-
-            Thumbnails.Builder<? extends BufferedImage> thumbnail = Thumbnails.of(bim)
-                    .outputFormat("jpg") // 指定输出格式
-                    .outputQuality(quality);
-
-            if (width > 0 && srcWidth > width) {
-                if (height <= 0 || srcHeight <= height) {
-                    height = (int) (width / (double) srcWidth * srcHeight);
-                    height = height == 0 ? width : height;
-                }
-                thumbnail.size(width, height);
-            } else {
-                // 宽高均小，指定原大小
-                thumbnail.size(srcWidth, srcHeight);
-            }
-
-            out = new ByteArrayOutputStream();
-            thumbnail.toOutputStream(out);
-            return out.toByteArray();
-        } catch (UnsupportedFormatException e) {
-            log.warn(e.getMessage(), e);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-        } finally {
-            if (out != null) {
-                try {
-                    out.close();
-                } catch (IOException e) {
-                    log.error("Error closing ByteArrayOutputStream", e);
-                }
-            }
-            if (iis != null) {
-                try {
-                    iis.close();
-                } catch (IOException e) {
-                    log.error("Error closing ImageInputStream", e);
-                }
-            }
-        }
-        return new byte[0];
-    }
-
-    private static double parseQuality(String q) {
-        try {
-            double quality = Convert.toDouble(q, 0.8);
-            return (quality >= 0 && quality <= 1) ? quality : 0.8;
-        } catch (NumberFormatException e) {
-            return 0.8;
-        }
-    }
-
-    private static int parseDimension(String dim) {
-        try {
-            return Convert.toInt(dim, -1);
-        } catch (NumberFormatException e) {
-            return -1;
-        }
     }
 
 }

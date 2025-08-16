@@ -65,6 +65,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
     private final IndexWriter indexWriter;
     private final CommonUserService userService;
     private final ReadContentService readContentService;
+    private final PopplerPdfReader popplerPdfReader;
     private final RebuildIndexTaskService rebuildIndexTaskService;
     private final SearchFileService searchFileService;
     private final EtagService esTagService;
@@ -383,7 +384,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
             }
             String type = FileTypeUtil.getType(file).toLowerCase();
             switch (type) {
-                case "pdf" -> readContentService.readPdfContent(file, fileId, writer);
+                case "pdf" -> popplerPdfReader.readPdfContent(file, fileId, writer);
                 case "dwg" -> readContentService.dwg2mxweb(file, fileId);
                 case "epub" -> readContentService.readEpubContent(file, fileId, writer);
                 case "ppt", "pptx" -> readContentService.readPPTContent(file, writer);

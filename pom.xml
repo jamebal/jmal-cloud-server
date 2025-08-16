@@ -6,7 +6,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.5.3</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
     <groupId>com.jmal</groupId>
     <artifactId>clouddisk</artifactId>
@@ -166,30 +166,11 @@
             <version>2.5.0</version>
         </dependency>
 
-        <dependency>
-            <groupId>net.sourceforge.tess4j</groupId>
-            <artifactId>tess4j</artifactId>
-            <version>5.13.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
         <!-- fastjson-->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>2.0.47</version>
-        </dependency>
-
-        <!-- 缩略图处理-->
-        <dependency>
-            <groupId>net.coobird</groupId>
-            <artifactId>thumbnailator</artifactId>
-            <version>0.4.20</version>
         </dependency>
 
         <!--解析MP3-->
@@ -210,19 +191,25 @@
         <dependency>
             <groupId>org.apache.ant</groupId>
             <artifactId>ant</artifactId>
-            <version>1.10.11</version>
+            <version>1.10.15</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
-            <version>1.26.1</version>
+            <version>1.28.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- api文档-->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.8.6</version>
+            <version>2.8.9</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.module</groupId>
@@ -290,16 +277,6 @@
             <version>0.18.0</version>
         </dependency>
         <dependency>
-            <groupId>e-iceblue</groupId>
-            <artifactId>spire.doc.free</artifactId>
-            <version>5.2.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jaxb</groupId>
-            <artifactId>jaxb-runtime</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
             <version>2.9.2</version>
@@ -320,26 +297,6 @@
             <artifactId>jsoup</artifactId>
             <version>1.18.1</version>
         </dependency>
-        <dependency>
-            <groupId>org.xhtmlrenderer</groupId>
-            <artifactId>flying-saucer-pdf</artifactId>
-            <version>9.9.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.jai-imageio</groupId>
-            <artifactId>jai-imageio-core</artifactId>
-            <version>1.4.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.jai-imageio</groupId>
-            <artifactId>jai-imageio-jpeg2000</artifactId>
-            <version>1.4.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.itextpdf</groupId>
-            <artifactId>html2pdf</artifactId>
-            <version>5.0.5</version>
-        </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -351,12 +308,6 @@
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
             <version>3.18.2</version>
-        </dependency>
-
-        <!-- websocket-->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
         <!-- springboot 缓存自动配置-->
@@ -373,11 +324,6 @@
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
             <version>3.2.12.RELEASE</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.oshi</groupId>
-            <artifactId>oshi-core</artifactId>
-            <version>6.2.2</version>
         </dependency>
         <!-- ip定位-->
         <dependency>
@@ -412,6 +358,10 @@
                 <exclusion>
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcprov-jdk15on</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -483,23 +433,40 @@
 
                         <configuration>
                             <buildArgs>
-<!--                                <buildArg>-H:+PrintAnalysisCallTree</buildArg>-->
-                                <buildArg>-Dorg.apache.lucene.store.MMapDirectory.enableMemorySegments=false</buildArg>
+                                <!--                                <buildArg>-H:+PrintAnalysisCallTree</buildArg>-->
+                                <!--                                <buildArg>-Dorg.apache.lucene.store.MMapDirectory.enableMemorySegments=false</buildArg>-->
 
-<!--                                <buildArg>&#45;&#45;initialize-at-build-time=cn.hutool.core.io.CharsetDetector</buildArg>-->
+                                <!--                                <buildArg>&#45;&#45;initialize-at-build-time=cn.hutool.core.io.CharsetDetector</buildArg>-->
                                 <!-- 将 RandomUtil 也设置为运行时初始化 -->
-<!--                                <buildArg>&#45;&#45;initialize-at-run-time=cn.hutool.core.util.RandomUtil</buildArg>-->
-                                <buildArg>--initialize-at-build-time=com.spire.doc.packages</buildArg>
-<!--                                <buildArg>&#45;&#45;trace-object-instantiation=java.security.SecureRandom</buildArg>-->
+                                <!--                                <buildArg>&#45;&#45;initialize-at-run-time=cn.hutool.core.util.RandomUtil</buildArg>-->
+                                <!--                                <buildArg>&#45;&#45;trace-object-instantiation=java.security.SecureRandom</buildArg>-->
 
                                 <!-- PDFBox 相关配置 -->
-                                <buildArg>--initialize-at-build-time==org.apache.pdfbox</buildArg>
+                                <!--                                <buildArg>&#45;&#45;initialize-at-build-time==org.apache.pdfbox</buildArg>-->
 
-<!--                                <buildArg>&#45;&#45;exact-reachability-metadata</buildArg>-->
+                                <!--                                <buildArg>&#45;&#45;exact-reachability-metadata</buildArg>-->
 
-                                <buildArg>-H:+AddAllCharsets</buildArg>
-                                <buildArg>-H:+AllowIncompleteClasspath</buildArg>
-                                <buildArg>--enable-url-protocols=http,https</buildArg>
+                                <!--                                <buildArg>&#45;&#45;initialize-at-build-time=com.spire.doc.packages</buildArg>-->
+
+<!--                                <buildArg>&#45;&#45;initialize-at-run-time=javax.imageio.ImageIO</buildArg>-->
+<!--                                <buildArg>-march=native</buildArg>-->
+<!--                                <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>-->
+<!--                                <buildArg>-H:+AddAllCharsets</buildArg>-->
+<!--                                <buildArg>-H:+AllowIncompleteClasspath</buildArg>-->
+<!--                                <buildArg>&#45;&#45;enable-url-protocols=http,https</buildArg>-->
+
+<!--                                    <buildArg>-Djava.awt.headless=false</buildArg>-->
+<!--                                    <buildArg>-H:ConfigurationFileDirectories=src/main/resources/META-INF/native-image</buildArg>-->
+<!--                                    <buildArg>-H:ConfigurationFileDirectories=/Users/jmal/studio/myProject/github/jmal-cloud-server/src/main/resources/native-image-test/</buildArg>-->
+<!--                                    <buildArg>&#45;&#45;add-modules=java.desktop</buildArg>-->
+<!--                                    <buildArg>&#45;&#45;initialize-at-run-time=java.awt,java.awt.color,java.awt.dnd,java.awt.event,java.awt.font,java.awt.geom,java.awt.im,java.awt.image,java.awt.image.renderable,java.awt.print,javax.imageio,javax.print,javax.swing,sun.awt,sun.font,sun.java2d</buildArg>-->
+
+                                    <buildArg>-march=native</buildArg>
+
+                                    <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
+                                    <buildArg>-H:+AddAllCharsets</buildArg>
+                                    <buildArg>-H:+AllowIncompleteClasspath</buildArg>
+                                    <buildArg>--enable-url-protocols=http,https</buildArg>
                             </buildArgs>
                         </configuration>
 

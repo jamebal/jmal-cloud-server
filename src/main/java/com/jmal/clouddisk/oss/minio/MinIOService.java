@@ -6,7 +6,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.google.common.collect.HashMultimap;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.interceptor.FileInterceptor;
+import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.oss.*;
 import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import io.minio.*;
@@ -434,7 +434,7 @@ public class MinIOService implements IOssService {
     public FileInfo getThumbnail(String objectName, File file, int width) {
         try {
             this.minIoClient.downloadObject(bucketName, objectName, file);
-            byte[] bytes = FileInterceptor.imageCrop(file, "80", String.valueOf(width), null);
+            byte[] bytes = ImageMagickProcessor.cropImage(file, "80", String.valueOf(width), null);
             FileUtil.writeBytes(bytes, file);
             return baseOssService.getFileInfo(objectName);
         } catch (Exception e) {

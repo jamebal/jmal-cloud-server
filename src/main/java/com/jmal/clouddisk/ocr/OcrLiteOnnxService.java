@@ -3,16 +3,13 @@ package com.jmal.clouddisk.ocr;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.media.FFMPEGCommand;
 import com.jmal.clouddisk.service.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-
-import static com.jmal.clouddisk.util.FFMPEGUtils.getWaitingForResults;
-
+import java.io.Writer;
 
 @Service("ocrLiteOnnx")
 @RequiredArgsConstructor
@@ -21,62 +18,41 @@ public class OcrLiteOnnxService implements IOcrService {
 
     public final FileProperties fileProperties;
 
-    @Override
-    public String doOCR(String imagePath, String tempImagePath) {
-        if (CharSequenceUtil.isBlank(imagePath)) {
-            return "";
-        }
-        String resultTxtPath = null;
-        try {
-            resultTxtPath = getResultText(imagePath, imagePath + "-result.txt");
-            if (!FileUtil.isFile(resultTxtPath)) {
-                return "";
-            }
-            return FileUtil.readUtf8String(resultTxtPath);
-        } catch (Exception e) {
-            log.warn("Error while performing OCR: {}", e.getMessage(), e);
-        } finally {
-            FileUtil.del(tempImagePath);
-            if (FileUtil.isFile(resultTxtPath)) {
-                FileUtil.del(resultTxtPath);
-            }
-        }
-        return "";
-    }
-
     /**
-     * 获取OCR识别结果
-     * @param inputPath 输入图片路径
-     * @param outputPath 输出文件路径
-     * @return String
+     * 【已优化】对指定的图片执行 OCR, 并将结果直接流式传输到 Writer.
+     *
+     * @param writer        用于接收 OCR 结果的 Writer.
+     * @param imagePath     需要识别的图片文件的路径.
+     * @param tempImagePath 临时图片文件的路径 (用于 OCR 后删除).
      */
-    public String getResultText(String inputPath, String outputPath) {
-        if (FFMPEGCommand.hasNoFFmpeg()) {
-            return outputPath;
-        }
-        if (FileUtil.exist(outputPath)) {
-            return outputPath;
+    @Override
+    public void doOCR(Writer writer, String imagePath, String tempImagePath) {
+        if (CharSequenceUtil.isBlank(imagePath)) {
+            return;
         }
         try {
-            ProcessBuilder processBuilder = getOcrLiteOnnxProcessBuilder(inputPath);
-            Process process = processBuilder.start();
-            return getWaitingForResults(outputPath, processBuilder, process, 60);
-        } catch (InterruptedException e) {
-            log.error(e.getMessage(), e);
-            Thread.currentThread().interrupt();
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            ProcessBuilder processBuilder = getOcrLiteOnnxProcessBuilder(imagePath);
+            // 调用流式处理方法
+            CommonOcrService.executeAndPipeOutput(writer, processBuilder);
+        } catch (IOException | InterruptedException e) {
+            log.warn("Error while performing OCR with OcrLiteOnnx: {}", e.getMessage(), e);
+            // 如果在等待时被中断，恢复中断状态
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        } finally {
+            // 无论成功与否，都删除用于 OCR 的临时图片
+            FileUtil.del(tempImagePath);
         }
-        return null;
     }
 
     /**
-     * 使用ocr_lite_onnx进行OCR识别
+     * 构建 OcrLiteOnnx 命令的 ProcessBuilder.
      * @param inputPath 输入图片路径
      * @return ProcessBuilder
      */
     private ProcessBuilder getOcrLiteOnnxProcessBuilder(String inputPath) {
-        ProcessBuilder processBuilder = new ProcessBuilder(
+        return new ProcessBuilder(
                 Constants.OCR_LITE_ONNX,
                 "--models", fileProperties.getOcrLiteONNXModelPath(),
                 "--det", "dbnet.onnx",
@@ -90,10 +66,7 @@ public class OcrLiteOnnxService implements IOcrService {
                 "--boxThresh", "0.3",
                 "--unClipRatio", "2.0",
                 "--doAngle", "0",
-                "--mostAngle", "0",
-                "--outputResultImg", "0"
+                "--mostAngle", "0"
         );
-        processBuilder.redirectErrorStream(true);
-        return processBuilder;
     }
 }

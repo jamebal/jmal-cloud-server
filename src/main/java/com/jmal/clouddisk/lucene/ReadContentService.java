@@ -1,10 +1,7 @@
 package com.jmal.clouddisk.lucene;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.ocr.OcrService;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.impl.ImageService;
 import com.jmal.clouddisk.service.impl.PathService;
 import com.jmal.clouddisk.util.FileContentUtil;
 import lombok.RequiredArgsConstructor;
@@ -13,16 +10,6 @@ import nl.siegmann.epublib.domain.Book;
 import nl.siegmann.epublib.domain.Resource;
 import nl.siegmann.epublib.domain.Spine;
 import nl.siegmann.epublib.epub.EpubReader;
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.cos.COSName;
-import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDResources;
-import org.apache.pdfbox.pdmodel.graphics.PDXObject;
-import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
-import org.apache.pdfbox.rendering.PDFRenderer;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.hslf.usermodel.HSLFShape;
 import org.apache.poi.hslf.usermodel.HSLFSlide;
 import org.apache.poi.hslf.usermodel.HSLFSlideShow;
@@ -39,13 +26,8 @@ import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.apache.poi.xslf.usermodel.XSLFTextShape;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xwpf.usermodel.*;
-import org.bson.types.ObjectId;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -58,13 +40,10 @@ import java.util.regex.Pattern;
 @Slf4j
 public class ReadContentService {
 
-    private final OcrService ocrService;
-
     private final PathService pathService;
 
-    private final ImageService imageService;
+    private final CoverFileService coverFileService;
 
-    private final MongoTemplate mongoTemplate;
 
     /**
      * 将 DWG 文件转换为 MXWeb 文件
@@ -81,72 +60,6 @@ public class ReadContentService {
         }
     }
 
-    public static boolean checkPageContent(PDDocument document, int pageIndex) throws IOException {
-        PDPage page = document.getPage(pageIndex); // 获取页面
-        if (page == null) {
-            return false;
-        }
-        // 检查是否含有图片
-        PDResources resources = page.getResources();
-        if (resources == null) {
-            return false;
-        }
-        for (COSName xObjectName : resources.getXObjectNames()) {
-            PDXObject xObject = resources.getXObject(xObjectName);
-            if (xObject instanceof PDImageXObject) {
-                // 如果找到至少一张图片，则可以提前退出
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public void readPdfContent(File file, String fileId, Writer writer) {
-        try (PDDocument document = Loader.loadPDF(new RandomAccessReadBufferedFile(file))) {
-            String username = pathService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
-
-            // 生成封面图像
-            if (CharSequenceUtil.isNotBlank(fileId)) {
-                File coverFile = FileContentUtil.pdfCoverImage(file, document, pathService.getVideoCacheDir(username, fileId));
-                updateCoverFileDocument(fileId, coverFile);
-            }
-
-            PDFRenderer pdfRenderer = new PDFRenderer(document);
-            PDFTextStripper pdfStripper = new PDFTextStripper();
-
-            for (int pageIndex = 0; pageIndex < document.getNumberOfPages(); pageIndex++) { // 使用 0-based 索引
-                readPdfOfPage(file, pageIndex, pdfStripper, document, writer, pdfRenderer, username);
-            }
-        } catch (IOException e) {
-            FileContentUtil.readFailed(file, e);
-        }
-    }
-
-    private void readPdfOfPage(File file, int pageIndex, PDFTextStripper pdfStripper, PDDocument document, Writer writer, PDFRenderer pdfRenderer, String username) {
-        try {
-            int pageNumber = pageIndex + 1;
-            pdfStripper.setStartPage(pageNumber); // PDFTextStripper 使用 1-based 索引
-            pdfStripper.setEndPage(pageNumber);
-            String text = pdfStripper.getText(document).trim();
-
-            // 如果页面包含文字，添加提取的文字
-            if (!text.isEmpty()) {
-                writer.write(text);
-            }
-            // 如果页面包含图片或没有文字，则进行 OCR
-            if ((checkPageContent(document, pageIndex) || text.isEmpty()) && Boolean.TRUE.equals(ocrService.getOcrConfig().getEnable())) {
-                String ocrText = ocrService.extractPageWithOCR(file, pdfRenderer, pageIndex, document.getNumberOfPages(), username);
-                if (CharSequenceUtil.isNotBlank(ocrText)) {
-                    writer.write(ocrText);
-                }
-            }
-        } catch (IOException e) {
-            log.error("提取文字失败, {}, 页数: {}", file.getName(), pageIndex, e);
-        } catch (Exception e) {
-            log.error("提取文字失败1, {}, 页数: {}", file.getName(), pageIndex, e);
-        }
-    }
-
     public void readEpubContent(File file, String fileId, Writer writer) {
         try (InputStream fileInputStream = new FileInputStream(file)) {
             // 打开 EPUB 文件
@@ -157,7 +70,7 @@ public class ReadContentService {
             String username = pathService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
             if (CharSequenceUtil.isNotBlank(fileId)) {
                 File coverFile = FileContentUtil.epubCoverImage(book, pathService.getVideoCacheDir(username, fileId));
-                updateCoverFileDocument(fileId, coverFile);
+                coverFileService.updateCoverFileDocument(fileId, coverFile);
             }
 
             // 获取章节内容
@@ -330,24 +243,6 @@ public class ReadContentService {
             default:
                 return "";
         }
-    }
-
-    /**
-     * 更新文件封面
-     *
-     * @param fileId    文件Id
-     * @param coverFile 封面文件
-     */
-    public void updateCoverFileDocument(String fileId, File coverFile) {
-        if (coverFile == null || !coverFile.exists()) {
-            return;
-        }
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(new ObjectId(fileId)));
-        Update update = new Update();
-        imageService.generateThumbnail(coverFile, update);
-        update.set("showCover", true);
-        mongoTemplate.updateFirst(query, update, FileDocument.class);
     }
 
 }

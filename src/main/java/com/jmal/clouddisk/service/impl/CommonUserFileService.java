@@ -10,10 +10,7 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.lucene.EtagService;
 import com.jmal.clouddisk.lucene.LuceneIndexQueueEvent;
 import com.jmal.clouddisk.lucene.RebuildIndexTaskService;
-import com.jmal.clouddisk.media.HeifUtils;
-import com.jmal.clouddisk.media.VideoInfo;
-import com.jmal.clouddisk.media.VideoInfoDO;
-import com.jmal.clouddisk.media.VideoProcessService;
+import com.jmal.clouddisk.media.*;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.Music;
 import com.jmal.clouddisk.model.OperationPermission;
@@ -92,7 +89,7 @@ public class CommonUserFileService {
 
     private final VideoProcessService videoProcessService;
 
-    private final ImageService imageService;
+    private final ImageMagickProcessor imageMagickProcessor;
 
     public FileDocument getFileDocument(String userId, String fileName, String relativePath, Query query) {
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
@@ -431,7 +428,7 @@ public class CommonUserFileService {
         // 获取图片Exif信息
         update.set("exif", ImageExifUtil.getExif(file));
         // 生成缩略图
-        imageService.generateThumbnail(file, update);
+        imageMagickProcessor.generateThumbnail(file, update);
     }
 
     private File replaceWebp(String userId, File file, String username) {

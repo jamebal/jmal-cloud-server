@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;
@@ -50,7 +51,7 @@ public class UserFileService {
             PathUtil.del(Paths.get(fileProperties.getRootDir(), username));
             Query query = new Query();
             query.addCriteria(Criteria.where(USER_ID).in(userId));
-            mongoTemplate.remove(query, FileServiceImpl.class);
+            mongoTemplate.remove(query, FileDocument.class);
         });
     }
 
@@ -95,7 +96,7 @@ public class UserFileService {
         query.addCriteria(Criteria.where("_id").is(fileId));
         Update update = new Update();
         update.set("isPublic", true);
-        mongoTemplate.updateFirst(query, update, FileServiceImpl.class);
+        mongoTemplate.updateFirst(query, update, FileDocument.class);
     }
 
 }
