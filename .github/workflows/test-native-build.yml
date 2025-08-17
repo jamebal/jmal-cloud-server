@@ -60,6 +60,10 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          # 为了调试，暂时禁用 buildx 缓存，确保完全干净
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false # 禁用构建证明，排除干扰
           file: ./Dockerfile.native
           push: true
           # 只构建并推送当前运行器架构的镜像
@@ -71,35 +75,46 @@ jobs:
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
 
-  merge-manifests:
-    # 等待所有架构的构建都完成后再运行
-    needs: build-per-arch
-    runs-on: ubuntu-latest # 合并操作不耗资源，用哪个都行
-
-    steps:
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.GHCR_IO_USERNAME }}
-          password: ${{ secrets.GHCR_IO_TOKEN }}
-
-      - name: Create and push Docker Hub manifest
+      # ======================= 新增的调试步骤 =======================
+      - name: Inspect the pushed image RIGHT AFTER push
+        if: always() # 保证即使前面步骤失败也运行此步骤
         run: |
-          docker manifest create jmal/jmalcloud_native:test \
-            --amend jmal/jmalcloud_native:test-amd64 \
-            --amend jmal/jmalcloud_native:test-arm64
-          docker manifest push jmal/jmalcloud_native:test
+          echo "--- Inspecting Docker Hub image ---"
+          docker manifest inspect jmal/jmalcloud_native:test-${{ matrix.arch }}
+          
+          echo "--- Inspecting GHCR image ---"
+          docker manifest inspect ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-${{ matrix.arch }}
+      # =============================================================
 
-      - name: Create and push GHCR manifest
-        run: |
-          docker manifest create ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test \
-            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-amd64 \
-            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-arm64
-          docker manifest push ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test
+#  merge-manifests:
+#    # 等待所有架构的构建都完成后再运行
+#    needs: build-per-arch
+#    runs-on: ubuntu-latest # 合并操作不耗资源，用哪个都行
+#
+#    steps:
+#      - name: Login to Docker Hub
+#        uses: docker/login-action@v3
+#        with:
+#          username: ${{ secrets.DOCKER_USERNAME }}
+#          password: ${{ secrets.DOCKER_PASSWORD }}
+#
+#      - name: Login to GitHub Container Registry
+#        uses: docker/login-action@v3
+#        with:
+#          registry: ghcr.io
+#          username: ${{ secrets.GHCR_IO_USERNAME }}
+#          password: ${{ secrets.GHCR_IO_TOKEN }}
+#
+#      - name: Create and push Docker Hub manifest
+#        run: |
+#          docker manifest create jmal/jmalcloud_native:test \
+#            --amend jmal/jmalcloud_native:test-amd64 \
+#            --amend jmal/jmalcloud_native:test-arm64
+#          docker manifest push jmal/jmalcloud_native:test
+#
+#      - name: Create and push GHCR manifest
+#        run: |
+#          docker manifest create ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test \
+#            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-amd64 \
+#            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-arm64
+#          docker manifest push ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test
