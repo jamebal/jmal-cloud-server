@@ -1,4 +1,4 @@
-name: Build and Push Multi-Arch Native Image
+name: Build and Push Multi-Arch Native Image (Multi-Stage Docker)
 
 on:
   push:
@@ -7,54 +7,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-push-multi-arch:
+  build-and-push:
+    name: Build and Push Multi-Arch Image
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract project version from pom.xml
-        id: project_version
-        run: |
-          VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-          echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      # ------------------- 关键修改：设置 QEMU 和 Buildx -------------------
       - name: Set up QEMU
-        # QEMU 让我们可以在 amd64 runner 上模拟并构建 arm64 镜像
+        # QEMU 仍然是必需的，以便 amd64 runner 可以构建 arm64 镜像
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      # ------------------- GraalVM 设置 -------------------
-      - name: Set up GraalVM for Native Image
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: '24'
-          distribution: 'graalvm'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          cache: 'maven'
-
-      # ------------------- 关键修改：为不同架构分别构建 -------------------
-      - name: Build Native Image for AMD64
-        run: |
-          # 使用 -march=x86-64-v2 确保良好的兼容性
-          mvn clean package -Pnative -DskipTests -Dnative.build.args="-march=x86-64-v2"
-          # 重命名输出文件以便区分
-          mv target/jmalcloud target/app-amd64
-
-      - name: Install ARM64 cross-compilation toolchain
-        run: gu install native-image-musl-aarch64-java24
-
-      - name: Build Native Image for ARM64 (Cross-compilation)
-        run: |
-          # 告诉GraalVM我们要交叉编译 aarch64 (arm64) 架构
-          mvn package -Pnative -DskipTests -Dnative.build.args="-H:Architecture=aarch64"
-          # 重命名输出文件
-          mv target/jmalcloud target/app-arm64
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -69,16 +35,27 @@ jobs:
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
+      - name: Extract project version from pom.xml
+        id: project_version
+        run: |
+          VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+          echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV
+
+      # 核心步骤：构建并推送多架构镜像
+      # 所有复杂的构建逻辑都已封装在 Dockerfile.native 中
       - name: Build and push multi-platform Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.native
           push: true
-          # 现在 platforms 参数将能正常工作，因为它会在上下文中找到对应的文件
+          # buildx 会为每个平台执行一次 Dockerfile 构建
           platforms: linux/amd64,linux/arm64
           tags: |
             jmal/jmalcloud_native:test
             ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
+          # 启用 Docker build cache，加速后续构建
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
