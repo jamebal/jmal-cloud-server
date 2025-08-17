@@ -43,13 +43,13 @@
       "type": "[Ljava.nio.charset.Charset;"
     },
     {
-      "type": "[Ljava.util.HashMap$Node;"
-    },
-    {
       "type": "[Lkotlin.annotation.AnnotationTarget;"
     },
     {
-      "type": "[Lorg.apache.lucene.index.FieldInfo;"
+      "type": "[Lorg.apache.lucene.index.TermStates$PendingTermLookup;"
+    },
+    {
+      "type": "[Lorg.apache.lucene.search.DisiWrapper;"
     },
     {
       "type": "[Lorg.apache.lucene.util.fst.FSTCompiler$Arc;"
@@ -61,22 +61,10 @@
       "type": "[Lorg.apache.lucene.util.packed.PackedInts$Reader;"
     },
     {
-      "type": "[Lorg.openxmlformats.schemas.drawingml.x2006.main.CTNonVisualDrawingProps;"
-    },
-    {
-      "type": "[Lorg.openxmlformats.schemas.drawingml.x2006.picture.CTPicture;"
-    },
-    {
-      "type": "[Lorg.openxmlformats.schemas.presentationml.x2006.main.CTGroupShape;"
-    },
-    {
       "type": "[Lorg.springframework.core.annotation.AnnotationAttributes;"
     },
     {
       "type": "[Lorg.springframework.core.annotation.TypeMappedAnnotation;"
-    },
-    {
-      "type": "[Lorg.springframework.data.mapping.Parameter;"
     },
     {
       "type": "[Lorg.springframework.data.mongodb.core.index.CompoundIndex;"
@@ -392,14 +380,44 @@
       ]
     },
     {
-      "type": "com.alibaba.fastjson2.JSONObject",
-      "allDeclaredFields": true
+      "type": "com.alibaba.fastjson2.JSONObject"
     },
     {
       "type": "com.alibaba.fastjson2.util.TypeUtils$Cache",
       "fields": [
         {
           "name": "chars"
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson2.writer.FieldWriter",
+      "fields": [
+        {
+          "name": "initObjectWriter"
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson2.writer.FieldWriterObject",
+      "fields": [
+        {
+          "name": "initValueClass"
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson2.writer.OWG_1_5_ResponseResult",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class",
+            "java.lang.String",
+            "java.lang.String",
+            "long",
+            "java.util.List"
+          ]
         }
       ]
     },
@@ -429,24 +447,6 @@
     },
     {
       "type": "com.drew.metadata.exif.ExifSubIFDDirectory",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.drew.metadata.exif.GpsDirectory",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.drew.metadata.exif.makernotes.AppleMakernoteDirectory",
       "methods": [
         {
           "name": "<init>",
@@ -875,6 +875,14 @@
       ]
     },
     {
+      "type": "com.github.benmanes.caffeine.cache.BoundedLocalCache",
+      "fields": [
+        {
+          "name": "refreshes"
+        }
+      ]
+    },
+    {
       "type": "com.github.benmanes.caffeine.cache.Cache"
     },
     {
@@ -939,40 +947,25 @@
     },
     {
       "type": "com.github.benmanes.caffeine.cache.SSMSA",
-      "methods": [
+      "fields": [
         {
-          "name": "<init>",
-          "parameterTypes": [
-            "com.github.benmanes.caffeine.cache.Caffeine",
-            "com.github.benmanes.caffeine.cache.CacheLoader",
-            "boolean"
-          ]
+          "name": "FACTORY"
         }
       ]
     },
     {
       "type": "com.github.benmanes.caffeine.cache.SSMSW",
-      "methods": [
+      "fields": [
         {
-          "name": "<init>",
-          "parameterTypes": [
-            "com.github.benmanes.caffeine.cache.Caffeine",
-            "com.github.benmanes.caffeine.cache.CacheLoader",
-            "boolean"
-          ]
+          "name": "FACTORY"
         }
       ]
     },
     {
       "type": "com.github.benmanes.caffeine.cache.SSW",
-      "methods": [
+      "fields": [
         {
-          "name": "<init>",
-          "parameterTypes": [
-            "com.github.benmanes.caffeine.cache.Caffeine",
-            "com.github.benmanes.caffeine.cache.CacheLoader",
-            "boolean"
-          ]
+          "name": "FACTORY"
         }
       ]
     },
@@ -985,64 +978,12 @@
       ]
     },
     {
-      "type": "com.github.jaiimageio.impl.common.PackageUtil"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.plugins.bmp.BMPImageReaderSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.plugins.bmp.BMPImageWriterSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.plugins.gif.GIFImageWriterSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.plugins.pcx.PCXImageReaderSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.plugins.pcx.PCXImageWriterSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.plugins.pnm.PNMImageReaderSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.plugins.pnm.PNMImageWriterSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.plugins.raw.RawImageReaderSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.plugins.raw.RawImageWriterSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.plugins.tiff.TIFFImageReaderSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.plugins.tiff.TIFFImageWriterSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.plugins.wbmp.WBMPImageReaderSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.plugins.wbmp.WBMPImageWriterSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.stream.ChannelImageInputStreamSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.impl.stream.ChannelImageOutputStreamSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.jpeg2000.impl.J2KImageReaderCodecLibSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.jpeg2000.impl.J2KImageReaderSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.jpeg2000.impl.J2KImageWriterCodecLibSpi"
-    },
-    {
-      "type": "com.github.jaiimageio.jpeg2000.impl.J2KImageWriterSpi"
+      "type": "com.github.benmanes.caffeine.cache.UnboundedLocalCache",
+      "fields": [
+        {
+          "name": "refreshes"
+        }
+      ]
     },
     {
       "type": "com.github.mxab.thymeleaf.extras.dataattribute.dialect.DataAttributeDialect"
@@ -1735,13 +1676,6 @@
             "com.jmal.clouddisk.service.impl.LogService",
             "com.jmal.clouddisk.service.IUserService"
           ]
-        },
-        {
-          "name": "notFind",
-          "parameterTypes": [
-            "jakarta.servlet.http.HttpServletRequest",
-            "org.springframework.ui.Model"
-          ]
         }
       ]
     },
@@ -1791,24 +1725,6 @@
         },
         {
           "name": "token",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.controller.record.MfaSetupResponse",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "mfaEnable",
-          "parameterTypes": []
-        },
-        {
-          "name": "qrCodeImageUri",
-          "parameterTypes": []
-        },
-        {
-          "name": "secret",
           "parameterTypes": []
         }
       ]
@@ -1915,19 +1831,7 @@
           ]
         },
         {
-          "name": "getOcrConfig",
-          "parameterTypes": []
-        },
-        {
-          "name": "getPreviewConfig",
-          "parameterTypes": []
-        },
-        {
           "name": "getTaskProgress",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTranscodeConfig",
           "parameterTypes": []
         },
         {
@@ -1941,12 +1845,6 @@
         {
           "name": "recalculateFolderSize",
           "parameterTypes": []
-        },
-        {
-          "name": "setOcrConfig",
-          "parameterTypes": [
-            "com.jmal.clouddisk.ocr.OcrConfig"
-          ]
         },
         {
           "name": "sync",
@@ -2019,16 +1917,6 @@
           ]
         },
         {
-          "name": "addFile",
-          "parameterTypes": [
-            "java.lang.String",
-            "java.lang.Boolean",
-            "java.lang.String",
-            "java.lang.String",
-            "java.lang.String"
-          ]
-        },
-        {
           "name": "checkFileExist",
           "parameterTypes": [
             "com.jmal.clouddisk.model.UploadApiParamDTO"
@@ -2048,21 +1936,6 @@
           ]
         },
         {
-          "name": "delete",
-          "parameterTypes": [
-            "java.lang.String",
-            "java.lang.String[]",
-            "java.lang.String",
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "favorite",
-          "parameterTypes": [
-            "java.lang.String[]"
-          ]
-        },
-        {
           "name": "list",
           "parameterTypes": [
             "com.jmal.clouddisk.model.UploadApiParamDTO"
@@ -2074,12 +1947,6 @@
             "java.lang.String",
             "java.lang.String",
             "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "merge",
-          "parameterTypes": [
-            "com.jmal.clouddisk.model.UploadApiParamDTO"
           ]
         },
         {
@@ -2100,15 +1967,6 @@
           ]
         },
         {
-          "name": "rename",
-          "parameterTypes": [
-            "java.lang.String",
-            "java.lang.String",
-            "java.lang.String",
-            "java.lang.String"
-          ]
-        },
-        {
           "name": "searchFile",
           "parameterTypes": [
             "com.jmal.clouddisk.model.UploadApiParamDTO",
@@ -2116,29 +1974,13 @@
           ]
         },
         {
-          "name": "searchFileAndOpenDir",
+          "name": "setTag",
           "parameterTypes": [
-            "com.jmal.clouddisk.model.UploadApiParamDTO",
-            "java.lang.String",
-            "java.lang.String"
+            "com.jmal.clouddisk.model.EditTagDTO"
           ]
         },
         {
           "name": "thumbnail",
-          "parameterTypes": [
-            "java.lang.String",
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "thumbnailByUsername",
-          "parameterTypes": [
-            "java.lang.String",
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "thumbnailName",
           "parameterTypes": [
             "java.lang.String",
             "java.lang.Boolean"
@@ -2341,10 +2183,6 @@
             "com.jmal.clouddisk.service.impl.UserLoginHolder",
             "com.jmal.clouddisk.util.MessageUtil"
           ]
-        },
-        {
-          "name": "initiateMfaSetup",
-          "parameterTypes": []
         }
       ]
     },
@@ -2367,6 +2205,7 @@
           "name": "<init>",
           "parameterTypes": [
             "com.jmal.clouddisk.ocr.OcrService",
+            "com.jmal.clouddisk.media.ImageMagickProcessor",
             "com.jmal.clouddisk.service.impl.UserLoginHolder"
           ]
         }
@@ -2668,17 +2507,7 @@
           "parameterTypes": []
         },
         {
-          "name": "exceptionHandler",
-          "parameterTypes": [
-            "java.lang.Exception"
-          ]
-        },
-        {
           "name": "handleAsyncRequestTimeoutException",
-          "parameterTypes": []
-        },
-        {
-          "name": "handleNoResourceException",
           "parameterTypes": []
         }
       ]
@@ -2826,16 +2655,25 @@
           ]
         },
         {
-          "name": "getNewVersion",
-          "parameterTypes": []
-        },
-        {
           "name": "init",
           "parameterTypes": []
         },
         {
           "name": "initIndicesAfterStartup",
           "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.lucene.CoverFileService",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.media.ImageMagickProcessor",
+            "org.springframework.data.mongodb.core.MongoTemplate"
+          ]
         }
       ]
     },
@@ -2972,6 +2810,7 @@
             "org.apache.lucene.index.IndexWriter",
             "com.jmal.clouddisk.service.impl.CommonUserService",
             "com.jmal.clouddisk.lucene.ReadContentService",
+            "com.jmal.clouddisk.lucene.PopplerPdfReader",
             "com.jmal.clouddisk.lucene.RebuildIndexTaskService",
             "com.jmal.clouddisk.lucene.SearchFileService",
             "com.jmal.clouddisk.lucene.EtagService"
@@ -2988,16 +2827,29 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.lucene.PopplerPdfReader",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.lucene.CoverFileService",
+            "com.jmal.clouddisk.ocr.OcrService",
+            "com.jmal.clouddisk.media.ImageMagickProcessor",
+            "com.jmal.clouddisk.service.impl.PathService"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.lucene.ReadContentService",
       "allDeclaredFields": true,
       "methods": [
         {
           "name": "<init>",
           "parameterTypes": [
-            "com.jmal.clouddisk.ocr.OcrService",
             "com.jmal.clouddisk.service.impl.PathService",
-            "com.jmal.clouddisk.service.impl.ImageService",
-            "org.springframework.data.mongodb.core.MongoTemplate"
+            "com.jmal.clouddisk.lucene.CoverFileService"
           ]
         }
       ]
@@ -3103,70 +2955,20 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.media.TranscodeConfig",
+      "type": "com.jmal.clouddisk.media.ImageMagickProcessor",
       "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getBitrate",
-          "parameterTypes": []
-        },
-        {
-          "name": "getBitrateCond",
-          "parameterTypes": []
-        },
-        {
-          "name": "getEnable",
-          "parameterTypes": []
-        },
-        {
-          "name": "getFrameRate",
-          "parameterTypes": []
-        },
-        {
-          "name": "getFrameRateCond",
-          "parameterTypes": []
-        },
-        {
-          "name": "getHeight",
-          "parameterTypes": []
-        },
-        {
-          "name": "getHeightCond",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIsReTranscode",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMaxThreads",
-          "parameterTypes": []
-        },
-        {
-          "name": "getVttThumbnailCount",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.media.TranscodeConfig_Accessor_52b0yl",
       "methods": [
         {
           "name": "<init>",
           "parameterTypes": [
-            "com.jmal.clouddisk.media.TranscodeConfig"
+            "com.jmal.clouddisk.config.FileProperties"
           ]
         }
       ]
     },
     {
-      "type": "com.jmal.clouddisk.media.TranscodeConfig_Instantiator_52b0yl",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
+      "type": "com.jmal.clouddisk.media.TranscodeConfig",
+      "allDeclaredFields": true
     },
     {
       "type": "com.jmal.clouddisk.media.TranscodeStatus"
@@ -3225,7 +3027,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.media.VideoInfoDO_Accessor_qdbyh4",
+      "type": "com.jmal.clouddisk.media.VideoInfoDO_Accessor_oxf1bo",
       "methods": [
         {
           "name": "<init>",
@@ -3236,7 +3038,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.media.VideoInfoDO_Instantiator_qdbyh4",
+      "type": "com.jmal.clouddisk.media.VideoInfoDO_Instantiator_oxf1bo",
       "methods": [
         {
           "name": "<init>",
@@ -3357,7 +3159,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.DirectLink_Accessor_64qtox",
+      "type": "com.jmal.clouddisk.model.DirectLink_Accessor_1h8gua",
       "methods": [
         {
           "name": "<init>",
@@ -3368,7 +3170,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.DirectLink_Instantiator_64qtox",
+      "type": "com.jmal.clouddisk.model.DirectLink_Instantiator_1h8gua",
       "methods": [
         {
           "name": "<init>",
@@ -3377,7 +3179,32 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.EditTagDTO"
+      "type": "com.jmal.clouddisk.model.EditTagDTO",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setFileIds",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        },
+        {
+          "name": "setRemoveTagIds",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        },
+        {
+          "name": "setTagList",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.ExifInfo",
@@ -3450,7 +3277,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.ExifInfo_Accessor_vyk7li",
+      "type": "com.jmal.clouddisk.model.ExifInfo_Accessor_eb23oa",
       "methods": [
         {
           "name": "<init>",
@@ -3461,7 +3288,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.ExifInfo_Instantiator_vyk7li",
+      "type": "com.jmal.clouddisk.model.ExifInfo_Instantiator_eb23oa",
       "methods": [
         {
           "name": "<init>",
@@ -3552,10 +3379,6 @@
           "parameterTypes": [
             "java.time.LocalDateTime"
           ]
-        },
-        {
-          "name": "uploadTime",
-          "parameterTypes": []
         }
       ]
     },
@@ -3774,7 +3597,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.FileDocument_Accessor_i3peti",
+      "type": "com.jmal.clouddisk.model.FileDocument_Accessor_loipkg",
       "methods": [
         {
           "name": "<init>",
@@ -3785,7 +3608,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.FileDocument_Instantiator_i3peti",
+      "type": "com.jmal.clouddisk.model.FileDocument_Instantiator_loipkg",
       "methods": [
         {
           "name": "<init>",
@@ -4093,7 +3916,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.FileIntroVO_Accessor_kce3tu",
+      "type": "com.jmal.clouddisk.model.FileIntroVO_Accessor_67akrw",
       "methods": [
         {
           "name": "<init>",
@@ -4104,7 +3927,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.FileIntroVO_Instantiator_kce3tu",
+      "type": "com.jmal.clouddisk.model.FileIntroVO_Instantiator_67akrw",
       "methods": [
         {
           "name": "<init>",
@@ -4139,7 +3962,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.GridFSBO_Accessor_r6sa0x",
+      "type": "com.jmal.clouddisk.model.GridFSBO_Accessor_k1bqyw",
       "methods": [
         {
           "name": "<init>",
@@ -4150,7 +3973,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.GridFSBO_Instantiator_r6sa0x",
+      "type": "com.jmal.clouddisk.model.GridFSBO_Instantiator_k1bqyw",
       "methods": [
         {
           "name": "<init>",
@@ -4278,7 +4101,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.LogOperation$IpInfo_Accessor_qkqm05",
+      "type": "com.jmal.clouddisk.model.LogOperation$IpInfo_Accessor_737c28",
       "methods": [
         {
           "name": "<init>",
@@ -4289,13 +4112,11 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.LogOperation$IpInfo_Instantiator_qkqm05",
+      "type": "com.jmal.clouddisk.model.LogOperation$IpInfo_Instantiator_737c28",
       "methods": [
         {
           "name": "<init>",
-          "parameterTypes": [
-            "com.jmal.clouddisk.model.LogOperation"
-          ]
+          "parameterTypes": []
         }
       ]
     },
@@ -4343,7 +4164,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.LogOperation_Accessor_s24pld",
+      "type": "com.jmal.clouddisk.model.LogOperation_Accessor_vn2etc",
       "methods": [
         {
           "name": "<init>",
@@ -4354,7 +4175,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.LogOperation_Instantiator_s24pld",
+      "type": "com.jmal.clouddisk.model.LogOperation_Instantiator_vn2etc",
       "methods": [
         {
           "name": "<init>",
@@ -4399,7 +4220,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.Metadata_Accessor_8gd7gd",
+      "type": "com.jmal.clouddisk.model.Metadata_Accessor_ec71dj",
       "methods": [
         {
           "name": "<init>",
@@ -4410,7 +4231,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.Metadata_Instantiator_8gd7gd",
+      "type": "com.jmal.clouddisk.model.Metadata_Instantiator_ec71dj",
       "methods": [
         {
           "name": "<init>",
@@ -4425,27 +4246,6 @@
     {
       "type": "com.jmal.clouddisk.model.OperationPermission",
       "allDeclaredFields": true
-    },
-    {
-      "type": "com.jmal.clouddisk.model.OperationTips",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getMsg",
-          "parameterTypes": []
-        },
-        {
-          "name": "getOperation",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSuccess",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.OperationTips$OperationTipsBuilder"
     },
     {
       "type": "com.jmal.clouddisk.model.Page"
@@ -4491,7 +4291,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.ShareDO_Accessor_denylm",
+      "type": "com.jmal.clouddisk.model.ShareDO_Accessor_np0jdk",
       "methods": [
         {
           "name": "<init>",
@@ -4502,7 +4302,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.ShareDO_Instantiator_denylm",
+      "type": "com.jmal.clouddisk.model.ShareDO_Instantiator_np0jdk",
       "methods": [
         {
           "name": "<init>",
@@ -4566,29 +4366,187 @@
     },
     {
       "type": "com.jmal.clouddisk.model.Tag",
-      "allDeclaredFields": true
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "getColor",
+          "parameterTypes": []
+        },
+        {
+          "name": "getName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTagId",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.TagDO",
-      "allDeclaredFields": true
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "getColor",
+          "parameterTypes": []
+        },
+        {
+          "name": "getId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSlug",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSort",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTagBackground",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUserId",
+          "parameterTypes": []
+        }
+      ]
     },
     {
-      "type": "com.jmal.clouddisk.model.TagDTO"
-    },
-    {
-      "type": "com.jmal.clouddisk.model.Trash",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "com.jmal.clouddisk.model.Trash_Accessor_a5d8ko",
+      "type": "com.jmal.clouddisk.model.TagDO_Accessor_xmftgf",
       "methods": [
         {
           "name": "<init>",
           "parameterTypes": [
-            "com.jmal.clouddisk.model.Trash"
+            "com.jmal.clouddisk.model.TagDO"
           ]
         }
       ]
+    },
+    {
+      "type": "com.jmal.clouddisk.model.TagDO_Instantiator_xmftgf",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.model.TagDTO",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "getArticleNum",
+          "parameterTypes": []
+        },
+        {
+          "name": "getColor",
+          "parameterTypes": []
+        },
+        {
+          "name": "getFontSize",
+          "parameterTypes": []
+        },
+        {
+          "name": "getId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSlug",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSort",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTagBackground",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUserId",
+          "parameterTypes": []
+        },
+        {
+          "name": "setColor",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setId",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setSlug",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setSort",
+          "parameterTypes": [
+            "java.lang.Integer"
+          ]
+        },
+        {
+          "name": "setTagBackground",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setUserId",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.model.Tag_Accessor_ln4yez",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.model.Tag"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.model.Tag_Instantiator_ln4yez",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.model.Trash",
+      "allDeclaredFields": true
     },
     {
       "type": "com.jmal.clouddisk.model.UploadApiParamDTO",
@@ -4639,11 +4597,11 @@
           "parameterTypes": []
         },
         {
-          "name": "getIsFolder",
+          "name": "getIsFavorite",
           "parameterTypes": []
         },
         {
-          "name": "getIsTrash",
+          "name": "getIsFolder",
           "parameterTypes": []
         },
         {
@@ -4763,13 +4721,13 @@
           ]
         },
         {
-          "name": "setIsFolder",
+          "name": "setIsFavorite",
           "parameterTypes": [
             "java.lang.Boolean"
           ]
         },
         {
-          "name": "setIsTrash",
+          "name": "setIsFolder",
           "parameterTypes": [
             "java.lang.Boolean"
           ]
@@ -4901,7 +4859,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_Accessor_dq8ttq",
+      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_Accessor_lvr32l",
       "methods": [
         {
           "name": "<init>",
@@ -4912,7 +4870,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_Instantiator_dq8ttq",
+      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_Instantiator_lvr32l",
       "methods": [
         {
           "name": "<init>",
@@ -5079,12 +5037,6 @@
         {
           "name": "getUserId",
           "parameterTypes": []
-        },
-        {
-          "name": "isShowAlonePage",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
         },
         {
           "name": "isShowBeian",
@@ -5347,7 +5299,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO_Accessor_3970fw",
+      "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO_Accessor_5bp1nb",
       "methods": [
         {
           "name": "<init>",
@@ -5358,7 +5310,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO_Instantiator_3970fw",
+      "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO_Instantiator_5bp1nb",
       "methods": [
         {
           "name": "<init>",
@@ -5499,7 +5451,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_lcoqc1",
+      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_pu327g",
       "methods": [
         {
           "name": "<init>",
@@ -5510,7 +5462,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Instantiator_lcoqc1",
+      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Instantiator_pu327g",
       "methods": [
         {
           "name": "<init>",
@@ -5747,7 +5699,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Accessor_2wpe3v",
+      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Accessor_ige1iy",
       "methods": [
         {
           "name": "<init>",
@@ -5758,7 +5710,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Instantiator_2wpe3v",
+      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Instantiator_ige1iy",
       "methods": [
         {
           "name": "<init>",
@@ -5935,7 +5887,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.RoleDTO_Accessor_hljhf",
+      "type": "com.jmal.clouddisk.model.rbac.RoleDTO_Accessor_4npgnd",
       "methods": [
         {
           "name": "<init>",
@@ -5946,7 +5898,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.RoleDTO_Instantiator_hljhf",
+      "type": "com.jmal.clouddisk.model.rbac.RoleDTO_Instantiator_4npgnd",
       "methods": [
         {
           "name": "<init>",
@@ -5963,9 +5915,7 @@
       "methods": [
         {
           "name": "<init>",
-          "parameterTypes": [
-            "com.jmal.clouddisk.config.FileProperties"
-          ]
+          "parameterTypes": []
         }
       ]
     },
@@ -5974,21 +5924,7 @@
     },
     {
       "type": "com.jmal.clouddisk.ocr.OcrConfig",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getEnable",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMaxTasks",
-          "parameterTypes": []
-        },
-        {
-          "name": "getOcrEngine",
-          "parameterTypes": []
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
       "type": "com.jmal.clouddisk.ocr.OcrLiteOnnxService",
@@ -6010,7 +5946,7 @@
           "name": "<init>",
           "parameterTypes": [
             "java.util.Map",
-            "com.jmal.clouddisk.ocr.CommonOcrService",
+            "com.jmal.clouddisk.media.ImageMagickProcessor",
             "com.jmal.clouddisk.lucene.TaskProgressService",
             "org.springframework.data.mongodb.core.MongoTemplate"
           ]
@@ -6026,10 +5962,6 @@
           "parameterTypes": [
             "java.lang.String"
           ]
-        },
-        {
-          "name": "tesseractThreadLocal",
-          "parameterTypes": []
         }
       ]
     },
@@ -6055,41 +5987,15 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.ocr.TesseractOcrConfig$$SpringCGLIB$$FastClass$$0",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "java.lang.Class"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.ocr.TesseractOcrConfig$$SpringCGLIB$$FastClass$$1",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "java.lang.Class"
-          ]
-        }
-      ]
-    },
-    {
       "type": "com.jmal.clouddisk.ocr.TesseractService",
       "allDeclaredFields": true,
       "methods": [
         {
           "name": "<init>",
           "parameterTypes": [
-            "java.lang.ThreadLocal",
-            "com.jmal.clouddisk.ocr.CommonOcrService"
+            "com.jmal.clouddisk.ocr.TesseractOcrConfig",
+            "com.jmal.clouddisk.media.ImageMagickProcessor"
           ]
-        },
-        {
-          "name": "unload",
-          "parameterTypes": []
         }
       ]
     },
@@ -6327,7 +6233,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Accessor_rgmml2",
+      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Accessor_2htu71",
       "methods": [
         {
           "name": "<init>",
@@ -6338,7 +6244,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Instantiator_rgmml2",
+      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Instantiator_2htu71",
       "methods": [
         {
           "name": "<init>",
@@ -6471,6 +6377,12 @@
           ]
         },
         {
+          "name": "deleteAllByUser",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        },
+        {
           "name": "generateAccessToken",
           "parameterTypes": [
             "com.jmal.clouddisk.model.UserAccessTokenDO"
@@ -6577,7 +6489,7 @@
             "com.jmal.clouddisk.lucene.EtagService",
             "com.jmal.clouddisk.service.impl.CommonUserService",
             "com.jmal.clouddisk.media.VideoProcessService",
-            "com.jmal.clouddisk.service.impl.ImageService"
+            "com.jmal.clouddisk.media.ImageMagickProcessor"
           ]
         }
       ]
@@ -6665,16 +6577,6 @@
             "com.jmal.clouddisk.service.impl.CommonUserService",
             "org.springframework.context.ApplicationEventPublisher"
           ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.service.impl.ImageService",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
         }
       ]
     },
@@ -6995,6 +6897,10 @@
       "allDeclaredFields": true,
       "methods": [
         {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
           "name": "getCode",
           "parameterTypes": []
         },
@@ -7160,12 +7066,6 @@
     {
       "type": "com.jmal.clouddisk.webdav.WebdavServlet",
       "allDeclaredFields": true
-    },
-    {
-      "type": "com.luciad.imageio.webp.WebPImageReaderSpi"
-    },
-    {
-      "type": "com.luciad.imageio.webp.WebPImageWriterSpi"
     },
     {
       "type": "com.mongodb.ClientBulkWriteException"
@@ -7465,15 +7365,6 @@
     },
     {
       "type": "com.sun.jna.NativeLong",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.sun.jna.ptr.PointerByReference",
       "methods": [
         {
           "name": "<init>",
@@ -8322,15 +8213,7 @@
       "type": "java.lang.InterruptedException"
     },
     {
-      "type": "java.lang.Iterable",
-      "fields": [
-        {
-          "name": "iterator"
-        },
-        {
-          "name": "spliterator"
-        }
-      ]
+      "type": "java.lang.Iterable"
     },
     {
       "type": "java.lang.Long",
@@ -8425,27 +8308,13 @@
       ]
     },
     {
-      "type": "java.lang.Thread",
-      "fields": [
-        {
-          "name": "threadLocalRandomProbe"
-        }
-      ]
+      "type": "java.lang.Thread"
     },
     {
       "type": "java.lang.Thread$Builder"
     },
     {
       "type": "java.lang.ThreadGroup"
-    },
-    {
-      "type": "java.lang.ThreadLocal"
-    },
-    {
-      "type": "java.lang.ThreadLocal$SuppliedThreadLocal"
-    },
-    {
-      "type": "java.lang.ThreadLocal$ThreadLocalMap"
     },
     {
       "type": "java.lang.Throwable",
@@ -8578,9 +8447,6 @@
       "type": "java.lang.reflect.GenericDeclaration"
     },
     {
-      "type": "java.lang.reflect.InvocationHandler"
-    },
-    {
       "type": "java.lang.reflect.Method",
       "methods": [
         {
@@ -8687,8 +8553,7 @@
       ]
     },
     {
-      "type": "java.net.URI",
-      "allDeclaredFields": true
+      "type": "java.net.URI"
     },
     {
       "type": "java.net.URL"
@@ -8754,10 +8619,16 @@
       "type": "java.security.interfaces.ECPublicKey"
     },
     {
+      "type": "java.sql.Clob"
+    },
+    {
       "type": "java.sql.Date"
     },
     {
       "type": "java.sql.DriverManager"
+    },
+    {
+      "type": "java.sql.Struct"
     },
     {
       "type": "java.sql.Time"
@@ -8829,10 +8700,6 @@
       "type": "java.util.EventListener"
     },
     {
-      "type": "java.util.HashMap",
-      "allDeclaredFields": true
-    },
-    {
       "type": "java.util.HashSet"
     },
     {
@@ -8851,6 +8718,10 @@
       "allDeclaredFields": true
     },
     {
+      "type": "java.util.ImmutableCollections$List12",
+      "allDeclaredFields": true
+    },
+    {
       "type": "java.util.ImmutableCollections$ListN",
       "allDeclaredFields": true
     },
@@ -8862,17 +8733,10 @@
       "type": "java.util.Iterator"
     },
     {
-      "type": "java.util.LinkedHashMap",
-      "allDeclaredFields": true
+      "type": "java.util.LinkedHashMap"
     },
     {
-      "type": "java.util.List",
-      "methods": [
-        {
-          "name": "size",
-          "parameterTypes": []
-        }
-      ]
+      "type": "java.util.List"
     },
     {
       "type": "java.util.Locale"
@@ -8900,9 +8764,6 @@
     },
     {
       "type": "java.util.SequencedCollection"
-    },
-    {
-      "type": "java.util.SequencedMap"
     },
     {
       "type": "java.util.ServiceLoader"
@@ -9007,19 +8868,16 @@
       "type": "java.util.function.Consumer"
     },
     {
-      "type": "java.util.function.Function",
-      "allDeclaredFields": true
+      "type": "java.util.function.Function"
     },
     {
       "type": "java.util.function.ObjIntConsumer"
     },
     {
-      "type": "java.util.function.Predicate",
-      "allDeclaredFields": true
+      "type": "java.util.function.Predicate"
     },
     {
-      "type": "java.util.function.Supplier",
-      "allDeclaredFields": true
+      "type": "java.util.function.Supplier"
     },
     {
       "type": "java.util.logging.LogManager"
@@ -9062,21 +8920,6 @@
     },
     {
       "type": "javax.cache.Caching"
-    },
-    {
-      "type": "javax.imageio.spi.ImageReaderSpi"
-    },
-    {
-      "type": "javax.imageio.spi.ImageReaderWriterSpi",
-      "methods": [
-        {
-          "name": "getFormatNames",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "javax.imageio.spi.ImageWriterSpi"
     },
     {
       "type": "javax.inject.Inject"
@@ -9210,6 +9053,12 @@
       "type": "kotlin.Comparable"
     },
     {
+      "type": "kotlin.Deprecated"
+    },
+    {
+      "type": "kotlin.DeprecationLevel"
+    },
+    {
       "type": "kotlin.Double"
     },
     {
@@ -9269,6 +9118,9 @@
           "parameterTypes": []
         }
       ]
+    },
+    {
+      "type": "kotlin.ReplaceWith"
     },
     {
       "type": "kotlin.SafePublicationLazyImpl",
@@ -9376,18 +9228,6 @@
       "type": "liquibase.change.DatabaseChange"
     },
     {
-      "type": "net.sourceforge.tess4j.ITessAPI$TessBaseAPI",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "net.sourceforge.tess4j.Tesseract"
-    },
-    {
       "type": "nz.net.ultraq.thymeleaf.layoutdialect.LayoutDialect"
     },
     {
@@ -9474,9 +9314,6 @@
     },
     {
       "type": "org.apache.catalina.connector.Request"
-    },
-    {
-      "type": "org.apache.catalina.connector.RequestFacade"
     },
     {
       "type": "org.apache.catalina.connector.Response"
@@ -9709,13 +9546,10 @@
       ]
     },
     {
+      "type": "org.apache.lucene.backward_codecs.lucene100.Lucene100Codec"
+    },
+    {
       "type": "org.apache.lucene.backward_codecs.lucene50.Lucene50PostingsFormat"
-    },
-    {
-      "type": "org.apache.lucene.backward_codecs.lucene70.Lucene70Codec"
-    },
-    {
-      "type": "org.apache.lucene.backward_codecs.lucene70.Lucene70DocValuesFormat"
     },
     {
       "type": "org.apache.lucene.backward_codecs.lucene80.Lucene80Codec"
@@ -9745,6 +9579,12 @@
       "type": "org.apache.lucene.backward_codecs.lucene91.Lucene91Codec"
     },
     {
+      "type": "org.apache.lucene.backward_codecs.lucene912.Lucene912Codec"
+    },
+    {
+      "type": "org.apache.lucene.backward_codecs.lucene912.Lucene912PostingsFormat"
+    },
+    {
       "type": "org.apache.lucene.backward_codecs.lucene92.Lucene92Codec"
     },
     {
@@ -9754,19 +9594,25 @@
       "type": "org.apache.lucene.backward_codecs.lucene95.Lucene95Codec"
     },
     {
+      "type": "org.apache.lucene.backward_codecs.lucene99.Lucene99Codec"
+    },
+    {
+      "type": "org.apache.lucene.backward_codecs.lucene99.Lucene99PostingsFormat"
+    },
+    {
       "type": "org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat"
     },
     {
       "type": "org.apache.lucene.codecs.bloom.BloomFilteringPostingsFormat"
     },
     {
+      "type": "org.apache.lucene.codecs.lucene101.Lucene101Codec"
+    },
+    {
+      "type": "org.apache.lucene.codecs.lucene101.Lucene101PostingsFormat"
+    },
+    {
       "type": "org.apache.lucene.codecs.lucene90.Lucene90DocValuesFormat"
-    },
-    {
-      "type": "org.apache.lucene.codecs.lucene99.Lucene99Codec"
-    },
-    {
-      "type": "org.apache.lucene.codecs.lucene99.Lucene99PostingsFormat"
     },
     {
       "type": "org.apache.lucene.codecs.memory.DirectPostingsFormat"
@@ -9895,13 +9741,38 @@
       "type": "org.apache.lucene.index.TwoPhaseCommit"
     },
     {
+      "type": "org.apache.lucene.internal.hppc.IntArrayList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.apache.lucene.internal.hppc.IntHashSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.apache.lucene.internal.hppc.IntObjectHashMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.apache.lucene.internal.hppc.LongArrayList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.apache.lucene.internal.hppc.LongHashSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.apache.lucene.internal.hppc.LongIntHashMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.apache.lucene.internal.hppc.LongObjectHashMap",
+      "allDeclaredFields": true
+    },
+    {
       "type": "org.apache.lucene.queryparser.classic.ParseException"
     },
     {
       "type": "org.apache.lucene.sandbox.codecs.idversion.IDVersionPostingsFormat"
-    },
-    {
-      "type": "org.apache.lucene.search.AbstractMultiTermQueryConstantScoreWrapper"
     },
     {
       "type": "org.apache.lucene.search.AutomatonQuery",
@@ -9923,12 +9794,6 @@
       ]
     },
     {
-      "type": "org.apache.lucene.search.BoostQuery"
-    },
-    {
-      "type": "org.apache.lucene.search.ConstantScoreQuery"
-    },
-    {
       "type": "org.apache.lucene.search.DocIdSet",
       "allDeclaredFields": true
     },
@@ -9936,17 +9801,8 @@
       "type": "org.apache.lucene.search.IndexSearcher"
     },
     {
-      "type": "org.apache.lucene.search.MatchAllDocsQuery"
-    },
-    {
       "type": "org.apache.lucene.search.MultiTermQuery",
       "allDeclaredFields": true
-    },
-    {
-      "type": "org.apache.lucene.search.MultiTermQueryConstantScoreBlendedWrapper"
-    },
-    {
-      "type": "org.apache.lucene.search.PrefixQuery"
     },
     {
       "type": "org.apache.lucene.search.Query",
@@ -9968,9 +9824,6 @@
     },
     {
       "type": "org.apache.lucene.search.Sort"
-    },
-    {
-      "type": "org.apache.lucene.search.TermQuery"
     },
     {
       "type": "org.apache.lucene.search.highlight.InvalidTokenOffsetsException"
@@ -9996,6 +9849,9 @@
     {
       "type": "org.apache.lucene.store.FSDirectory",
       "allDeclaredFields": true
+    },
+    {
+      "type": "org.apache.lucene.store.FilterIndexInput"
     },
     {
       "type": "org.apache.lucene.store.IOContext"
@@ -10097,6 +9953,10 @@
       "allDeclaredFields": true
     },
     {
+      "type": "org.apache.lucene.util.automaton.Transition",
+      "allDeclaredFields": true
+    },
+    {
       "type": "org.apache.lucene.util.fst.FST",
       "allDeclaredFields": true
     },
@@ -10114,14 +9974,6 @@
     },
     {
       "type": "org.apache.lucene.util.packed.DeltaPackedLongValues$Builder",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.apache.lucene.util.packed.DirectMonotonicReader",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.apache.lucene.util.packed.DirectMonotonicReader$Meta",
       "allDeclaredFields": true
     },
     {
@@ -10150,18 +10002,6 @@
           ]
         }
       ]
-    },
-    {
-      "type": "org.apache.pdfbox.jbig2.JBIG2ImageReaderSpi"
-    },
-    {
-      "type": "org.apache.pdfbox.pdmodel.PDDocument"
-    },
-    {
-      "type": "org.apache.pdfbox.rendering.PDFRenderer"
-    },
-    {
-      "type": "org.apache.pdfbox.text.PDFTextStripper"
     },
     {
       "type": "org.apache.poi.ss.usermodel.Cell"
@@ -11790,12 +11630,6 @@
           ]
         },
         {
-          "name": "oas31ModelConverter",
-          "parameterTypes": [
-            "org.springdoc.core.properties.SpringDocConfigProperties"
-          ]
-        },
-        {
           "name": "openAPIBuilder",
           "parameterTypes": [
             "java.util.Optional",
@@ -11998,10 +11832,6 @@
         {
           "name": "<init>",
           "parameterTypes": []
-        },
-        {
-          "name": "nullableKotlinRequestParameterCustomizer",
-          "parameterTypes": []
         }
       ]
     },
@@ -12015,6 +11845,12 @@
         },
         {
           "name": "kotlinDeprecatedPropertyCustomizer",
+          "parameterTypes": [
+            "org.springdoc.core.providers.ObjectMapperProvider"
+          ]
+        },
+        {
+          "name": "kotlinModelConverter",
           "parameterTypes": [
             "org.springdoc.core.providers.ObjectMapperProvider"
           ]
@@ -12073,6 +11909,10 @@
     },
     {
       "type": "org.springdoc.core.converters.FileSupportConverter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.springdoc.core.converters.KotlinInlineClassUnwrappingConverter",
       "allDeclaredFields": true
     },
     {
@@ -15287,15 +15127,7 @@
     },
     {
       "type": "org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "error",
-          "parameterTypes": [
-            "jakarta.servlet.http.HttpServletRequest"
-          ]
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
       "type": "org.springframework.boot.autoconfigure.web.servlet.error.DefaultErrorViewResolver",
@@ -15395,16 +15227,6 @@
     {
       "type": "org.springframework.boot.autoconfigure.websocket.servlet.TomcatWebSocketServletWebServerCustomizer",
       "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.boot.autoconfigure.websocket.servlet.WebSocketMessagingAutoConfiguration",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
     },
     {
       "type": "org.springframework.boot.autoconfigure.websocket.servlet.WebSocketServletAutoConfiguration",
@@ -16670,15 +16492,10 @@
       "type": "org.springframework.core.annotation.MergedAnnotation"
     },
     {
-      "type": "org.springframework.core.annotation.MergedAnnotations",
-      "allDeclaredFields": true
-    },
-    {
       "type": "org.springframework.core.annotation.Order"
     },
     {
-      "type": "org.springframework.core.convert.ConversionService",
-      "allDeclaredFields": true
+      "type": "org.springframework.core.convert.ConversionService"
     },
     {
       "type": "org.springframework.core.convert.TypeDescriptor"
@@ -16696,8 +16513,7 @@
       "type": "org.springframework.core.convert.converter.GenericConverter"
     },
     {
-      "type": "org.springframework.core.convert.converter.GenericConverter$ConvertiblePair",
-      "allDeclaredFields": true
+      "type": "org.springframework.core.convert.converter.GenericConverter$ConvertiblePair"
     },
     {
       "type": "org.springframework.core.convert.support.ConfigurableConversionService"
@@ -16775,26 +16591,13 @@
       "allDeclaredFields": true
     },
     {
-      "type": "org.springframework.data.convert.CustomConversions$ConversionTargetsCache",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.data.convert.CustomConversions$ConverterConfiguration",
-      "allDeclaredFields": true
-    },
-    {
       "type": "org.springframework.data.convert.CustomConversions$ConverterRegistration"
     },
     {
       "type": "org.springframework.data.convert.CustomConversions$ConverterRegistrationIntent"
     },
     {
-      "type": "org.springframework.data.convert.CustomConversions$StoreConversions",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.data.convert.CustomConversions$TargetTypes",
-      "allDeclaredFields": true
+      "type": "org.springframework.data.convert.CustomConversions$StoreConversions"
     },
     {
       "type": "org.springframework.data.convert.EntityConverter"
@@ -16806,14 +16609,10 @@
       "type": "org.springframework.data.convert.EntityWriter"
     },
     {
-      "type": "org.springframework.data.convert.PropertyValueConversions",
-      "allDeclaredFields": true
+      "type": "org.springframework.data.convert.PropertyValueConversions"
     },
     {
       "type": "org.springframework.data.convert.ReadingConverter"
-    },
-    {
-      "type": "org.springframework.data.convert.TypeMapper"
     },
     {
       "type": "org.springframework.data.convert.WritingConverter"
@@ -16884,35 +16683,16 @@
       "type": "org.springframework.data.ldap.repository.support.LdapRepositoryFactoryBean"
     },
     {
-      "type": "org.springframework.data.mapping.Alias",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.data.mapping.Association",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.data.mapping.InstanceCreatorMetadata",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.data.mapping.InstanceCreatorMetadataSupport",
-      "allDeclaredFields": true
+      "type": "org.springframework.data.mapping.Association"
     },
     {
       "type": "org.springframework.data.mapping.MappingException"
     },
     {
-      "type": "org.springframework.data.mapping.Parameter",
-      "allDeclaredFields": true
+      "type": "org.springframework.data.mapping.PersistentEntity"
     },
     {
-      "type": "org.springframework.data.mapping.PersistentEntity",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.data.mapping.PersistentProperty",
-      "allDeclaredFields": true
+      "type": "org.springframework.data.mapping.PersistentProperty"
     },
     {
       "type": "org.springframework.data.mapping.PersistentPropertyAccessor"
@@ -16922,10 +16702,6 @@
     },
     {
       "type": "org.springframework.data.mapping.PersistentPropertyPaths"
-    },
-    {
-      "type": "org.springframework.data.mapping.PreferredConstructor",
-      "allDeclaredFields": true
     },
     {
       "type": "org.springframework.data.mapping.PropertyPath"
@@ -16941,8 +16717,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "org.springframework.data.mapping.context.MappingContext",
-      "allDeclaredFields": true
+      "type": "org.springframework.data.mapping.context.MappingContext"
     },
     {
       "type": "org.springframework.data.mapping.model.ClassGeneratingEntityInstantiator$ObjectInstantiator"
@@ -16963,8 +16738,7 @@
       "type": "org.springframework.data.mapping.model.Property"
     },
     {
-      "type": "org.springframework.data.mapping.model.SimpleTypeHolder",
-      "allDeclaredFields": true
+      "type": "org.springframework.data.mapping.model.SimpleTypeHolder"
     },
     {
       "type": "org.springframework.data.mapping.model.ValueExpressionEvaluator"
@@ -17262,8 +17036,7 @@
       "type": "org.springframework.data.mongodb.core.convert.MappingMongoConverter$MongoDbPropertyValueProvider"
     },
     {
-      "type": "org.springframework.data.mongodb.core.convert.MongoConverter",
-      "allDeclaredFields": true
+      "type": "org.springframework.data.mongodb.core.convert.MongoConverter"
     },
     {
       "type": "org.springframework.data.mongodb.core.convert.MongoCustomConversions",
@@ -17273,8 +17046,7 @@
       "type": "org.springframework.data.mongodb.core.convert.MongoCustomConversions$MongoConverterConfigurationAdapter"
     },
     {
-      "type": "org.springframework.data.mongodb.core.convert.MongoTypeMapper",
-      "allDeclaredFields": true
+      "type": "org.springframework.data.mongodb.core.convert.MongoTypeMapper"
     },
     {
       "type": "org.springframework.data.mongodb.core.convert.MongoWriter"
@@ -17502,12 +17274,7 @@
       ]
     },
     {
-      "type": "org.springframework.data.util.Lazy",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.data.util.TypeInformation",
-      "allDeclaredFields": true
+      "type": "org.springframework.data.util.TypeInformation"
     },
     {
       "type": "org.springframework.data.web.OffsetScrollPositionArgumentResolver"
@@ -17727,40 +17494,7 @@
       "type": "org.springframework.http.HttpStatus"
     },
     {
-      "type": "org.springframework.http.HttpStatusCode"
-    },
-    {
       "type": "org.springframework.http.MediaType"
-    },
-    {
-      "type": "org.springframework.http.ProblemDetail",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getDetail",
-          "parameterTypes": []
-        },
-        {
-          "name": "getInstance",
-          "parameterTypes": []
-        },
-        {
-          "name": "getProperties",
-          "parameterTypes": []
-        },
-        {
-          "name": "getStatus",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTitle",
-          "parameterTypes": []
-        },
-        {
-          "name": "getType",
-          "parameterTypes": []
-        }
-      ]
     },
     {
       "type": "org.springframework.http.ReactiveHttpInputMessage"
@@ -17826,10 +17560,6 @@
     },
     {
       "type": "org.springframework.http.converter.json.MappingJackson2HttpMessageConverter",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.http.converter.json.ProblemDetailJacksonXmlMixin",
       "allDeclaredFields": true
     },
     {
@@ -17977,9 +17707,6 @@
     },
     {
       "type": "org.springframework.mail.javamail.JavaMailSenderImpl"
-    },
-    {
-      "type": "org.springframework.messaging.simp.config.AbstractMessageBrokerConfiguration"
     },
     {
       "type": "org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean"
@@ -18472,9 +18199,6 @@
       "type": "org.springframework.web.reactive.function.client.WebClientException"
     },
     {
-      "type": "org.springframework.web.reactive.result.view.RequestContext"
-    },
-    {
       "type": "org.springframework.web.reactive.result.view.View"
     },
     {
@@ -18532,12 +18256,7 @@
       "type": "org.springframework.web.servlet.ThemeResolver"
     },
     {
-      "type": "org.springframework.web.servlet.View",
-      "fields": [
-        {
-          "name": "PATH_VARIABLES"
-        }
-      ]
+      "type": "org.springframework.web.servlet.View"
     },
     {
       "type": "org.springframework.web.servlet.ViewResolver"
@@ -18866,9 +18585,6 @@
       "allDeclaredFields": true
     },
     {
-      "type": "org.springframework.web.servlet.support.RequestContext"
-    },
-    {
       "type": "org.springframework.web.servlet.support.SessionFlashMapManager",
       "allDeclaredFields": true
     },
@@ -18895,9 +18611,6 @@
       "type": "org.springframework.web.servlet.view.AbstractUrlBasedView"
     },
     {
-      "type": "org.springframework.web.servlet.view.AbstractView"
-    },
-    {
       "type": "org.springframework.web.servlet.view.BeanNameViewResolver",
       "allDeclaredFields": true
     },
@@ -18910,9 +18623,6 @@
       "allDeclaredFields": true
     },
     {
-      "type": "org.springframework.web.servlet.view.InternalResourceView"
-    },
-    {
       "type": "org.springframework.web.servlet.view.InternalResourceViewResolver",
       "allDeclaredFields": true
     },
@@ -18923,9 +18633,6 @@
     {
       "type": "org.springframework.web.servlet.view.ViewResolverComposite",
       "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.web.socket.config.annotation.DelegatingWebSocketMessageBrokerConfiguration"
     },
     {
       "type": "org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer"
@@ -18991,12 +18698,6 @@
       "type": "org.thymeleaf.messageresolver.IMessageResolver"
     },
     {
-      "type": "org.thymeleaf.spring5.context.IThymeleafRequestContext"
-    },
-    {
-      "type": "org.thymeleaf.spring5.expression.IThymeleafEvaluationContext"
-    },
-    {
       "type": "org.thymeleaf.spring6.ISpringTemplateEngine"
     },
     {
@@ -19004,102 +18705,12 @@
       "allDeclaredFields": true
     },
     {
-      "type": "org.thymeleaf.spring6.context.IThymeleafRequestContext"
-    },
-    {
-      "type": "org.thymeleaf.spring6.expression.IThymeleafEvaluationContext"
-    },
-    {
-      "type": "org.thymeleaf.spring6.expression.Mvc$Spring41MvcUriComponentsBuilderDelegate",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
       "type": "org.thymeleaf.spring6.templateresolver.SpringResourceTemplateResolver",
       "allDeclaredFields": true
     },
     {
-      "type": "org.thymeleaf.spring6.view.AbstractThymeleafView",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.thymeleaf.spring6.view.ThymeleafView",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
       "type": "org.thymeleaf.spring6.view.ThymeleafViewResolver",
       "allDeclaredFields": true
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.AdditionExpression",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "org.thymeleaf.standard.expression.IStandardExpression",
-            "org.thymeleaf.standard.expression.IStandardExpression"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.AdditionSubtractionExpression",
-      "methods": [
-        {
-          "name": "isLeftAllowed",
-          "parameterTypes": [
-            "org.thymeleaf.standard.expression.IStandardExpression"
-          ]
-        },
-        {
-          "name": "isRightAllowed",
-          "parameterTypes": [
-            "org.thymeleaf.standard.expression.IStandardExpression"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.AndExpression"
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.EqualsNotEqualsExpression"
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.GreaterLesserExpression"
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.IStandardConversionService"
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.IStandardExpressionParser"
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.IStandardVariableExpressionEvaluator"
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.MultiplicationDivisionRemainderExpression",
-      "methods": [
-        {
-          "name": "isLeftAllowed",
-          "parameterTypes": [
-            "org.thymeleaf.standard.expression.IStandardExpression"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.OrExpression"
     },
     {
       "type": "org.thymeleaf.templatemode.TemplateMode"
@@ -19179,25 +18790,8 @@
       "type": "schemaorg_apache_xmlbeans.system.sXMLTOOLS.TypeSystemHolder"
     },
     {
-      "type": "sun.java2d.marlin.DMarlinRenderingEngine",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
       "type": "sun.misc.Unsafe",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "invokeCleaner",
-          "parameterTypes": [
-            "java.nio.ByteBuffer"
-          ]
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
       "type": "sun.reflect.ReflectionFactory",
@@ -19575,13 +19169,6 @@
     {
       "type": {
         "proxy": [
-          "net.sourceforge.tess4j.TessAPI"
-        ]
-      }
-    },
-    {
-      "type": {
-        "proxy": [
           "org.springframework.boot.context.properties.ConfigurationProperties"
         ]
       }
@@ -19666,13 +19253,6 @@
     {
       "type": {
         "proxy": [
-          "org.springframework.web.bind.annotation.ResponseStatus"
-        ]
-      }
-    },
-    {
-      "type": {
-        "proxy": [
           "org.springframework.web.bind.annotation.RestController"
         ]
       }
@@ -19738,21 +19318,6 @@
     },
     {
       "glob": "META-INF/services/java.util.spi.ResourceBundleControlProvider"
-    },
-    {
-      "glob": "META-INF/services/javax.imageio.spi.ImageInputStreamSpi"
-    },
-    {
-      "glob": "META-INF/services/javax.imageio.spi.ImageOutputStreamSpi"
-    },
-    {
-      "glob": "META-INF/services/javax.imageio.spi.ImageReaderSpi"
-    },
-    {
-      "glob": "META-INF/services/javax.imageio.spi.ImageTranscoderSpi"
-    },
-    {
-      "glob": "META-INF/services/javax.imageio.spi.ImageWriterSpi"
     },
     {
       "glob": "META-INF/services/javax.xml.parsers.DocumentBuilderFactory"
@@ -20016,6 +19581,9 @@
       "glob": "com/jmal/clouddisk/listener/FileMonitor.class"
     },
     {
+      "glob": "com/jmal/clouddisk/lucene/CoverFileService.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/lucene/EtagService.class"
     },
     {
@@ -20023,6 +19591,9 @@
     },
     {
       "glob": "com/jmal/clouddisk/lucene/LuceneService.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/lucene/PopplerPdfReader.class"
     },
     {
       "glob": "com/jmal/clouddisk/lucene/ReadContentService.class"
@@ -20041,6 +19612,9 @@
     },
     {
       "glob": "com/jmal/clouddisk/lucene/TaskProgressService.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/media/ImageMagickProcessor.class"
     },
     {
       "glob": "com/jmal/clouddisk/media/VideoProcessService.class"
@@ -20175,9 +19749,6 @@
       "glob": "com/jmal/clouddisk/service/impl/FileVersionServiceImpl.class"
     },
     {
-      "glob": "com/jmal/clouddisk/service/impl/ImageService.class"
-    },
-    {
       "glob": "com/jmal/clouddisk/service/impl/LogService.class"
     },
     {
@@ -20284,9 +19855,6 @@
     },
     {
       "glob": "config/application.yml"
-    },
-    {
-      "glob": "darwin-aarch64"
     },
     {
       "glob": "fastjson2.properties"
@@ -20829,9 +20397,6 @@
       "glob": "org/apache/coyote/http11/filters/LocalStrings_zh_Hans_CN.properties"
     },
     {
-      "glob": "org/apache/fontbox/cmap/Identity-H"
-    },
-    {
       "glob": "org/apache/ftpserver/ftplet/UserManager.class"
     },
     {
@@ -20866,24 +20431,6 @@
     },
     {
       "glob": "org/apache/naming/LocalStrings_zh_Hans_CN.properties"
-    },
-    {
-      "glob": "org/apache/pdfbox/resources/afm/Helvetica.afm"
-    },
-    {
-      "glob": "org/apache/pdfbox/resources/glyphlist/additional.txt"
-    },
-    {
-      "glob": "org/apache/pdfbox/resources/glyphlist/glyphlist.txt"
-    },
-    {
-      "glob": "org/apache/pdfbox/resources/glyphlist/zapfdingbats.txt"
-    },
-    {
-      "glob": "org/apache/pdfbox/resources/text/BidiMirroring.txt"
-    },
-    {
-      "glob": "org/apache/pdfbox/resources/ttf/LiberationSans-Regular.ttf"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctbody0f06type.xsb"
@@ -21112,21 +20659,6 @@
     },
     {
       "glob": "org/apache/tomcat/util/scan/LocalStrings_zh_Hans_CN.properties"
-    },
-    {
-      "glob": "org/apache/tomcat/util/security/LocalStrings.properties"
-    },
-    {
-      "glob": "org/apache/tomcat/util/security/LocalStrings_zh.properties"
-    },
-    {
-      "glob": "org/apache/tomcat/util/security/LocalStrings_zh_CN.properties"
-    },
-    {
-      "glob": "org/apache/tomcat/util/security/LocalStrings_zh_Hans.properties"
-    },
-    {
-      "glob": "org/apache/tomcat/util/security/LocalStrings_zh_Hans_CN.properties"
     },
     {
       "glob": "org/apache/tomcat/util/threads/LocalStrings.properties"
@@ -21918,12 +21450,6 @@
       "glob": "org/springframework/boot/autoconfigure/web/servlet/error/ErrorMvcAutoConfiguration.class"
     },
     {
-      "glob": "org/springframework/boot/autoconfigure/websocket/servlet/WebSocketMessagingAutoConfiguration$WebSocketMessageConverterConfiguration.class"
-    },
-    {
-      "glob": "org/springframework/boot/autoconfigure/websocket/servlet/WebSocketMessagingAutoConfiguration.class"
-    },
-    {
       "glob": "org/springframework/boot/autoconfigure/websocket/servlet/WebSocketServletAutoConfiguration$JettyWebSocketConfiguration.class"
     },
     {
@@ -21958,9 +21484,6 @@
     },
     {
       "glob": "org/springframework/boot/web/server/WebServerFactoryCustomizer.class"
-    },
-    {
-      "glob": "org/springframework/boot/web/server/mime-mappings.properties"
     },
     {
       "glob": "org/springframework/cache/annotation/AbstractCachingConfiguration$CachingConfigurerSupplier.class"
@@ -22131,12 +21654,6 @@
       "glob": "org/springframework/web/servlet/i18n/LocaleChangeInterceptor.class"
     },
     {
-      "glob": "org/springframework/web/socket/config/annotation/WebSocketMessageBrokerConfigurer.class"
-    },
-    {
-      "glob": "org/thymeleaf/thymeleaf.properties"
-    },
-    {
       "glob": "org/xml/sax/EntityResolver.class"
     },
     {
@@ -22158,49 +21675,10 @@
       "glob": "templates"
     },
     {
-      "glob": "templates/404.html"
-    },
-    {
-      "glob": "templates/archives.html"
-    },
-    {
-      "glob": "templates/article.html"
-    },
-    {
-      "glob": "templates/articles-query.html"
-    },
-    {
-      "glob": "templates/articles.html"
-    },
-    {
-      "glob": "templates/categories.html"
-    },
-    {
-      "glob": "templates/component/article-top.html"
-    },
-    {
-      "glob": "templates/component/common-js.html"
-    },
-    {
-      "glob": "templates/component/footer.html"
-    },
-    {
-      "glob": "templates/component/head.html"
-    },
-    {
-      "glob": "templates/component/sidebar.html"
-    },
-    {
       "glob": "templates/error.html"
     },
     {
       "glob": "templates/index.html"
-    },
-    {
-      "glob": "templates/tags.html"
-    },
-    {
-      "glob": "thumbnailator.properties"
     },
     {
       "module": "java.base",
@@ -22209,10 +21687,6 @@
     {
       "module": "java.base",
       "glob": "jdk/internal/icu/impl/data/icudt76b/nfkc.nrm"
-    },
-    {
-      "module": "java.base",
-      "glob": "jdk/internal/icu/impl/data/icudt76b/ubidi.icu"
     },
     {
       "module": "java.base",
@@ -22225,34 +21699,6 @@
     {
       "module": "java.base",
       "glob": "sun/text/resources/SentenceBreakIteratorData"
-    },
-    {
-      "module": "java.desktop",
-      "glob": "sun/awt/resources/awt_zh.properties"
-    },
-    {
-      "module": "java.desktop",
-      "glob": "sun/awt/resources/awt_zh_Hans.properties"
-    },
-    {
-      "module": "java.desktop",
-      "glob": "sun/awt/resources/awt_zh_Hans_CN.properties"
-    },
-    {
-      "module": "java.desktop",
-      "glob": "sun/awt/resources/awtosx_zh.properties"
-    },
-    {
-      "module": "java.desktop",
-      "glob": "sun/awt/resources/awtosx_zh_CN.properties"
-    },
-    {
-      "module": "java.desktop",
-      "glob": "sun/awt/resources/awtosx_zh_Hans.properties"
-    },
-    {
-      "module": "java.desktop",
-      "glob": "sun/awt/resources/awtosx_zh_Hans_CN.properties"
     },
     {
       "module": "java.xml",
@@ -22395,9 +21841,6 @@
     {
       "name": "org.apache.catalina.valves.LocalStrings",
       "locales": [
-        "und",
-        "zh",
-        "zh-CN",
         "zh-Hans-CN"
       ]
     },
@@ -22486,12 +21929,6 @@
       ]
     },
     {
-      "name": "org.apache.tomcat.util.security.LocalStrings",
-      "locales": [
-        "zh-Hans-CN"
-      ]
-    },
-    {
       "name": "org.apache.tomcat.util.threads.LocalStrings",
       "locales": [
         "zh-Hans-CN"
@@ -22511,18 +21948,6 @@
     },
     {
       "name": "org.apache.xmlbeans.impl.regex.message",
-      "locales": [
-        "zh-Hans-CN"
-      ]
-    },
-    {
-      "name": "sun.awt.resources.awt",
-      "locales": [
-        "zh-Hans-CN"
-      ]
-    },
-    {
-      "name": "sun.awt.resources.awtosx",
       "locales": [
         "zh-Hans-CN"
       ]
@@ -22554,115 +21979,6 @@
   "jni": [
     {
       "type": "[Ljava.lang.Object;"
-    },
-    {
-      "type": "[Lsun.java2d.loops.GraphicsPrimitive;"
-    },
-    {
-      "type": "com.sun.imageio.plugins.jpeg.JPEGImageReader",
-      "methods": [
-        {
-          "name": "acceptPixels",
-          "parameterTypes": [
-            "int",
-            "boolean"
-          ]
-        },
-        {
-          "name": "passComplete",
-          "parameterTypes": []
-        },
-        {
-          "name": "passStarted",
-          "parameterTypes": [
-            "int"
-          ]
-        },
-        {
-          "name": "pushBack",
-          "parameterTypes": [
-            "int"
-          ]
-        },
-        {
-          "name": "readInputData",
-          "parameterTypes": [
-            "byte[]",
-            "int",
-            "int"
-          ]
-        },
-        {
-          "name": "setImageData",
-          "parameterTypes": [
-            "int",
-            "int",
-            "int",
-            "int",
-            "int",
-            "byte[]"
-          ]
-        },
-        {
-          "name": "skipInputBytes",
-          "parameterTypes": [
-            "long"
-          ]
-        },
-        {
-          "name": "skipPastImage",
-          "parameterTypes": [
-            "int"
-          ]
-        },
-        {
-          "name": "warningOccurred",
-          "parameterTypes": [
-            "int"
-          ]
-        },
-        {
-          "name": "warningWithMessage",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.sun.imageio.plugins.jpeg.JPEGImageWriter",
-      "methods": [
-        {
-          "name": "grabPixels",
-          "parameterTypes": [
-            "int"
-          ]
-        },
-        {
-          "name": "warningOccurred",
-          "parameterTypes": [
-            "int"
-          ]
-        },
-        {
-          "name": "warningWithMessage",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "writeMetadata",
-          "parameterTypes": []
-        },
-        {
-          "name": "writeOutputData",
-          "parameterTypes": [
-            "byte[]",
-            "int",
-            "int"
-          ]
-        }
-      ]
     },
     {
       "type": "com.sun.jna.Callback"
@@ -22960,253 +22276,6 @@
       ]
     },
     {
-      "type": "java.awt.AlphaComposite",
-      "fields": [
-        {
-          "name": "extraAlpha"
-        },
-        {
-          "name": "rule"
-        }
-      ]
-    },
-    {
-      "type": "java.awt.Color",
-      "methods": [
-        {
-          "name": "getRGB",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "java.awt.geom.AffineTransform",
-      "fields": [
-        {
-          "name": "m00"
-        },
-        {
-          "name": "m01"
-        },
-        {
-          "name": "m02"
-        },
-        {
-          "name": "m10"
-        },
-        {
-          "name": "m11"
-        },
-        {
-          "name": "m12"
-        }
-      ]
-    },
-    {
-      "type": "java.awt.geom.Path2D",
-      "fields": [
-        {
-          "name": "numTypes"
-        },
-        {
-          "name": "pointTypes"
-        },
-        {
-          "name": "windingRule"
-        }
-      ]
-    },
-    {
-      "type": "java.awt.geom.Path2D$Float",
-      "fields": [
-        {
-          "name": "floatCoords"
-        }
-      ]
-    },
-    {
-      "type": "java.awt.image.BufferedImage",
-      "fields": [
-        {
-          "name": "colorModel"
-        },
-        {
-          "name": "imageType"
-        },
-        {
-          "name": "raster"
-        }
-      ],
-      "methods": [
-        {
-          "name": "getRGB",
-          "parameterTypes": [
-            "int",
-            "int",
-            "int",
-            "int",
-            "int[]",
-            "int",
-            "int"
-          ]
-        },
-        {
-          "name": "setRGB",
-          "parameterTypes": [
-            "int",
-            "int",
-            "int",
-            "int",
-            "int[]",
-            "int",
-            "int"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "java.awt.image.ColorModel",
-      "fields": [
-        {
-          "name": "colorSpace"
-        },
-        {
-          "name": "colorSpaceType"
-        },
-        {
-          "name": "isAlphaPremultiplied"
-        },
-        {
-          "name": "is_sRGB"
-        },
-        {
-          "name": "nBits"
-        },
-        {
-          "name": "numComponents"
-        },
-        {
-          "name": "supportsAlpha"
-        },
-        {
-          "name": "transparency"
-        }
-      ],
-      "methods": [
-        {
-          "name": "getRGBdefault",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "java.awt.image.IndexColorModel",
-      "fields": [
-        {
-          "name": "allgrayopaque"
-        },
-        {
-          "name": "colorData"
-        },
-        {
-          "name": "map_size"
-        },
-        {
-          "name": "rgb"
-        },
-        {
-          "name": "transparent_index"
-        }
-      ]
-    },
-    {
-      "type": "java.awt.image.Raster",
-      "fields": [
-        {
-          "name": "dataBuffer"
-        },
-        {
-          "name": "height"
-        },
-        {
-          "name": "minX"
-        },
-        {
-          "name": "minY"
-        },
-        {
-          "name": "numBands"
-        },
-        {
-          "name": "numDataElements"
-        },
-        {
-          "name": "sampleModel"
-        },
-        {
-          "name": "sampleModelTranslateX"
-        },
-        {
-          "name": "sampleModelTranslateY"
-        },
-        {
-          "name": "width"
-        }
-      ]
-    },
-    {
-      "type": "java.awt.image.SampleModel",
-      "fields": [
-        {
-          "name": "height"
-        },
-        {
-          "name": "width"
-        }
-      ],
-      "methods": [
-        {
-          "name": "getPixels",
-          "parameterTypes": [
-            "int",
-            "int",
-            "int",
-            "int",
-            "int[]",
-            "java.awt.image.DataBuffer"
-          ]
-        },
-        {
-          "name": "setPixels",
-          "parameterTypes": [
-            "int",
-            "int",
-            "int",
-            "int",
-            "int[]",
-            "java.awt.image.DataBuffer"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "java.awt.image.SinglePixelPackedSampleModel",
-      "fields": [
-        {
-          "name": "bitMasks"
-        },
-        {
-          "name": "bitOffsets"
-        },
-        {
-          "name": "bitSizes"
-        },
-        {
-          "name": "maxBitSize"
-        }
-      ]
-    },
-    {
       "type": "java.lang.Boolean",
       "fields": [
         {
@@ -23422,12 +22491,6 @@
           "parameterTypes": [
             "java.lang.String"
           ]
-        },
-        {
-          "name": "load",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
         }
       ]
     },
@@ -23559,610 +22622,6 @@
         },
         {
           "name": "arrayOffset",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "javax.imageio.plugins.jpeg.JPEGHuffmanTable",
-      "fields": [
-        {
-          "name": "lengths"
-        },
-        {
-          "name": "values"
-        }
-      ]
-    },
-    {
-      "type": "javax.imageio.plugins.jpeg.JPEGQTable",
-      "fields": [
-        {
-          "name": "qTable"
-        }
-      ]
-    },
-    {
-      "type": "sun.awt.SunHints",
-      "fields": [
-        {
-          "name": "INTVAL_STROKE_PURE"
-        }
-      ]
-    },
-    {
-      "type": "sun.awt.image.BufImgSurfaceData$ICMColorData",
-      "fields": [
-        {
-          "name": "pData"
-        }
-      ],
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.awt.image.ByteComponentRaster",
-      "fields": [
-        {
-          "name": "data"
-        },
-        {
-          "name": "dataOffsets"
-        },
-        {
-          "name": "pixelStride"
-        },
-        {
-          "name": "scanlineStride"
-        },
-        {
-          "name": "type"
-        }
-      ]
-    },
-    {
-      "type": "sun.awt.image.ImageRepresentation",
-      "fields": [
-        {
-          "name": "numSrcLUT"
-        },
-        {
-          "name": "srcLUTtransIndex"
-        }
-      ]
-    },
-    {
-      "type": "sun.awt.image.IntegerComponentRaster",
-      "fields": [
-        {
-          "name": "data"
-        },
-        {
-          "name": "dataOffsets"
-        },
-        {
-          "name": "pixelStride"
-        },
-        {
-          "name": "scanlineStride"
-        },
-        {
-          "name": "type"
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.Disposer",
-      "methods": [
-        {
-          "name": "addRecord",
-          "parameterTypes": [
-            "java.lang.Object",
-            "long",
-            "long"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.InvalidPipeException"
-    },
-    {
-      "type": "sun.java2d.NullSurfaceData"
-    },
-    {
-      "type": "sun.java2d.SunGraphics2D",
-      "fields": [
-        {
-          "name": "clipRegion"
-        },
-        {
-          "name": "composite"
-        },
-        {
-          "name": "eargb"
-        },
-        {
-          "name": "lcdTextContrast"
-        },
-        {
-          "name": "pixel"
-        },
-        {
-          "name": "strokeHint"
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.SurfaceData",
-      "fields": [
-        {
-          "name": "pData"
-        },
-        {
-          "name": "valid"
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.Blit",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.BlitBg",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.CompositeType",
-      "fields": [
-        {
-          "name": "AnyAlpha"
-        },
-        {
-          "name": "Src"
-        },
-        {
-          "name": "SrcNoEa"
-        },
-        {
-          "name": "SrcOver"
-        },
-        {
-          "name": "SrcOverNoEa"
-        },
-        {
-          "name": "Xor"
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.DrawGlyphList",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.DrawGlyphListAA",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.DrawGlyphListLCD",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.DrawLine",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.DrawParallelogram",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.DrawPath",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.DrawPolygons",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.DrawRect",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.FillParallelogram",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.FillPath",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.FillRect",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.FillSpans",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.GraphicsPrimitive",
-      "fields": [
-        {
-          "name": "pNativePrim"
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.GraphicsPrimitiveMgr",
-      "methods": [
-        {
-          "name": "register",
-          "parameterTypes": [
-            "sun.java2d.loops.GraphicsPrimitive[]"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.MaskBlit",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.MaskFill",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.ScaledBlit",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.SurfaceType",
-      "fields": [
-        {
-          "name": "Any3Byte"
-        },
-        {
-          "name": "Any4Byte"
-        },
-        {
-          "name": "AnyByte"
-        },
-        {
-          "name": "AnyColor"
-        },
-        {
-          "name": "AnyInt"
-        },
-        {
-          "name": "AnyShort"
-        },
-        {
-          "name": "ByteBinary1Bit"
-        },
-        {
-          "name": "ByteBinary2Bit"
-        },
-        {
-          "name": "ByteBinary4Bit"
-        },
-        {
-          "name": "ByteGray"
-        },
-        {
-          "name": "ByteIndexed"
-        },
-        {
-          "name": "ByteIndexedBm"
-        },
-        {
-          "name": "FourByteAbgr"
-        },
-        {
-          "name": "FourByteAbgrPre"
-        },
-        {
-          "name": "Index12Gray"
-        },
-        {
-          "name": "Index8Gray"
-        },
-        {
-          "name": "IntArgb"
-        },
-        {
-          "name": "IntArgbBm"
-        },
-        {
-          "name": "IntArgbPre"
-        },
-        {
-          "name": "IntBgr"
-        },
-        {
-          "name": "IntRgb"
-        },
-        {
-          "name": "IntRgbx"
-        },
-        {
-          "name": "OpaqueColor"
-        },
-        {
-          "name": "ThreeByteBgr"
-        },
-        {
-          "name": "Ushort4444Argb"
-        },
-        {
-          "name": "Ushort555Rgb"
-        },
-        {
-          "name": "Ushort555Rgbx"
-        },
-        {
-          "name": "Ushort565Rgb"
-        },
-        {
-          "name": "UshortGray"
-        },
-        {
-          "name": "UshortIndexed"
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.TransformHelper",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "long",
-            "sun.java2d.loops.SurfaceType",
-            "sun.java2d.loops.CompositeType",
-            "sun.java2d.loops.SurfaceType"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.loops.XORComposite",
-      "fields": [
-        {
-          "name": "alphaMask"
-        },
-        {
-          "name": "xorColor"
-        },
-        {
-          "name": "xorPixel"
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.pipe.Region",
-      "fields": [
-        {
-          "name": "bands"
-        },
-        {
-          "name": "endIndex"
-        },
-        {
-          "name": "hix"
-        },
-        {
-          "name": "hiy"
-        },
-        {
-          "name": "lox"
-        },
-        {
-          "name": "loy"
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.pipe.RegionIterator",
-      "fields": [
-        {
-          "name": "curIndex"
-        },
-        {
-          "name": "numXbands"
-        },
-        {
-          "name": "region"
-        }
-      ]
-    },
-    {
-      "type": "sun.java2d.pipe.ShapeSpanIterator",
-      "fields": [
-        {
-          "name": "pData"
-        }
-      ]
-    },
-    {
-      "type": "sun.lwawt.macosx.LWCToolkit",
-      "methods": [
-        {
-          "name": "installToolkitThreadInJava",
           "parameterTypes": []
         }
       ]

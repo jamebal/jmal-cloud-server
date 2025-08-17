@@ -9,17 +9,17 @@
         <relativePath/>
     </parent>
     <groupId>com.jmal</groupId>
-    <artifactId>clouddisk</artifactId>
+    <artifactId>jmalcloud</artifactId>
     <version>2.15.0</version>
-    <name>clouddisk</name>
+    <name>jmalcloud</name>
     <description>Cloud Disk</description>
     <packaging>jar</packaging>
 
     <properties>
-        <java.version>17</java.version>
+        <java.version>24</java.version>
         <maven-jar-plugin.version>3.0.0</maven-jar-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <lucene.version>9.10.0</lucene.version>
+        <lucene.version>10.2.2</lucene.version>
         <zxing.version>3.5.3</zxing.version>
     </properties>
 
@@ -232,7 +232,8 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <version>1.18.38</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- tools-->
@@ -318,7 +319,7 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-            <version>2.8.0</version>
+            <version>3.2.2</version>
         </dependency>
         <dependency>
             <groupId>io.projectreactor</groupId>
@@ -397,6 +398,15 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.38</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
             </plugin>
 
             <plugin>
@@ -433,34 +443,6 @@
 
                         <configuration>
                             <buildArgs>
-                                <!--                                <buildArg>-H:+PrintAnalysisCallTree</buildArg>-->
-                                <!--                                <buildArg>-Dorg.apache.lucene.store.MMapDirectory.enableMemorySegments=false</buildArg>-->
-
-                                <!--                                <buildArg>&#45;&#45;initialize-at-build-time=cn.hutool.core.io.CharsetDetector</buildArg>-->
-                                <!-- 将 RandomUtil 也设置为运行时初始化 -->
-                                <!--                                <buildArg>&#45;&#45;initialize-at-run-time=cn.hutool.core.util.RandomUtil</buildArg>-->
-                                <!--                                <buildArg>&#45;&#45;trace-object-instantiation=java.security.SecureRandom</buildArg>-->
-
-                                <!-- PDFBox 相关配置 -->
-                                <!--                                <buildArg>&#45;&#45;initialize-at-build-time==org.apache.pdfbox</buildArg>-->
-
-                                <!--                                <buildArg>&#45;&#45;exact-reachability-metadata</buildArg>-->
-
-                                <!--                                <buildArg>&#45;&#45;initialize-at-build-time=com.spire.doc.packages</buildArg>-->
-
-<!--                                <buildArg>&#45;&#45;initialize-at-run-time=javax.imageio.ImageIO</buildArg>-->
-<!--                                <buildArg>-march=native</buildArg>-->
-<!--                                <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>-->
-<!--                                <buildArg>-H:+AddAllCharsets</buildArg>-->
-<!--                                <buildArg>-H:+AllowIncompleteClasspath</buildArg>-->
-<!--                                <buildArg>&#45;&#45;enable-url-protocols=http,https</buildArg>-->
-
-<!--                                    <buildArg>-Djava.awt.headless=false</buildArg>-->
-<!--                                    <buildArg>-H:ConfigurationFileDirectories=src/main/resources/META-INF/native-image</buildArg>-->
-<!--                                    <buildArg>-H:ConfigurationFileDirectories=/Users/jmal/studio/myProject/github/jmal-cloud-server/src/main/resources/native-image-test/</buildArg>-->
-<!--                                    <buildArg>&#45;&#45;add-modules=java.desktop</buildArg>-->
-<!--                                    <buildArg>&#45;&#45;initialize-at-run-time=java.awt,java.awt.color,java.awt.dnd,java.awt.event,java.awt.font,java.awt.geom,java.awt.im,java.awt.image,java.awt.image.renderable,java.awt.print,javax.imageio,javax.print,javax.swing,sun.awt,sun.font,sun.java2d</buildArg>-->
-
                                     <buildArg>-march=native</buildArg>
 
                                     <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>

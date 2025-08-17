@@ -64,7 +64,7 @@ public class SearchFileService {
             Term term = new Term(Constants.ETAG, fileIndexHash);
             Query query = new TermQuery(term);
             TopDocs topDocs = indexSearcher.search(query, 1);
-            return topDocs.totalHits.value > 0;
+            return topDocs.totalHits.value() > 0;
         } catch (IOException e) {
             log.error("检查 {} 是否存在失败", Constants.ETAG, e);
         } finally {

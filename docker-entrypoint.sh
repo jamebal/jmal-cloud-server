@@ -13,11 +13,9 @@ chown -R ${USER_UID}:${USER_GID} /jmalcloud/models
 chown -R ${USER_UID}:${USER_GID} /jmalcloud/tess4j
 chown ${USER_UID}:${USER_GID} /jmalcloud/ip2region.xdb
 chown -R ${USER_UID}:${USER_GID} /usr/local/mxcad
-chown ${USER_UID}:${USER_GID} /usr/local/clouddisk-${VERSION}.jar
-chown -R ${USER_UID}:${USER_GID} /usr/local/clouddisk-lib
 chown -R ${USER_UID}:${USER_GID} log
 
-exec gosu ${USER_UID}:${USER_GID} java ${JVM_OPTS} \
+exec gosu ${USER_UID}:${USER_GID} /usr/local/jmalcloud \
  -Duser.timezone=${TZ} \
  -Dfile.encoding=UTF-8 \
  -Dloader.path=/usr/local/clouddisk-lib \

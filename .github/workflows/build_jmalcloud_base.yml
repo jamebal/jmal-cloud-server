@@ -1,4 +1,4 @@
-name: Build jdk21_ffmpeg Docker Image
+name: Build jmalcloud Base Docker Image
 
 on:
   workflow_dispatch:
@@ -9,16 +9,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'maven'
-
-      - name: Build with Maven
-        run: mvn clean package -DskipTests
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -43,6 +33,6 @@ jobs:
           file: docker/Dockerfile
           push: true
           tags: |
-            jmal/jdk21_ffmpeg:latest
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jdk21_ffmpeg:latest
+            jmal/jmalcloud_base:latest
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_base:latest
           platforms: linux/amd64,linux/arm64

@@ -39,6 +39,8 @@ RUN apt-get update && \
     curl \
     locales \
     tesseract-ocr \
+    imagemagick \
+    poppler-utils \
     p7zip-full \
     unrar \
     libheif-examples && \
@@ -61,25 +63,21 @@ RUN locale-gen en_US.UTF-8 && \
     update-locale LANG=en_US.UTF-8 && \
     ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
-# --- 4. 复制 Java 运行时 ---
-COPY --from=eclipse-temurin:21-jre-jammy /opt/java/openjdk /opt/java/openjdk
-
-# --- 5. 从构建器阶段复制处理好的应用文件 ---
+# --- 4. 从构建器阶段复制处理好的应用文件 ---
 COPY --from=builder /output/mxcad /usr/local/mxcad
 COPY --from=builder /output/mxcad/mx/locale /usr/local/share/locale
 COPY --from=builder /output/ocrlite/bin/OcrLiteOnnx /usr/local/bin/OcrLiteOnnx
 COPY --from=builder /output/ocrlite/models /jmalcloud/
 
-# --- 6. 复制配置文件和数据 ---
+# --- 5. 复制配置文件和数据 ---
 RUN mkdir -p /jmalcloud/files /jmalcloud/tess4j/datapath
 COPY docker/ip2region.xdb /jmalcloud/
 COPY tess4j/datapath/chi_sim.traineddata /jmalcloud/tess4j/datapath/
-COPY target/lib /usr/local/clouddisk-lib
 
-# --- 7. 设置环境变量 ---
+# --- 6. 设置环境变量 ---
 ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US:en \
     LC_ALL=en_US.UTF-8 \
-    PATH="/opt/java/openjdk/bin:/usr/lib/jellyfin-ffmpeg:${PATH}"
+    PATH="/usr/lib/jellyfin-ffmpeg:${PATH}"
 
 CMD ["bash"]
