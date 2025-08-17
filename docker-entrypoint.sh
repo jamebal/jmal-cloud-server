@@ -15,7 +15,7 @@ chown ${USER_UID}:${USER_GID} /jmalcloud/ip2region.xdb
 chown -R ${USER_UID}:${USER_GID} /usr/local/mxcad
 chown -R ${USER_UID}:${USER_GID} log
 
-exec gosu ${USER_UID}:${USER_GID} /usr/local/jmalcloud \
+exec gosu ${USER_UID}:${USER_GID} /app/jmalcloud \
  -Duser.timezone=${TZ} \
  -Dfile.encoding=UTF-8 \
  -Dloader.path=/usr/local/clouddisk-lib \

@@ -1,5 +1,6 @@
 FROM ghcr.io/jamebal/jmalcloud_base:latest
 
+ARG TARGETARCH
 ARG VERSION
 
 ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
@@ -19,8 +20,11 @@ ENV FILE_ROOT_DIR /jmalcloud/files
 ENV TESS4J_DATA_PATH /jmalcloud/tess4j/datapath
 
 # 从构建器阶段复制编译好的可执行文件
-# Spring Boot GraalVM 插件默认会将可执行文件放在 target 目录
-COPY target/jmalcloud /usr/local/
+COPY target/app-${TARGETARCH} /app/jmalcloud
+# 复制所有 .so 动态链接库
+COPY target/*.so /app/
+# 确保文件有执行权限
+RUN chmod +x /app/jmalcloud
 
 VOLUME /jmalcloud/
 
