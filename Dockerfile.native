@@ -3,10 +3,18 @@
 FROM ghcr.io/graalvm/graalvm-community:24.0.2 AS builder
 # 将构建上下文复制到镜像中
 WORKDIR /work
-COPY . .
 
-# 使用 Maven GraalVM 插件构建 Native Image
-RUN mvn clean package -Pnative -DskipTests
+# 仅复制构建定义文件
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
+
+# 下载所有依赖。只要 pom.xml 不变，这一层就会被缓存，节省大量时间
+RUN ./mvnw dependency:go-offline
+
+# 复制项目的源代码
+COPY src/ src/
+
+RUN ./mvnw clean package -Pnative -DskipTests
 
 FROM ghcr.io/jamebal/jmalcloud_base:latest
 
