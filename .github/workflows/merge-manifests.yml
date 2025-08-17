@@ -1,4 +1,4 @@
-name: Build test native (Multi-Arch)
+name: merge manifests
 
 on:
   push:
