@@ -1,4 +1,4 @@
-name: Build test native
+name: Build test native (Multi-Arch)
 
 on:
   push:
@@ -7,28 +7,35 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
+  build-per-arch:
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            os: ubuntu-latest
+          - arch: arm64
+            os: ubuntu-22.04-arm
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Extract project version from pom.xml
-        id: project_version # 给步骤一个id以便后续引用
+        id: project_version
         run: |
           VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
           echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT" # 使用 GITHUB_OUTPUT 在步骤间传递值   
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      # ------------------- 阶段二: 使用 GraalVM 构建 Native Image -------------------
       - name: Set up GraalVM for Native Image
         uses: graalvm/setup-graalvm@v1
         with:
-          java-version: '24' # GraalVM 24.x 基于 JDK 24
+          java-version: '24'
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          cache: 'maven' # GraalVM action 也支持缓存 Maven 依赖
+          cache: 'maven'
 
       - name: Build Native Image with Maven
         run: mvn clean package -Pnative -DskipTests
@@ -49,15 +56,50 @@ jobs:
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
-      - name: Build and push Docker image to multiple registries
+      - name: Build and push arch-specific image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.native
           push: true
+          # 只构建并推送当前运行器架构的镜像
+          # 并使用一个带架构后缀的临时标签
           tags: |
-            jmal/jmalcloud_native:test
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test
-          platforms: linux/amd64,linux/arm64
+            jmal/jmalcloud_native:test-${{ matrix.arch }}
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
+
+  merge-manifests:
+    # 等待所有架构的构建都完成后再运行
+    needs: build-per-arch
+    runs-on: ubuntu-latest # 合并操作不耗资源，用哪个都行
+
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_IO_USERNAME }}
+          password: ${{ secrets.GHCR_IO_TOKEN }}
+
+      - name: Create and push Docker Hub manifest
+        run: |
+          docker manifest create jmal/jmalcloud_native:test \
+            --amend jmal/jmalcloud_native:test-amd64 \
+            --amend jmal/jmalcloud_native:test-arm64
+          docker manifest push jmal/jmalcloud_native:test
+
+      - name: Create and push GHCR manifest
+        run: |
+          docker manifest create ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test \
+            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-amd64 \
+            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-arm64
+          docker manifest push ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test

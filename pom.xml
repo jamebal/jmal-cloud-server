@@ -443,7 +443,7 @@
 
                         <configuration>
                             <buildArgs>
-                                    <buildArg>-march=x86-64-v2</buildArg>
+                                    <buildArg>-march=compatibility</buildArg>
                                     <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
                                     <buildArg>-H:+AddAllCharsets</buildArg>
                                     <buildArg>-H:+AllowIncompleteClasspath</buildArg>
