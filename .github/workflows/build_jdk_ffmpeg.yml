@@ -1,15 +1,11 @@
-name: Build test
+name: Build jdk21_ffmpeg Docker Image
 
 on:
-  push:
-    branches:
-      - 'master'
   workflow_dispatch:
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,11 +19,6 @@ jobs:
 
       - name: Build with Maven
         run: mvn clean package -DskipTests
-
-      - name: Extract project version from pom.xml
-        run: |
-          VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-          echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV        
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -45,15 +36,13 @@ jobs:
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
-      - name: Build and push Docker image to multiple registries
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: docker/Dockerfile
           push: true
           tags: |
-            jmal/jmalcloud:test
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud:test
+            jmal/jdk21_ffmpeg:latest
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jdk21_ffmpeg:latest
           platforms: linux/amd64,linux/arm64
-          build-args: |
-            VERSION=${{ env.PROJECT_VERSION }}
