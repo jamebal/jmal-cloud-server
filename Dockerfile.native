@@ -1,20 +1,20 @@
-# --- 阶段一: 构建基础 (使用与 CI 匹配的 GraalVM 镜像) ---
-# 使用官方的 GraalVM 镜像作为构建环境
-FROM ghcr.io/graalvm/graalvm-community:24.0.2 AS builder
-# 将构建上下文复制到镜像中
-WORKDIR /work
-
-# 仅复制构建定义文件
-COPY .mvn/ .mvn
-COPY mvnw pom.xml ./
-
-# 下载所有依赖。只要 pom.xml 不变，这一层就会被缓存，节省大量时间
-RUN ./mvnw dependency:go-offline
-
-# 复制项目的源代码
-COPY src/ src/
-
-RUN ./mvnw clean package -Pnative -DskipTests
+## --- 阶段一: 构建基础 (使用与 CI 匹配的 GraalVM 镜像) ---
+## 使用官方的 GraalVM 镜像作为构建环境
+#FROM ghcr.io/graalvm/graalvm-community:24.0.2 AS builder
+## 将构建上下文复制到镜像中
+#WORKDIR /work
+#
+## 仅复制构建定义文件
+#COPY .mvn/ .mvn
+#COPY mvnw pom.xml ./
+#
+## 下载所有依赖。只要 pom.xml 不变，这一层就会被缓存，节省大量时间
+#RUN ./mvnw dependency:go-offline
+#
+## 复制项目的源代码
+#COPY src/ src/
+#
+#RUN ./mvnw clean package -Pnative -DskipTests
 
 FROM ghcr.io/jamebal/jmalcloud_base:latest
 
@@ -38,8 +38,8 @@ ENV TESS4J_DATA_PATH /jmalcloud/tess4j/datapath
 
 # 从构建器阶段复制编译好的可执行文件
 # Spring Boot GraalVM 插件默认会将可执行文件放在 target 目录
-COPY --from=builder /work/target/jmalcloud /app/jmalcloud
-COPY --from=builder /work/target/*.so /app/
+COPY target/jmalcloud /app/jmalcloud
+COPY target/*.so /app/
 RUN chmod +x /app/jmalcloud
 
 VOLUME /jmalcloud/

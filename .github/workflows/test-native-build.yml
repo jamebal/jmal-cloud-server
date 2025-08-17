@@ -1,4 +1,4 @@
-name: Build and Push Multi-Arch Native Image (Multi-Stage Docker)
+name: Build test
 
 on:
   push:
@@ -8,16 +8,30 @@ on:
 
 jobs:
   build-and-push:
-    name: Build and Push Multi-Arch Image
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        # QEMU 仍然是必需的，以便 amd64 runner 可以构建 arm64 镜像
-        uses: docker/setup-qemu-action@v3
+      - name: Extract project version from pom.xml
+        id: project_version # 给步骤一个id以便后续引用
+        run: |
+          VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+          echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT" # 使用 GITHUB_OUTPUT 在步骤间传递值   
+
+      # ------------------- 阶段二: 使用 GraalVM 构建 Native Image -------------------
+      - name: Set up GraalVM for Native Image
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '24' # GraalVM 24.x 基于 JDK 24
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache: 'maven' # GraalVM action 也支持缓存 Maven 依赖
+
+      - name: Build Native Image with Maven
+        run: mvn clean package -Pnative -DskipTests
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -35,27 +49,15 @@ jobs:
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
-      - name: Extract project version from pom.xml
-        id: project_version
-        run: |
-          VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-          echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV
-
-      # 核心步骤：构建并推送多架构镜像
-      # 所有复杂的构建逻辑都已封装在 Dockerfile.native 中
-      - name: Build and push multi-platform Docker image
+      - name: Build and push Docker image to multiple registries
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.native
           push: true
-          # buildx 会为每个平台执行一次 Dockerfile 构建
-          platforms: linux/amd64,linux/arm64
           tags: |
             jmal/jmalcloud_native:test
             ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test
+          platforms: linux/amd64,linux/arm64
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
-          # 启用 Docker build cache，加速后续构建
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
