@@ -444,7 +444,6 @@
                         <configuration>
                             <buildArgs>
                                     <buildArg>-march=native</buildArg>
-                                    <buildArg>${native.build.args}</buildArg>
                                     <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
                                     <buildArg>-H:+AddAllCharsets</buildArg>
                                     <buildArg>-H:+AllowIncompleteClasspath</buildArg>
