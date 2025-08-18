@@ -13,10 +13,10 @@ jobs:
         include:
           - arch: amd64
             os: ubuntu-latest
-            march_arg: x86-64-v3
+            profile: native-adm64
           - arch: arm64
             os: ubuntu-22.04-arm
-            march_arg: armv8-a
+            profile: native-arm64
 
     runs-on: ${{ matrix.os }}
 
@@ -40,7 +40,7 @@ jobs:
           cache: 'maven'
 
       - name: Build Native Image with Maven
-        run: mvn clean package -Pnative -DskipTests -Dmy.native.build.args="--gc=G1 -march=${{ matrix.march_arg }} -H:+UnlockExperimentalVMOptions -H:+AddAllCharsets -H:+AllowIncompleteClasspath"
+        run: mvn clean package -P${{ matrix.profile }} -DskipTests
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
