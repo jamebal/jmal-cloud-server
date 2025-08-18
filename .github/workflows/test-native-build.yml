@@ -26,6 +26,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '24'
+          cache: 'maven'
+
       - name: Set up GraalVM for Native Image
         uses: graalvm/setup-graalvm@v1
         with:
