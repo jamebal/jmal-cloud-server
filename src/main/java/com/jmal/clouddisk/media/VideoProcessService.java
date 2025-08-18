@@ -20,14 +20,15 @@ import com.jmal.clouddisk.service.impl.PathService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.result.UpdateResult;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -50,7 +51,7 @@ import static com.jmal.clouddisk.util.FFMPEGUtils.*;
 @Lazy
 @Slf4j
 @RequiredArgsConstructor
-public class VideoProcessService {
+public class VideoProcessService implements ApplicationListener<ContextRefreshedEvent> {
 
     private final FileProperties fileProperties;
 
@@ -97,10 +98,13 @@ public class VideoProcessService {
 
     private final static String TRANSCODE_VIDEO = "transcodeVideo";
 
-    @PostConstruct
-    public void init() {
-        getVideoTranscodingService();
-        addTranscodingTaskService = ThreadUtil.newFixedExecutor(8, 40960, "addTranscodingTask", true);
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        // 确保只在根应用上下文执行一次，防止在Web环境中执行两次
+        if (event.getApplicationContext().getParent() == null) {
+            getVideoTranscodingService();
+            addTranscodingTaskService = ThreadUtil.newFixedExecutor(8, 40960, "addTranscodingTask", true);
+        }
     }
 
     private void getVideoTranscodingService() {
@@ -154,7 +158,7 @@ public class VideoProcessService {
         processesTasks.clear();
 
         // 取消转码任务
-        videoTranscodingTasks.forEach((fileId, future) -> {
+        videoTranscodingTasks.forEach((_, future) -> {
             if (!future.isDone()) {
                 future.cancel(true);
             }

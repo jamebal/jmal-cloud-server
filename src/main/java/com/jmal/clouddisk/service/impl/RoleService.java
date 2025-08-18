@@ -3,7 +3,6 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import com.alibaba.fastjson2.JSON;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
@@ -26,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -143,7 +143,7 @@ public class RoleService {
         query.addCriteria(Criteria.where("_id").is(roleDO.getId()));
         if(roleDO.getMenuIds() != null){
             // 分配权限后更新相关角色用户的权限缓存
-            ThreadUtil.execute(() -> updateUserCacheByRole(roleDO));
+            CompletableFuture.runAsync(() -> updateUserCacheByRole(roleDO));
         }
         Update update = MongoUtil.getUpdate(roleDO);
         mongoTemplate.upsert(query, update, COLLECTION_NAME);

@@ -4,7 +4,6 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
@@ -31,6 +30,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -288,7 +288,7 @@ public class SettingService {
     private void ensureProcessCalculateFolderSize() {
         if (calculateFolderSizeScheduled.compareAndSet(false, true)) {
             String notifyUsername = userLoginHolder.getUsername();
-            ThreadUtil.execute(() -> {
+            CompletableFuture.runAsync(() -> {
                 try {
                     // 清除之前的文件夹大小数据
                     clearFolderSizInDb();

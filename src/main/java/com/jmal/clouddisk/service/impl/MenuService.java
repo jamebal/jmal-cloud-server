@@ -3,7 +3,6 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import com.alibaba.fastjson2.JSON;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -28,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -282,7 +282,7 @@ public class MenuService {
      * 初始化菜单数据
      */
     public void initMenus() {
-        ThreadUtil.execute(() -> {
+        CompletableFuture.runAsync(() -> {
             TimeInterval timeInterval = new TimeInterval();
             List<MenuDO> menuDOList = getMenuDOListByConfigJSON();
             if (menuDOList.isEmpty()) return;

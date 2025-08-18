@@ -8,7 +8,6 @@ import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
@@ -67,6 +66,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import static com.jmal.clouddisk.service.IUserService.USER_ID;
 
@@ -847,7 +847,7 @@ public class FileServiceImpl implements IFileService {
         String finalUsername = username;
         String operator = userLoginHolder.getUsername();
         LogOperation logOperation = logService.getLogOperation();
-        ThreadUtil.execute(() -> {
+        CompletableFuture.runAsync(() -> {
             try {
                 String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
                 if (ossPath != null) {
@@ -1001,7 +1001,7 @@ public class FileServiceImpl implements IFileService {
         upload.setUserId(userLoginHolder.getUserId());
         upload.setUsername(userLoginHolder.getUsername());
         LogOperation logOperation = logService.getLogOperation();
-        ThreadUtil.execute(() -> {
+        CompletableFuture.runAsync(() -> {
             try {
                 String currentDirectory = getOssFileCurrentDirectory(upload, froms);
                 String fromFileIdOne = froms.get(0);
@@ -1074,7 +1074,7 @@ public class FileServiceImpl implements IFileService {
         upload.setUserId(userLoginHolder.getUserId());
         upload.setUsername(userLoginHolder.getUsername());
         LogOperation logOperation = logService.getLogOperation();
-        ThreadUtil.execute(() -> {
+        CompletableFuture.runAsync(() -> {
             try {
                 // 复制成功
                 getCopyResult(upload, froms, to, false, logOperation);

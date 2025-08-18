@@ -2,6 +2,7 @@ package com.jmal.clouddisk.webdav;
 
 import com.jmal.clouddisk.config.FileProperties;
 import jakarta.servlet.MultipartConfigElement;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletPath;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
@@ -12,22 +13,12 @@ import org.springframework.web.servlet.DispatcherServlet;
 
 
 @Configuration
+@RequiredArgsConstructor
 public class WebdavConfig {
 
     private final FileProperties fileProperties;
 
-    private final MyRealm myRealm;
-
-    private final WebdavAuthenticator webdavAuthenticator;
-
     private final MyWebdavServlet myWebdavServlet;
-
-    public WebdavConfig(FileProperties fileProperties, MyRealm myRealm, WebdavAuthenticator webdavAuthenticator, MyWebdavServlet myWebdavServlet) {
-        this.fileProperties = fileProperties;
-        this.myRealm = myRealm;
-        this.webdavAuthenticator = webdavAuthenticator;
-        this.myWebdavServlet = myWebdavServlet;
-    }
 
     /**
      * 自定义 DispatcherServlet 的注册，以确保关键应用程序行为。

@@ -4,10 +4,11 @@ import cn.hutool.extra.ftp.SimpleFtpServer;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.service.IUserService;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.usermanager.impl.BaseUser;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -22,7 +23,7 @@ import java.util.List;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class FTPServerConfig {
+public class FTPServerConfig  implements ApplicationListener<ContextRefreshedEvent> {
 
     private final FileProperties fileProperties;
 
@@ -30,7 +31,6 @@ public class FTPServerConfig {
 
     private final MyPropertiesUserManager myPropertiesUserManager;
 
-    @PostConstruct
     public void startFTPServer() {
 
         List<ConsumerDTO> userList = userService.userListAll();
@@ -50,4 +50,11 @@ public class FTPServerConfig {
         log.info("FTP server port: {}", fileProperties.getFtpServerPort());
     }
 
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        // 确保只在根应用上下文执行一次，防止在Web环境中执行两次
+        if (event.getApplicationContext().getParent() == null) {
+            startFTPServer();
+        }
+    }
 }

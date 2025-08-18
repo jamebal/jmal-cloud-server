@@ -1,9 +1,10 @@
 package com.jmal.clouddisk.annotation;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,7 +20,8 @@ import java.util.Map;
  * @Date 2021/1/8 8:38 下午
  */
 @Component
-public class AnnoManageUtil {
+@RequiredArgsConstructor
+public class AnnoManageUtil implements ApplicationListener<ContextRefreshedEvent> {
 
     /***
      * 权限标识列表
@@ -27,15 +29,24 @@ public class AnnoManageUtil {
     public static final List<String> AUTHORITIES = new ArrayList<>();
 
     // 注入 Spring 的应用上下文
-    @Autowired
-    private ApplicationContext applicationContext;
+    private final ApplicationContext applicationContext;
 
     /**
-     * 通过 Spring 容器获取所有的权限标识，不再需要反射扫描。
+     * 监听 ContextRefreshedEvent 事件。
+     * 此方法将在Spring容器完全初始化所有Bean后被调用。
+     * 这是执行应用级别扫描和初始化的安全时机。
+     *
+     * @param event 上下文刷新事件
      */
-    @PostConstruct
-    public void getAllAuthorities() {
-        // 不再需要 Reflections！
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        // 确保只在根应用上下文执行一次，防止在Web环境中执行两次
+        if (event.getApplicationContext().getParent() == null) {
+            initAuthorities();
+        }
+    }
+
+    private void initAuthorities() {
         // 直接从 Spring 容器中获取所有被 @RestController 注解的 beans
         Map<String, Object> restControllers = applicationContext.getBeansWithAnnotation(RestController.class);
         Collection<Object> controllerInstances = restControllers.values();

@@ -2,7 +2,6 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.http.useragent.UserAgent;
 import cn.hutool.http.useragent.UserAgentUtil;
 import com.jmal.clouddisk.config.FileProperties;
@@ -34,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -302,7 +302,7 @@ public class LogService {
     }
 
     public void asyncAddLog(LogOperation logOperation) {
-        ThreadUtil.execute(() -> {
+        CompletableFuture.runAsync(() -> {
             logOperation.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             mongoTemplate.save(logOperation);
         });

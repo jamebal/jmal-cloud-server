@@ -2,7 +2,6 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
@@ -33,6 +32,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author jmal
@@ -202,7 +202,7 @@ public class UserServiceImpl implements IUserService {
         updateConsumer(userId, query, update);
         if (user.getRoles() != null) {
             // 修改用户角色后更新相关角色用户的权限缓存
-            ThreadUtil.execute(() -> roleService.updateUserCacheByRole(user.getRoles()));
+            CompletableFuture.runAsync(() -> roleService.updateUserCacheByRole(user.getRoles()));
         }
         return ResultUtil.success(fileId);
     }

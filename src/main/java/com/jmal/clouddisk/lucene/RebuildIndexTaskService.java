@@ -33,10 +33,7 @@ import java.math.RoundingMode;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -153,7 +150,7 @@ public class RebuildIndexTaskService {
         }
         setPercentMap(0d, 0d);
         String finalUsername = username;
-        ThreadUtil.execute(() -> {
+        CompletableFuture.runAsync(() -> {
             if (!SYNC_FILE_LOCK.tryLock()) {
                 return;
             }

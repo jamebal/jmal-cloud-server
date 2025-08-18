@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
@@ -43,7 +44,7 @@ public class AliyunOssService implements IOssService {
         this.ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor, ossConfigDTO);
-        ThreadUtil.execute(this::getMultipartUploads);
+        CompletableFuture.runAsync(this::getMultipartUploads);
     }
 
     @Override
