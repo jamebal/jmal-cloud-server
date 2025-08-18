@@ -443,6 +443,8 @@
 
                         <configuration>
                             <buildArgs>
+<!--                                    <buildArg>&#45;&#45;pgo-instrument</buildArg>-->
+<!--                                    <buildArg>&#45;&#45;pgo=gameoflife.iprof</buildArg>-->
                                     <buildArg>-march=compatibility</buildArg>
                                     <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
                                     <buildArg>-H:+AddAllCharsets</buildArg>
