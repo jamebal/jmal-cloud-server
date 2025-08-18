@@ -18,8 +18,6 @@ chown -R ${USER_UID}:${USER_GID} log
 exec gosu ${USER_UID}:${USER_GID} /app/jmalcloud \
  -Duser.timezone=${TZ} \
  -Dfile.encoding=UTF-8 \
- -Dloader.path=/usr/local/clouddisk-lib \
- -jar /usr/local/clouddisk-${VERSION}.jar \
  --spring.profiles.active=${RUN_ENVIRONMENT} \
  --spring.data.mongodb.uri=${MONGODB_URI} \
  --tess4j.data-path=${TESS4J_DATA_PATH} \

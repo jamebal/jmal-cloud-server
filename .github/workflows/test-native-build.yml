@@ -24,13 +24,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract project version from pom.xml
-        id: project_version
-        run: |
-          VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-          echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
       - name: Set up GraalVM for Native Image
         uses: graalvm/setup-graalvm@v1
         with:
@@ -39,8 +32,56 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: 'maven'
 
-      - name: Build Native Image with Maven
-        run: mvn clean package -Pnative -DskipTests -Dnative.march.arg=${{ matrix.march }}
+      # 构建带插桩的 Native Image
+      - name: Build Instrumented Native Image
+        run: |
+          mvn clean package -Pnative -DskipTests -Dnative.pgo.arg="--pgo-instrument" -Dnative.o.arg="-o target/jmalcloud-instrumented"
+
+      # 运行插桩程序以生成 Profile 文件
+      - name: Run Instrumented App to Generate Profile
+        run: |
+          # 赋予执行权限
+          chmod +x target/jmalcloud-instrumented
+          
+          mkdir -p /jmalcloud/
+          
+          echo "Starting instrumented application in the background..."
+          # 在后台运行程序，并将 profile 文件名指定为 jmalcloud.iprof
+          # 使用 & 将其放入后台
+          ./target/jmalcloud-instrumented -XX:ProfilesDumpFile=jmalcloud.iprof --spring.data.mongodb.uri=${{secrets.MONGODB_URI}} --file.rootDir=/jmalcloud &
+          
+          # 获取后台进程的 PID (Process ID)
+          APP_PID=$!
+          echo "Application started with PID: $APP_PID"
+          
+          echo "Waiting for 60 seconds to collect profile data..."
+          # 等待 60 秒
+          sleep 60
+          
+          echo "Stopping the application (PID: $APP_PID) with SIGINT (like Ctrl+C)..."
+          # 发送 SIGINT 信号来优雅地终止进程，这会触发 profile 文件的写入
+          kill -INT $APP_PID
+          
+          echo "Waiting a few seconds for the process to terminate gracefully..."
+          # 等待几秒钟，确保文件已完全写入磁盘
+          sleep 5
+
+      # 验证 Profile 文件是否已创建
+      - name: Verify Profile File Creation
+        run: |
+          echo "Checking if profile file was created..."
+          ls -l jmalcloud.iprof
+          if [ ! -f "jmalcloud.iprof" ]; then
+            echo "Error: Profile file jmalcloud.iprof was not created."
+            exit 1
+          fi
+
+      # 使用 Profile 文件构建最终优化的 Native Image
+      - name: Build PGO-Optimized Native Image
+        run: mvn clean package -Pnative -DskipTests -Dnative.march.arg='-march=${{ matrix.march }}' -Dnative.pgo.arg="--pgo=jmalcloud.iprof" -Dnative.o.arg="-o target/jmalcloud"
+
+#      - name: Build Native Image with Maven
+#        run: mvn clean package -Pnative -DskipTests -Dnative.march.arg='-march=${{ matrix.march }}'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -57,6 +98,13 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
+
+      - name: Extract project version from pom.xml
+        id: project_version
+        run: |
+          VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+          echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Build and push arch-specific image
         uses: docker/build-push-action@v5

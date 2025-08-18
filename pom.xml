@@ -21,8 +21,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lucene.version>10.2.2</lucene.version>
         <zxing.version>3.5.3</zxing.version>
-        <native.march.arg>compatibility</native.march.arg>
-        <native.gc.arg>serial</native.gc.arg>
+        <native.march.arg>-march=compatibility</native.march.arg>
+        <native.gc.arg>--gc=serial</native.gc.arg>
     </properties>
 
     <repositories>
@@ -444,8 +444,11 @@
                         </executions>
                         <configuration>
                             <buildArgs>
-                                <buildArg>-march=${native.march.arg}</buildArg>
-                                <buildArg>--gc=${native.gc.arg}</buildArg>
+                                <buildArg>-J-Xmx32g</buildArg>
+                                <buildArg>${native.march.arg}</buildArg>
+                                <buildArg>${native.gc.arg}</buildArg>
+                                <buildArg>${native.pgo.arg}</buildArg>
+                                <buildArg>${native.o.arg}</buildArg>
                                 <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
                                 <buildArg>-H:+AddAllCharsets</buildArg>
                                 <buildArg>-H:+AllowIncompleteClasspath</buildArg>
