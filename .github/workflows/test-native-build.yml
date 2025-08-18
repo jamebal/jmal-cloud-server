@@ -40,7 +40,7 @@ jobs:
           cache: 'maven'
 
       - name: Build Native Image with Maven
-        run: mvn clean package -Pnative -DskipTests -Dnative.gc.arg=G1 -Dnative.march.arg=${{ matrix.march }}
+        run: mvn clean package -Pnative -DskipTests -Dnative.march.arg=${{ matrix.march }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
