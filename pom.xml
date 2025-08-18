@@ -22,11 +22,7 @@
         <lucene.version>10.2.2</lucene.version>
         <zxing.version>3.5.3</zxing.version>
         <my.native.build.args>
-            -march=compatibility
-            -H:+UnlockExperimentalVMOptions
-            -H:+AddAllCharsets
-            -H:+AllowIncompleteClasspath
-            --enable-url-protocols=http,https
+            -march=compatibility -H:+UnlockExperimentalVMOptions -H:+AddAllCharsets -H:+AllowIncompleteClasspath
         </my.native.build.args>
     </properties>
 
