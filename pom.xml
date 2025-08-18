@@ -444,7 +444,7 @@
                         </executions>
                         <configuration>
                             <buildArgs>
-                                <buildArg>-J-Xmx32g</buildArg>
+                                <buildArg>-J-Xmx12g</buildArg>
                                 <buildArg>${native.march.arg}</buildArg>
                                 <buildArg>${native.gc.arg}</buildArg>
                                 <buildArg>${native.pgo.arg}</buildArg>
