@@ -21,6 +21,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lucene.version>10.2.2</lucene.version>
         <zxing.version>3.5.3</zxing.version>
+        <my.native.build.args>
+            -march=compatibility
+            -H:+UnlockExperimentalVMOptions
+            -H:+AddAllCharsets
+            -H:+AllowIncompleteClasspath
+            --enable-url-protocols=http,https
+        </my.native.build.args>
     </properties>
 
     <repositories>
@@ -440,19 +447,11 @@
                                 <phase>package</phase>
                             </execution>
                         </executions>
-
                         <configuration>
                             <buildArgs>
-<!--                                    <buildArg>&#45;&#45;pgo-instrument</buildArg>-->
-<!--                                    <buildArg>&#45;&#45;pgo=gameoflife.iprof</buildArg>-->
-                                    <buildArg>-march=compatibility</buildArg>
-                                    <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
-                                    <buildArg>-H:+AddAllCharsets</buildArg>
-                                    <buildArg>-H:+AllowIncompleteClasspath</buildArg>
-                                    <buildArg>--enable-url-protocols=http,https</buildArg>
+                                ${my.native.build.args}
                             </buildArgs>
                         </configuration>
-
                     </plugin>
                 </plugins>
             </build>
