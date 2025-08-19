@@ -112,22 +112,14 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
-        uses: Wandalen/wretry.action@master
+        uses: docker/login-action@v3
         with:
-          action: docker/login-action@v3
-          attempt_limit: 5
-          attempt_delay: 5000
-        env:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Login to GitHub Container Registry
-        uses: Wandalen/wretry.action@master
+        uses: docker/login-action@v3
         with:
-          action: docker/login-action@v3
-          attempt_limit: 5
-          attempt_delay: 5000
-        env:
           registry: ghcr.io
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
@@ -139,28 +131,21 @@ jobs:
           echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Build image (no push) -march=compatibility
-        run: |
-          docker buildx build \
-            --file ./Dockerfile \
-            --platform linux/${{ matrix.arch }} \
-            --build-arg VERSION=${{ env.PROJECT_VERSION }} \
-            --cache-from type=gha \
-            --cache-to type=gha,mode=max \
-            --provenance=false \
-            --load \
-            -t jmal/jmalcloud_native:test-${{ matrix.arch }} \
-            -t ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-${{ matrix.arch }} \
-            .
-
-      - name: Push image to Docker Hub and GHCR with retry  -march=compatibility
-        run: |
-          for i in {1..5}; do
-            docker push jmal/jmalcloud_native:test-${{ matrix.arch }} && \
-            docker push ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-${{ matrix.arch }} && break
-            echo "Push failed, retry #$i..."
-            sleep 15
-          done
+      - name: Build and push arch-specific image -march=compatibility
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          file: ./Dockerfile
+          push: true
+          tags: |
+            jmal/jmalcloud_native:test-${{ matrix.arch }}
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
+          build-args: |
+            VERSION=${{ env.PROJECT_VERSION }}
 
       - name: Inspect the pushed image RIGHT AFTER push
         if: ${{ success() }}
@@ -175,29 +160,21 @@ jobs:
       - name: Build PGO-Optimized Native Image -march=${{ matrix.march }}
         run: mvn clean package -Pnative -DskipTests -Dnative.march.arg='-march=${{ matrix.march }}' -Dnative.pgo.arg="--pgo=jmalcloud.iprof" -Dnative.output.arg="-o target/jmalcloud"
 
-
-      - name: Build image (no push) -march=${{ matrix.arch }}
-        run: |
-          docker buildx build \
-            --file ./Dockerfile \
-            --platform linux/${{ matrix.arch }} \
-            --build-arg VERSION=${{ env.PROJECT_VERSION }} \
-            --cache-from type=gha \
-            --cache-to type=gha,mode=max \
-            --provenance=false \
-            --load \
-            -t jmal/jmalcloud_native_${{ matrix.march }}:test-${{ matrix.arch }} \
-            -t ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_${{ matrix.march }}:test-${{ matrix.arch }} \
-            .
-
-      - name: Push image to Docker Hub and GHCR with retry  -march=compatibility
-        run: |
-          for i in {1..5}; do
-            docker push jmal/jmalcloud_native_${{ matrix.march }}:test-${{ matrix.arch }} && \
-            docker push ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_${{ matrix.march }}:test-${{ matrix.arch }} && break
-            echo "Push failed, retry #$i..."
-            sleep 15
-          done
+      - name: Build and push arch-specific image -march=${{ matrix.march }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          file: ./Dockerfile
+          push: true
+          tags: |
+            jmal/jmalcloud_native_${{ matrix.march }}:test-${{ matrix.arch }}
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_${{ matrix.march }}:test-${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
+          build-args: |
+            VERSION=${{ env.PROJECT_VERSION }}
 
       - name: Inspect the pushed image RIGHT AFTER push -march=${{ matrix.march }}
         if: ${{ success() }}
