@@ -1,4 +1,22 @@
-FROM ghcr.io/jamebal/jdk21_ffmpeg:latest
+## --- 阶段一: 构建基础 (使用与 CI 匹配的 GraalVM 镜像) ---
+## 使用官方的 GraalVM 镜像作为构建环境
+#FROM ghcr.io/graalvm/graalvm-community:24.0.2 AS builder
+## 将构建上下文复制到镜像中
+#WORKDIR /work
+#
+## 仅复制构建定义文件
+#COPY .mvn/ .mvn
+#COPY mvnw pom.xml ./
+#
+## 下载所有依赖。只要 pom.xml 不变，这一层就会被缓存，节省大量时间
+#RUN ./mvnw dependency:go-offline
+#
+## 复制项目的源代码
+#COPY src/ src/
+#
+#RUN ./mvnw clean package -Pnative -DskipTests
+
+FROM ghcr.io/jamebal/jmalcloud_base:latest
 
 ARG VERSION
 
@@ -18,34 +36,23 @@ ENV MONITOR_IGNORE_FILE_PREFIX ".DS_Store,._"
 ENV FILE_ROOT_DIR /jmalcloud/files
 ENV TESS4J_DATA_PATH /jmalcloud/tess4j/datapath
 
-ADD target/clouddisk-${VERSION}.jar /usr/local/
+# 从构建器阶段复制编译好的可执行文件
+# Spring Boot GraalVM 插件默认会将可执行文件放在 target 目录
+COPY target/jmalcloud /app/jmalcloud
+COPY target/*.so /app/
+RUN chmod +x /app/jmalcloud
 
 VOLUME /jmalcloud/
 
-# 设置支持的平台
-ARG TARGETPLATFORM
-RUN echo "Building for platform: $TARGETPLATFORM"
-LABEL org.label-schema.build.multi-platform=true
-ENV PLATFORM=$TARGETPLATFORM
-ENV VERSION=${VERSION}
-
-# 将 Linux/arm64/v8 架构设置为默认平台
-# 如果需要，可以根据需要更改此设置
-ENV DOCKER_DEFAULT_PLATFORM=linux/amd64,linux/arm64
-
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
-RUN apt-get update && \
-    apt-get install -y gosu && \
-    chmod +x /docker-entrypoint.sh && \
-    rm -rf /var/lib/apt/lists/*
+RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 8088
 
 # FTP Server
 EXPOSE 8089
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8088/public/health > /dev/null || exit 1
+# HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 CMD curl -f http://localhost:8088/public/health > /dev/null || exit 1
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
