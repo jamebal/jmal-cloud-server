@@ -29,7 +29,9 @@ jobs:
       - name: Add Maven to PATH
         run: |
           echo "/opt/maven/bin" >> $GITHUB_PATH
-          mvn -v
+
+      - name: Check Maven version
+        run: mvn -v
 
       - name: Set up GraalVM for Native Image
         uses: graalvm/setup-graalvm@v1
