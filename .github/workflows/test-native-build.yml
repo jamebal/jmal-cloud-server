@@ -44,7 +44,7 @@ jobs:
       # 构建带插桩的 Native Image
       - name: Build Instrumented Native Image
         run: |
-          mvn clean package -Pnative -DskipTests -Dnative.pgo.arg="--pgo-instrument" -Dnative.o.arg="-o target/jmalcloud-instrumented"
+          mvn clean package -Pnative -DskipTests -Dnative.pgo.arg="--pgo-instrument" -Dnative.output.arg="-o target/jmalcloud-instrumented"
 
       # 运行插桩程序以生成 Profile 文件
       - name: Run Instrumented App to Generate Profile
@@ -87,7 +87,7 @@ jobs:
 
       # 使用 Profile 文件构建最终优化的 Native Image
       - name: Build PGO-Optimized Native Image
-        run: mvn clean package -Pnative -DskipTests -Dnative.march.arg='-march=${{ matrix.march }}' -Dnative.pgo.arg="--pgo=jmalcloud.iprof" -Dnative.o.arg="-o target/jmalcloud"
+        run: mvn clean package -Pnative -DskipTests -Dnative.march.arg='-march=${{ matrix.march }}' -Dnative.pgo.arg="--pgo=jmalcloud.iprof" -Dnative.output.arg="-o target/jmalcloud"
 
 #      - name: Build Native Image with Maven
 #        run: mvn clean package -Pnative -DskipTests -Dnative.march.arg='-march=${{ matrix.march }}'
