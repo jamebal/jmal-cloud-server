@@ -80,11 +80,12 @@ jobs:
           # 上传文件
           cp -r target/test-classes ${HOME}/jmalcloud/admin/
           
+          # 等待应用程序运行一段时间以收集性能数据
+          echo "等待应用程序运行 120 秒以收集性能数据..."
+          sleep 120
+          
           # 打印日志文件的最后 100 行
           tail -n 100 "${HOME}/app.log"
-          
-          # 等待应用程序运行一段时间以收集性能数据
-          sleep 120
           
           echo "发送 SIGINT 信号来优雅地终止进程，这会触发 profile 文件的写入"
           kill -15 $APP_PID
@@ -92,9 +93,9 @@ jobs:
           echo "等待几秒钟，让进程优雅地终止..."
           sleep 5
           
-          ls -lh 'target/jmalcloud.iprof'
+          ls -lh 'jmalcloud.iprof'
           
-          ls -lh 'target/jmalcloud.iprof'
+          ls -lh 'jmalcloud.iprof'
 
       # 验证 Profile 文件是否已创建
       - name: Verify Profile File Creation
