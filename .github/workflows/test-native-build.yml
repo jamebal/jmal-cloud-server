@@ -31,6 +31,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '24'
+          maven-version: '3.9.11'
           cache: 'maven'
 
       - name: Set up GraalVM for Native Image
@@ -132,7 +133,7 @@ jobs:
             VERSION=${{ env.PROJECT_VERSION }}
 
       - name: Inspect the pushed image RIGHT AFTER push
-        if: always()
+        if: ${{ success() }}
         run: |
           echo "--- Inspecting Docker Hub image ---"
           docker manifest inspect jmal/jmalcloud_native:test-${{ matrix.arch }}
