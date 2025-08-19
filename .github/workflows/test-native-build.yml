@@ -53,7 +53,7 @@ jobs:
           chmod +x target/jmalcloud-instrumented
           
           rm -rf ${HOME}/jmalcloud
-          rm jmalcloud.iprof
+          rm -f jmalcloud.iprof
           
           mkdir ${HOME}/jmalcloud
           
