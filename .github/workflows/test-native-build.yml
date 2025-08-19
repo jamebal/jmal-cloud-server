@@ -59,7 +59,7 @@ jobs:
           echo "Starting instrumented application in the background..."
           # 在后台运行程序，并将 profile 文件名指定为 jmalcloud.iprof
           # 使用 & 将其放入后台
-          ./target/jmalcloud-instrumented -XX:ProfilesDumpFile='target/jmalcloud.iprof' --spring.data.mongodb.uri=${{secrets.MONGODB_URI}} --file.rootDir=${HOME}/jmalcloud &
+          ./target/jmalcloud-instrumented -XX:ProfilesDumpFile='target/jmalcloud.iprof' --spring.data.mongodb.uri=${{secrets.MONGODB_URI}} --file.rootDir=${HOME}/jmalcloud > "${HOME}/app.log" 2>&1 &
           
           # 获取后台进程的 PID (Process ID)
           APP_PID=$!
