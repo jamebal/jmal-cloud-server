@@ -26,14 +26,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Maven
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '24'
-          maven-version: '3.9.11'
-          cache: 'maven'
-
       - name: Set up GraalVM for Native Image
         uses: graalvm/setup-graalvm@v1
         with:
@@ -53,12 +45,12 @@ jobs:
           # 赋予执行权限
           chmod +x target/jmalcloud-instrumented
           
-          mkdir -p /jmalcloud/
+          mkdir ~/jmalcloud
           
           echo "Starting instrumented application in the background..."
           # 在后台运行程序，并将 profile 文件名指定为 jmalcloud.iprof
           # 使用 & 将其放入后台
-          ./target/jmalcloud-instrumented -XX:ProfilesDumpFile=jmalcloud.iprof --spring.data.mongodb.uri=${{secrets.MONGODB_URI}} --file.rootDir=/jmalcloud &
+          ./target/jmalcloud-instrumented -XX:ProfilesDumpFile=jmalcloud.iprof --spring.data.mongodb.uri=${{secrets.MONGODB_URI}} --file.rootDir=~/jmalcloud &
           
           # 获取后台进程的 PID (Process ID)
           APP_PID=$!
