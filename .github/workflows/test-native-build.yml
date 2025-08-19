@@ -118,8 +118,8 @@ jobs:
           attempt_limit: 5
           attempt_delay: 5000
         env:
-          USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Login to GitHub Container Registry
         uses: Wandalen/wretry.action@master
@@ -128,9 +128,9 @@ jobs:
           attempt_limit: 5
           attempt_delay: 5000
         env:
-          REGISTRY: ghcr.io
-          USERNAME: ${{ secrets.GHCR_IO_USERNAME }}
-          PASSWORD: ${{ secrets.GHCR_IO_TOKEN }}
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_IO_USERNAME }}
+          password: ${{ secrets.GHCR_IO_TOKEN }}
 
       - name: Extract project version from pom.xml
         id: project_version
@@ -176,7 +176,7 @@ jobs:
         run: mvn clean package -Pnative -DskipTests -Dnative.march.arg='-march=${{ matrix.march }}' -Dnative.pgo.arg="--pgo=jmalcloud.iprof" -Dnative.output.arg="-o target/jmalcloud"
 
 
-      - name: Build image (no push) -march=compatibility
+      - name: Build image (no push) -march=${{ matrix.arch }}
         run: |
           docker buildx build \
             --file ./Dockerfile \
