@@ -63,11 +63,16 @@ jobs:
           
           # 获取后台进程的 PID (Process ID)
           APP_PID=$!
-          echo "Application started with PID: $APP_PID"
+          echo "应用程序已启动，进程ID为: $APP_PID"
           
-          echo "Waiting for 60 seconds to collect profile data..."
-          # 等待 30 秒 启动
-          sleep 30
+          # 等待应用启动
+          for i in {1..30}; do
+            if curl -s http://localhost:8088/public/health | grep -q '^UP'; then
+              echo "App is up"
+              break
+            fi
+            sleep 2
+          done
           
           # 创建管理员
           curl --location --request POST 'http://localhost:8088/public/initialization?password=123456&id=&username=admin&showName=%E7%AE%A1%E7%90%86%E5%91%981&avatar=https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif&slogan=&introduction=&webpDisabled=&roles=&quota=10'
@@ -79,11 +84,14 @@ jobs:
           
           echo "Stopping the application (PID: $APP_PID) with SIGINT (like Ctrl+C)..."
           # 发送 SIGINT 信号来优雅地终止进程，这会触发 profile 文件的写入
-          kill -INT $APP_PID
+          kill -15 $APP_PID
           
-          echo "Waiting a few seconds for the process to terminate gracefully..."
-          # 等待几秒钟，确保文件已完全写入磁盘
+          echo "等待几秒钟，让进程优雅地终止..."
           sleep 5
+          
+          ls -lh 'target/jmalcloud.iprof'
+          
+          ls -lh 'target/jmalcloud.iprof'
 
       # 验证 Profile 文件是否已创建
       - name: Verify Profile File Creation
