@@ -4,6 +4,82 @@
       "type": "[B"
     },
     {
+      "type": "org.jaudiotagger.tag.datatype.NumberHashMap",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.jaudiotagger.tag.datatype.NumberHashMap"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.jaudiotagger.tag.datatype.TextEncodedStringSizeTerminated",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.jaudiotagger.tag.datatype.TextEncodedStringSizeTerminated"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.jaudiotagger.tag.id3.framebody.FrameBodyTALB",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.nio.ByteBuffer",
+            "int"
+          ]
+        },
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.jaudiotagger.tag.id3.framebody.FrameBodyTALB"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.jaudiotagger.tag.id3.framebody.FrameBodyTIT2",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.nio.ByteBuffer",
+            "int"
+          ]
+        },
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.jaudiotagger.tag.id3.framebody.FrameBodyTIT2"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.jaudiotagger.tag.id3.framebody.FrameBodyTPE1",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.nio.ByteBuffer",
+            "int"
+          ]
+        },
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.jaudiotagger.tag.id3.framebody.FrameBodyTPE1"
+          ]
+        }
+      ]
+    },
+    {
       "type": "[C"
     },
     {
