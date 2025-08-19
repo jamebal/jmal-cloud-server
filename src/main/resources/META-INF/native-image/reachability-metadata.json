@@ -43,13 +43,16 @@
       "type": "[Ljava.nio.charset.Charset;"
     },
     {
-      "type": "[Ljava.util.HashMap$Node;"
-    },
-    {
       "type": "[Lkotlin.annotation.AnnotationTarget;"
     },
     {
       "type": "[Lorg.apache.lucene.index.TermStates$PendingTermLookup;"
+    },
+    {
+      "type": "[Lorg.apache.lucene.search.DisiWrapper;"
+    },
+    {
+      "type": "[Lorg.apache.lucene.util.fst.FSTCompiler$Arc;"
     },
     {
       "type": "[Lorg.apache.lucene.util.packed.PackedInts$Reader;"
@@ -385,6 +388,97 @@
       ]
     },
     {
+      "type": "com.alibaba.fastjson2.writer.FieldWriter",
+      "fields": [
+        {
+          "name": "initObjectWriter"
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson2.writer.FieldWriterObject",
+      "fields": [
+        {
+          "name": "initValueClass"
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson2.writer.OWG_1_5_ResponseResult",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class",
+            "java.lang.String",
+            "java.lang.String",
+            "long",
+            "java.util.List"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson2.writer.OWG_2_5_ResponseResult",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class",
+            "java.lang.String",
+            "java.lang.String",
+            "long",
+            "java.util.List"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson2.writer.OWG_3_5_ResponseResult",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class",
+            "java.lang.String",
+            "java.lang.String",
+            "long",
+            "java.util.List"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson2.writer.OWG_4_5_ResponseResult",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class",
+            "java.lang.String",
+            "java.lang.String",
+            "long",
+            "java.util.List"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson2.writer.OWG_5_5_ResponseResult",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class",
+            "java.lang.String",
+            "java.lang.String",
+            "long",
+            "java.util.List"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.couchbase.client.java.Bucket"
     },
     {
@@ -511,15 +605,6 @@
     },
     {
       "type": "com.fasterxml.jackson.databind.AnnotationIntrospector"
-    },
-    {
-      "type": "com.fasterxml.jackson.databind.BeanDescription",
-      "methods": [
-        {
-          "name": "findJsonValueAccessor",
-          "parameterTypes": []
-        }
-      ]
     },
     {
       "type": "com.fasterxml.jackson.databind.DatabindException"
@@ -1628,21 +1713,6 @@
             "com.jmal.clouddisk.service.impl.LogService",
             "com.jmal.clouddisk.service.IUserService"
           ]
-        },
-        {
-          "name": "article",
-          "parameterTypes": [
-            "jakarta.servlet.http.HttpServletRequest",
-            "java.lang.String",
-            "org.springframework.ui.Model"
-          ]
-        },
-        {
-          "name": "index",
-          "parameterTypes": [
-            "jakarta.servlet.http.HttpServletRequest",
-            "org.springframework.ui.Model"
-          ]
         }
       ]
     },
@@ -1715,8 +1785,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.controller.record.MfaVerifyRequest",
-      "allDeclaredFields": true
+      "type": "com.jmal.clouddisk.controller.record.MfaVerifyRequest"
     },
     {
       "type": "com.jmal.clouddisk.controller.rest.AuthController",
@@ -1773,6 +1842,13 @@
         {
           "name": "<init>",
           "parameterTypes": []
+        },
+        {
+          "name": "list",
+          "parameterTypes": [
+            "java.lang.String",
+            "java.lang.String"
+          ]
         },
         {
           "name": "tree",
@@ -1896,9 +1972,22 @@
           ]
         },
         {
-          "name": "favorite",
+          "name": "checkFileExist",
           "parameterTypes": [
-            "java.lang.String[]"
+            "com.jmal.clouddisk.model.UploadApiParamDTO"
+          ]
+        },
+        {
+          "name": "checkUpload",
+          "parameterTypes": [
+            "com.jmal.clouddisk.model.UploadApiParamDTO"
+          ]
+        },
+        {
+          "name": "coverOfMedia",
+          "parameterTypes": [
+            "java.lang.String",
+            "java.lang.String"
           ]
         },
         {
@@ -1913,6 +2002,12 @@
             "java.lang.String",
             "java.lang.String",
             "java.lang.Boolean"
+          ]
+        },
+        {
+          "name": "merge",
+          "parameterTypes": [
+            "com.jmal.clouddisk.model.UploadApiParamDTO"
           ]
         },
         {
@@ -1933,9 +2028,18 @@
           ]
         },
         {
-          "name": "setTag",
+          "name": "searchFile",
           "parameterTypes": [
-            "com.jmal.clouddisk.model.EditTagDTO"
+            "com.jmal.clouddisk.model.UploadApiParamDTO",
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "searchFileAndOpenDir",
+          "parameterTypes": [
+            "com.jmal.clouddisk.model.UploadApiParamDTO",
+            "java.lang.String",
+            "java.lang.String"
           ]
         },
         {
@@ -1946,16 +2050,9 @@
           ]
         },
         {
-          "name": "thumbnailByUsername",
+          "name": "uploadPost",
           "parameterTypes": [
-            "java.lang.String",
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "unFavorite",
-          "parameterTypes": [
-            "java.lang.String[]"
+            "com.jmal.clouddisk.model.UploadApiParamDTO"
           ]
         }
       ]
@@ -2049,6 +2146,12 @@
           "name": "<init>",
           "parameterTypes": [
             "com.jmal.clouddisk.lucene.SearchFileService"
+          ]
+        },
+        {
+          "name": "recentlySearchHistory",
+          "parameterTypes": [
+            "java.lang.String"
           ]
         }
       ]
@@ -2211,38 +2314,6 @@
             "com.jmal.clouddisk.interceptor.FileInterceptor",
             "com.jmal.clouddisk.oss.web.WebOssService"
           ]
-        },
-        {
-          "name": "cancelShare",
-          "parameterTypes": [
-            "java.lang.String[]"
-          ]
-        },
-        {
-          "name": "generateLink",
-          "parameterTypes": [
-            "com.jmal.clouddisk.model.ShareDO"
-          ]
-        },
-        {
-          "name": "hasSubShare",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "publicThumbnail",
-          "parameterTypes": [
-            "java.lang.String",
-            "java.lang.Boolean",
-            "jakarta.servlet.http.HttpServletRequest"
-          ]
-        },
-        {
-          "name": "shareList",
-          "parameterTypes": [
-            "com.jmal.clouddisk.model.UploadApiParamDTO"
-          ]
         }
       ]
     },
@@ -2301,6 +2372,13 @@
           "parameterTypes": [
             "com.jmal.clouddisk.model.query.QueryUserDTO"
           ]
+        },
+        {
+          "name": "update",
+          "parameterTypes": [
+            "com.jmal.clouddisk.model.rbac.ConsumerDTO",
+            "org.springframework.web.multipart.MultipartFile"
+          ]
         }
       ]
     },
@@ -2329,12 +2407,6 @@
         {
           "name": "accessTokenList",
           "parameterTypes": []
-        },
-        {
-          "name": "deleteAccessToken",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
         }
       ]
     },
@@ -2446,18 +2518,6 @@
         {
           "name": "<init>",
           "parameterTypes": []
-        },
-        {
-          "name": "exceptionHandler",
-          "parameterTypes": [
-            "java.lang.Exception"
-          ]
-        },
-        {
-          "name": "handleAsyncRequestNotUsableException",
-          "parameterTypes": [
-            "java.io.IOException"
-          ]
         },
         {
           "name": "handleAsyncRequestTimeoutException",
@@ -2854,8 +2914,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.lucene.TaskProgress",
-      "allDeclaredFields": true
+      "type": "com.jmal.clouddisk.lucene.TaskProgress"
     },
     {
       "type": "com.jmal.clouddisk.lucene.TaskProgressService",
@@ -2872,16 +2931,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.lucene.TaskType",
-      "allDeclaredFields": true,
-      "fields": [
-        {
-          "name": "OCR"
-        },
-        {
-          "name": "TRANSCODE_VIDEO"
-        }
-      ]
+      "type": "com.jmal.clouddisk.lucene.TaskType"
     },
     {
       "type": "com.jmal.clouddisk.media.ImageMagickProcessor",
@@ -2942,7 +2992,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.media.TranscodeConfig_Accessor_rkv93b",
+      "type": "com.jmal.clouddisk.media.TranscodeConfig_Accessor_mk9uy",
       "methods": [
         {
           "name": "<init>",
@@ -2953,7 +3003,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.media.TranscodeConfig_Instantiator_rkv93b",
+      "type": "com.jmal.clouddisk.media.TranscodeConfig_Instantiator_mk9uy",
       "methods": [
         {
           "name": "<init>",
@@ -3129,44 +3179,10 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.ArticleParamDTO",
-      "allDeclaredFields": true
+      "type": "com.jmal.clouddisk.model.ArticleParamDTO"
     },
     {
-      "type": "com.jmal.clouddisk.model.ArticleVO",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getAlonePage",
-          "parameterTypes": []
-        },
-        {
-          "name": "getEditable",
-          "parameterTypes": []
-        },
-        {
-          "name": "getHtml",
-          "parameterTypes": []
-        },
-        {
-          "name": "setAlonePage",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setContentText",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setHtml",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
+      "type": "com.jmal.clouddisk.model.ArticleVO"
     },
     {
       "type": "com.jmal.clouddisk.model.CategoryDO",
@@ -3207,7 +3223,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.CategoryDO_Accessor_nskiuo",
+      "type": "com.jmal.clouddisk.model.CategoryDO_Accessor_6o1wew",
       "methods": [
         {
           "name": "<init>",
@@ -3218,7 +3234,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.CategoryDO_Instantiator_nskiuo",
+      "type": "com.jmal.clouddisk.model.CategoryDO_Instantiator_6o1wew",
       "methods": [
         {
           "name": "<init>",
@@ -3337,32 +3353,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.EditTagDTO",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "setFileIds",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setRemoveTagIds",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setTagList",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        }
-      ]
+      "type": "com.jmal.clouddisk.model.EditTagDTO"
     },
     {
       "type": "com.jmal.clouddisk.model.ExifInfo",
@@ -3435,7 +3426,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.ExifInfo_Accessor_hq2k5t",
+      "type": "com.jmal.clouddisk.model.ExifInfo_Accessor_l7ib9e",
       "methods": [
         {
           "name": "<init>",
@@ -3446,7 +3437,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.ExifInfo_Instantiator_hq2k5t",
+      "type": "com.jmal.clouddisk.model.ExifInfo_Instantiator_l7ib9e",
       "methods": [
         {
           "name": "<init>",
@@ -3537,14 +3528,6 @@
           "parameterTypes": [
             "java.time.LocalDateTime"
           ]
-        },
-        {
-          "name": "updateTime",
-          "parameterTypes": []
-        },
-        {
-          "name": "uploadTime",
-          "parameterTypes": []
         }
       ]
     },
@@ -3763,7 +3746,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.FileDocument_Accessor_ch49gy",
+      "type": "com.jmal.clouddisk.model.FileDocument_Accessor_d9ll3p",
       "methods": [
         {
           "name": "<init>",
@@ -3774,7 +3757,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.FileDocument_Instantiator_ch49gy",
+      "type": "com.jmal.clouddisk.model.FileDocument_Instantiator_d9ll3p",
       "methods": [
         {
           "name": "<init>",
@@ -4082,7 +4065,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.FileIntroVO_Accessor_mcvdbm",
+      "type": "com.jmal.clouddisk.model.FileIntroVO_Accessor_pm3kk",
       "methods": [
         {
           "name": "<init>",
@@ -4093,7 +4076,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.FileIntroVO_Instantiator_mcvdbm",
+      "type": "com.jmal.clouddisk.model.FileIntroVO_Instantiator_pm3kk",
       "methods": [
         {
           "name": "<init>",
@@ -4128,7 +4111,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.GridFSBO_Accessor_b6hm3t",
+      "type": "com.jmal.clouddisk.model.GridFSBO_Accessor_oeekwp",
       "methods": [
         {
           "name": "<init>",
@@ -4139,7 +4122,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.GridFSBO_Instantiator_b6hm3t",
+      "type": "com.jmal.clouddisk.model.GridFSBO_Instantiator_oeekwp",
       "methods": [
         {
           "name": "<init>",
@@ -4156,8 +4139,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.LdapConfigDTO",
-      "allDeclaredFields": true
+      "type": "com.jmal.clouddisk.model.LdapConfigDTO"
     },
     {
       "type": "com.jmal.clouddisk.model.LogOperation",
@@ -4268,7 +4250,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.LogOperation$IpInfo_Accessor_hxbv40",
+      "type": "com.jmal.clouddisk.model.LogOperation$IpInfo_Accessor_nu2h28",
       "methods": [
         {
           "name": "<init>",
@@ -4279,7 +4261,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.LogOperation$IpInfo_Instantiator_hxbv40",
+      "type": "com.jmal.clouddisk.model.LogOperation$IpInfo_Instantiator_nu2h28",
       "methods": [
         {
           "name": "<init>",
@@ -4331,7 +4313,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.LogOperation_Accessor_yc9z32",
+      "type": "com.jmal.clouddisk.model.LogOperation_Accessor_vxjbr",
       "methods": [
         {
           "name": "<init>",
@@ -4342,7 +4324,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.LogOperation_Instantiator_yc9z32",
+      "type": "com.jmal.clouddisk.model.LogOperation_Instantiator_vxjbr",
       "methods": [
         {
           "name": "<init>",
@@ -4495,7 +4477,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.Metadata_Accessor_u6l0iy",
+      "type": "com.jmal.clouddisk.model.Metadata_Accessor_xuiddg",
       "methods": [
         {
           "name": "<init>",
@@ -4506,7 +4488,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.Metadata_Instantiator_u6l0iy",
+      "type": "com.jmal.clouddisk.model.Metadata_Instantiator_xuiddg",
       "methods": [
         {
           "name": "<init>",
@@ -4537,7 +4519,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.Music_Accessor_8a22o0",
+      "type": "com.jmal.clouddisk.model.Music_Accessor_shvb1s",
       "methods": [
         {
           "name": "<init>",
@@ -4548,7 +4530,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.Music_Instantiator_8a22o0",
+      "type": "com.jmal.clouddisk.model.Music_Instantiator_shvb1s",
       "methods": [
         {
           "name": "<init>",
@@ -4558,208 +4540,17 @@
     },
     {
       "type": "com.jmal.clouddisk.model.OperationPermission",
-      "allDeclaredFields": true,
-      "fields": [
-        {
-          "name": "DELETE"
-        },
-        {
-          "name": "DOWNLOAD"
-        },
-        {
-          "name": "PUT"
-        },
-        {
-          "name": "UPLOAD"
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.Page",
-      "methods": [
-        {
-          "name": "getData",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTotalPage",
-          "parameterTypes": []
-        }
-      ]
+      "type": "com.jmal.clouddisk.model.Page"
     },
     {
       "type": "com.jmal.clouddisk.model.ShareDO",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "getContentType",
-          "parameterTypes": []
-        },
-        {
-          "name": "getCreateDate",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExpireDate",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtractionCode",
-          "parameterTypes": []
-        },
-        {
-          "name": "getFatherShareId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getFileId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getFileName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIsFolder",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIsPrivacy",
-          "parameterTypes": []
-        },
-        {
-          "name": "getOperationPermissionList",
-          "parameterTypes": []
-        },
-        {
-          "name": "getShareBase",
-          "parameterTypes": []
-        },
-        {
-          "name": "getShortId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUserId",
-          "parameterTypes": []
-        },
-        {
-          "name": "setFileId",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setIsFolder",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setIsPrivacy",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setShortId",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setUserId",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.ShareDO_Accessor_pw46yj",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "com.jmal.clouddisk.model.ShareDO"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.ShareDO_Instantiator_pw46yj",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.ShareVO",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getContentType",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExpireDate",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtractionCode",
-          "parameterTypes": []
-        },
-        {
-          "name": "getFileName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIsFolder",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIsPrivacy",
-          "parameterTypes": []
-        },
-        {
-          "name": "getOperationPermissionList",
-          "parameterTypes": []
-        },
-        {
-          "name": "getShareBase",
-          "parameterTypes": []
-        },
-        {
-          "name": "getShareId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getShortId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSubShare",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUserId",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.SharerDTO",
       "allDeclaredFields": true
+    },
+    {
+      "type": "com.jmal.clouddisk.model.ShareVO"
     },
     {
       "type": "com.jmal.clouddisk.model.Tag",
@@ -4814,7 +4605,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.TagDO_Accessor_vjofv3",
+      "type": "com.jmal.clouddisk.model.TagDO_Accessor_dmz2xo",
       "methods": [
         {
           "name": "<init>",
@@ -4825,7 +4616,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.TagDO_Instantiator_vjofv3",
+      "type": "com.jmal.clouddisk.model.TagDO_Instantiator_dmz2xo",
       "methods": [
         {
           "name": "<init>",
@@ -4837,10 +4628,6 @@
       "type": "com.jmal.clouddisk.model.TagDTO",
       "allDeclaredFields": true,
       "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
         {
           "name": "getArticleNum",
           "parameterTypes": []
@@ -4922,7 +4709,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.Tag_Accessor_shvb1s",
+      "type": "com.jmal.clouddisk.model.Tag_Accessor_ybzjeu",
       "methods": [
         {
           "name": "<init>",
@@ -4933,7 +4720,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.Tag_Instantiator_shvb1s",
+      "type": "com.jmal.clouddisk.model.Tag_Instantiator_ybzjeu",
       "methods": [
         {
           "name": "<init>",
@@ -4954,11 +4741,43 @@
           "parameterTypes": []
         },
         {
+          "name": "getChunkNumber",
+          "parameterTypes": []
+        },
+        {
+          "name": "getChunkSize",
+          "parameterTypes": []
+        },
+        {
+          "name": "getCurrentChunkSize",
+          "parameterTypes": []
+        },
+        {
           "name": "getCurrentDirectory",
           "parameterTypes": []
         },
         {
-          "name": "getIsFavorite",
+          "name": "getFile",
+          "parameterTypes": []
+        },
+        {
+          "name": "getFilename",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIdentifier",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIncludeFileContent",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIncludeFileName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIncludeTagName",
           "parameterTypes": []
         },
         {
@@ -4971,6 +4790,10 @@
         },
         {
           "name": "getIsTrash",
+          "parameterTypes": []
+        },
+        {
+          "name": "getLastModified",
           "parameterTypes": []
         },
         {
@@ -4990,11 +4813,19 @@
           "parameterTypes": []
         },
         {
+          "name": "getRelativePath",
+          "parameterTypes": []
+        },
+        {
           "name": "getSortableProp",
           "parameterTypes": []
         },
         {
-          "name": "getTagId",
+          "name": "getTotalChunks",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTotalSize",
           "parameterTypes": []
         },
         {
@@ -5006,9 +4837,27 @@
           "parameterTypes": []
         },
         {
+          "name": "setChunkNumber",
+          "parameterTypes": [
+            "java.lang.Integer"
+          ]
+        },
+        {
+          "name": "setChunkSize",
+          "parameterTypes": [
+            "java.lang.Integer"
+          ]
+        },
+        {
           "name": "setContentText",
           "parameterTypes": [
             "java.lang.String"
+          ]
+        },
+        {
+          "name": "setCurrentChunkSize",
+          "parameterTypes": [
+            "java.lang.Integer"
           ]
         },
         {
@@ -5018,7 +4867,43 @@
           ]
         },
         {
-          "name": "setIsFavorite",
+          "name": "setFile",
+          "parameterTypes": [
+            "org.springframework.web.multipart.MultipartFile"
+          ]
+        },
+        {
+          "name": "setFilename",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setFilenames",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        },
+        {
+          "name": "setIdentifier",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setIncludeFileContent",
+          "parameterTypes": [
+            "java.lang.Boolean"
+          ]
+        },
+        {
+          "name": "setIncludeFileName",
+          "parameterTypes": [
+            "java.lang.Boolean"
+          ]
+        },
+        {
+          "name": "setIncludeTagName",
           "parameterTypes": [
             "java.lang.Boolean"
           ]
@@ -5039,6 +4924,12 @@
           "name": "setIsTrash",
           "parameterTypes": [
             "java.lang.Boolean"
+          ]
+        },
+        {
+          "name": "setLastModified",
+          "parameterTypes": [
+            "java.lang.Long"
           ]
         },
         {
@@ -5078,9 +4969,15 @@
           ]
         },
         {
-          "name": "setTagId",
+          "name": "setTotalChunks",
           "parameterTypes": [
-            "java.lang.String"
+            "java.lang.Integer"
+          ]
+        },
+        {
+          "name": "setTotalSize",
+          "parameterTypes": [
+            "java.lang.Long"
           ]
         },
         {
@@ -5098,19 +4995,36 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.UploadImageDTO",
-      "allDeclaredFields": true
+      "type": "com.jmal.clouddisk.model.UploadImageDTO"
     },
     {
-      "type": "com.jmal.clouddisk.model.UploadResponse"
+      "type": "com.jmal.clouddisk.model.UploadResponse",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "getResume",
+          "parameterTypes": []
+        },
+        {
+          "name": "isExist",
+          "parameterTypes": []
+        },
+        {
+          "name": "isMerge",
+          "parameterTypes": []
+        },
+        {
+          "name": "isPass",
+          "parameterTypes": []
+        },
+        {
+          "name": "isUpload",
+          "parameterTypes": []
+        }
+      ]
     },
     {
-      "type": "com.jmal.clouddisk.model.Urlset",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "com.jmal.clouddisk.model.Urlset$Url",
-      "allDeclaredFields": true
+      "type": "com.jmal.clouddisk.model.Urlset"
     },
     {
       "type": "com.jmal.clouddisk.model.UserAccessTokenDO",
@@ -5139,7 +5053,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_Accessor_9qd8va",
+      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_Accessor_xkdig8",
       "methods": [
         {
           "name": "<init>",
@@ -5150,7 +5064,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_Instantiator_9qd8va",
+      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_Instantiator_xkdig8",
       "methods": [
         {
           "name": "<init>",
@@ -5301,7 +5215,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.WebsiteSettingDO_Accessor_4u9sh0",
+      "type": "com.jmal.clouddisk.model.WebsiteSettingDO_Accessor_bctap3",
       "methods": [
         {
           "name": "<init>",
@@ -5312,7 +5226,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.WebsiteSettingDO_Instantiator_4u9sh0",
+      "type": "com.jmal.clouddisk.model.WebsiteSettingDO_Instantiator_bctap3",
       "methods": [
         {
           "name": "<init>",
@@ -5419,12 +5333,6 @@
         {
           "name": "getUserId",
           "parameterTypes": []
-        },
-        {
-          "name": "isShowAlonePage",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
         },
         {
           "name": "isShowBeian",
@@ -5554,24 +5462,10 @@
     },
     {
       "type": "com.jmal.clouddisk.model.WebsiteSettingDTO$OperatingButton",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getStyle",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTitle",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUrl",
-          "parameterTypes": []
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.WebsiteSettingDTO_Accessor_l0bfdf",
+      "type": "com.jmal.clouddisk.model.WebsiteSettingDTO_Accessor_n1e23i",
       "methods": [
         {
           "name": "<init>",
@@ -5582,7 +5476,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.WebsiteSettingDTO_Instantiator_l0bfdf",
+      "type": "com.jmal.clouddisk.model.WebsiteSettingDTO_Instantiator_n1e23i",
       "methods": [
         {
           "name": "<init>",
@@ -5738,7 +5632,101 @@
     },
     {
       "type": "com.jmal.clouddisk.model.query.SearchDTO",
-      "allDeclaredFields": true
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "getCurrentDirectory",
+          "parameterTypes": []
+        },
+        {
+          "name": "getExactSearch",
+          "parameterTypes": []
+        },
+        {
+          "name": "getFolder",
+          "parameterTypes": []
+        },
+        {
+          "name": "getId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIncludeFileContent",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIncludeFileName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIncludeTagName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIsFavorite",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIsFolder",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIsMount",
+          "parameterTypes": []
+        },
+        {
+          "name": "getKeyword",
+          "parameterTypes": []
+        },
+        {
+          "name": "getModifyEnd",
+          "parameterTypes": []
+        },
+        {
+          "name": "getModifyStart",
+          "parameterTypes": []
+        },
+        {
+          "name": "getMountUserId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSearchMount",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSearchOverall",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSearchUserId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSizeMax",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSizeMin",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTagId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getType",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUserId",
+          "parameterTypes": []
+        },
+        {
+          "name": "isSearchMountSubFolder",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.query.SearchDTO$SearchDTOBuilder"
@@ -5746,6 +5734,26 @@
     {
       "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO",
       "allDeclaredFields": true
+    },
+    {
+      "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO_Accessor_gco7j9",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.model.query.SearchOptionHistoryDO"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO_Instantiator_gco7j9",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.rbac.ConsumerBase",
@@ -5814,7 +5822,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_6gtiio",
+      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_fvvhyq",
       "methods": [
         {
           "name": "<init>",
@@ -5825,7 +5833,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Instantiator_6gtiio",
+      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Instantiator_fvvhyq",
       "methods": [
         {
           "name": "<init>",
@@ -5934,7 +5942,19 @@
           ]
         },
         {
+          "name": "setExactSearch",
+          "parameterTypes": [
+            "java.lang.Boolean"
+          ]
+        },
+        {
           "name": "setId",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setIframe",
           "parameterTypes": [
             "java.lang.String"
           ]
@@ -5953,6 +5973,18 @@
         },
         {
           "name": "setMfaToken",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setNetdiskLogo",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setNetdiskName",
           "parameterTypes": [
             "java.lang.String"
           ]
@@ -6062,7 +6094,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Accessor_z21pk3",
+      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Accessor_9atgg1",
       "methods": [
         {
           "name": "<init>",
@@ -6073,7 +6105,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Instantiator_z21pk3",
+      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Instantiator_9atgg1",
       "methods": [
         {
           "name": "<init>",
@@ -6250,7 +6282,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.RoleDTO_Accessor_ahnl41",
+      "type": "com.jmal.clouddisk.model.rbac.RoleDTO_Accessor_oua0np",
       "methods": [
         {
           "name": "<init>",
@@ -6261,7 +6293,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.RoleDTO_Instantiator_ahnl41",
+      "type": "com.jmal.clouddisk.model.rbac.RoleDTO_Instantiator_oua0np",
       "methods": [
         {
           "name": "<init>",
@@ -6304,7 +6336,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.ocr.OcrConfig_Accessor_si28c2",
+      "type": "com.jmal.clouddisk.ocr.OcrConfig_Accessor_868n2n",
       "methods": [
         {
           "name": "<init>",
@@ -6315,7 +6347,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.ocr.OcrConfig_Instantiator_si28c2",
+      "type": "com.jmal.clouddisk.ocr.OcrConfig_Instantiator_868n2n",
       "methods": [
         {
           "name": "<init>",
@@ -6438,12 +6470,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.office.OfficeHistory",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "com.jmal.clouddisk.office.OfficeHistory$User",
-      "allDeclaredFields": true
+      "type": "com.jmal.clouddisk.office.OfficeHistory"
     },
     {
       "type": "com.jmal.clouddisk.office.callbacks.Callback",
@@ -6520,7 +6547,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.office.model.OfficeConfigDO_Accessor_7xj3wf",
+      "type": "com.jmal.clouddisk.office.model.OfficeConfigDO_Accessor_eu8mdx",
       "methods": [
         {
           "name": "<init>",
@@ -6531,7 +6558,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.office.model.OfficeConfigDO_Instantiator_7xj3wf",
+      "type": "com.jmal.clouddisk.office.model.OfficeConfigDO_Instantiator_eu8mdx",
       "methods": [
         {
           "name": "<init>",
@@ -6680,7 +6707,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Accessor_4m6bmg",
+      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Accessor_k33pw4",
       "methods": [
         {
           "name": "<init>",
@@ -6691,7 +6718,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Instantiator_4m6bmg",
+      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Instantiator_k33pw4",
       "methods": [
         {
           "name": "<init>",
@@ -6761,12 +6788,6 @@
         },
         {
           "name": "accessTokenList",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "deleteAccessToken",
           "parameterTypes": [
             "java.lang.String"
           ]
@@ -7279,6 +7300,10 @@
       "type": "com.jmal.clouddisk.util.ResponseResult",
       "allDeclaredFields": true,
       "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
         {
           "name": "getCode",
           "parameterTypes": []
@@ -7826,9 +7851,6 @@
       "type": "dev.samstevens.totp.time.TimeProvider"
     },
     {
-      "type": "double"
-    },
-    {
       "type": "freemarker.template.Configuration"
     },
     {
@@ -7968,60 +7990,6 @@
       "allDeclaredFields": true
     },
     {
-      "type": "io.swagger.v3.core.jackson.ApiResponsesSerializer",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "io.swagger.v3.core.jackson.PathsSerializer",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "io.swagger.v3.core.jackson.mixin.ComponentsMixin",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.core.jackson.mixin.DiscriminatorMixin",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.core.jackson.mixin.ExtensionsMixin",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.core.jackson.mixin.InfoMixin",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.core.jackson.mixin.LicenseMixin",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.core.jackson.mixin.MediaTypeMixin",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.core.jackson.mixin.OpenAPIMixin",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.core.jackson.mixin.OperationMixin",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.core.jackson.mixin.SchemaMixin",
-      "allDeclaredFields": true
-    },
-    {
       "type": "io.swagger.v3.core.util.ObjectMapperFactory",
       "allDeclaredFields": true
     },
@@ -8054,9 +8022,6 @@
     },
     {
       "type": "io.swagger.v3.oas.annotations.Webhooks"
-    },
-    {
-      "type": "io.swagger.v3.oas.annotations.callbacks.Callbacks"
     },
     {
       "type": "io.swagger.v3.oas.annotations.extensions.Extension"
@@ -8122,9 +8087,6 @@
       "type": "io.swagger.v3.oas.annotations.security.SecurityRequirement"
     },
     {
-      "type": "io.swagger.v3.oas.annotations.security.SecurityRequirements"
-    },
-    {
       "type": "io.swagger.v3.oas.annotations.security.SecurityScheme"
     },
     {
@@ -8140,1862 +8102,83 @@
       "type": "io.swagger.v3.oas.annotations.tags.Tags"
     },
     {
-      "type": "io.swagger.v3.oas.models.Components",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "getCallbacks",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExamples",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtensions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getHeaders",
-          "parameterTypes": []
-        },
-        {
-          "name": "getLinks",
-          "parameterTypes": []
-        },
-        {
-          "name": "getParameters",
-          "parameterTypes": []
-        },
-        {
-          "name": "getPathItems",
-          "parameterTypes": []
-        },
-        {
-          "name": "getRequestBodies",
-          "parameterTypes": []
-        },
-        {
-          "name": "getResponses",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSchemas",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSecuritySchemes",
-          "parameterTypes": []
-        },
-        {
-          "name": "setCallbacks",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setExamples",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setExtensions",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setHeaders",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setLinks",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setParameters",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setPathItems",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setRequestBodies",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setResponses",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setSchemas",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setSecuritySchemes",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        }
-      ]
+      "type": "io.swagger.v3.oas.models.Components"
     },
     {
-      "type": "io.swagger.v3.oas.models.ExternalDocumentation",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDescription",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtensions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUrl",
-          "parameterTypes": []
-        },
-        {
-          "name": "setDescription",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setExtensions",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setUrl",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
+      "type": "io.swagger.v3.oas.models.ExternalDocumentation"
     },
     {
       "type": "io.swagger.v3.oas.models.OpenAPI",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "getComponents",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtensions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExternalDocs",
-          "parameterTypes": []
-        },
-        {
-          "name": "getInfo",
-          "parameterTypes": []
-        },
-        {
-          "name": "getJsonSchemaDialect",
-          "parameterTypes": []
-        },
-        {
-          "name": "getOpenapi",
-          "parameterTypes": []
-        },
-        {
-          "name": "getPaths",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSecurity",
-          "parameterTypes": []
-        },
-        {
-          "name": "getServers",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTags",
-          "parameterTypes": []
-        },
-        {
-          "name": "getWebhooks",
-          "parameterTypes": []
-        },
-        {
-          "name": "setComponents",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.Components"
-          ]
-        },
-        {
-          "name": "setExtensions",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setExternalDocs",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.ExternalDocumentation"
-          ]
-        },
-        {
-          "name": "setInfo",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.info.Info"
-          ]
-        },
-        {
-          "name": "setJsonSchemaDialect",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setOpenapi",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setPaths",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.Paths"
-          ]
-        },
-        {
-          "name": "setSecurity",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setServers",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setTags",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setWebhooks",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
-      "type": "io.swagger.v3.oas.models.Operation",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getCallbacks",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDeprecated",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDescription",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtensions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExternalDocs",
-          "parameterTypes": []
-        },
-        {
-          "name": "getOperationId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getParameters",
-          "parameterTypes": []
-        },
-        {
-          "name": "getRequestBody",
-          "parameterTypes": []
-        },
-        {
-          "name": "getResponses",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSecurity",
-          "parameterTypes": []
-        },
-        {
-          "name": "getServers",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSummary",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTags",
-          "parameterTypes": []
-        }
-      ]
+      "type": "io.swagger.v3.oas.models.Operation"
     },
     {
-      "type": "io.swagger.v3.oas.models.PathItem",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "get$ref",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDelete",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDescription",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtensions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getGet",
-          "parameterTypes": []
-        },
-        {
-          "name": "getHead",
-          "parameterTypes": []
-        },
-        {
-          "name": "getOptions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getParameters",
-          "parameterTypes": []
-        },
-        {
-          "name": "getPatch",
-          "parameterTypes": []
-        },
-        {
-          "name": "getPost",
-          "parameterTypes": []
-        },
-        {
-          "name": "getPut",
-          "parameterTypes": []
-        },
-        {
-          "name": "getServers",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSummary",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTrace",
-          "parameterTypes": []
-        }
-      ]
+      "type": "io.swagger.v3.oas.models.PathItem"
     },
     {
-      "type": "io.swagger.v3.oas.models.PathItem$HttpMethod"
-    },
-    {
-      "type": "io.swagger.v3.oas.models.Paths",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
+      "type": "io.swagger.v3.oas.models.Paths"
     },
     {
       "type": "io.swagger.v3.oas.models.SpecVersion"
     },
     {
-      "type": "io.swagger.v3.oas.models.callbacks.Callback",
-      "allDeclaredFields": true
+      "type": "io.swagger.v3.oas.models.callbacks.Callback"
     },
     {
-      "type": "io.swagger.v3.oas.models.examples.Example",
-      "allDeclaredFields": true
+      "type": "io.swagger.v3.oas.models.examples.Example"
     },
     {
-      "type": "io.swagger.v3.oas.models.headers.Header",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "get$ref",
-          "parameterTypes": []
-        },
-        {
-          "name": "getContent",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDeprecated",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDescription",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExample",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExamples",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExplode",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtensions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getRequired",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSchema",
-          "parameterTypes": []
-        },
-        {
-          "name": "getStyle",
-          "parameterTypes": []
-        },
-        {
-          "name": "set$ref",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setContent",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Content"
-          ]
-        },
-        {
-          "name": "setDeprecated",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setDescription",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setExample",
-          "parameterTypes": [
-            "java.lang.Object"
-          ]
-        },
-        {
-          "name": "setExamples",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setExplode",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setExtensions",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setRequired",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setSchema",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Schema"
-          ]
-        },
-        {
-          "name": "setStyle",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.headers.Header$StyleEnum"
-          ]
-        }
-      ]
+      "type": "io.swagger.v3.oas.models.headers.Header"
     },
     {
-      "type": "io.swagger.v3.oas.models.headers.Header$StyleEnum",
-      "allDeclaredFields": true
+      "type": "io.swagger.v3.oas.models.info.Info"
     },
     {
-      "type": "io.swagger.v3.oas.models.info.Contact",
-      "allDeclaredFields": true
+      "type": "io.swagger.v3.oas.models.media.ComposedSchema"
     },
     {
-      "type": "io.swagger.v3.oas.models.info.Info",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "getContact",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDescription",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtensions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getLicense",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSummary",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTermsOfService",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTitle",
-          "parameterTypes": []
-        },
-        {
-          "name": "getVersion",
-          "parameterTypes": []
-        },
-        {
-          "name": "setContact",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.info.Contact"
-          ]
-        },
-        {
-          "name": "setDescription",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setExtensions",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setLicense",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.info.License"
-          ]
-        },
-        {
-          "name": "setSummary",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setTermsOfService",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setTitle",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setVersion",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
+      "type": "io.swagger.v3.oas.models.media.Content"
     },
     {
-      "type": "io.swagger.v3.oas.models.info.License",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtensions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIdentifier",
-          "parameterTypes": []
-        },
-        {
-          "name": "getName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUrl",
-          "parameterTypes": []
-        },
-        {
-          "name": "setExtensions",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setIdentifier",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setName",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setUrl",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
+      "type": "io.swagger.v3.oas.models.media.MediaType"
     },
     {
-      "type": "io.swagger.v3.oas.models.links.Link",
-      "allDeclaredFields": true
+      "type": "io.swagger.v3.oas.models.media.Schema"
     },
     {
-      "type": "io.swagger.v3.oas.models.media.ArraySchema",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
+      "type": "io.swagger.v3.oas.models.parameters.Parameter"
     },
     {
-      "type": "io.swagger.v3.oas.models.media.BooleanSchema",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
+      "type": "io.swagger.v3.oas.models.parameters.RequestBody"
     },
     {
-      "type": "io.swagger.v3.oas.models.media.ByteArraySchema",
-      "allDeclaredFields": true
+      "type": "io.swagger.v3.oas.models.responses.ApiResponse"
     },
     {
-      "type": "io.swagger.v3.oas.models.media.ComposedSchema",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
+      "type": "io.swagger.v3.oas.models.responses.ApiResponses"
     },
     {
-      "type": "io.swagger.v3.oas.models.media.Content",
-      "allDeclaredFields": true
+      "type": "io.swagger.v3.oas.models.security.Scopes"
     },
     {
-      "type": "io.swagger.v3.oas.models.media.DateTimeSchema",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
+      "type": "io.swagger.v3.oas.models.security.SecurityRequirement"
     },
     {
-      "type": "io.swagger.v3.oas.models.media.Discriminator",
-      "allDeclaredFields": true
+      "type": "io.swagger.v3.oas.models.security.SecurityScheme"
     },
     {
-      "type": "io.swagger.v3.oas.models.media.Encoding",
-      "allDeclaredFields": true
+      "type": "io.swagger.v3.oas.models.security.SecurityScheme$In"
     },
     {
-      "type": "io.swagger.v3.oas.models.media.Encoding$StyleEnum",
-      "allDeclaredFields": true
+      "type": "io.swagger.v3.oas.models.security.SecurityScheme$Type"
     },
     {
-      "type": "io.swagger.v3.oas.models.media.FileSchema",
-      "allDeclaredFields": true
+      "type": "io.swagger.v3.oas.models.servers.Server"
     },
     {
-      "type": "io.swagger.v3.oas.models.media.IntegerSchema",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "io.swagger.v3.oas.models.media.MapSchema",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "io.swagger.v3.oas.models.media.MediaType",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getEncoding",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExample",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExamples",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtensions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSchema",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "io.swagger.v3.oas.models.media.NumberSchema",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "io.swagger.v3.oas.models.media.ObjectSchema",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "io.swagger.v3.oas.models.media.Schema",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "get$anchor",
-          "parameterTypes": []
-        },
-        {
-          "name": "get$comment",
-          "parameterTypes": []
-        },
-        {
-          "name": "get$dynamicAnchor",
-          "parameterTypes": []
-        },
-        {
-          "name": "get$id",
-          "parameterTypes": []
-        },
-        {
-          "name": "get$ref",
-          "parameterTypes": []
-        },
-        {
-          "name": "get$schema",
-          "parameterTypes": []
-        },
-        {
-          "name": "get$vocabulary",
-          "parameterTypes": []
-        },
-        {
-          "name": "getAdditionalItems",
-          "parameterTypes": []
-        },
-        {
-          "name": "getAdditionalProperties",
-          "parameterTypes": []
-        },
-        {
-          "name": "getAllOf",
-          "parameterTypes": []
-        },
-        {
-          "name": "getAnyOf",
-          "parameterTypes": []
-        },
-        {
-          "name": "getBooleanSchemaValue",
-          "parameterTypes": []
-        },
-        {
-          "name": "getConst",
-          "parameterTypes": []
-        },
-        {
-          "name": "getContains",
-          "parameterTypes": []
-        },
-        {
-          "name": "getContentEncoding",
-          "parameterTypes": []
-        },
-        {
-          "name": "getContentMediaType",
-          "parameterTypes": []
-        },
-        {
-          "name": "getContentSchema",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDefault",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDependentRequired",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDependentSchemas",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDeprecated",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDescription",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDiscriminator",
-          "parameterTypes": []
-        },
-        {
-          "name": "getElse",
-          "parameterTypes": []
-        },
-        {
-          "name": "getEnum",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExample",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExampleSetFlag",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExamples",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExclusiveMaximum",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExclusiveMaximumValue",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExclusiveMinimum",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExclusiveMinimumValue",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtensions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExternalDocs",
-          "parameterTypes": []
-        },
-        {
-          "name": "getFormat",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIf",
-          "parameterTypes": []
-        },
-        {
-          "name": "getItems",
-          "parameterTypes": []
-        },
-        {
-          "name": "getJsonSchema",
-          "parameterTypes": []
-        },
-        {
-          "name": "getJsonSchemaImpl",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMaxContains",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMaxItems",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMaxLength",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMaxProperties",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMaximum",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMinContains",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMinItems",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMinLength",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMinProperties",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMinimum",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMultipleOf",
-          "parameterTypes": []
-        },
-        {
-          "name": "getNot",
-          "parameterTypes": []
-        },
-        {
-          "name": "getNullable",
-          "parameterTypes": []
-        },
-        {
-          "name": "getOneOf",
-          "parameterTypes": []
-        },
-        {
-          "name": "getPattern",
-          "parameterTypes": []
-        },
-        {
-          "name": "getPatternProperties",
-          "parameterTypes": []
-        },
-        {
-          "name": "getPrefixItems",
-          "parameterTypes": []
-        },
-        {
-          "name": "getProperties",
-          "parameterTypes": []
-        },
-        {
-          "name": "getPropertyNames",
-          "parameterTypes": []
-        },
-        {
-          "name": "getReadOnly",
-          "parameterTypes": []
-        },
-        {
-          "name": "getRequired",
-          "parameterTypes": []
-        },
-        {
-          "name": "getThen",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTitle",
-          "parameterTypes": []
-        },
-        {
-          "name": "getType",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTypes",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUnevaluatedItems",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUnevaluatedProperties",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUniqueItems",
-          "parameterTypes": []
-        },
-        {
-          "name": "getWriteOnly",
-          "parameterTypes": []
-        },
-        {
-          "name": "getXml",
-          "parameterTypes": []
-        },
-        {
-          "name": "set$anchor",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "set$comment",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "set$dynamicAnchor",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "set$id",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "set$ref",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "set$schema",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "set$vocabulary",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setAdditionalItems",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Schema"
-          ]
-        },
-        {
-          "name": "setAdditionalProperties",
-          "parameterTypes": [
-            "java.lang.Object"
-          ]
-        },
-        {
-          "name": "setAllOf",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setAnyOf",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setBooleanSchemaValue",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setConst",
-          "parameterTypes": [
-            "java.lang.Object"
-          ]
-        },
-        {
-          "name": "setContains",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Schema"
-          ]
-        },
-        {
-          "name": "setContentEncoding",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setContentMediaType",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setContentSchema",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Schema"
-          ]
-        },
-        {
-          "name": "setDefault",
-          "parameterTypes": [
-            "java.lang.Object"
-          ]
-        },
-        {
-          "name": "setDependentRequired",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setDependentSchemas",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setDeprecated",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setDescription",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setDiscriminator",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Discriminator"
-          ]
-        },
-        {
-          "name": "setElse",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Schema"
-          ]
-        },
-        {
-          "name": "setEnum",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setExample",
-          "parameterTypes": [
-            "java.lang.Object"
-          ]
-        },
-        {
-          "name": "setExampleSetFlag",
-          "parameterTypes": [
-            "boolean"
-          ]
-        },
-        {
-          "name": "setExamples",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setExclusiveMaximum",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setExclusiveMaximumValue",
-          "parameterTypes": [
-            "java.math.BigDecimal"
-          ]
-        },
-        {
-          "name": "setExclusiveMinimum",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setExclusiveMinimumValue",
-          "parameterTypes": [
-            "java.math.BigDecimal"
-          ]
-        },
-        {
-          "name": "setExtensions",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setExternalDocs",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.ExternalDocumentation"
-          ]
-        },
-        {
-          "name": "setFormat",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setIf",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Schema"
-          ]
-        },
-        {
-          "name": "setItems",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Schema"
-          ]
-        },
-        {
-          "name": "setJsonSchema",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setJsonSchemaImpl",
-          "parameterTypes": [
-            "java.lang.Object"
-          ]
-        },
-        {
-          "name": "setMaxContains",
-          "parameterTypes": [
-            "java.lang.Integer"
-          ]
-        },
-        {
-          "name": "setMaxItems",
-          "parameterTypes": [
-            "java.lang.Integer"
-          ]
-        },
-        {
-          "name": "setMaxLength",
-          "parameterTypes": [
-            "java.lang.Integer"
-          ]
-        },
-        {
-          "name": "setMaxProperties",
-          "parameterTypes": [
-            "java.lang.Integer"
-          ]
-        },
-        {
-          "name": "setMaximum",
-          "parameterTypes": [
-            "java.math.BigDecimal"
-          ]
-        },
-        {
-          "name": "setMinContains",
-          "parameterTypes": [
-            "java.lang.Integer"
-          ]
-        },
-        {
-          "name": "setMinItems",
-          "parameterTypes": [
-            "java.lang.Integer"
-          ]
-        },
-        {
-          "name": "setMinLength",
-          "parameterTypes": [
-            "java.lang.Integer"
-          ]
-        },
-        {
-          "name": "setMinProperties",
-          "parameterTypes": [
-            "java.lang.Integer"
-          ]
-        },
-        {
-          "name": "setMinimum",
-          "parameterTypes": [
-            "java.math.BigDecimal"
-          ]
-        },
-        {
-          "name": "setMultipleOf",
-          "parameterTypes": [
-            "java.math.BigDecimal"
-          ]
-        },
-        {
-          "name": "setNot",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Schema"
-          ]
-        },
-        {
-          "name": "setNullable",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setOneOf",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setPattern",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setPatternProperties",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setPrefixItems",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setProperties",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setPropertyNames",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Schema"
-          ]
-        },
-        {
-          "name": "setReadOnly",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setRequired",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setThen",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Schema"
-          ]
-        },
-        {
-          "name": "setTitle",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setType",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setTypes",
-          "parameterTypes": [
-            "java.util.Set"
-          ]
-        },
-        {
-          "name": "setUnevaluatedItems",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Schema"
-          ]
-        },
-        {
-          "name": "setUnevaluatedProperties",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Schema"
-          ]
-        },
-        {
-          "name": "setUniqueItems",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setWriteOnly",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setXml",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.XML"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "io.swagger.v3.oas.models.media.Schema$BynaryStringConversion"
-    },
-    {
-      "type": "io.swagger.v3.oas.models.media.Schema$SchemaResolution"
-    },
-    {
-      "type": "io.swagger.v3.oas.models.media.StringSchema",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "io.swagger.v3.oas.models.media.XML",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.oas.models.parameters.HeaderParameter",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getIn",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "io.swagger.v3.oas.models.parameters.Parameter",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "get$ref",
-          "parameterTypes": []
-        },
-        {
-          "name": "getAllowEmptyValue",
-          "parameterTypes": []
-        },
-        {
-          "name": "getAllowReserved",
-          "parameterTypes": []
-        },
-        {
-          "name": "getContent",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDeprecated",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDescription",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExample",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExamples",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExplode",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtensions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIn",
-          "parameterTypes": []
-        },
-        {
-          "name": "getName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getRequired",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSchema",
-          "parameterTypes": []
-        },
-        {
-          "name": "getStyle",
-          "parameterTypes": []
-        },
-        {
-          "name": "set$ref",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setAllowEmptyValue",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setAllowReserved",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setContent",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Content"
-          ]
-        },
-        {
-          "name": "setDeprecated",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setDescription",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setExample",
-          "parameterTypes": [
-            "java.lang.Object"
-          ]
-        },
-        {
-          "name": "setExamples",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setExplode",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setExtensions",
-          "parameterTypes": [
-            "java.util.Map"
-          ]
-        },
-        {
-          "name": "setIn",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setName",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setRequired",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setSchema",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.media.Schema"
-          ]
-        },
-        {
-          "name": "setStyle",
-          "parameterTypes": [
-            "io.swagger.v3.oas.models.parameters.Parameter$StyleEnum"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "io.swagger.v3.oas.models.parameters.Parameter$StyleEnum",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.oas.models.parameters.RequestBody",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "get$ref",
-          "parameterTypes": []
-        },
-        {
-          "name": "getContent",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDescription",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtensions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getRequired",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "io.swagger.v3.oas.models.responses.ApiResponse",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "get$ref",
-          "parameterTypes": []
-        },
-        {
-          "name": "getContent",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDescription",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtensions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getHeaders",
-          "parameterTypes": []
-        },
-        {
-          "name": "getLinks",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "io.swagger.v3.oas.models.responses.ApiResponses",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.oas.models.security.OAuthFlow",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.oas.models.security.OAuthFlows",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.oas.models.security.Scopes",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.oas.models.security.SecurityRequirement",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.oas.models.security.SecurityScheme",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.oas.models.security.SecurityScheme$In",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.oas.models.security.SecurityScheme$Type",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.oas.models.servers.Server",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDescription",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExtensions",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUrl",
-          "parameterTypes": []
-        },
-        {
-          "name": "getVariables",
-          "parameterTypes": []
-        },
-        {
-          "name": "setDescription",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setUrl",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "io.swagger.v3.oas.models.servers.ServerVariable",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.oas.models.servers.ServerVariables",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "io.swagger.v3.oas.models.tags.Tag",
-      "allDeclaredFields": true
+      "type": "io.swagger.v3.oas.models.tags.Tag"
     },
     {
       "type": "io.undertow.Undertow"
@@ -10154,12 +8337,6 @@
       "type": "jakarta.validation.Constraint"
     },
     {
-      "type": "jakarta.validation.ConstraintValidator"
-    },
-    {
-      "type": "jakarta.validation.ConstraintValidatorContext"
-    },
-    {
       "type": "jakarta.validation.ConstraintValidatorFactory"
     },
     {
@@ -10199,21 +8376,7 @@
       "type": "jakarta.validation.constraints.Min"
     },
     {
-      "type": "jakarta.validation.constraints.NotNull",
-      "methods": [
-        {
-          "name": "groups",
-          "parameterTypes": []
-        },
-        {
-          "name": "message",
-          "parameterTypes": []
-        },
-        {
-          "name": "payload",
-          "parameterTypes": []
-        }
-      ]
+      "type": "jakarta.validation.constraints.NotNull"
     },
     {
       "type": "jakarta.validation.constraints.Pattern"
@@ -10249,8 +8412,7 @@
       "type": "java.beans.Transient"
     },
     {
-      "type": "java.io.Closeable",
-      "allDeclaredFields": true
+      "type": "java.io.Closeable"
     },
     {
       "type": "java.io.DataInput"
@@ -10265,25 +8427,11 @@
       "type": "java.io.FileInputStream"
     },
     {
-      "type": "java.io.IOException",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
+      "type": "java.io.IOException"
     },
     {
       "type": "java.io.InputStream",
       "allDeclaredFields": true
-    },
-    {
-      "type": "java.io.ObjectInputStream"
-    },
-    {
-      "type": "java.io.ObjectOutputStream"
     },
     {
       "type": "java.io.OutputStream"
@@ -10295,8 +8443,7 @@
       "type": "java.io.Reader"
     },
     {
-      "type": "java.io.Serializable",
-      "allDeclaredFields": true
+      "type": "java.io.Serializable"
     },
     {
       "type": "java.io.UnsupportedEncodingException"
@@ -10305,22 +8452,16 @@
       "type": "java.io.Writer"
     },
     {
-      "type": "java.lang.AbstractStringBuilder"
-    },
-    {
       "type": "java.lang.Appendable"
     },
     {
-      "type": "java.lang.AutoCloseable",
-      "allDeclaredFields": true
+      "type": "java.lang.AutoCloseable"
     },
     {
-      "type": "java.lang.Boolean",
-      "allDeclaredFields": true
+      "type": "java.lang.Boolean"
     },
     {
-      "type": "java.lang.CharSequence",
-      "allDeclaredFields": true
+      "type": "java.lang.CharSequence"
     },
     {
       "type": "java.lang.Class",
@@ -10362,44 +8503,24 @@
       "type": "java.lang.CloneNotSupportedException"
     },
     {
-      "type": "java.lang.Cloneable"
-    },
-    {
       "type": "java.lang.Comparable",
       "allDeclaredFields": true
     },
     {
-      "type": "java.lang.Deprecated",
-      "methods": [
-        {
-          "name": "forRemoval",
-          "parameterTypes": []
-        },
-        {
-          "name": "since",
-          "parameterTypes": []
-        }
-      ]
+      "type": "java.lang.Deprecated"
     },
     {
       "type": "java.lang.Double",
       "allDeclaredFields": true
     },
     {
-      "type": "java.lang.Enum",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.lang.Enum$EnumDesc"
+      "type": "java.lang.Enum"
     },
     {
       "type": "java.lang.Error"
     },
     {
       "type": "java.lang.Exception"
-    },
-    {
-      "type": "java.lang.FunctionalInterface"
     },
     {
       "type": "java.lang.IllegalAccessException"
@@ -10418,8 +8539,7 @@
       "type": "java.lang.InterruptedException"
     },
     {
-      "type": "java.lang.Iterable",
-      "allDeclaredFields": true
+      "type": "java.lang.Iterable"
     },
     {
       "type": "java.lang.Long",
@@ -10492,17 +8612,10 @@
           ]
         },
         {
-          "name": "length",
-          "parameterTypes": []
-        },
-        {
           "name": "value",
           "parameterTypes": []
         }
       ]
-    },
-    {
-      "type": "java.lang.StringBuffer"
     },
     {
       "type": "java.lang.StringBuilder"
@@ -10570,18 +8683,10 @@
       ]
     },
     {
-      "type": "java.lang.constant.Constable",
-      "allDeclaredFields": true
+      "type": "java.lang.constant.Constable"
     },
     {
-      "type": "java.lang.constant.ConstantDesc",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.lang.constant.DynamicConstantDesc"
-    },
-    {
-      "type": "java.lang.foreign.MemorySegment"
+      "type": "java.lang.constant.ConstantDesc"
     },
     {
       "type": "java.lang.invoke.MethodHandle"
@@ -10749,7 +8854,11 @@
     },
     {
       "type": "java.math.BigDecimal",
-      "allDeclaredFields": true
+      "fields": [
+        {
+          "name": "intCompact"
+        }
+      ]
     },
     {
       "type": "java.math.BigInteger",
@@ -10760,48 +8869,10 @@
       ]
     },
     {
-      "type": "java.net.HttpURLConnection"
-    },
-    {
-      "type": "java.net.InetAddress",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.net.InetAddress$Addresses"
-    },
-    {
-      "type": "java.net.InetAddress$CachedLocalHost"
-    },
-    {
-      "type": "java.net.InetAddress$CachedLookup"
-    },
-    {
-      "type": "java.net.InetAddress$HostsFileResolver"
-    },
-    {
-      "type": "java.net.InetAddress$InetAddressHolder"
-    },
-    {
-      "type": "java.net.InetAddress$NameServiceAddresses"
-    },
-    {
-      "type": "java.net.InetAddress$PlatformResolver"
-    },
-    {
-      "type": "java.net.InetAddress$ValidCachedLookup"
-    },
-    {
-      "type": "java.net.InetSocketAddress",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.net.InetSocketAddress$InetSocketAddressHolder"
+      "type": "java.net.InetAddress"
     },
     {
       "type": "java.net.MalformedURLException"
-    },
-    {
-      "type": "java.net.NetworkInterface"
     },
     {
       "type": "java.net.Socket",
@@ -10816,24 +8887,13 @@
       ]
     },
     {
-      "type": "java.net.SocketAddress",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.net.URI",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.net.URI$Parser"
+      "type": "java.net.URI"
     },
     {
       "type": "java.net.URL"
     },
     {
       "type": "java.net.URLClassLoader"
-    },
-    {
-      "type": "java.net.URLConnection"
     },
     {
       "type": "java.net.UnixDomainSocketAddress"
@@ -10845,35 +8905,13 @@
       "type": "java.nio.Buffer"
     },
     {
-      "type": "java.nio.ByteBuffer"
-    },
-    {
-      "type": "java.nio.CharBuffer"
-    },
-    {
-      "type": "java.nio.channels.ReadableByteChannel"
-    },
-    {
       "type": "java.nio.channels.ServerSocketChannel"
     },
     {
       "type": "java.nio.channels.SocketChannel"
     },
     {
-      "type": "java.nio.charset.Charset",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.nio.charset.Charset$ExtendedProviderHolder"
-    },
-    {
-      "type": "java.nio.charset.Charset$ThreadTrackHolder"
-    },
-    {
-      "type": "java.nio.charset.CharsetDecoder"
-    },
-    {
-      "type": "java.nio.charset.CharsetEncoder"
+      "type": "java.nio.charset.Charset"
     },
     {
       "type": "java.nio.file.FileVisitResult"
@@ -10912,10 +8950,16 @@
       "type": "java.security.interfaces.ECPublicKey"
     },
     {
+      "type": "java.sql.Clob"
+    },
+    {
       "type": "java.sql.Date"
     },
     {
       "type": "java.sql.DriverManager"
+    },
+    {
+      "type": "java.sql.Struct"
     },
     {
       "type": "java.sql.Timestamp"
@@ -10936,83 +8980,13 @@
       "type": "java.time.Clock"
     },
     {
-      "type": "java.time.DayOfWeek"
-    },
-    {
       "type": "java.time.Duration"
     },
     {
       "type": "java.time.Instant"
     },
     {
-      "type": "java.time.LocalDate"
-    },
-    {
-      "type": "java.time.LocalDateTime",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.time.LocalTime"
-    },
-    {
-      "type": "java.time.Month"
-    },
-    {
-      "type": "java.time.OffsetDateTime"
-    },
-    {
-      "type": "java.time.ZoneId"
-    },
-    {
-      "type": "java.time.ZoneOffset"
-    },
-    {
-      "type": "java.time.ZonedDateTime",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.time.chrono.ChronoLocalDate"
-    },
-    {
-      "type": "java.time.chrono.ChronoLocalDateTime",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.time.chrono.ChronoZonedDateTime",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.time.chrono.Chronology"
-    },
-    {
-      "type": "java.time.format.DateTimeFormatter"
-    },
-    {
-      "type": "java.time.temporal.Temporal",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.time.temporal.TemporalAccessor",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.time.temporal.TemporalAdjuster",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.time.temporal.TemporalAmount"
-    },
-    {
-      "type": "java.time.temporal.TemporalField"
-    },
-    {
-      "type": "java.time.temporal.TemporalQuery"
-    },
-    {
-      "type": "java.time.temporal.TemporalUnit"
-    },
-    {
-      "type": "java.time.temporal.ValueRange"
+      "type": "java.time.LocalDateTime"
     },
     {
       "type": "java.util.AbstractCollection",
@@ -11023,28 +8997,13 @@
       "allDeclaredFields": true
     },
     {
-      "type": "java.util.ArrayList",
-      "methods": [
-        {
-          "name": "size",
-          "parameterTypes": []
-        }
-      ]
+      "type": "java.util.ArrayList"
     },
     {
       "type": "java.util.Arrays$ArrayList"
     },
     {
-      "type": "java.util.Collection",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.util.Collections$SynchronizedMap",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.util.Collections$SynchronizedSortedMap",
-      "allDeclaredFields": true
+      "type": "java.util.Collection"
     },
     {
       "type": "java.util.Collections$UnmodifiableCollection"
@@ -11066,10 +9025,6 @@
     },
     {
       "type": "java.util.EventListener"
-    },
-    {
-      "type": "java.util.HashMap",
-      "allDeclaredFields": true
     },
     {
       "type": "java.util.HashSet"
@@ -11101,57 +9056,19 @@
       "type": "java.util.Iterator"
     },
     {
-      "type": "java.util.LinkedHashMap",
-      "allDeclaredFields": true
+      "type": "java.util.LinkedHashMap"
     },
     {
-      "type": "java.util.List",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "size",
-          "parameterTypes": []
-        }
-      ]
+      "type": "java.util.List"
     },
     {
-      "type": "java.util.Locale",
-      "allDeclaredFields": true
+      "type": "java.util.Locale"
     },
     {
-      "type": "java.util.Locale$Builder"
-    },
-    {
-      "type": "java.util.Locale$Category"
-    },
-    {
-      "type": "java.util.Locale$FilteringMode"
-    },
-    {
-      "type": "java.util.Locale$IsoCountryCode"
-    },
-    {
-      "type": "java.util.Locale$LanguageRange",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.util.Locale$LocaleCache"
-    },
-    {
-      "type": "java.util.Locale$LocaleKey"
-    },
-    {
-      "type": "java.util.Locale$LocaleNameGetter"
-    },
-    {
-      "type": "java.util.Map",
-      "allDeclaredFields": true
+      "type": "java.util.Map"
     },
     {
       "type": "java.util.Map$Entry"
-    },
-    {
-      "type": "java.util.Map.Entry"
     },
     {
       "type": "java.util.MissingResourceException"
@@ -11169,21 +9086,13 @@
       "type": "java.util.ResourceBundle"
     },
     {
-      "type": "java.util.SequencedCollection",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.util.SequencedMap"
+      "type": "java.util.SequencedCollection"
     },
     {
       "type": "java.util.ServiceLoader"
     },
     {
-      "type": "java.util.Set",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.util.SortedMap"
+      "type": "java.util.Set"
     },
     {
       "type": "java.util.Spliterator"
@@ -11282,9 +9191,6 @@
       "type": "java.util.function.Function"
     },
     {
-      "type": "java.util.function.IntFunction"
-    },
-    {
       "type": "java.util.function.ObjIntConsumer"
     },
     {
@@ -11292,9 +9198,6 @@
     },
     {
       "type": "java.util.function.Supplier"
-    },
-    {
-      "type": "java.util.function.UnaryOperator"
     },
     {
       "type": "java.util.logging.LogManager"
@@ -11307,9 +9210,6 @@
           "parameterTypes": []
         }
       ]
-    },
-    {
-      "type": "java.util.stream.IntStream"
     },
     {
       "type": "java.util.stream.Stream"
@@ -11417,9 +9317,6 @@
       "type": "jdk.crac.management.CRaCMXBean"
     },
     {
-      "type": "jdk.internal.ValueBased"
-    },
-    {
       "type": "jdk.internal.loader.ClassLoaders$AppClassLoader"
     },
     {
@@ -11430,9 +9327,6 @@
     },
     {
       "type": "jdk.internal.vm.annotation.IntrinsicCandidate"
-    },
-    {
-      "type": "jdk.internal.vm.annotation.Stable"
     },
     {
       "type": "jdk.net.ExtendedSocketOptions",
@@ -11447,9 +9341,6 @@
           "name": "TCP_KEEPINTERVAL"
         }
       ]
-    },
-    {
-      "type": "kotlin.Annotation"
     },
     {
       "type": "kotlin.Any"
@@ -11476,19 +9367,10 @@
       "type": "kotlin.CharArray"
     },
     {
-      "type": "kotlin.CharSequence"
-    },
-    {
-      "type": "kotlin.Cloneable"
-    },
-    {
       "type": "kotlin.Comparable"
     },
     {
       "type": "kotlin.Deprecated"
-    },
-    {
-      "type": "kotlin.DeprecatedSinceKotlin"
     },
     {
       "type": "kotlin.DeprecationLevel"
@@ -11498,9 +9380,6 @@
     },
     {
       "type": "kotlin.DoubleArray"
-    },
-    {
-      "type": "kotlin.Enum"
     },
     {
       "type": "kotlin.Float"
@@ -11558,9 +9437,6 @@
       ]
     },
     {
-      "type": "kotlin.Number"
-    },
-    {
       "type": "kotlin.ReplaceWith"
     },
     {
@@ -11578,19 +9454,10 @@
       "type": "kotlin.ShortArray"
     },
     {
-      "type": "kotlin.SinceKotlin"
-    },
-    {
       "type": "kotlin.String"
     },
     {
-      "type": "kotlin.Throwable"
-    },
-    {
       "type": "kotlin.Unit"
-    },
-    {
-      "type": "kotlin.WasExperimental"
     },
     {
       "type": "kotlin.annotation.AnnotationRetention"
@@ -11605,88 +9472,28 @@
       "type": "kotlin.annotation.Retention"
     },
     {
-      "type": "kotlin.annotation.Target",
-      "methods": [
-        {
-          "name": "allowedTargets",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "kotlin.collections.ByteIterator"
-    },
-    {
-      "type": "kotlin.collections.Collection"
-    },
-    {
-      "type": "kotlin.collections.Iterable"
-    },
-    {
-      "type": "kotlin.collections.Iterator"
+      "type": "kotlin.annotation.Target"
     },
     {
       "type": "kotlin.collections.List"
     },
     {
-      "type": "kotlin.collections.ListIterator"
-    },
-    {
       "type": "kotlin.collections.Map"
-    },
-    {
-      "type": "kotlin.collections.Map.Entry"
-    },
-    {
-      "type": "kotlin.collections.MutableCollection"
-    },
-    {
-      "type": "kotlin.collections.MutableIterable"
-    },
-    {
-      "type": "kotlin.collections.MutableIterator"
     },
     {
       "type": "kotlin.collections.MutableList"
     },
     {
-      "type": "kotlin.collections.MutableListIterator"
-    },
-    {
       "type": "kotlin.collections.MutableMap"
     },
     {
-      "type": "kotlin.collections.MutableMap.MutableEntry"
-    },
-    {
-      "type": "kotlin.collections.MutableSet"
-    },
-    {
-      "type": "kotlin.collections.Set"
-    },
-    {
       "type": "kotlin.coroutines.Continuation"
-    },
-    {
-      "type": "kotlin.internal.IntrinsicConstEvaluation"
-    },
-    {
-      "type": "kotlin.internal.PlatformDependent"
     },
     {
       "type": "kotlin.jvm.JvmInline"
     },
     {
       "type": "kotlin.jvm.internal.DefaultConstructorMarker"
-    },
-    {
-      "type": "kotlin.ranges.IntRange"
-    },
-    {
-      "type": "kotlin.ranges.LongRange"
-    },
-    {
-      "type": "kotlin.reflect.KClass"
     },
     {
       "type": "kotlin.reflect.KParameter"
@@ -12249,6 +10056,10 @@
       "allDeclaredFields": true
     },
     {
+      "type": "org.apache.lucene.internal.hppc.IntHashSet",
+      "allDeclaredFields": true
+    },
+    {
       "type": "org.apache.lucene.internal.hppc.IntObjectHashMap",
       "allDeclaredFields": true
     },
@@ -12275,6 +10086,15 @@
     },
     {
       "type": "org.apache.lucene.search.BooleanQuery$Builder"
+    },
+    {
+      "type": "org.apache.lucene.search.BoostAttributeImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.apache.lucene.search.DocIdSet",
@@ -13508,16 +11328,6 @@
       "type": "org.hibernate.validator.HibernateValidator"
     },
     {
-      "type": "org.hibernate.validator.internal.constraintvalidators.bv.NotNullValidator",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
       "type": "org.hibernate.validator.internal.engine.AbstractConfigurationImpl",
       "methods": [
         {
@@ -14322,17 +12132,7 @@
     },
     {
       "type": "org.springdoc.webmvc.api.OpenApiWebMvcResource",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "openapiJson",
-          "parameterTypes": [
-            "jakarta.servlet.http.HttpServletRequest",
-            "java.lang.String",
-            "java.util.Locale"
-          ]
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
       "type": "org.springdoc.webmvc.core.configuration.SpringDocWebMvcConfiguration",
@@ -14453,15 +12253,7 @@
     },
     {
       "type": "org.springdoc.webmvc.ui.SwaggerConfigResource",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "openapiJson",
-          "parameterTypes": [
-            "jakarta.servlet.http.HttpServletRequest"
-          ]
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
       "type": "org.springdoc.webmvc.ui.SwaggerIndexPageTransformer",
@@ -18620,14 +16412,6 @@
       "allDeclaredFields": true
     },
     {
-      "type": "org.springframework.core.convert.support.GenericConversionService$Converters",
-      "fields": [
-        {
-          "name": "converters"
-        }
-      ]
-    },
-    {
       "type": "org.springframework.core.env.ConfigurableEnvironment"
     },
     {
@@ -18637,37 +16421,16 @@
       "type": "org.springframework.core.env.EnvironmentCapable"
     },
     {
-      "type": "org.springframework.core.io.AbstractFileResolvingResource",
-      "allDeclaredFields": true
+      "type": "org.springframework.core.io.InputStreamSource"
     },
     {
-      "type": "org.springframework.core.io.AbstractResource",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.core.io.InputStreamResource",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.core.io.InputStreamSource",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.core.io.Resource",
-      "allDeclaredFields": true
+      "type": "org.springframework.core.io.Resource"
     },
     {
       "type": "org.springframework.core.io.ResourceLoader"
     },
     {
-      "type": "org.springframework.core.io.UrlResource",
-      "allDeclaredFields": true
-    },
-    {
       "type": "org.springframework.core.io.support.ResourcePatternResolver"
-    },
-    {
-      "type": "org.springframework.core.io.support.ResourceRegion"
     },
     {
       "type": "org.springframework.core.task.AsyncListenableTaskExecutor"
@@ -19605,296 +17368,28 @@
       "type": "org.springframework.http.CacheControl"
     },
     {
-      "type": "org.springframework.http.ContentDisposition",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.http.ContentDisposition$Builder"
-    },
-    {
-      "type": "org.springframework.http.ContentDisposition$BuilderImpl"
-    },
-    {
-      "type": "org.springframework.http.DefaultHttpStatusCode",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.http.HttpEntity",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.http.HttpHeaders",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.http.HttpHeaders$CaseInsensitiveEntrySet"
+      "type": "org.springframework.http.HttpHeaders"
     },
     {
       "type": "org.springframework.http.HttpInputMessage"
     },
     {
-      "type": "org.springframework.http.HttpMethod",
-      "allDeclaredFields": true
-    },
-    {
       "type": "org.springframework.http.HttpOutputMessage"
-    },
-    {
-      "type": "org.springframework.http.HttpRange",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.http.HttpRange$ByteRange"
-    },
-    {
-      "type": "org.springframework.http.HttpRange$SuffixByteRange"
     },
     {
       "type": "org.springframework.http.HttpRequest"
     },
     {
-      "type": "org.springframework.http.HttpStatus",
-      "allDeclaredFields": true,
-      "fields": [
-        {
-          "name": "ACCEPTED"
-        },
-        {
-          "name": "ALREADY_REPORTED"
-        },
-        {
-          "name": "BAD_GATEWAY"
-        },
-        {
-          "name": "BAD_REQUEST"
-        },
-        {
-          "name": "BANDWIDTH_LIMIT_EXCEEDED"
-        },
-        {
-          "name": "CHECKPOINT"
-        },
-        {
-          "name": "CONFLICT"
-        },
-        {
-          "name": "CONTINUE"
-        },
-        {
-          "name": "CREATED"
-        },
-        {
-          "name": "DESTINATION_LOCKED"
-        },
-        {
-          "name": "EARLY_HINTS"
-        },
-        {
-          "name": "EXPECTATION_FAILED"
-        },
-        {
-          "name": "FAILED_DEPENDENCY"
-        },
-        {
-          "name": "FORBIDDEN"
-        },
-        {
-          "name": "FOUND"
-        },
-        {
-          "name": "GATEWAY_TIMEOUT"
-        },
-        {
-          "name": "GONE"
-        },
-        {
-          "name": "HTTP_VERSION_NOT_SUPPORTED"
-        },
-        {
-          "name": "IM_USED"
-        },
-        {
-          "name": "INSUFFICIENT_SPACE_ON_RESOURCE"
-        },
-        {
-          "name": "INSUFFICIENT_STORAGE"
-        },
-        {
-          "name": "INTERNAL_SERVER_ERROR"
-        },
-        {
-          "name": "I_AM_A_TEAPOT"
-        },
-        {
-          "name": "LENGTH_REQUIRED"
-        },
-        {
-          "name": "LOCKED"
-        },
-        {
-          "name": "LOOP_DETECTED"
-        },
-        {
-          "name": "METHOD_FAILURE"
-        },
-        {
-          "name": "METHOD_NOT_ALLOWED"
-        },
-        {
-          "name": "MOVED_PERMANENTLY"
-        },
-        {
-          "name": "MOVED_TEMPORARILY"
-        },
-        {
-          "name": "MULTIPLE_CHOICES"
-        },
-        {
-          "name": "MULTI_STATUS"
-        },
-        {
-          "name": "NETWORK_AUTHENTICATION_REQUIRED"
-        },
-        {
-          "name": "NON_AUTHORITATIVE_INFORMATION"
-        },
-        {
-          "name": "NOT_ACCEPTABLE"
-        },
-        {
-          "name": "NOT_EXTENDED"
-        },
-        {
-          "name": "NOT_FOUND"
-        },
-        {
-          "name": "NOT_IMPLEMENTED"
-        },
-        {
-          "name": "NOT_MODIFIED"
-        },
-        {
-          "name": "NO_CONTENT"
-        },
-        {
-          "name": "OK"
-        },
-        {
-          "name": "PARTIAL_CONTENT"
-        },
-        {
-          "name": "PAYLOAD_TOO_LARGE"
-        },
-        {
-          "name": "PAYMENT_REQUIRED"
-        },
-        {
-          "name": "PERMANENT_REDIRECT"
-        },
-        {
-          "name": "PRECONDITION_FAILED"
-        },
-        {
-          "name": "PRECONDITION_REQUIRED"
-        },
-        {
-          "name": "PROCESSING"
-        },
-        {
-          "name": "PROXY_AUTHENTICATION_REQUIRED"
-        },
-        {
-          "name": "REQUESTED_RANGE_NOT_SATISFIABLE"
-        },
-        {
-          "name": "REQUEST_ENTITY_TOO_LARGE"
-        },
-        {
-          "name": "REQUEST_HEADER_FIELDS_TOO_LARGE"
-        },
-        {
-          "name": "REQUEST_TIMEOUT"
-        },
-        {
-          "name": "REQUEST_URI_TOO_LONG"
-        },
-        {
-          "name": "RESET_CONTENT"
-        },
-        {
-          "name": "SEE_OTHER"
-        },
-        {
-          "name": "SERVICE_UNAVAILABLE"
-        },
-        {
-          "name": "SWITCHING_PROTOCOLS"
-        },
-        {
-          "name": "TEMPORARY_REDIRECT"
-        },
-        {
-          "name": "TOO_EARLY"
-        },
-        {
-          "name": "TOO_MANY_REQUESTS"
-        },
-        {
-          "name": "UNAUTHORIZED"
-        },
-        {
-          "name": "UNAVAILABLE_FOR_LEGAL_REASONS"
-        },
-        {
-          "name": "UNPROCESSABLE_ENTITY"
-        },
-        {
-          "name": "UNSUPPORTED_MEDIA_TYPE"
-        },
-        {
-          "name": "UPGRADE_REQUIRED"
-        },
-        {
-          "name": "URI_TOO_LONG"
-        },
-        {
-          "name": "USE_PROXY"
-        },
-        {
-          "name": "VARIANT_ALSO_NEGOTIATES"
-        }
-      ]
+      "type": "org.springframework.http.HttpStatus"
     },
     {
-      "type": "org.springframework.http.HttpStatus$Series"
-    },
-    {
-      "type": "org.springframework.http.HttpStatusCode",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.http.MediaType",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.http.ProblemDetail",
-      "allDeclaredFields": true
+      "type": "org.springframework.http.MediaType"
     },
     {
       "type": "org.springframework.http.ReactiveHttpInputMessage"
     },
     {
-      "type": "org.springframework.http.ResponseEntity",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.http.ResponseEntity$BodyBuilder"
-    },
-    {
-      "type": "org.springframework.http.ResponseEntity$DefaultBuilder"
-    },
-    {
-      "type": "org.springframework.http.ResponseEntity$HeadersBuilder"
+      "type": "org.springframework.http.ResponseEntity"
     },
     {
       "type": "org.springframework.http.client.ClientHttpRequestFactory"
@@ -19971,9 +17466,6 @@
     },
     {
       "type": "org.springframework.http.server.RequestPath"
-    },
-    {
-      "type": "org.springframework.http.server.ServerHttpResponse"
     },
     {
       "type": "org.springframework.http.server.observation.ServerRequestObservationContext"
@@ -20299,12 +17791,10 @@
       "type": "org.springframework.util.ErrorHandler"
     },
     {
-      "type": "org.springframework.util.MimeType",
-      "allDeclaredFields": true
+      "type": "org.springframework.util.MimeType"
     },
     {
-      "type": "org.springframework.util.MultiValueMap",
-      "allDeclaredFields": true
+      "type": "org.springframework.util.MultiValueMap"
     },
     {
       "type": "org.springframework.util.PathMatcher"
@@ -20364,14 +17854,7 @@
       "type": "org.springframework.validation.method.MethodValidationResult"
     },
     {
-      "type": "org.springframework.web.ErrorResponse",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.web.ErrorResponse$Builder"
-    },
-    {
-      "type": "org.springframework.web.ErrorResponse$Interceptor"
+      "type": "org.springframework.web.ErrorResponse"
     },
     {
       "type": "org.springframework.web.HttpMediaTypeNotAcceptableException"
@@ -20574,14 +18057,16 @@
       "type": "org.springframework.web.multipart.MultipartException"
     },
     {
-      "type": "org.springframework.web.multipart.MultipartFile",
-      "allDeclaredFields": true
+      "type": "org.springframework.web.multipart.MultipartFile"
     },
     {
       "type": "org.springframework.web.multipart.MultipartHttpServletRequest"
     },
     {
       "type": "org.springframework.web.multipart.MultipartResolver"
+    },
+    {
+      "type": "org.springframework.web.multipart.support.StandardMultipartHttpServletRequest$StandardMultipartFile"
     },
     {
       "type": "org.springframework.web.multipart.support.StandardServletMultipartResolver",
@@ -20601,9 +18086,6 @@
     },
     {
       "type": "org.springframework.web.reactive.function.client.WebClientException"
-    },
-    {
-      "type": "org.springframework.web.reactive.result.view.RequestContext"
     },
     {
       "type": "org.springframework.web.reactive.result.view.View"
@@ -20663,12 +18145,7 @@
       "type": "org.springframework.web.servlet.ThemeResolver"
     },
     {
-      "type": "org.springframework.web.servlet.View",
-      "fields": [
-        {
-          "name": "PATH_VARIABLES"
-        }
-      ]
+      "type": "org.springframework.web.servlet.View"
     },
     {
       "type": "org.springframework.web.servlet.ViewResolver"
@@ -20957,37 +18434,13 @@
       "type": "org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping$AnnotationDescriptor"
     },
     {
-      "type": "org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter$DataWithMediaType"
-    },
-    {
-      "type": "org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter$DefaultCallback"
-    },
-    {
-      "type": "org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter$ErrorCallback"
-    },
-    {
-      "type": "org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter$Handler"
-    },
-    {
       "type": "org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod"
     },
     {
-      "type": "org.springframework.web.servlet.mvc.method.annotation.SseEmitter",
-      "allDeclaredFields": true
+      "type": "org.springframework.web.servlet.mvc.method.annotation.SseEmitter"
     },
     {
-      "type": "org.springframework.web.servlet.mvc.method.annotation.SseEmitter$SseEventBuilder"
-    },
-    {
-      "type": "org.springframework.web.servlet.mvc.method.annotation.SseEmitter$SseEventBuilderImpl"
-    },
-    {
-      "type": "org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody",
-      "allDeclaredFields": true
+      "type": "org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody"
     },
     {
       "type": "org.springframework.web.servlet.resource.AbstractResourceResolver",
@@ -21021,9 +18474,6 @@
       "allDeclaredFields": true
     },
     {
-      "type": "org.springframework.web.servlet.support.RequestContext"
-    },
-    {
       "type": "org.springframework.web.servlet.support.SessionFlashMapManager",
       "allDeclaredFields": true
     },
@@ -21050,9 +18500,6 @@
       "type": "org.springframework.web.servlet.view.AbstractUrlBasedView"
     },
     {
-      "type": "org.springframework.web.servlet.view.AbstractView"
-    },
-    {
       "type": "org.springframework.web.servlet.view.BeanNameViewResolver",
       "allDeclaredFields": true
     },
@@ -21063,9 +18510,6 @@
     {
       "type": "org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator",
       "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.web.servlet.view.InternalResourceView"
     },
     {
       "type": "org.springframework.web.servlet.view.InternalResourceViewResolver",
@@ -21143,12 +18587,6 @@
       "type": "org.thymeleaf.messageresolver.IMessageResolver"
     },
     {
-      "type": "org.thymeleaf.spring5.context.IThymeleafRequestContext"
-    },
-    {
-      "type": "org.thymeleaf.spring5.expression.IThymeleafEvaluationContext"
-    },
-    {
       "type": "org.thymeleaf.spring6.ISpringTemplateEngine"
     },
     {
@@ -21156,102 +18594,12 @@
       "allDeclaredFields": true
     },
     {
-      "type": "org.thymeleaf.spring6.context.IThymeleafRequestContext"
-    },
-    {
-      "type": "org.thymeleaf.spring6.expression.IThymeleafEvaluationContext"
-    },
-    {
-      "type": "org.thymeleaf.spring6.expression.Mvc$Spring41MvcUriComponentsBuilderDelegate",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
       "type": "org.thymeleaf.spring6.templateresolver.SpringResourceTemplateResolver",
       "allDeclaredFields": true
     },
     {
-      "type": "org.thymeleaf.spring6.view.AbstractThymeleafView",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.thymeleaf.spring6.view.ThymeleafView",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
       "type": "org.thymeleaf.spring6.view.ThymeleafViewResolver",
       "allDeclaredFields": true
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.AdditionExpression",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "org.thymeleaf.standard.expression.IStandardExpression",
-            "org.thymeleaf.standard.expression.IStandardExpression"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.AdditionSubtractionExpression",
-      "methods": [
-        {
-          "name": "isLeftAllowed",
-          "parameterTypes": [
-            "org.thymeleaf.standard.expression.IStandardExpression"
-          ]
-        },
-        {
-          "name": "isRightAllowed",
-          "parameterTypes": [
-            "org.thymeleaf.standard.expression.IStandardExpression"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.AndExpression"
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.EqualsNotEqualsExpression"
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.GreaterLesserExpression"
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.IStandardConversionService"
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.IStandardExpressionParser"
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.IStandardVariableExpressionEvaluator"
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.MultiplicationDivisionRemainderExpression",
-      "methods": [
-        {
-          "name": "isLeftAllowed",
-          "parameterTypes": [
-            "org.thymeleaf.standard.expression.IStandardExpression"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "org.thymeleaf.standard.expression.OrExpression"
     },
     {
       "type": "org.thymeleaf.templatemode.TemplateMode"
@@ -21653,15 +19001,6 @@
       ]
     },
     {
-      "type": "sun.util.locale.BaseLocale"
-    },
-    {
-      "type": "sun.util.locale.LocaleExtensions"
-    },
-    {
-      "type": "sun.util.locale.provider.LocaleResources"
-    },
-    {
       "type": {
         "proxy": [
           "io.methvin.watchservice.jna.CarbonAPI"
@@ -21701,13 +19040,6 @@
           "java.lang.reflect.WildcardType",
           "org.springframework.core.SerializableTypeWrapper$SerializableTypeProxy",
           "java.io.Serializable"
-        ]
-      }
-    },
-    {
-      "type": {
-        "proxy": [
-          "kotlin.internal.IntrinsicConstEvaluation"
         ]
       }
     },
@@ -21756,26 +19088,6 @@
     {
       "type": {
         "proxy": [
-          "org.springframework.stereotype.Controller"
-        ]
-      }
-    },
-    {
-      "type": {
-        "proxy": [
-          "org.springframework.validation.annotation.Validated"
-        ]
-      },
-      "methods": [
-        {
-          "name": "value",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": {
-        "proxy": [
           "org.springframework.web.bind.annotation.ControllerAdvice"
         ]
       }
@@ -21783,21 +19095,7 @@
     {
       "type": {
         "proxy": [
-          "org.springframework.web.bind.annotation.DeleteMapping"
-        ]
-      }
-    },
-    {
-      "type": {
-        "proxy": [
           "org.springframework.web.bind.annotation.ExceptionHandler"
-        ]
-      }
-    },
-    {
-      "type": {
-        "proxy": [
-          "org.springframework.web.bind.annotation.GetMapping"
         ]
       }
     },
@@ -21818,20 +19116,6 @@
     {
       "type": {
         "proxy": [
-          "org.springframework.web.bind.annotation.PostMapping"
-        ]
-      }
-    },
-    {
-      "type": {
-        "proxy": [
-          "org.springframework.web.bind.annotation.PutMapping"
-        ]
-      }
-    },
-    {
-      "type": {
-        "proxy": [
           "org.springframework.web.bind.annotation.RequestMapping"
         ]
       }
@@ -21840,13 +19124,6 @@
       "type": {
         "proxy": [
           "org.springframework.web.bind.annotation.RequestParam"
-        ]
-      }
-    },
-    {
-      "type": {
-        "proxy": [
-          "org.springframework.web.bind.annotation.ResponseStatus"
         ]
       }
     },
@@ -21866,133 +19143,10 @@
       "glob": "META-INF/build-info.properties"
     },
     {
-      "glob": "META-INF/maven/org.webjars.npm/swagger-ui/pom.properties"
-    },
-    {
-      "glob": "META-INF/maven/org.webjars/swagger-ui/pom.properties"
-    },
-    {
-      "glob": "META-INF/resources/articles/css/light/index-2.15.0.css"
-    },
-    {
-      "glob": "META-INF/resources/articles/favicon.ico"
-    },
-    {
-      "glob": "META-INF/resources/articles/font-awesome/free-6.4.2/css/all.min.css"
-    },
-    {
-      "glob": "META-INF/resources/articles/font-awesome/free-6.4.2/webfonts/fa-brands-400.woff2"
-    },
-    {
-      "glob": "META-INF/resources/articles/font-awesome/free-6.4.2/webfonts/fa-solid-900.woff2"
-    },
-    {
-      "glob": "META-INF/resources/articles/js/font_2024484_qwtkvngfp5b.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/js/jquery-3.5.1.min.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/js/jquery.pjax.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/layui/css/layui.css"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/css/content-theme/custom-light.css"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/index.css"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/index.min.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/abcjs/abcjs_basic.min.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/echarts/echarts.min.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/flowchart.js/flowchart.min.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/graphviz/full.render.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/graphviz/viz.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/highlight.js/highlight.min.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/highlight.js/styles/androidstudio.min.css"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/highlight.js/styles/github.min.css"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/highlight.js/third-languages.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/katex/fonts/KaTeX_Main-Regular.woff2"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/katex/fonts/KaTeX_Math-Italic.woff2"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/katex/fonts/KaTeX_Size2-Regular.woff2"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/katex/katex.min.css"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/katex/katex.min.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/katex/mhchem.min.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/mermaid/mermaid.min.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/plantuml/plantuml-encoder.min.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/vditor@3.11.1/dist/js/smiles-drawer/smiles-drawer.min.js"
-    },
-    {
-      "glob": "META-INF/resources/articles/viewerjs/viewer.min.css"
-    },
-    {
-      "glob": "META-INF/resources/articles/viewerjs/viewer.min.js"
-    },
-    {
       "glob": "META-INF/resources/index.html"
     },
     {
       "glob": "META-INF/resources/webjars-locator.properties"
-    },
-    {
-      "glob": "META-INF/resources/webjars/swagger-ui/5.21.0"
-    },
-    {
-      "glob": "META-INF/resources/webjars/swagger-ui/5.21.0/index.html"
-    },
-    {
-      "glob": "META-INF/resources/webjars/swagger-ui/5.21.0/swagger-initializer.js"
-    },
-    {
-      "glob": "META-INF/resources/webjars/swagger-ui/5.21.0/swagger-ui-bundle.js"
-    },
-    {
-      "glob": "META-INF/resources/webjars/swagger-ui/index.html"
-    },
-    {
-      "glob": "META-INF/resources/webjars/swagger-ui/swagger-initializer.js"
-    },
-    {
-      "glob": "META-INF/resources/webjars/swagger-ui/swagger-ui-bundle.js"
     },
     {
       "glob": "META-INF/services/ch.qos.logback.classic.spi.Configurator"
@@ -22575,12 +19729,6 @@
     },
     {
       "glob": "i18n/messages.properties"
-    },
-    {
-      "glob": "i18n/messages_en.properties"
-    },
-    {
-      "glob": "i18n/messages_en_US.properties"
     },
     {
       "glob": "i18n/messages_zh.properties"
@@ -24068,9 +21216,6 @@
       "glob": "org/springframework/boot/web/server/WebServerFactoryCustomizer.class"
     },
     {
-      "glob": "org/springframework/boot/web/server/mime-mappings.properties"
-    },
-    {
       "glob": "org/springframework/cache/annotation/AbstractCachingConfiguration$CachingConfigurerSupplier.class"
     },
     {
@@ -24239,109 +21384,10 @@
       "glob": "org/springframework/web/servlet/i18n/LocaleChangeInterceptor.class"
     },
     {
-      "glob": "org/thymeleaf/thymeleaf.properties"
-    },
-    {
       "glob": "org/xml/sax/EntityResolver.class"
     },
     {
       "glob": "public/index.html"
-    },
-    {
-      "glob": "resources/articles/css/light/index-2.15.0.css"
-    },
-    {
-      "glob": "resources/articles/favicon.ico"
-    },
-    {
-      "glob": "resources/articles/font-awesome/free-6.4.2/css/all.min.css"
-    },
-    {
-      "glob": "resources/articles/font-awesome/free-6.4.2/webfonts/fa-brands-400.woff2"
-    },
-    {
-      "glob": "resources/articles/font-awesome/free-6.4.2/webfonts/fa-solid-900.woff2"
-    },
-    {
-      "glob": "resources/articles/js/font_2024484_qwtkvngfp5b.js"
-    },
-    {
-      "glob": "resources/articles/js/jquery-3.5.1.min.js"
-    },
-    {
-      "glob": "resources/articles/js/jquery.pjax.js"
-    },
-    {
-      "glob": "resources/articles/layui/css/layui.css"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/css/content-theme/custom-light.css"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/index.css"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/index.min.js"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/abcjs/abcjs_basic.min.js"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/echarts/echarts.min.js"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/flowchart.js/flowchart.min.js"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/graphviz/full.render.js"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/graphviz/viz.js"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/highlight.js/highlight.min.js"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/highlight.js/styles/androidstudio.min.css"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/highlight.js/styles/github.min.css"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/highlight.js/third-languages.js"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/katex/fonts/KaTeX_Main-Regular.woff2"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/katex/fonts/KaTeX_Math-Italic.woff2"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/katex/fonts/KaTeX_Size2-Regular.woff2"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/katex/katex.min.css"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/katex/katex.min.js"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/katex/mhchem.min.js"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/mermaid/mermaid.min.js"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/plantuml/plantuml-encoder.min.js"
-    },
-    {
-      "glob": "resources/articles/vditor@3.11.1/dist/js/smiles-drawer/smiles-drawer.min.js"
-    },
-    {
-      "glob": "resources/articles/viewerjs/viewer.min.css"
-    },
-    {
-      "glob": "resources/articles/viewerjs/viewer.min.js"
     },
     {
       "glob": "resources/index.html"
@@ -24353,154 +21399,16 @@
       "glob": "springdoc.config.properties"
     },
     {
-      "glob": "static/articles/css/light/index-2.15.0.css"
-    },
-    {
-      "glob": "static/articles/favicon.ico"
-    },
-    {
-      "glob": "static/articles/font-awesome/free-6.4.2/css/all.min.css"
-    },
-    {
-      "glob": "static/articles/font-awesome/free-6.4.2/webfonts/fa-brands-400.woff2"
-    },
-    {
-      "glob": "static/articles/font-awesome/free-6.4.2/webfonts/fa-solid-900.woff2"
-    },
-    {
-      "glob": "static/articles/js/font_2024484_qwtkvngfp5b.js"
-    },
-    {
-      "glob": "static/articles/js/jquery-3.5.1.min.js"
-    },
-    {
-      "glob": "static/articles/js/jquery.pjax.js"
-    },
-    {
-      "glob": "static/articles/layui/css/layui.css"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/css/content-theme/custom-light.css"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/index.css"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/index.min.js"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/abcjs/abcjs_basic.min.js"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/echarts/echarts.min.js"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/flowchart.js/flowchart.min.js"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/graphviz/full.render.js"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/graphviz/viz.js"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/highlight.js/highlight.min.js"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/highlight.js/styles/androidstudio.min.css"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/highlight.js/styles/github.min.css"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/highlight.js/third-languages.js"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/katex/fonts/KaTeX_Main-Regular.woff2"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/katex/fonts/KaTeX_Math-Italic.woff2"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/katex/fonts/KaTeX_Size2-Regular.woff2"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/katex/katex.min.css"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/katex/katex.min.js"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/katex/mhchem.min.js"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/mermaid/mermaid.min.js"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/plantuml/plantuml-encoder.min.js"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/smiles-drawer/smiles-drawer.min.js"
-    },
-    {
-      "glob": "static/articles/viewerjs/viewer.min.css"
-    },
-    {
-      "glob": "static/articles/viewerjs/viewer.min.js"
-    },
-    {
       "glob": "static/index.html"
     },
     {
       "glob": "templates"
     },
     {
-      "glob": "templates/404.html"
-    },
-    {
-      "glob": "templates/archives.html"
-    },
-    {
-      "glob": "templates/article.html"
-    },
-    {
-      "glob": "templates/articles-query.html"
-    },
-    {
-      "glob": "templates/articles.html"
-    },
-    {
-      "glob": "templates/categories.html"
-    },
-    {
-      "glob": "templates/component/article-tail.html"
-    },
-    {
-      "glob": "templates/component/article-top.html"
-    },
-    {
-      "glob": "templates/component/articles-list.html"
-    },
-    {
-      "glob": "templates/component/common-js.html"
-    },
-    {
-      "glob": "templates/component/footer.html"
-    },
-    {
-      "glob": "templates/component/head.html"
-    },
-    {
-      "glob": "templates/component/sidebar.html"
-    },
-    {
       "glob": "templates/error.html"
     },
     {
       "glob": "templates/index.html"
-    },
-    {
-      "glob": "templates/tags.html"
     },
     {
       "module": "java.base",
@@ -24535,7 +21443,6 @@
     {
       "name": "i18n/messages",
       "locales": [
-        "en-US",
         "zh-CN"
       ]
     },

@@ -23,6 +23,7 @@
         <zxing.version>3.5.3</zxing.version>
         <native.march.arg>-march=compatibility</native.march.arg>
         <native.gc.arg>--gc=serial</native.gc.arg>
+        <native.xmx.arg>-J-Xmx15g</native.xmx.arg>
     </properties>
 
     <repositories>
@@ -444,11 +445,11 @@
                         </executions>
                         <configuration>
                             <buildArgs>
-                                <buildArg>-J-Xmx12g</buildArg>
+                                <buildArg>${native.xmx.arg}</buildArg>
                                 <buildArg>${native.march.arg}</buildArg>
                                 <buildArg>${native.gc.arg}</buildArg>
                                 <buildArg>${native.pgo.arg}</buildArg>
-                                <buildArg>${native.o.arg}</buildArg>
+                                <buildArg>${native.output.arg}</buildArg>
                                 <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
                                 <buildArg>-H:+AddAllCharsets</buildArg>
                                 <buildArg>-H:+AllowIncompleteClasspath</buildArg>
