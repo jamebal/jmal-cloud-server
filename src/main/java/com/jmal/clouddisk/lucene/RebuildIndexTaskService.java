@@ -389,7 +389,11 @@ public class RebuildIndexTaskService {
         if (syncFileVisitor == null) {
             return PERCENT_MAP.getOrDefault(SYNC_PERCENT, 100d);
         }
-        return syncFileVisitor.getPercent();
+        double percent = syncFileVisitor.getPercent();
+        if (percent > 100) {
+            return 100;
+        }
+        return percent;
     }
 
     /**
@@ -399,7 +403,11 @@ public class RebuildIndexTaskService {
         if (NOT_INDEX_TASK_SIZE.get() == 0 || isSyncFile()) {
             return 100;
         }
-        return getIndexedPercentValue();
+        double percent = getIndexedPercentValue();
+        if (percent > 100) {
+            return 100;
+        }
+        return percent;
     }
 
     private double getIndexedPercentValue() {
