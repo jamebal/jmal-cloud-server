@@ -59,7 +59,7 @@ public class FileListener implements DirectoryChangeListener {
 
     private final ScheduledExecutorService scheduler = ThreadUtil.createScheduledExecutor(2);
 
-    private final ExecutorService processExecutor = ThreadUtil.newFixedExecutor(Runtime.getRuntime().availableProcessors(), 10000, "file-process-thread", true);
+    private final ExecutorService processExecutor = ThreadUtil.newFixedExecutor(4, 10000, "file-process-thread", true);
 
     @PostConstruct
     public void init() {
@@ -101,9 +101,7 @@ public class FileListener implements DirectoryChangeListener {
             log.info("执行增量文件扫描，确保100%处理...");
             rebuildIndexTaskService.doSync(null, null, false);
 
-            rebuildIndexTaskService.onSyncComplete(() -> {
-                scanningInProgress.set(false);
-            });
+            rebuildIndexTaskService.onSyncComplete(() -> scanningInProgress.set(false));
         });
     }
 
@@ -153,13 +151,11 @@ public class FileListener implements DirectoryChangeListener {
     private void processQueueItems() {
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                DirectoryChangeEvent event = processingQueue.poll(100, TimeUnit.MILLISECONDS);
-                if (event != null) {
-                    try {
-                        processEvent(event);
-                    } catch (Exception e) {
-                        log.error("处理事件失败: {}, 路径: {}", event.eventType(), event.path(), e);
-                    }
+                DirectoryChangeEvent event = processingQueue.take();
+                try {
+                    processEvent(event);
+                } catch (Exception e) {
+                    log.error("处理事件失败: {}, 路径: {}", event.eventType(), event.path(), e);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
