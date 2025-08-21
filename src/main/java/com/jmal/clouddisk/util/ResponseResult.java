@@ -15,9 +15,9 @@ import java.util.Map;
 @Getter
 @Accessors(chain = true)
 public class ResponseResult<T> {
-	private int code;
-	private Object message;
+	private Integer code;
+	private String message;
 	private T data;
-	private Object count;
+	private Number count;
 	private Map<String, Object> props;
 }

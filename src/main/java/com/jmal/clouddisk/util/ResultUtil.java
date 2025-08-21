@@ -17,14 +17,14 @@ public class ResultUtil {
     public static <T> ResponseResult<T> genResult() {
         ResponseResult<T> result = new ResponseResult<>();
         result.setCode(0);
-        result.setMessage(true);
+        result.setMessage("true");
         return result;
     }
 
     public static <T> ResponseResult<T> success(T data) {
         ResponseResult<T> result = new ResponseResult<>();
         result.setCode(0);
-        result.setMessage(true);
+        result.setMessage("true");
         result.setData(data);
         return result;
     }
@@ -39,7 +39,7 @@ public class ResultUtil {
     public static <T> ResponseResult<T> success() {
         ResponseResult<T> result = new ResponseResult<>();
         result.setCode(0);
-        result.setMessage(true);
+        result.setMessage("true");
         return result;
     }
 

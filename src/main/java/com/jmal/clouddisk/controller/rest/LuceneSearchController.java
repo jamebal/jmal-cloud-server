@@ -7,6 +7,7 @@ import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
@@ -30,7 +31,7 @@ public class LuceneSearchController {
 
     @Operation(summary = "搜索")
     @GetMapping("/")
-    public ResponseResult<List<FileIntroVO>> list(SearchDTO searchDTO) throws IOException, ParseException, InvalidTokenOffsetsException {
+    public ResponseResult<List<FileIntroVO>> list(@Valid SearchDTO searchDTO) throws IOException, ParseException, InvalidTokenOffsetsException {
         return searchFileService.searchFile(searchDTO);
     }
 

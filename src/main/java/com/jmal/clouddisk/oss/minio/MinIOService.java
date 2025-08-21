@@ -433,10 +433,9 @@ public class MinIOService implements IOssService {
 
     @Override
     public FileInfo getThumbnail(String objectName, File file, int width) {
-        try {
+        try (InputStream inputStream = ImageMagickProcessor.cropImage(file, "80", String.valueOf(width), null)) {
             this.minIoClient.downloadObject(bucketName, objectName, file);
-            byte[] bytes = ImageMagickProcessor.cropImage(file, "80", String.valueOf(width), null);
-            FileUtil.writeBytes(bytes, file);
+            FileUtil.writeFromStream(inputStream, file);
             return baseOssService.getFileInfo(objectName);
         } catch (Exception e) {
             log.error(e.getMessage(), e);

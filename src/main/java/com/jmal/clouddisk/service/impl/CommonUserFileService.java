@@ -21,7 +21,6 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
-import com.luciad.imageio.webp.WebPWriteParam;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.result.UpdateResult;
@@ -38,12 +37,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.FileImageOutputStream;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -449,19 +442,7 @@ public class CommonUserFileService {
             return file;
         }
         File outputFile = new File(file.getPath() + Constants.POINT_SUFFIX_WEBP);
-        // 从某处获取图像进行编码
-        BufferedImage image;
-        try {
-            image = ImageIO.read(file);
-            if (image == null) {
-                return file;
-            }
-            imageFileToWebp(outputFile, image);
-            FileUtil.del(file);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            return file;
-        }
+        ImageMagickProcessor.replaceWebp(file, outputFile, true);
         return outputFile;
     }
 
@@ -532,18 +513,6 @@ public class CommonUserFileService {
             result = consumer.getWebpDisabled();
         }
         return result;
-    }
-
-    public void imageFileToWebp(File outputFile, BufferedImage image) throws IOException {
-        // 获取一个WebP ImageWriter实例
-        ImageWriter writer = ImageIO.getImageWritersByMIMEType(Constants.CONTENT_TYPE_WEBP).next();
-        // 配置编码参数
-        WebPWriteParam writeParam = new WebPWriteParam(writer.getLocale());
-        writeParam.setCompressionMode(ImageWriteParam.MODE_DEFAULT);
-        // 在ImageWriter上配置输出
-        writer.setOutput(new FileImageOutputStream(outputFile));
-        // 编码
-        writer.write(null, new IIOImage(image, null, null), writeParam);
     }
 
     /**

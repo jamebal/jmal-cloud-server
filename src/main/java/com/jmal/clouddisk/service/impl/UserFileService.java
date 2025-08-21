@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -20,10 +21,9 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -72,15 +72,14 @@ public class UserFileService {
         // userImagePaths 不存在则新建
         commonUserFileService.upsertFolder(userImagePaths, username, userId);
         File newFile;
-        try {
+        try (InputStream inputStream = multipartFile.getInputStream()) {
             if (commonUserFileService.getDisabledWebp(userId) || ("ico".equals(FileUtil.getSuffix(fileName)))) {
                 newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
-                FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
+                FileUtil.writeFromStream(inputStream, newFile);
             } else {
                 fileName = fileName + Constants.POINT_SUFFIX_WEBP;
                 newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
-                BufferedImage image = ImageIO.read(multipartFile.getInputStream());
-                commonUserFileService.imageFileToWebp(newFile, image);
+                ImageMagickProcessor.convertToWebpFile(inputStream, newFile);
             }
         } catch (IOException e) {
             throw new CommonException(2, "上传失败");

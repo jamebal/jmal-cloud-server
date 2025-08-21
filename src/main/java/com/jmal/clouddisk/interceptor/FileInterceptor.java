@@ -1,10 +1,11 @@
 package com.jmal.clouddisk.interceptor;
 
-import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.URLUtil;
+import com.google.common.io.ByteStreams;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.model.FileDocument;
@@ -15,7 +16,6 @@ import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.MyFileUtils;
 import com.jmal.clouddisk.util.UrlEncodingChecker;
-import com.luciad.imageio.webp.WebPWriteParam;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,11 +27,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 
-import javax.imageio.*;
-import javax.imageio.stream.FileCacheImageOutputStream;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -92,7 +88,7 @@ public class FileInterceptor implements HandlerInterceptor {
     private final WebOssService webOssService;
 
     @Override
-    public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
+    public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) throws IOException, InterruptedException {
         if (internalValid(request, response)) return true;
 
         if (fileAuthError(request, response)) {
@@ -290,44 +286,41 @@ public class FileInterceptor implements HandlerInterceptor {
     private void webp(HttpServletRequest request, HttpServletResponse response) {
         Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
         uriPath = uriPath.subpath(1, uriPath.getNameCount());
-        try {
-            File file = Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
-            // 从某处获取图像进行编码
-            BufferedImage image = ImageIO.read(file);
-
-            // 获取一个WebP ImageWriter实例
-            ImageWriter writer = ImageIO.getImageWritersByMIMEType("image/webp").next();
-            responseHeader(response, file.getName() + ".webp", new byte[1]);
-            // 配置编码参数
-            WebPWriteParam writeParam = new WebPWriteParam(writer.getLocale());
-            writeParam.setCompressionMode(ImageWriteParam.MODE_DEFAULT);
-            // 在ImageWriter上配置输出
-            FileCacheImageOutputStream output = new FileCacheImageOutputStream(response.getOutputStream(), null);
-            writer.setOutput(output);
-            // 编码
-            writer.write(null, new IIOImage(image, null, null), writeParam);
+        File file = Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
+        try(FileInputStream fileInputStream = new FileInputStream(file);
+            InputStream inputStream = ImageMagickProcessor.convertToWebp(fileInputStream);
+            ServletOutputStream outputStream = response.getOutputStream()) {
+            ByteStreams.copy(inputStream, outputStream);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
 
     }
 
-    private void thumbnail(HttpServletRequest request, HttpServletResponse response) {
+    private void thumbnail(HttpServletRequest request, HttpServletResponse response) throws FileNotFoundException {
         Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
         if (uriPath.getNameCount() < MIN_COUNT) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
         FileDocument fileDocument = getFileDocument(uriPath, false);
-        Path relativePath = uriPath.subpath(1, uriPath.getNameCount());
-        if (fileDocument != null) {
-            if (fileDocument.getContent() == null) {
-                File file = Paths.get(fileProperties.getRootDir(), relativePath.toString()).toFile();
-                if (file.exists()) {
-                    fileDocument.setContent(FileUtil.readBytes(file));
-                }
-            }
-            responseWritImage(response, fileDocument.getName(), fileDocument.getContent());
+        if (fileDocument == null) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return;
         }
+        Path relativePath = uriPath.subpath(1, uriPath.getNameCount());
+        InputStream inputStream;
+        if (fileDocument.getContent() == null) {
+            File file = Paths.get(fileProperties.getRootDir(), relativePath.toString()).toFile();
+            if (!file.exists() || !file.isFile() || !file.canRead()) {
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+            inputStream = new FileInputStream(file);
+        } else {
+            inputStream = new ByteArrayInputStream(fileDocument.getContent());
+        }
+        responseWritImage(response, fileDocument.getName(), inputStream);
     }
 
     private FileDocument getFileDocument(Path uriPath, boolean excludeContent) {
@@ -344,38 +337,40 @@ public class FileInterceptor implements HandlerInterceptor {
         return getFileDocument(uriPath, true);
     }
 
-    private void handleCrop(HttpServletRequest request, HttpServletResponse response) {
+    private void handleCrop(HttpServletRequest request, HttpServletResponse response) throws IOException, InterruptedException {
         File file = getFileByRequest(request);
         String q = request.getParameter("q");
         String w = request.getParameter("w");
         String h = request.getParameter("h");
-        byte[] img = ImageMagickProcessor.cropImage(file, q, w, h);
-        if (img.length > 0) {
-            responseWritImage(response, file.getName(), img);
-        }
+        InputStream inputStream = ImageMagickProcessor.cropImage(file, q, w, h);
+        responseWritImage(response, file.getName(), inputStream);
     }
 
-    private @NotNull File getFileByRequest(HttpServletRequest request) {
+    private File getFileByRequest(HttpServletRequest request) {
         Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
         uriPath = uriPath.subpath(1, uriPath.getNameCount());
         return Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
     }
 
-    private void responseWritImage(HttpServletResponse response, String fileName, byte[] img) {
-        responseHeader(response, fileName, img);
+    private void responseWritImage(HttpServletResponse response, String fileName, InputStream inputStream) {
+        if (inputStream == null) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        responseHeader(response, fileName);
         try (ServletOutputStream outputStream = response.getOutputStream()) {
-            outputStream.write(img);
+            log.info("Response image: {}", fileName);
+            ByteStreams.copy(inputStream, outputStream);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
+        } finally {
+            IoUtil.close(inputStream);
         }
     }
 
-    private void responseHeader(HttpServletResponse response, String fileName, byte[] img) {
+    private void responseHeader(HttpServletResponse response, String fileName) {
         if (!CharSequenceUtil.isBlank(fileName)) {
             response.setHeader(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(MyFileUtils.extName(fileName)));
-        }
-        if (img != null) {
-            response.setHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(img.length));
         }
         response.setHeader(HttpHeaders.CONNECTION, "close");
         response.setHeader(HttpHeaders.CONTENT_ENCODING, "utf-8");

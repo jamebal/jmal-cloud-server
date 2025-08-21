@@ -156,12 +156,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
-        <!-- 转换图片为webp-->
-        <dependency>
-            <groupId>com.github.gotson</groupId>
-            <artifactId>webp-imageio</artifactId>
-            <version>0.2.2</version>
-        </dependency>
 
         <dependency>
             <groupId>com.github.albfernandez</groupId>
@@ -450,9 +444,12 @@
                                 <buildArg>${native.gc.arg}</buildArg>
                                 <buildArg>${native.pgo.arg}</buildArg>
                                 <buildArg>${native.output.arg}</buildArg>
+<!--                                <buildArg>&#45;&#45;enable-monitoring=jmxserver,jmxclient,jvmstat</buildArg>-->
                                 <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
                                 <buildArg>-H:+AddAllCharsets</buildArg>
                                 <buildArg>-H:+AllowIncompleteClasspath</buildArg>
+                                <buildArg>--enable-http</buildArg>
+                                <buildArg>--enable-https</buildArg>
                             </buildArgs>
                         </configuration>
                     </plugin>

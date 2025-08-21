@@ -7,6 +7,7 @@ import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -16,6 +17,7 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.Either;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.lucene.LuceneService;
+import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.*;
@@ -35,10 +37,9 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -676,19 +677,22 @@ public class MarkdownServiceImpl implements IMarkdownService {
         // docImagePaths 不存在则新建
         commonUserFileService.upsertFolder(docImagePaths, username, userId);
         File newFile;
-        try (HttpResponse response = HttpRequest.get(upload.getUrl()).setFollowRedirects(true).executeAsync()) {
+        try (HttpResponse response = HttpRequest.get(upload.getUrl()).setFollowRedirects(true).executeAsync();
+        InputStream inputStream = response.bodyStream()) {
             if (!response.isOk()) {
                 throw new HttpException("Server response error with status code: [{}]", response.getStatus());
             }
-            File destFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString()).toFile();
-            final File outFile = response.completeFileNameFromHeader(destFile);
-            if (!outFile.getName().endsWith(Constants.POINT_SUFFIX_WEBP)) {
-                newFile = new File(outFile.getPath() + Constants.POINT_SUFFIX_WEBP);
+            String fileName = getFileName(upload.getUrl(), response);
+            if (fileName.endsWith(Constants.POINT_SUFFIX_WEBP)) {
+                newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
+                // 保存原始webp文件
+                FileUtil.writeFromStream(inputStream, newFile);
             } else {
-                newFile = new File(outFile.getPath());
+                // 去掉fileName中的后缀
+                String fileNameWithoutSuffix = StrUtil.removeSuffix(fileName, "." + FileUtil.getSuffix(fileName));
+                newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileNameWithoutSuffix + Constants.POINT_SUFFIX_WEBP).toFile();
+                ImageMagickProcessor.convertToWebpFile(inputStream, newFile);
             }
-            BufferedImage image = ImageIO.read(response.bodyStream());
-            commonUserFileService.imageFileToWebp(newFile, image);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new CommonException(2, "上传失败");
@@ -701,6 +705,30 @@ public class MarkdownServiceImpl implements IMarkdownService {
         map.put(Constants.FILENAME, newFile.getName());
         map.put(Constants.FILE_PATH, filepath);
         return ResultUtil.success(map);
+    }
+
+    /**
+     * 获取url中的文件名
+     * @param imageUrl 图片链接
+     * @param response HttpResponse
+     * @return 文件名
+     */
+    private static String getFileName(String imageUrl, HttpResponse response) {
+        // 从头信息中获取文件名
+        String fileName = response.getFileNameFromDisposition(null);
+        if (StrUtil.isBlank(fileName)) {
+            final String path = URLUtil.getPath(imageUrl);
+            // 从路径中获取文件名
+            fileName = StrUtil.subSuf(path, path.lastIndexOf('/') + 1);
+            if (StrUtil.isBlank(fileName)) {
+                // 编码后的路径做为文件名
+                fileName = URLUtil.encodeQuery(path, StandardCharsets.UTF_8);
+            } else {
+                // issue#I4K0FS@Gitee
+                fileName = URLUtil.decode(fileName, StandardCharsets.UTF_8);
+            }
+        }
+        return fileName;
     }
 
     /***
@@ -724,17 +752,16 @@ public class MarkdownServiceImpl implements IMarkdownService {
         // docImagePaths 不存在则新建
         commonUserFileService.upsertFolder(docImagePaths, username, userId);
         File newFile;
-        try {
+        try (InputStream inputStream = multipartFile.getInputStream()) {
             if (commonUserFileService.getDisabledWebp(userId) || ("ico".equals(FileUtil.getSuffix(fileName)))) {
                 newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
-                FileUtil.writeFromStream(multipartFile.getInputStream(), newFile);
+                FileUtil.writeFromStream(inputStream, newFile);
             } else {
                 if (!fileName.endsWith(Constants.POINT_SUFFIX_WEBP)) {
                     fileName = fileName + Constants.POINT_SUFFIX_WEBP;
                 }
                 newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
-                BufferedImage image = ImageIO.read(multipartFile.getInputStream());
-                commonUserFileService.imageFileToWebp(newFile, image);
+                ImageMagickProcessor.convertToWebpFile(inputStream, newFile);
             }
         } catch (IOException e) {
             throw new CommonException(2, "上传失败");
