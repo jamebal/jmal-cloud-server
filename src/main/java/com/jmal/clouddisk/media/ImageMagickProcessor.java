@@ -1,17 +1,16 @@
 package com.jmal.clouddisk.media;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.lang.ObjectId;
-import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.util.CommandUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.exec.*;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
@@ -19,9 +18,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 使用 ImageMagick 命令行工具来处理图片.
@@ -61,8 +57,10 @@ public class ImageMagickProcessor {
      * @param update org.springframework.data.mongodb.core.query.UpdateDefinition
      */
     public void generateThumbnail(File file, Update update) {
-        try (InputStream stream = cropImage(file, "1", "256", "256")) {
-            update.set("content", IoUtil.readBytes(stream));
+        try {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            cropImage(file, "1", "256", "256", byteArrayOutputStream);
+            update.set("content", byteArrayOutputStream.toByteArray());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (IOException e) {
@@ -77,29 +75,24 @@ public class ImageMagickProcessor {
      * @throws IOException 如果转换过程中发生 I/O 错误
      */
     public static void convertToWebpFile(InputStream originImageStream, File destFile) throws IOException {
-        Process process = RuntimeUtil.exec("magick", "-", "webp:" + destFile.getAbsolutePath());
-        // 输入原图数据到stdin
-        try (OutputStream procIn = process.getOutputStream()) {
-            originImageStream.transferTo(procIn);
-        }
+        // 命令: magick - webp:output.webp
+        CommandLine commandLine = CommandLine.parse("magick");
+        commandLine.addArgument("-");
+        commandLine.addArgument("webp:" + destFile.getAbsolutePath());
+        CommandUtil.execCommand(commandLine, originImageStream, null);
     }
 
     /**
-     * 将输入流转换为 WebP 格式的 InputStream
+     * 将输入流转换为 WebP 格式并输出到指定输出流
      * @param originImageStream 原始图片的输入流
-     * @return 转换后的 WebP 格式的 InputStream
-     * @throws IOException 如果转换过程中发生 I/O 错误
+     * @param outputStream 输出流，用于接收转换后的 WebP 数据
      */
-    public static InputStream convertToWebp(InputStream originImageStream) throws IOException {
-        Process process = RuntimeUtil.exec("magick", "-", "webp:-");
-
-        // 输入原图数据到stdin
-        try (OutputStream procIn = process.getOutputStream()) {
-            originImageStream.transferTo(procIn);
-        }
-
-        // 调用方负责关闭
-        return process.getInputStream();
+    public static void convertToWebp(InputStream originImageStream, OutputStream outputStream) {
+        // 命令 : magick - webp:-
+        CommandLine commandLine = CommandLine.parse("magick");
+        commandLine.addArgument("-");
+        commandLine.addArgument("webp:-");
+        CommandUtil.execCommand(commandLine, originImageStream, outputStream);
     }
 
     /**
@@ -110,12 +103,12 @@ public class ImageMagickProcessor {
      */
     public static void replaceWebp(File srcFile, File destFile, boolean deleteSrc) {
         log.debug("Converting image to WebP format: {} -> {}", srcFile.getAbsolutePath(), destFile.getAbsolutePath());
-        // 命令: convert input.jpg -quality 80 output.webp
+        // 命令: magick input.jpg output.webp
         try {
-            RuntimeUtil.exec("magick",
-                    srcFile.getAbsolutePath(),
-                    destFile.getAbsolutePath()
-            );
+            CommandLine cmdLine = new CommandLine("magick");
+            cmdLine.addArgument(srcFile.getAbsolutePath(), false);
+            cmdLine.addArgument(destFile.getAbsolutePath(), false);
+            CommandUtil.execCommand(cmdLine, null, null);
         } finally {
             if (deleteSrc) {
                 FileUtil.del(srcFile);
@@ -125,6 +118,7 @@ public class ImageMagickProcessor {
 
     /**
      * 生成带水印的缩略图 (替代 Thumbnails.of(...).watermark(...))
+     * 命令: convert original.jpg -resize 1280x1024 watermark.png -gravity SouthEast -compose over -composite -quality 80 watermarked_thumbnail.jpg
      *
      * @param originalImage  源文件
      * @param watermarkImage 水印图片文件
@@ -136,20 +130,21 @@ public class ImageMagickProcessor {
      */
     public void createWatermarkedThumbnail(File originalImage, File watermarkImage, File outputImage, int width, int height, String gravity, int quality) {
         log.info("Creating watermarked thumbnail for '{}' -> '{}'", originalImage, outputImage);
-
-        // 命令: convert original.jpg -resize 1280x1024 \
-        //       watermark.png -gravity SouthEast -compose over -composite \
-        //       -quality 80 watermarked_thumbnail.jpg
-        executeCommand("convert",
-                originalImage.getAbsolutePath(),
-                "-resize", width + "x" + height,
-                watermarkImage.getAbsolutePath(),
-                "-gravity", gravity,
-                "-compose", "over",
-                "-composite",
-                "-quality", String.valueOf(quality),
-                outputImage.getAbsolutePath()
-        );
+        // 命令: convert original.jpg -resize 1280x1024 watermark.png -gravity SouthEast -compose over -composite -quality 80 watermarked_thumbnail.jpg
+        CommandLine cmdLine = new CommandLine("magick");
+        cmdLine.addArgument(originalImage.getAbsolutePath(), false);
+        cmdLine.addArgument("-resize", false);
+        cmdLine.addArgument(width + "x" + height, false);
+        cmdLine.addArgument(watermarkImage.getAbsolutePath(), false);
+        cmdLine.addArgument("-gravity", false);
+        cmdLine.addArgument(gravity, false);
+        cmdLine.addArgument("-compose", false);
+        cmdLine.addArgument("over", false);
+        cmdLine.addArgument("-composite", false);
+        cmdLine.addArgument("-quality", false);
+        cmdLine.addArgument(String.valueOf(quality), false);
+        cmdLine.addArgument(outputImage.getAbsolutePath(), false);
+        CommandUtil.execCommand(cmdLine, null, null);
     }
 
     /**
@@ -160,9 +155,9 @@ public class ImageMagickProcessor {
      * @param q       剪裁后的质量 (字符串 "0.0" 到 "1.0")
      * @param w       剪裁后的宽度 (字符串)
      * @param h       剪裁后的高度 (字符串)
-     * @return 剪裁和转换后的 InputStream, 由调用方负责关闭。
+     * @param outputStream 输出流，用于接收处理后的图片数据
      */
-    public static InputStream cropImage(File srcFile, String q, String w, String h) throws IOException, InterruptedException {
+    public static void cropImage(File srcFile, String q, String w, String h, OutputStream outputStream) throws IOException, InterruptedException {
         if (srcFile == null || !srcFile.exists() || !srcFile.isFile()) {
             log.error("Invalid source file: {}", srcFile);
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
@@ -171,56 +166,72 @@ public class ImageMagickProcessor {
         int[] dimensions = getImageDimensions(srcFile);
         if (dimensions == null) {
             log.error("Could not get dimensions for file, aborting crop: {}", srcFile.getAbsolutePath());
-            return new FileInputStream(srcFile);
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         int srcWidth = dimensions[0];
-        int srcHeight = dimensions[1]; // 现在需要获取高度
+        int srcHeight = dimensions[1];
 
         // 2. 解析输入参数
         double quality = parseQuality(q);
         int targetWidth = parseDimension(w);
-        int targetHeight = parseDimension(h); // 解析目标高度
+        int targetHeight = parseDimension(h);
 
         // 3. 构建 ImageMagick 命令
-        List<String> command = new ArrayList<>();
-        command.add("magick");
-        command.add(srcFile.getAbsolutePath());
-
-        // 4. 根据完整的原始逻辑添加 -resize 参数
-        // 只有当目标宽度有效且小于源宽度时，才进行缩放
-        if (targetWidth > 0 && srcWidth > targetWidth) {
-            command.add("-thumbnail");
-            // 如果目标高度也有效且小于源高度，则使用 WxH 边界框
-            if (targetHeight > 0 && srcHeight > targetHeight) {
-                command.add(targetWidth + "x" + targetHeight);
-            } else {
-                // 否则 (高度未指定或不造成缩小)，仅根据宽度缩放
-                command.add(targetWidth + "x");
-            }
-        }
-
-        // 5. 添加质量和输出格式参数
-        command.add("-quality");
-        command.add(String.valueOf((int) (quality * 100))); // ImageMagick 质量是 0-100
-        String suffix = FileUtil.extName(srcFile);
-        command.add(suffix + ":-"); // 指定输出格式为 JPG, 并输出到 stdout
-
-        // 6. 执行命令并获取 InputStream
-        return executeCommandAndGetInputStream(command.toArray(new String[0]));
+        CommandLine cmdLine = buildImageMagickThumbnailCommand(srcFile, targetWidth, srcWidth, targetHeight, srcHeight, quality);
+        CommandUtil.execCommand(cmdLine, null, outputStream);
     }
 
     /**
-     * 获取图片尺寸
+     * 构建 ImageMagick thumbnail 命令行参数
+     * @param srcFile 源文件
+     * @param targetWidth 目标宽度
+     * @param srcWidth 源文件宽度
+     * @param targetHeight 目标高度
+     * @param srcHeight 源文件高度
+     * @param quality 输出图片质量 (0.0 - 1.0)
+     * @return 构建好的命令行参数数组
+     */
+    private static CommandLine buildImageMagickThumbnailCommand(File srcFile, int targetWidth, int srcWidth, int targetHeight, int srcHeight, double quality) {
+        CommandLine cmdLine = new CommandLine("magick");
+        cmdLine.addArgument(srcFile.getAbsolutePath(), false);
+        // 只有当目标宽度有效且小于源宽度时，才进行缩放
+        if (targetWidth > 0 && srcWidth > targetWidth) {
+            cmdLine.addArgument("-thumbnail", false);
+            // 如果目标高度也有效且小于源高度，则使用 WxH 边界框
+            if (targetHeight > 0 && srcHeight > targetHeight) {
+                cmdLine.addArgument(targetWidth + "x" + targetHeight, false);
+            } else {
+                // 否则 (高度未指定或不造成缩小)，仅根据宽度缩放
+                cmdLine.addArgument(targetWidth + "x", false);
+            }
+        }
+        // 添加质量和输出格式参数
+        cmdLine.addArgument("-quality", false);
+        // ImageMagick 质量是 0-100
+        cmdLine.addArgument(String.valueOf((int) (quality * 100)), false);
+        String suffix = FileUtil.extName(srcFile);
+        // 指定输出格式为 suffix, 并输出到 stdout
+        cmdLine.addArgument(suffix + ":-", false);
+        return cmdLine;
+    }
+
+    /**
+     * <p>获取图片尺寸</p>
+     * 命令: identify -format "%w %h" image.jpg
      *
      * @param imageFile 图片文件
      * @return 一个包含 [width, height] 的数组，如果失败则返回 null
      */
     public static int[] getImageDimensions(File imageFile) {
-        // 命令: identify -format "%w %h" image.jpg
-        String output = executeCommand("identify", "-format", "%w %h", imageFile.getAbsolutePath());
-        if (CharSequenceUtil.isBlank(output)) {
-            return null;
-        }
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        CommandLine cmdLine = CommandLine.parse("identify");
+        cmdLine.addArgument("-format", false);
+        cmdLine.addArgument("%w %h", false);
+        cmdLine.addArgument(imageFile.getAbsolutePath(), false);
+        CommandUtil.execCommand(cmdLine, null, outputStream);
+
+        String output = IoUtil.toStr(outputStream, StandardCharsets.UTF_8);
+
         String[] dimensions = output.trim().split(" ");
         if (dimensions.length == 2) {
             try {
@@ -231,36 +242,6 @@ public class ImageMagickProcessor {
             }
         }
         return null;
-    }
-
-    /**
-     * 执行命令并返回 InputStream.
-     */
-    private static InputStream executeCommandAndGetInputStream(String... command) throws IOException, InterruptedException {
-        log.info("Executing command for inputStream: {}", String.join(" ", command));
-        Process process = RuntimeUtil.exec(command);
-        outputError(command, process);
-        return process.getInputStream();
-    }
-
-    private static void outputError(String[] command, Process process) throws IOException, InterruptedException {
-        // 先等进程执行结束
-        if (!process.waitFor(10, TimeUnit.SECONDS)) {
-            process.destroyForcibly();
-            throw new IOException("Command timed out: " + String.join(" ", command));
-        }
-
-        // 读取错误输出
-        String errorOutput = IoUtil.read(process.getErrorStream(), StandardCharsets.UTF_8);
-
-        if (process.exitValue() != 0) {
-            printError(command, process, errorOutput);
-        }
-    }
-
-    private static void printError(String[] command, Process process, String errorOutput) {
-        log.error("Command failed with exit code {}: {}", process.exitValue(), java.lang.String.join(" ", command));
-        log.error("Error output:\n{}", errorOutput);
     }
 
     /**
@@ -292,13 +273,4 @@ public class ImageMagickProcessor {
         }
     }
 
-    private static String executeCommand(String... command) {
-        try {
-            log.debug("Executing command: {}", String.join(" ", command));
-            return RuntimeUtil.execForStr(StandardCharsets.UTF_8, command);
-        } catch (IORuntimeException e) {
-            log.error("Error executing command: {}", String.join(" ", command), e);
-        }
-        return null;
-    }
 }

@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.media;
 
-import cn.hutool.core.io.FileUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,8 +9,8 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -53,16 +52,15 @@ public class ImageMagickProcessorTest {
         // 将生成的缩略图保存到临时目录
         File thumbnailFile = tempPath.resolve("thumbnail.png").toFile();
 
-        // 测试生成缩略图
-        try (InputStream inputStream = ImageMagickProcessor.cropImage(new File("/Users/jmal/temp/filetest/rootpath/jmal/未命名文件夹/IMG_0871_01.HEIC.jpg"), "1", "256", "256")) {
-            FileUtil.writeFromStream(inputStream, thumbnailFile);
-        }
+        FileOutputStream fileOutputStream = new FileOutputStream(thumbnailFile);
+
+        ImageMagickProcessor.cropImage(new File("/Users/jmal/Pictures/截图/截屏2025-03-11 22.17.33.png"), null, "1000", null, fileOutputStream);
         // 验证缩略图文件是否存在, 并且是否为一个正常的图片
         BufferedImage thumbnailImage = ImageIO.read(thumbnailFile);
         Assertions.assertNotNull(thumbnailImage, "缩略图生成失败，文件可能不存在或不是有效的图片格式");
         // 验证缩略图的尺寸
-        Assertions.assertEquals(256, thumbnailImage.getWidth(), "缩略图宽度不正确");
-        Assertions.assertEquals(256, thumbnailImage.getHeight(), "缩略图高度不正确");
+        Assertions.assertEquals(1000, thumbnailImage.getWidth(), "缩略图宽度不正确");
+        Assertions.assertEquals(1000, thumbnailImage.getHeight(), "缩略图高度不正确");
     }
 
     /**

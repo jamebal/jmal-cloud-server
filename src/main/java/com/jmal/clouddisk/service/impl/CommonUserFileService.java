@@ -5,6 +5,7 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.StrUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.lucene.EtagService;
@@ -413,10 +414,14 @@ public class CommonUserFileService {
 
     private void processImage(File file, Update update) {
         // 获取图片尺寸
-        FastImageInfo imageInfo = new FastImageInfo(file);
-        if (imageInfo.getWidth() > 0 && imageInfo.getHeight() > 0) {
-            update.set("w", imageInfo.getWidth());
-            update.set("h", imageInfo.getHeight());
+        int[] dimensions = ImageMagickProcessor.getImageDimensions(file);
+        if (dimensions != null) {
+            int srcWidth = dimensions[0];
+            int srcHeight = dimensions[1];
+            if (srcWidth > 0 && srcHeight > 0) {
+                update.set("w", srcWidth);
+                update.set("h", srcHeight);
+            }
         }
         // 获取图片Exif信息
         update.set("exif", ImageExifUtil.getExif(file));
@@ -441,7 +446,9 @@ public class CommonUserFileService {
         if (Constants.SUFFIX_WEBP.equals(suffix)) {
             return file;
         }
-        File outputFile = new File(file.getPath() + Constants.POINT_SUFFIX_WEBP);
+        // 去掉fileName中的后缀
+        String fileNameWithoutSuffix = StrUtil.removeSuffix(file.getName(), "." + FileUtil.getSuffix(file.getName()));
+        File outputFile = new File(file.getParentFile().getAbsoluteFile(), fileNameWithoutSuffix + Constants.POINT_SUFFIX_WEBP);
         ImageMagickProcessor.replaceWebp(file, outputFile, true);
         return outputFile;
     }

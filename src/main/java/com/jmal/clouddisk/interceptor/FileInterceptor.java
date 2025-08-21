@@ -5,7 +5,6 @@ import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.URLUtil;
-import com.google.common.io.ByteStreams;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.model.FileDocument;
@@ -283,17 +282,12 @@ public class FileInterceptor implements HandlerInterceptor {
         return true;
     }
 
-    private void webp(HttpServletRequest request, HttpServletResponse response) {
+    private void webp(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
         uriPath = uriPath.subpath(1, uriPath.getNameCount());
         File file = Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
-        try(FileInputStream fileInputStream = new FileInputStream(file);
-            InputStream inputStream = ImageMagickProcessor.convertToWebp(fileInputStream);
-            ServletOutputStream outputStream = response.getOutputStream()) {
-            ByteStreams.copy(inputStream, outputStream);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-        }
+        FileInputStream fileInputStream = new FileInputStream(file);
+        ImageMagickProcessor.convertToWebp(fileInputStream, response.getOutputStream());
 
     }
 
@@ -320,7 +314,15 @@ public class FileInterceptor implements HandlerInterceptor {
         } else {
             inputStream = new ByteArrayInputStream(fileDocument.getContent());
         }
-        responseWritImage(response, fileDocument.getName(), inputStream);
+        responseHeader(response, fileDocument.getName());
+        try (ServletOutputStream outputStream = response.getOutputStream()) {
+            IoUtil.copy(inputStream, outputStream);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        } finally {
+            IoUtil.close(inputStream);
+        }
     }
 
     private FileDocument getFileDocument(Path uriPath, boolean excludeContent) {
@@ -342,30 +344,14 @@ public class FileInterceptor implements HandlerInterceptor {
         String q = request.getParameter("q");
         String w = request.getParameter("w");
         String h = request.getParameter("h");
-        InputStream inputStream = ImageMagickProcessor.cropImage(file, q, w, h);
-        responseWritImage(response, file.getName(), inputStream);
+        ImageMagickProcessor.cropImage(file, q, w, h, response.getOutputStream());
+        responseHeader(response, file.getName());
     }
 
     private File getFileByRequest(HttpServletRequest request) {
         Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
         uriPath = uriPath.subpath(1, uriPath.getNameCount());
         return Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
-    }
-
-    private void responseWritImage(HttpServletResponse response, String fileName, InputStream inputStream) {
-        if (inputStream == null) {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            return;
-        }
-        responseHeader(response, fileName);
-        try (ServletOutputStream outputStream = response.getOutputStream()) {
-            log.info("Response image: {}", fileName);
-            ByteStreams.copy(inputStream, outputStream);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-        } finally {
-            IoUtil.close(inputStream);
-        }
     }
 
     private void responseHeader(HttpServletResponse response, String fileName) {
