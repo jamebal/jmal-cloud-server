@@ -447,8 +447,8 @@
                                 <buildArg>${native.xmx.arg}</buildArg>
                                 <buildArg>${native.march.arg}</buildArg>
                                 <buildArg>${native.gc.arg}</buildArg>
-                                <buildArg>${native.pgo.arg}</buildArg>
-                                <buildArg>${native.output.arg}</buildArg>
+<!--                                <buildArg>${native.pgo.arg}</buildArg>-->
+<!--                                <buildArg>${native.output.arg}</buildArg>-->
 <!--                                <buildArg>&#45;&#45;enable-monitoring=jmxserver,jmxclient,jvmstat</buildArg>-->
                                 <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
                                 <buildArg>-H:+AddAllCharsets</buildArg>
