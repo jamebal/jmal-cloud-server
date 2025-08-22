@@ -55,37 +55,20 @@ RUN mkdir -p /output/ocrlite/bin /output/ocrlite/models && \
 # --- 设置权限 ---
 RUN chmod -R 777 /output/mxcad/mxcadassembly && chmod -R 777 /output/mxcad/mx/so/* && chmod +x /output/ocrlite/bin/OcrLiteOnnx
 
-# 提取依赖
-RUN mkdir /opt/magick-libs && \
-    ldd /opt/imagemagick/bin/magick | awk '{print $3}' | grep '^/' | xargs -I{} cp --parents {} /opt/magick-libs
-
 
 FROM ubuntu:22.04 as runtime
 
-ARG TARGETARCH
-ENV ARCHDIR=""
-RUN if [ "${TARGETARCH}" = "amd64" ]; then \
-      export ARCHDIR="x86_64-linux-gnu"; \
-    elif [ "${TARGETARCH}" = "arm64" ]; then \
-      export ARCHDIR="aarch64-linux-gnu"; \
-    else \
-      echo "Unsupported TARGETARCH: ${TARGETARCH}"; exit 1; \
-    fi && \
-    echo "ARCHDIR=${ARCHDIR}" > /tmp/archdir_env
-# 后面所有用${ARCHDIR}的地方，先读取
-ARG ARCHDIR
-ENV ARCHDIR=${ARCHDIR}
-
+ENV DEBIAN_FRONTEND=noninteractive
 # 安装基础运行时依赖 ---
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    gosu \
-    locales \
-    tesseract-ocr \
-    poppler-utils \
-    p7zip-full \
-    unrar \
-    libheif-examples && \
+      gosu \
+      locales \
+      tesseract-ocr \
+      poppler-utils \
+      p7zip-full \
+      unrar \
+      ca-certificates && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -111,7 +94,6 @@ COPY --from=builder /output/mxcad/mx/locale /usr/local/share/locale
 COPY --from=builder /output/ocrlite/bin/OcrLiteOnnx /usr/local/bin/OcrLiteOnnx
 COPY --from=builder /output/ocrlite/models /jmalcloud/
 COPY --from=builder /opt/imagemagick /opt/imagemagick
-COPY --from=builder /opt/magick-libs/lib/${ARCHDIR}-linux-gnu/ /lib/${ARCHDIR}-linux-gnu/
 
 # --- 复制配置文件和数据 ---
 RUN mkdir -p /jmalcloud/files /jmalcloud/tess4j/datapath
