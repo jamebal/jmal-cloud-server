@@ -67,8 +67,7 @@ RUN apt-get update && \
       tesseract-ocr \
       poppler-utils \
       p7zip-full \
-      unrar && \
-      # 这些是imagemagick 7.x常见运行库
+      unrar \
       libjpeg-turbo8 \
       libpng16-16 \
       libtiff5 \
