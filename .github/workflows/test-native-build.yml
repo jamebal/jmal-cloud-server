@@ -156,35 +156,6 @@ jobs:
           echo "--- Inspecting GHCR image ---"
           docker manifest inspect ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-${{ matrix.arch }}
 
-      # 使用 Profile 文件构建最终优化的 Native Image -march=${{ matrix.march }}
-      - name: Build PGO-Optimized Native Image -march=${{ matrix.march }}
-        run: mvn clean package -Pnative -DskipTests -Dnative.march.arg='-march=${{ matrix.march }}' -Dnative.pgo.arg="--pgo=jmalcloud.iprof" -Dnative.output.arg="-o target/jmalcloud"
-
-      - name: Build and push arch-specific image -march=${{ matrix.march }}
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          provenance: false
-          file: ./Dockerfile
-          push: true
-          tags: |
-            jmal/jmalcloud_native_${{ matrix.march }}:test-${{ matrix.arch }}
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_${{ matrix.march }}:test-${{ matrix.arch }}
-          platforms: linux/${{ matrix.arch }}
-          build-args: |
-            VERSION=${{ env.PROJECT_VERSION }}
-
-      - name: Inspect the pushed image RIGHT AFTER push -march=${{ matrix.march }}
-        if: ${{ success() }}
-        run: |
-          echo "--- Inspecting Docker Hub image ---"
-          docker manifest inspect jmal/jmalcloud_native_${{ matrix.march }}:test-${{ matrix.arch }}
-          
-          echo "--- Inspecting GHCR image ---"
-          docker manifest inspect ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_${{ matrix.march }}:test-${{ matrix.arch }}
-
   merge-manifests:
     needs: build-per-arch
     runs-on: ubuntu-latest
@@ -215,23 +186,9 @@ jobs:
             --amend jmal/jmalcloud_native:test-arm64
           docker manifest push jmal/jmalcloud_native:test
 
-      - name: Create and push Docker Hub manifest march
-        run: |
-          docker manifest create jmal/jmalcloud_native_o3:test \
-            --amend jmal/jmalcloud_native_x86-64-v3:test-amd64 \
-            --amend jmal/jmalcloud_native_armv8-a:test-arm64
-          docker manifest push jmal/jmalcloud_native_o3:test
-
       - name: Create and push GHCR manifest
         run: |
           docker manifest create ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test \
             --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-amd64 \
             --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-arm64
           docker manifest push ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test
-
-      - name: Create and push GHCR manifest march
-        run: |
-          docker manifest create ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_o3:test \
-            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_x86-64-v3:test-amd64 \
-            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_armv8-a:test-arm64
-          docker manifest push ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_o3:test
