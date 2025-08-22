@@ -68,8 +68,8 @@ COPY --from=builder /build/ffmpeg_dependencies.txt /build/jellyfin-ffmpeg.deb /t
 
 # 安装基础运行时依赖
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    gosu \
+    apt-get install -y --no-install-recommends $(cat /tmp/ffmpeg_dependencies.txt) && \
+    apt-get install -y --no-install-recommends gosu \
     locales \
     tesseract-ocr \
     poppler-utils \
@@ -78,12 +78,12 @@ RUN apt-get update && \
     ca-certificates \
     libheif1 \
     libwebpdemux2 \
-    libopenexr25 \
-    $(cat /tmp/ffmpeg_dependencies.txt) && \
+    libopenexr25 && \
     dpkg -i /tmp/jellyfin-ffmpeg.deb && \
     # 清理工作
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/ffmpeg_dependencies.txt /tmp/jellyfin-ffmpeg.deb && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /tmp/ && \
     # --- 配置系统环境 (Locale, Timezone) ---
     locale-gen en_US.UTF-8 && \
     update-locale LANG=en_US.UTF-8 && \
