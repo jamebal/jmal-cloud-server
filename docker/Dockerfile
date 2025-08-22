@@ -27,7 +27,9 @@ RUN apt-get update && \
       libx11-dev \
       ca-certificates \
       --no-install-recommends \
-      curl unzip p7zip-full && \
+      curl \
+      unzip \
+      p7zip-full && \
     rm -rf /var/lib/apt/lists/* && \
     \
     # 下载并编译安装 ImageMagick 7.x
@@ -55,7 +57,7 @@ RUN apt-get update && \
     7z x models.7z -o/output/ocrlite/models && \
     \
     # --- 设置权限 ---
-    mod +x /output/ocrlite/bin/OcrLiteOnnx
+    chmod +x /output/ocrlite/bin/OcrLiteOnnx
 
 
 FROM ubuntu:22.04 as runtime
