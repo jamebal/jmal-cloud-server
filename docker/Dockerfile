@@ -2,13 +2,39 @@ FROM ubuntu:22.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    ca-certificates wget curl unzip p7zip-full && \
+    apt-get install -y \
+      build-essential \
+      wget \
+      git \
+      pkg-config \
+      libjpeg-dev \
+      libpng-dev \
+      libtiff-dev \
+      libwebp-dev \
+      libheif-dev \
+      libde265-dev \
+      libfftw3-dev \
+      libopenexr-dev \
+      libxml2-dev \
+      libfreetype6-dev \
+      liblcms2-dev \
+      libfontconfig1-dev \
+      libx11-dev \
+      ca-certificates \
+      --no-install-recommends \
+      curl unzip p7zip-full && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
 ARG TARGETARCH
 ENV ARCH=${TARGETARCH}
+
+# 下载并编译安装 ImageMagick 7.x
+RUN git clone --depth 1 --branch 7.1.2-1 https://github.com/ImageMagick/ImageMagick.git ImageMagick-7.1.2-1 && \
+    cd ImageMagick-7.1.2-1 && \
+    ./configure --prefix=/opt/imagemagick --disable-static && \
+    make -j$(nproc) && \
+    make install
 
 RUN wget https://repo.jellyfin.org/files/ffmpeg/ubuntu/7.x/7.1.1-7/${ARCH}/jellyfin-ffmpeg7_7.1.1-7-jammy_${ARCH}.deb && \
     wget https://github.com/jamebal/jmal-cloud-server/releases/download/v2.14.0/mxcad_${ARCH}.zip && \
@@ -30,24 +56,37 @@ RUN mkdir -p /output/ocrlite/bin /output/ocrlite/models && \
 RUN chmod -R 777 /output/mxcad/mxcadassembly && chmod -R 777 /output/mxcad/mx/so/* && chmod +x /output/ocrlite/bin/OcrLiteOnnx
 
 
-FROM ubuntu:22.04
+FROM ubuntu:22.04 as runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
-# --- 1. 安装基础运行时依赖 ---
+# 安装基础运行时依赖 ---
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    gosu \
-    locales \
-    tesseract-ocr \
-    imagemagick \
-    poppler-utils \
-    p7zip-full \
-    unrar \
-    libheif-examples && \
+      gosu \
+      locales \
+      tesseract-ocr \
+      poppler-utils \
+      p7zip-full \
+      unrar && \
+      # 这些是imagemagick 7.x常见运行库
+      libjpeg-turbo8 \
+      libpng16-16 \
+      libtiff5 \
+      libwebp7 \
+      libheif1 \
+      libde265-0 \
+      libfftw3-double3 \
+      libopenexr25 \
+      libxml2 \
+      libfreetype6 \
+      liblcms2-2 \
+      libfontconfig1 \
+      libx11-6 \
+      ca-certificates && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# --- 2. 安装 ffmpeg ---
+# --- 安装 ffmpeg ---
 COPY --from=builder /build/ffmpeg_dependencies.txt /tmp/
 COPY --from=builder /build/jellyfin-ffmpeg7_7.1.1-7-jammy_*.deb /tmp/jellyfin-ffmpeg.deb
 
@@ -58,26 +97,27 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/ffmpeg_dependencies.txt /tmp/jellyfin-ffmpeg.deb
 
-# --- 3. 配置系统环境 (Locale, Timezone) ---
+# --- 配置系统环境 (Locale, Timezone) ---
 RUN locale-gen en_US.UTF-8 && \
     update-locale LANG=en_US.UTF-8 && \
     ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
-# --- 4. 从构建器阶段复制处理好的应用文件 ---
+# --- 从构建器阶段复制处理好的应用文件 ---
 COPY --from=builder /output/mxcad /usr/local/mxcad
 COPY --from=builder /output/mxcad/mx/locale /usr/local/share/locale
 COPY --from=builder /output/ocrlite/bin/OcrLiteOnnx /usr/local/bin/OcrLiteOnnx
 COPY --from=builder /output/ocrlite/models /jmalcloud/
+COPY --from=builder /opt/imagemagick /opt/imagemagick
 
-# --- 5. 复制配置文件和数据 ---
+# --- 复制配置文件和数据 ---
 RUN mkdir -p /jmalcloud/files /jmalcloud/tess4j/datapath
 COPY docker/ip2region.xdb /jmalcloud/
 COPY tess4j/datapath/chi_sim.traineddata /jmalcloud/tess4j/datapath/
 
-# --- 6. 设置环境变量 ---
+# --- 设置环境变量 ---
 ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US:en \
     LC_ALL=en_US.UTF-8 \
-    PATH="/usr/lib/jellyfin-ffmpeg:${PATH}"
+    PATH="/opt/imagemagick/bin:/usr/lib/jellyfin-ffmpeg:${PATH}"
 
 CMD ["bash"]
