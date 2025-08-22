@@ -62,7 +62,9 @@ RUN mkdir /opt/magick-libs && \
 
 FROM ubuntu:22.04 as runtime
 
-ENV DEBIAN_FRONTEND=noninteractive
+ARG TARGETARCH
+ENV ARCH=${TARGETARCH} DEBIAN_FRONTEND=noninteractive
+
 # 安装基础运行时依赖 ---
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
