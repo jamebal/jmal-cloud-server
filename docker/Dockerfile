@@ -55,6 +55,10 @@ RUN mkdir -p /output/ocrlite/bin /output/ocrlite/models && \
 # --- 设置权限 ---
 RUN chmod -R 777 /output/mxcad/mxcadassembly && chmod -R 777 /output/mxcad/mx/so/* && chmod +x /output/ocrlite/bin/OcrLiteOnnx
 
+# 提取依赖
+RUN mkdir /opt/magick-libs && \
+    ldd /opt/imagemagick/bin/magick | awk '{print $3}' | grep '^/' | xargs -I{} cp --parents {} /opt/magick-libs
+
 
 FROM ubuntu:22.04 as runtime
 
@@ -62,26 +66,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 # 安装基础运行时依赖 ---
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      gosu \
-      locales \
-      tesseract-ocr \
-      poppler-utils \
-      p7zip-full \
-      unrar \
-      libjpeg-turbo8 \
-      libpng16-16 \
-      libtiff5 \
-      libwebp7 \
-      libheif1 \
-      libde265-0 \
-      libfftw3-double3 \
-      libopenexr25 \
-      libxml2 \
-      libfreetype6 \
-      liblcms2-2 \
-      libfontconfig1 \
-      libx11-6 \
-      ca-certificates && \
+    gosu \
+    locales \
+    tesseract-ocr \
+    poppler-utils \
+    p7zip-full \
+    unrar \
+    libheif-examples && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -107,6 +98,7 @@ COPY --from=builder /output/mxcad/mx/locale /usr/local/share/locale
 COPY --from=builder /output/ocrlite/bin/OcrLiteOnnx /usr/local/bin/OcrLiteOnnx
 COPY --from=builder /output/ocrlite/models /jmalcloud/
 COPY --from=builder /opt/imagemagick /opt/imagemagick
+COPY --from=builder /opt/magick-libs /
 
 # --- 复制配置文件和数据 ---
 RUN mkdir -p /jmalcloud/files /jmalcloud/tess4j/datapath
