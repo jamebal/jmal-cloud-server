@@ -98,7 +98,8 @@ COPY --from=builder /output/mxcad/mx/locale /usr/local/share/locale
 COPY --from=builder /output/ocrlite/bin/OcrLiteOnnx /usr/local/bin/OcrLiteOnnx
 COPY --from=builder /output/ocrlite/models /jmalcloud/
 COPY --from=builder /opt/imagemagick /opt/imagemagick
-COPY --from=builder /opt/magick-libs /
+COPY --from=builder /opt/magick-libs/lib/${ARCH}-linux-gnu/ /lib/${ARCH}-linux-gnu/
+COPY --from=builder /opt/magick-libs/usr/lib/${ARCH}-linux-gnu/ /usr/lib/${ARCH}-linux-gnu/
 
 # --- 复制配置文件和数据 ---
 RUN mkdir -p /jmalcloud/files /jmalcloud/tess4j/datapath
