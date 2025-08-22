@@ -63,7 +63,18 @@ RUN mkdir /opt/magick-libs && \
 FROM ubuntu:22.04 as runtime
 
 ARG TARGETARCH
-ENV ARCH=${TARGETARCH} DEBIAN_FRONTEND=noninteractive
+ENV ARCHDIR=""
+RUN if [ "${TARGETARCH}" = "amd64" ]; then \
+      export ARCHDIR="x86_64-linux-gnu"; \
+    elif [ "${TARGETARCH}" = "arm64" ]; then \
+      export ARCHDIR="aarch64-linux-gnu"; \
+    else \
+      echo "Unsupported TARGETARCH: ${TARGETARCH}"; exit 1; \
+    fi && \
+    echo "ARCHDIR=${ARCHDIR}" > /tmp/archdir_env
+# 后面所有用${ARCHDIR}的地方，先读取
+ARG ARCHDIR
+ENV ARCHDIR=${ARCHDIR}
 
 # 安装基础运行时依赖 ---
 RUN apt-get update && \
@@ -100,8 +111,8 @@ COPY --from=builder /output/mxcad/mx/locale /usr/local/share/locale
 COPY --from=builder /output/ocrlite/bin/OcrLiteOnnx /usr/local/bin/OcrLiteOnnx
 COPY --from=builder /output/ocrlite/models /jmalcloud/
 COPY --from=builder /opt/imagemagick /opt/imagemagick
-COPY --from=builder /opt/magick-libs/lib/${ARCH}-linux-gnu/ /lib/${ARCH}-linux-gnu/
-COPY --from=builder /opt/magick-libs/usr/lib/${ARCH}-linux-gnu/ /usr/lib/${ARCH}-linux-gnu/
+COPY --from=builder /opt/magick-libs/lib/${ARCHDIR}-linux-gnu/ /lib/${ARCHDIR}-linux-gnu/
+COPY --from=builder /opt/magick-libs/usr/lib/${ARCHDIR}/ /usr/lib/${ARCHDIR}/
 
 # --- 复制配置文件和数据 ---
 RUN mkdir -p /jmalcloud/files /jmalcloud/tess4j/datapath
