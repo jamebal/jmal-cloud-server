@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.media;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.lang.ObjectId;
@@ -8,9 +9,11 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.util.CommandUtil;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.exec.*;
+import org.apache.commons.exec.CommandLine;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
@@ -76,7 +79,7 @@ public class ImageMagickProcessor {
      */
     public static void convertToWebpFile(InputStream originImageStream, File destFile) throws IOException {
         // 命令: magick - webp:output.webp
-        CommandLine commandLine = CommandLine.parse("magick");
+        CommandLine commandLine = new CommandLine("magick");
         commandLine.addArgument("-");
         commandLine.addArgument("webp:" + destFile.getAbsolutePath());
         CommandUtil.execCommand(commandLine, originImageStream, null);
@@ -89,10 +92,24 @@ public class ImageMagickProcessor {
      */
     public static void convertToWebp(InputStream originImageStream, OutputStream outputStream) {
         // 命令 : magick - webp:-
-        CommandLine commandLine = CommandLine.parse("magick");
+        CommandLine commandLine = new CommandLine("magick");
         commandLine.addArgument("-");
         commandLine.addArgument("webp:-");
         CommandUtil.execCommand(commandLine, originImageStream, outputStream);
+    }
+
+    /**
+     * 将图片转换为 WebP 格式并输出到指定的输出流
+     * @param srcFile 源文件，必须是图片格式
+     * @param outputStream 输出流，用于接收转换后的 WebP 数据
+     */
+    public static void toWebp(File srcFile, OutputStream outputStream) {
+        checkFile(srcFile);
+        // 构建 ImageMagick 命令行参数
+        CommandLine cmdLine = new CommandLine("magick");
+        cmdLine.addArgument(srcFile.getAbsolutePath(), false);
+        cmdLine.addArgument("webp:-", false);
+        CommandUtil.execCommand(cmdLine, null, outputStream);
     }
 
     /**
@@ -117,37 +134,6 @@ public class ImageMagickProcessor {
     }
 
     /**
-     * 生成带水印的缩略图 (替代 Thumbnails.of(...).watermark(...))
-     * 命令: convert original.jpg -resize 1280x1024 watermark.png -gravity SouthEast -compose over -composite -quality 80 watermarked_thumbnail.jpg
-     *
-     * @param originalImage  源文件
-     * @param watermarkImage 水印图片文件
-     * @param outputImage    目标文件
-     * @param width          目标宽度
-     * @param height         目标高度
-     * @param gravity        水印位置 (e.g., "SouthEast" for bottom-right)
-     * @param quality        输出图片质量 (1-100)
-     */
-    public void createWatermarkedThumbnail(File originalImage, File watermarkImage, File outputImage, int width, int height, String gravity, int quality) {
-        log.info("Creating watermarked thumbnail for '{}' -> '{}'", originalImage, outputImage);
-        // 命令: convert original.jpg -resize 1280x1024 watermark.png -gravity SouthEast -compose over -composite -quality 80 watermarked_thumbnail.jpg
-        CommandLine cmdLine = new CommandLine("magick");
-        cmdLine.addArgument(originalImage.getAbsolutePath(), false);
-        cmdLine.addArgument("-resize", false);
-        cmdLine.addArgument(width + "x" + height, false);
-        cmdLine.addArgument(watermarkImage.getAbsolutePath(), false);
-        cmdLine.addArgument("-gravity", false);
-        cmdLine.addArgument(gravity, false);
-        cmdLine.addArgument("-compose", false);
-        cmdLine.addArgument("over", false);
-        cmdLine.addArgument("-composite", false);
-        cmdLine.addArgument("-quality", false);
-        cmdLine.addArgument(String.valueOf(quality), false);
-        cmdLine.addArgument(outputImage.getAbsolutePath(), false);
-        CommandUtil.execCommand(cmdLine, null, null);
-    }
-
-    /**
      * 使用 ImageMagick 替换原有的 imageCrop 方法。
      * 根据给定参数对图片进行缩放和质量调整，并返回 JPG 格式的字节数组。
      *
@@ -158,18 +144,13 @@ public class ImageMagickProcessor {
      * @param outputStream 输出流，用于接收处理后的图片数据
      */
     public static void cropImage(File srcFile, String q, String w, String h, OutputStream outputStream) throws IOException, InterruptedException {
-        if (srcFile == null || !srcFile.exists() || !srcFile.isFile()) {
-            log.error("Invalid source file: {}", srcFile);
-            throw new CommonException(ExceptionType.FILE_NOT_FIND);
-        }
+        checkFile(srcFile);
         // 1. 获取源图片尺寸
-        int[] dimensions = getImageDimensions(srcFile);
-        if (dimensions == null) {
+        ImageFormat imageFormat = identifyFormat(srcFile);
+        if (imageFormat == null) {
             log.error("Could not get dimensions for file, aborting crop: {}", srcFile.getAbsolutePath());
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
-        int srcWidth = dimensions[0];
-        int srcHeight = dimensions[1];
 
         // 2. 解析输入参数
         double quality = parseQuality(q);
@@ -177,8 +158,15 @@ public class ImageMagickProcessor {
         int targetHeight = parseDimension(h);
 
         // 3. 构建 ImageMagick 命令
-        CommandLine cmdLine = buildImageMagickThumbnailCommand(srcFile, targetWidth, srcWidth, targetHeight, srcHeight, quality);
+        CommandLine cmdLine = buildImageMagickThumbnailCommand(srcFile, targetWidth, imageFormat.getWidth(), targetHeight, imageFormat.getHeight(), quality);
         CommandUtil.execCommand(cmdLine, null, outputStream);
+    }
+
+    private static void checkFile(File srcFile) {
+        if (srcFile == null || !srcFile.exists() || !srcFile.isFile()) {
+            log.error("Invalid source file: {}", srcFile);
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
     }
 
     /**
@@ -209,9 +197,7 @@ public class ImageMagickProcessor {
         cmdLine.addArgument("-quality", false);
         // ImageMagick 质量是 0-100
         cmdLine.addArgument(String.valueOf((int) (quality * 100)), false);
-        String suffix = FileUtil.extName(srcFile);
-        // 指定输出格式为 suffix, 并输出到 stdout
-        cmdLine.addArgument(suffix + ":-", false);
+        cmdLine.addArgument("png:-", false);
         return cmdLine;
     }
 
@@ -222,26 +208,48 @@ public class ImageMagickProcessor {
      * @param imageFile 图片文件
      * @return 一个包含 [width, height] 的数组，如果失败则返回 null
      */
-    public static int[] getImageDimensions(File imageFile) {
+    public static ImageFormat identifyFormat(File imageFile) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        CommandLine cmdLine = CommandLine.parse("identify");
+
+        CommandLine cmdLine = new CommandLine("magick");
+        cmdLine.addArgument("identify", false);
         cmdLine.addArgument("-format", false);
-        cmdLine.addArgument("%w %h", false);
+        cmdLine.addArgument(ImageFormat.DEFAULT_FORMAT_PARAM, false);
         cmdLine.addArgument(imageFile.getAbsolutePath(), false);
         CommandUtil.execCommand(cmdLine, null, outputStream);
 
         String output = IoUtil.toStr(outputStream, StandardCharsets.UTF_8);
 
-        String[] dimensions = output.trim().split(" ");
-        if (dimensions.length == 2) {
-            try {
-                return new int[]{Integer.parseInt(dimensions[0]), Integer.parseInt(dimensions[1])};
-            } catch (NumberFormatException e) {
-                log.error("Failed to parse dimensions from identify output: {}", output);
-                return null;
+        return ImageFormat.getImageFormat(output);
+    }
+
+    @Builder
+    @Getter
+    public static class ImageFormat {
+        public static final String DEFAULT_FORMAT_PARAM = "%m %e %w %h";
+        private String format;
+        private String ext;
+        private Integer width;
+        private Integer height;
+
+        public static ImageFormat getImageFormat(String output) {
+            int formatLength = DEFAULT_FORMAT_PARAM.split(" ").length;
+            String[] formats = output.trim().split(" ");
+            if (formats.length == formatLength) {
+                try {
+                    return ImageFormat.builder()
+                            .format(formats[0])
+                            .ext(formats[1])
+                            .width(Convert.toInt(formats[2], 0))
+                            .height(Convert.toInt(formats[3], 0))
+                            .build();
+                } catch (NumberFormatException e) {
+                    log.error("Failed to parse dimensions from identify output: {}", output);
+                    return null;
+                }
             }
+            return null;
         }
-        return null;
     }
 
     /**

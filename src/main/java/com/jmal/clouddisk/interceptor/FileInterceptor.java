@@ -97,7 +97,7 @@ public class FileInterceptor implements HandlerInterceptor {
         Path path = Paths.get(request.getRequestURI());
         String filename = getDownloadFilename(request, path);
         String operation = request.getParameter(OPERATION);
-
+        setHeader(request, response);
         if (!CharSequenceUtil.isBlank(operation)) {
             switch (operation) {
                 case DOWNLOAD -> {
@@ -117,18 +117,29 @@ public class FileInterceptor implements HandlerInterceptor {
         } else {
             return !previewOssFile(request, response, path);
         }
-        setHeader(request, response);
         return true;
     }
 
-    private void setHeader(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
+    private void previewImageFile(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        File file = getFileByRequest(request);
+        if (!file.exists() || !file.isFile() || !file.canRead()) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        }
+        responseHeader(response, file.getName());
+        ImageMagickProcessor.toWebp(file, response.getOutputStream());
+    }
+
+    private void setHeader(HttpServletRequest request, HttpServletResponse response) {
         FileDocument fileDocument = getFileDocument(Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8)));
+        if (fileDocument == null) {
+            return;
+        }
         String contentType = fileDocument.getContentType();
         if (CharSequenceUtil.isNotBlank(contentType) && contentType.contains("/")) {
             response.setHeader(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType());
         }
         if (fileDocument.getEtag() != null) {
-            response.setHeader(HttpHeaders.ETAG, "\"" + fileDocument.getEtag() + "\"");
+            response.setHeader(HttpHeaders.ETAG, fileDocument.getEtag());
         }
         setCacheControl(request, response);
     }
@@ -204,11 +215,16 @@ public class FileInterceptor implements HandlerInterceptor {
     /**
      * 预览oss文件
      */
-    private boolean previewOssFile(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, Path path) {
+    private boolean previewOssFile(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, Path path) throws IOException {
         Path prePth = path.subpath(1, path.getNameCount());
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (CharSequenceUtil.isNotBlank(ossPath)) {
             webOssService.download(ossPath, prePth, request, response, null);
+            return true;
+        }
+        String extName = MyFileUtils.extName(prePth.getFileName().toString());
+        if ("dng".equals(extName) || "heic".equals(extName) || "heif".equals(extName) || "tiff".equals(extName)) {
+            previewImageFile(request, response);
             return true;
         }
         return false;
@@ -252,6 +268,9 @@ public class FileInterceptor implements HandlerInterceptor {
         if (!isNotAllowAccess(fileDocument, request)) {
             // 判断当前uri所属的文件是否为已分享的文件或其子文件
             FileDocument thisFile = getFileDocument(uriPath);
+            if (thisFile == null) {
+                return true;
+            }
             if (thisFile.getPath().equals(fileDocument.getPath())) {
                 return false;
             }
@@ -327,6 +346,9 @@ public class FileInterceptor implements HandlerInterceptor {
 
     private FileDocument getFileDocument(Path uriPath, boolean excludeContent) {
         String username = uriPath.getName(1).toString();
+        if (uriPath.getNameCount() <= 2) {
+            return null;
+        }
         String path = File.separator;
         if (uriPath.getNameCount() > MIN_COUNT + 1) {
             path = File.separator + uriPath.subpath(MIN_COUNT, uriPath.getNameCount()).getParent().toString() + File.separator;
@@ -344,8 +366,8 @@ public class FileInterceptor implements HandlerInterceptor {
         String q = request.getParameter("q");
         String w = request.getParameter("w");
         String h = request.getParameter("h");
-        ImageMagickProcessor.cropImage(file, q, w, h, response.getOutputStream());
         responseHeader(response, file.getName());
+        ImageMagickProcessor.cropImage(file, q, w, h, response.getOutputStream());
     }
 
     private File getFileByRequest(HttpServletRequest request) {

@@ -414,13 +414,13 @@ public class CommonUserFileService {
 
     private void processImage(File file, Update update) {
         // 获取图片尺寸
-        int[] dimensions = ImageMagickProcessor.getImageDimensions(file);
-        if (dimensions != null) {
-            int srcWidth = dimensions[0];
-            int srcHeight = dimensions[1];
+        ImageMagickProcessor.ImageFormat imageFormat = ImageMagickProcessor.identifyFormat(file);
+        if (imageFormat != null) {
+            int srcWidth = imageFormat.getWidth();
+            int srcHeight = imageFormat.getHeight();
             if (srcWidth > 0 && srcHeight > 0) {
-                update.set("w", srcWidth);
-                update.set("h", srcHeight);
+                update.set("w", imageFormat.getWidth());
+                update.set("h", imageFormat.getHeight());
             }
         }
         // 获取图片Exif信息
@@ -431,14 +431,6 @@ public class CommonUserFileService {
 
     private File replaceWebp(String userId, File file, String username) {
         String suffix = FileUtil.getSuffix(file).toLowerCase();
-        // 判断是否为heic格式
-        if ("heic".equals(suffix)) {
-            String output = HeifUtils.heifConvert(file.getAbsolutePath(), Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username));
-            if (output != null) {
-                FileUtil.del(file);
-                return null;
-            }
-        }
 
         if (getDisabledWebp(userId) || ("ico".equals(suffix))) {
             return file;

@@ -665,6 +665,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public Optional<FileDocument> coverOfMedia(String id, String username) throws CommonException {
+        username = userLoginHolder.getUsername();
         FileDocument fileDocument = commonFileService.getFileDocumentById(id, false);
         if (fileDocument != null && fileDocument.getContent() != null) {
             return Optional.of(fileDocument);

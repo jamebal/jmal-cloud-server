@@ -60,17 +60,4 @@ public class CommandUtil {
         }
     }
 
-    public static void main(String[] args) {
-        // CommandLine cmdLine = CommandLine.parse("identify -help");
-        CommandLine cmdLine = new CommandLine("identify");
-        // CommandLine cmdLine = CommandLine.parse("identify -format \"%w %h\" \"/Users/jmal/Pictures/截图/截屏2025-03-11 22.17.33.png\"");
-        cmdLine.addArgument("-ping", false);
-        cmdLine.addArgument("/Users/jmal/Pictures/截图/截屏2025-03-11 22.17.33.png", false);
-        try (InputStream inputStream = System.in; OutputStream outputStream = System.out) {
-            execCommand(cmdLine, inputStream, outputStream);
-        } catch (IOException e) {
-            log.error("Error executing command: {}", e.getMessage());
-        }
-    }
-
 }
