@@ -20,7 +20,7 @@ ENV TESS4J_DATA_PATH /jmalcloud/tess4j/datapath
 
 # 从构建器阶段复制编译好的可执行文件
 # Spring Boot GraalVM 插件默认会将可执行文件放在 target 目录
-COPY docker-entrypoint.sh target /app/
+COPY docker-entrypoint.sh target/jmalcloud target/*.so /app/
 
 RUN chmod +x /app/jmalcloud && chmod +x /app/docker-entrypoint.sh
 
