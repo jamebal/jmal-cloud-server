@@ -21,7 +21,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lucene.version>10.2.2</lucene.version>
         <zxing.version>3.5.3</zxing.version>
-        <native-image.addArgs>-march=compatibility -J-Xmx15g</native-image.addArgs>
+        <native-image.addArgs>-march=compatibility</native-image.addArgs>
+        <native-mage.jvmArgs>-Xmx15g</native-mage.jvmArgs>
     </properties>
 
     <repositories>
@@ -441,6 +442,9 @@
                             </execution>
                         </executions>
                         <configuration>
+                            <jvmArgs>
+                                <jvmArg>${native-mage.jvmArgs}</jvmArg>
+                            </jvmArgs>
                             <buildArgs combine.children="append">
 <!--                                <buildArg>&#45;&#45;enable-monitoring=jmxserver,jmxclient,jvmstat</buildArg>-->
                                 <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
