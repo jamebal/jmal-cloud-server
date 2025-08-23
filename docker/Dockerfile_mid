@@ -4,7 +4,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 ARG TARGETARCH
 ENV ARCH=${TARGETARCH}
 
-RUN apt-get update && \
+RUN chmod 1777 /tmp && \
+    apt-get update && \
     apt-get install -y wget unzip && \
     mkdir -p /temp && \
     cd /temp && \
