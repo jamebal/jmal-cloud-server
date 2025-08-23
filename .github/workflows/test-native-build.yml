@@ -41,7 +41,7 @@ jobs:
       # 构建带插桩的 Native Image
       - name: Build Instrumented Native Image
         run: |
-          mvn clean package -Pnative -DskipTests -Dnative-mage.jvmArgs="-Xmx20g" -Dnative-image.addArgs="-march=compatibility --pgo-instrument -o target/jmalcloud-instrumented"
+          mvn clean package -Pnative -DskipTests -Dnative-mage.jvmArgs="-Xmx20g" -Dnative-image.addArgs="--pgo-instrument -o target/jmalcloud-instrumented"
 
       # 运行插桩程序以生成 Profile 文件
       - name: Run Instrumented App to Generate Profile
@@ -106,7 +106,7 @@ jobs:
 
       # 使用 Profile 文件构建最终优化的 Native Image -march=compatibility
       - name: Build PGO-Optimized Native Image -march=compatibility
-        run: mvn clean package -Pnative -DskipTests -Dnative-mage.jvmArgs="-Xmx15g" -Dnative-image.addArgs="-march=compatibility --pgo=jmalcloud.iprof -o target/jmalcloud"
+        run: mvn clean package -Pnative -DskipTests -Dnative-mage.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--pgo=jmalcloud.iprof -o target/jmalcloud"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
