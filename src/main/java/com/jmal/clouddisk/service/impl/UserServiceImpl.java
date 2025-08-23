@@ -19,6 +19,7 @@ import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -230,6 +231,11 @@ public class UserServiceImpl implements IUserService {
     @Override
     public ResponseResult<ConsumerDTO> userInfo(String id) {
         ConsumerDO consumer = mongoTemplate.findById(id, ConsumerDO.class, COLLECTION_NAME);
+        return getConsumerDTOResponseResult(consumer);
+    }
+
+    @NotNull
+    private ResponseResult<ConsumerDTO> getConsumerDTOResponseResult(ConsumerDO consumer) {
         if (consumer == null) {
             return ResultUtil.success(new ConsumerDTO());
         }
@@ -256,10 +262,11 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public ResponseResult<ConsumerDTO> info() {
-        if (StrUtil.isBlank(userLoginHolder.getUserId())) {
+        if (StrUtil.isBlank(userLoginHolder.getUsername())) {
             return ResultUtil.success(new ConsumerDTO());
         }
-        return userInfo(userLoginHolder.getUserId());
+        ConsumerDO consumerDO = getUserInfoByUsername(userLoginHolder.getUsername());
+        return getConsumerDTOResponseResult(consumerDO);
     }
 
     @Override

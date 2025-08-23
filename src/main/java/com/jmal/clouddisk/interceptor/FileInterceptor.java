@@ -72,7 +72,7 @@ public class FileInterceptor implements HandlerInterceptor {
     /***
      * 路径最小层级
      */
-    private static final int MIN_COUNT = 2;
+    private static final int MIN_COUNT = 3;
 
     private final FileProperties fileProperties;
 
@@ -125,7 +125,7 @@ public class FileInterceptor implements HandlerInterceptor {
         if (!file.exists() || !file.isFile() || !file.canRead()) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         }
-        responseHeader(response, file.getName());
+        responseImageFileHeader(response, file.getName());
         ImageMagickProcessor.toWebp(file, response.getOutputStream());
     }
 
@@ -194,7 +194,7 @@ public class FileInterceptor implements HandlerInterceptor {
     }
 
     private boolean downloadOssFile(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, String filename, Path path) {
-        Path prePth = path.subpath(1, path.getNameCount());
+        Path prePth = path.subpath(MIN_COUNT - 1, path.getNameCount());
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
             webOssService.download(ossPath, prePth, request, response, filename);
@@ -216,7 +216,7 @@ public class FileInterceptor implements HandlerInterceptor {
      * 预览oss文件
      */
     private boolean previewOssFile(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, Path path) throws IOException {
-        Path prePth = path.subpath(1, path.getNameCount());
+        Path prePth = path.subpath(MIN_COUNT - 1, path.getNameCount());
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (CharSequenceUtil.isNotBlank(ossPath)) {
             webOssService.download(ossPath, prePth, request, response, null);
@@ -256,7 +256,7 @@ public class FileInterceptor implements HandlerInterceptor {
             if (nameCount == MIN_COUNT && path.startsWith("logo")) {
                 return false;
             }
-            if (!CharSequenceUtil.isBlank(username) && username.equals(uriPath.getName(1).toString())) {
+            if (!CharSequenceUtil.isBlank(username) && username.equals(uriPath.getName(MIN_COUNT - 1).toString())) {
                 return false;
             }
             return isNotAllowAccess(getFileDocument(uriPath), request);
@@ -302,12 +302,10 @@ public class FileInterceptor implements HandlerInterceptor {
     }
 
     private void webp(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
-        uriPath = uriPath.subpath(1, uriPath.getNameCount());
-        File file = Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
+        File file = getFileByRequest(request);
         FileInputStream fileInputStream = new FileInputStream(file);
+        responseImageFileHeader(response, file.getName());
         ImageMagickProcessor.convertToWebp(fileInputStream, response.getOutputStream());
-
     }
 
     private void thumbnail(HttpServletRequest request, HttpServletResponse response) throws FileNotFoundException {
@@ -321,7 +319,7 @@ public class FileInterceptor implements HandlerInterceptor {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-        Path relativePath = uriPath.subpath(1, uriPath.getNameCount());
+        Path relativePath = uriPath.subpath(MIN_COUNT - 1, uriPath.getNameCount());
         InputStream inputStream;
         if (fileDocument.getContent() == null) {
             File file = Paths.get(fileProperties.getRootDir(), relativePath.toString()).toFile();
@@ -333,7 +331,7 @@ public class FileInterceptor implements HandlerInterceptor {
         } else {
             inputStream = new ByteArrayInputStream(fileDocument.getContent());
         }
-        responseHeader(response, fileDocument.getName());
+        responseImageFileHeader(response, fileDocument.getName());
         try (ServletOutputStream outputStream = response.getOutputStream()) {
             IoUtil.copy(inputStream, outputStream);
         } catch (IOException e) {
@@ -345,8 +343,8 @@ public class FileInterceptor implements HandlerInterceptor {
     }
 
     private FileDocument getFileDocument(Path uriPath, boolean excludeContent) {
-        String username = uriPath.getName(1).toString();
-        if (uriPath.getNameCount() <= 2) {
+        String username = uriPath.getName(MIN_COUNT - 1).toString();
+        if (uriPath.getNameCount() <= MIN_COUNT) {
             return null;
         }
         String path = File.separator;
@@ -366,17 +364,17 @@ public class FileInterceptor implements HandlerInterceptor {
         String q = request.getParameter("q");
         String w = request.getParameter("w");
         String h = request.getParameter("h");
-        responseHeader(response, file.getName());
+        responseImageFileHeader(response, file.getName());
         ImageMagickProcessor.cropImage(file, q, w, h, response.getOutputStream());
     }
 
     private File getFileByRequest(HttpServletRequest request) {
         Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
-        uriPath = uriPath.subpath(1, uriPath.getNameCount());
+        uriPath = uriPath.subpath(MIN_COUNT - 1, uriPath.getNameCount());
         return Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
     }
 
-    private void responseHeader(HttpServletResponse response, String fileName) {
+    private void responseImageFileHeader(HttpServletResponse response, String fileName) {
         if (!CharSequenceUtil.isBlank(fileName)) {
             response.setHeader(HttpHeaders.CONTENT_TYPE, FileContentTypeUtils.getContentType(MyFileUtils.extName(fileName)));
         }

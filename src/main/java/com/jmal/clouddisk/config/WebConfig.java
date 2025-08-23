@@ -37,6 +37,12 @@ public class WebConfig implements WebMvcConfigurer {
 
     private final PreFileInterceptor preFileInterceptor;
 
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        // 只给@RestController加/api前缀
+        configurer.addPathPrefix("/api", c -> c.isAnnotationPresent(org.springframework.web.bind.annotation.RestController.class));
+    }
+
     /**
      * 注册拦截器
      */
@@ -44,21 +50,21 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(localeChangeInterceptor());
 
-		registry.addInterceptor(authInterceptor).addPathPatterns("/**").
-				excludePathPatterns("/", "/login/**", "/public/**", "/articles/**", "/error/**", "/file/**" , "/pre-file/**" , "/share-file/**", "/direct-file/**" , "/files/**","/swagger-ui/**");
+		registry.addInterceptor(authInterceptor).addPathPatterns("/api/**").
+				excludePathPatterns("/api", "/api/login/**", "/api/public/**", "/articles/**", "/api/error/**", "/api/file/**" , "/api/pre-file/**" , "/api/share-file/**", "/api/direct-file/**" , "/api/files/**","/api/swagger-ui/**");
 
-        registry.addInterceptor(fileInterceptor).addPathPatterns("/file/**").addPathPatterns("/files/**");
+        registry.addInterceptor(fileInterceptor).addPathPatterns("/api/file/**").addPathPatterns("/api/files/**");
 
-        registry.addInterceptor(shareFileInterceptor).addPathPatterns("/share-file/{fileId}/{token}/**");
+        registry.addInterceptor(shareFileInterceptor).addPathPatterns("/api/share-file/{fileId}/{token}/**");
 
-        registry.addInterceptor(directFileInterceptor).addPathPatterns("/direct-file/{mark}/{filename}");
+        registry.addInterceptor(directFileInterceptor).addPathPatterns("/api/direct-file/{mark}/{filename}");
 
-        registry.addInterceptor(preFileInterceptor).addPathPatterns("/pre-file/{fileId}/**");
+        registry.addInterceptor(preFileInterceptor).addPathPatterns("/api/pre-file/{fileId}/**");
     }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/file/**")
+        registry.addResourceHandler("/api/file/**")
                 .addResourceLocations("file:" + fileProperties.getRootDir() + File.separator);
         log.info("静态资源目录:{}", fileProperties.getRootDir() + File.separator);
     }
