@@ -21,9 +21,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lucene.version>10.2.2</lucene.version>
         <zxing.version>3.5.3</zxing.version>
-        <native.march.arg>-march=compatibility</native.march.arg>
-        <native.gc.arg>--gc=serial</native.gc.arg>
-        <native.xmx.arg>-J-Xmx15g</native.xmx.arg>
+        <native-image.addArgs>-march=compatibility -J-Xmx15g</native-image.addArgs>
     </properties>
 
     <repositories>
@@ -443,18 +441,14 @@
                             </execution>
                         </executions>
                         <configuration>
-                            <buildArgs>
-                                <buildArg>${native.xmx.arg}</buildArg>
-                                <buildArg>${native.march.arg}</buildArg>
-                                <buildArg>${native.gc.arg}</buildArg>
-                                <buildArg>${native.pgo.arg}</buildArg>
-                                <buildArg>${native.output.arg}</buildArg>
+                            <buildArgs combine.children="append">
 <!--                                <buildArg>&#45;&#45;enable-monitoring=jmxserver,jmxclient,jvmstat</buildArg>-->
                                 <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
                                 <buildArg>-H:+AddAllCharsets</buildArg>
                                 <buildArg>-H:+AllowIncompleteClasspath</buildArg>
                                 <buildArg>--enable-http</buildArg>
                                 <buildArg>--enable-https</buildArg>
+                                <buildArg>${native-image.addArgs}</buildArg>
                             </buildArgs>
                         </configuration>
                     </plugin>
