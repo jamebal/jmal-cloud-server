@@ -1,10 +1,13 @@
 FROM ghcr.io/jamebal/jmalcloud_base:latest
 
+ENV DEBIAN_FRONTEND=noninteractive
 ARG TARGETARCH
 ENV ARCH=${TARGETARCH}
 
 RUN apt-get update && \
     apt-get install -y wget unzip && \
+    mkdir -p /temp && \
+    cd /temp && \
     wget https://github.com/jamebal/jmal-cloud-server/releases/download/v2.14.0/mxcad_${ARCH}.zip && \
     \
     # 解压 mxcad
