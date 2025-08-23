@@ -1,24 +1,21 @@
-FROM ubuntu:22.04 AS builder
+FROM ghcr.io/jamebal/jmalcloud_base:latest
 
-ENV DEBIAN_FRONTEND=noninteractive
-
-WORKDIR /build
 ARG TARGETARCH
 ENV ARCH=${TARGETARCH}
 
 RUN apt-get update && \
-    apt-get install -y wget && \
+    apt-get install -y wget unzip && \
     wget https://github.com/jamebal/jmal-cloud-server/releases/download/v2.14.0/mxcad_${ARCH}.zip && \
     \
     # 解压 mxcad
-    unzip -o mxcad_${ARCH}.zip -d /output && \
-    mv /output/mxcad_${ARCH} /output/mxcad && \
-    chmod -R 777 /output/mxcad/mxcadassembly && \
-    chmod -R 777 /output/mxcad/mx/so/* && \
-
-
-FROM ghcr.io/jamebal/jmalcloud_base:latest
-
-# --- 从构建器阶段复制处理好的应用文件 ---
-COPY --from=builder /output/mxcad /usr/local/mxcad
-COPY --from=builder /output/mxcad/mx/locale /usr/local/share/locale
+    unzip -o mxcad_${ARCH}.zip -d /temp && \
+    mv /temp/mxcad_${ARCH} /temp/mxcad && \
+    chmod -R 755 /temp/mxcad/mxcadassembly && \
+    chmod -R 755 /temp/mxcad/mx/so/* && \
+    cp -r /temp/mxcad /usr/local/ && \
+    cp -r /temp/mxcad/mx/locale /usr/local/share/ && \
+    # 清理工作
+    apt-get purge -y --auto-remove wget unzip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /temp/ && \
