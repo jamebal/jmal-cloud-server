@@ -65,7 +65,7 @@ file:
   encryptionSalt: ${ENCRYPTION_SALT}
 
   # 前端资源路径
-  frontResourcePath: /Users/jmal/studio/myProject/github/jmal-cloud-view/dist/
+  frontendResourcePath: /Users/jmal/studio/myProject/github/jmal-cloud-view/dist/
   # pdfjs资源路径
   pdfjsResourcePath: /Users/jmal/Downloads/pdfjs/
   # drawio资源路径

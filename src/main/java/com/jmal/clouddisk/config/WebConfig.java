@@ -69,7 +69,7 @@ public class WebConfig implements WebMvcConfigurer {
 
         // 前端资源
         registry.addResourceHandler("/**")
-                .addResourceLocations("file:" + fileProperties.getFrontResourcePath());
+                .addResourceLocations("file:" + fileProperties.getFrontendResourcePath());
         // pdfjs
         registry.addResourceHandler("/pdf.js/**")
                 .addResourceLocations("file:" + fileProperties.getPdfjsResourcePath());
