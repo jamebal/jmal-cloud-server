@@ -42,8 +42,11 @@ jobs:
           npm run build:prod
 
       - name: rename frontend dist
+        working-directory: ./frontend
         run: |
-          mv frontend/dist frontend/frontend_dist
+          mkdir -p frontend
+          mv dist/ frontend/
+          mv frontend/dist/ frontend/frontend/
 
       - name: Add Maven to PATH
         run: |

@@ -21,7 +21,7 @@ exec gosu ${USER_UID}:${USER_GID} /app/jmalcloud ${JVM_OPTS} \
  --spring.profiles.active=${RUN_ENVIRONMENT} \
  --spring.data.mongodb.uri=${MONGODB_URI} \
  --tess4j.data-path=${TESS4J_DATA_PATH} \
- --file.frontendResourcePath=/app/frontend/frontend_dist/ \
+ --file.frontendResourcePath=/app/frontend/ \
  --file.exactSearch=${EXACT_SEARCH} \
  --file.ngramMaxContentLengthMB=${NGRAM_MAX_CONTENT_LENGTH_MB} \
  --file.ngramMinSize=${NGRAM_MIN_SIZE} \
