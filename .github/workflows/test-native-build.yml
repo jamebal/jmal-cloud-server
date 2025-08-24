@@ -9,12 +9,8 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            os: ubuntu-latest
-            march: x86-64-v3
             self_hosted_label: [self-hosted, Linux, X64]
           - arch: arm64
-            os: ubuntu-22.04-arm
-            march: armv8-a
             self_hosted_label: [self-hosted, Linux, ARM64]
 
     runs-on: ${{ matrix.self_hosted_label }}
@@ -139,12 +135,8 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            os: ubuntu-latest
-            march: x86-64-v3
             self_hosted_label: [self-hosted, Linux, X64]
           - arch: arm64
-            os: ubuntu-22.04-arm
-            march: armv8-a
             self_hosted_label: [self-hosted, Linux, ARM64]
     runs-on: ${{ matrix.self_hosted_label }}
 
