@@ -21,7 +21,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lucene.version>10.2.2</lucene.version>
         <zxing.version>3.5.3</zxing.version>
-        <native-mage.jvmArgs>-Xmx15g</native-mage.jvmArgs>
+        <native-image.jvmArgs>-Xmx15g</native-image.jvmArgs>
         <native-image.march>-march=compatibility</native-image.march>
         <native-image.addArgs>--gc=serial</native-image.addArgs>
     </properties>
@@ -444,7 +444,7 @@
                         </executions>
                         <configuration>
                             <jvmArgs>
-                                <jvmArg>${native-mage.jvmArgs}</jvmArg>
+                                <jvmArg>${native-image.jvmArgs}</jvmArg>
                             </jvmArgs>
                             <buildArgs>
                                 <buildArg>${native-image.march}</buildArg>

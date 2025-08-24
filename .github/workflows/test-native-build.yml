@@ -66,7 +66,7 @@ jobs:
       # 构建带插桩的 Native Image
       - name: Build Instrumented Native Image
         run: |
-          mvn clean package -Pnative -DskipTests -Dnative-mage.jvmArgs="-Xmx20g" -Dnative-image.addArgs="--pgo-instrument -o target/jmalcloud-instrumented"
+          mvn clean package -Pnative -DskipTests -Dnative-image.jvmArgs="-Xmx20g" -Dnative-image.addArgs="--pgo-instrument -o target/jmalcloud-instrumented"
 
       # 运行插桩程序以生成 Profile 文件
       - name: Run Instrumented App to Generate Profile
@@ -131,8 +131,24 @@ jobs:
 
       # 使用 Profile 文件构建最终优化的 Native Image -march=compatibility
       - name: Build PGO-Optimized Native Image -march=compatibility
-        run: mvn clean package -Pnative -DskipTests -Dnative-mage.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--pgo=jmalcloud.iprof -o target/jmalcloud"
+        run: mvn clean package -Pnative -DskipTests -Dnative-image.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--pgo=jmalcloud.iprof -o target/jmalcloud"
 
+  build-docker-and-push:
+    needs: build-per-arch
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            os: ubuntu-latest
+            march: x86-64-v3
+            self_hosted_label: [self-hosted, Linux, X64]
+          - arch: arm64
+            os: ubuntu-22.04-arm
+            march: armv8-a
+            self_hosted_label: [self-hosted, Linux, ARM64]
+    runs-on: ${{ matrix.self_hosted_label }}
+
+    steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -177,12 +193,12 @@ jobs:
         run: |
           echo "--- Inspecting Docker Hub image ---"
           docker manifest inspect jmal/jmalcloud_native:test-${{ matrix.arch }}
-          
+
           echo "--- Inspecting GHCR image ---"
           docker manifest inspect ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-${{ matrix.arch }}
 
   merge-manifests:
-    needs: build-per-arch
+    needs: build-docker-and-push
     runs-on: ubuntu-latest
 
     steps:
