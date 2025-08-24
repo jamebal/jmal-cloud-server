@@ -80,6 +80,10 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/excalidraw/app/**")
                 .addResourceLocations("file:" + fileProperties.getExcalidrawResourcePath());
 
+        // 博客静态资源
+        registry.addResourceHandler("/articles/**")
+                .addResourceLocations("classpath:/static/articles/");
+
         log.debug("网盘文件根目录:{}", fileProperties.getRootDir() + File.separator);
     }
 
