@@ -35,13 +35,11 @@ jobs:
         with:
           node-version: 16.20.2
 
-      - name: Install frontend dependencies
+      - name: Install frontend dependencies and Build
         working-directory: ./frontend
-        run: npm install
-
-      - name: Build frontend
-        working-directory: ./frontend
-        run: npm run build:prod
+        run: |
+          npm install
+          npm run build:prod
 
       - name: rename frontend dist
         run: |
