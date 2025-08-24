@@ -66,7 +66,21 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/api/file/**")
                 .addResourceLocations("file:" + fileProperties.getRootDir() + File.separator);
-        log.info("静态资源目录:{}", fileProperties.getRootDir() + File.separator);
+
+        // 前端资源
+        registry.addResourceHandler("/**")
+                .addResourceLocations("file:" + fileProperties.getFrontResourcePath());
+        // pdfjs
+        registry.addResourceHandler("/pdf.js/**")
+                .addResourceLocations("file:" + fileProperties.getPdfjsResourcePath());
+        // drawio
+        registry.addResourceHandler("/drawio/webapp/**")
+                .addResourceLocations("file:" + fileProperties.getDrawioResourcePath());
+        // excalidraw
+        registry.addResourceHandler("/excalidraw/app/**")
+                .addResourceLocations("file:" + fileProperties.getExcalidrawResourcePath());
+
+        log.debug("网盘文件根目录:{}", fileProperties.getRootDir() + File.separator);
     }
 
     public AsyncTaskExecutor taskExecutor() {

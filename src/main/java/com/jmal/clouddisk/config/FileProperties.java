@@ -121,6 +121,14 @@ public class FileProperties {
      */
     private Integer ngramMaxSize = 6;
 
+    private String frontResourcePath = "/app/jmal-cloud-view/dist/";
+
+    private String pdfjsResourcePath = "/app/preview/pdfjs/";
+
+    private String drawioResourcePath = "/app/preview/draw/";
+
+    private String excalidrawResourcePath = "/app/preview/excalidraw/";
+
     public void setIp2regionDbPath(String path) {
         Path dbPath = Paths.get(path);
         if (!PathUtil.exists(dbPath, true)) {
