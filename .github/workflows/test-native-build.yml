@@ -23,9 +23,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Add Maven to PATH
+      # 拉取前端项目代码
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          repository: jamebal/jmal-cloud-view
+          path: frontend
+
+      - name: Set up Node.js 16.20.2
+        uses: actions/setup-node@v4
+        with:
+          node-version: 16.20.2
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build:prod
+
+      - name: rename frontend dist
         run: |
-          echo "/opt/maven/bin" >> $GITHUB_PATH
+          mv frontend/dist frontend/frontend_dist
 
       - name: Set up GraalVM for Native Image
         uses: graalvm/setup-graalvm@v1

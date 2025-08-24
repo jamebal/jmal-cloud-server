@@ -121,7 +121,7 @@ public class FileProperties {
      */
     private Integer ngramMaxSize = 6;
 
-    private String frontendResourcePath = "/app/jmal-cloud-view/dist/";
+    private String frontendResourcePath = "/app/frontend/dist/";
 
     private String pdfjsResourcePath = "/app/preview/pdfjs/";
 
