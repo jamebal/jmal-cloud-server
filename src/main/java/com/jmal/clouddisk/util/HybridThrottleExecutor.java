@@ -1,5 +1,7 @@
 package com.jmal.clouddisk.util;
 
+import cn.hutool.core.thread.ThreadUtil;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -9,7 +11,7 @@ import java.util.concurrent.TimeUnit;
  * 混合节流执行器
  */
 public class HybridThrottleExecutor {
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, ThreadUtil.createThreadFactory("hybrid-throttle-executor"));
     private ScheduledFuture<?> scheduledFuture;
     private final long delay;
     private volatile long lastExecuteTime = 0;

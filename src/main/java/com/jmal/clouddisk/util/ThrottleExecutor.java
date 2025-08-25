@@ -1,12 +1,13 @@
 package com.jmal.clouddisk.util;
 
+import cn.hutool.core.thread.ThreadUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.*;
 
 @Slf4j
 public class ThrottleExecutor {
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, ThreadUtil.createThreadFactory("throttle-executor"));
     private ScheduledFuture<?> scheduledFuture;
     private final long delay;
 
@@ -36,9 +37,7 @@ public class ThrottleExecutor {
 
         for (int i = 0; i < 10; i++) {
             final int param = i;
-            throttleExecutor.schedule(() -> {
-                System.out.println("Executing task with param: " + param);
-            });
+            throttleExecutor.schedule(() -> System.out.println("Executing task with param: " + param));
             try {
                 Thread.sleep(100); // 模拟频繁调用
             } catch (InterruptedException e) {

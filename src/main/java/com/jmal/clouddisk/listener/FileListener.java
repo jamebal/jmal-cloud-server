@@ -59,7 +59,7 @@ public class FileListener implements DirectoryChangeListener {
 
     private final ScheduledExecutorService scheduler = ThreadUtil.createScheduledExecutor(2);
 
-    private final ExecutorService processExecutor = ThreadUtil.newFixedExecutor(4, 10000, "file-process-thread", true);
+    private final ExecutorService processExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     @PostConstruct
     public void init() {

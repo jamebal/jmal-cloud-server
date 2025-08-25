@@ -103,7 +103,7 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
         // 确保只在根应用上下文执行一次，防止在Web环境中执行两次
         if (event.getApplicationContext().getParent() == null) {
             getVideoTranscodingService();
-            addTranscodingTaskService = ThreadUtil.newFixedExecutor(8, 40960, "addTranscodingTask", true);
+            addTranscodingTaskService = Executors.newVirtualThreadPerTaskExecutor();
         }
     }
 

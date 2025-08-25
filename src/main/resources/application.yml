@@ -37,6 +37,9 @@ spring:
   messages:
     basename: i18n/messages
     encoding: UTF-8
+  threads:
+    virtual:
+      enabled: true
 springdoc:
   packages-to-scan: com.jmal.clouddisk.controller,com.jmal.clouddisk.oss
   api-docs:

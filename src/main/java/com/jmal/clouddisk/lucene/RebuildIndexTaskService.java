@@ -473,7 +473,6 @@ public class RebuildIndexTaskService {
         }
 
         private void processFile(Path file, String username) {
-            // 使用 RxJava 执行异步文件创建
             syncFileVisitorService.execute(() -> createFile(username, file));
         }
 
