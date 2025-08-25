@@ -34,7 +34,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_IO_TOKEN }}
 
       - name: Copy Docker Hub tag jmalcloud:test -> latest (+version if present)
         run: |
@@ -54,12 +54,12 @@ jobs:
         run: |
           # latest
           docker buildx imagetools create \
-            -t "ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud:latest" \
+            -t "ghcr.io/${{ github.actor }}/jmalcloud:latest" \
             "${SOURCE_IMAGE_DOCKERHUB}"
 
           # version tag (only if PROJECT_VERSION is set)
           if [ -n "${PROJECT_VERSION}" ]; then
             docker buildx imagetools create \
-              -t "ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud:${PROJECT_VERSION}" \
+              -t "ghcr.io/${{ github.actor }}/jmalcloud:${PROJECT_VERSION}" \
               "${SOURCE_IMAGE_DOCKERHUB}"
           fi
