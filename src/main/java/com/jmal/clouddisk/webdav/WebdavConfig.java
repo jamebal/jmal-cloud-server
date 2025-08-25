@@ -1,11 +1,8 @@
 package com.jmal.clouddisk.webdav;
 
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.webdav.resource.FileResourceSet;
 import jakarta.servlet.MultipartConfigElement;
-import org.apache.tomcat.util.descriptor.web.LoginConfig;
-import org.apache.tomcat.util.descriptor.web.SecurityCollection;
-import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletPath;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
@@ -16,22 +13,12 @@ import org.springframework.web.servlet.DispatcherServlet;
 
 
 @Configuration
+@RequiredArgsConstructor
 public class WebdavConfig {
 
     private final FileProperties fileProperties;
 
-    private final MyRealm myRealm;
-
-    private final WebdavAuthenticator webdavAuthenticator;
-
     private final MyWebdavServlet myWebdavServlet;
-
-    public WebdavConfig(FileProperties fileProperties, MyRealm myRealm, WebdavAuthenticator webdavAuthenticator, MyWebdavServlet myWebdavServlet) {
-        this.fileProperties = fileProperties;
-        this.myRealm = myRealm;
-        this.webdavAuthenticator = webdavAuthenticator;
-        this.myWebdavServlet = myWebdavServlet;
-    }
 
     /**
      * 自定义 DispatcherServlet 的注册，以确保关键应用程序行为。
@@ -75,34 +62,9 @@ public class WebdavConfig {
     }
 
     @Bean
-    public WebServerFactoryCustomizer<TomcatServletWebServerFactory> webServerFactoryCustomizer() {
-        return factory -> factory.addContextCustomizers(context -> {
-            // 创建一个新的WebResourceRoot实例
-            MyStandardRoot standardRoot = new MyStandardRoot(context);
-            // 自定义静态资源的位置
-            standardRoot.addPreResources(new FileResourceSet(standardRoot, fileProperties.getRootDir()));
-            // 将新的WebResourceRoot设置为应用程序的资源根目录
-            context.setResources(standardRoot);
-            context.getPipeline().addValve(webdavAuthenticator);
-
-            context.setRealm(myRealm);
-
-            // 设置安全约束
-            SecurityCollection securityCollection = new SecurityCollection();
-            securityCollection.addPattern(fileProperties.getWebDavPrefixPath() + "/*");
-
-            SecurityConstraint securityConstraint = new SecurityConstraint();
-            securityConstraint.addAuthRole("webdav");
-            securityConstraint.addCollection(securityCollection);
-
-            context.addConstraint(securityConstraint);
-
-            // 设置登录配置
-            LoginConfig loginConfig = new LoginConfig();
-            loginConfig.setAuthMethod("BASIC");
-            context.setLoginConfig(loginConfig);
-
-        });
+    public WebServerFactoryCustomizer<TomcatServletWebServerFactory> webServerFactoryCustomizer(MyTomcatContextCustomizer myTomcatContextCustomizer) {
+        return factory -> factory.addContextCustomizers(myTomcatContextCustomizer);
     }
 
 }
+

@@ -14,18 +14,21 @@ import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.CommonUserService;
+import com.jmal.clouddisk.service.impl.MessageService;
+import com.jmal.clouddisk.service.impl.PathService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.result.UpdateResult;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -47,22 +50,20 @@ import static com.jmal.clouddisk.util.FFMPEGUtils.*;
 @Service
 @Lazy
 @Slf4j
-public class VideoProcessService {
+@RequiredArgsConstructor
+public class VideoProcessService implements ApplicationListener<ContextRefreshedEvent> {
 
-    @Autowired
-    private FileProperties fileProperties;
+    private final FileProperties fileProperties;
 
-    @Autowired
-    private IUserService userService;
+    private final CommonUserService userService;
 
-    @Autowired
-    private CommonFileService commonFileService;
+    private final PathService pathService;
 
-    @Autowired
-    private TaskProgressService taskProgressService;
+    private final MessageService messageService;
 
-    @Resource
-    MongoTemplate mongoTemplate;
+    private final TaskProgressService taskProgressService;
+
+    private final MongoTemplate mongoTemplate;
 
     /**
      * 视频转码线程池
@@ -97,10 +98,13 @@ public class VideoProcessService {
 
     private final static String TRANSCODE_VIDEO = "transcodeVideo";
 
-    @PostConstruct
-    public void init() {
-        getVideoTranscodingService();
-        addTranscodingTaskService = ThreadUtil.newFixedExecutor(8, 40960, "addTranscodingTask", true);
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        // 确保只在根应用上下文执行一次，防止在Web环境中执行两次
+        if (event.getApplicationContext().getParent() == null) {
+            getVideoTranscodingService();
+            addTranscodingTaskService = Executors.newVirtualThreadPerTaskExecutor();
+        }
     }
 
     private void getVideoTranscodingService() {
@@ -154,7 +158,7 @@ public class VideoProcessService {
         processesTasks.clear();
 
         // 取消转码任务
-        videoTranscodingTasks.forEach((fileId, future) -> {
+        videoTranscodingTasks.forEach((_, future) -> {
             if (!future.isDone()) {
                 future.cancel(true);
             }
@@ -400,7 +404,7 @@ public class VideoProcessService {
     }
 
     public void deleteVideoCacheById(String username, String fileId) {
-        String videoCacheDir = getVideoCacheDir(username, fileId);
+        String videoCacheDir = pathService.getVideoCacheDir(username, fileId);
         if (FileUtil.exist(videoCacheDir)) {
             FileUtil.del(videoCacheDir);
         }
@@ -426,7 +430,7 @@ public class VideoProcessService {
         Path prePath = Paths.get(username, relativePath, fileName);
         String ossPath = CaffeineUtil.getOssPath(prePath);
         Path fileAbsolutePath = Paths.get(fileProperties.getRootDir(), username, relativePath, fileName);
-        String videoCacheDir = getVideoCacheDir(username, "");
+        String videoCacheDir = pathService.getVideoCacheDir(username, "");
         // 判断fileId是否为path, 如果为path则取最后一个
         if (fileId.contains("/")) {
             fileId = fileId.substring(fileId.lastIndexOf("/") + 1);
@@ -469,22 +473,6 @@ public class VideoProcessService {
         return videoInfo;
     }
 
-    /**
-     * 获取视频文件缓存目录
-     *
-     * @param username username
-     * @param fileId   fileId
-     * @return 视频文件缓存目录
-     */
-    public String getVideoCacheDir(String username, String fileId) {
-        // 视频文件缓存目录
-        String videoCacheDir = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, fileProperties.getVideoTranscodeCache(), fileId).toString();
-        if (!FileUtil.exist(videoCacheDir)) {
-            FileUtil.mkdir(videoCacheDir);
-        }
-        return videoCacheDir;
-    }
-
     private void videoToM3U8(String fileId, String username, String relativePath, String fileName, boolean onlyCPU) throws IOException, InterruptedException {
         TranscodeConfig transcodeConfig = getTranscodeConfig();
         if (BooleanUtil.isFalse(transcodeConfig.getEnable())) {
@@ -492,7 +480,7 @@ public class VideoProcessService {
         }
         Path fileAbsolutePath = Paths.get(fileProperties.getRootDir(), username, relativePath, fileName);
         // 视频文件缓存目录
-        String videoCacheDir = getVideoCacheDir(username, fileId);
+        String videoCacheDir = pathService.getVideoCacheDir(username, fileId);
         if (FFMPEGCommand.hasNoFFmpeg()) {
             return;
         }
@@ -717,7 +705,7 @@ public class VideoProcessService {
         }
         mongoTemplate.upsert(query, update, FileDocument.class);
         fileDocument.setM3u8(m3u8);
-        commonFileService.pushMessage(username, fileDocument, Constants.UPDATE_FILE);
+        messageService.pushMessage(username, fileDocument, Constants.UPDATE_FILE);
     }
 
     @PreDestroy

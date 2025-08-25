@@ -1,10 +1,12 @@
 package com.jmal.clouddisk.model.rbac;
 
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -18,8 +20,9 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Schema
+@RegisterReflectionForBinding
 @Document(collection = UserServiceImpl.COLLECTION_NAME)
-public class ConsumerDO extends ConsumerBase {
+public class ConsumerDO extends ConsumerBase implements Reflective {
     String id;
     @Schema(name = "username", title = "用户名", example = "admin")
     @Indexed

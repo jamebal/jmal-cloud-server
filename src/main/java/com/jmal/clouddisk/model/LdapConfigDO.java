@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
@@ -13,7 +14,7 @@ import java.util.List;
  */
 @Data
 @Document(collection = "ldapConfig")
-public class LdapConfigDO {
+public class LdapConfigDO implements Reflective {
     String id;
     /**
      * 是否启用

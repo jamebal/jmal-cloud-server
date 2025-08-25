@@ -7,9 +7,10 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.IFileService;
+import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.SystemUtil;
 import io.methvin.watcher.DirectoryWatcher;
-import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @Description 启动时开启文件目录监控
@@ -48,6 +50,8 @@ public class FileMonitor {
 
     final IFileService fileService;
 
+    private final CommonFileService commonFileService;
+
     final FileListener fileListener;
 
     @Value("${version}")
@@ -57,8 +61,26 @@ public class FileMonitor {
 
     private DirectoryWatcher watcher;
 
+    // 这个锁专门用于保护 'watcher' 实例的生命周期（创建、关闭、重载）
+    private final Object watcherLock = new Object();
+
     @EventListener(ContextRefreshedEvent.class)
-    public void initIndicesAfterStartup() {
+    public void onApplicationReady(ContextRefreshedEvent event) {
+        if (event.getApplicationContext().getParent() != null) {
+            return;
+        }
+        // 检查新版本
+        CompletableFuture.runAsync(() -> {
+            String newVersion = SystemUtil.getNewVersion();
+            log.debug("Current version: {}, Latest version: {}", version, newVersion);
+        });
+        // 初始化MongoDB索引
+        initializeMongoIndices();
+        // 启动文件监控服务
+        startFileMonitoringAsync();
+    }
+
+    private void initializeMongoIndices() {
         // 1. 获取映射上下文，这一步不变
         MongoMappingContext mappingContext = (MongoMappingContext) mongoTemplate.getConverter().getMappingContext();
 
@@ -85,20 +107,31 @@ public class FileMonitor {
         }
     }
 
-    @PostConstruct
-    public void init() throws IOException {
-        // 检测新版本
-        newVersion = SystemUtil.getNewVersion();
+    /**
+     * <p>启动文件监控服务</p>
+     */
+    public void startFileMonitoringAsync() {
         // 判断是否开启文件监控
         if (Boolean.FALSE.equals(fileProperties.getMonitor())) {
             return;
         }
-        // 忽略目录
-        fileListener.addFilterDir(Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir()));
-        fileListener.addFilterDir(Paths.get(fileProperties.getRootDir(), fileProperties.getLuceneIndexDir()));
-
-        // 开启文件监控
-        newDirectoryWatcher();
+        CompletableFuture.runAsync(() -> {
+            synchronized (watcherLock) {
+                try {
+                    // 如果已经存在一个watcher (可能是重载逻辑调用)，先安全关闭
+                    if (this.watcher != null) {
+                        this.watcher.close();
+                    }
+                    // 忽略目录
+                    fileListener.addFilterDir(Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir()));
+                    fileListener.addFilterDir(Paths.get(fileProperties.getRootDir(), fileProperties.getLuceneIndexDir()));
+                    // 开启文件监控
+                    newDirectoryWatcher();
+                } catch (IOException e) {
+                    log.error("文件监控服务启动失败: {}", e.getMessage());
+                }
+            }
+        });
     }
 
     private void newDirectoryWatcher() throws IOException {
@@ -115,11 +148,8 @@ public class FileMonitor {
     }
 
     private void reloadDirectoryWatcher() {
-        try {
-            watcher.close();
-            newDirectoryWatcher();
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
+        synchronized (watcherLock) {
+            startFileMonitoringAsync();
         }
     }
 
@@ -139,7 +169,7 @@ public class FileMonitor {
      * 需要移除的路径
      * @param path 需要移除的路径
      */
-    public void removeDirFilter(String path) {
+    public synchronized void removeDirFilter(String path) {
         Path filepath = Paths.get(fileProperties.getRootDir(), path);
         if (fileListener.containsFilterDir(filepath)) {
             fileListener.removeFilterDir(filepath);
@@ -197,7 +227,7 @@ public class FileMonitor {
     private void clearVideoCache(File file, boolean videoCache) {
         if (videoCache && file.listFiles() != null) {
             for (File f : Objects.requireNonNull(file.listFiles())) {
-                FileDocument fileDocument = fileService.getById(f.getName());
+                FileDocument fileDocument = commonFileService.getById(f.getName());
                 if (fileDocument == null || f.isFile()) {
                     FileUtil.del(f);
                     log.info("删除视频转码缓存文件: {}", f.getAbsolutePath());
@@ -223,5 +253,21 @@ public class FileMonitor {
     @Scheduled(cron = "0 0 0/3 * * ?")
     private void getNewVersion() {
         newVersion = SystemUtil.getNewVersion();
+    }
+
+    /**
+     * 在应用关闭时，优雅地关闭文件监控。
+     */
+    @PreDestroy
+    public void cleanup() {
+        synchronized (watcherLock) {
+            if (this.watcher != null) {
+                try {
+                    this.watcher.close();
+                } catch (IOException e) {
+                    log.error("Error closing file watcher.", e);
+                }
+            }
+        }
     }
 }

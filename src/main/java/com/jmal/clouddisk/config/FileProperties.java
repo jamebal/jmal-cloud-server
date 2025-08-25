@@ -26,6 +26,8 @@ import java.util.List;
 @ConfigurationProperties(prefix = "file")
 @Slf4j
 public class FileProperties {
+
+    private String testTempDir = System.getProperty("user.dir") + "/testTempDir";
     /***
      * 文件存储根目录 文件监控目录
      */
@@ -119,6 +121,14 @@ public class FileProperties {
      */
     private Integer ngramMaxSize = 6;
 
+    private String frontendResourcePath = "/app/frontend/dist/";
+
+    private String pdfjsResourcePath = "/app/preview/pdfjs/";
+
+    private String drawioResourcePath = "/app/preview/draw/";
+
+    private String excalidrawResourcePath = "/app/preview/excalidraw/";
+
     public void setIp2regionDbPath(String path) {
         Path dbPath = Paths.get(path);
         if (!PathUtil.exists(dbPath, true)) {
@@ -171,6 +181,10 @@ public class FileProperties {
 
     public String getRootDir() {
         return Paths.get(rootDir).toString();
+    }
+
+    public Path getTestTempDirPath() {
+        return Paths.get(testTempDir);
     }
 
     public String getUserImgDir() {

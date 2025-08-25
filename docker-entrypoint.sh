@@ -13,18 +13,15 @@ chown -R ${USER_UID}:${USER_GID} /jmalcloud/models
 chown -R ${USER_UID}:${USER_GID} /jmalcloud/tess4j
 chown ${USER_UID}:${USER_GID} /jmalcloud/ip2region.xdb
 chown -R ${USER_UID}:${USER_GID} /usr/local/mxcad
-chown ${USER_UID}:${USER_GID} /usr/local/clouddisk-${VERSION}.jar
-chown -R ${USER_UID}:${USER_GID} /usr/local/clouddisk-lib
 chown -R ${USER_UID}:${USER_GID} log
 
-exec gosu ${USER_UID}:${USER_GID} java ${JVM_OPTS} \
+exec gosu ${USER_UID}:${USER_GID} /app/jmalcloud ${JVM_OPTS} \
  -Duser.timezone=${TZ} \
  -Dfile.encoding=UTF-8 \
- -Dloader.path=/usr/local/clouddisk-lib \
- -jar /usr/local/clouddisk-${VERSION}.jar \
  --spring.profiles.active=${RUN_ENVIRONMENT} \
  --spring.data.mongodb.uri=${MONGODB_URI} \
  --tess4j.data-path=${TESS4J_DATA_PATH} \
+ --file.frontendResourcePath=/app/frontend/ \
  --file.exactSearch=${EXACT_SEARCH} \
  --file.ngramMaxContentLengthMB=${NGRAM_MAX_CONTENT_LENGTH_MB} \
  --file.ngramMinSize=${NGRAM_MIN_SIZE} \

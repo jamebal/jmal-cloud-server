@@ -7,13 +7,15 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.AsyncTaskExecutor;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.*;
 import org.springframework.web.servlet.i18n.CookieLocaleResolver;
 
 import java.io.File;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * WebConfig
@@ -37,6 +39,12 @@ public class WebConfig implements WebMvcConfigurer {
 
     private final PreFileInterceptor preFileInterceptor;
 
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        // 只给@RestController加/api前缀
+        configurer.addPathPrefix("/api", c -> c.isAnnotationPresent(org.springframework.web.bind.annotation.RestController.class));
+    }
+
     /**
      * 注册拦截器
      */
@@ -44,33 +52,46 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(localeChangeInterceptor());
 
-		registry.addInterceptor(authInterceptor).addPathPatterns("/**").
-				excludePathPatterns("/", "/login/**", "/public/**", "/articles/**", "/error/**", "/file/**" , "/pre-file/**" , "/share-file/**", "/direct-file/**" , "/files/**","/swagger-ui/**");
+		registry.addInterceptor(authInterceptor).addPathPatterns("/api/**").
+				excludePathPatterns("/api", "/api/login/**", "/api/public/**", "/articles/**", "/api/error/**", "/api/file/**" , "/api/pre-file/**" , "/api/share-file/**", "/api/direct-file/**" , "/api/files/**","/api/swagger-ui/**");
 
-        registry.addInterceptor(fileInterceptor).addPathPatterns("/file/**").addPathPatterns("/files/**");
+        registry.addInterceptor(fileInterceptor).addPathPatterns("/api/file/**").addPathPatterns("/api/files/**");
 
-        registry.addInterceptor(shareFileInterceptor).addPathPatterns("/share-file/{fileId}/{token}/**");
+        registry.addInterceptor(shareFileInterceptor).addPathPatterns("/api/share-file/{fileId}/{token}/**");
 
-        registry.addInterceptor(directFileInterceptor).addPathPatterns("/direct-file/{mark}/{filename}");
+        registry.addInterceptor(directFileInterceptor).addPathPatterns("/api/direct-file/{mark}/{filename}");
 
-        registry.addInterceptor(preFileInterceptor).addPathPatterns("/pre-file/{fileId}/**");
+        registry.addInterceptor(preFileInterceptor).addPathPatterns("/api/pre-file/{fileId}/**");
     }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/file/**")
+        registry.addResourceHandler("/api/file/**")
                 .addResourceLocations("file:" + fileProperties.getRootDir() + File.separator);
-        log.info("静态资源目录:{}", fileProperties.getRootDir() + File.separator);
+
+        // 前端资源
+        registry.addResourceHandler("/**")
+                .addResourceLocations("file:" + fileProperties.getFrontendResourcePath());
+        // pdfjs
+        registry.addResourceHandler("/pdf.js/**")
+                .addResourceLocations("file:" + fileProperties.getPdfjsResourcePath());
+        // drawio
+        registry.addResourceHandler("/drawio/webapp/**")
+                .addResourceLocations("file:" + fileProperties.getDrawioResourcePath());
+        // excalidraw
+        registry.addResourceHandler("/excalidraw/app/**")
+                .addResourceLocations("file:" + fileProperties.getExcalidrawResourcePath());
+
+        // 博客静态资源
+        registry.addResourceHandler("/articles/**")
+                .addResourceLocations("classpath:/static/articles/");
+
+        log.debug("网盘文件根目录:{}", fileProperties.getRootDir() + File.separator);
     }
 
     public AsyncTaskExecutor taskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10);
-        executor.setMaxPoolSize(50);
-        executor.setQueueCapacity(100);
-        executor.setThreadNamePrefix("Custom-Executor-");
-        executor.initialize();
-        return executor;
+        ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        return new ConcurrentTaskExecutor(virtualThreadExecutor);
     }
 
     @Override

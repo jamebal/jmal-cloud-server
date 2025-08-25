@@ -74,11 +74,6 @@ public class ArticlesController {
         return fileService.getSitemapTxt();
     }
 
-    @GetMapping("/")
-    public String redirectToArticles() {
-        return "redirect:/public/api";
-    }
-
     @GetMapping("/articles")
     @LogOperatingFun(value = "文章列表", logType = LogOperation.Type.ARTICLE)
     public String index(HttpServletRequest request, Model map) {

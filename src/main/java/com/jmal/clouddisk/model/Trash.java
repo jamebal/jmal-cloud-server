@@ -1,7 +1,8 @@
 package com.jmal.clouddisk.model;
 
-import com.jmal.clouddisk.service.impl.FileServiceImpl;
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.media.VideoInfoDO;
+import com.jmal.clouddisk.service.impl.CommonFileService;
 import lombok.Data;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
@@ -15,14 +16,14 @@ import java.util.Objects;
  * @author jmal
  */
 @Data
-@Document(collection = FileServiceImpl.TRASH_COLLECTION_NAME)
+@Document(collection = CommonFileService.TRASH_COLLECTION_NAME)
 @CompoundIndexes({
         @CompoundIndex(name = "name_1", def = "{'name': 1}"),
         @CompoundIndex(name = "size_1", def = "{'size': 1}"),
         @CompoundIndex(name = "updateDate_1", def = "{'updateDate': 1}"),
         @CompoundIndex(name = "hidden_1", def = "{'hidden': 1}"),
 })
-public class Trash extends FileBase {
+public class Trash extends FileBase implements Reflective {
     private String userId;
     private String path;
     /**

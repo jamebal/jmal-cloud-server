@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import lombok.Data;
@@ -11,7 +12,7 @@ import lombok.Data;
  */
 @Data
 @Schema
-public class SharerDTO {
+public class SharerDTO implements Reflective {
     String shareId;
     String userId;
     @Schema(name = "avatar", title = "头像链接")

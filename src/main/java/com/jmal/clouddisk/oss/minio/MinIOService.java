@@ -1,12 +1,11 @@
 package com.jmal.clouddisk.oss.minio;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.google.common.collect.HashMultimap;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.interceptor.FileInterceptor;
+import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.oss.*;
 import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import io.minio.*;
@@ -25,6 +24,7 @@ import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -60,7 +60,7 @@ public class MinIOService implements IOssService {
                 .build());
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor, ossConfigDTO);
-        ThreadUtil.execute(this::getMultipartUploads);
+        CompletableFuture.runAsync(this::getMultipartUploads);
     }
 
     @Override
@@ -433,9 +433,9 @@ public class MinIOService implements IOssService {
     @Override
     public FileInfo getThumbnail(String objectName, File file, int width) {
         try {
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            ImageMagickProcessor.cropImage(file, "80", String.valueOf(width), null, fileOutputStream);
             this.minIoClient.downloadObject(bucketName, objectName, file);
-            byte[] bytes = FileInterceptor.imageCrop(file, "80", String.valueOf(width), null);
-            FileUtil.writeBytes(bytes, file);
             return baseOssService.getFileInfo(objectName);
         } catch (Exception e) {
             log.error(e.getMessage(), e);

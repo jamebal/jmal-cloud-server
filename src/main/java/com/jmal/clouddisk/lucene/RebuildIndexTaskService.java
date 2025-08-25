@@ -8,10 +8,7 @@ import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.ocr.OcrService;
-import com.jmal.clouddisk.service.impl.CommonFileService;
-import com.jmal.clouddisk.service.impl.MenuService;
-import com.jmal.clouddisk.service.impl.RoleService;
-import com.jmal.clouddisk.service.impl.UserServiceImpl;
+import com.jmal.clouddisk.service.impl.*;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.ThrottleExecutor;
@@ -36,10 +33,7 @@ import java.math.RoundingMode;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -55,17 +49,23 @@ import java.util.concurrent.locks.ReentrantLock;
 @RequiredArgsConstructor
 public class RebuildIndexTaskService {
 
+    private final PathService pathService;
+
     private final IndexWriter indexWriter;
 
     private final MenuService menuService;
 
     private final RoleService roleService;
 
-    private final UserServiceImpl userService;
+    private final CommonUserService commonUserService;
 
     private final FileProperties fileProperties;
 
     private final CommonFileService commonFileService;
+
+    private final CommonUserFileService commonUserFileService;
+
+    private final MessageService messageService;
 
     private final MongoTemplate mongoTemplate;
 
@@ -128,7 +128,7 @@ public class RebuildIndexTaskService {
         }
         // 启动时检测是否存在lucene索引，不存在则初始化
         if (!checkIndexExists()) {
-            doSync(userService.getCreatorUsername(), null, true);
+            doSync(commonUserService.getCreatorUsername(), null, true);
         }
         // 重置索引状态
         resetIndexStatus();
@@ -146,11 +146,11 @@ public class RebuildIndexTaskService {
             return;
         }
         if (StrUtil.isBlank(username)) {
-            username = userService.getCreatorUsername();
+            username = commonUserService.getCreatorUsername();
         }
         setPercentMap(0d, 0d);
         String finalUsername = username;
-        ThreadUtil.execute(() -> {
+        CompletableFuture.runAsync(() -> {
             if (!SYNC_FILE_LOCK.tryLock()) {
                 return;
             }
@@ -376,7 +376,7 @@ public class RebuildIndexTaskService {
             return;
         }
         if (getRecipient(null) == null) {
-            getRecipient(userService.getCreatorUsername());
+            getRecipient(commonUserService.getCreatorUsername());
         }
         // 更新进度
         updatePercent();
@@ -389,7 +389,11 @@ public class RebuildIndexTaskService {
         if (syncFileVisitor == null) {
             return PERCENT_MAP.getOrDefault(SYNC_PERCENT, 100d);
         }
-        return syncFileVisitor.getPercent();
+        double percent = syncFileVisitor.getPercent();
+        if (percent > 100) {
+            return 100;
+        }
+        return percent;
     }
 
     /**
@@ -399,7 +403,11 @@ public class RebuildIndexTaskService {
         if (NOT_INDEX_TASK_SIZE.get() == 0 || isSyncFile()) {
             return 100;
         }
-        return getIndexedPercentValue();
+        double percent = getIndexedPercentValue();
+        if (percent > 100) {
+            return 100;
+        }
+        return percent;
     }
 
     private double getIndexedPercentValue() {
@@ -438,7 +446,7 @@ public class RebuildIndexTaskService {
             // 跳过临时文件目录
             FileVisitResult skipTempDirectory = skipTempDirectory(dir);
             if (skipTempDirectory != null) return skipTempDirectory;
-            String username = commonFileService.getUsernameByAbsolutePath(dir);
+            String username = pathService.getUsernameByAbsolutePath(dir);
             processCount.incrementAndGet();
             if (StrUtil.isBlank(username)) {
                 return super.visitFile(dir, attrs);
@@ -456,7 +464,7 @@ public class RebuildIndexTaskService {
                 return super.visitFile(file, attrs);
             }
             processCount.incrementAndGet();
-            String username = commonFileService.getUsernameByAbsolutePath(file);
+            String username = pathService.getUsernameByAbsolutePath(file);
             if (StrUtil.isBlank(username)) {
                 return super.visitFile(file, attrs);
             }
@@ -465,13 +473,12 @@ public class RebuildIndexTaskService {
         }
 
         private void processFile(Path file, String username) {
-            // 使用 RxJava 执行异步文件创建
             syncFileVisitorService.execute(() -> createFile(username, file));
         }
 
         private void createFile(String username, Path file) {
             try {
-                commonFileService.createFile(username, file.toFile(), null, null);
+                commonUserFileService.createFile(username, file.toFile(), null, null);
             } catch (Exception e) {
                 log.error("createFile error {}{}", e.getMessage(), file, e);
                 Query query = new Query();
@@ -500,7 +507,7 @@ public class RebuildIndexTaskService {
     }
 
     private void pushMessage() {
-        commonFileService.pushMessage(getRecipient(null), PERCENT_MAP, RebuildIndexTaskService.MSG_SYNCED);
+        messageService.pushMessage(getRecipient(null), PERCENT_MAP, RebuildIndexTaskService.MSG_SYNCED);
         log.debug("索引进度: {}, isSyncFile: {}, INDEXED_TASK_SIZE, {}, NOT_INDEX_TASK_SIZE: {}", PERCENT_MAP, isSyncFile(), INDEXED_TASK_SIZE.get(), NOT_INDEX_TASK_SIZE.get());
     }
 
@@ -517,7 +524,7 @@ public class RebuildIndexTaskService {
             // 跳过临时文件目录
             FileVisitResult skipTempDirectory = skipTempDirectory(dir);
             if (skipTempDirectory != null) return skipTempDirectory;
-            String username = commonFileService.getUsernameByAbsolutePath(dir);
+            String username = pathService.getUsernameByAbsolutePath(dir);
             count.addAndGet(1);
             if (StrUtil.isBlank(username)) {
                 return super.visitFile(dir, attrs);
@@ -587,11 +594,11 @@ public class RebuildIndexTaskService {
         if (filepath.toFile().isFile()) {
             return;
         }
-        String username = commonFileService.getUsernameByAbsolutePath(filepath);
+        String username = pathService.getUsernameByAbsolutePath(filepath);
         String userId = null;
         String path = null;
         if (StrUtil.isNotBlank(username)) {
-            userId = userService.getUserIdByUserName(username);
+            userId = commonUserService.getUserIdByUserName(username);
             Path relativePath = Paths.get(fileProperties.getRootDir(), username).relativize(filepath);
             if (relativePath.getNameCount() > 0) {
                 path = "/" + relativePath + "/";

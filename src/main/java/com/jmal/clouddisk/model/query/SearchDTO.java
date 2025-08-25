@@ -2,6 +2,7 @@ package com.jmal.clouddisk.model.query;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import com.jmal.clouddisk.config.Reflective;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +17,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @Builder
 @Schema
-public class SearchDTO extends QueryBaseDTO {
+public class SearchDTO extends QueryBaseDTO implements Reflective {
 
     String id;
 

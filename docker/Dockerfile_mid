@@ -1,0 +1,25 @@
+FROM ghcr.io/jamebal/jmalcloud_base:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+ARG TARGETARCH
+ENV ARCH=${TARGETARCH}
+
+RUN mkdir -p /tmp && chmod 1777 /tmp && \
+    apt-get update && \
+    apt-get install -y wget unzip && \
+    mkdir -p /temp && \
+    cd /temp && \
+    wget https://github.com/jamebal/jmal-cloud-server/releases/download/v2.14.0/mxcad_${ARCH}.zip && \
+    \
+    # 解压 mxcad
+    unzip -o mxcad_${ARCH}.zip -d /temp && \
+    mv /temp/mxcad_${ARCH} /temp/mxcad && \
+    chmod -R 755 /temp/mxcad/mxcadassembly && \
+    chmod -R 755 /temp/mxcad/mx/so/* && \
+    cp -r /temp/mxcad /usr/local/ && \
+    cp -r /temp/mxcad/mx/locale /usr/local/share/ && \
+    # 清理工作
+    apt-get purge -y --auto-remove wget unzip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /temp/

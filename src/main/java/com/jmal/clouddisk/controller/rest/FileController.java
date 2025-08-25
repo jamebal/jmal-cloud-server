@@ -12,6 +12,8 @@ import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.UserFileService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileNameUtils;
@@ -50,6 +52,10 @@ public class FileController {
 
     private final IFileService fileService;
 
+    private final CommonFileService commonFileService;
+
+    private final UserFileService userFileService;
+
     private final WebOssService webOssService;
 
     private final UserLoginHolder userLoginHolder;
@@ -61,7 +67,7 @@ public class FileController {
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<FileDocument> getFileById(@RequestParam String id) {
-        return ResultUtil.success(fileService.getById(id));
+        return ResultUtil.success(commonFileService.getById(id));
     }
 
     @Operation(summary = "文件列表")
@@ -282,9 +288,9 @@ public class FileController {
     @GetMapping("/view/cover")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> coverOfMedia(String id, String name) {
-        ResultUtil.checkParamIsNull(id, name);
-        Optional<FileDocument> file = fileService.coverOfMedia(id, name);
+    public ResponseEntity<Object> coverOfMedia(String id) {
+        ResultUtil.checkParamIsNull(id);
+        Optional<FileDocument> file = fileService.coverOfMedia(id, null);
         return file.map(fileService::getObjectResponseEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
     }
 
@@ -330,7 +336,7 @@ public class FileController {
     @LogOperatingFun
     @Permission("cloud:file:update")
     public ResponseResult<Object> setPublic(@RequestParam String fileId) {
-        fileService.setPublic(fileId);
+        userFileService.setPublic(fileId);
         return ResultUtil.success();
     }
 

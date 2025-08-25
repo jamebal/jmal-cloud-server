@@ -6,6 +6,7 @@ import com.jmal.clouddisk.controller.record.MfaVerifyRequest;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.service.impl.TotpService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.MessageUtil;
@@ -14,35 +15,31 @@ import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/mfa")
 @Tag(name = "两步验证")
 public class MfaController {
 
     private final TotpService totpService;
     private final IUserService userService;
+    private final SettingService settingService;
     private final UserLoginHolder userLoginHolder;
     private final MessageUtil messageUtil;
 
-    @PostMapping("/setup")
-    @Permission("sys:user:update")
+    @GetMapping("/public/mfa/setup")
     @Operation(summary = "准备开启两步验证")
-    public ResponseResult<Object> initiateMfaSetup() {
-        if (userService.isMfaEnabled(userLoginHolder.getUsername())) {
-            return ResultUtil.success(new MfaSetupResponse(true, null, null));
+    public ResponseResult<Object> initiateMfaSetup(@RequestParam String username) {
+        if (userService.isMfaEnabled(username)) {
+            return ResultUtil.success(new MfaSetupResponse(true, null, null, settingService.getMfaForceEnable()));
         }
         final String secret = totpService.generateNewSecret();
-        final String qrCodeUri = totpService.generateQrCodeImageUri(secret, userLoginHolder.getUsername());
-        return ResultUtil.success(new MfaSetupResponse(false, secret, qrCodeUri));
+        final String qrCodeUri = totpService.generateQrCodeImageUri(secret, username);
+        return ResultUtil.success(new MfaSetupResponse(false, secret, qrCodeUri, null));
     }
 
-    @PostMapping("/enable")
+    @PostMapping("/mfa/enable")
     @Permission("sys:user:update")
     @Operation(summary = "验证并开启两步验证")
     public ResponseResult<Object> verifyAndEnableMfa(@RequestBody MfaVerifyRequest request) {
@@ -61,7 +58,7 @@ public class MfaController {
         return ResultUtil.success();
     }
 
-    @PostMapping("/disable")
+    @PostMapping("/mfa/disable")
     @Permission("sys:user:update")
     @Operation(summary = "验证并禁用两步验证")
     public ResponseResult<Object> verifyDisableMfa(@RequestBody MfaVerifyRequest request) {

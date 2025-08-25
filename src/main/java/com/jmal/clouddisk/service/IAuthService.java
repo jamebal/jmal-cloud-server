@@ -33,6 +33,15 @@ public interface IAuthService {
     ResponseResult<Object> verifyTotp(HttpServletRequest request, HttpServletResponse response, ConsumerDTO consumerDTO);
 
     /**
+     * 初始化并验证TOTP码
+     * @param request HttpServletRequest
+     * @param response HttpServletResponse
+     * @param consumerDTO ConsumerDTO
+     * @return ResponseResult
+     */
+    ResponseResult<Object> initVerifyTotp(HttpServletRequest request, HttpServletResponse response, ConsumerDTO consumerDTO);
+
+    /**
      * 登出
      * @param token token
      * @param response HttpServletResponse

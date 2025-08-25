@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model.query;
 
+import com.jmal.clouddisk.config.Reflective;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import lombok.Data;
@@ -13,7 +14,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Schema
-public class QueryMenuDTO extends QueryBaseDTO {
+public class QueryMenuDTO extends QueryBaseDTO implements Reflective {
     @Schema(name = "name", title = "菜单名称")
     String name;
     @Schema(name = "code", title = "菜单地址")

@@ -12,6 +12,7 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -45,6 +46,8 @@ public class ShareController {
     private final IShareService shareService;
 
     private final IFileService fileService;
+
+    private final CommonFileService commonFileService;
 
     private final IUserService userService;
 
@@ -179,7 +182,7 @@ public class ShareController {
     @GetMapping("/public/s/{fileId}/packageDownload/{filename}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public void publicPackageDownloadOne(HttpServletRequest request, HttpServletResponse response, @PathVariable String fileId, @PathVariable String filename) {
-        FileDocument fileDocument = fileService.getById(fileId);
+        FileDocument fileDocument = commonFileService.getById(fileId);
         if (fileInterceptor.isNotAllowAccess(fileDocument, request)) {
             return;
         }
@@ -289,7 +292,7 @@ public class ShareController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> getFileById(HttpServletRequest request, @RequestParam String fileId, @RequestParam String shareId) {
         shareService.validShare(request.getHeader(Constants.SHARE_TOKEN), shareId);
-        return ResultUtil.success(fileService.getById(fileId));
+        return ResultUtil.success(commonFileService.getById(fileId));
     }
 
     @Operation(summary = "挂用户获取分享文件信息")

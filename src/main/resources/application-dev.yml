@@ -15,3 +15,8 @@ spring:
 logging:
   level:
     root: info
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false

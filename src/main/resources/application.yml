@@ -10,14 +10,20 @@ server:
   tomcat:
     max-part-count: 30
     max-part-header-size: 8KB
+  compression:
+    enabled: true
+    min-response-size: 1024
+    mime-types: >
+      application/json,application/xml,text/html,text/xml,text/plain,
+      text/css,text/javascript,application/javascript,application/x-javascript,
+      application/font-woff2,application/font-woff,application/font-ttf,font/woff,
+      application/vnd.ms-fontobject,image/svg+xml
 version: 2.15.0
 tess4j:
   data-path: /Users/jmal/studio/myProject/github/jmal-cloud-server/tess4j/datapath
 spring:
   application:
     name: jmalcloud
-  main:
-    allow-circular-references: true
   profiles:
     active: dev
   servlet:
@@ -31,6 +37,9 @@ spring:
   messages:
     basename: i18n/messages
     encoding: UTF-8
+  threads:
+    virtual:
+      enabled: true
 springdoc:
   packages-to-scan: com.jmal.clouddisk.controller,com.jmal.clouddisk.oss
   api-docs:

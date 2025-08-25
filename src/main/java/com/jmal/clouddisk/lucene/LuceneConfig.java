@@ -19,7 +19,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FSLockFactory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,7 +66,7 @@ public class LuceneConfig {
      */
     @Bean
     public Directory luceneDirectory() throws IOException {
-        return FSDirectory.open(getIndexDir());
+        return new NIOFSDirectory(getIndexDir(), FSLockFactory.getDefault());
     }
 
     /**
@@ -127,6 +128,8 @@ public class LuceneConfig {
 
         IndexWriterConfig indexWriterConfig = new IndexWriterConfig(wrapperAnalyzer);
         indexWriterConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+        indexWriterConfig.setRAMBufferSizeMB(64); // 设置内存缓冲区大小，单位为MB
+        indexWriterConfig.setRAMPerThreadHardLimitMB(32); // 设置每个线程的内存限制，单位为MB
         this.indexWriterInstance = new IndexWriter(directory, indexWriterConfig);
         return this.indexWriterInstance;
     }

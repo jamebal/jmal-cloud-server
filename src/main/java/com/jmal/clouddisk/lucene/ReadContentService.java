@@ -1,10 +1,8 @@
 package com.jmal.clouddisk.lucene;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.jmal.clouddisk.media.VideoProcessService;
-import com.jmal.clouddisk.ocr.OcrService;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.PathService;
 import com.jmal.clouddisk.util.FileContentUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,16 +10,6 @@ import nl.siegmann.epublib.domain.Book;
 import nl.siegmann.epublib.domain.Resource;
 import nl.siegmann.epublib.domain.Spine;
 import nl.siegmann.epublib.epub.EpubReader;
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.cos.COSName;
-import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDResources;
-import org.apache.pdfbox.pdmodel.graphics.PDXObject;
-import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
-import org.apache.pdfbox.rendering.PDFRenderer;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.hslf.usermodel.HSLFShape;
 import org.apache.poi.hslf.usermodel.HSLFSlide;
 import org.apache.poi.hslf.usermodel.HSLFSlideShow;
@@ -52,11 +40,10 @@ import java.util.regex.Pattern;
 @Slf4j
 public class ReadContentService {
 
-    private final OcrService ocrService;
+    private final PathService pathService;
 
-    public final CommonFileService commonFileService;
+    private final CoverFileService coverFileService;
 
-    public final VideoProcessService videoProcessService;
 
     /**
      * 将 DWG 文件转换为 MXWeb 文件
@@ -65,77 +52,11 @@ public class ReadContentService {
      * @param fileId 文件 ID
      */
     public void dwg2mxweb(File file, String fileId) {
-        String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
+        String username = pathService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
         // 生成封面图像
         if (CharSequenceUtil.isNotBlank(fileId)) {
             String outputName = file.getName() + Constants.MXWEB_SUFFIX;
-            FileContentUtil.dwgConvert(file.getAbsolutePath(), videoProcessService.getVideoCacheDir(username, fileId), outputName);
-        }
-    }
-
-    public static boolean checkPageContent(PDDocument document, int pageIndex) throws IOException {
-        PDPage page = document.getPage(pageIndex); // 获取页面
-        if (page == null) {
-            return false;
-        }
-        // 检查是否含有图片
-        PDResources resources = page.getResources();
-        if (resources == null) {
-            return false;
-        }
-        for (COSName xObjectName : resources.getXObjectNames()) {
-            PDXObject xObject = resources.getXObject(xObjectName);
-            if (xObject instanceof PDImageXObject) {
-                // 如果找到至少一张图片，则可以提前退出
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public void readPdfContent(File file, String fileId, Writer writer) {
-        try (PDDocument document = Loader.loadPDF(new RandomAccessReadBufferedFile(file))) {
-            String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
-
-            // 生成封面图像
-            if (CharSequenceUtil.isNotBlank(fileId)) {
-                File coverFile = FileContentUtil.pdfCoverImage(file, document, videoProcessService.getVideoCacheDir(username, fileId));
-                commonFileService.updateCoverFileDocument(fileId, coverFile);
-            }
-
-            PDFRenderer pdfRenderer = new PDFRenderer(document);
-            PDFTextStripper pdfStripper = new PDFTextStripper();
-
-            for (int pageIndex = 0; pageIndex < document.getNumberOfPages(); pageIndex++) { // 使用 0-based 索引
-                readPdfOfPage(file, pageIndex, pdfStripper, document, writer, pdfRenderer, username);
-            }
-        } catch (IOException e) {
-            FileContentUtil.readFailed(file, e);
-        }
-    }
-
-    private void readPdfOfPage(File file, int pageIndex, PDFTextStripper pdfStripper, PDDocument document, Writer writer, PDFRenderer pdfRenderer, String username) {
-        try {
-            int pageNumber = pageIndex + 1;
-            pdfStripper.setStartPage(pageNumber); // PDFTextStripper 使用 1-based 索引
-            pdfStripper.setEndPage(pageNumber);
-            String text = pdfStripper.getText(document).trim();
-
-            // 如果页面包含文字，添加提取的文字
-            if (!text.isEmpty()) {
-                writer.write(text);
-            }
-            // 如果页面包含图片或没有文字，则进行 OCR
-            if ((checkPageContent(document, pageIndex) || text.isEmpty()) && Boolean.TRUE.equals(ocrService.getOcrConfig().getEnable())) {
-                String ocrText = ocrService.extractPageWithOCR(file, pdfRenderer, pageIndex, document.getNumberOfPages(), username);
-                if (CharSequenceUtil.isNotBlank(ocrText)) {
-                    writer.write(ocrText);
-                }
-            }
-        } catch (IOException e) {
-            log.error("提取文字失败, {}, 页数: {}", file.getName(), pageIndex, e);
-        } catch (Exception e) {
-            log.error("提取文字失败1, {}, 页数: {}", file.getName(), pageIndex, e);
+            FileContentUtil.dwgConvert(file.getAbsolutePath(), pathService.getVideoCacheDir(username, fileId), outputName);
         }
     }
 
@@ -146,10 +67,10 @@ public class ReadContentService {
             Book book = epubReader.readEpub(fileInputStream);
 
             // 生成封面图像
-            String username = commonFileService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
+            String username = pathService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
             if (CharSequenceUtil.isNotBlank(fileId)) {
-                File coverFile = FileContentUtil.epubCoverImage(book, videoProcessService.getVideoCacheDir(username, fileId));
-                commonFileService.updateCoverFileDocument(fileId, coverFile);
+                File coverFile = FileContentUtil.epubCoverImage(book, pathService.getVideoCacheDir(username, fileId));
+                coverFileService.updateCoverFileDocument(fileId, coverFile);
             }
 
             // 获取章节内容
@@ -323,4 +244,5 @@ public class ReadContentService {
                 return "";
         }
     }
+
 }

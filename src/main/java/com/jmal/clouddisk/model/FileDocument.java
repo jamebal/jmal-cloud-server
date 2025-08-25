@@ -1,7 +1,8 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.media.VideoInfoDO;
-import com.jmal.clouddisk.service.impl.FileServiceImpl;
+import com.jmal.clouddisk.service.impl.CommonFileService;
 import lombok.Data;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
@@ -17,7 +18,7 @@ import java.util.Objects;
  * @author jmal
  */
 @Data
-@Document(collection = FileServiceImpl.COLLECTION_NAME)
+@Document(collection = CommonFileService.COLLECTION_NAME)
 @CompoundIndexes({
         @CompoundIndex(name = "name_1", def = "{'name': 1}"),
         @CompoundIndex(name = "size_1", def = "{'size': 1}"),
@@ -34,7 +35,7 @@ import java.util.Objects;
         @CompoundIndex(name = "doc_tags", def = "{'tags.tagId': 1}"),
         @CompoundIndex(name = "process_marked_folders", def = "{ 'needsEtagUpdate': 1, 'isFolder': 1, 'lastEtagUpdateRequestAt': 1 }"),
 })
-public class FileDocument extends FileBase {
+public class FileDocument extends FileBase implements Reflective {
     private String userId;
     private String username;
     /***

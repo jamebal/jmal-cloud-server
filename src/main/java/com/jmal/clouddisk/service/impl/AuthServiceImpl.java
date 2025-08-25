@@ -61,6 +61,8 @@ public class AuthServiceImpl implements IAuthService {
 
     private final TextEncryptor textEncryptor;
 
+    private final SettingService settingService;
+
     public String loginError() {
         return messageUtil.getMessage("login.error");
     }
@@ -110,31 +112,66 @@ public class AuthServiceImpl implements IAuthService {
                 // 密码正确, 检查MFA状态
                 if (BooleanUtil.isTrue(consumerDO.getMfaEnabled())) {
                     // 需要MFA验证。生成一个短期的、有范围的“预授权Token”
-                    String mfaToken = TokenUtil.createToken(consumerDTO.getUsername(), hashPassword, LocalDateTimeUtil.now().plusMinutes(5));
+                    String mfaToken = getMfaToken(consumerDTO, hashPassword);
                     return ResultUtil.success(new LoginResponse(null, true, mfaToken));
                 } else {
-                    // 无需MFA，直接登录成功
-                    return loginValidSuccess(request, response, consumerDTO, consumerDO);
+                    // 检查是否强制启用多因素认证
+                    if (settingService.getMfaForceEnable()) {
+                        String mfaToken = getMfaToken(consumerDTO, hashPassword);
+                        return ResultUtil.success(new LoginResponse(true, null, mfaToken));
+                    } else {
+                        // 无需MFA，直接登录成功
+                        return loginValidSuccess(request, response, consumerDTO, consumerDO);
+                    }
                 }
             }
         }
         return ResultUtil.error(loginError());
     }
 
+    private static String getMfaToken(ConsumerDTO consumerDTO, String hashPassword) {
+        return TokenUtil.createToken(consumerDTO.getUsername(), hashPassword, LocalDateTimeUtil.now().plusMinutes(5));
+    }
+
     @Override
     public ResponseResult<Object> verifyTotp(HttpServletRequest request, HttpServletResponse response, ConsumerDTO consumerDTO) {
         // 验证预授权Token
-        String hashPassword = userService.getHashPasswordUserName(consumerDTO.getUsername());
-        String username = TokenUtil.getTokenKey(consumerDTO.getMfaToken(), hashPassword);
-        if (CharSequenceUtil.isBlank(username) || !consumerDTO.getUsername().equals(username)) {
-            return ResultUtil.error(messageUtil.getMessage("login.mfaError"));
-        }
+        ResponseResult<Object> result = verifyMafToken(consumerDTO);
+        if (result != null) return result;
         // 验证TOTP码
         if (totpService.isCodeInvalid(consumerDTO.getMfaCode(), consumerDTO.getUsername())) {
             return ResultUtil.error(messageUtil.getMessage("login.mfaError"));
         }
         ConsumerDO consumerDO = userService.getUserInfoByUsername(consumerDTO.getUsername());
         return loginValidSuccess(request, response, consumerDTO, consumerDO);
+    }
+
+    @Override
+    public ResponseResult<Object> initVerifyTotp(HttpServletRequest request, HttpServletResponse response, ConsumerDTO consumerDTO) {
+        // 验证预授权Token
+        ResponseResult<Object> result = verifyMafToken(consumerDTO);
+        if (result != null) return result;
+
+        // 使用前端传回的secret和用户输入的code进行验证
+        if (!totpService.isRawCodeValid(consumerDTO.getMfaSecret(), consumerDTO.getMfaCode())) {
+            return ResultUtil.error(messageUtil.getMessage("login.mfaError"));
+        }
+
+        // 验证成功！将密钥与用户绑定并启用MFA
+        userService.enableMfa(userService.getUserIdByUserName(consumerDTO.getUsername()), consumerDTO.getMfaSecret());
+
+        ConsumerDO consumerDO = userService.getUserInfoByUsername(consumerDTO.getUsername());
+        return loginValidSuccess(request, response, consumerDTO, consumerDO);
+    }
+
+    private ResponseResult<Object> verifyMafToken(ConsumerDTO consumerDTO) {
+        // 验证预授权Token
+        String hashPassword = userService.getHashPasswordUserName(consumerDTO.getUsername());
+        String username = TokenUtil.getTokenKey(consumerDTO.getMfaToken(), hashPassword);
+        if (CharSequenceUtil.isBlank(username) || !consumerDTO.getUsername().equals(username)) {
+            return ResultUtil.error(messageUtil.getMessage("login.mfaError"));
+        }
+        return null;
     }
 
     private static ResponseResult<Object> loginValidSuccess(HttpServletRequest request, HttpServletResponse response, ConsumerDTO userDTO, ConsumerDO consumerDO) {

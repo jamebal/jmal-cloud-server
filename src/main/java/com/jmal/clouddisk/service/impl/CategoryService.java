@@ -4,13 +4,14 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.model.CategoryDO;
 import com.jmal.clouddisk.model.CategoryDTO;
+import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -29,10 +30,10 @@ import java.util.stream.Collectors;
  * @Date 2020/10/26 5:51 下午
  */
 @Service
+@RequiredArgsConstructor
 public class CategoryService {
 
-    @Autowired
-    private MongoTemplate mongoTemplate;
+    private final MongoTemplate mongoTemplate;
 
     private static final String COLLECTION_NAME = "category";
 
@@ -78,7 +79,7 @@ public class CategoryService {
         Query query = new Query();
         query.addCriteria(Criteria.where("categoryIds").is(categoryDTO.getId()));
         query.addCriteria(Criteria.where(Constants.RELEASE).is(true));
-        long count = mongoTemplate.count(query, FileServiceImpl.COLLECTION_NAME);
+        long count = mongoTemplate.count(query, FileDocument.class);
         categoryDTO.setArticleNum(Convert.toInt(count));
         categoryDTO.setValue(Convert.toInt(count));
     }
@@ -369,7 +370,7 @@ public class CategoryService {
             categoryIds.addAll(categoryIdList);
         }
         List<String> categoryIdList1 = mongoTemplate.find(query, CategoryDO.class, COLLECTION_NAME).stream().map(CategoryDO::getId).collect(Collectors.toList());
-        if (categoryIdList1.size() > 0) {
+        if (!categoryIdList1.isEmpty()) {
             categoryIds.addAll(findLoopCategory(false, categoryIdList1));
         }
         return categoryIds;

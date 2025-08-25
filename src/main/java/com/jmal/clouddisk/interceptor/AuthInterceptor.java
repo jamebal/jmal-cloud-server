@@ -7,6 +7,7 @@ import com.jmal.clouddisk.model.UserAccessTokenDO;
 import com.jmal.clouddisk.model.rbac.UserLoginContext;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.RoleService;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -18,6 +19,7 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
@@ -36,6 +38,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class AuthInterceptor implements HandlerInterceptor {
 
     public static final String JMAL_TOKEN = "jmal-token";
@@ -57,10 +60,8 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     private final UserServiceImpl userService;
 
-    public AuthInterceptor(IAuthDAO authDAO, UserServiceImpl userService) {
-        this.authDAO = authDAO;
-        this.userService = userService;
-    }
+    private final RoleService roleService;
+
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
@@ -116,7 +117,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     public void setAuthorities(String username) {
         List<String> authorities = CaffeineUtil.getAuthoritiesCache(username);
         if (authorities == null || authorities.isEmpty()) {
-            authorities = userService.getAuthorities(username);
+            authorities = roleService.getAuthorities(username);
             CaffeineUtil.setAuthoritiesCache(username, authorities);
         }
         setAuthorities(username, authorities);

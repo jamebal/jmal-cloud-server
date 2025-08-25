@@ -3,9 +3,11 @@ package com.jmal.clouddisk.webdav;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.config.WebFilter;
+import com.jmal.clouddisk.service.impl.RoleService;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.PasswordHash;
+import lombok.RequiredArgsConstructor;
 import org.apache.catalina.Context;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
@@ -20,9 +22,12 @@ import java.security.Principal;
 import java.util.*;
 
 @Component
+@RequiredArgsConstructor
 public class MyRealm extends RealmBase {
 
     private final UserServiceImpl userService;
+
+    private final RoleService roleService;
 
     private final FileProperties fileProperties;
 
@@ -44,11 +49,6 @@ public class MyRealm extends RealmBase {
     private static final List<WebdavMethod> LIST_METHODS = Arrays.asList(WebdavMethod.GET, WebdavMethod.HEAD, WebdavMethod.TRACE, WebdavMethod.OPTIONS, WebdavMethod.PROPFIND, WebdavMethod.PROPPATCH);
 
     private static final List<String> DEFAULT_ROLES = List.of("webdav");
-
-    public MyRealm(UserServiceImpl userService, FileProperties fileProperties) {
-        this.userService = userService;
-        this.fileProperties = fileProperties;
-    }
 
     @Override
     protected String getPassword(String username) {
@@ -119,7 +119,7 @@ public class MyRealm extends RealmBase {
     public int maxAuthority(String username) {
         List<String> authorities = CaffeineUtil.getAuthoritiesCache(username);
         if (authorities == null) {
-            authorities = userService.getAuthorities(username);
+            authorities = roleService.getAuthorities(username);
         }
 
         Map<String, Integer> authorityMap = Map.of(

@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -11,7 +12,7 @@ import lombok.experimental.Accessors;
  */
 @Data
 @Accessors(chain = true)
-public class UserTokenDO {
+public class UserTokenDO implements Reflective {
     private String username;
     /***
      * 最后一次访问的时间戳

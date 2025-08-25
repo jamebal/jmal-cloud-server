@@ -3,7 +3,6 @@ package com.jmal.clouddisk.oss;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
@@ -22,10 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -360,7 +356,7 @@ public class BaseOssService {
             // 临时文件的最后修改时间大于5秒就上传
             if ((System.currentTimeMillis() - lastModified) > 5000) {
                 removeWaitingUploadCache(objectName);
-                ThreadUtil.execute(() -> ossService.uploadFile(tempFileAbsolutePath, objectName));
+                CompletableFuture.runAsync(() -> ossService.uploadFile(tempFileAbsolutePath, objectName));
             }
         });
     }

@@ -2,6 +2,7 @@ package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import com.jmal.clouddisk.config.Reflective;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
  * @Date 2020/9/30 10:34 上午
  */
 @Data
-public class UserAccessTokenDTO {
+public class UserAccessTokenDTO implements Reflective {
     String id;
     /***
      * 授权码名称

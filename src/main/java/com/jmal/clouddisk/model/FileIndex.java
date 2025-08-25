@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.util.HashUtil;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -11,7 +12,7 @@ import java.io.File;
  */
 @Data
 @Accessors(chain = true)
-public class FileIndex {
+public class FileIndex implements Reflective {
 
     public FileIndex(File file, FileIntroVO fileIntroVO) {
         this.file = file;

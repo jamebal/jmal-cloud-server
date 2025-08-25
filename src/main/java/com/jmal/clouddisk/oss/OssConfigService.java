@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.oss;
 
 import cn.hutool.core.io.file.PathUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
@@ -34,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -62,7 +62,7 @@ public class OssConfigService {
     @PostConstruct
     public void init() {
         // load config
-        ThreadUtil.execute(() -> {
+        CompletableFuture.runAsync(() -> {
             List<OssConfigDO> ossConfigDOList = mongoTemplate.findAll(OssConfigDO.class);
             for (OssConfigDO ossConfigDO : ossConfigDOList) {
                 String userId = ossConfigDO.getUserId();

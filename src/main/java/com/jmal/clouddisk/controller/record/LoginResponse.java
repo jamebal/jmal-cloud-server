@@ -1,3 +1,5 @@
 package com.jmal.clouddisk.controller.record;
 
-public record LoginResponse(String token, boolean mfaRequired, String mfaToken) {}
+import com.jmal.clouddisk.config.Reflective;
+
+public record LoginResponse(Boolean mfaForceEnable, Boolean mfaRequired, String mfaToken) implements Reflective {}

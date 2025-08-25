@@ -4,7 +4,7 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
@@ -15,9 +15,9 @@ import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -41,36 +42,28 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class SettingService {
 
-    @Autowired
-    FileProperties fileProperties;
+    private final FileProperties fileProperties;
 
-    @Autowired
-    private MongoTemplate mongoTemplate;
+    private final MongoTemplate mongoTemplate;
 
     protected static final String COLLECTION_NAME_WEBSITE_SETTING = "websiteSetting";
 
-    @Autowired
-    private IAuthDAO authDAO;
+    private final IAuthDAO authDAO;
 
-    @Autowired
-    private MenuService menuService;
+    private final MenuService menuService;
 
-    @Autowired
-    private UserServiceImpl userService;
+    private final UserServiceImpl userService;
 
-    @Autowired
-    private RoleService roleService;
+    private final RoleService roleService;
 
-    @Autowired
-    UserLoginHolder userLoginHolder;
+    private final UserLoginHolder userLoginHolder;
 
-    @Autowired
-    private EtagService etagService;
+    private final EtagService etagService;
 
-    @Autowired
-    CommonFileService commonFileService;
+    private final MessageService messageService;
 
     private final AtomicBoolean calculateFolderSizeScheduled = new AtomicBoolean(false);
 
@@ -296,7 +289,7 @@ public class SettingService {
     private void ensureProcessCalculateFolderSize() {
         if (calculateFolderSizeScheduled.compareAndSet(false, true)) {
             String notifyUsername = userLoginHolder.getUsername();
-            ThreadUtil.execute(() -> {
+            CompletableFuture.runAsync(() -> {
                 try {
                     // 清除之前的文件夹大小数据
                     clearFolderSizInDb();
@@ -337,7 +330,7 @@ public class SettingService {
                 String currentFolderNormalizedPath = folderDoc.getPath() + folderDoc.getName() + "/";
                 try {
                     // 计算文件夹大小
-                    long size = etagService.getFolderSize(FileServiceImpl.COLLECTION_NAME, folderDoc.getUserId(), currentFolderNormalizedPath);
+                    long size = etagService.getFolderSize(CommonFileService.COLLECTION_NAME, folderDoc.getUserId(), currentFolderNormalizedPath);
                     // 更新数据库中的大小
                     Update update = new Update();
                     update.set(Constants.SIZE, size);
@@ -346,7 +339,7 @@ public class SettingService {
                     // 推送进度
                     hybridThrottleExecutor.execute(() -> {
                         double progress = (totalSize > 0) ? (double) calculateFolderSizeProcessedCount.get() / totalSize * 100 : 100.0;
-                        commonFileService.pushMessage(notifyUsername, NumberUtil.round(progress, 2), "calculateFolderSizeProcessed");
+                        messageService.pushMessage(notifyUsername, NumberUtil.round(progress, 2), "calculateFolderSizeProcessed");
                     });
 
                 } catch (Exception e) {
@@ -384,4 +377,19 @@ public class SettingService {
         mongoTemplate.updateMulti(query, update, FileDocument.class);
     }
 
+    public boolean getMfaForceEnable() {
+        Query query = new Query();
+        WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(query, WebsiteSettingDO.class, COLLECTION_NAME_WEBSITE_SETTING);
+        if (websiteSettingDO != null) {
+            return BooleanUtil.isTrue(websiteSettingDO.getMfaForceEnable());
+        }
+        return false;
+    }
+
+    public void setMfaForceEnable(Boolean mfaForceEnable) {
+        Query query = new Query();
+        Update update = new Update();
+        update.set("mfaForceEnable", mfaForceEnable);
+        mongoTemplate.upsert(query, update, COLLECTION_NAME_WEBSITE_SETTING);
+    }
 }

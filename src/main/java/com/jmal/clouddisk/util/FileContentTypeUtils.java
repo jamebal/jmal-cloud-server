@@ -208,7 +208,7 @@ public class FileContentTypeUtils {
         CONTENT_TYPE_MAP.put("iges", "application/acad");
         CONTENT_TYPE_MAP.put("igs", "application/acad");
         CONTENT_TYPE_MAP.put("dwt", "application/acad");
-        CONTENT_TYPE_MAP.put("dng", "application/acad");
+        CONTENT_TYPE_MAP.put("dng", "image/x-adobe-dng");
         CONTENT_TYPE_MAP.put("e", "text/x-eiffel");
         CONTENT_TYPE_MAP.put("egon", "application/x-egon");
         CONTENT_TYPE_MAP.put("eif", "text/x-eiffel");

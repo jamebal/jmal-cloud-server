@@ -59,7 +59,7 @@ public class FileListener implements DirectoryChangeListener {
 
     private final ScheduledExecutorService scheduler = ThreadUtil.createScheduledExecutor(2);
 
-    private final ExecutorService processExecutor = ThreadUtil.newFixedExecutor(Runtime.getRuntime().availableProcessors(), 10000, "file-process-thread", true);
+    private final ExecutorService processExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     @PostConstruct
     public void init() {
@@ -101,10 +101,7 @@ public class FileListener implements DirectoryChangeListener {
             log.info("执行增量文件扫描，确保100%处理...");
             rebuildIndexTaskService.doSync(null, null, false);
 
-            rebuildIndexTaskService.onSyncComplete(() -> {
-                scanningInProgress.set(false);
-                log.info("增量文件扫描完成，已添加到处理队列。");
-            });
+            rebuildIndexTaskService.onSyncComplete(() -> scanningInProgress.set(false));
         });
     }
 
@@ -154,13 +151,11 @@ public class FileListener implements DirectoryChangeListener {
     private void processQueueItems() {
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                DirectoryChangeEvent event = processingQueue.poll(100, TimeUnit.MILLISECONDS);
-                if (event != null) {
-                    try {
-                        processEvent(event);
-                    } catch (Exception e) {
-                        log.error("处理事件失败: {}, 路径: {}", event.eventType(), event.path(), e);
-                    }
+                DirectoryChangeEvent event = processingQueue.take();
+                try {
+                    processEvent(event);
+                } catch (Exception e) {
+                    log.error("处理事件失败: {}, 路径: {}", event.eventType(), event.path(), e);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -189,7 +184,7 @@ public class FileListener implements DirectoryChangeListener {
         // 增加事件计数器，检测高负载
         int currentCount = eventBurstCounter.incrementAndGet();
         lastBurstTime = Instant.now();
-        if (currentCount > EVENT_BURST_THRESHOLD) {
+        if (currentCount > EVENT_BURST_THRESHOLD && !highLoadDetected.get()) {
             highLoadDetected.set(true);
             log.warn("检测到高事件负载: {}事件/{}秒，标记为需要增量扫描", currentCount, BURST_WINDOW.getSeconds());
         }

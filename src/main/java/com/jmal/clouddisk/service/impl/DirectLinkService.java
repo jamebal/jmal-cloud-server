@@ -25,7 +25,7 @@ public class DirectLinkService {
 
     public static final String COLLECTION_NAME = "direct_links";
     public static final String MARK = "mark";
-    private final FileServiceImpl fileService;
+    private final CommonFileService commonFileService;
     private final UserLoginHolder userLoginHolder;
     private final MongoTemplate mongoTemplate;
 
@@ -106,7 +106,7 @@ public class DirectLinkService {
      * @param userId 用户id
      */
     private void checkOwnership(String fileId, String userId) {
-        FileDocument fileDocument = fileService.getById(fileId);
+        FileDocument fileDocument = commonFileService.getById(fileId);
         if (fileDocument == null) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS);
         }

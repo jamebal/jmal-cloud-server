@@ -2,6 +2,7 @@ package com.jmal.clouddisk.model;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.util.TimeUntils;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
  * @Date 2020/11/12 2:05 下午
  */
 @Data
-public class FileBase {
+public class FileBase implements Reflective {
 
     @Id
     String id;

@@ -10,9 +10,7 @@ import com.jmal.clouddisk.office.model.Track;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.service.impl.CommonFileService;
-import com.jmal.clouddisk.service.impl.LogService;
-import com.jmal.clouddisk.service.impl.UserLoginHolder;
+import com.jmal.clouddisk.service.impl.*;
 import com.jmal.clouddisk.util.TimeUntils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +39,8 @@ public class SaveCallback implements Callback {
     private final MongoTemplate mongoTemplate;
 
     private final CommonFileService commonFileService;
+
+    private final MessageService messageService;
 
     private final LogService logService;
 
@@ -76,7 +76,7 @@ public class SaveCallback implements Callback {
             fileDocument.setMd5(md5);
             // 修改文件日志
             logService.asyncAddLogFileOperation(fileUsername, Paths.get(fileDocument.getPath(), fileDocument.getName()).toString(), "修改文件");
-            commonFileService.pushMessage(userLoginHolder.getUsername(), fileDocument, Constants.UPDATE_FILE);
+            messageService.pushMessage(userLoginHolder.getUsername(), fileDocument, Constants.UPDATE_FILE);
 
             // 修改文件之后保存历史版本
             String relativePath = Paths.get(fileDocument.getPath(), fileDocument.getName()).toString();

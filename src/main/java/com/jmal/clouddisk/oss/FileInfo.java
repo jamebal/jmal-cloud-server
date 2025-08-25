@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.oss;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.FileIntroVO;
 import com.jmal.clouddisk.oss.web.WebOssCommonService;
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 import java.util.Date;
 
 @Data
-public class FileInfo {
+public class FileInfo implements Reflective {
     private String bucketName;
     private String key;
     private String eTag;

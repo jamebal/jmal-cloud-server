@@ -12,6 +12,7 @@ import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.model.query.SearchOptionHistoryDO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.service.impl.TagService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -53,7 +54,7 @@ public class SearchFileService {
     private final UserLoginHolder userLoginHolder;
     private final TagService tagService;
     private final MongoTemplate mongoTemplate;
-    private final IUserService userService;
+    private final CommonUserService userService;
 
     public boolean existsSha256(String fileIndexHash) {
         IndexSearcher indexSearcher = null;

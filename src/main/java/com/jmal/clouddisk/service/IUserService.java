@@ -121,48 +121,6 @@ public interface IUserService {
     String getUserNameById(String userId);
 
     /***
-     * 是否禁用webp(默认开启)
-     * @param userId userId
-     * @param disabled disabled
-     */
-    void disabledWebp(String userId, Boolean disabled);
-
-    /***
-     * 获取是否禁用webp状态
-     * @param userId userId
-     * @return disabled
-     */
-    boolean getDisabledWebp(String userId);
-
-    /***
-     * 获取该用户的权限信息
-     * @param username username
-     * @return 用户权限列表
-     */
-    List<String> getAuthorities(String username);
-
-    /***
-     * 获取该用户的菜单信息
-     * @param userId userId
-     * @return 用户菜单Id列表
-     */
-    List<String> getMenuIdList(String userId);
-
-    /***
-     * 根据角色获取用户名列表
-     * @param roleId 角色Id
-     * @return 用户名列表
-     */
-    List<String> getUserNameListByRole(String roleId);
-
-    /***
-     * 根据角色获取用户名列表
-     * @param rolesIds 角色Id列表
-     * @return 用户名列表
-     */
-    List<String> getUserNameListByRole(List<String> rolesIds);
-
-    /***
      * 判断该用户是否为创建者
      * @param userId userId
      */

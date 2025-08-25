@@ -1,6 +1,8 @@
 package com.jmal.clouddisk.model;
 
 import cn.hutool.core.util.StrUtil;
+import com.jmal.clouddisk.config.Reflective;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.List;
@@ -11,7 +13,7 @@ import java.util.List;
  * @Date 2020/11/5 3:58 下午
  */
 @Data
-public class WebsiteSettingDTO {
+public class WebsiteSettingDTO implements Reflective {
     String userId;
     /***
      * 用户头像
@@ -108,6 +110,9 @@ public class WebsiteSettingDTO {
     String iframe;
 
     Boolean exactSearch;
+
+    @Schema(name = "forceEnable", title = "是否强制启用多因素认证")
+    Boolean mfaForceEnable;
 
     @Data
     public static class OperatingButton {

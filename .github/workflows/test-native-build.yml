@@ -1,41 +1,146 @@
-name: Build test native
+name: Build test native (Multi-Arch)
 
 on:
-  push:
-    branches:
-      - 'master'
   workflow_dispatch:
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
+  build-per-arch:
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            self_hosted_label: [self-hosted, Linux, X64]
+          - arch: arm64
+            self_hosted_label: [self-hosted, Linux, ARM64]
+
+    runs-on: ${{ matrix.self_hosted_label }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract project version from pom.xml
-        id: project_version # 给步骤一个id以便后续引用
-        run: |
-          VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-          echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT" # 使用 GITHUB_OUTPUT 在步骤间传递值   
+      # 拉取前端项目代码
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          repository: jamebal/jmal-cloud-view
+          path: frontend
 
-      # ------------------- 阶段二: 使用 GraalVM 构建 Native Image -------------------
+      - name: Set up Node.js 16.20.2
+        uses: actions/setup-node@v4
+        with:
+          node-version: 16.20.2
+
+      - name: Install frontend dependencies and Build
+        working-directory: ./frontend
+        run: |
+          npm install
+          npm run build:prod
+
+      - name: rename frontend dist
+        working-directory: ./frontend
+        run: |
+          mkdir -p frontend
+          mv dist/ frontend/
+          mv frontend/dist/ frontend/frontend/
+
+      - name: Set Maven Environmental
+        run: |
+          echo "/opt/maven/bin" >> $GITHUB_PATH
+
       - name: Set up GraalVM for Native Image
         uses: graalvm/setup-graalvm@v1
         with:
-          java-version: '24' # GraalVM 24.x 基于 JDK 24
+          java-version: '24'
           distribution: 'graalvm'
-          version: '24' # 指定使用 GraalVM 24.x
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          cache: 'maven' # GraalVM action 也支持缓存 Maven 依赖
+          cache: 'maven'
 
-      - name: Build Native Image with Maven
-        run: mvn clean package -Pnative -DskipTests
-        # -Pnative 激活 pom.xml 中为 native image 定义的 profile
-        # native:compile 是 GraalVM 插件提供的编译目标
+      - name: Check Maven version
+        run: mvn -v
 
+      # 构建带插桩的 Native Image
+      - name: Build Instrumented Native Image
+        run: |
+          mvn clean package -Pnative -DskipTests -Dnative-image.jvmArgs="-Xmx20g" -Dnative-image.addArgs="--pgo-instrument -o target/jmalcloud-instrumented"
+
+      # 运行插桩程序以生成 Profile 文件
+      - name: Run Instrumented App to Generate Profile
+        run: |
+          # 赋予执行权限
+          chmod +x target/jmalcloud-instrumented
+          
+          rm -rf ${HOME}/jmalcloud
+          rm -f jmalcloud.iprof
+          
+          mkdir ${HOME}/jmalcloud
+          
+          echo "Starting instrumented application in the background..."
+          # 在后台运行程序，并将 profile 文件名指定为 jmalcloud.iprof
+          # 使用 & 将其放入后台
+          ./target/jmalcloud-instrumented -XX:ProfilesDumpFile='jmalcloud.iprof' --spring.data.mongodb.uri=${{secrets.MONGODB_URI}} --file.rootDir=${HOME}/jmalcloud > "${HOME}/app.log" 2>&1 &
+          
+          # 获取后台进程的 PID (Process ID)
+          APP_PID=$!
+          echo "应用程序已启动，进程ID为: $APP_PID"
+          
+          # 等待应用启动
+          for i in {1..30}; do
+            if curl -s http://localhost:8088/public/health | grep -q '^UP'; then
+              echo "App is up"
+              break
+            fi
+            sleep 2
+          done
+          
+          # 创建管理员
+          curl --location --request POST 'http://localhost:8088/public/initialization?password=123456&id=&username=admin&showName=%E7%AE%A1%E7%90%86%E5%91%981&avatar=https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif&slogan=&introduction=&webpDisabled=&roles=&quota=10'
+          # 上传文件
+          cp -r target/test-classes ${HOME}/jmalcloud/admin/
+          
+          # 等待应用程序运行一段时间以收集性能数据
+          echo "等待应用程序运行 120 秒以收集性能数据..."
+          sleep 120
+          
+          # 打印日志文件的最后 100 行
+          tail -n 100 "${HOME}/app.log"
+          
+          echo "发送 SIGINT 信号来优雅地终止进程，这会触发 profile 文件的写入"
+          kill -15 $APP_PID
+          
+          echo "等待几秒钟，让进程优雅地终止..."
+          sleep 5
+          
+          ls -lh 'jmalcloud.iprof'
+          
+          ls -lh 'jmalcloud.iprof'
+
+      # 验证 Profile 文件是否已创建
+      - name: Verify Profile File Creation
+        run: |
+          echo "Checking if profile file was created..."
+          ls -l jmalcloud.iprof
+          if [ ! -f "jmalcloud.iprof" ]; then
+            echo "Error: Profile file jmalcloud.iprof was not created."
+            exit 1
+          fi
+
+      # 使用 Profile 文件构建最终优化的 Native Image -march=compatibility
+      - name: Build PGO-Optimized Native Image -march=compatibility
+        run: mvn clean package -Pnative -DskipTests -Dnative-image.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--pgo=jmalcloud.iprof -o target/jmalcloud"
+
+  build-docker-and-push:
+    needs: build-per-arch
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            self_hosted_label: [self-hosted, Linux, X64]
+          - arch: arm64
+            self_hosted_label: [self-hosted, Linux, ARM64]
+    runs-on: ${{ matrix.self_hosted_label }}
+
+    steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -52,15 +157,81 @@ jobs:
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
-      - name: Build and push Docker image to multiple registries
+      - name: Set up GraalVM for JAVA HOME
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '24'
+          distribution: 'graalvm'
+
+      - name: Set Maven Environmental
+        run: |
+          echo "/opt/maven/bin" >> $GITHUB_PATH
+
+      - name: Extract project version from pom.xml
+        id: project_version
+        run: |
+          VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+          echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push arch-specific image -march=compatibility
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile.native
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          file: ./Dockerfile
           push: true
           tags: |
-            jmal/jmalcloud:test
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud:test
-          platforms: linux/amd64,linux/arm64
+            jmal/jmalcloud_native:test-${{ matrix.arch }}
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
+
+      - name: Inspect the pushed image RIGHT AFTER push
+        if: ${{ success() }}
+        run: |
+          echo "--- Inspecting Docker Hub image ---"
+          docker manifest inspect jmal/jmalcloud_native:test-${{ matrix.arch }}
+
+          echo "--- Inspecting GHCR image ---"
+          docker manifest inspect ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-${{ matrix.arch }}
+
+  merge-manifests:
+    needs: build-docker-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for registry to become consistent
+        run: |
+          echo "Waiting for 30 seconds to allow registry caches to update..."
+          sleep 30
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_IO_USERNAME }}
+          password: ${{ secrets.GHCR_IO_TOKEN }}
+
+      - name: Create and push Docker Hub manifest
+        run: |
+          docker manifest create jmal/jmalcloud_native:test \
+            --amend jmal/jmalcloud_native:test-amd64 \
+            --amend jmal/jmalcloud_native:test-arm64
+          docker manifest push jmal/jmalcloud_native:test
+
+      - name: Create and push GHCR manifest
+        run: |
+          docker manifest create ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test \
+            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-amd64 \
+            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test-arm64
+          docker manifest push ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test

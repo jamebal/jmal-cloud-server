@@ -10,7 +10,8 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.service.impl.FileServiceImpl;
+import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.util.HashUtil;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.result.UpdateResult;
@@ -35,6 +36,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -60,7 +62,7 @@ public class EtagService {
 
     private final FileProperties fileProperties;
 
-    private final IUserService userService;
+    private final CommonUserService userService;
 
     private static final String EMPTY_FOLDER_ETAG_BASE_STRING = "EMPTY_FOLDER_REPRESENTATION_MONGO_V2";
     private static final int MAX_ETAG_UPDATE_ATTEMPTS = 5; // 最大失败重试次数
@@ -77,7 +79,7 @@ public class EtagService {
         if (executorMarkedFoldersService == null) {
             executorMarkedFoldersService = ThreadUtil.newFixedExecutor(1, 1, "EtagWorker-", false);
         }
-        ThreadUtil.execute(() -> {
+        CompletableFuture.runAsync(() -> {
             Query queryNoEtagQuery = new Query();
             queryNoEtagQuery.addCriteria(Criteria.where(Constants.ETAG).exists(false).and(Constants.IS_FOLDER).is(true));
             long countOfFoldersWithoutEtag = mongoTemplate.count(queryNoEtagQuery, FileDocument.class);
@@ -455,7 +457,7 @@ public class EtagService {
             newCalculatedEtag = HashUtil.sha256(combinedRepresentation.toString());
 
             // 计算文件夹大小
-            folderSize = getFolderSize(FileServiceImpl.COLLECTION_NAME, userId, currentFolderNormalizedPath);
+            folderSize = getFolderSize(CommonFileService.COLLECTION_NAME, userId, currentFolderNormalizedPath);
         }
 
         if (!newCalculatedEtag.equals(oldEtag)) {

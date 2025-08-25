@@ -1,4 +1,4 @@
-FROM ghcr.io/jamebal/jdk21_ffmpeg:latest
+FROM ghcr.io/jamebal/jmalcloud_mid:latest
 
 ARG VERSION
 
@@ -7,7 +7,6 @@ ENV RUN_ENVIRONMENT prod
 ENV JVM_OPTS ""
 ENV LOG_LEVEL warn
 
-# 是否开启精确搜索
 ENV EXACT_SEARCH false
 ENV NGRAM_MAX_CONTENT_LENGTH_MB "5"
 ENV NGRAM_MIN_SIZE "2"
@@ -18,34 +17,12 @@ ENV MONITOR_IGNORE_FILE_PREFIX ".DS_Store,._"
 ENV FILE_ROOT_DIR /jmalcloud/files
 ENV TESS4J_DATA_PATH /jmalcloud/tess4j/datapath
 
-ADD target/clouddisk-${VERSION}.jar /usr/local/
+COPY docker-entrypoint.sh target/jmalcloud frontend/frontend target/*.so /app/
+
+RUN chmod +x /app/jmalcloud && chmod +x /app/docker-entrypoint.sh
 
 VOLUME /jmalcloud/
 
-# 设置支持的平台
-ARG TARGETPLATFORM
-RUN echo "Building for platform: $TARGETPLATFORM"
-LABEL org.label-schema.build.multi-platform=true
-ENV PLATFORM=$TARGETPLATFORM
-ENV VERSION=${VERSION}
-
-# 将 Linux/arm64/v8 架构设置为默认平台
-# 如果需要，可以根据需要更改此设置
-ENV DOCKER_DEFAULT_PLATFORM=linux/amd64,linux/arm64
-
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-
-RUN apt-get update && \
-    apt-get install -y gosu && \
-    chmod +x /docker-entrypoint.sh && \
-    rm -rf /var/lib/apt/lists/*
-
 EXPOSE 8088
 
-# FTP Server
-EXPOSE 8089
-
-HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8088/public/health > /dev/null || exit 1
-
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

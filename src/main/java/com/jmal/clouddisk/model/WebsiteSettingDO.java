@@ -1,5 +1,7 @@
 package com.jmal.clouddisk.model;
 
+import com.jmal.clouddisk.config.Reflective;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.List;
@@ -10,7 +12,7 @@ import java.util.List;
  * @Date 2020/11/5 2:45 下午
  */
 @Data
-public class WebsiteSettingDO {
+public class WebsiteSettingDO implements Reflective {
 
     /***
      * 站点背景大图
@@ -95,4 +97,7 @@ public class WebsiteSettingDO {
      * iframe预览配置
      */
     String iframe;
+
+    @Schema(name = "forceEnable", title = "是否强制启用多因素认证")
+    Boolean mfaForceEnable;
 }
