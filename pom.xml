@@ -109,6 +109,12 @@
             <groupId>dev.samstevens.totp</groupId>
             <artifactId>totp</artifactId>
             <version>1.7.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.zxing</groupId>
+                    <artifactId>javase</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- spring-->
         <dependency>
@@ -132,6 +138,10 @@
                 <exclusion>
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.tomcat.embed</groupId>
+                    <artifactId>tomcat-embed-websocket</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

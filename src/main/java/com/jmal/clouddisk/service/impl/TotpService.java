@@ -2,17 +2,13 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
-import com.jmal.clouddisk.exception.CommonException;
-import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.WebsiteSettingDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IUserService;
 import dev.samstevens.totp.code.CodeVerifier;
-import dev.samstevens.totp.exceptions.QrGenerationException;
 import dev.samstevens.totp.qr.QrData;
 import dev.samstevens.totp.qr.QrGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
-import dev.samstevens.totp.util.Utils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
@@ -50,12 +46,7 @@ public class TotpService {
                 .digits(6)
                 .period(30)
                 .build();
-        try {
-            byte[] imageData = qrGenerator.generate(data);
-            return Utils.getDataUriForImage(imageData, qrGenerator.getImageMimeType());
-        } catch (QrGenerationException e) {
-            throw new CommonException(ExceptionType.WARNING.getCode(), "无法生成MFA二维码");
-        }
+        return data.getUri();
     }
 
     /**
