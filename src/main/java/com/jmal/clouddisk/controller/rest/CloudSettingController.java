@@ -147,7 +147,7 @@ public class CloudSettingController {
         return ResultUtil.success(commonUserFileService.getDisabledWebp(userId));
     }
 
-    @Operation(summary = "是否禁用webp(默认开启)")
+    @Operation(summary = "是否禁用webp(默认关闭)")
     @PutMapping("/user/setting/disabled/webp")
     @Permission("sys:user:update")
     @LogOperatingFun

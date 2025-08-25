@@ -76,8 +76,6 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     private final CommonUserFileService commonUserFileService;
 
-    private final IFileService fileService;
-
     private final IFileVersionService fileVersionService;
 
     private final LuceneService luceneService;

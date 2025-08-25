@@ -4,8 +4,8 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.jmal.clouddisk.controller.sse.Message;
-import com.jmal.clouddisk.controller.sse.SseController;
+import com.jmal.clouddisk.controller.rest.sse.Message;
+import com.jmal.clouddisk.controller.rest.sse.SseController;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -63,7 +63,7 @@ public class MessageService {
         if (space == null) {
             space = 0L;
         }
-        ConsumerDO consumerDO = commonUserService.userInfoById(userId);
+        ConsumerDO consumerDO = commonUserService.getUserInfoById(userId);
         if (consumerDO != null && consumerDO.getQuota() != null) {
             if (space >= consumerDO.getQuota() * 1024L * 1024L * 1024L) {
                 // 空间已满

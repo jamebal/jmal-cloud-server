@@ -178,6 +178,7 @@ public class UserServiceImpl implements IUserService {
             update.set("slogan", slogan);
             consumerDO.setSlogan(slogan);
         }
+
         String introduction = user.getIntroduction();
         if (!CharSequenceUtil.isBlank(introduction)) {
             update.set("introduction", introduction);
@@ -185,6 +186,13 @@ public class UserServiceImpl implements IUserService {
             update.set("introduction", "");
         }
         consumerDO.setIntroduction(introduction);
+
+        Boolean webpDisabled = user.getWebpDisabled();
+        if (webpDisabled != null) {
+            update.set("webpDisabled", webpDisabled);
+            consumerDO.setWebpDisabled(webpDisabled);
+        }
+
         String fileId = "";
         if (!CharSequenceUtil.isBlank(user.getAvatar())) {
             fileId = user.getAvatar();

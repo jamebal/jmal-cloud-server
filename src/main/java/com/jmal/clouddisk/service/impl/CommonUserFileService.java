@@ -505,9 +505,7 @@ public class CommonUserFileService {
 
     public boolean getDisabledWebp(String userId) {
         boolean result = true;
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(userId));
-        ConsumerDO consumer = mongoTemplate.findOne(query, ConsumerDO.class);
+        ConsumerDO consumer = commonUserService.getUserInfoById(userId);
         if (consumer != null && consumer.getWebpDisabled() != null) {
             result = consumer.getWebpDisabled();
         }

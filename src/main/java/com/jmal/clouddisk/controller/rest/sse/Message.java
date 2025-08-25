@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.controller.sse;
+package com.jmal.clouddisk.controller.rest.sse;
 
 import lombok.Getter;
 import lombok.Setter;

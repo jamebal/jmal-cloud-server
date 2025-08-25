@@ -68,14 +68,8 @@ public class CommonUserService {
     }
 
     public ConsumerDO getUserInfoById(String userId) {
-        if (CharSequenceUtil.isBlank(userId)) {
-            return null;
-        }
-        return mongoTemplate.findById(userId, ConsumerDO.class);
-    }
-
-    public ConsumerDO userInfoById(String userId) {
-        return getUserInfoById(userId);
+        String username = getUserNameById(userId);
+        return getUserInfoByUsername(username);
     }
 
     /**
