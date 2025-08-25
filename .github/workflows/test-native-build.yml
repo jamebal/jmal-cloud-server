@@ -44,7 +44,7 @@ jobs:
           mv dist/ frontend/
           mv frontend/dist/ frontend/frontend/
 
-      - name: Add Maven to PATH
+      - name: Set Maven Environmental
         run: |
           echo "/opt/maven/bin" >> $GITHUB_PATH
 
@@ -156,6 +156,10 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
+
+      - name: Set Maven Environmental
+        run: |
+          echo "/opt/maven/bin" >> $GITHUB_PATH
 
       - name: Extract project version from pom.xml
         id: project_version
