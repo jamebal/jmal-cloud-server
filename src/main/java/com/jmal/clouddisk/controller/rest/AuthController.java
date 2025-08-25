@@ -47,6 +47,13 @@ public class AuthController {
         return authService.verifyTotp(request, response, consumerDTO);
     }
 
+    @Operation(summary = "初始化并验证TOTP")
+    @LogOperatingFun(logType = LogOperation.Type.LOGIN)
+    @PostMapping("/public/init-verify-totp")
+    public ResponseResult<Object> initVerifyTotp(HttpServletRequest request, HttpServletResponse response, @RequestBody ConsumerDTO consumerDTO) {
+        return authService.initVerifyTotp(request, response, consumerDTO);
+    }
+
     @Operation(summary = "校验旧密码")
     @PostMapping("/valid-old-pass")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)

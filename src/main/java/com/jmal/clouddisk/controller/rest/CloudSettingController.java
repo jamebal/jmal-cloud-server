@@ -13,7 +13,6 @@ import com.jmal.clouddisk.model.WebsiteSettingDTO;
 import com.jmal.clouddisk.ocr.OcrConfig;
 import com.jmal.clouddisk.ocr.OcrService;
 import com.jmal.clouddisk.service.IAuthService;
-import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonUserFileService;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -36,8 +35,6 @@ public class CloudSettingController {
     private final SettingService settingService;
 
     private final TaskProgressService taskProgressService;
-
-    private final IUserService userService;
 
     private final CommonUserFileService commonUserFileService;
 
@@ -147,15 +144,6 @@ public class CloudSettingController {
         return ResultUtil.success(commonUserFileService.getDisabledWebp(userId));
     }
 
-    @Operation(summary = "是否禁用webp(默认关闭)")
-    @PutMapping("/user/setting/disabled/webp")
-    @Permission("sys:user:update")
-    @LogOperatingFun
-    public ResponseResult<Object> disabledWebp(@RequestParam String userId, @RequestParam Boolean disabled) {
-        userService.disabledWebp(userId, disabled);
-        return ResultUtil.success();
-    }
-
     @Operation(summary = "加载ldap配置")
     @GetMapping("/ldap/config")
     public ResponseResult<Object> loadLdapConfig() {
@@ -205,6 +193,21 @@ public class CloudSettingController {
     @Permission(value = "cloud:file:upload")
     public ResponseResult<Map<String, Integer>> getTranscodeStatus() {
         return ResultUtil.success(videoProcessService.getTranscodeStatus());
+    }
+
+    @Operation(summary = "获取是否强制启用两步认证")
+    @GetMapping("/cloud/setting/mfa-force-enable")
+    public ResponseResult<Object> getMfaForceEnable() {
+        return ResultUtil.success(settingService.getMfaForceEnable());
+    }
+
+    @Operation(summary = "设置是否强制启用两步认证")
+    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
+    @PutMapping("/cloud/setting/mfa-force-enable")
+    @Permission(value = "cloud:set:sync")
+    public ResponseResult<Object> setMfaForceEnable(@RequestParam Boolean mfaForceEnable) {
+        settingService.setMfaForceEnable(mfaForceEnable);
+        return ResultUtil.success();
     }
 
 }

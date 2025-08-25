@@ -4,6 +4,7 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
@@ -376,4 +377,19 @@ public class SettingService {
         mongoTemplate.updateMulti(query, update, FileDocument.class);
     }
 
+    public boolean getMfaForceEnable() {
+        Query query = new Query();
+        WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(query, WebsiteSettingDO.class, COLLECTION_NAME_WEBSITE_SETTING);
+        if (websiteSettingDO != null) {
+            return BooleanUtil.isTrue(websiteSettingDO.getMfaForceEnable());
+        }
+        return false;
+    }
+
+    public void setMfaForceEnable(Boolean mfaForceEnable) {
+        Query query = new Query();
+        Update update = new Update();
+        update.set("mfaForceEnable", mfaForceEnable);
+        mongoTemplate.upsert(query, update, COLLECTION_NAME_WEBSITE_SETTING);
+    }
 }

@@ -121,13 +121,6 @@ public interface IUserService {
     String getUserNameById(String userId);
 
     /***
-     * 是否禁用webp(默认开启)
-     * @param userId userId
-     * @param disabled disabled
-     */
-    void disabledWebp(String userId, Boolean disabled);
-
-    /***
      * 判断该用户是否为创建者
      * @param userId userId
      */

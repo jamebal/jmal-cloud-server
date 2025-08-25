@@ -362,7 +362,7 @@ public class UserServiceImpl implements IUserService {
 
     private void updateConsumer(String userId, Query query, Update update) {
         mongoTemplate.upsert(query, update, COLLECTION_NAME);
-        ConsumerDO consumerDO = getUserInfoById(userId);
+        ConsumerDO consumerDO = commonUserService.getUserInfoByIdNoCache(userId);
         CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
     }
 
@@ -438,15 +438,6 @@ public class UserServiceImpl implements IUserService {
     @Override
     public String getUserNameById(String userId) {
         return commonUserService.getUserNameById(userId);
-    }
-
-    @Override
-    public void disabledWebp(String userId, Boolean disabled) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(userId));
-        Update update = new Update();
-        update.set("webpDisabled", disabled);
-        updateConsumer(userId, query, update);
     }
 
     @Override

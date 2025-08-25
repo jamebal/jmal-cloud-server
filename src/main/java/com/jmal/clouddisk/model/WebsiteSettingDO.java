@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.jmal.clouddisk.config.Reflective;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.List;
@@ -96,4 +97,7 @@ public class WebsiteSettingDO implements Reflective {
      * iframe预览配置
      */
     String iframe;
+
+    @Schema(name = "forceEnable", title = "是否强制启用多因素认证")
+    Boolean mfaForceEnable;
 }

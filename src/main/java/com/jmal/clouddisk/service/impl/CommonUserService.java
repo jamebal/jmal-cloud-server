@@ -42,12 +42,12 @@ public class CommonUserService {
         return null;
     }
 
-    public ConsumerDO getUserInfoByUsername(String name) {
-        ConsumerDO consumer = CaffeineUtil.getConsumerByUsernameCache(name);
+    public ConsumerDO getUserInfoByUsername(String username) {
+        ConsumerDO consumer = CaffeineUtil.getConsumerByUsernameCache(username);
         if (consumer == null) {
-            consumer = getUserInfo(name);
+            consumer = getUserInfo(username);
             if (consumer != null) {
-                CaffeineUtil.setConsumerByUsernameCache(name, consumer);
+                CaffeineUtil.setConsumerByUsernameCache(username, consumer);
             }
         }
         return consumer;
@@ -65,6 +65,10 @@ public class CommonUserService {
         Query query = new Query();
         query.addCriteria(Criteria.where(USERNAME).is(username));
         return mongoTemplate.findOne(query, ConsumerDO.class);
+    }
+
+    public ConsumerDO getUserInfoByIdNoCache(String userId) {
+        return mongoTemplate.findById(userId, ConsumerDO.class);
     }
 
     public ConsumerDO getUserInfoById(String userId) {
