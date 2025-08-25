@@ -35,5 +35,5 @@ jobs:
       - name: Copy GHCR tag jmalcloud_native:test -> jmalcloud:test
         run: |
           docker buildx imagetools create \
-            -t ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud:test \
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native:test
+            -t ghcr.io/${{ secrets.actor }}/jmalcloud:test \
+            ghcr.io/${{ secrets.actor }}/jmalcloud_native:test
