@@ -30,22 +30,24 @@ public class ShareFileInterceptor implements HandlerInterceptor {
 
     private final UserLoginHolder userLoginHolder;
 
+    private static final int PATH_SEGMENTS_COUNT = 5;
+
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
         String uri = request.getRequestURI();
         String[] pathSegments = uri.split("/");
 
         // 验证路径格式
-        if (pathSegments.length < 4 || !"share-file".equals(pathSegments[1])) {
+        if (pathSegments.length < PATH_SEGMENTS_COUNT || !"share-file".equals(pathSegments[PATH_SEGMENTS_COUNT - 3])) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return false;
         }
         String shareToken = null;
-        if (pathSegments.length == 5) {
-            shareToken = pathSegments[3];
+        if (pathSegments.length == (PATH_SEGMENTS_COUNT + 1)) {
+            shareToken = pathSegments[PATH_SEGMENTS_COUNT - 1];
         }
 
-        String fileId = pathSegments[2];
+        String fileId = pathSegments[PATH_SEGMENTS_COUNT - 2];
         FileDocument fileDocument = preFileInterceptor.getFileDocument(response, fileId);
         if (fileDocument == null) {
             return false;
@@ -64,13 +66,16 @@ public class ShareFileInterceptor implements HandlerInterceptor {
     }
 
     private boolean isNotAllowAccess(FileDocument fileDocument, String shareToken, HttpServletRequest request) {
-        if (BooleanUtil.isTrue(fileDocument.getIsShare())) {
+        if (BooleanUtil.isTrue(fileDocument.getIsShare()) || BooleanUtil.isTrue(fileDocument.getIsPublic())) {
             return validShareFile(fileDocument, shareToken, request);
         }
         return true;
     }
 
     public boolean validShareFile(FileDocument fileDocument, String shareToken, HttpServletRequest request) {
+        if (BooleanUtil.isTrue(fileDocument.getIsPublic())) {
+            return false;
+        }
         if (System.currentTimeMillis() >= fileDocument.getExpiresAt()) {
             // 过期了
             return true;

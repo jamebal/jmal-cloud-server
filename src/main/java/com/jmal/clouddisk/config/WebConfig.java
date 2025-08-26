@@ -39,6 +39,8 @@ public class WebConfig implements WebMvcConfigurer {
 
     private final PreFileInterceptor preFileInterceptor;
 
+    public static final String API_FILE_PREFIX = "/api/file/";
+
     @Override
     public void configurePathMatch(PathMatchConfigurer configurer) {
         // 只给@RestController加/api前缀
@@ -53,9 +55,9 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(localeChangeInterceptor());
 
 		registry.addInterceptor(authInterceptor).addPathPatterns("/api/**").
-				excludePathPatterns("/api", "/api/login/**", "/api/public/**", "/articles/**", "/api/error/**", "/api/file/**" , "/api/pre-file/**" , "/api/share-file/**", "/api/direct-file/**" , "/api/files/**","/api/swagger-ui/**");
+				excludePathPatterns("/api", "/api/login/**", "/api/public/**", "/articles/**", "/api/error/**", API_FILE_PREFIX + "**" , "/api/pre-file/**" , "/api/share-file/**", "/api/direct-file/**" , "/api/files/**","/api/swagger-ui/**");
 
-        registry.addInterceptor(fileInterceptor).addPathPatterns("/api/file/**").addPathPatterns("/api/files/**");
+        registry.addInterceptor(fileInterceptor).addPathPatterns(API_FILE_PREFIX + "**").addPathPatterns("/api/files/**");
 
         registry.addInterceptor(shareFileInterceptor).addPathPatterns("/api/share-file/{fileId}/{token}/**");
 
@@ -66,7 +68,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/api/file/**")
+        registry.addResourceHandler(API_FILE_PREFIX + "**")
                 .addResourceLocations("file:" + fileProperties.getRootDir() + File.separator);
 
         // 前端资源

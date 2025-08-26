@@ -13,6 +13,7 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSON;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.config.WebConfig;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.Either;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -698,7 +699,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         }
         String fileId = commonUserFileService.createFile(username, newFile, userId, true);
         map.put(Constants.FILE_ID, fileId);
-        String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), newFile.getName()), StandardCharsets.UTF_8);
+        String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(WebConfig.API_FILE_PREFIX + Paths.get(username, docImagePaths.toString(), newFile.getName()), StandardCharsets.UTF_8);
         map.put("url", filepath);
         map.put("originalURL", upload.getUrl());
         map.put(Constants.FILENAME, newFile.getName());
@@ -767,7 +768,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         }
         String fileId = commonUserFileService.createFile(username, newFile, userId, true);
         map.put(Constants.FILE_ID, fileId);
-        String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode("/file/" + Paths.get(username, docImagePaths.toString(), fileName), StandardCharsets.UTF_8);
+        String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(WebConfig.API_FILE_PREFIX + Paths.get(username, docImagePaths.toString(), fileName), StandardCharsets.UTF_8);
         map.put(Constants.FILENAME, fileName);
         map.put(Constants.FILE_PATH, filepath);
         return map;

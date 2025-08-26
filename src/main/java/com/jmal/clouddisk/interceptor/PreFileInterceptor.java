@@ -5,6 +5,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jmal.clouddisk.config.WebConfig;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
@@ -106,7 +107,7 @@ public class PreFileInterceptor implements HandlerInterceptor {
     }
 
     private String constructInternalFilePath(FileDocument fileDocument) {
-        return "/file/" + userService.getUserNameById(fileDocument.getUserId()) + fileDocument.getPath() + fileDocument.getName();
+        return WebConfig.API_FILE_PREFIX + userService.getUserNameById(fileDocument.getUserId()) + fileDocument.getPath() + fileDocument.getName();
     }
 
     private static void handleForwardException(HttpServletResponse response, String internalFilePath, Exception e) {
