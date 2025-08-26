@@ -514,11 +514,4 @@ public class UserServiceImpl implements IUserService {
         return consumerDO.getAvatar();
     }
 
-    /**
-     * 获取创建者的用户名
-     * @return 用户名
-     */
-    public String getCreatorUsername() {
-        return commonUserService.getCreatorUsername();
-    }
 }
