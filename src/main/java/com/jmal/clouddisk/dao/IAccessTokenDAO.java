@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.repository;
+package com.jmal.clouddisk.dao;
 
 import com.jmal.clouddisk.model.UserAccessTokenDO;
 import com.jmal.clouddisk.model.UserAccessTokenDTO;
@@ -10,13 +10,13 @@ import java.util.List;
  * IAuthDAO
  * @author jmal
  */
-public interface IAuthDAO {
+public interface IAccessTokenDAO {
 
-    /**
-     * 数据源
-     * @return DataSource
-     */
-    DataSource getDataSource();
+    String USERNAME = "username";
+
+    String ACCESS_TOKEN = "accessToken";
+
+    String ACCESS_TOKEN_COLLECTION_NAME = "access_token";
 
     /***
      * 根据AccessToken获取用户名

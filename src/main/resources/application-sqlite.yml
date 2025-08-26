@@ -1,0 +1,26 @@
+spring:
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  data:
+    mongodb:
+      uri: mongodb://disabled:0/disabled
+      host: disabled
+      port: 0
+      database: disabled
+  datasource:
+    url: jdbc:sqlite:jmalcloud.db
+    driver-class-name: org.sqlite.JDBC
+    username:
+    password:
+jmalcloud:
+  datasource:
+    type: sqlite

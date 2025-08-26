@@ -5,7 +5,7 @@ import com.alibaba.fastjson2.JSON;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
 import com.jmal.clouddisk.model.rbac.UserLoginContext;
-import com.jmal.clouddisk.repository.IAuthDAO;
+import com.jmal.clouddisk.dao.IAccessTokenDAO;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.RoleService;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
@@ -56,7 +56,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     private static final int SECONDS_IN_DAY = 24 * 60 * 60; // 86400
     private static final int NINETY_DAYS_IN_SECONDS = 90 * SECONDS_IN_DAY; // 7776000
 
-    private final IAuthDAO authDAO;
+    private final IAccessTokenDAO accessTokenDAO;
 
     private final UserServiceImpl userService;
 
@@ -158,7 +158,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (CharSequenceUtil.isBlank(token)) {
             return null;
         }
-        UserAccessTokenDO userAccessTokenDO = authDAO.getUserNameByAccessToken(token);
+        UserAccessTokenDO userAccessTokenDO = accessTokenDAO.getUserNameByAccessToken(token);
         if (userAccessTokenDO == null) {
             return null;
         }
@@ -167,7 +167,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             return null;
         }
         // access-token 认证通过 设置该身份的权限
-        Completable.fromAction(() -> authDAO.updateAccessToken(username, userAccessTokenDO.getAccessToken()))
+        Completable.fromAction(() -> accessTokenDAO.updateAccessToken(username, userAccessTokenDO.getAccessToken()))
                 .subscribeOn(Schedulers.io())
                 .subscribe();
         setAuthorities(username);

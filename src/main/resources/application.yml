@@ -25,7 +25,7 @@ spring:
   application:
     name: jmalcloud
   profiles:
-    active: dev
+    active: dev, sqlite
   servlet:
     multipart:
       max-file-size: 50MB
@@ -40,6 +40,9 @@ spring:
   threads:
     virtual:
       enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: update
 springdoc:
   packages-to-scan: com.jmal.clouddisk.controller,com.jmal.clouddisk.oss
   api-docs:

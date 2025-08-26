@@ -12,7 +12,7 @@ import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.lucene.EtagService;
 import com.jmal.clouddisk.model.*;
-import com.jmal.clouddisk.repository.IAuthDAO;
+import com.jmal.clouddisk.dao.IAccessTokenDAO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.*;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +51,7 @@ public class SettingService {
 
     protected static final String COLLECTION_NAME_WEBSITE_SETTING = "websiteSetting";
 
-    private final IAuthDAO authDAO;
+    private final IAccessTokenDAO accessTokenDAO;
 
     private final MenuService menuService;
 
@@ -229,7 +229,7 @@ public class SettingService {
         userAccessTokenDO.setName(tokenName);
         userAccessTokenDO.setUsername(username);
         userAccessTokenDO.setAccessToken(accessToken);
-        authDAO.generateAccessToken(userAccessTokenDO);
+        accessTokenDAO.generateAccessToken(userAccessTokenDO);
         return ResultUtil.success(accessToken);
     }
 
@@ -239,7 +239,7 @@ public class SettingService {
      * @return List<UserAccessTokenDTO>
      */
     public ResponseResult<List<UserAccessTokenDTO>> accessTokenList(String username) {
-        List<UserAccessTokenDTO> list = authDAO.accessTokenList(username);
+        List<UserAccessTokenDTO> list = accessTokenDAO.accessTokenList(username);
         return ResultUtil.success(list);
     }
 
@@ -248,7 +248,7 @@ public class SettingService {
      * @param id accessTokenId
      */
     public void deleteAccessToken(String id) {
-        authDAO.deleteAccessToken(id);
+        accessTokenDAO.deleteAccessToken(id);
     }
 
     public void resetMenuAndRole() {

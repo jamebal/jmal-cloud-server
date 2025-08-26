@@ -1,16 +1,21 @@
 package com.jmal.clouddisk.model.rbac;
 
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
+import jakarta.persistence.MappedSuperclass;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
-/**
- * @Description ConsumerBase
- * @blame jmal
- * @Date 2022/8/20 23:21
- */
-@Data
-public class ConsumerBase implements Reflective {
+@Getter
+@Setter
+@ToString
+@RequiredArgsConstructor
+@MappedSuperclass
+public class ConsumerBase extends AuditableEntity implements Reflective {
+
     @Schema(name = "password", title = "密码", example = "123456")
     String password;
 }

@@ -14,7 +14,7 @@ import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerBase;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
-import com.jmal.clouddisk.repository.IAuthDAO;
+import com.jmal.clouddisk.dao.IAccessTokenDAO;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
@@ -59,7 +59,7 @@ public class UserServiceImpl implements IUserService {
 
     private final RoleService roleService;
 
-    private final IAuthDAO authDAO;
+    private final IAccessTokenDAO accessTokenDAO;
 
     private final FileProperties fileProperties;
 
@@ -128,7 +128,7 @@ public class UserServiceImpl implements IUserService {
         // 删除关联分享
         shareService.deleteAllByUser(userList);
         // 删除关联token
-        authDAO.deleteAllByUser(userList);
+        accessTokenDAO.deleteAllByUser(userList);
         // 删除用户缓存
         CaffeineUtil.removeConsumerListByUsernameCache(userList);
         Query query = new Query();

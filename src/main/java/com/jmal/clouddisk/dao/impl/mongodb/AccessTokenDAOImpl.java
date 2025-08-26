@@ -1,16 +1,16 @@
-package com.jmal.clouddisk.repository.impl;
+package com.jmal.clouddisk.dao.impl.mongodb;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.jmal.clouddisk.dao.IAccessTokenDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
 import com.jmal.clouddisk.model.UserAccessTokenDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
-import com.jmal.clouddisk.repository.DataSource;
-import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.util.TimeUntils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -27,21 +27,11 @@ import java.util.stream.Collectors;
  * @Date 2020/10/13 10:49 上午
  */
 @Repository
-public class AuthDAOImpl implements IAuthDAO {
+@RequiredArgsConstructor
+@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
+public class AccessTokenDAOImpl implements IAccessTokenDAO {
 
-    private static final String USERNAME = "username";
-
-    private static final String ACCESS_TOKEN = "accessToken";
-
-    private static final String ACCESS_TOKEN_COLLECTION_NAME = "access_token";
-
-    @Autowired
-    private MongoTemplate mongoTemplate;
-
-    @Override
-    public DataSource getDataSource() {
-        return DataSource.mongodb;
-    }
+    private final MongoTemplate mongoTemplate;
 
     @Override
     public UserAccessTokenDO getUserNameByAccessToken(String accessToken) {

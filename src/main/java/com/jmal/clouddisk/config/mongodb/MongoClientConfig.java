@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.config;
+package com.jmal.clouddisk.config.mongodb;
 
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;

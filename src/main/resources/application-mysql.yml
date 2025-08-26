@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/jmalcloud?useUnicode=true&characterEncoding=UTF8&useSSL=false&useUnicode=true&serverTimezone=GMT&connectTimeout=60000&socketTimeout=60000
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: xxx
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+jmalcloud:
+  datasource:
+    type: mysql

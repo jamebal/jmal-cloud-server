@@ -2,9 +2,6 @@ spring:
   thymeleaf: # thymeleaf配置，开发环境不启用缓存，正式环境下请启用缓存，提高性能
     cache: false
     mode: HTML # thymeleaf对html元素格式要求严格，设置它的mode为HTML，忘记结束标签后不会报错
-  data:
-    mongodb:
-      uri: mongodb://127.0.0.1:27017/jmalcloud
   web:
     resources:
       cache:
@@ -12,6 +9,16 @@ spring:
           max-age: 0
       chain:
         cache: false
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
 logging:
   level:
     root: info

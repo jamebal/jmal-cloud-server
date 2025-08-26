@@ -4,8 +4,11 @@ import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -17,13 +20,16 @@ import java.util.List;
  * @Description 用户模型
  * @author jmal
  */
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString
+@RequiredArgsConstructor
 @Schema
 @RegisterReflectionForBinding
 @Document(collection = UserServiceImpl.COLLECTION_NAME)
+@Entity
+@Table(name = UserServiceImpl.COLLECTION_NAME)
 public class ConsumerDO extends ConsumerBase implements Reflective {
-    String id;
     @Schema(name = "username", title = "用户名", example = "admin")
     @Indexed
     String username;
@@ -38,8 +44,20 @@ public class ConsumerDO extends ConsumerBase implements Reflective {
     String introduction;
     @Schema(name = "webpDisabled", title = "是否禁用webp")
     Boolean webpDisabled;
+
+    /**
+     * 角色ID列表
+     * 存储格式：["66cb6e9c507f4a2b8c1d3e5f", "66cb6e9c507f4a2b8c1d3e60"]
+     */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "user_role_ids",
+            joinColumns = @JoinColumn(name = "user_id")
+    )
+    @Column(name = "role_id", length = 24)
     @Schema(name = "roles", title = "角色Id集合")
     List<String> roles;
+
     @Schema(name = "quota", title = "默认配额, 10G", example = "10")
     Integer quota;
     @Schema(name = "takeUpSpace", title = "已使用的空间")

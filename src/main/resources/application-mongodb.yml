@@ -1,0 +1,22 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://127.0.0.1:27017/jmalcloud
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  datasource:
+    url: jdbc:sqlite:jmalcloud.db
+    driver-class-name: org.sqlite.JDBC
+
+jmalcloud:
+  datasource:
+    type: mongodb
