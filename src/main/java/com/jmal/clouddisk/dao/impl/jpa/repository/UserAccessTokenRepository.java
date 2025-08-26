@@ -18,7 +18,6 @@ import java.util.Optional;
  * @author jamebal
  */
 @Repository
-@JpaRepositoryMarker
 @Conditional(RelationalDataSourceCondition.class)
 public interface UserAccessTokenRepository extends JpaRepository<UserAccessTokenDO, String> {
 

@@ -14,7 +14,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-@JpaRepositoryMarker
 @Conditional(RelationalDataSourceCondition.class)
 public interface FolderSizeJpaRepository extends JpaRepository<FileEntityDO, String> {
 

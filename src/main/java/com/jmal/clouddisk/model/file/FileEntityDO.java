@@ -27,7 +27,7 @@ public class FileEntityDO extends AuditableEntity implements Reflective {
     private Boolean isFolder;
     private String name;
     private String md5;
-    private long size;
+    private Long size;
     /**
      * 上传时间
      */
@@ -57,23 +57,21 @@ public class FileEntityDO extends AuditableEntity implements Reflective {
     private Boolean shareBase;
     private String shareId;
 
-    @Column(name = "share_props", columnDefinition = "LONGTEXT")
+    @Lob
+    @Column(name = "share_props")
     @Convert(converter = ExtendedPropertiesConverter.class)
     private ShareProperties shareProps;
 
-    @Column(name = "props", columnDefinition = "LONGTEXT")
+    @Lob
+    @Column(name = "props")
     @Convert(converter = ExtendedPropertiesConverter.class)
     private OtherProperties props;
 
     // =========================== ETag相关字段 ===========================
     private String etag;
-    @Column(name = "etag_ufa")
     private Integer etagUpdateFailedAttempts;
-    @Column(name = "etag_nu")
     private Boolean needsEtagUpdate;
-    @Column(name = "etag_lur")
     private LocalDateTime lastEtagUpdateRequestAt;
-    @Column(name = "etag_lue")
     private String lastEtagUpdateError;
 
 

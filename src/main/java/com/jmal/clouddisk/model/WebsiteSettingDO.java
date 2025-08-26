@@ -3,9 +3,14 @@ package com.jmal.clouddisk.model;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import lombok.*;
+import jakarta.persistence.Transient;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
@@ -63,10 +68,12 @@ public class WebsiteSettingDO extends AuditableEntity implements Reflective {
     /***
      * 需要显示的独立页面
      */
+    @Transient
     List<String> alonePages;
     /***
      * 操作按钮
      */
+    @Column(columnDefinition = "TEXT")
     String operatingButtons;
     /***
      * 分类页面背景
@@ -101,11 +108,13 @@ public class WebsiteSettingDO extends AuditableEntity implements Reflective {
     /**
      * 页脚html
      */
+    @Column(columnDefinition = "TEXT")
     String footerHtml;
 
     /**
      * iframe预览配置
      */
+    @Column(columnDefinition = "TEXT")
     String iframe;
 
     @Schema(name = "forceEnable", title = "是否强制启用多因素认证")

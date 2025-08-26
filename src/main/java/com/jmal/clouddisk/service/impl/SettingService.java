@@ -297,6 +297,7 @@ public class SettingService {
             List<FileDocument> tasks = folderSizeDAO.findFoldersNeedUpdateSize(FOLDER_BATCH_SIZE);
             if (tasks.isEmpty()) {
                 run = false;
+                messageService.pushMessage(notifyUsername, 100, "calculateFolderSizeProcessed");
                 continue;
             }
             for (FileDocument folderDoc : tasks) {

@@ -7,9 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@JpaRepositoryMarker
 @Conditional(RelationalDataSourceCondition.class)
 public interface HeartwingsJpaRepository extends JpaRepository<HeartwingsDO, String> {
-
-    long count();
 }
