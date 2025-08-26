@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.FileInfo;
 import com.jmal.clouddisk.oss.IOssService;

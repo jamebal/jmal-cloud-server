@@ -7,10 +7,12 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.ReUtil;
+import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
@@ -55,6 +57,8 @@ public class ShareServiceImpl implements IShareService {
     private final IFileService fileService;
 
     private final CommonFileService commonFileService;
+
+    private final IWebsiteSettingDAO websiteSettingDAO;
 
     private final MongoTemplate mongoTemplate;
 
@@ -809,7 +813,7 @@ public class ShareServiceImpl implements IShareService {
         if (consumerDO.getAvatar() != null) {
             sharerDTO.setAvatar(consumerDO.getAvatar());
         }
-        WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(new Query(), WebsiteSettingDO.class, SettingService.COLLECTION_NAME_WEBSITE_SETTING);
+        WebsiteSettingDO websiteSettingDO = websiteSettingDAO.findOne();
         if (websiteSettingDO != null) {
             sharerDTO.setNetdiskName(websiteSettingDO.getNetdiskName());
             sharerDTO.setNetdiskLogo(websiteSettingDO.getNetdiskLogo());

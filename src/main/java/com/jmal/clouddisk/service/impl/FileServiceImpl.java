@@ -23,6 +23,8 @@ import com.jmal.clouddisk.lucene.SearchFileService;
 import com.jmal.clouddisk.media.VideoInfo;
 import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.oss.web.WebOssCommonService;
 import com.jmal.clouddisk.oss.web.WebOssCopyFileService;

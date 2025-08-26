@@ -1,6 +1,8 @@
 package com.jmal.clouddisk.dao.impl.jpa.repository;
 
+import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,6 +18,8 @@ import java.util.Optional;
  * @author jamebal
  */
 @Repository
+@JpaRepositoryMarker
+@Conditional(RelationalDataSourceCondition.class)
 public interface UserAccessTokenRepository extends JpaRepository<UserAccessTokenDO, String> {
 
     /**

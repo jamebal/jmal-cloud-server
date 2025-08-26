@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.model.file.FileBase;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

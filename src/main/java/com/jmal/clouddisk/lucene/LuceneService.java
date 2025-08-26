@@ -7,7 +7,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileIndex;
-import com.jmal.clouddisk.model.FileIntroVO;
+import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;

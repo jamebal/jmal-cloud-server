@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.lucene.SearchFileService;
-import com.jmal.clouddisk.model.FileIntroVO;
+import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;

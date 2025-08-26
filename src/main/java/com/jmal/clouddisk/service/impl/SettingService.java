@@ -10,19 +10,20 @@ import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.dao.IAccessTokenDAO;
+import com.jmal.clouddisk.dao.IFolderSizeDAO;
+import com.jmal.clouddisk.dao.IHeartwingsDAO;
+import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
 import com.jmal.clouddisk.lucene.EtagService;
 import com.jmal.clouddisk.model.*;
-import com.jmal.clouddisk.dao.IAccessTokenDAO;
-import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.util.*;
+import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.util.HybridThrottleExecutor;
+import com.jmal.clouddisk.util.MyFileUtils;
+import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,11 +48,13 @@ public class SettingService {
 
     private final FileProperties fileProperties;
 
-    private final MongoTemplate mongoTemplate;
+    private final IWebsiteSettingDAO websiteSettingDAO;
 
-    protected static final String COLLECTION_NAME_WEBSITE_SETTING = "websiteSetting";
+    private final IHeartwingsDAO heartwingsDAO;
 
     private final IAccessTokenDAO accessTokenDAO;
+
+    private final IFolderSizeDAO folderSizeDAO;
 
     private final MenuService menuService;
 
@@ -92,16 +95,13 @@ public class SettingService {
         File dist = new File(fileProperties.getRootDir() + File.separator + filename);
         try {
             String oldFilename = null;
-            Query query = new Query();
-            WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(query, WebsiteSettingDO.class, COLLECTION_NAME_WEBSITE_SETTING);
+            WebsiteSettingDO websiteSettingDO = websiteSettingDAO.findOne();
             if (websiteSettingDO != null) {
                 oldFilename = websiteSettingDO.getNetdiskLogo();
             }
             // 保存新的logo文件
             FileUtil.writeFromStream(file.getInputStream(), dist);
-            Update update = new Update();
-            update.set("netdiskLogo", filename);
-            mongoTemplate.upsert(new Query(), update, COLLECTION_NAME_WEBSITE_SETTING);
+            websiteSettingDAO.updateLogo(filename);
             if (!CharSequenceUtil.isBlank(oldFilename)) {
                 // 删除之前的logo文件
                 PathUtil.del(Paths.get(fileProperties.getRootDir(), oldFilename));
@@ -119,10 +119,7 @@ public class SettingService {
      * @param netdiskName 网盘名称
      */
     public ResponseResult<Object> updateNetdiskName(String netdiskName) {
-        Query query = new Query();
-        Update update = new Update();
-        update.set("netdiskName", netdiskName);
-        mongoTemplate.upsert(query, update, COLLECTION_NAME_WEBSITE_SETTING);
+        websiteSettingDAO.updateName(netdiskName);
         return ResultUtil.success("修改成功");
     }
 
@@ -132,11 +129,9 @@ public class SettingService {
      * @return ResponseResult
      */
     public ResponseResult<Object> websiteUpdate(WebsiteSettingDO websiteSettingDO) {
-        Query query = new Query();
-        Update update = MongoUtil.getUpdate(websiteSettingDO);
         // 添加心语记录
         addHeartwings(websiteSettingDO);
-        mongoTemplate.upsert(query, update, COLLECTION_NAME_WEBSITE_SETTING);
+        websiteSettingDAO.upsert(websiteSettingDO);
         return ResultUtil.success();
     }
 
@@ -145,7 +140,7 @@ public class SettingService {
      * @param websiteSettingDO WebsiteSettingDO
      */
     private void addHeartwings(WebsiteSettingDO websiteSettingDO) {
-        WebsiteSettingDO websiteSettingDO1 = mongoTemplate.findOne(new Query(), WebsiteSettingDO.class, COLLECTION_NAME_WEBSITE_SETTING);
+        WebsiteSettingDO websiteSettingDO1 = websiteSettingDAO.findOne();
         if (websiteSettingDO1 != null) {
             String oldHeartwings = websiteSettingDO1.getBackgroundTextSite();
             String heartwings = websiteSettingDO.getBackgroundTextSite();
@@ -155,7 +150,7 @@ public class SettingService {
                 heartwingsDO.setCreator(userLoginHolder.getUserId());
                 heartwingsDO.setUsername(userLoginHolder.getUsername());
                 heartwingsDO.setHeartwings(heartwings);
-                mongoTemplate.save(heartwingsDO);
+                heartwingsDAO.save(heartwingsDO);
             }
         }
     }
@@ -185,8 +180,7 @@ public class SettingService {
      */
     public WebsiteSettingDTO getWebsiteSetting() {
         WebsiteSettingDTO websiteSettingDTO = new WebsiteSettingDTO();
-        Query query = new Query();
-        WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(query, WebsiteSettingDO.class, COLLECTION_NAME_WEBSITE_SETTING);
+        WebsiteSettingDO websiteSettingDO = websiteSettingDAO.findOne();
         if (websiteSettingDO != null) {
             BeanUtils.copyProperties(websiteSettingDO, websiteSettingDTO);
         }
@@ -201,16 +195,7 @@ public class SettingService {
     }
 
     public ResponseResult<List<HeartwingsDO>> getWebsiteHeartwings(Integer page, Integer pageSize, String order) {
-        Query query = new Query();
-        long count = mongoTemplate.count(query, HeartwingsDO.class);
-        query.skip((long) pageSize * (page - 1));
-        query.limit(pageSize);
-        Sort.Direction direction = Sort.Direction.ASC;
-        if ("descending".equals(order)) {
-            direction = Sort.Direction.DESC;
-        }
-        query.with(Sort.by(direction, Constants.CREATE_TIME));
-        return ResultUtil.success(mongoTemplate.find(query, HeartwingsDO.class)).setCount(count);
+        return heartwingsDAO.getWebsiteHeartwings(page, pageSize, order);
     }
 
     /***
@@ -257,19 +242,12 @@ public class SettingService {
     }
 
     public WebsiteSettingDTO getPreviewConfig() {
-        Query query = new Query();
-        query.fields().include("iframe");
-        WebsiteSettingDTO websiteSettingDTO = mongoTemplate.findOne(new Query(), WebsiteSettingDTO.class, COLLECTION_NAME_WEBSITE_SETTING);
-        if (websiteSettingDTO == null) {
-            return new WebsiteSettingDTO();
-        }
-        return websiteSettingDTO;
+        WebsiteSettingDO websiteSettingDO = websiteSettingDAO.getPreviewConfig();
+        return websiteSettingDO.toWebsiteSettingDTO();
     }
 
     public synchronized void updatePreviewConfig(WebsiteSettingDTO websiteSettingDTO) {
-        Update update = new Update();
-        update.set("iframe", websiteSettingDTO.getIframe());
-        mongoTemplate.upsert(new Query(), update, COLLECTION_NAME_WEBSITE_SETTING);
+        websiteSettingDAO.updatePreviewConfig(websiteSettingDTO.getIframe());
     }
 
     /**
@@ -292,8 +270,8 @@ public class SettingService {
             CompletableFuture.runAsync(() -> {
                 try {
                     // 清除之前的文件夹大小数据
-                    clearFolderSizInDb();
-                    long totalSize = totalSizeNeedUpdateSizeInDb();
+                    folderSizeDAO.clearFolderSizInDb();
+                    long totalSize = folderSizeDAO.totalSizeNeedUpdateSizeInDb();
                     calculateFolderSizeProcessedCount.set(0);
                     HybridThrottleExecutor hybridThrottleExecutor = new HybridThrottleExecutor(THROTTLE_DELAY_MS);
                     // 调用实际的循环处理逻辑
@@ -303,7 +281,7 @@ public class SettingService {
                     calculateFolderSizeScheduled.set(false);
                     // 关键：检查在本次处理运行期间是否有新的文件夹被标记
                     // 如果有，则再次尝试调度，确保它们得到处理
-                    if (hasNeedUpdateSizeInDb()) {
+                    if (folderSizeDAO.hasNeedUpdateSizeInDb()) {
                         ensureProcessCalculateFolderSize();
                     }
                 }
@@ -316,8 +294,7 @@ public class SettingService {
         boolean run = true;
         while (run && !Thread.currentThread().isInterrupted()) {
             // 查询所有需要更新大小的文件夹
-            Query query = Query.query(Criteria.where(Constants.IS_FOLDER).is(true).and(Constants.SIZE).exists(false)).limit(FOLDER_BATCH_SIZE);
-            List<FileDocument> tasks = mongoTemplate.find(query, FileDocument.class);
+            List<FileDocument> tasks = folderSizeDAO.findFoldersNeedUpdateSize(FOLDER_BATCH_SIZE);
             if (tasks.isEmpty()) {
                 run = false;
                 continue;
@@ -332,9 +309,8 @@ public class SettingService {
                     // 计算文件夹大小
                     long size = etagService.getFolderSize(CommonFileService.COLLECTION_NAME, folderDoc.getUserId(), currentFolderNormalizedPath);
                     // 更新数据库中的大小
-                    Update update = new Update();
-                    update.set(Constants.SIZE, size);
-                    mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(folderDoc.getId())), update, FileDocument.class);
+                    folderSizeDAO.updateFileSize(folderDoc.getId(), size);
+
                     calculateFolderSizeProcessedCount.getAndIncrement();
                     // 推送进度
                     hybridThrottleExecutor.execute(() -> {
@@ -349,37 +325,8 @@ public class SettingService {
         }
     }
 
-    /**
-     * 检查数据库中是否还有需要更新siz的文件夹
-     */
-    private boolean hasNeedUpdateSizeInDb() {
-        Query query = Query.query(Criteria.where(Constants.IS_FOLDER).is(true).and(Constants.SIZE).exists(false));
-        query.limit(1); // 只需要知道是否存在，不需要完整计数
-        return mongoTemplate.exists(query, FileDocument.class);
-    }
-
-    /**
-     * 获取需要更新大小的文件夹总数
-     * @return long
-     */
-    private long totalSizeNeedUpdateSizeInDb() {
-        Query query = Query.query(Criteria.where(Constants.IS_FOLDER).is(true).and(Constants.SIZE).exists(false));
-        return mongoTemplate.count(query, FileDocument.class);
-    }
-
-    /**
-     * 清除数据库中所有文件夹的大小字段
-     */
-    private void clearFolderSizInDb() {
-        Query query = Query.query(Criteria.where(Constants.IS_FOLDER).is(true));
-        Update update = new Update();
-        update.unset(Constants.SIZE);
-        mongoTemplate.updateMulti(query, update, FileDocument.class);
-    }
-
     public boolean getMfaForceEnable() {
-        Query query = new Query();
-        WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(query, WebsiteSettingDO.class, COLLECTION_NAME_WEBSITE_SETTING);
+        WebsiteSettingDO websiteSettingDO = websiteSettingDAO.findOne();
         if (websiteSettingDO != null) {
             return BooleanUtil.isTrue(websiteSettingDO.getMfaForceEnable());
         }
@@ -387,9 +334,6 @@ public class SettingService {
     }
 
     public void setMfaForceEnable(Boolean mfaForceEnable) {
-        Query query = new Query();
-        Update update = new Update();
-        update.set("mfaForceEnable", mfaForceEnable);
-        mongoTemplate.upsert(query, update, COLLECTION_NAME_WEBSITE_SETTING);
+        websiteSettingDAO.setMfaForceEnable(mfaForceEnable);
     }
 }

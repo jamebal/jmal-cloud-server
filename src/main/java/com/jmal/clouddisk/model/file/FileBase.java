@@ -1,11 +1,13 @@
-package com.jmal.clouddisk.model;
+package com.jmal.clouddisk.model.file;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import com.jmal.clouddisk.util.TimeUntils;
-import lombok.Data;
-import org.springframework.data.annotation.Id;
+import jakarta.persistence.MappedSuperclass;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
@@ -15,11 +17,11 @@ import java.time.LocalDateTime;
  * @Description 文件模型基类
  * @Date 2020/11/12 2:05 下午
  */
-@Data
-public class FileBase implements Reflective {
+@Getter
+@Setter
+@MappedSuperclass
+public class FileBase extends AuditableEntity implements Reflective {
 
-    @Id
-    String id;
     /***
      * 是否为文件夹
      */

@@ -18,7 +18,7 @@ public abstract class AuditableEntity {
 
     @Id
     @Column(name = "id", length = 24)
-    String id;
+    public String id;
 
     @CreatedDate
     @Column(name = "created_time", updatable = false)

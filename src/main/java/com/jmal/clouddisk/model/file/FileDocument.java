@@ -1,7 +1,8 @@
-package com.jmal.clouddisk.model;
+package com.jmal.clouddisk.model.file;
 
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.media.VideoInfoDO;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import lombok.Data;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -52,10 +53,6 @@ public class FileDocument extends FileBase implements Reflective {
      */
     private Long agoTime;
     /***
-     * 显示大小
-     */
-    private String showSize;
-    /***
      * 图片的宽度
      */
     private String w;
@@ -85,10 +82,6 @@ public class FileDocument extends FileBase implements Reflective {
      */
     private String suffix;
     /***
-     * 文件描述
-     */
-    private String description;
-    /***
      * 是否收藏
      */
     private Boolean isFavorite;
@@ -96,10 +89,6 @@ public class FileDocument extends FileBase implements Reflective {
      * oss目录名称
      */
     private String ossFolder;
-    /**
-     * oss平台类型
-     */
-    private String ossPlatform;
     /***
      * 是否公共文件
      */

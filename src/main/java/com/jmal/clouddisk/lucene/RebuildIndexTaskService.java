@@ -6,7 +6,7 @@ import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.ocr.OcrService;
 import com.jmal.clouddisk.service.impl.*;
 import com.jmal.clouddisk.util.ResponseResult;

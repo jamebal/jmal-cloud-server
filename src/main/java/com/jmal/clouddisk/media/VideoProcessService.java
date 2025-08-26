@@ -7,7 +7,7 @@ import cn.hutool.core.util.ObjectUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.lucene.TaskProgressService;
 import com.jmal.clouddisk.lucene.TaskType;
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.oss.IOssService;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.web.WebOssService;

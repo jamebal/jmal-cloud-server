@@ -2,7 +2,7 @@ package com.jmal.clouddisk.office.callbacks.implementations;
 
 import cn.hutool.http.HttpUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.OperationPermission;
 import com.jmal.clouddisk.office.callbacks.Callback;
 import com.jmal.clouddisk.office.callbacks.Status;

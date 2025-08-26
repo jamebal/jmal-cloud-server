@@ -1,8 +1,10 @@
 package com.jmal.clouddisk.media;
 
+import jakarta.persistence.Embeddable;
 import lombok.Data;
 
 @Data
+@Embeddable
 public class VideoInfoDO {
     private Integer width;
     private Integer height;

@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.util.HashUtil;
 import lombok.Data;
 import lombok.experimental.Accessors;

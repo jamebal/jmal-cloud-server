@@ -10,12 +10,12 @@ spring:
         jdbc:
           lob:
             non_contextual_creation: true
-  data:
-    mongodb:
-      uri: mongodb://disabled:0/disabled
-      host: disabled
-      port: 0
-      database: disabled
+#  data:
+#    mongodb:
+#      uri: mongodb://disabled:0/disabled
+#      host: disabled
+#      port: 0
+#      database: disabled
   datasource:
     url: jdbc:sqlite:jmalcloud.db
     driver-class-name: org.sqlite.JDBC

@@ -2,7 +2,10 @@ package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
-import lombok.Data;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.*;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -15,26 +18,29 @@ import java.time.LocalDateTime;
  * @Description 心语记录
  * @Date 2021/3/1 10:19 上午
  */
-@Data
+@Getter
+@Setter
+@ToString
+@RequiredArgsConstructor
 @Document(collection = "heartwings")
 @CompoundIndexes({
         @CompoundIndex(name = "createTime_1", def = "{'createTime': 1}"),
 })
-public class HeartwingsDO implements Reflective {
+@Entity
+@Table(name = "heartwings")
+public class HeartwingsDO extends AuditableEntity implements Reflective {
 
-    private String id;
-
-    /***
+    /**
      * 创建者 userId
      */
     private String creator;
 
-    /***
+    /**
      * 创建者 username
      */
     private String username;
 
-    /***
+    /**
      * 心语
      */
     private String heartwings;

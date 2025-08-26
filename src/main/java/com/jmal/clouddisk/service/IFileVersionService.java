@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.service;
 
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.GridFSBO;
 import com.jmal.clouddisk.office.OfficeHistory;
 import com.jmal.clouddisk.oss.AbstractOssObject;

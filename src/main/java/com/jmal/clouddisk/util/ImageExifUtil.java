@@ -8,7 +8,7 @@ import com.drew.metadata.exif.ExifIFD0Directory;
 import com.drew.metadata.exif.ExifSubIFDDescriptor;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.drew.metadata.exif.GpsDirectory;
-import com.jmal.clouddisk.model.ExifInfo;
+import com.jmal.clouddisk.model.file.ExifInfo;
 import com.jmal.clouddisk.service.Constants;
 import lombok.extern.slf4j.Slf4j;
 

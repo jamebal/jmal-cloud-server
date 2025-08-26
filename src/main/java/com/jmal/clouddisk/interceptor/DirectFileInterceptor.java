@@ -2,7 +2,7 @@ package com.jmal.clouddisk.interceptor;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.DirectLinkService;
 import com.jmal.clouddisk.service.impl.FileServiceImpl;

@@ -5,6 +5,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.listener.FileMonitor;
@@ -46,6 +47,8 @@ public class UserServiceImpl implements IUserService {
     public static final String COLLECTION_NAME = "user";
 
     private final MongoTemplate mongoTemplate;
+
+    private final IWebsiteSettingDAO websiteSettingDAO;
 
     private final CommonUserService commonUserService;
 
@@ -254,7 +257,7 @@ public class UserServiceImpl implements IUserService {
         if (consumerDTO.getAvatar() == null) {
             consumerDTO.setAvatar("");
         }
-        WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(new Query(), WebsiteSettingDO.class, SettingService.COLLECTION_NAME_WEBSITE_SETTING);
+        WebsiteSettingDO websiteSettingDO = websiteSettingDAO.findOne();
         if (websiteSettingDO != null) {
             consumerDTO.setNetdiskName(websiteSettingDO.getNetdiskName());
             consumerDTO.setNetdiskLogo(websiteSettingDO.getNetdiskLogo());

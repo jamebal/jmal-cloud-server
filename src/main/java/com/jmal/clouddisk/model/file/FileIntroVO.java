@@ -1,7 +1,10 @@
-package com.jmal.clouddisk.model;
+package com.jmal.clouddisk.model.file;
 
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.media.VideoInfoDO;
+import com.jmal.clouddisk.model.Music;
+import com.jmal.clouddisk.model.OperationPermission;
+import com.jmal.clouddisk.model.Tag;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

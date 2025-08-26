@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.lucene;
 
 import com.jmal.clouddisk.media.ImageMagickProcessor;
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.file.FileDocument;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;

@@ -1,8 +1,8 @@
 package com.jmal.clouddisk.oss.web;
 
 import cn.hutool.core.convert.Convert;
-import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.FileIntroVO;
+import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.model.OperationPermission;
 import com.jmal.clouddisk.oss.BaseOssService;
 import com.jmal.clouddisk.oss.BucketInfo;

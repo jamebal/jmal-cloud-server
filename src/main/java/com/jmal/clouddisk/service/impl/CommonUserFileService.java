@@ -12,7 +12,7 @@ import com.jmal.clouddisk.lucene.EtagService;
 import com.jmal.clouddisk.lucene.LuceneIndexQueueEvent;
 import com.jmal.clouddisk.lucene.RebuildIndexTaskService;
 import com.jmal.clouddisk.media.*;
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.Music;
 import com.jmal.clouddisk.model.OperationPermission;
 import com.jmal.clouddisk.model.UploadApiParamDTO;

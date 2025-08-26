@@ -7,7 +7,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.controller.rest.sse.Message;
 import com.jmal.clouddisk.controller.rest.sse.SseController;
 import com.jmal.clouddisk.exception.CommonException;
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
