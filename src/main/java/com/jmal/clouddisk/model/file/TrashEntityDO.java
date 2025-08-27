@@ -4,7 +4,10 @@ import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -12,8 +15,6 @@ import org.hibernate.type.SqlTypes;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * FileDocument 文件模型
@@ -23,8 +24,8 @@ import java.util.Set;
 @Getter
 @Setter
 @Entity
-@Table(name = "files")
-public class FileEntityDO extends AuditableEntity implements Reflective {
+@Table(name = "trash")
+public class TrashEntityDO extends AuditableEntity implements Reflective {
 
     private String userId;
     private Boolean isFolder;
@@ -32,7 +33,6 @@ public class FileEntityDO extends AuditableEntity implements Reflective {
     private String md5;
     private Long size;
     private String contentType;
-    private String suffix;
     /**
      * 上传时间
      */
@@ -55,39 +55,12 @@ public class FileEntityDO extends AuditableEntity implements Reflective {
     @Lob
     private byte[] blob;
 
-    private Boolean isFavorite;
-    private String ossFolder;
-
-    private Boolean shareBase;
-    private Boolean subShare;
-    private String shareId;
-
-    @Column(name = "share_props", columnDefinition = "json")
-    @JdbcTypeCode(SqlTypes.JSON)
-    private ShareProperties shareProps;
-
     @Column(name = "props", columnDefinition = "json")
     @JdbcTypeCode(SqlTypes.JSON)
     private OtherProperties props;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "file_tag_ids",
-            joinColumns = @JoinColumn(name = "file_id")
-    )
-    @Column(name = "tag_id", length = 24)
-    private Set<String> tags = new HashSet<>();
-
-    private String mountFileId;
-    private Integer delTag;
-
-    // =========================== ETag相关字段 ===========================
-    private String etag;
-    private Integer etagUpdateFailedAttempts;
-    private Boolean needsEtagUpdate;
-    private LocalDateTime lastEtagUpdateRequestAt;
-    private String lastEtagUpdateError;
-
+    private Boolean hidden;
+    private Boolean move;
 
     @Override
     public int hashCode() {

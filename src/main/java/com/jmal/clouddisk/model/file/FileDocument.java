@@ -47,7 +47,6 @@ public class FileDocument extends FileBase implements Reflective {
      * 文件路径(根路径为"/")
      */
     private String path;
-    private String rootPath;
     /***
      * updateDate 距离现在的时间
      */
