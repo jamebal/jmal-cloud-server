@@ -18,6 +18,7 @@ public class MigrationRunner {
 
     private final UserMigrationService userMigrationService;
     private final WebsiteSettingMigrationService websiteSettingMigrationService;
+    private final AccessTokenMigrationService accessTokenMigrationService;
 
     // 可以在应用启动时自动执行
     @EventListener(ApplicationReadyEvent.class)
@@ -28,6 +29,9 @@ public class MigrationRunner {
 
         MigrationResult websiteResult = websiteSettingMigrationService.migrateWebsiteSetting();
         log.info("网站设置迁移完成: {}", websiteResult);
+
+        MigrationResult accessTokenResult = accessTokenMigrationService.accessTokenData();
+        log.info("访问令牌迁移完成: {}", accessTokenResult);
     }
 
 }

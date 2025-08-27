@@ -1,9 +1,11 @@
 package com.jmal.clouddisk.config.jpa;
 
+import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.bson.types.ObjectId;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -13,6 +15,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @MappedSuperclass
+@Conditional(RelationalDataSourceCondition.class)
 @EntityListeners(AuditingEntityListener.class)
 public abstract class AuditableEntity {
 

@@ -3,7 +3,7 @@ package com.jmal.clouddisk.dao.impl.jpa;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.dao.IAccessTokenDAO;
 import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
-import com.jmal.clouddisk.dao.impl.jpa.repository.UserAccessTokenRepository;
+import com.jmal.clouddisk.dao.impl.jpa.repository.AccessTokenRepository;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
@@ -27,12 +27,12 @@ import java.util.stream.Collectors;
 @Conditional(RelationalDataSourceCondition.class)
 public class AccessTokenDAOJpaImpl implements IAccessTokenDAO {
 
-    private final UserAccessTokenRepository userAccessTokenRepository;
+    private final AccessTokenRepository accessTokenRepository;
 
     @Override
     public UserAccessTokenDO getUserNameByAccessToken(String accessToken) {
         try {
-            UserAccessTokenDO result = userAccessTokenRepository.findByAccessToken(accessToken).orElse(null);
+            UserAccessTokenDO result = accessTokenRepository.findByAccessToken(accessToken).orElse(null);
             log.debug("JPA查询AccessToken: {}, 结果: {}", accessToken, result != null ? "找到" : "未找到");
             return result;
         } catch (Exception e) {
@@ -48,12 +48,12 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO {
 
         try {
             // 检查名称是否已存在
-            if (userAccessTokenRepository.existsByName(userAccessTokenDO.getName())) {
+            if (accessTokenRepository.existsByName(userAccessTokenDO.getName())) {
                 throw new CommonException(ExceptionType.EXISTING_RESOURCES.getCode(), "该名称已存在");
             }
             // 设置创建时间并保存
             userAccessTokenDO.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
-            userAccessTokenRepository.save(userAccessTokenDO);
+            accessTokenRepository.save(userAccessTokenDO);
         } catch (CommonException e) {
             throw e;
         } catch (Exception e) {
@@ -76,7 +76,7 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO {
                     .map(ConsumerDO::getUsername)
                     .collect(Collectors.toList());
 
-            userAccessTokenRepository.deleteByUsernameIn(usernames);
+            accessTokenRepository.deleteByUsernameIn(usernames);
         } catch (Exception e) {
             log.error("JPA删除用户Token失败: userCount={}, error={}",
                     userList.size(), e.getMessage(), e);
@@ -87,7 +87,7 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO {
     @Override
     public List<UserAccessTokenDTO> accessTokenList(String username) {
         try {
-            List<UserAccessTokenDO> tokenList = userAccessTokenRepository.findByUsername(username);
+            List<UserAccessTokenDO> tokenList = accessTokenRepository.findByUsername(username);
 
             List<UserAccessTokenDTO> result = tokenList.stream().map(token -> {
                 UserAccessTokenDTO dto = new UserAccessTokenDTO();
@@ -107,7 +107,7 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO {
     @Transactional
     public void updateAccessToken(String username, String token) {
         try {
-            int updatedCount = userAccessTokenRepository.updateLastActiveTimeByUsernameAndToken(
+            int updatedCount = accessTokenRepository.updateLastActiveTimeByUsernameAndToken(
                     username, token, LocalDateTime.now(TimeUntils.ZONE_ID));
 
             if (updatedCount > 0) {
@@ -125,8 +125,8 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO {
     @Transactional
     public void deleteAccessToken(String id) {
         try {
-            if (userAccessTokenRepository.existsById(id)) {
-                userAccessTokenRepository.deleteById(id);
+            if (accessTokenRepository.existsById(id)) {
+                accessTokenRepository.deleteById(id);
             } else {
                 log.warn("JPA删除AccessToken失败: 令牌不存在, id={}", id);
                 throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), "访问令牌不存在");

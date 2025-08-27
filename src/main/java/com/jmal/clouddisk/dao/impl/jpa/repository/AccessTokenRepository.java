@@ -19,7 +19,7 @@ import java.util.Optional;
  */
 @Repository
 @Conditional(RelationalDataSourceCondition.class)
-public interface UserAccessTokenRepository extends JpaRepository<UserAccessTokenDO, String> {
+public interface AccessTokenRepository extends JpaRepository<UserAccessTokenDO, String> {
 
     /**
      * 根据访问令牌查找

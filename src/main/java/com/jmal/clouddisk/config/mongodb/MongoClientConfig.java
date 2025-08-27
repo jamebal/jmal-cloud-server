@@ -7,6 +7,7 @@ import com.mongodb.client.MongoClients;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -19,6 +20,7 @@ import java.util.Objects;
 @Configuration
 @Slf4j
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
 public class MongoClientConfig extends AbstractMongoClientConfiguration {
 
   private final Environment env;
