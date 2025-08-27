@@ -24,3 +24,4 @@ spring:
 jmalcloud:
   datasource:
     type: sqlite
+    migration: true

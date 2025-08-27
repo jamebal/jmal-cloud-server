@@ -5,7 +5,13 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.dao.IAccessTokenDAO;
+import com.jmal.clouddisk.dao.IUserDAO;
 import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
+import com.jmal.clouddisk.dao.mapping.CommonField;
+import com.jmal.clouddisk.dao.mapping.UserField;
+import com.jmal.clouddisk.dao.util.MyQuery;
+import com.jmal.clouddisk.dao.util.MyUpdate;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.listener.FileMonitor;
@@ -15,7 +21,6 @@ import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerBase;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
-import com.jmal.clouddisk.dao.IAccessTokenDAO;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
@@ -25,7 +30,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -46,6 +50,7 @@ public class UserServiceImpl implements IUserService {
 
     public static final String COLLECTION_NAME = "user";
 
+    private final IUserDAO userDAO;
     private final MongoTemplate mongoTemplate;
 
     private final IWebsiteSettingDAO websiteSettingDAO;
@@ -88,11 +93,11 @@ public class UserServiceImpl implements IUserService {
             encryption(consumerDTO, originalPwd);
             consumerDO = new ConsumerDO();
             BeanUtils.copyProperties(consumerDTO, consumerDO);
-            consumerDO.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
+            consumerDO.setCreatedTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             consumerDO.setId(null);
             // 新建用户目录
             createUserDir(consumerDO.getUsername());
-            consumerDO = mongoTemplate.save(consumerDO, COLLECTION_NAME);
+            consumerDO = userDAO.save(consumerDO);
             // 更新用户缓存
             CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
         } else {
@@ -117,9 +122,7 @@ public class UserServiceImpl implements IUserService {
         if (idList.contains(currentUserId)) {
             return ResultUtil.warning("不能删除自己");
         }
-        Query query1 = new Query();
-        query1.addCriteria(Criteria.where("_id").in(idList));
-        List<ConsumerDO> userList = mongoTemplate.find(query1, ConsumerDO.class, COLLECTION_NAME);
+        List<ConsumerDO> userList = userDAO.findAllById(idList);
         // 过滤掉创建者
         ConsumerDO creator = userList.stream().filter(user -> user.getCreator() != null && user.getCreator()).findAny().orElse(null);
         if (creator != null) {
@@ -134,9 +137,7 @@ public class UserServiceImpl implements IUserService {
         accessTokenDAO.deleteAllByUser(userList);
         // 删除用户缓存
         CaffeineUtil.removeConsumerListByUsernameCache(userList);
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(idList));
-        mongoTemplate.remove(query, COLLECTION_NAME);
+        userDAO.deleteAllById(idList);
         return ResultUtil.success();
     }
 
@@ -148,15 +149,15 @@ public class UserServiceImpl implements IUserService {
             return ResultUtil.warning("请使用其他用户名");
         }
 
-        Query query = new Query();
+        MyQuery query = new MyQuery();
         String userId = user.getId();
         ConsumerDO consumerDO;
         if (!CharSequenceUtil.isBlank(userId)) {
-            query.addCriteria(Criteria.where("_id").is(userId));
+            query.eq(CommonField.ID.getLogical(), userId);
             consumerDO = getUserInfoById(userId);
         } else {
             if (!CharSequenceUtil.isBlank(name)) {
-                query.addCriteria(Criteria.where(USERNAME).is(name));
+                query.eq(USERNAME, name);
                 consumerDO = getUserInfoByUsername(name);
             } else {
                 return ResultUtil.success();
@@ -165,10 +166,10 @@ public class UserServiceImpl implements IUserService {
         if (consumerDO == null) {
             consumerDO = new ConsumerDO();
         }
-        Update update = new Update();
+        MyUpdate update = new MyUpdate();
         String showName = user.getShowName();
         if (!CharSequenceUtil.isBlank(showName)) {
-            update.set(SHOW_NAME, showName);
+            update.set(UserField.SHOW_NAME.getLogical(), showName);
             consumerDO.setShowName(showName);
         }
         Integer quota = user.getQuota();
@@ -192,7 +193,7 @@ public class UserServiceImpl implements IUserService {
 
         Boolean webpDisabled = user.getWebpDisabled();
         if (webpDisabled != null) {
-            update.set("webpDisabled", webpDisabled);
+            update.set(UserField.WEBP_DISABLED.getLogical(), webpDisabled);
             consumerDO.setWebpDisabled(webpDisabled);
         }
 
@@ -209,8 +210,8 @@ public class UserServiceImpl implements IUserService {
         // 设置用户头像
         fileId = setConsumerAvatar(blobAvatar, userId, consumerDO, update, fileId);
         LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
-        update.set("updateTime", now);
-        consumerDO.setUpdateTime(now);
+        update.set(UserField.UPDATED_TIME.getLogical(), now);
+        consumerDO.setUpdatedTime(now);
         updateConsumer(userId, query, update);
         if (user.getRoles() != null) {
             // 修改用户角色后更新相关角色用户的权限缓存
@@ -219,9 +220,9 @@ public class UserServiceImpl implements IUserService {
         return ResultUtil.success(fileId);
     }
 
-    private String setConsumerAvatar(MultipartFile blobAvatar, String userId, ConsumerDO consumerDO, Update update, String fileId) {
+    private String setConsumerAvatar(MultipartFile blobAvatar, String userId, ConsumerDO consumerDO, MyUpdate update, String fileId) {
         if (blobAvatar != null) {
-            ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
+            ConsumerDO consumer = userDAO.findById(userId);
             if (consumer != null) {
                 UploadApiParamDTO upload = new UploadApiParamDTO();
                 upload.setUserId(userId);
@@ -241,7 +242,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public ResponseResult<ConsumerDTO> userInfo(String id) {
-        ConsumerDO consumer = mongoTemplate.findById(id, ConsumerDO.class, COLLECTION_NAME);
+        ConsumerDO consumer = userDAO.findById(id);
         return getConsumerDTOResponseResult(consumer);
     }
 
@@ -353,18 +354,18 @@ public class UserServiceImpl implements IUserService {
         if (originalPwd.length() < 8) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "密码长度不能少于8位");
         }
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(userId));
-        Update update = new Update();
+        MyQuery query = new MyQuery();
+        query.eq(CommonField.ID.getLogical(), userId);
+        MyUpdate update = new MyUpdate();
         String password = PasswordHash.createHash(originalPwd);
         LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
         update.set("password", password);
-        update.set("updateTime", now);
+        update.set(UserField.UPDATED_TIME.getLogical(), now);
         updateConsumer(userId, query, update);
     }
 
-    private void updateConsumer(String userId, Query query, Update update) {
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+    private void updateConsumer(String userId, MyQuery query, MyUpdate update) {
+        userDAO.upsert(query, update);
         ConsumerDO consumerDO = commonUserService.getUserInfoByIdNoCache(userId);
         CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
     }
@@ -418,7 +419,7 @@ public class UserServiceImpl implements IUserService {
             user.setQuota((int) (SystemUtil.getFreeSpace() / 2));
             String originalPwd = user.getPassword();
             encryption(user, originalPwd);
-            user.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
+            user.setCreatedTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             user.setId(null);
             // 新建用户目录
             createUserDir(user.getUsername());
@@ -461,21 +462,21 @@ public class UserServiceImpl implements IUserService {
     public void enableMfa(String userId, String rawSecret) {
         // 加密密钥
         String encryptedSecret = textEncryptor.encrypt(rawSecret);
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(userId));
-        Update update = new Update();
-        update.set("mfaSecret", encryptedSecret);
-        update.set("mfaEnabled", true);
+        MyQuery query = new MyQuery();
+        query.eq(CommonField.ID.getLogical(), userId);
+        MyUpdate update = new MyUpdate();
+        update.set(UserField.MFA_SECRET.getLogical(), encryptedSecret);
+        update.set(UserField.MFA_ENABLED.getLogical(), true);
         updateConsumer(userId, query, update);
     }
 
     @Override
     public void disableMfa(String userId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(userId));
-        Update update = new Update();
-        update.unset("mfaSecret");
-        update.unset("mfaEnabled");
+        MyQuery query = new MyQuery();
+        query.eq(CommonField.ID.getLogical(), userId);
+        MyUpdate update = new MyUpdate();
+        update.unset(UserField.MFA_SECRET.getLogical());
+        update.unset(UserField.MFA_ENABLED.getLogical());
         updateConsumer(userId, query, update);
     }
 

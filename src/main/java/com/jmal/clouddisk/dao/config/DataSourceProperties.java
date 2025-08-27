@@ -17,6 +17,11 @@ public class DataSourceProperties {
     private DataSourceType type;
 
     /**
+     * 是否在启动时进行数据迁移，仅在type为jpa时有效(从mongodb迁移到jpa)
+     */
+    private Boolean migration = false;
+
+    /**
      * 是否在启动时验证数据源连接
      */
     private boolean validateOnStartup = true;

@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.model.rbac;
 
 import com.jmal.clouddisk.config.Reflective;
-import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
@@ -13,7 +12,6 @@ import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -61,11 +59,8 @@ public class ConsumerDO extends ConsumerBase implements Reflective {
     @Schema(name = "quota", title = "默认配额, 10G", example = "10")
     Integer quota;
     @Schema(name = "takeUpSpace", title = "已使用的空间")
+
     Long takeUpSpace;
-    @Schema(name = Constants.CREATE_TIME, title = "创建时间")
-    LocalDateTime createTime;
-    @Schema(name = "updateTime", title = "修改时间", hidden = true)
-    LocalDateTime updateTime;
     @Schema(name = "creator", title = "网盘创建者", hidden = true)
     Boolean creator;
 
@@ -73,6 +68,7 @@ public class ConsumerDO extends ConsumerBase implements Reflective {
     Boolean mfaEnabled;
 
     @Schema(name = "mfaSecret", title = "encrypted_mfa_secret")
+    @Column(columnDefinition = "TEXT")
     String mfaSecret;
 
 }
