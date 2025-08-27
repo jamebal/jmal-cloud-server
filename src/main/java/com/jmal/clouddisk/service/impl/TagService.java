@@ -34,7 +34,7 @@ public class TagService {
 
     private final MongoTemplate mongoTemplate;
 
-    private static final String COLLECTION_NAME = "tag";
+    public static final String COLLECTION_NAME = "tag";
 
 
     /***

@@ -1,7 +1,10 @@
 package com.jmal.clouddisk.model;
 
 import com.jmal.clouddisk.config.Reflective;
-import lombok.Data;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 
@@ -12,10 +15,12 @@ import java.util.List;
  * @Description LdapDO
  * @date 2023/5/8 18:00
  */
-@Data
+@Getter
+@Setter
 @Document(collection = "ldapConfig")
-public class LdapConfigDO implements Reflective {
-    String id;
+@Entity
+@Table(name = "ldap_config")
+public class LdapConfigDO extends AuditableEntity implements Reflective {
     /**
      * 是否启用
      */
@@ -27,6 +32,12 @@ public class LdapConfigDO implements Reflective {
     /**
      * 默认角色
      */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "ldap_config_role_ids",
+            joinColumns = @JoinColumn(name = "ldap_config_id")
+    )
+    @Column(name = "role_id", length = 24)
     List<String> defaultRoleList;
     /**
      * 管理账号密码

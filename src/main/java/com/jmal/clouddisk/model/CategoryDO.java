@@ -1,8 +1,13 @@
 package com.jmal.clouddisk.model;
 
 import com.jmal.clouddisk.config.Reflective;
-import lombok.Data;
-import org.springframework.data.annotation.Id;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import com.jmal.clouddisk.service.impl.CategoryService;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.text.Collator;
 import java.util.Comparator;
@@ -12,10 +17,12 @@ import java.util.Comparator;
  * @Description 类别(自定类别)
  * @Date 2020/10/26 4:19 下午
  */
-@Data
-public class CategoryDO implements Comparable<CategoryDO>, Reflective {
-    @Id
-    private String id;
+@Getter
+@Setter
+@Document(collection = CategoryService.COLLECTION_NAME)
+@Entity
+@Table(name = CategoryService.COLLECTION_NAME)
+public class CategoryDO extends AuditableEntity implements Comparable<CategoryDO>, Reflective {
     /***
      * 用户Id
      */

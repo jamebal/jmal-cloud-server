@@ -35,7 +35,7 @@ public class CategoryService {
 
     private final MongoTemplate mongoTemplate;
 
-    private static final String COLLECTION_NAME = "category";
+    public static final String COLLECTION_NAME = "category";
 
     /***
      * 分类列表

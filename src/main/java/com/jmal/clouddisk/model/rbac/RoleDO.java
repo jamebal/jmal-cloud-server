@@ -1,8 +1,11 @@
 package com.jmal.clouddisk.model.rbac;
 
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import com.jmal.clouddisk.service.impl.RoleService;
-import lombok.Data;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -13,13 +16,12 @@ import java.util.List;
  * @blame jmal
  * @Date 2021/1/7 7:41 下午
  */
-@Data
+@Getter
+@Setter
 @Document(collection = RoleService.COLLECTION_NAME)
-public class RoleDO implements Reflective {
-    /***
-     * 主键
-     */
-    String id;
+@Entity
+@Table(name = RoleService.COLLECTION_NAME)
+public class RoleDO extends AuditableEntity implements Reflective {
     /***
      * 角色名称
      */
@@ -35,6 +37,12 @@ public class RoleDO implements Reflective {
     /***
      * 菜单Id列表
      */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "role_menu_ids",
+            joinColumns = @JoinColumn(name = "role_id")
+    )
+    @Column(name = "menu_id", length = 24)
     List<String> menuIds;
     /***
      * 创建时间

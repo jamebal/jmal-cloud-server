@@ -2,7 +2,14 @@ package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
-import lombok.Data;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -12,7 +19,8 @@ import java.time.LocalDateTime;
  * @Description 操作日志
  * @author jmal
  */
-@Data
+@Getter
+@Setter
 @Document(collection = "log")
 @CompoundIndex(name = "createTime_1", def = "{'createTime': 1}")
 @CompoundIndex(name = "time_1", def = "{'time': 1}")
@@ -31,8 +39,9 @@ import java.time.LocalDateTime;
 @CompoundIndex(name = "type_username_1", def = "{'type': 1, 'username': 1}")
 @CompoundIndex(name = "type_username_createTime_1", def = "{'type': 1, 'username': 1, 'createTime': 1}")
 @CompoundIndex(name = "fileUserId_type_1", def = "{'fileUserId': 1, 'type': 1}")
-public class LogOperation implements Reflective {
-    private String id;
+@Entity
+@Table(name = "log")
+public class LogOperation extends AuditableEntity implements Reflective {
     /***
      * 账号
      */
@@ -95,6 +104,8 @@ public class LogOperation implements Reflective {
      */
     private String type;
 
+    @Column(name = "ip_info", columnDefinition = "json")
+    @JdbcTypeCode(SqlTypes.JSON)
     private IpInfo ipInfo;
 
     /**
@@ -107,7 +118,8 @@ public class LogOperation implements Reflective {
      */
     private String fileUserId;
 
-    @Data
+    @Setter
+    @Getter
     public static class IpInfo {
         /***
          * 国家

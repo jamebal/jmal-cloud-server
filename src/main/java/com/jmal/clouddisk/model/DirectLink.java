@@ -3,8 +3,12 @@ package com.jmal.clouddisk.model;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import com.jmal.clouddisk.service.impl.DirectLinkService;
-import lombok.Data;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -12,15 +16,17 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @Document(collection = DirectLinkService.COLLECTION_NAME)
 @CompoundIndexes({
         @CompoundIndex(name = "mark_1", def = "{'mark': 1}"),
         @CompoundIndex(name = "fileId_1", def = "{'fileId': 1}"),
 
 })
-public class DirectLink implements Reflective {
-    String id;
+@Entity
+@Table(name = DirectLinkService.COLLECTION_NAME)
+public class DirectLink extends AuditableEntity implements Reflective {
 
     String fileId;
 

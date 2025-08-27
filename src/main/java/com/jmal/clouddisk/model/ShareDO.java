@@ -2,9 +2,12 @@ package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import com.jmal.clouddisk.service.impl.ShareServiceImpl;
-import lombok.Data;
-import org.springframework.data.annotation.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -16,11 +19,12 @@ import java.util.List;
  * @Author jmal
  * @Date 2020-03-17 16:28
  */
-@Data
+@Getter
+@Setter
 @Document(collection = ShareServiceImpl.COLLECTION_NAME)
-public class ShareDO implements Reflective {
-    @Id
-    private String id;
+@Entity
+@Table(name = ShareServiceImpl.COLLECTION_NAME)
+public class ShareDO extends AuditableEntity implements Reflective {
     /**
      * 父级分享Id
      */

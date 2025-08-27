@@ -1,8 +1,12 @@
 package com.jmal.clouddisk.model.rbac;
 
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import com.jmal.clouddisk.service.impl.MenuService;
-import lombok.Data;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -12,13 +16,12 @@ import java.time.LocalDateTime;
  * @Description 菜单模型
  * @Date 2021/1/7 8:53 下午
  */
-@Data
+@Getter
+@Setter
 @Document(collection = MenuService.COLLECTION_NAME)
-public class MenuDO implements Reflective {
-    /***
-     * 主键
-     */
-    String id;
+@Entity
+@Table(name = MenuService.COLLECTION_NAME)
+public class MenuDO extends AuditableEntity implements Reflective {
     /***
      * 父级菜单Id
      */

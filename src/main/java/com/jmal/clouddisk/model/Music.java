@@ -1,14 +1,14 @@
 package com.jmal.clouddisk.model;
 
 import com.jmal.clouddisk.config.Reflective;
-import jakarta.persistence.Embeddable;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author jmal
  */
-@Data
-@Embeddable
+@Getter
+@Setter
 public class Music implements Reflective {
     /***
      * 歌名
