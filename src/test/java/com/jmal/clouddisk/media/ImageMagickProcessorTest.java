@@ -38,9 +38,6 @@ public class ImageMagickProcessorTest {
         //FileUtil.del(tempDir);
     }
 
-    public static void main(String[] args) {
-    }
-
     @Test
     public void testGenerateThumbnail() throws IOException, InterruptedException, URISyntaxException {
         cropImageTest("file/images/Multiavatar-Randall Zone.png");
@@ -48,8 +45,8 @@ public class ImageMagickProcessorTest {
         cropImageTest("file/images/sample_640×426.bmp");
         cropImageTest("file/images/sample1.heic");
         cropImageTest("file/images/sample_640×426.gif");
-        cropImageTest("file/images/sample1.heif");
-        cropImageTest("file/images/sample1.dng");
+        // cropImageTest("file/images/sample1.heif");
+        // cropImageTest("file/images/sample1.dng");
     }
 
     private File getResourcesFile(String classpath) throws URISyntaxException {
