@@ -8,6 +8,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
@@ -20,6 +21,7 @@ import java.time.LocalDateTime;
 @Setter
 @RequiredArgsConstructor
 @Entity
+@Document(collection = IAccessTokenDAO.ACCESS_TOKEN_COLLECTION_NAME)
 @Table(name = IAccessTokenDAO.ACCESS_TOKEN_COLLECTION_NAME)
 public class UserAccessTokenDO extends AuditableEntity implements Reflective {
     /***
