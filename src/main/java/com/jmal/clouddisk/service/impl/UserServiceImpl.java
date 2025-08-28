@@ -49,7 +49,6 @@ public class UserServiceImpl implements IUserService {
     public static final String COLLECTION_NAME = "user";
 
     private final IUserDAO userDAO;
-    // private final MongoTemplate mongoTemplate;
 
     private final IWebsiteSettingDAO websiteSettingDAO;
 

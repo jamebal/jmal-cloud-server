@@ -15,6 +15,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -29,6 +30,10 @@ import java.util.Set;
 @Entity
 @Table(name = "files")
 public class FileEntityDO extends AuditableEntity implements Reflective {
+
+    public FileEntityDO() {
+
+    }
 
     private String userId;
     private Boolean isFolder;
@@ -88,6 +93,51 @@ public class FileEntityDO extends AuditableEntity implements Reflective {
     private LocalDateTime lastEtagUpdateRequestAt;
     private String lastEtagUpdateError;
 
+    public FileEntityDO(FileDocument fileDocument) {
+        this.id = fileDocument.getId();
+        this.userId = fileDocument.getUserId();
+        this.path = fileDocument.getPath();
+        this.isFolder = fileDocument.getIsFolder();
+        this.name = fileDocument.getName();
+        this.md5 = fileDocument.getMd5();
+        this.size = fileDocument.getSize();
+        this.contentType = fileDocument.getContentType();
+        this.uploadDate = fileDocument.getUploadDate();
+        this.updateDate = fileDocument.getUpdateDate();
+        this.suffix = fileDocument.getSuffix();
+        this.isFavorite = fileDocument.getIsFavorite();
+        this.ossFolder = fileDocument.getOssFolder();
+        this.shareBase = fileDocument.getShareBase();
+        this.subShare = fileDocument.getSubShare();
+        this.shareId = fileDocument.getShareId();
+
+        this.shareProps = new ShareProperties(fileDocument);
+        this.props = new OtherProperties(fileDocument);
+        this.tags = new HashSet<>();
+        if (fileDocument.getTags() != null) {
+            this.tags.addAll(fileDocument.getTags());
+        }
+        this.mountFileId = fileDocument.getMountFileId();
+        this.delTag = fileDocument.getDelete();
+        this.etag = fileDocument.getEtag();
+        this.etagUpdateFailedAttempts = fileDocument.getEtagUpdateFailedAttempts();
+        this.needsEtagUpdate = fileDocument.getNeedsEtagUpdate();
+        this.lastEtagUpdateRequestAt = fileDocument.getLastEtagUpdateRequestAt();
+        this.lastEtagUpdateError = fileDocument.getLastEtagUpdateError();
+
+        if (fileDocument.getContent() != null) {
+            this.blobType = BlobType.thumbnail;
+            this.blob = fileDocument.getContent();
+        }
+        if (fileDocument.getContentText() != null) {
+            this.blobType = BlobType.contentText;
+            this.blob = fileDocument.getContentText().getBytes(StandardCharsets.UTF_8);
+        }
+        if (fileDocument.getHtml() != null) {
+            this.blobType = BlobType.html;
+            this.blob = fileDocument.getHtml().getBytes(StandardCharsets.UTF_8);
+        }
+    }
 
     @Override
     public int hashCode() {

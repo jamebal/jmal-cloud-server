@@ -19,6 +19,7 @@ public class MigrationRunner {
     private final UserMigrationService userMigrationService;
     private final WebsiteSettingMigrationService websiteSettingMigrationService;
     private final AccessTokenMigrationService accessTokenMigrationService;
+    private final FileMigrationService fileMigrationService;
 
     // 可以在应用启动时自动执行
     @EventListener(ApplicationReadyEvent.class)
@@ -32,6 +33,9 @@ public class MigrationRunner {
 
         MigrationResult accessTokenResult = accessTokenMigrationService.accessTokenData();
         log.info("访问令牌迁移完成: {}", accessTokenResult);
+
+        MigrationResult fileResult = fileMigrationService.migrateConsumerData();
+        log.info("文件数据迁移完成: {}", fileResult);
     }
 
 }
