@@ -4,7 +4,11 @@ import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
-import jakarta.persistence.*;
+import com.jmal.clouddisk.model.Tag;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -70,13 +74,9 @@ public class FileEntityDO extends AuditableEntity implements Reflective {
     @JdbcTypeCode(SqlTypes.JSON)
     private OtherProperties props;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "file_tag_ids",
-            joinColumns = @JoinColumn(name = "file_id")
-    )
-    @Column(name = "tag_id", length = 24)
-    private Set<String> tags = new HashSet<>();
+    @Column(name = "tags", columnDefinition = "json")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Set<Tag> tags = new HashSet<>();
 
     private String mountFileId;
     private Integer delTag;

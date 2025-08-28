@@ -3,11 +3,15 @@ package com.jmal.clouddisk.model.rbac;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -47,13 +51,8 @@ public class ConsumerDO extends ConsumerBase implements Reflective {
      * 角色ID列表
      * 存储格式：["66cb6e9c507f4a2b8c1d3e5f", "66cb6e9c507f4a2b8c1d3e60"]
      */
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(
-            name = "user_role_ids",
-            joinColumns = @JoinColumn(name = "user_id")
-    )
-    @Column(name = "role_id", length = 24)
-    @Schema(name = "roles", title = "角色Id集合")
+    @Column(name = "roles", columnDefinition = "json")
+    @JdbcTypeCode(SqlTypes.JSON)
     List<String> roles;
 
     @Schema(name = "quota", title = "默认配额, 10G", example = "10")

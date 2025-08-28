@@ -18,10 +18,11 @@ import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -58,35 +59,38 @@ public class OssConfigService {
 
     private final TextEncryptor textEncryptor;
 
+    @EventListener(ContextRefreshedEvent.class)
+    public void onApplicationReady(ContextRefreshedEvent event) {
+        if (event.getApplicationContext().getParent() != null) {
+            return;
+        }
+        CompletableFuture.runAsync(this::init);
+    }
 
-    @PostConstruct
-    public void init() {
-        // load config
-        CompletableFuture.runAsync(() -> {
-            List<OssConfigDO> ossConfigDOList = mongoTemplate.findAll(OssConfigDO.class);
-            for (OssConfigDO ossConfigDO : ossConfigDOList) {
-                String userId = ossConfigDO.getUserId();
-                ConsumerDO consumerDO = userService.userInfoById(userId);
-                if (consumerDO == null) {
-                    continue;
+    private void init() {
+        List<OssConfigDO> ossConfigDOList = mongoTemplate.findAll(OssConfigDO.class);
+        for (OssConfigDO ossConfigDO : ossConfigDOList) {
+            String userId = ossConfigDO.getUserId();
+            ConsumerDO consumerDO = userService.userInfoById(userId);
+            if (consumerDO == null) {
+                continue;
+            }
+            OssConfigDTO ossConfigDTO = ossConfigDO.toOssConfigDTO(textEncryptor);
+            ossConfigDTO.setUsername(consumerDO.getUsername());
+            IOssService ossService = null;
+            try {
+                ossService = newOssService(fileProperties, ossConfigDO.getPlatform(), ossConfigDTO);
+                if (ossService != null) {
+                    setBucketInfoCache(ossConfigDO.getPlatform(), ossConfigDTO, ossService);
                 }
-                OssConfigDTO ossConfigDTO = ossConfigDO.toOssConfigDTO(textEncryptor);
-                ossConfigDTO.setUsername(consumerDO.getUsername());
-                IOssService ossService = null;
-                try {
-                    ossService = newOssService(fileProperties, ossConfigDO.getPlatform(), ossConfigDTO);
-                    if (ossService != null) {
-                        setBucketInfoCache(ossConfigDO.getPlatform(), ossConfigDTO, ossService);
-                    }
-                } catch (Exception e) {
-                    log.error("{} 配置加载失败!", ossConfigDO.getPlatform().getValue());
-                    log.error(e.getMessage(), e);
-                    if (ossService != null) {
-                        ossService.close();
-                    }
+            } catch (Exception e) {
+                log.error("{} 配置加载失败!", ossConfigDO.getPlatform().getValue());
+                log.error(e.getMessage(), e);
+                if (ossService != null) {
+                    ossService.close();
                 }
             }
-        });
+        }
     }
 
     public void setOssServiceMap(String key, IOssService ossService) {

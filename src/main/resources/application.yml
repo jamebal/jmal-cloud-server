@@ -50,6 +50,7 @@ spring:
         jdbc:
           lob:
             non_contextual_creation: true
+    open-in-view: false
 springdoc:
   packages-to-scan: com.jmal.clouddisk.controller,com.jmal.clouddisk.oss
   api-docs:

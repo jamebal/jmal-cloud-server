@@ -27,5 +27,6 @@ public class OtherProperties extends ExtendedProperties {
     private String vtt;
     private Boolean showCover;
     private String remark;
+    private String ossPlatform;
 
 }

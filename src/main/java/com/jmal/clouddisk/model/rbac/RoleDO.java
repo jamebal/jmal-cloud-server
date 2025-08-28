@@ -6,6 +6,8 @@ import com.jmal.clouddisk.service.impl.RoleService;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -37,12 +39,8 @@ public class RoleDO extends AuditableEntity implements Reflective {
     /***
      * 菜单Id列表
      */
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "role_menu_ids",
-            joinColumns = @JoinColumn(name = "role_id")
-    )
-    @Column(name = "menu_id", length = 24)
+    @Column(name = "menus", columnDefinition = "json")
+    @JdbcTypeCode(SqlTypes.JSON)
     List<String> menuIds;
     /***
      * 创建时间

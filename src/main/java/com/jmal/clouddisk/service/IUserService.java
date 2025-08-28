@@ -67,12 +67,6 @@ public interface IUserService {
     ResponseResult<List<ConsumerDTO>> userList(QueryUserDTO queryDTO);
 
     /***
-     * 所有用户列表
-     * @return 用户列表
-     */
-    List<ConsumerDTO> userListAll();
-
-    /***
      * 修改用户密码
      * @param consumer ConsumerDO
      * @return ResponseResult
@@ -158,4 +152,5 @@ public interface IUserService {
 
     void disableMfa(String userId);
 
+    String getUsername(String userId);
 }

@@ -5,6 +5,8 @@ import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 
@@ -32,12 +34,8 @@ public class LdapConfigDO extends AuditableEntity implements Reflective {
     /**
      * 默认角色
      */
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "ldap_config_role_ids",
-            joinColumns = @JoinColumn(name = "ldap_config_id")
-    )
-    @Column(name = "role_id", length = 24)
+    @Column(name = "roles", columnDefinition = "json")
+    @JdbcTypeCode(SqlTypes.JSON)
     List<String> defaultRoleList;
     /**
      * 管理账号密码

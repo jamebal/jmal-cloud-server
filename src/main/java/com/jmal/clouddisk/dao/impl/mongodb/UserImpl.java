@@ -6,12 +6,15 @@ import com.jmal.clouddisk.dao.mapping.UserField;
 import com.jmal.clouddisk.dao.util.MongoQueryUtil;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.dao.util.MyUpdate;
+import com.jmal.clouddisk.dao.util.PageableUtil;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.util.MongoUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -77,22 +80,36 @@ public class UserImpl implements IUserDAO {
         return mongoTemplate.count(new Query(), ConsumerDO.class);
     }
 
-    @Override
-    public List<ConsumerDO> findUserList(QueryUserDTO queryDTO) {
+    /**
+     * 根据条件分页查询用户列表
+     *
+     * @param queryDTO 查询条件
+     * @return 分页后的用户数据
+     */
+    public Page<ConsumerDO> findUserList(QueryUserDTO queryDTO) {
         Query query = new Query();
-        MongoUtil.commonQuery(queryDTO, query);
+
         if (!CharSequenceUtil.isBlank(queryDTO.getUsername())) {
+            // 使用 "i" 选项表示不区分大小写
             query.addCriteria(Criteria.where(IUserService.USERNAME).regex(queryDTO.getUsername(), "i"));
         }
         if (!CharSequenceUtil.isBlank(queryDTO.getShowName())) {
             query.addCriteria(Criteria.where(IUserService.SHOW_NAME).regex(queryDTO.getShowName(), "i"));
         }
-        return mongoTemplate.find(query, ConsumerDO.class);
-    }
 
-    @Override
-    public List<ConsumerDO> findAll() {
-        return mongoTemplate.find(new Query(), ConsumerDO.class);
+        long total = mongoTemplate.count(query, ConsumerDO.class);
+
+        Pageable pageable = PageableUtil.buildPageable(queryDTO);
+
+        if (total == 0) {
+            return Page.empty(pageable);
+        }
+
+        query.with(pageable);
+
+        List<ConsumerDO> content = mongoTemplate.find(query, ConsumerDO.class);
+
+        return new PageImpl<>(content, pageable, total);
     }
 
     @Override
@@ -100,5 +117,14 @@ public class UserImpl implements IUserDAO {
         Query query = new Query();
         query.addCriteria(Criteria.where(IUserService.SHOW_NAME).is(showName));
         return mongoTemplate.findOne(query, ConsumerDO.class);
+    }
+
+    @Override
+    public String getUsernameById(String userId) {
+        ConsumerDO consumerDO = findById(userId);
+        if (consumerDO != null) {
+            return consumerDO.getUsername();
+        }
+        return null;
     }
 }

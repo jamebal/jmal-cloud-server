@@ -27,6 +27,7 @@ import com.jmal.clouddisk.util.*;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -285,8 +286,8 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public ResponseResult<List<ConsumerDTO>> userList(QueryUserDTO queryDTO) {
-        long count = userDAO.count();
-        List<ConsumerDO> userList = userDAO.findUserList(queryDTO);
+        Page<ConsumerDO> consumerDOPage = userDAO.findUserList(queryDTO);
+        List<ConsumerDO> userList = consumerDOPage.getContent();
         List<ConsumerDTO> consumerDTOList = userList.parallelStream().map(consumerDO -> {
             ConsumerDTO consumerDTO = new ConsumerDTO();
             BeanUtils.copyProperties(consumerDO, consumerDTO);
@@ -296,17 +297,7 @@ public class UserServiceImpl implements IUserService {
             }
             return consumerDTO;
         }).toList();
-        return ResultUtil.success(consumerDTOList).setCount(count);
-    }
-
-    @Override
-    public List<ConsumerDTO> userListAll() {
-        List<ConsumerDO> userList = userDAO.findAll();
-        return userList.parallelStream().map(consumerDO -> {
-            ConsumerDTO consumerDTO = new ConsumerDTO();
-            consumerDTO.setUsername(consumerDO.getUsername());
-            return consumerDTO;
-        }).toList();
+        return ResultUtil.success(consumerDTOList).setCount(consumerDOPage.getTotalElements());
     }
 
     @Override
@@ -464,6 +455,11 @@ public class UserServiceImpl implements IUserService {
         update.unset(UserField.MFA_SECRET.getLogical());
         update.unset(UserField.MFA_ENABLED.getLogical());
         updateConsumer(userId, query, update);
+    }
+
+    @Override
+    public String getUsername(String userId) {
+        return userDAO.getUsernameById(userId);
     }
 
     public ConsumerDO getUserInfoById(String userId) {

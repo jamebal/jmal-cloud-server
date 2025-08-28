@@ -4,6 +4,7 @@ import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.dao.util.MyUpdate;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -25,9 +26,9 @@ public interface IUserDAO {
 
     long count();
 
-    List<ConsumerDO> findUserList(QueryUserDTO queryDTO);
-
-    List<ConsumerDO> findAll();
+    Page<ConsumerDO> findUserList(QueryUserDTO queryDTO);
 
     ConsumerDO findByShowName(String showName);
+
+    String getUsernameById(String userId);
 }
