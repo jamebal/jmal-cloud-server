@@ -49,7 +49,6 @@ public class AppRuntimeHints implements RuntimeHintsRegistrar {
                 .filter(Objects::nonNull)
                 .map(className -> ClassUtils.resolveClassName(className, classLoader))
                 .forEach(clazz -> {
-                    System.out.println("Registering reflection for: " + clazz.getName());
                     hints.reflection().registerType(clazz, values());
                 });
     }
