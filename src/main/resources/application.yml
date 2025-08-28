@@ -25,7 +25,7 @@ spring:
   application:
     name: jmalcloud
   profiles:
-    active: dev, sqlite
+    active: dev, mongodb
   servlet:
     multipart:
       max-file-size: 50MB

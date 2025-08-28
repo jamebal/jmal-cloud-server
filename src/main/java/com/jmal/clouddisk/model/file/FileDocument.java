@@ -85,6 +85,10 @@ public class FileDocument extends FileBase implements Reflective {
      */
     private Boolean isFavorite;
     /**
+     * oss平台类型
+     */
+    private String ossPlatform;
+    /**
      * oss目录名称
      */
     private String ossFolder;
