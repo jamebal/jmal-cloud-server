@@ -2,6 +2,7 @@ package com.jmal.clouddisk.model.file;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
 import jakarta.persistence.Embeddable;
 import lombok.Data;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @Embeddable
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ExifInfo implements Reflective {
     /**
      * 设备制造商

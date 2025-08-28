@@ -2,7 +2,10 @@ package com.jmal.clouddisk.model.file;
 
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.media.VideoInfoDO;
-import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.Music;
+import com.jmal.clouddisk.model.OperationPermission;
+import com.jmal.clouddisk.model.Tag;
+import com.jmal.clouddisk.model.Trash;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import lombok.Data;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -201,6 +204,11 @@ public class FileDocument extends FileBase implements Reflective {
      * 备注, 主要用于全文检索
      */
     private String remark;
+
+    /**
+     * MONGO_INDEX_FIELD
+     */
+    private Integer index;
 
     /**
      * 操作权限

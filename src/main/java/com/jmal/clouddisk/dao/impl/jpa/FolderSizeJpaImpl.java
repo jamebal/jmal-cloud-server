@@ -4,6 +4,7 @@ import com.jmal.clouddisk.dao.IFolderSizeDAO;
 import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FolderSizeJpaRepository;
 import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.FileMetadataDO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
@@ -28,10 +29,18 @@ public class FolderSizeJpaImpl implements IFolderSizeDAO {
 
         try {
             Pageable pageable = PageRequest.of(0, batchSize);
-            List<FileDocument> folders = fileDocumentRepository.findFoldersWithoutSize(pageable);
+            List<FileMetadataDO> folders = fileDocumentRepository.findFoldersWithoutSize(pageable);
 
+            List<FileDocument> fileDocuments = folders.stream().map(fileMetadataDO -> {
+                FileDocument fileDocument = new FileDocument();
+                fileDocument.setId(fileMetadataDO.getId());
+                fileDocument.setPath(fileMetadataDO.getPath());
+                fileDocument.setName(fileMetadataDO.getName());
+                fileDocument.setUserId(fileMetadataDO.getUserId());
+                return fileDocument;
+            }).toList();
             log.debug("找到 {} 个需要更新大小的文件夹", folders.size());
-            return folders;
+            return fileDocuments;
         } catch (Exception e) {
             log.error("查询需要更新大小的文件夹失败: {}", e.getMessage(), e);
             throw new RuntimeException("查询文件夹失败", e);

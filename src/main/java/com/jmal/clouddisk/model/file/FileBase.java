@@ -37,7 +37,7 @@ public class FileBase extends AuditableEntity implements Reflective {
     /***
      * 文件大小
      */
-    private long size;
+    private Long size;
     /***
      * 文件类型
      */

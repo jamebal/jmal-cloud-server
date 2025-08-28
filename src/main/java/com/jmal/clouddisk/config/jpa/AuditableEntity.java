@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 public abstract class AuditableEntity {
 
     @Id
-    @Column(name = "id", length = 24)
+    @Column(name = "id", length = 24, columnDefinition = "varchar(24)")
     public String id;
 
     @CreatedDate

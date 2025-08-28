@@ -3,7 +3,7 @@ package com.jmal.clouddisk.dao.impl.jpa.migration;
 import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileJpaRepository;
 import com.jmal.clouddisk.model.file.FileDocument;
-import com.jmal.clouddisk.model.file.FileEntityDO;
+import com.jmal.clouddisk.model.file.FileMetadataDO;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +52,7 @@ public class FileMigrationService {
                 try {
 
                     // 转换 FileDocument 到 FileEntityDO
-                    List<FileEntityDO> fileEntityDOList = mongoDataList.parallelStream().map(FileEntityDO::new).toList();
+                    List<FileMetadataDO> fileEntityDOList = mongoDataList.parallelStream().map(FileMetadataDO::new).toList();
 
 
                     // 直接批量保存到 SQLite，无需转换
@@ -66,7 +66,7 @@ public class FileMigrationService {
                     // 如果批量保存失败，尝试逐条保存
                     for (FileDocument mongoData : mongoDataList) {
                         try {
-                            fileJpaRepository.save(new FileEntityDO(mongoData));
+                            fileJpaRepository.save(new FileMetadataDO(mongoData));
                             result.addSuccess(1);
                             result.incrementProcessed();
                         } catch (Exception ex) {
