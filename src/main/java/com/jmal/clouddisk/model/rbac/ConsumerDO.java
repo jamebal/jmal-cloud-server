@@ -47,7 +47,7 @@ public class ConsumerDO extends ConsumerBase implements Reflective {
      * 角色ID列表
      * 存储格式：["66cb6e9c507f4a2b8c1d3e5f", "66cb6e9c507f4a2b8c1d3e60"]
      */
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(
             name = "user_role_ids",
             joinColumns = @JoinColumn(name = "user_id")

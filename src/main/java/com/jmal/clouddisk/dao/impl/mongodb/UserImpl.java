@@ -1,12 +1,15 @@
 package com.jmal.clouddisk.dao.impl.mongodb;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.dao.IUserDAO;
 import com.jmal.clouddisk.dao.mapping.UserField;
 import com.jmal.clouddisk.dao.util.MongoQueryUtil;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.dao.util.MyUpdate;
+import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.util.MongoUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -66,6 +69,36 @@ public class UserImpl implements IUserDAO {
     public ConsumerDO findOneByCreatorTrue() {
         Query query = new Query();
         query.addCriteria(Criteria.where("creator").is(true));
+        return mongoTemplate.findOne(query, ConsumerDO.class);
+    }
+
+    @Override
+    public long count() {
+        return mongoTemplate.count(new Query(), ConsumerDO.class);
+    }
+
+    @Override
+    public List<ConsumerDO> findUserList(QueryUserDTO queryDTO) {
+        Query query = new Query();
+        MongoUtil.commonQuery(queryDTO, query);
+        if (!CharSequenceUtil.isBlank(queryDTO.getUsername())) {
+            query.addCriteria(Criteria.where(IUserService.USERNAME).regex(queryDTO.getUsername(), "i"));
+        }
+        if (!CharSequenceUtil.isBlank(queryDTO.getShowName())) {
+            query.addCriteria(Criteria.where(IUserService.SHOW_NAME).regex(queryDTO.getShowName(), "i"));
+        }
+        return mongoTemplate.find(query, ConsumerDO.class);
+    }
+
+    @Override
+    public List<ConsumerDO> findAll() {
+        return mongoTemplate.find(new Query(), ConsumerDO.class);
+    }
+
+    @Override
+    public ConsumerDO findByShowName(String showName) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.SHOW_NAME).is(showName));
         return mongoTemplate.findOne(query, ConsumerDO.class);
     }
 }

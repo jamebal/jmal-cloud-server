@@ -5,8 +5,6 @@ import com.jmal.clouddisk.dao.IUserDAO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -77,8 +75,6 @@ public class CommonUserService {
      * @return 用户名
      */
     public String getCreatorUsername() {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("creator").is(true));
         ConsumerDO consumerDO = userDAO.findOneByCreatorTrue();
         if (consumerDO == null) {
             return null;

@@ -2,6 +2,7 @@ package com.jmal.clouddisk.dao;
 
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.dao.util.MyUpdate;
+import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 
 import java.util.List;
@@ -21,4 +22,12 @@ public interface IUserDAO {
     ConsumerDO findByUsername(String username);
 
     ConsumerDO findOneByCreatorTrue();
+
+    long count();
+
+    List<ConsumerDO> findUserList(QueryUserDTO queryDTO);
+
+    List<ConsumerDO> findAll();
+
+    ConsumerDO findByShowName(String showName);
 }

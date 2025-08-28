@@ -27,9 +27,6 @@ import com.jmal.clouddisk.util.*;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,7 +48,7 @@ public class UserServiceImpl implements IUserService {
     public static final String COLLECTION_NAME = "user";
 
     private final IUserDAO userDAO;
-    private final MongoTemplate mongoTemplate;
+    // private final MongoTemplate mongoTemplate;
 
     private final IWebsiteSettingDAO websiteSettingDAO;
 
@@ -288,16 +285,8 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public ResponseResult<List<ConsumerDTO>> userList(QueryUserDTO queryDTO) {
-        Query query = new Query();
-        long count = mongoTemplate.count(query, COLLECTION_NAME);
-        MongoUtil.commonQuery(queryDTO, query);
-        if (!CharSequenceUtil.isBlank(queryDTO.getUsername())) {
-            query.addCriteria(Criteria.where(USERNAME).regex(queryDTO.getUsername(), "i"));
-        }
-        if (!CharSequenceUtil.isBlank(queryDTO.getShowName())) {
-            query.addCriteria(Criteria.where(SHOW_NAME).regex(queryDTO.getShowName(), "i"));
-        }
-        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
+        long count = userDAO.count();
+        List<ConsumerDO> userList = userDAO.findUserList(queryDTO);
         List<ConsumerDTO> consumerDTOList = userList.parallelStream().map(consumerDO -> {
             ConsumerDTO consumerDTO = new ConsumerDTO();
             BeanUtils.copyProperties(consumerDO, consumerDTO);
@@ -312,8 +301,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public List<ConsumerDTO> userListAll() {
-        Query query = new Query();
-        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class);
+        List<ConsumerDO> userList = userDAO.findAll();
         return userList.parallelStream().map(consumerDO -> {
             ConsumerDTO consumerDTO = new ConsumerDTO();
             consumerDTO.setUsername(consumerDO.getUsername());
@@ -326,7 +314,7 @@ public class UserServiceImpl implements IUserService {
         String userId = consumer.getId();
         String newPassword = consumer.getPassword();
         if (!CharSequenceUtil.isBlank(userId) && !CharSequenceUtil.isBlank(newPassword)) {
-            ConsumerDO consumer1 = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
+            ConsumerDO consumer1 = userDAO.findById(userId);
             if (consumer1 != null) {
                 if (newPassword.equals(consumer1.getPassword())) {
                     return ResultUtil.warning("新密码不能与旧密码相同!");
@@ -393,8 +381,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public ResponseResult<Boolean> hasUser() {
-        Query query = new Query();
-        long count = mongoTemplate.count(query, COLLECTION_NAME);
+        long count = userDAO.count();
         if (count > 0) {
             count = 1;
         }
@@ -403,8 +390,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public synchronized ResponseResult<Object> initialization(ConsumerDTO consumerDTO) {
-        Query query = new Query();
-        long count = mongoTemplate.count(query, COLLECTION_NAME);
+        long count = userDAO.count();
         if (count < 1) {
             ConsumerDO user = new ConsumerDO();
             BeanUtils.copyProperties(consumerDTO, user);
@@ -423,7 +409,7 @@ public class UserServiceImpl implements IUserService {
             user.setId(null);
             // 新建用户目录
             createUserDir(user.getUsername());
-            mongoTemplate.save(user, COLLECTION_NAME);
+            userDAO.save(user);
         }
         return ResultUtil.success();
     }
@@ -486,7 +472,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public boolean getIsCreator(String userId) {
-        ConsumerDO consumerDO = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
+        ConsumerDO consumerDO = userDAO.findById(userId);
         if (consumerDO == null) {
             return false;
         }
@@ -495,9 +481,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public String getUserIdByShowName(String showName) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(SHOW_NAME).is(showName));
-        ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
+        ConsumerDO consumerDO = userDAO.findByShowName(showName);
         if (consumerDO != null) {
             return consumerDO.getId();
         }
@@ -509,9 +493,7 @@ public class UserServiceImpl implements IUserService {
      * @return 头像文件Id
      */
     public String getCreatorAvatar() {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("creator").is(true));
-        ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
+        ConsumerDO consumerDO = userDAO.findOneByCreatorTrue();
         if (consumerDO == null) {
             return null;
         }

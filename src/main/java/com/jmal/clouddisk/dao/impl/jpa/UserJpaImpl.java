@@ -5,14 +5,18 @@ import com.jmal.clouddisk.dao.IUserDAO;
 import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.UserJpaRepository;
 import com.jmal.clouddisk.dao.mapping.UserField;
+import com.jmal.clouddisk.dao.util.JpaQueryUtil;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.dao.util.MyUpdate;
 import com.jmal.clouddisk.dao.util.QuerySpecificationUtil;
+import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
@@ -75,6 +79,28 @@ public class UserJpaImpl implements IUserDAO {
     @Override
     public ConsumerDO findOneByCreatorTrue() {
         return userJpaRepository.findOneByCreatorTrue().orElse(null);
+    }
+
+    @Override
+    public long count() {
+        return userJpaRepository.count();
+    }
+
+    @Override
+    public List<ConsumerDO> findUserList(QueryUserDTO queryDTO) {
+        Pageable pageable = JpaQueryUtil.buildPageable(queryDTO);
+        Page<ConsumerDO> consumerDOPage = userJpaRepository.findUserList(queryDTO.getUsername(), queryDTO.getShowName(), pageable);
+        return consumerDOPage.getContent();
+    }
+
+    @Override
+    public List<ConsumerDO> findAll() {
+        return userJpaRepository.findAll();
+    }
+
+    @Override
+    public ConsumerDO findByShowName(String showName) {
+        return userJpaRepository.findByShowName(showName).orElse(null);
     }
 
     public void applyUpdateToEntity(ConsumerDO entity, MyUpdate update) {
