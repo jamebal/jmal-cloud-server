@@ -25,7 +25,7 @@ spring:
   application:
     name: jmalcloud
   profiles:
-    active: dev, mongodb
+    active: mongodb
   servlet:
     multipart:
       max-file-size: 50MB
@@ -43,6 +43,13 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
 springdoc:
   packages-to-scan: com.jmal.clouddisk.controller,com.jmal.clouddisk.oss
   api-docs:

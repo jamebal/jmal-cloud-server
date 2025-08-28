@@ -10,6 +10,51 @@
       "type": "[I"
     },
     {
+      "type": "org.apache.tools.zip.AsiExtraField",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.tools.zip.JarMarker",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.tools.zip.UnicodeCommentExtraField",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.tools.zip.UnicodePathExtraField",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.tools.zip.Zip64ExtendedInformationExtraField",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "[Lcom.fasterxml.jackson.databind.deser.BeanDeserializerModifier;"
     },
     {

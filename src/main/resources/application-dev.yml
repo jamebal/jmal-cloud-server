@@ -9,16 +9,6 @@ spring:
           max-age: 0
       chain:
         cache: false
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        jdbc:
-          lob:
-            non_contextual_creation: true
 logging:
   level:
     root: info
