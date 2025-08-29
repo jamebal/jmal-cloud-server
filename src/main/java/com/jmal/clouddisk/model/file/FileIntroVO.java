@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author jmal
@@ -118,4 +119,6 @@ public class FileIntroVO extends FileBase implements Reflective {
      * 文件的etag
      */
     private String etag;
+
+    private Set<String> tagIds;
 }

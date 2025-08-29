@@ -29,6 +29,9 @@ public class FileIndex implements Reflective {
         if (fileIntroVO.getTags() != null) {
             fileIntroVO.getTags().forEach(tag -> tagIds.add(tag.getTagId()));
         }
+        if (fileIntroVO.getTagIds() != null) {
+            tagIds.addAll(fileIntroVO.getTagIds());
+        }
     }
 
     private String getTagName(FileIntroVO fileIntroVO) {
