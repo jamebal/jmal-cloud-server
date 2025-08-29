@@ -1,7 +1,9 @@
 package com.jmal.clouddisk.dao.mongo_to_jpa;
 
 import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
+import com.jmal.clouddisk.model.file.ArticleDO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
 import jakarta.transaction.Transactional;
@@ -13,6 +15,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -25,6 +28,8 @@ public class FileMigrationService {
     private final MongoTemplate mongoTemplate;
 
     private final FileMetadataRepository fileMetadataRepository;
+
+    private final ArticleRepository articleRepository;
 
     /**
      * 迁移 File 数据从 MongoDB 到 SQLite
@@ -51,12 +56,27 @@ public class FileMigrationService {
 
                 try {
 
+                    List<ArticleDO> articleDOList = new ArrayList<>();
+
                     // 转换 FileDocument 到 FileEntityDO
-                    List<FileMetadataDO> fileEntityDOList = mongoDataList.parallelStream().map(FileMetadataDO::new).toList();
+                    List<FileMetadataDO> fileEntityDOList = mongoDataList.stream().map(fileDocument -> {
+                        FileMetadataDO fileMetadataDO = new FileMetadataDO(fileDocument);
+                        if (fileDocument.getSlug() != null) {
+                            ArticleDO articleDO = new ArticleDO(fileDocument);
+                            articleDO.setFileMetadata(fileMetadataDO);
+                            articleDOList.add(articleDO);
+                        }
+                        return fileMetadataDO;
+                    }).toList();
 
 
                     // 直接批量保存到 SQLite，无需转换
                     fileMetadataRepository.saveAll(fileEntityDOList);
+
+                    // 保存文章
+                    if (!articleDOList.isEmpty()) {
+                        articleRepository.saveAll(articleDOList);
+                    }
                     result.addSuccess(mongoDataList.size());
                     result.addProcessed(mongoDataList.size());
                     log.info("成功保存 {} 条记录到 SQLite", mongoDataList.size());
