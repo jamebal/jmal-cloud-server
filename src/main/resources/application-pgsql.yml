@@ -1,5 +1,6 @@
 spring:
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
     show-sql: false
@@ -10,11 +11,11 @@ spring:
           lob:
             non_contextual_creation: true
   datasource:
-    url: jdbc:mysql://localhost:3306/jmalcloud?useUnicode=true&characterEncoding=UTF8&useSSL=false&useUnicode=true&serverTimezone=GMT&connectTimeout=60000&socketTimeout=60000
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
+    url: jdbc:postgresql://192.168.0.12:5432/jmalcloud?currentSchema=public
+    driver-class-name: org.postgresql.Driver
+    username: jmalcloud
     password: xxx
 jmalcloud:
   datasource:
-    type: mysql
+    type: pgsql
     migration: false
