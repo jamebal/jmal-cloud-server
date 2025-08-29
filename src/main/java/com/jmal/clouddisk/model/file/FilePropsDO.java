@@ -36,6 +36,7 @@ public class FilePropsDO implements Reflective {
 
     @Lob
     @Basic(fetch = FetchType.LAZY)
+    @Column(name = "blob_data")
     private byte[] blob;
 
     private Boolean shareBase;
@@ -43,15 +44,15 @@ public class FilePropsDO implements Reflective {
     private String shareId;
     private Integer LuceneIndex;
 
-    @Column(name = "share_props", columnDefinition = "json")
+    @Column(name = "share_props")
     @JdbcTypeCode(SqlTypes.JSON)
     private ShareProperties shareProps;
 
-    @Column(name = "props", columnDefinition = "json")
+    @Column(name = "props")
     @JdbcTypeCode(SqlTypes.JSON)
     private OtherProperties props;
 
-    @Column(name = "tags", columnDefinition = "json")
+    @Column(name = "tags")
     @JdbcTypeCode(SqlTypes.JSON)
     private Set<Tag> tags = new HashSet<>();
 

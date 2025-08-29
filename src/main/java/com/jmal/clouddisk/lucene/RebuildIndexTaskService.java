@@ -322,6 +322,7 @@ public class RebuildIndexTaskService {
                 throttleExecutor = new ThrottleExecutor(10000);
             }
         }
+        throttleExecutor.cancel();
         throttleExecutor.schedule(this::rebuildingIndexCompleted);
     }
 
@@ -542,11 +543,15 @@ public class RebuildIndexTaskService {
 
     private @Nullable FileVisitResult skipTempDirectory(Path dir) {
         // 跳过临时文件目录
-        if (dir.toFile().getName().equals(fileProperties.getChunkFileDir())) {
+        if (dir.startsWith(Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir()))) {
             return FileVisitResult.SKIP_SUBTREE;
         }
         // 跳过lucene索引目录
-        if (dir.toFile().getName().equals(fileProperties.getLuceneIndexDir())) {
+        if (dir.startsWith(Paths.get(fileProperties.getRootDir(), fileProperties.getLuceneIndexDir()))) {
+            return FileVisitResult.SKIP_SUBTREE;
+        }
+        // 跳过 jmalcloud 目录
+        if (dir.startsWith(Paths.get(fileProperties.getRootDir(), fileProperties.getJmalcloudDBDir()))) {
             return FileVisitResult.SKIP_SUBTREE;
         }
         return null;

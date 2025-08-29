@@ -30,7 +30,7 @@ import java.util.List;
 @RegisterReflectionForBinding
 @Document(collection = UserServiceImpl.COLLECTION_NAME)
 @Entity
-@Table(name = UserServiceImpl.COLLECTION_NAME)
+@Table(name = "consumers")
 public class ConsumerDO extends ConsumerBase implements Reflective {
     @Schema(name = "username", title = "用户名", example = "admin")
     @Indexed
@@ -51,7 +51,7 @@ public class ConsumerDO extends ConsumerBase implements Reflective {
      * 角色ID列表
      * 存储格式：["66cb6e9c507f4a2b8c1d3e5f", "66cb6e9c507f4a2b8c1d3e60"]
      */
-    @Column(name = "roles", columnDefinition = "json")
+    @Column(name = "roles")
     @JdbcTypeCode(SqlTypes.JSON)
     List<String> roles;
 

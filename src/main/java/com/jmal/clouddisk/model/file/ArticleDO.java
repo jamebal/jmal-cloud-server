@@ -22,6 +22,7 @@ import java.util.List;
 @Table(name = "articles")
 public class ArticleDO extends AuditableEntity implements Reflective {
 
+    @Column(name = "is_release")
     private Boolean release;
     private Boolean alonePage;
     private Integer pageSort;
@@ -30,11 +31,11 @@ public class ArticleDO extends AuditableEntity implements Reflective {
     private String cover;
     private String slug;
 
-    @Column(name = "category_ids", columnDefinition = "json")
+    @Column(name = "category_ids")
     @JdbcTypeCode(SqlTypes.JSON)
     private List<String> categoryIds;
 
-    @Column(name = "tag_ids", columnDefinition = "json")
+    @Column(name = "tag_ids")
     @JdbcTypeCode(SqlTypes.JSON)
     private List<String> tagIds;
 

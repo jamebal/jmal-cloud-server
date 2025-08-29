@@ -39,7 +39,7 @@ public class RoleDO extends AuditableEntity implements Reflective {
     /***
      * 菜单Id列表
      */
-    @Column(name = "menus", columnDefinition = "json")
+    @Column(name = "menus")
     @JdbcTypeCode(SqlTypes.JSON)
     List<String> menuIds;
     /***

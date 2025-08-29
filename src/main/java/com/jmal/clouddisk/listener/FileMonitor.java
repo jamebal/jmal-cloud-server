@@ -125,6 +125,7 @@ public class FileMonitor {
                     // 忽略目录
                     fileListener.addFilterDir(Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir()));
                     fileListener.addFilterDir(Paths.get(fileProperties.getRootDir(), fileProperties.getLuceneIndexDir()));
+                    fileListener.addFilterDir(Paths.get(fileProperties.getRootDir(), fileProperties.getJmalcloudDBDir()));
                     // 开启文件监控
                     newDirectoryWatcher();
                 } catch (IOException e) {

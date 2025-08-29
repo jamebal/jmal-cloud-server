@@ -3,6 +3,7 @@ package com.jmal.clouddisk.model;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import com.jmal.clouddisk.service.impl.CategoryService;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -46,6 +47,7 @@ public class CategoryDO extends AuditableEntity implements Comparable<CategoryDO
     /***
      * 分类描述
      */
+    @Column(name = "description")
     private String desc;
     /***
      * 分类背景

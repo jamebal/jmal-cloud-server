@@ -632,7 +632,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
         while (run) {
             if (!hasUnIndexFile()) {
                 log.debug("待索引文件处理完成");
-                rebuildIndexTaskService.rebuildingIndexCompleted();
+                rebuildIndexTaskService.delayResetIndex();
                 indexWriter.commit();
                 run = false;
             }

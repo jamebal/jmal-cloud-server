@@ -34,7 +34,7 @@ public class LdapConfigDO extends AuditableEntity implements Reflective {
     /**
      * 默认角色
      */
-    @Column(name = "roles", columnDefinition = "json")
+    @Column(name = "roles")
     @JdbcTypeCode(SqlTypes.JSON)
     List<String> defaultRoleList;
     /**

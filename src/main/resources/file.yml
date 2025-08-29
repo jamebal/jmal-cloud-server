@@ -3,6 +3,8 @@ file:
   testTempDir: /Users/jmal/Downloads/jmalcloud-test-temp
   # 文件存储根目录 文件监控目录
   rootDir: /Users/jmal/temp/filetest/rootpath
+  # 数据库文件和相关文件存储目录 位于 ${rootDir}/${dbDir}
+  dbDir: jmalcloud_db
   # markdown默认存储的位置
   documentDir: /Document/
   # markdown里图片存储的位置

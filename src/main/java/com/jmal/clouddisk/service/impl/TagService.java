@@ -1,11 +1,12 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.jmal.clouddisk.dao.IArticleDAO;
+import com.jmal.clouddisk.dao.ITagDAO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.TagDO;
 import com.jmal.clouddisk.model.TagDTO;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -34,32 +35,34 @@ public class TagService {
 
     private final MongoTemplate mongoTemplate;
 
-    public static final String COLLECTION_NAME = "tag";
+    private final ITagDAO tagDAO;
 
+    private final IArticleDAO articleDAO;
 
-    /***
+    /**
      * 标签列表
      * @param userId userId
      * @return List<TagDTO>
      */
     public List<TagDTO> list(String userId) {
-        Query query = getQueryUserId(userId);
-        List<TagDO> tagList = mongoTemplate.find(query, TagDO.class, COLLECTION_NAME);
-        return tagList.parallelStream().map(tag -> {
-            TagDTO tagDTO = new TagDTO();
-            BeanUtils.copyProperties(tag, tagDTO);
-            return tagDTO;
-        }).sorted().toList();
+        List<TagDO> tagList = tagDAO.findTags(userId);
+        return tagList.stream()
+                .map(tag -> {
+                    TagDTO tagDTO = new TagDTO();
+                    BeanUtils.copyProperties(tag, tagDTO);
+                    return tagDTO;
+                })
+                .sorted()
+                .collect(Collectors.toList());
     }
 
-    /***
+    /**
      * 带有文章数的标签列表
      * @return List<TagDTO>
      */
     public List<TagDTO> listTagsOfArticle() {
-        Query query = getQueryUserId(null);
-        List<TagDO> tagList = mongoTemplate.find(query, TagDO.class, COLLECTION_NAME);
-        return tagList.parallelStream().map(tag -> {
+        List<TagDO> tagList = tagDAO.findTags(null);
+        return tagList.stream().map(tag -> {
             TagDTO tagDTO = new TagDTO();
             BeanUtils.copyProperties(tag, tagDTO);
             getTagArticlesNum(tagDTO);
@@ -69,7 +72,7 @@ public class TagService {
         }).filter(tag -> tag.getArticleNum() > 0).sorted().toList();
     }
 
-    /***
+    /**
      * 获取标签的文章数
      * @param tagDTO tagDTO
      */
@@ -81,42 +84,23 @@ public class TagService {
     }
 
     /***
-     * 获取查询条件
-     * @param userId userId
-     * @return Query
-     */
-    private Query getQueryUserId(String userId) {
-        Query query = new Query();
-        if (!CharSequenceUtil.isBlank(userId)) {
-            query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        } else {
-            query.addCriteria(Criteria.where(IUserService.USER_ID).exists(false));
-        }
-        return query;
-    }
-
-    /***
-     * 获取分类信息
+     * 获取标签信息
      * @param userId 用户id
      * @param tagName 标签名
      * @return 一个分类信息
      */
     public TagDO getTagInfo(String userId, String tagName) {
-        Query query = getQueryUserId(userId);
-        query.addCriteria(Criteria.where("name").is(tagName));
-        return mongoTemplate.findOne(query, TagDO.class, COLLECTION_NAME);
+        return tagDAO.findOneTagByUserIdAndName(userId, tagName);
     }
 
     /***
-     * 获取分类信息
+     * 获取标签信息
      * @param userId 用户id
      * @param tagSlugName 标签缩略名
      * @return 一个分类信息
      */
     public TagDO getTagInfoBySlug(String userId, String tagSlugName) {
-        Query query = getQueryUserId(userId);
-        query.addCriteria(Criteria.where("slug").is(tagSlugName));
-        TagDO tag = mongoTemplate.findOne(query, TagDO.class, COLLECTION_NAME);
+        TagDO tag = tagDAO.findOneTagByUserIdAndSlugName(userId, tagSlugName);
         if (tag == null) {
             tag = getTagInfo(userId, tagSlugName);
         }
@@ -131,7 +115,7 @@ public class TagService {
     public TagDO getTagInfo(String tagId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(tagId));
-        return mongoTemplate.findOne(query, TagDO.class, COLLECTION_NAME);
+        return mongoTemplate.findOne(query, TagDO.class);
     }
 
     /***
@@ -147,7 +131,7 @@ public class TagService {
         TagDO tag = new TagDO();
         BeanUtils.copyProperties(tagDTO, tag);
         tag.setId(null);
-        mongoTemplate.save(tag, COLLECTION_NAME);
+        mongoTemplate.save(tag);
         return ResultUtil.success();
     }
 
@@ -169,7 +153,7 @@ public class TagService {
         Query query1 = new Query();
         query1.addCriteria(Criteria.where("_id").nin(tagDTO.getId()));
         query1.addCriteria(Criteria.where("name").is(tagDTO.getName()));
-        if (mongoTemplate.exists(query1, COLLECTION_NAME)) {
+        if (mongoTemplate.exists(query1, TagDO.class)) {
             return ResultUtil.warning("该标签名称已存在");
         }
         tagDTO.setSlug(getSlug(tagDTO));
@@ -178,7 +162,7 @@ public class TagService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(tagDTO.getId()));
         Update update = MongoUtil.getUpdate(tag);
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        mongoTemplate.upsert(query, update, TagDO.class);
         return ResultUtil.success();
     }
 
@@ -193,7 +177,7 @@ public class TagService {
             query.addCriteria(Criteria.where("_id").nin(id));
         }
         query.addCriteria(Criteria.where("slug").is(slug));
-        if (mongoTemplate.exists(query, COLLECTION_NAME)) {
+        if (mongoTemplate.exists(query, TagDO.class)) {
             return slug + "-1";
         }
         return slug;
@@ -206,7 +190,7 @@ public class TagService {
     public void delete(List<String> tagIdList) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(tagIdList));
-        mongoTemplate.remove(query, COLLECTION_NAME);
+        mongoTemplate.remove(query, TagDO.class);
     }
 
     /**
@@ -241,7 +225,7 @@ public class TagService {
     private Tag getTagIdByName(String tagName, String color, String userId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("name").is(tagName));
-        TagDO tag = mongoTemplate.findOne(query, TagDO.class, COLLECTION_NAME);
+        TagDO tag = mongoTemplate.findOne(query, TagDO.class);
         if (tag == null) {
             // 添加新标签
             tag = new TagDO();
@@ -264,7 +248,7 @@ public class TagService {
         }
         tag.setName(tagName);
         tag.setSlug(tagName);
-        mongoTemplate.save(tag, COLLECTION_NAME);
+        mongoTemplate.save(tag);
         Tag fileDocumentTag = new Tag();
         fileDocumentTag.setTagId(tag.getId());
         fileDocumentTag.setName(tagName);
@@ -295,7 +279,7 @@ public class TagService {
     public List<TagDO> getTagListByIds(Object[] tagIds) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(tagIds));
-        return mongoTemplate.find(query, TagDO.class, COLLECTION_NAME);
+        return mongoTemplate.find(query, TagDO.class);
     }
 
     /**
@@ -318,7 +302,7 @@ public class TagService {
             query.addCriteria(Criteria.where("_id").is(tagDTO.getId()));
             Update update = new Update();
             update.set("sort", tagDTO.getSort());
-            mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
+            mongoTemplate.updateFirst(query, update, TagDO.class);
         });
     }
 }

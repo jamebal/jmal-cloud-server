@@ -53,9 +53,10 @@ public class TrashEntityDO extends AuditableEntity implements Reflective {
     private String path;
     private BlobType blobType;
     @Lob
+    @Column(name = "blob_data")
     private byte[] blob;
 
-    @Column(name = "props", columnDefinition = "json")
+    @Column(name = "props")
     @JdbcTypeCode(SqlTypes.JSON)
     private OtherProperties props;
 

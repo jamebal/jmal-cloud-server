@@ -104,7 +104,7 @@ public class LogOperation extends AuditableEntity implements Reflective {
      */
     private String type;
 
-    @Column(name = "ip_info", columnDefinition = "json")
+    @Column(name = "ip_info")
     @JdbcTypeCode(SqlTypes.JSON)
     private IpInfo ipInfo;
 

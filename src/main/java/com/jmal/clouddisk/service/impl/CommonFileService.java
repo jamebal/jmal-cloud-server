@@ -594,6 +594,7 @@ public class CommonFileService {
                     if (!file.exists() || fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(file.getName()::startsWith)) {
                         deleteFile(username, file);
                         log.info("删除不存在的文档: {}", file.getAbsolutePath());
+                        mongoTemplate.remove(new Query().addCriteria(Criteria.where("_id").is(fileId)), CommonFileService.COLLECTION_NAME);
                     } else {
                         if (fileId != null) {
                             Query removeDeletequery = new Query();
