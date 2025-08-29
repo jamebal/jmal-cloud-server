@@ -8,7 +8,6 @@ import cn.hutool.core.thread.ThreadUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.FileIndex;
 import com.jmal.clouddisk.model.file.FileIntroVO;
-import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
@@ -268,7 +267,6 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
                 rebuildIndexTaskService.incrementIndexedTaskSize();
             }
             FileIndex fileIndex = new FileIndex(file, fileIntroVO);
-            fileIndex.setTagName(getTagName(fileIntroVO));
             setFileIndex(fileIndex);
             if (readContent) {
                 String sha256 = HashUtil.sha256(file);
@@ -319,13 +317,6 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
     private File getFileByFileIntroVO(FileIntroVO fileIntroVO) {
         String username = userService.getUserNameById(fileIntroVO.getUserId());
         return Paths.get(fileProperties.getRootDir(), username, fileIntroVO.getPath(), fileIntroVO.getName()).toFile();
-    }
-
-    private String getTagName(FileIntroVO fileIntroVO) {
-        if (fileIntroVO != null && fileIntroVO.getTags() != null && !fileIntroVO.getTags().isEmpty()) {
-            return fileIntroVO.getTags().stream().map(Tag::getName).reduce((a, b) -> a + " " + b).orElse("");
-        }
-        return null;
     }
 
     /**
@@ -498,6 +489,13 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
             if (CharSequenceUtil.isNotBlank(tagName)) {
                 newDocument.add(new Field(FIELD_TAG_NAME_NGRAM, tagName, TextField.TYPE_NOT_STORED));
                 newDocument.add(new TextField(FIELD_TAG_NAME_FUZZY, tagName, Field.Store.NO));
+            }
+            if (fileIndex.getTagIds() != null && !fileIndex.getTagIds().isEmpty()) {
+                for (String tagId : fileIndex.getTagIds()) {
+                    if (CharSequenceUtil.isNotBlank(tagId)) {
+                        newDocument.add(new StringField("tagIds", tagId, Field.Store.NO));
+                    }
+                }
             }
             if (CharSequenceUtil.isNotBlank(fullContent)) {
                 newDocument.add(new TextField(FIELD_CONTENT_FUZZY, fullContent, Field.Store.NO));

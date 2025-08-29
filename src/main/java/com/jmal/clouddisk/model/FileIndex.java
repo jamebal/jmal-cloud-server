@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * 创建文件索引需要的内容
@@ -23,6 +25,17 @@ public class FileIndex implements Reflective {
         this.isFolder = fileIntroVO.getIsFolder();
         this.isFavorite = fileIntroVO.getIsFavorite();
         this.remark = fileIntroVO.getRemark();
+        this.tagName = getTagName(fileIntroVO);
+        if (fileIntroVO.getTags() != null) {
+            fileIntroVO.getTags().forEach(tag -> tagIds.add(tag.getTagId()));
+        }
+    }
+
+    private String getTagName(FileIntroVO fileIntroVO) {
+        if (fileIntroVO != null && fileIntroVO.getTags() != null && !fileIntroVO.getTags().isEmpty()) {
+            return fileIntroVO.getTags().stream().map(Tag::getName).reduce((a, b) -> a + " " + b).orElse("");
+        }
+        return null;
     }
 
 
@@ -34,6 +47,7 @@ public class FileIndex implements Reflective {
     private String path;
     private String type;
     private String tagName;
+    private Set<String> tagIds = new HashSet<>();
     private Long modified;
     private Long size;
     private Boolean isFolder;
