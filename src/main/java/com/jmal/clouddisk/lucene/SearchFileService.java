@@ -56,29 +56,6 @@ public class SearchFileService {
     private final MongoTemplate mongoTemplate;
     private final CommonUserService userService;
 
-    public boolean existsSha256(String fileIndexHash) {
-        IndexSearcher indexSearcher = null;
-        try {
-            searcherManager.maybeRefresh();
-            indexSearcher = searcherManager.acquire();
-            Term term = new Term(Constants.ETAG, fileIndexHash);
-            Query query = new TermQuery(term);
-            TopDocs topDocs = indexSearcher.search(query, 1);
-            return topDocs.totalHits.value() > 0;
-        } catch (IOException e) {
-            log.error("检查 {} 是否存在失败", Constants.ETAG, e);
-        } finally {
-            if (indexSearcher != null) {
-                try {
-                    searcherManager.release(indexSearcher);
-                } catch (IOException e) {
-                    log.error("释放搜索器失败", e);
-                }
-            }
-        }
-        return false;
-    }
-
     public ResponseResult<List<FileIntroVO>> searchFile(SearchDTO searchDTO) {
         String keyword = searchDTO.getKeyword();
         if (keyword == null || keyword.trim().isEmpty() || searchDTO.getUserId() == null) {

@@ -67,6 +67,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
     private final PopplerPdfReader popplerPdfReader;
     private final RebuildIndexTaskService rebuildIndexTaskService;
     private final SearchFileService searchFileService;
+    private final LuceneQueryService luceneQueryService;
     private final EtagService esTagService;
 
     public static final String MONGO_INDEX_FIELD = "index";
@@ -113,6 +114,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
     public static final String FIELD_CONTENT_FUZZY = "content";
     public static final String FIELD_FILENAME_FUZZY = "filename";
     public static final String FIELD_TAG_NAME_FUZZY = "tagName";
+    public static final String FIELD_TAG_ID = "tagId";
 
     // 定义分段大小
     private static final int CHUNK_SIZE_CHARS = 1024; // 例如，每 1KB 左右一个块，或者按行数
@@ -456,7 +458,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
     public void updateIndexDocument(IndexWriter indexWriter, FileIndex fileIndex, String fullContent, String fileIndexHash) {
         String fileId = fileIndex.getFileId();
         try {
-            if (searchFileService.existsSha256(fileIndexHash)) {
+            if (luceneQueryService.existsSha256(fileIndexHash)) {
                 return;
             }
             String fileName = (fileIndex.getName() == null ? "" : fileIndex.getName()) + " " + fileIndex.getRemark();
@@ -493,7 +495,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
             if (fileIndex.getTagIds() != null && !fileIndex.getTagIds().isEmpty()) {
                 for (String tagId : fileIndex.getTagIds()) {
                     if (CharSequenceUtil.isNotBlank(tagId)) {
-                        newDocument.add(new StringField("tagIds", tagId, Field.Store.NO));
+                        newDocument.add(new StringField(FIELD_TAG_ID, tagId, Field.Store.NO));
                     }
                 }
             }
