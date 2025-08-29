@@ -2,6 +2,7 @@ package com.jmal.clouddisk.model.file;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
@@ -54,6 +55,12 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = false, orphanRemoval = true)
     @PrimaryKeyJoinColumn
     private FilePropsDO props;
+
+    @OneToOne(mappedBy = "fileMetadata",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true)
+    @JsonIgnore
+    private ArticleDO article;
 
     // =========================== ETag相关字段 ===========================
     @Column(length = 64)

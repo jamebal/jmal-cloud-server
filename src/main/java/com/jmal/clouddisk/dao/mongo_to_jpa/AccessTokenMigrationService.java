@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.dao.impl.jpa.migration;
+package com.jmal.clouddisk.dao.mongo_to_jpa;
 
 import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.AccessTokenRepository;

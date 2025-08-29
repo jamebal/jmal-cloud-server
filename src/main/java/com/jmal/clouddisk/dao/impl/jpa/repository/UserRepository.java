@@ -15,7 +15,7 @@ import java.util.Optional;
 
 @Repository
 @Conditional(RelationalDataSourceCondition.class)
-public interface UserJpaRepository extends JpaRepository<ConsumerDO, String>, JpaSpecificationExecutor<ConsumerDO> {
+public interface UserRepository extends JpaRepository<ConsumerDO, String>, JpaSpecificationExecutor<ConsumerDO> {
 
     Optional<ConsumerDO> findByUsername(String username);
 

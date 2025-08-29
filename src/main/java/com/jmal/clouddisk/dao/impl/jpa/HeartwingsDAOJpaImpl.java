@@ -2,7 +2,7 @@ package com.jmal.clouddisk.dao.impl.jpa;
 
 import com.jmal.clouddisk.dao.IHeartwingsDAO;
 import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
-import com.jmal.clouddisk.dao.impl.jpa.repository.HeartwingsJpaRepository;
+import com.jmal.clouddisk.dao.impl.jpa.repository.HeartwingsRepository;
 import com.jmal.clouddisk.model.HeartwingsDO;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -23,9 +23,9 @@ import java.util.List;
 @Repository
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class HeartwingsJpaImpl implements IHeartwingsDAO {
+public class HeartwingsDAOJpaImpl implements IHeartwingsDAO {
 
-    private final HeartwingsJpaRepository heartwingsRepository;
+    private final HeartwingsRepository heartwingsRepository;
 
     @Override
     @Transactional

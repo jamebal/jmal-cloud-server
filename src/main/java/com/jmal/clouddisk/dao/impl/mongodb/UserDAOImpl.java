@@ -26,7 +26,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
-public class UserImpl implements IUserDAO {
+public class UserDAOImpl implements IUserDAO {
 
     private final MongoTemplate mongoTemplate;
 

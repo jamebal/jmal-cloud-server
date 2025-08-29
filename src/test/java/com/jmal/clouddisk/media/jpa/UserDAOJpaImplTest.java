@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.media.jpa;
 
-import com.jmal.clouddisk.dao.impl.jpa.UserJpaImpl;
-import com.jmal.clouddisk.dao.impl.jpa.repository.UserJpaRepository;
+import com.jmal.clouddisk.dao.impl.jpa.UserDAOJpaImpl;
+import com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.dao.util.MyUpdate;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -25,13 +25,13 @@ import static org.mockito.Mockito.*;
 
 @Slf4j
 @ExtendWith(MockitoExtension.class)
-public class UserJpaImplTest {
+public class UserDAOJpaImplTest {
 
     @Mock
-    private UserJpaRepository userJpaRepository;
+    private UserRepository userRepository;
 
     @InjectMocks
-    private UserJpaImpl userJpa;
+    private UserDAOJpaImpl userJpa;
 
     private ConsumerDO testUser;
     private List<ConsumerDO> testUsers;
@@ -62,7 +62,7 @@ public class UserJpaImplTest {
     @Test
     void testSave() {
         // 设置模拟行为
-        when(userJpaRepository.save(any(ConsumerDO.class))).thenReturn(testUser);
+        when(userRepository.save(any(ConsumerDO.class))).thenReturn(testUser);
 
         // 调用被测试方法
         ConsumerDO result = userJpa.save(testUser);
@@ -71,13 +71,13 @@ public class UserJpaImplTest {
         assertNotNull(result);
         assertEquals("user-123", result.getId());
         assertEquals("testuser", result.getUsername());
-        verify(userJpaRepository, times(1)).save(testUser);
+        verify(userRepository, times(1)).save(testUser);
     }
 
     @Test
     void testFindAllById() {
         // 设置模拟行为
-        when(userJpaRepository.findAllById(anyList())).thenReturn(testUsers);
+        when(userRepository.findAllById(anyList())).thenReturn(testUsers);
 
         // 调用被测试方法
         List<ConsumerDO> result = userJpa.findAllById(testIds);
@@ -87,7 +87,7 @@ public class UserJpaImplTest {
         assertEquals(2, result.size());
         assertEquals("user-123", result.get(0).getId());
         assertEquals("user-456", result.get(1).getId());
-        verify(userJpaRepository, times(1)).findAllById(testIds);
+        verify(userRepository, times(1)).findAllById(testIds);
     }
 
     @Test
@@ -96,14 +96,14 @@ public class UserJpaImplTest {
         userJpa.deleteAllById(testIds);
 
         // 验证
-        verify(userJpaRepository, times(1)).deleteAllById(testIds);
+        verify(userRepository, times(1)).deleteAllById(testIds);
     }
 
     @Test
     void testFindById() {
         // 设置模拟行为
-        when(userJpaRepository.findById("user-123")).thenReturn(Optional.of(testUser));
-        when(userJpaRepository.findById("non-existent")).thenReturn(Optional.empty());
+        when(userRepository.findById("user-123")).thenReturn(Optional.of(testUser));
+        when(userRepository.findById("non-existent")).thenReturn(Optional.empty());
 
         // 调用被测试方法 - 存在的用户
         ConsumerDO result1 = userJpa.findById("user-123");
@@ -117,15 +117,15 @@ public class UserJpaImplTest {
 
         // 验证
         assertNull(result2);
-        verify(userJpaRepository, times(1)).findById("user-123");
-        verify(userJpaRepository, times(1)).findById("non-existent");
+        verify(userRepository, times(1)).findById("user-123");
+        verify(userRepository, times(1)).findById("non-existent");
     }
 
     @Test
     void testFindByUsername() {
         // 设置模拟行为
-        when(userJpaRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-        when(userJpaRepository.findByUsername("non-existent")).thenReturn(Optional.empty());
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsername("non-existent")).thenReturn(Optional.empty());
 
         // 调用被测试方法 - 存在的用户
         ConsumerDO result1 = userJpa.findByUsername("testuser");
@@ -139,14 +139,14 @@ public class UserJpaImplTest {
 
         // 验证
         assertNull(result2);
-        verify(userJpaRepository, times(1)).findByUsername("testuser");
-        verify(userJpaRepository, times(1)).findByUsername("non-existent");
+        verify(userRepository, times(1)).findByUsername("testuser");
+        verify(userRepository, times(1)).findByUsername("non-existent");
     }
 
     @Test
     void testFindOneByCreatorTrue() {
         // 设置模拟行为
-        when(userJpaRepository.findOneByCreatorTrue()).thenReturn(Optional.of(testUser));
+        when(userRepository.findOneByCreatorTrue()).thenReturn(Optional.of(testUser));
 
         // 调用被测试方法
         ConsumerDO result = userJpa.findOneByCreatorTrue();
@@ -154,7 +154,7 @@ public class UserJpaImplTest {
         // 验证
         assertNotNull(result);
         assertTrue(result.getCreator());
-        verify(userJpaRepository, times(1)).findOneByCreatorTrue();
+        verify(userRepository, times(1)).findOneByCreatorTrue();
     }
 
     @Test
@@ -168,15 +168,15 @@ public class UserJpaImplTest {
         update.set("quota", 2000);
 
         // 设置模拟行为 - 找到已存在的用户
-        when(userJpaRepository.findOne(any(Specification.class))).thenReturn(Optional.of(testUser));
-        when(userJpaRepository.save(any(ConsumerDO.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.findOne(any(Specification.class))).thenReturn(Optional.of(testUser));
+        when(userRepository.save(any(ConsumerDO.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // 调用被测试方法
         userJpa.upsert(query, update);
 
         // 验证
-        verify(userJpaRepository, times(1)).findOne(any(Specification.class));
-        verify(userJpaRepository, times(1)).save(argThat(consumer ->
+        verify(userRepository, times(1)).findOne(any(Specification.class));
+        verify(userRepository, times(1)).save(argThat(consumer ->
             "Updated User".equals(consumer.getShowName()) &&
             2000 == consumer.getQuota()
         ));
@@ -193,15 +193,15 @@ public class UserJpaImplTest {
         update.set("password", "newpassword");
 
         // 设置模拟行为 - 没有找到用户，需要创建新用户
-        when(userJpaRepository.findOne(any(Specification.class))).thenReturn(Optional.empty());
-        when(userJpaRepository.save(any(ConsumerDO.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.findOne(any(Specification.class))).thenReturn(Optional.empty());
+        when(userRepository.save(any(ConsumerDO.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // 调用被测试方法
         userJpa.upsert(query, update);
 
         // 验证
-        verify(userJpaRepository, times(1)).findOne(any(Specification.class));
-        verify(userJpaRepository, times(1)).save(argThat(consumer ->
+        verify(userRepository, times(1)).findOne(any(Specification.class));
+        verify(userRepository, times(1)).save(argThat(consumer ->
             "NewUser".equals(consumer.getShowName()) &&
             "newpassword".equals(consumer.getPassword()) &&
             "newuser".equals(consumer.getUsername())

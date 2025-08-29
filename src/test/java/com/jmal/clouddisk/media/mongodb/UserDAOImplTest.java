@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.media.mongodb;
 
-import com.jmal.clouddisk.dao.impl.mongodb.UserImpl;
+import com.jmal.clouddisk.dao.impl.mongodb.UserDAOImpl;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.dao.util.MyUpdate;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -27,13 +27,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class UserImplTest {
+public class UserDAOImplTest {
 
     @Mock
     private MongoTemplate mongoTemplate;
 
     @InjectMocks
-    private UserImpl userImpl;
+    private UserDAOImpl userDAOImpl;
 
     @Captor
     private ArgumentCaptor<Query> queryCaptor;
@@ -73,7 +73,7 @@ public class UserImplTest {
         when(mongoTemplate.save(any(ConsumerDO.class))).thenReturn(testUser);
 
         // 调用被测试方法
-        ConsumerDO result = userImpl.save(testUser);
+        ConsumerDO result = userDAOImpl.save(testUser);
 
         // 验证
         assertNotNull(result);
@@ -88,7 +88,7 @@ public class UserImplTest {
         when(mongoTemplate.find(any(Query.class), eq(ConsumerDO.class))).thenReturn(testUsers);
 
         // 调用被测试方法
-        List<ConsumerDO> result = userImpl.findAllById(testIds);
+        List<ConsumerDO> result = userDAOImpl.findAllById(testIds);
 
         // 验证
         assertNotNull(result);
@@ -105,7 +105,7 @@ public class UserImplTest {
     @Test
     void testDeleteAllById() {
         // 调用被测试方法
-        userImpl.deleteAllById(testIds);
+        userDAOImpl.deleteAllById(testIds);
 
         // 验证传递给 mongoTemplate 的查询条件
         verify(mongoTemplate).remove(queryCaptor.capture(), eq(ConsumerDO.class));
@@ -120,14 +120,14 @@ public class UserImplTest {
         when(mongoTemplate.findById("non-existent", ConsumerDO.class)).thenReturn(null);
 
         // 调用被测试方法 - 存在的用户
-        ConsumerDO result1 = userImpl.findById("user-123");
+        ConsumerDO result1 = userDAOImpl.findById("user-123");
 
         // 验证
         assertNotNull(result1);
         assertEquals("user-123", result1.getId());
 
         // 调用被测试方法 - 不存在的用户
-        ConsumerDO result2 = userImpl.findById("non-existent");
+        ConsumerDO result2 = userDAOImpl.findById("non-existent");
 
         // 验证
         assertNull(result2);
@@ -146,7 +146,7 @@ public class UserImplTest {
         myUpdate.set("quota", 2000);
 
         // 调用被测试方法
-        userImpl.upsert(myQuery, myUpdate);
+        userDAOImpl.upsert(myQuery, myUpdate);
 
         // 验证传递给 mongoTemplate 的参数
         verify(mongoTemplate).upsert(queryCaptor.capture(), updateCaptor.capture(), eq(ConsumerDO.class));
@@ -165,7 +165,7 @@ public class UserImplTest {
         when(mongoTemplate.findOne(any(Query.class), eq(ConsumerDO.class))).thenReturn(testUser);
 
         // 调用被测试方法
-        ConsumerDO result = userImpl.findByUsername("testuser");
+        ConsumerDO result = userDAOImpl.findByUsername("testuser");
 
         // 验证
         assertNotNull(result);
@@ -184,7 +184,7 @@ public class UserImplTest {
         when(mongoTemplate.findOne(any(Query.class), eq(ConsumerDO.class))).thenReturn(testUser);
 
         // 调用被测试方法
-        ConsumerDO result = userImpl.findOneByCreatorTrue();
+        ConsumerDO result = userDAOImpl.findOneByCreatorTrue();
 
         // 验证
         assertNotNull(result);
@@ -202,7 +202,7 @@ public class UserImplTest {
         when(mongoTemplate.findOne(any(Query.class), eq(ConsumerDO.class))).thenReturn(null);
 
         // 调用被测试方法
-        ConsumerDO result = userImpl.findByUsername("nonexistent");
+        ConsumerDO result = userDAOImpl.findByUsername("nonexistent");
 
         // 验证
         assertNull(result);
@@ -215,7 +215,7 @@ public class UserImplTest {
         when(mongoTemplate.findOne(any(Query.class), eq(ConsumerDO.class))).thenReturn(null);
 
         // 调用被测试方法
-        ConsumerDO result = userImpl.findOneByCreatorTrue();
+        ConsumerDO result = userDAOImpl.findOneByCreatorTrue();
 
         // 验证
         assertNull(result);

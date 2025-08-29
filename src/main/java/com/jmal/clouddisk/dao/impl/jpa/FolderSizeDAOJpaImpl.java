@@ -2,7 +2,7 @@ package com.jmal.clouddisk.dao.impl.jpa;
 
 import com.jmal.clouddisk.dao.IFolderSizeDAO;
 import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
-import com.jmal.clouddisk.dao.impl.jpa.repository.FolderSizeJpaRepository;
+import com.jmal.clouddisk.dao.impl.jpa.repository.FolderSizeRepository;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +19,9 @@ import java.util.List;
 @Repository
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class FolderSizeJpaImpl implements IFolderSizeDAO {
+public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
 
-    private final FolderSizeJpaRepository fileDocumentRepository;
+    private final FolderSizeRepository fileDocumentRepository;
 
     @Override
     public List<FileDocument> findFoldersNeedUpdateSize(int batchSize) {

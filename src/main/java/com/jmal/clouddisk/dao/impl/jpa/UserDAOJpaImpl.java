@@ -3,7 +3,7 @@ package com.jmal.clouddisk.dao.impl.jpa;
 import cn.hutool.core.convert.Convert;
 import com.jmal.clouddisk.dao.IUserDAO;
 import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
-import com.jmal.clouddisk.dao.impl.jpa.repository.UserJpaRepository;
+import com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository;
 import com.jmal.clouddisk.dao.mapping.UserField;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.dao.util.MyUpdate;
@@ -26,29 +26,29 @@ import java.util.Optional;
 @Repository
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class UserJpaImpl implements IUserDAO {
+public class UserDAOJpaImpl implements IUserDAO {
 
-    private final UserJpaRepository userJpaRepository;
+    private final UserRepository userRepository;
 
     @Override
     public ConsumerDO save(ConsumerDO consumerDO) {
-        return userJpaRepository.save(consumerDO);
+        return userRepository.save(consumerDO);
     }
 
     @Override
     public List<ConsumerDO> findAllById(List<String> idList) {
-        return userJpaRepository.findAllById(idList);
+        return userRepository.findAllById(idList);
     }
 
     @Override
     public void deleteAllById(List<String> idList) {
-        userJpaRepository.deleteAllById(idList);
+        userRepository.deleteAllById(idList);
     }
 
     @Override
     @Transactional
     public ConsumerDO findById(String userId) {
-        return userJpaRepository.findById(userId).orElse(null);
+        return userRepository.findById(userId).orElse(null);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class UserJpaImpl implements IUserDAO {
 
         Specification<ConsumerDO> spec = QuerySpecificationUtil.toSpecification(myQuery, UserField.allFields());
 
-        Optional<ConsumerDO> optional = userJpaRepository.findOne(spec);
+        Optional<ConsumerDO> optional = userRepository.findOne(spec);
 
         ConsumerDO entity;
 
@@ -67,33 +67,33 @@ public class UserJpaImpl implements IUserDAO {
             applyQueryToEntity(entity, myQuery);
         }
         applyUpdateToEntity(entity, myUpdate);
-        userJpaRepository.save(entity);
+        userRepository.save(entity);
     }
 
     @Override
     @Transactional
     public ConsumerDO findByUsername(String username) {
-        return userJpaRepository.findByUsername(username).orElse(null);
+        return userRepository.findByUsername(username).orElse(null);
     }
 
     @Override
     public ConsumerDO findOneByCreatorTrue() {
-        return userJpaRepository.findOneByCreatorTrue().orElse(null);
+        return userRepository.findOneByCreatorTrue().orElse(null);
     }
 
     @Override
     public long count() {
-        return userJpaRepository.count();
+        return userRepository.count();
     }
 
     @Override
     public Page<ConsumerDO> findUserList(QueryUserDTO queryDTO) {
-        return userJpaRepository.findUserList(queryDTO.getUsername(), queryDTO.getShowName(), PageableUtil.buildPageable(queryDTO));
+        return userRepository.findUserList(queryDTO.getUsername(), queryDTO.getShowName(), PageableUtil.buildPageable(queryDTO));
     }
 
     @Override
     public ConsumerDO findByShowName(String showName) {
-        return userJpaRepository.findByShowName(showName).orElse(null);
+        return userRepository.findByShowName(showName).orElse(null);
     }
 
     @Override

@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Repository
 @Conditional(RelationalDataSourceCondition.class)
-public interface WebsiteSettingJpaRepository extends JpaRepository<WebsiteSettingDO, String> {
+public interface WebsiteSettingRepository extends JpaRepository<WebsiteSettingDO, String> {
 
     /**
      * 查找最新的网站设置（按创建时间排序）

@@ -14,7 +14,7 @@ import java.util.List;
 
 @Repository
 @Conditional(RelationalDataSourceCondition.class)
-public interface FolderSizeJpaRepository extends JpaRepository<FileMetadataDO, String> {
+public interface FolderSizeRepository extends JpaRepository<FileMetadataDO, String> {
 
     /**
      * 查询需要更新大小的文件夹（size字段为null）

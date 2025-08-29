@@ -16,7 +16,7 @@ import java.util.List;
 @Repository
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
-public class FolderSizeImpl implements IFolderSizeDAO {
+public class FolderSizeDAOImpl implements IFolderSizeDAO {
 
     private final MongoTemplate mongoTemplate;
 

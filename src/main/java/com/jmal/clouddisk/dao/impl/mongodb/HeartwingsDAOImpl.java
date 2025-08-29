@@ -17,7 +17,7 @@ import java.util.List;
 @Repository
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
-public class HeartwingsImpl implements IHeartwingsDAO {
+public class HeartwingsDAOImpl implements IHeartwingsDAO {
 
     private final MongoTemplate mongoTemplate;
 

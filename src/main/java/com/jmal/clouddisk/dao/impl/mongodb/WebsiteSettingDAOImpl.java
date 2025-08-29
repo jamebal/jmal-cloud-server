@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
-public class WebsiteSettingImpl implements IWebsiteSettingDAO {
+public class WebsiteSettingDAOImpl implements IWebsiteSettingDAO {
 
     private final MongoTemplate mongoTemplate;
 

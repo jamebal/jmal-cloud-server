@@ -1,9 +1,8 @@
-package com.jmal.clouddisk.dao.impl.jpa.migration;
+package com.jmal.clouddisk.dao.mongo_to_jpa;
 
 import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
-import com.jmal.clouddisk.dao.impl.jpa.repository.FileJpaRepository;
-import com.jmal.clouddisk.model.file.FileDocument;
-import com.jmal.clouddisk.model.file.FileMetadataDO;
+import com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository;
+import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,18 +19,18 @@ import java.util.List;
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "jmalcloud.datasource.migration")
 @Conditional(RelationalDataSourceCondition.class)
-public class FileMigrationService {
+public class UserMigrationService {
 
     private final MongoTemplate mongoTemplate;
 
-    private final FileJpaRepository fileJpaRepository;
+    private final UserRepository jpaRepository;
 
     /**
-     * 迁移 File 数据从 MongoDB 到 SQLite
+     * 迁移 User 数据从 MongoDB 到 SQLite
      */
     @Transactional
     public MigrationResult migrateConsumerData() {
-        log.info("开始迁移 File 数据从 MongoDB 到 SQLite");
+        log.info("开始迁移 User 数据从 MongoDB 到 SQLite");
 
         MigrationResult result = new MigrationResult();
         int batchSize = 1000; // 批量处理大小
@@ -41,7 +40,7 @@ public class FileMigrationService {
             while (true) {
                 // 分批从 MongoDB 读取数据
                 Query query = new Query().skip(skip).limit(batchSize);
-                List<FileDocument> mongoDataList = mongoTemplate.find(query, FileDocument.class);
+                List<ConsumerDO> mongoDataList = mongoTemplate.find(query, ConsumerDO.class);
 
                 if (mongoDataList.isEmpty()) {
                     break; // 没有更多数据
@@ -50,13 +49,8 @@ public class FileMigrationService {
                 log.info("正在处理第 {} 批数据，数量: {}", (skip / batchSize) + 1, mongoDataList.size());
 
                 try {
-
-                    // 转换 FileDocument 到 FileEntityDO
-                    List<FileMetadataDO> fileEntityDOList = mongoDataList.parallelStream().map(FileMetadataDO::new).toList();
-
-
                     // 直接批量保存到 SQLite，无需转换
-                    fileJpaRepository.saveAll(fileEntityDOList);
+                    jpaRepository.saveAll(mongoDataList);
                     result.addSuccess(mongoDataList.size());
                     result.addProcessed(mongoDataList.size());
                     log.info("成功保存 {} 条记录到 SQLite", mongoDataList.size());
@@ -64,13 +58,13 @@ public class FileMigrationService {
                     log.error("批量保存到 SQLite 失败: {}", e.getMessage());
 
                     // 如果批量保存失败，尝试逐条保存
-                    for (FileDocument mongoData : mongoDataList) {
+                    for (ConsumerDO mongoData : mongoDataList) {
                         try {
-                            fileJpaRepository.save(new FileMetadataDO(mongoData));
+                            jpaRepository.save(mongoData);
                             result.addSuccess(1);
                             result.incrementProcessed();
                         } catch (Exception ex) {
-                            log.error("保存 File 数据失败, ID: {}, 错误: {}", mongoData.getId(), ex.getMessage());
+                            log.error("保存 用户 数据失败, ID: {}, 错误: {}", mongoData.getId(), ex.getMessage());
                             result.addError(mongoData.getId(), ex.getMessage());
                             result.incrementProcessed();
                         }
