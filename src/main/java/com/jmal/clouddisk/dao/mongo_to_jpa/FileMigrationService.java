@@ -52,7 +52,7 @@ public class FileMigrationService {
                     break; // 没有更多数据
                 }
 
-                log.info("正在处理第 {} 批数据，数量: {}", (skip / batchSize) + 1, mongoDataList.size());
+                log.debug("正在处理第 {} 批数据，数量: {}", (skip / batchSize) + 1, mongoDataList.size());
 
                 try {
 
@@ -79,7 +79,7 @@ public class FileMigrationService {
                     }
                     result.addSuccess(mongoDataList.size());
                     result.addProcessed(mongoDataList.size());
-                    log.info("成功保存 {} 条记录到 SQLite", mongoDataList.size());
+                    log.debug("成功保存 {} 条记录到 SQLite", mongoDataList.size());
                 } catch (Exception e) {
                     log.error("批量保存到 SQLite 失败: {}", e.getMessage());
 
