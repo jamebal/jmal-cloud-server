@@ -18,7 +18,7 @@ public interface WebsiteSettingRepository extends JpaRepository<WebsiteSettingDO
     /**
      * 查找最新的网站设置（按创建时间排序）
      */
-    Optional<WebsiteSettingDO> findFirstByOrderByCreatedTimeDesc();
+    Optional<WebsiteSettingDO> findFirst();
 
     /**
      * 更新网盘Logo

@@ -19,7 +19,12 @@ public class WebsiteSettingDAOImpl implements IWebsiteSettingDAO {
 
     @Override
     public WebsiteSettingDO findOne() {
-        return mongoTemplate.findOne(new Query(), WebsiteSettingDO.class);
+        WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(new Query(), WebsiteSettingDO.class);
+        if (websiteSettingDO == null) {
+            websiteSettingDO = new WebsiteSettingDO();
+            mongoTemplate.save(websiteSettingDO);
+        }
+        return websiteSettingDO;
     }
 
     @Override
@@ -46,7 +51,12 @@ public class WebsiteSettingDAOImpl implements IWebsiteSettingDAO {
     public WebsiteSettingDO getPreviewConfig() {
         Query query = new Query();
         query.fields().include("iframe");
-        return mongoTemplate.findOne(new Query(), WebsiteSettingDO.class);
+        WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(query, WebsiteSettingDO.class);
+        if (websiteSettingDO == null) {
+            websiteSettingDO = new WebsiteSettingDO();
+            mongoTemplate.save(websiteSettingDO);
+        }
+        return websiteSettingDO;
     }
 
     @Override

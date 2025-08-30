@@ -25,15 +25,14 @@ public class WebsiteSettingDAOJpaImpl implements IWebsiteSettingDAO {
         log.debug("查询网站设置");
 
         try {
-            Optional<WebsiteSettingDO> setting = websiteSettingRepository.findFirstByOrderByCreatedTimeDesc();
+            Optional<WebsiteSettingDO> setting = websiteSettingRepository.findFirst();
 
             if (setting.isPresent()) {
                 log.debug("找到网站设置: id={}, siteName={}",
                          setting.get().getId(), setting.get().getSiteName());
                 return setting.get();
             } else {
-                log.debug("未找到网站设置，返回null");
-                return null;
+                return websiteSettingRepository.save(new WebsiteSettingDO());
             }
         } catch (Exception e) {
             log.error("查询网站设置失败: {}", e.getMessage(), e);
@@ -92,7 +91,7 @@ public class WebsiteSettingDAOJpaImpl implements IWebsiteSettingDAO {
             validateWebsiteSettingDO(websiteSettingDO);
 
             // 检查是否存在现有记录
-            Optional<WebsiteSettingDO> existingSetting = websiteSettingRepository.findFirstByOrderByCreatedTimeDesc();
+            Optional<WebsiteSettingDO> existingSetting = websiteSettingRepository.findFirst();
 
             if (existingSetting.isPresent()) {
                 // 更新现有记录
@@ -123,7 +122,7 @@ public class WebsiteSettingDAOJpaImpl implements IWebsiteSettingDAO {
         log.debug("获取预览配置");
 
         try {
-            Optional<WebsiteSettingDO> setting = websiteSettingRepository.findFirstByOrderByCreatedTimeDesc();
+            Optional<WebsiteSettingDO> setting = websiteSettingRepository.findFirst();
 
             if (setting.isPresent()) {
                 WebsiteSettingDO previewConfig = setting.get();
