@@ -267,14 +267,6 @@ public class RoleService {
     }
 
     /***
-     * 获取所有角色
-     * @return List<RoleDO>
-     */
-    public List<RoleDO> getAllRoles() {
-        return mongoTemplate.findAll(RoleDO.class, COLLECTION_NAME);
-    }
-
-    /***
      * 初始化角色数据
      */
     public void initRoles() {
