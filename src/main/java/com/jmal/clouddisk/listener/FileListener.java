@@ -97,12 +97,7 @@ public class FileListener implements DirectoryChangeListener {
         }
         // 延时执行，确保当前处理队列中的事件都被处理完
         rebuildIndexTaskService.doSync(null, null, false);
-        rebuildIndexTaskService.onSyncComplete(() -> {
-            log.info("执行增量文件扫描，确保100%处理...");
-            rebuildIndexTaskService.doSync(null, null, false);
-
-            rebuildIndexTaskService.onSyncComplete(() -> scanningInProgress.set(false));
-        });
+        rebuildIndexTaskService.onSyncComplete(() -> scanningInProgress.set(false));
     }
 
     private void transferEventsToQueue() {
