@@ -35,4 +35,14 @@ public class FileDAOImpl implements IFileDAO {
         update.set("isPublic", true);
         mongoTemplate.updateFirst(query, update, FileDocument.class);
     }
+
+    @Override
+    public void updateTagInfoInFiles(String tagId, String newTagName, String newColor) {
+        Query query1 = new Query();
+        query1.addCriteria(Criteria.where("tags.tagId").is(tagId));
+        Update update = new Update();
+        update.set("tags.$.color", newColor);
+        update.set("tags.$.name", newTagName);
+        mongoTemplate.updateMulti(query1,update, FileDocument.class);
+    }
 }

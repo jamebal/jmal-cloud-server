@@ -6,6 +6,7 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -26,4 +27,13 @@ public interface TagRepository extends JpaRepository<TagDO, String>, JpaSpecific
     @Query("SELECT t FROM TagDO t WHERE ((:userId IS NULL AND t.userId IS NULL) OR (t.userId = :userId)) AND t.slug = :slug")
     Optional<TagDO> findOneTagByUserIdAndSlug(@Param("userId") String userId, @Param("slug") String slug);
 
+    boolean existsByNameAndIdNot(String name, String id);
+
+    boolean existsBySlugAndIdNot(String slug, String id);
+
+    void removeByIdIn(List<String> idList);
+
+    @Modifying
+    @Query("UPDATE TagDO t SET t.sort = :sort WHERE t.id = :id")
+    void updateSortById(String id, Integer sort);
 }

@@ -4,6 +4,8 @@ import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FilePropsRepository;
+import com.jmal.clouddisk.lucene.LuceneQueryService;
+import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.FilePropsDO;
 import com.jmal.clouddisk.model.file.ShareProperties;
 import jakarta.persistence.EntityNotFoundException;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Repository
@@ -24,6 +27,8 @@ public class FileDAOJpaImpl implements IFileDAO {
     private final FileMetadataRepository fileMetadataRepository;
 
     private final FilePropsRepository filePropsRepository;
+
+    private final LuceneQueryService luceneQueryService;
 
     @Override
     public void deleteAllByIdInBatch(List<String> userIdList) {
@@ -40,5 +45,27 @@ public class FileDAOJpaImpl implements IFileDAO {
             props.setShareProps(new ShareProperties());
         }
         props.getShareProps().setIsPublic(true);
+    }
+
+    @Override
+    @Transactional
+    public void updateTagInfoInFiles(String tagId, String newTagName, String newColor) {
+        Set<String> affectedFileIds = luceneQueryService.findByTagId(tagId);
+        if (affectedFileIds == null || affectedFileIds.isEmpty()) {
+            return;
+        }
+        List<FilePropsDO> propsToUpdate = filePropsRepository.findAllById(affectedFileIds);
+        for (FilePropsDO props : propsToUpdate) {
+            if (props.getTags() == null) continue;
+            for (Tag tag : props.getTags()) {
+                if (tagId.equals(tag.getTagId())) {
+                    // 更新 name 和 color
+                    tag.setName(newTagName);
+                    tag.setColor(newColor);
+                    break;
+                }
+            }
+        }
+        filePropsRepository.saveAll(propsToUpdate);
     }
 }

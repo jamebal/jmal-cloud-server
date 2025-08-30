@@ -46,10 +46,37 @@ public class LuceneQueryService {
         return false;
     }
 
+    public long countByTagId(String tagId) {
+        Term term = new Term(LuceneService.FIELD_TAG_ID, tagId);
+        Query query = new TermQuery(term);
+        return count(query);
+    }
+
     public Set<String> findByTagId(String tagId) {
         Term term = new Term(LuceneService.FIELD_TAG_ID, tagId);
         Query query = new TermQuery(term);
         return find(query);
+    }
+
+    public long count(Query query) {
+        IndexSearcher indexSearcher = null;
+        try {
+            searcherManager.maybeRefresh();
+            indexSearcher = searcherManager.acquire();
+            TopDocs topDocs = indexSearcher.search(query, Integer.MAX_VALUE);
+            return topDocs.totalHits.value();
+        } catch (IOException e) {
+            log.error("查询失败, query: {}", query.toString(), e);
+        } finally {
+            if (indexSearcher != null) {
+                try {
+                    searcherManager.release(indexSearcher);
+                } catch (IOException e) {
+                    log.error("释放搜索器失败", e);
+                }
+            }
+        }
+        return 0;
     }
 
     public Set<String> find(Query query) {
