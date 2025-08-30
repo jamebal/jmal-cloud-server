@@ -2,6 +2,7 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.controller.record.LoginResponse;
 import com.jmal.clouddisk.exception.CommonException;
@@ -14,10 +15,11 @@ import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.service.IAuthService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.ldap.AuthenticationException;
@@ -67,11 +69,17 @@ public class AuthServiceImpl implements IAuthService {
         return messageUtil.getMessage("login.error");
     }
 
-    @PostConstruct
-    private void init() {
+    @EventListener(ContextRefreshedEvent.class)
+    public void onApplicationReady(ContextRefreshedEvent event) {
+        if (event.getApplicationContext().getParent() != null) {
+            return;
+        }
+        ThreadUtil.execute(this::init);
+    }
+
+    public void init() {
         LdapConfigDO ldapConfigDO = mongoTemplate.findOne(new Query(), LdapConfigDO.class);
         if (ldapConfigDO != null) {
-            ConsumerDO consumerDO = userService.getUserInfoById(ldapConfigDO.getUserId());
             LdapConfigDTO ldapConfigDTO = ldapConfigDO.toLdapConfigDTO(textEncryptor);
             LdapContextSource ldapContextSource = loadLdapConfig(ldapConfigDTO);
             ldapTemplate = new LdapTemplate(ldapContextSource);

@@ -15,12 +15,13 @@ import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.util.HashUtil;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.result.UpdateResult;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -74,7 +75,14 @@ public class EtagService {
      */
     private ExecutorService executorMarkedFoldersService;
 
-    @PostConstruct
+    @EventListener(ContextRefreshedEvent.class)
+    public void onApplicationReady(ContextRefreshedEvent event) {
+        if (event.getApplicationContext().getParent() != null) {
+            return;
+        }
+        ThreadUtil.execute(this::init);
+    }
+
     public void init() {
         if (executorMarkedFoldersService == null) {
             executorMarkedFoldersService = ThreadUtil.newFixedExecutor(1, 1, "EtagWorker-", false);

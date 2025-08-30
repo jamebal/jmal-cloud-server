@@ -12,7 +12,6 @@ import com.jmal.clouddisk.service.impl.*;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.ThrottleExecutor;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +21,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.PrefixQuery;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -119,7 +120,14 @@ public class RebuildIndexTaskService {
 
     private final ReentrantLock deleteDocWithDeleteFlagLock = new ReentrantLock();
 
-    @PostConstruct
+    @EventListener(ContextRefreshedEvent.class)
+    public void onApplicationReady(ContextRefreshedEvent event) {
+        if (event.getApplicationContext().getParent() != null) {
+            return;
+        }
+        ThreadUtil.execute(this::init);
+    }
+
     public void init() {
         // 启动时检测是否存在菜单，不存在则初始化
         if (!menuService.existsMenu()) {

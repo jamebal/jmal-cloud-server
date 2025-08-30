@@ -28,11 +28,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-/**
- * @Description 角色管理
- * @blame jmal
- * @Date 2021/1/7 7:45 下午
- */
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -283,11 +278,10 @@ public class RoleService {
      * 初始化角色数据
      */
     public void initRoles() {
-
         TimeInterval timeInterval = new TimeInterval();
         List<RoleDO> roleDOList = getRoleDOListByConfigJSON();
         if (roleDOList.isEmpty()) return;
-        roleDOList.parallelStream().forEach(roleDO -> {
+        roleDOList.forEach(roleDO -> {
             Query query = new Query();
             query.addCriteria(Criteria.where("_id").is(roleDO.getId()));
             boolean exists = mongoTemplate.exists(query, COLLECTION_NAME);

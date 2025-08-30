@@ -1,18 +1,19 @@
-package com.jmal.clouddisk.config;
+package com.jmal.clouddisk.config.hints;
 
+import com.jmal.clouddisk.config.Reflective;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
-import org.springframework.core.type.filter.AssignableTypeFilter; // 导入新的过滤器
+import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.util.ClassUtils;
 
 import java.util.Objects;
 
-import static org.springframework.aot.hint.MemberCategory.*;
+import static org.springframework.aot.hint.MemberCategory.values;
 
 public class AppRuntimeHints implements RuntimeHintsRegistrar {
 
@@ -48,9 +49,7 @@ public class AppRuntimeHints implements RuntimeHintsRegistrar {
                 .map(BeanDefinition::getBeanClassName)
                 .filter(Objects::nonNull)
                 .map(className -> ClassUtils.resolveClassName(className, classLoader))
-                .forEach(clazz -> {
-                    hints.reflection().registerType(clazz, values());
-                });
+                .forEach(clazz -> hints.reflection().registerType(clazz, values()));
     }
 
     private ClassPathScanningCandidateComponentProvider createScanner() {

@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.IFileService;
@@ -14,16 +15,8 @@ import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.type.filter.AnnotationTypeFilter;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.index.IndexOperations;
-import org.springframework.data.mongodb.core.index.MongoPersistentEntityIndexResolver;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -46,8 +39,6 @@ public class FileMonitor {
 
     final FileProperties fileProperties;
 
-    final MongoTemplate mongoTemplate;
-
     final IFileService fileService;
 
     private final CommonFileService commonFileService;
@@ -69,42 +60,17 @@ public class FileMonitor {
         if (event.getApplicationContext().getParent() != null) {
             return;
         }
+        ThreadUtil.execute(this::init);
+    }
+
+    public void init() {
         // 检查新版本
+        // 启动文件监控服务
+        startFileMonitoringAsync();
         CompletableFuture.runAsync(() -> {
             String newVersion = SystemUtil.getNewVersion();
             log.debug("Current version: {}, Latest version: {}", version, newVersion);
         });
-        // 初始化MongoDB索引
-        initializeMongoIndices();
-        // 启动文件监控服务
-        startFileMonitoringAsync();
-    }
-
-    private void initializeMongoIndices() {
-        // 1. 获取映射上下文，这一步不变
-        MongoMappingContext mappingContext = (MongoMappingContext) mongoTemplate.getConverter().getMappingContext();
-
-        // 2. 创建索引解析器，这一步不变
-        MongoPersistentEntityIndexResolver resolver = new MongoPersistentEntityIndexResolver(mappingContext);
-
-        // 3. 使用 Spring 的类路径扫描器自动发现所有 @Document 注解的类
-        ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
-        provider.addIncludeFilter(new AnnotationTypeFilter(Document.class));
-
-        // 替换为你的实体类所在的包名
-        String basePackage = "com.jmal.clouddisk.model";
-
-        for (BeanDefinition beanDefinition : provider.findCandidateComponents(basePackage)) {
-            try {
-                Class<?> entityClass = Class.forName(beanDefinition.getBeanClassName());
-                // 获取对应实体类的 IndexOperations
-                IndexOperations indexOps = mongoTemplate.indexOps(entityClass);
-                resolver.resolveIndexFor(entityClass).forEach(indexOps::createIndex);
-            } catch (ClassNotFoundException e) {
-                // 处理异常
-                log.error("Error loading class: {}", e.getMessage(), e);
-            }
-        }
     }
 
     /**

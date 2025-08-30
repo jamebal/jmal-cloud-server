@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -282,20 +281,18 @@ public class MenuService {
      * 初始化菜单数据
      */
     public void initMenus() {
-        CompletableFuture.runAsync(() -> {
-            TimeInterval timeInterval = new TimeInterval();
-            List<MenuDO> menuDOList = getMenuDOListByConfigJSON();
-            if (menuDOList.isEmpty()) return;
-            menuDOList.parallelStream().forEach(menuDO -> {
-                Query query = new Query();
-                query.addCriteria(Criteria.where("_id").is(menuDO.getId()));
-                boolean exists = mongoTemplate.exists(query, COLLECTION_NAME);
-                if (!exists) {
-                    mongoTemplate.insert(menuDO);
-                }
-            });
-            log.info("更新菜单， 耗时:{}ms", timeInterval.intervalMs());
+        TimeInterval timeInterval = new TimeInterval();
+        List<MenuDO> menuDOList = getMenuDOListByConfigJSON();
+        if (menuDOList.isEmpty()) return;
+        menuDOList.forEach(menuDO -> {
+            Query query = new Query();
+            query.addCriteria(Criteria.where("_id").is(menuDO.getId()));
+            boolean exists = mongoTemplate.exists(query, COLLECTION_NAME);
+            if (!exists) {
+                mongoTemplate.insert(menuDO);
+            }
         });
+        log.info("更新菜单， 耗时:{}ms", timeInterval.intervalMs());
     }
 
     /**

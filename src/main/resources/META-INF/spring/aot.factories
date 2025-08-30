@@ -1,1 +1,3 @@
-org.springframework.aot.hint.RuntimeHintsRegistrar=com.jmal.clouddisk.config.AppRuntimeHints
+org.springframework.aot.hint.RuntimeHintsRegistrar=\
+  com.jmal.clouddisk.config.hints.AppRuntimeHints,\
+  com.jmal.clouddisk.config.hints.MongoIndexRuntimeHints
