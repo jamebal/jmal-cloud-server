@@ -16,7 +16,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Schema
 public class TranscodeConfig {
 
-    @Schema(description = "是否启用转码, 默认开启")
+    @Schema(description = "是否启用转码, 默认关闭")
     private Boolean enable;
 
     @Max(value = 8, message = "最大任务数不能超过8")
@@ -64,7 +64,7 @@ public class TranscodeConfig {
 
     public Boolean getEnable() {
         if (enable == null)
-            return true;
+            return false;
         return enable;
     }
 
