@@ -19839,6 +19839,12 @@
       "glob": ""
     },
     {
+      "glob": "db/menu.json"
+    },
+    {
+      "glob": "db/role.json"
+    },
+    {
       "glob": "META-INF/MANIFEST.MF"
     },
     {
