@@ -127,7 +127,7 @@ jobs:
 
       # 使用 Profile 文件构建最终优化的 Native Image -march=compatibility
       - name: Build PGO-Optimized Native Image -march=compatibility
-        run: mvn clean package -Pnative -DskipTests -Dnative-image.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--pgo=jmalcloud.iprof -o target/jmalcloud --enable-monitoring=heapdump"
+        run: mvn clean package -Pnative -DskipTests -Dnative-image.jvmArgs="-Xmx15g" -Dnative-image.addArgs=" --enable-monitoring=heapdump --pgo=jmalcloud.iprof -o target/jmalcloud"
 
   build-docker-and-push:
     needs: build-per-arch

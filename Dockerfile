@@ -15,7 +15,7 @@ ENV NGRAM_MAX_SIZE "6"
 ENV FILE_MONITOR true
 ENV MONITOR_IGNORE_FILE_PREFIX ".DS_Store,._"
 ENV FILE_ROOT_DIR /jmalcloud/files
-ENV TESS4J_DATA_PATH /jmalcloud/tess4j/datapath
+ENV TESS4J_DATA_PATH /jmalcloud/datapath
 
 COPY docker-entrypoint.sh target/jmalcloud target/*.so /app/
 COPY frontend/frontend /app/
