@@ -15,10 +15,8 @@ import java.util.Optional;
 @Conditional(RelationalDataSourceCondition.class)
 public interface WebsiteSettingRepository extends JpaRepository<WebsiteSettingDO, String> {
 
-    /**
-     * 查找最新的网站设置（按创建时间排序）
-     */
-    Optional<WebsiteSettingDO> findFirst();
+    @Query("select w from WebsiteSettingDO w")
+    Optional<WebsiteSettingDO> findOne();
 
     /**
      * 更新网盘Logo
