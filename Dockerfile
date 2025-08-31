@@ -17,7 +17,8 @@ ENV MONITOR_IGNORE_FILE_PREFIX ".DS_Store,._"
 ENV FILE_ROOT_DIR /jmalcloud/files
 ENV TESS4J_DATA_PATH /jmalcloud/tess4j/datapath
 
-COPY docker-entrypoint.sh target/jmalcloud frontend/frontend target/*.so /app/
+COPY docker-entrypoint.sh target/jmalcloud target/*.so /app/
+COPY frontend/frontend /app/
 
 RUN chmod +x /app/jmalcloud && chmod +x /app/docker-entrypoint.sh
 
