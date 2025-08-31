@@ -24,28 +24,28 @@ public interface WebsiteSettingRepository extends JpaRepository<WebsiteSettingDO
      * 更新网盘Logo
      */
     @Modifying
-    @Query("UPDATE WebsiteSettingDO w SET w.netdiskLogo = :logo, w.updatedTime = CURRENT_TIMESTAMP")
+    @Query("UPDATE WebsiteSettingDO w SET w.netdiskLogo = :logo")
     int updateNetdiskLogo(@Param("logo") String logo);
 
     /**
      * 更新网盘名称
      */
     @Modifying
-    @Query("UPDATE WebsiteSettingDO w SET w.netdiskName = :name, w.updatedTime = CURRENT_TIMESTAMP")
+    @Query("UPDATE WebsiteSettingDO w SET w.netdiskName = :name")
     int updateNetdiskName(@Param("name") String name);
 
     /**
      * 更新iframe配置
      */
     @Modifying
-    @Query("UPDATE WebsiteSettingDO w SET w.iframe = :iframe, w.updatedTime = CURRENT_TIMESTAMP")
+    @Query("UPDATE WebsiteSettingDO w SET w.iframe = :iframe")
     int updateIframe(@Param("iframe") String iframe);
 
     /**
      * 更新MFA强制启用设置
      */
     @Modifying
-    @Query("UPDATE WebsiteSettingDO w SET w.mfaForceEnable = :mfaForceEnable, w.updatedTime = CURRENT_TIMESTAMP")
+    @Query("UPDATE WebsiteSettingDO w SET w.mfaForceEnable = :mfaForceEnable")
     int updateMfaForceEnable(@Param("mfaForceEnable") Boolean mfaForceEnable);
 
 }
