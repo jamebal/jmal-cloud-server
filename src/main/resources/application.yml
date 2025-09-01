@@ -57,11 +57,11 @@ spring:
 springdoc:
   packages-to-scan: com.jmal.clouddisk.controller,com.jmal.clouddisk.oss
   api-docs:
-    path: /public/api-docs
+    path: /api/public/api-docs
     version: openapi_3_0
     enabled: false
   swagger-ui:
-    path: /public/api
+    path: /api/public/api
     doc-expansion: none
     enabled: false
 logging:
