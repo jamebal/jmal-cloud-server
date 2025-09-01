@@ -27,7 +27,7 @@ public class CommonOcrService {
      * @return 预处理后的图片路径
      */
     public static String getPreprocessedOCRImage(String inputPath, String outputPath) {
-        if (FFMPEGCommand.hasNoFFmpeg()) {
+        if (FFMPEGCommand.hasNoFfmpeg()) {
             return outputPath;
         }
         if (FileUtil.exist(outputPath)) {

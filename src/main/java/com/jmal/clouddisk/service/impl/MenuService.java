@@ -3,7 +3,6 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import com.alibaba.fastjson2.JSON;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
@@ -304,7 +303,7 @@ public class MenuService {
                 return Collections.emptyList();
         }
         String json = new String(IoUtil.readBytes(inputStream), StandardCharsets.UTF_8);
-        return JSON.parseArray(json,MenuDO.class);
+        return JacksonUtil.parseArray(json,MenuDO.class);
     }
 
     /***

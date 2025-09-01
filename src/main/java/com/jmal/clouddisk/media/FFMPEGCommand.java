@@ -2,10 +2,9 @@ package com.jmal.clouddisk.media;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.NumberUtil;
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONArray;
-import com.alibaba.fastjson2.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.util.JacksonUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
@@ -39,27 +38,28 @@ public class FFMPEGCommand {
             try (InputStream inputStream = process.getInputStream();
                  BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
                 String json = reader.lines().collect(Collectors.joining());
-                JSONObject jsonObject = JSON.parseObject(json);
+                JsonNode jsonObject = JacksonUtil.parseObject(json, JsonNode.class);
 
                 // 获取视频格式信息
-                JSONObject formatObject = jsonObject.getJSONObject("format");
-                String format = formatObject.getString("format_name");
+                JsonNode formatObject = jsonObject.get("format");
+                String format = formatObject.get("format_name").asText();
 
                 // 获取视频时长
-                int duration = Convert.toInt(formatObject.get("duration"));
+                int duration = Convert.toInt(formatObject.get("duration").asDouble());
 
                 // 获取视频流信息
-                JSONArray streamsArray = jsonObject.getJSONArray("streams");
+                JsonNode streamsArray = jsonObject.get("streams");
                 if (!streamsArray.isEmpty()) {
-                    JSONObject streamObject = streamsArray.getJSONObject(0);
-                    int width = streamObject.getIntValue("width");
-                    int height = streamObject.getIntValue("height");
+                    JsonNode streamObject = streamsArray.get(0);
+                    int width = streamObject.get("width").asInt();
+                    int height = streamObject.get("height").asInt();
                     int rotation = 0;
-                    if (streamObject.containsKey("side_data_list")) {
-                        for (int i = 0; i < streamObject.getJSONArray("side_data_list").size(); i++) {
-                            JSONObject sideData = streamObject.getJSONArray("side_data_list").getJSONObject(i);
-                            if (sideData.containsKey("rotation")) {
-                                rotation = sideData.getIntValue("rotation");
+
+                    JsonNode sideDataList = streamObject.get("side_data_list");
+                    if (sideDataList != null && sideDataList.isArray()) {
+                        for (JsonNode sideData : sideDataList) {
+                            if (sideData.has("rotation")) {
+                                rotation = sideData.get("rotation").asInt();
                                 break;
                             }
                         }
@@ -67,10 +67,10 @@ public class FFMPEGCommand {
                     // 转换rotation
 
                     // 获取视频帧率信息
-                    String frameRateStr = streamObject.getString("r_frame_rate");
+                    String frameRateStr = streamObject.get("r_frame_rate").asText();
                     double frameRate = parseFrameRate(frameRateStr);
 
-                    int bitrate = streamObject.getIntValue("bit_rate"); // bps
+                    int bitrate = streamObject.has("bit_rate") ? streamObject.get("bit_rate").asInt() : 0;
                     return new VideoInfo(videoPath, width, height, format, bitrate, duration, Math.abs(rotation), frameRate);
                 }
             }
@@ -264,7 +264,8 @@ public class FFMPEGCommand {
      */
     static boolean checkMacAppleSilicon() {
         try {
-            Process process = Runtime.getRuntime().exec("ffmpeg -hwaccels");
+            ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-hwaccels");
+            Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
             while ((line = reader.readLine()) != null) {
@@ -283,7 +284,8 @@ public class FFMPEGCommand {
      */
     static boolean checkNvidiaDrive() {
         try {
-            Process process = Runtime.getRuntime().exec("nvidia-smi");
+            ProcessBuilder pb = new ProcessBuilder("nvidia-smi");
+            Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
             while ((line = reader.readLine()) != null) {
@@ -301,9 +303,10 @@ public class FFMPEGCommand {
      * 检查是否没有ffmpeg
      * @return true: 没有ffmpeg
      */
-    public static boolean hasNoFFmpeg() {
+    public static boolean hasNoFfmpeg() {
         try {
-            Process process = Runtime.getRuntime().exec("ffmpeg -version");
+            ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-version");
+            Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
             while ((line = reader.readLine()) != null) {

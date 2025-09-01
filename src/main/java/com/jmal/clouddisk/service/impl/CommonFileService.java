@@ -6,7 +6,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson2.JSONObject;
+import cn.hutool.json.JSONObject;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -238,18 +238,18 @@ public class CommonFileService {
 
     public void pushMessageOperationFileError(String username, String message, String operation) {
         JSONObject msg = new JSONObject();
-        msg.put("code", -1);
-        msg.put("msg", message);
-        msg.put("operation", operation);
+        msg.set("code", -1);
+        msg.set("msg", message);
+        msg.set("operation", operation);
         messageService.pushMessage(username, msg, Constants.OPERATION_FILE);
     }
 
     public void pushMessageOperationFileSuccess(String fromPath, String toPath, String username, String operation) {
         JSONObject msg = new JSONObject();
-        msg.put("code", 0);
-        msg.put("from", fromPath);
-        msg.put("to", toPath);
-        msg.put("operation", operation);
+        msg.set("code", 0);
+        msg.set("from", fromPath);
+        msg.set("to", toPath);
+        msg.set("operation", operation);
         messageService.pushMessage(username, msg, Constants.OPERATION_FILE);
     }
 

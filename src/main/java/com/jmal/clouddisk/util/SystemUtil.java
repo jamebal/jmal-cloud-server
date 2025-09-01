@@ -2,8 +2,7 @@ package com.jmal.clouddisk.util;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.http.HttpUtil;
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -43,7 +42,7 @@ public class SystemUtil {
             log.warn(e.getMessage());
             return null;
         }
-        JSONObject jsonObject = JSON.parseObject(result);
+        JsonNode jsonObject = JacksonUtil.parseObject(result, JsonNode.class);
         return Convert.toStr(jsonObject.get("tag_name"));
     }
 }

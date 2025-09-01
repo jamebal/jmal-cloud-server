@@ -412,7 +412,7 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
 
     public VideoInfo getVideoInfo(File videoFile) {
         VideoInfo videoInfo = new VideoInfo();
-        if (FFMPEGCommand.hasNoFFmpeg()) {
+        if (FFMPEGCommand.hasNoFfmpeg()) {
             return videoInfo;
         }
         if (!videoFile.exists()) {
@@ -424,7 +424,7 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
 
     public VideoInfo getVideoCover(String fileId, String username, String relativePath, String fileName) {
         VideoInfo videoInfo = new VideoInfo();
-        if (FFMPEGCommand.hasNoFFmpeg()) {
+        if (FFMPEGCommand.hasNoFfmpeg()) {
             return videoInfo;
         }
         Path prePath = Paths.get(username, relativePath, fileName);
@@ -481,7 +481,7 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
         Path fileAbsolutePath = Paths.get(fileProperties.getRootDir(), username, relativePath, fileName);
         // 视频文件缓存目录
         String videoCacheDir = pathService.getVideoCacheDir(username, fileId);
-        if (FFMPEGCommand.hasNoFFmpeg()) {
+        if (FFMPEGCommand.hasNoFfmpeg()) {
             return;
         }
         String outputPath = Paths.get(videoCacheDir, fileId + ".m3u8").toString();

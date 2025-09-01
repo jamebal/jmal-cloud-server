@@ -3,7 +3,6 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import com.alibaba.fastjson2.JSON;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
@@ -290,7 +289,7 @@ public class RoleService {
             return Collections.emptyList();
         }
         String json = new String(IoUtil.readBytes(inputStream), StandardCharsets.UTF_8);
-        return JSON.parseArray(json, RoleDO.class);
+        return JacksonUtil.parseArray(json, RoleDO.class);
     }
 
     /***

@@ -11,7 +11,6 @@ import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
-import com.alibaba.fastjson.JSON;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.config.WebConfig;
 import com.jmal.clouddisk.exception.CommonException;
@@ -436,7 +435,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
     private MarkdownVO getMarkdownVO(FileDocument fileDocument, boolean isDraft) {
         MarkdownVO markdownVO = new MarkdownVO();
         if (isDraft) {
-            markdownVO = JSON.parseObject(fileDocument.getDraft(), MarkdownVO.class);
+            markdownVO = JacksonUtil.parseObject(fileDocument.getDraft(), MarkdownVO.class);
             markdownVO.setId(fileDocument.getId());
         } else {
             BeanUtils.copyProperties(getFileDocument(fileDocument), markdownVO);
@@ -553,7 +552,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             }
             fileDocument.setContentText(upload.getContentText());
             fileDocument.setDraft(null);
-            update.set(Constants.DRAFT, JSON.toJSONStringWithDateFormat(fileDocument, "yyyy-MM-dd HH:mm:ss"));
+            update.set(Constants.DRAFT, JacksonUtil.toJSONStringWithDateFormat(fileDocument, "yyyy-MM-dd HH:mm:ss"));
         } else {
             if (upload.getFileId() != null) {
                 update.unset(Constants.DRAFT);
@@ -608,7 +607,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (fileDocument == null || fileDocument.getDraft() == null) {
             return ResultUtil.success();
         }
-        FileDocument draft = JSON.parseObject(fileDocument.getDraft(), FileDocument.class);
+        FileDocument draft = JacksonUtil.parseObject(fileDocument.getDraft(), FileDocument.class);
         File draftFile = Paths.get(fileProperties.getRootDir(), username, draft.getPath(), draft.getName()).toFile();
         FileUtil.del(draftFile);
 
