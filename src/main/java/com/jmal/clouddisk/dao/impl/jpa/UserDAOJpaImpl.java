@@ -46,12 +46,13 @@ public class UserDAOJpaImpl implements IUserDAO {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public ConsumerDO findById(String userId) {
         return userRepository.findById(userId).orElse(null);
     }
 
     @Override
+    @Transactional
     public void upsert(MyQuery myQuery, MyUpdate myUpdate) {
 
         Specification<ConsumerDO> spec = QuerySpecificationUtil.toSpecification(myQuery, UserField.allFields());
@@ -71,33 +72,37 @@ public class UserDAOJpaImpl implements IUserDAO {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public ConsumerDO findByUsername(String username) {
         return userRepository.findByUsername(username).orElse(null);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ConsumerDO findOneByCreatorTrue() {
         return userRepository.findOneByCreatorTrue().orElse(null);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long count() {
         return userRepository.count();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<ConsumerDO> findUserList(QueryUserDTO queryDTO) {
         return userRepository.findUserList(queryDTO.getUsername(), queryDTO.getShowName(), PageableUtil.buildPageable(queryDTO));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ConsumerDO findByShowName(String showName) {
         return userRepository.findByShowName(showName).orElse(null);
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public String getUsernameById(String userId) {
         ConsumerDO consumerDO = findById(userId);
         if (consumerDO != null) {

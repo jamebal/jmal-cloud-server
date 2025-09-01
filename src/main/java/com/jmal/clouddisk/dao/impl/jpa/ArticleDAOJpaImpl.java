@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Repository
@@ -23,6 +24,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
     private final FileMetadataRepository fileMetadataRepository;
 
     @Override
+    @Transactional
     public void createArticleFromDocument(FileDocument fileDocument) {
         FileMetadataDO existingFile = fileMetadataRepository.findById(fileDocument.getId())
                 .orElseThrow(() -> new EntityNotFoundException("FileMetadataDO not found with id: " + fileDocument.getId()));

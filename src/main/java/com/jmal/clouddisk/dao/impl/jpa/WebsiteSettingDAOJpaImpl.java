@@ -118,6 +118,7 @@ public class WebsiteSettingDAOJpaImpl implements IWebsiteSettingDAO {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public WebsiteSettingDO getPreviewConfig() {
         log.debug("获取预览配置");
 

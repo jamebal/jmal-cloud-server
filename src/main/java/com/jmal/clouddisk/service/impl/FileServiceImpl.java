@@ -14,6 +14,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
@@ -83,6 +84,8 @@ import static com.jmal.clouddisk.service.IUserService.USER_ID;
 @Slf4j
 @RequiredArgsConstructor
 public class FileServiceImpl implements IFileService {
+
+    private final IFileDAO fileDAO;
 
     private final CommonUserService userService;
 
@@ -1091,8 +1094,8 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public List<FileDocument> listByIds(List<String> fileIdList) {
-        return mongoTemplate.find(Query.query(Criteria.where("_id").in(fileIdList)), FileDocument.class);
+    public List<String> findByIdIn(List<String> fileIdList) {
+        return fileDAO.findByIdIn(fileIdList);
     }
 
     @Override

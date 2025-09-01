@@ -64,6 +64,7 @@ public class HeartwingsDAOJpaImpl implements IHeartwingsDAO {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseResult<List<HeartwingsDO>> getWebsiteHeartwings(Integer page, Integer pageSize, String order) {
         log.debug("查询网站心语列表: page={}, pageSize={}, order={}", page, pageSize, order);
 

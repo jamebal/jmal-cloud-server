@@ -6,10 +6,52 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 @Conditional(RelationalDataSourceCondition.class)
 public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, String>, JpaSpecificationExecutor<ConsumerDO> {
+
+    @Query("SELECT f.id FROM FileMetadataDO f JOIN f.props p " +
+            "WHERE f.userId = :userId " +
+            "AND p.shareBase = true " +
+            "AND f.path LIKE :pathPrefix ESCAPE '\\'")
+        // 使用 LIKE 进行前缀匹配
+    List<String> findIdSubShares(
+            @Param("userId") String userId,
+            @Param("pathPrefix") String pathPrefix
+    );
+
+    @Query("SELECT (count(f) > 0) FROM FileMetadataDO f JOIN f.props p " +
+            "WHERE f.userId = :userId " +
+            "AND p.shareBase = true " +
+            "AND f.path LIKE :pathPrefix ESCAPE '\\'")
+    boolean existsFolderSubShare(@Param("userId") String userId, @Param("pathPrefix") String pathPrefix);
+
+    @Query("SELECT f FROM FileMetadataDO f JOIN f.props p " +
+            "WHERE f.userId = :userId " +
+            "AND f.id LIKE :idPrefix ESCAPE '\\'")
+    List<FileMetadataDO> findAllByUserIdAndIdPrefix(String userId, String idPrefix);
+
+    Optional<FileMetadataDO> findByNameAndUserIdAndPath(String name, String userId, String path);
+
+    boolean existsByUserIdAndMountFileId(String userId, String mountFileId);
+
+    @Query("SELECT f.path FROM FileMetadataDO f " +
+            "WHERE f.userId = :userId " +
+            "AND f.mountFileId = :mountFileId ")
+    Optional<String> findMountFilePath(String userId, String mountFileId);
+
+    @Query("SELECT f.id FROM FileMetadataDO f " +
+            "WHERE f.id in :ids ")
+    List<String> findByIdIn(Collection<String> ids);
+
+    void removeByMountFileId(String mountFileId);
 
 }

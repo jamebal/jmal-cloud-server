@@ -30,6 +30,7 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO {
     private final AccessTokenRepository accessTokenRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public UserAccessTokenDO getUserNameByAccessToken(String accessToken) {
         try {
             UserAccessTokenDO result = accessTokenRepository.findByAccessToken(accessToken).orElse(null);
@@ -85,6 +86,7 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<UserAccessTokenDTO> accessTokenList(String username) {
         try {
             List<UserAccessTokenDO> tokenList = accessTokenRepository.findByUsername(username);

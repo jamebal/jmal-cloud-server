@@ -12,16 +12,19 @@ import cn.hutool.crypto.SecureUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.OperationPermission;
+import com.jmal.clouddisk.model.ShareDO;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.UploadResponse;
 import com.jmal.clouddisk.model.file.FileBase;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.oss.*;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
-import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
@@ -56,6 +59,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @RequiredArgsConstructor
 public class WebOssService extends WebOssCommonService {
 
+    private final IFileDAO fileDAO;
 
     private final FileProperties fileProperties;
 
@@ -798,16 +802,13 @@ public class WebOssService extends WebOssCommonService {
      * @param unSetShare  移除 share 属性
      */
     public List<FileDocument> removeOssPathFile(String userId, String fileId, String ossPath, boolean ossRootPath, boolean unSetShare) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
         String path;
         if (ossRootPath) {
             path = ossPath.substring(1);
         } else {
             path = fileId;
         }
-        query.addCriteria(Criteria.where("_id").regex("^" + ReUtil.escape(path)));
-        List<FileDocument> fileDocumentList = mongoTemplate.findAllAndRemove(query, FileDocument.class);
+        List<FileDocument> fileDocumentList = fileDAO.findAllAndRemoveByUserIdAndIdPrefix(userId, ReUtil.escape(path));
         List<FileDocument> list = new ArrayList<>();
         for (FileDocument fileDocument : fileDocumentList) {
             if (unSetShare) {

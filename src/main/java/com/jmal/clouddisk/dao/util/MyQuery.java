@@ -12,4 +12,10 @@ public class MyQuery {
         eqMap.put(field, value);
     }
 
+    public static String escapeLikeSpecialChars(String input) {
+        return input.replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+    }
+
 }

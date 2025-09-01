@@ -355,7 +355,7 @@ public interface IFileService {
      * @param fileIdList 文件Id列表
      * @return 文件列表
      */
-    List<FileDocument> listByIds(List<String> fileIdList);
+    List<String> findByIdIn(List<String> fileIdList);
 
     /**
      * 创建副本

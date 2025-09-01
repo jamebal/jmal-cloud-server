@@ -59,13 +59,6 @@ public interface IShareService {
     ResponseResult<Object> accessShareOpenDir(ShareDO share, String fileId, Integer pageIndex, Integer pageSize, Boolean showFolderSize);
 
     /**
-     * 获取分享列表
-     * @param upload UploadApiParamDTO
-     * @return List<ShareDO>
-     */
-    List<ShareDO> getShareList(UploadApiParamDTO upload);
-
-    /**
      * 分享列表
      * @param upload UploadApiParamDTO
      * @return ResponseResult

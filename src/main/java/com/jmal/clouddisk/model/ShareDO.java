@@ -3,7 +3,6 @@ package com.jmal.clouddisk.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
-import com.jmal.clouddisk.service.impl.ShareServiceImpl;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -21,9 +20,9 @@ import java.util.List;
  */
 @Getter
 @Setter
-@Document(collection = ShareServiceImpl.COLLECTION_NAME)
+@Document(collection = "share")
 @Entity
-@Table(name = ShareServiceImpl.COLLECTION_NAME)
+@Table(name = "share")
 public class ShareDO extends AuditableEntity implements Reflective {
     /**
      * 父级分享Id

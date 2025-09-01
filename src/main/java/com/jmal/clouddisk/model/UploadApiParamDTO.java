@@ -2,8 +2,11 @@ package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.dao.util.PageableUtil;
+import com.jmal.clouddisk.model.query.QueryBaseDTO;
 import com.jmal.clouddisk.util.FileNameUtils;
 import lombok.Data;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -303,4 +306,16 @@ public class UploadApiParamDTO implements Reflective {
         return FileNameUtils.safeDecode(folderPath);
     }
 
+    public QueryBaseDTO toQueryBaseDTO() {
+        QueryBaseDTO queryBaseDTO = new QueryBaseDTO();
+        queryBaseDTO.setPage(getPageIndex());
+        queryBaseDTO.setPageSize(getPageSize());
+        queryBaseDTO.setSortOrder(getOrder());
+        queryBaseDTO.setSortProp(getSortableProp());
+        return queryBaseDTO;
+    }
+
+    public Pageable getPageable() {
+        return PageableUtil.buildPageable(toQueryBaseDTO());
+    }
 }

@@ -24,6 +24,7 @@ public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
     private final FolderSizeRepository fileDocumentRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<FileDocument> findFoldersNeedUpdateSize(int batchSize) {
         log.debug("查询需要更新大小的文件夹，批次大小: {}", batchSize);
 
@@ -67,6 +68,7 @@ public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean hasNeedUpdateSizeInDb() {
         log.debug("检查是否还有需要更新大小的文件夹");
 
@@ -81,6 +83,7 @@ public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long totalSizeNeedUpdateSizeInDb() {
         log.debug("统计需要更新大小的文件夹数量");
 
