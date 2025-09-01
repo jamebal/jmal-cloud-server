@@ -39,14 +39,14 @@ public class MongoIndexInitializer {
         List<Class<?>> entityClasses = loadClassesFromResource();
 
         if (entityClasses.isEmpty()) {
-            log.warn("No @Document classes found in resource file '{}'. Skipping index creation.", DOCUMENT_CLASSES_RESOURCE_PATH);
+            log.debug("No @Document classes found in resource file '{}'. Skipping index creation.", DOCUMENT_CLASSES_RESOURCE_PATH);
             initializeMongoIndices();
             return;
         }
 
         log.info("Found {} @Document entity classes from resource file for index creation.", entityClasses.size());
 
-        // 2. 使用 MongoMappingContext 来创建解析器，但不再用它来发现实体
+        // 2. 使用 MongoMappingContext 来创建解析器
         MongoMappingContext mappingContext = (MongoMappingContext) mongoTemplate.getConverter().getMappingContext();
         MongoPersistentEntityIndexResolver resolver = new MongoPersistentEntityIndexResolver(mappingContext);
 
@@ -91,17 +91,17 @@ public class MongoIndexInitializer {
     }
 
     private void initializeMongoIndices() {
-        // 1. 获取映射上下文，这一步不变
+        // 1. 获取映射上下文
         MongoMappingContext mappingContext = (MongoMappingContext) mongoTemplate.getConverter().getMappingContext();
 
-        // 2. 创建索引解析器，这一步不变
+        // 2. 创建索引解析器
         MongoPersistentEntityIndexResolver resolver = new MongoPersistentEntityIndexResolver(mappingContext);
 
         // 3. 使用 Spring 的类路径扫描器自动发现所有 @Document 注解的类
         ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
         provider.addIncludeFilter(new AnnotationTypeFilter(Document.class));
 
-        // 替换为你的实体类所在的包名
+        // 实体类所在的包名
         String basePackage = "com.jmal.clouddisk";
 
         Set<BeanDefinition> beanDefinitions = provider.findCandidateComponents(basePackage);
