@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
 import com.jmal.clouddisk.dao.IFileDAO;
-import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
+import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FilePropsRepository;
 import com.jmal.clouddisk.lucene.LuceneQueryService;

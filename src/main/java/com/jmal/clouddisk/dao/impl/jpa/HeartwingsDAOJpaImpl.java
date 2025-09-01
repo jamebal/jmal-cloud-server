@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
 import com.jmal.clouddisk.dao.IHeartwingsDAO;
-import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
+import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.HeartwingsRepository;
 import com.jmal.clouddisk.model.HeartwingsDO;
 import com.jmal.clouddisk.util.ResponseResult;

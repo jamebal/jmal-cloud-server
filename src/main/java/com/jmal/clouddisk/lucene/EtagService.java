@@ -97,7 +97,7 @@ public class EtagService {
                 mongoTemplate.updateMulti(queryNoEtagQuery, update, FileDocument.class);
             }
             processRootFolderFiles();
-            log.info("Initial ETag setup finished. Ensuring ETag processing worker is active if needed.");
+            log.debug("Initial ETag setup finished. Ensuring ETag processing worker is active if needed.");
             ensureProcessingMarkedFolders();
         });
     }

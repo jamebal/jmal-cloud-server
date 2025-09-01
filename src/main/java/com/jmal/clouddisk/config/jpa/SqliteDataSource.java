@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.dao.config;
+package com.jmal.clouddisk.config.jpa;
 
 import cn.hutool.core.io.FileUtil;
 import com.jmal.clouddisk.config.FileProperties;

@@ -2,7 +2,7 @@ package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.dao.ITagDAO;
-import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
+import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.TagRepository;
 import com.jmal.clouddisk.model.TagDO;
 import jakarta.transaction.Transactional;

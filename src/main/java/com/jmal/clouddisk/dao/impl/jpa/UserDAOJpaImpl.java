@@ -2,7 +2,7 @@ package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.convert.Convert;
 import com.jmal.clouddisk.dao.IUserDAO;
-import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
+import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository;
 import com.jmal.clouddisk.dao.mapping.UserField;
 import com.jmal.clouddisk.dao.util.MyQuery;

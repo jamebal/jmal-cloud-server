@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.dao.mongo_to_jpa;
 
-import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
+import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.AccessTokenRepository;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
 import jakarta.transaction.Transactional;
@@ -30,6 +30,10 @@ public class AccessTokenMigrationService {
      */
     @Transactional
     public MigrationResult accessTokenData() {
+        if (jpaRepository.count() > 0) {
+            return new MigrationResult();
+        }
+
         log.info("开始迁移 AccessToken 数据从 MongoDB 到 SQLite");
 
         MigrationResult result = new MigrationResult();

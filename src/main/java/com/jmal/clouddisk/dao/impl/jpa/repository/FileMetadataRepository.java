@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.dao.impl.jpa.repository;
 
-import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
+import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import org.springframework.context.annotation.Conditional;

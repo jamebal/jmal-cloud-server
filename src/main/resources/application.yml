@@ -42,17 +42,28 @@ spring:
       enabled: true
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: false
     open-in-view: false
+  flyway:
+    enabled: true
+    locations:
+      - classpath:db/migration/{vendor}
+    encoding: UTF-8
+    baseline-on-migrate: true
+    baseline-description: "项目初始版本"
+    baseline-version: 1
+    validate-on-migrate: true
 springdoc:
   packages-to-scan: com.jmal.clouddisk.controller,com.jmal.clouddisk.oss
   api-docs:
     path: /public/api-docs
     version: openapi_3_0
+    enabled: false
   swagger-ui:
     path: /public/api
     doc-expansion: none
+    enabled: false
 logging:
   level:
     nl:

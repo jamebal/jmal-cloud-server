@@ -6,3 +6,11 @@ spring:
 jmalcloud:
   datasource:
     type: mongodb
+logging:
+  level:
+    org:
+      springframework:
+        data:
+          repository:
+            config:
+              RepositoryConfigurationDelegate: off

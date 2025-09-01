@@ -29,7 +29,23 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Entity
-@Table(name = "files")
+@Table(name = "files"
+        // indexes = {
+        //         @Index(name = "idx_name", columnList = "name"),
+        //         @Index(name = "idx_size", columnList = "size"),
+        //         @Index(name = "idx_update_date", columnList = "updateDate"),
+        //         @Index(name = "idx_path_name", columnList = "path, name"),
+        //         @Index(name = "idx_user_md5_path", columnList = "userId, path"),
+        //         @Index(name = "idx_user_path", columnList = "userId, path"),
+        //         @Index(name = "idx_user_path_name", columnList = "userId, path, name"),
+        //         @Index(name = "idx_user_is_folder_path", columnList = "userId, isFolder, path"),
+        //         @Index(name = "idx_user_is_folder_path_name", columnList = "userId, isFolder, path, name"),
+        //         @Index(name = "idx_user_is_folder", columnList = "userId, isFolder"),
+        //         @Index(name = "idx_user_is_favorite", columnList = "userId, isFavorite"),
+        //         @Index(name = "idx_user_content_type", columnList = "userId, contentType"),
+        //         @Index(name = "idx_process_marked_folders", columnList = "needsEtagUpdate, isFolder, lastEtagUpdateRequestAt")
+        // }
+)
 public class FileMetadataDO extends AuditableEntity implements Reflective {
 
     @Column(length = 24)

@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
 import com.jmal.clouddisk.dao.IFolderSizeDAO;
-import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
+import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FolderSizeRepository;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileMetadataDO;

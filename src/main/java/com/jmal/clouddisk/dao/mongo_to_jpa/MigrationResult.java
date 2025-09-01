@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.dao.mongo_to_jpa;
 
-import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
+import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

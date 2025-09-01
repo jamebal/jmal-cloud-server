@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.config.jpa;
 
-import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

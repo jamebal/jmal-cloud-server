@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.dao.config;
+package com.jmal.clouddisk.config.jpa;
 
 import com.jmal.clouddisk.dao.DataSourceType;
 import jakarta.validation.constraints.NotNull;

@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.dao.mongo_to_jpa;
 
-import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
+import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -27,19 +27,29 @@ public class MigrationRunner {
     public void onApplicationReady() {
         // 根据需要决定是否自动执行迁移
         MigrationResult userResult = userMigrationService.migrateConsumerData();
-        log.info("用户数据迁移完成: {}", userResult);
+        if (userResult.getTotalProcessed() > 0) {
+            log.info("用户数据迁移完成: {}", userResult);
+        }
 
         MigrationResult websiteResult = websiteSettingMigrationService.migrateWebsiteSetting();
-        log.info("网站设置迁移完成: {}", websiteResult);
+        if (websiteResult.getTotalProcessed() > 0) {
+            log.info("网站设置迁移完成: {}", websiteResult);
+        }
 
         MigrationResult accessTokenResult = accessTokenMigrationService.accessTokenData();
-        log.info("访问令牌迁移完成: {}", accessTokenResult);
+        if (accessTokenResult.getTotalProcessed() > 0) {
+            log.info("访问令牌迁移完成: {}", accessTokenResult);
+        }
 
         MigrationResult fileResult = fileMigrationService.migrateConsumerData();
-        log.info("文件数据迁移完成: {}", fileResult);
+        if (fileResult.getTotalProcessed() > 0) {
+            log.info("文件数据迁移完成: {}", fileResult);
+        }
 
         MigrationResult tagResult = tagMigrationService.migrateTagData();
-        log.info("标签数据迁移完成: {}", tagResult);
+        if (tagResult.getTotalProcessed() > 0) {
+            log.info("标签数据迁移完成: {}", tagResult);
+        }
     }
 
 }

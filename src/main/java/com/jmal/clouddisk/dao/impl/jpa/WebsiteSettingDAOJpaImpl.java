@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
 import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
-import com.jmal.clouddisk.dao.config.RelationalDataSourceCondition;
+import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.WebsiteSettingRepository;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 import lombok.RequiredArgsConstructor;
