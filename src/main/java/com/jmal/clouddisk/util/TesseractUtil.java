@@ -16,7 +16,7 @@ public class TesseractUtil {
             System.setProperty("jna.library.path", libPath);
             log.info("Set Tesseract lib path: {}", libPath);
         } else {
-            log.warn("Tesseract lib path not found");
+            log.info("Tesseract lib path not found");
         }
     }
 
