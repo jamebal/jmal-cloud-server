@@ -14,6 +14,7 @@ chown -R ${USER_UID}:${USER_GID} /jmalcloud/tess4j
 chown ${USER_UID}:${USER_GID} /jmalcloud/ip2region.xdb
 chown -R ${USER_UID}:${USER_GID} /usr/local/mxcad
 chown -R ${USER_UID}:${USER_GID} log
+chow  -R ${USER_UID}:${USER_GID} /app
 
 exec gosu ${USER_UID}:${USER_GID} /app/jmalcloud ${JVM_OPTS} \
  -Duser.timezone=${TZ} \
