@@ -21,6 +21,7 @@ public class MigrationRunner {
     private final AccessTokenMigrationService accessTokenMigrationService;
     private final FileMigrationService fileMigrationService;
     private final TagMigrationService tagMigrationService;
+    private final ShareMigrationService shareMigrationService;
 
     // 可以在应用启动时自动执行
     @EventListener(ApplicationReadyEvent.class)
@@ -49,6 +50,11 @@ public class MigrationRunner {
         MigrationResult tagResult = tagMigrationService.migrateTagData();
         if (tagResult.getTotalProcessed() > 0) {
             log.info("标签数据迁移完成: {}", tagResult);
+        }
+
+        MigrationResult shareResult = shareMigrationService.migrateShareData();
+        if (shareResult.getTotalProcessed() > 0) {
+            log.info("分享数据迁移完成: {}", shareResult);
         }
     }
 

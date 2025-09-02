@@ -130,6 +130,13 @@ public class WebsiteSettingDTO implements Reflective {
         String url;
     }
 
+    public String getSiteUrl() {
+        if (StrUtil.isBlank(siteUrl)) {
+            return "/articles";
+        }
+        return siteUrl;
+    }
+
     public boolean isShowAlonePage(String page){
         return alonePages.contains(page);
     }

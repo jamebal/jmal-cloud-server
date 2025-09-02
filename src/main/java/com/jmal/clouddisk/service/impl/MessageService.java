@@ -110,6 +110,9 @@ public class MessageService {
      * @param url      url
      */
     public void pushMessageSync(String username, Object message, String url) {
+        if (CharSequenceUtil.isBlank(username)) {
+            return;
+        }
         if (timelyPush(username, message, url)) return;
         if (Constants.CREATE_FILE.equals(url) || Constants.DELETE_FILE.equals(url)) {
             Map<String, ThrottleExecutor> throttleExecutorMap = throttleExecutorCache.get(username, key -> new HashMap<>(8));

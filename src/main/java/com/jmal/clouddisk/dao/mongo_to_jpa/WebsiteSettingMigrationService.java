@@ -26,7 +26,7 @@ public class WebsiteSettingMigrationService {
     private final WebsiteSettingRepository jpaRepository;
 
     /**
-     * 迁移数据从 MongoDB 到 SQLite
+     * 迁移数据从 MongoDB 到 JPA
      */
     @Transactional
     public MigrationResult migrateWebsiteSetting() {
@@ -34,7 +34,7 @@ public class WebsiteSettingMigrationService {
             return new MigrationResult();
         }
 
-        log.info("开始迁移 WebsiteSetting 数据从 MongoDB 到 SQLite");
+        log.info("开始迁移 WebsiteSetting 数据从 MongoDB 到 JPA");
 
         MigrationResult result = new MigrationResult();
         int batchSize = 1000; // 批量处理大小

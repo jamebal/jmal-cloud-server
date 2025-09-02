@@ -258,11 +258,13 @@ public class ShareServiceImpl implements IShareService {
 
     private void updateSubShare(ShareDO share, String fatherShareId) {
         ShareDO entity = shareDAO.findByFatherShareId(fatherShareId);
-        entity.setExpireDate(share.getExpireDate());
-        entity.setIsPrivacy(share.getIsPrivacy());
-        entity.setExtractionCode(share.getExtractionCode());
-        entity.setOperationPermissionList(share.getOperationPermissionList());
-        shareDAO.save(entity);
+        if (entity != null) {
+            entity.setExpireDate(share.getExpireDate());
+            entity.setIsPrivacy(share.getIsPrivacy());
+            entity.setExtractionCode(share.getExtractionCode());
+            entity.setOperationPermissionList(share.getOperationPermissionList());
+            shareDAO.save(entity);
+        }
     }
 
     /***

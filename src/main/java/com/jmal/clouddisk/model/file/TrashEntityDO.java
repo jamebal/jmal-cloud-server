@@ -48,7 +48,6 @@ public class TrashEntityDO extends AuditableEntity implements Reflective {
      * 文件路径(根路径为"/")
      */
     private String path;
-    private BlobType blobType;
     @Lob
     @Column(name = "blob_data")
     private byte[] blob;

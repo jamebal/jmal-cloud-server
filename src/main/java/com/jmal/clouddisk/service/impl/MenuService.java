@@ -303,7 +303,7 @@ public class MenuService {
                 return Collections.emptyList();
         }
         String json = new String(IoUtil.readBytes(inputStream), StandardCharsets.UTF_8);
-        return JacksonUtil.parseArray(json,MenuDO.class);
+        return JacksonUtil.parseArray(json, MenuDO.class);
     }
 
     /***

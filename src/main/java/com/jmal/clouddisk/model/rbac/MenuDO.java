@@ -1,5 +1,7 @@
 package com.jmal.clouddisk.model.rbac;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.jmal.clouddisk.config.LocalDateTimeFromTimestampDeserializer;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import com.jmal.clouddisk.service.impl.MenuService;
@@ -61,9 +63,11 @@ public class MenuDO extends AuditableEntity implements Reflective {
     /***
      * 创建时间
      */
+    @JsonDeserialize(using = LocalDateTimeFromTimestampDeserializer.class)
     LocalDateTime createTime;
     /***
      * 修改时间
      */
+    @JsonDeserialize(using = LocalDateTimeFromTimestampDeserializer.class)
     LocalDateTime updateTime;
 }

@@ -1,8 +1,8 @@
 package com.jmal.clouddisk.dao.mongo_to_jpa;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
-import com.jmal.clouddisk.dao.impl.jpa.repository.AccessTokenRepository;
-import com.jmal.clouddisk.model.UserAccessTokenDO;
+import com.jmal.clouddisk.dao.impl.jpa.repository.ShareRepository;
+import com.jmal.clouddisk.model.ShareDO;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,22 +19,22 @@ import java.util.List;
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "jmalcloud.datasource.migration")
 @Conditional(RelationalDataSourceCondition.class)
-public class AccessTokenMigrationService {
+public class ShareMigrationService {
 
     private final MongoTemplate mongoTemplate;
 
-    private final AccessTokenRepository jpaRepository;
+    private final ShareRepository shareRepository;
 
     /**
-     * 迁移数据从 MongoDB 到 JPA
+     * 迁移 Share 数据从 MongoDB 到 JPA
      */
     @Transactional
-    public MigrationResult accessTokenData() {
-        if (jpaRepository.count() > 0) {
+    public MigrationResult migrateShareData() {
+        if (shareRepository.count() > 0) {
             return new MigrationResult();
         }
 
-        log.info("开始迁移 AccessToken 数据从 MongoDB 到 JPA");
+        log.info("开始迁移 Share 数据从 MongoDB 到 JPA");
 
         MigrationResult result = new MigrationResult();
         int batchSize = 1000; // 批量处理大小
@@ -44,7 +44,7 @@ public class AccessTokenMigrationService {
             while (true) {
                 // 分批从 MongoDB 读取数据
                 Query query = new Query().skip(skip).limit(batchSize);
-                List<UserAccessTokenDO> mongoDataList = mongoTemplate.find(query, UserAccessTokenDO.class);
+                List<ShareDO> mongoDataList = mongoTemplate.find(query, ShareDO.class);
 
                 if (mongoDataList.isEmpty()) {
                     break; // 没有更多数据
@@ -53,8 +53,10 @@ public class AccessTokenMigrationService {
                 log.debug("正在处理第 {} 批数据，数量: {}", (skip / batchSize) + 1, mongoDataList.size());
 
                 try {
+
                     // 直接批量保存到 SQLite，无需转换
-                    jpaRepository.saveAll(mongoDataList);
+                    shareRepository.saveAll(mongoDataList);
+
                     result.addSuccess(mongoDataList.size());
                     result.addProcessed(mongoDataList.size());
                     log.debug("成功保存 {} 条记录到 SQLite", mongoDataList.size());
@@ -62,13 +64,13 @@ public class AccessTokenMigrationService {
                     log.error("批量保存到 SQLite 失败: {}", e.getMessage());
 
                     // 如果批量保存失败，尝试逐条保存
-                    for (UserAccessTokenDO mongoData : mongoDataList) {
+                    for (ShareDO mongoData : mongoDataList) {
                         try {
-                            jpaRepository.save(mongoData);
+                            shareRepository.save(mongoData);
                             result.addSuccess(1);
                             result.incrementProcessed();
                         } catch (Exception ex) {
-                            log.error("保存 AccessToken 数据失败, ID: {}, 错误: {}", mongoData.getId(), ex.getMessage());
+                            log.error("保存 Share 数据失败, ID: {}, 错误: {}", mongoData.getId(), ex.getMessage());
                             result.addError(mongoData.getId(), ex.getMessage());
                             result.incrementProcessed();
                         }

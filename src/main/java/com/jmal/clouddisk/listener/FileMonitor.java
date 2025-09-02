@@ -114,12 +114,6 @@ public class FileMonitor {
         log.info("\r\n文件监控服务已开启, 监控目录: {}, 忽略目录: {}", rootDir, fileListener.getFilterDirSet());
     }
 
-    private void reloadDirectoryWatcher() {
-        synchronized (watcherLock) {
-            startFileMonitoringAsync();
-        }
-    }
-
     /**
      * 在过滤器里添加路径
      * @param path 需要过滤掉的路径
@@ -129,7 +123,6 @@ public class FileMonitor {
         fileListener.addFilterDir(filepath);
         String username = Paths.get(path).getParent().getFileName().toString();
         fileService.createFile(username, filepath.toFile());
-        reloadDirectoryWatcher();
     }
 
     /**
@@ -142,7 +135,6 @@ public class FileMonitor {
             fileListener.removeFilterDir(filepath);
             String username = Paths.get(path).getParent().getFileName().toString();
             fileService.deleteFile(username, Paths.get(fileProperties.getRootDir(), path).toFile());
-            reloadDirectoryWatcher();
         }
     }
 

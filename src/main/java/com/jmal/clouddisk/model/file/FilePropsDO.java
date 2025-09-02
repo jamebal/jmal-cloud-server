@@ -4,14 +4,16 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.model.Tag;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -32,12 +34,10 @@ public class FilePropsDO implements Reflective {
     @Id
     private String id;
 
-    private BlobType blobType;
-
-    @Lob
-    @Basic(fetch = FetchType.LAZY)
-    @Column(name = "blob_data")
-    private byte[] blob;
+    /**
+     * 用于存储不同类型的二进制数据，如缩略图、文本内容, 使用文件存储, contentPath就是文件路径 ${rootDir}/${dbDir}/data/${yyyy-MM}/${fileId}/content|contentText|html|draft/${fileId}
+     */
+    private String contentPath;
 
     private Boolean shareBase;
     private Boolean subShare;
@@ -72,18 +72,20 @@ public class FilePropsDO implements Reflective {
         }
         this.delTag = fileDocument.getDelete();
 
-        if (fileDocument.getContent() != null) {
-            this.blobType = BlobType.thumbnail;
-            this.blob = fileDocument.getContent();
-        }
-        if (fileDocument.getContentText() != null) {
-            this.blobType = BlobType.contentText;
-            this.blob = fileDocument.getContentText().getBytes(StandardCharsets.UTF_8);
-        }
-        if (fileDocument.getHtml() != null) {
-            this.blobType = BlobType.html;
-            this.blob = fileDocument.getHtml().getBytes(StandardCharsets.UTF_8);
-        }
+        // if (fileDocument.getContent() != null) {
+        //     this.blobType = BlobType.thumbnail;
+        //     this.blob = fileDocument.getContent();
+        //     Path conentPath = Paths.get(parentPath, "content");
+        //
+        // }
+        // if (fileDocument.getContentText() != null) {
+        //     this.blobType = BlobType.contentText;
+        //     this.blob = fileDocument.getContentText().getBytes(StandardCharsets.UTF_8);
+        // }
+        // if (fileDocument.getHtml() != null) {
+        //     this.blobType = BlobType.html;
+        //     this.blob = fileDocument.getHtml().getBytes(StandardCharsets.UTF_8);
+        // }
         this.LuceneIndex = fileDocument.getIndex();
     }
 

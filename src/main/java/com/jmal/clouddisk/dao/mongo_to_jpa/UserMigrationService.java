@@ -26,7 +26,7 @@ public class UserMigrationService {
     private final UserRepository jpaRepository;
 
     /**
-     * 迁移 User 数据从 MongoDB 到 SQLite
+     * 迁移 User 数据从 MongoDB 到 JPA
      */
     @Transactional
     public MigrationResult migrateConsumerData() {
@@ -34,7 +34,7 @@ public class UserMigrationService {
             return new MigrationResult();
         }
 
-        log.info("开始迁移 User 数据从 MongoDB 到 SQLite");
+        log.info("开始迁移 User 数据从 MongoDB 到 JPA");
 
         MigrationResult result = new MigrationResult();
         int batchSize = 1000; // 批量处理大小

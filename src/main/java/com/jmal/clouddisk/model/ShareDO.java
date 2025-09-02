@@ -7,6 +7,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -73,6 +75,7 @@ public class ShareDO extends AuditableEntity implements Reflective {
     /**
      * 操作权限
      */
+    @JdbcTypeCode(SqlTypes.JSON)
     private List<OperationPermission> operationPermissionList;
 
 }

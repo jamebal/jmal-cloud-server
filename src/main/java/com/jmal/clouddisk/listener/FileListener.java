@@ -176,14 +176,6 @@ public class FileListener implements DirectoryChangeListener {
         Path eventPath = directoryChangeEvent.path();
         DirectoryChangeEvent.EventType eventType = directoryChangeEvent.eventType();
 
-        // 增加事件计数器，检测高负载
-        int currentCount = eventBurstCounter.incrementAndGet();
-        lastBurstTime = Instant.now();
-        if (currentCount > EVENT_BURST_THRESHOLD && !highLoadDetected.get()) {
-            highLoadDetected.set(true);
-            log.warn("检测到高事件负载: {}事件/{}秒，标记为需要增量扫描", currentCount, BURST_WINDOW.getSeconds());
-        }
-
         // 检查是否为忽略路径
         if (filterDirSet.stream().anyMatch(eventPath::startsWith)) {
             log.debug("忽略事件: {}, 路径: {}", eventType, eventPath);
@@ -193,6 +185,14 @@ public class FileListener implements DirectoryChangeListener {
         if (fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(eventPath.getFileName()::startsWith)) {
             log.debug("忽略文件:{}", eventPath.toFile().getAbsolutePath());
             return;
+        }
+
+        // 增加事件计数器，检测高负载
+        int currentCount = eventBurstCounter.incrementAndGet();
+        lastBurstTime = Instant.now();
+        if (currentCount > EVENT_BURST_THRESHOLD && !highLoadDetected.get()) {
+            highLoadDetected.set(true);
+            log.warn("检测到高事件负载: {}事件/{}秒，标记为需要增量扫描", currentCount, BURST_WINDOW.getSeconds());
         }
 
         log.debug("接收到事件: {}, 路径: {}", eventType, eventPath);
