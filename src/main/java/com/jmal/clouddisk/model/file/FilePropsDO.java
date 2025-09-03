@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model.file;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
@@ -35,9 +36,19 @@ public class FilePropsDO implements Reflective {
     private String id;
 
     /**
-     * 用于存储不同类型的二进制数据，如缩略图、文本内容, 使用文件存储, contentPath就是文件路径 ${rootDir}/${dbDir}/data/${yyyy-MM}/${fileId}/content|contentText|html|draft/${fileId}
+     * 用于存储不同类型的二进制数据，如缩略图、文本内容, 使用文件存储, contentPath就是文件路径 ${rootDir}/${dbDir}/data/${fileId}/content/${fileId}
      */
-    private String contentPath;
+    private Boolean hasContent;
+
+    /**
+     * ${rootDir}/${dbDir}/data/${fileId}/contentText/${fileId}
+     */
+    private Boolean hasContentText;
+
+    /**
+     * ${rootDir}/${dbDir}/data/${fileId}/html/${fileId}
+     */
+    private Boolean hasHtml;
 
     private Boolean shareBase;
     private Boolean subShare;
@@ -72,20 +83,10 @@ public class FilePropsDO implements Reflective {
         }
         this.delTag = fileDocument.getDelete();
 
-        // if (fileDocument.getContent() != null) {
-        //     this.blobType = BlobType.thumbnail;
-        //     this.blob = fileDocument.getContent();
-        //     Path conentPath = Paths.get(parentPath, "content");
-        //
-        // }
-        // if (fileDocument.getContentText() != null) {
-        //     this.blobType = BlobType.contentText;
-        //     this.blob = fileDocument.getContentText().getBytes(StandardCharsets.UTF_8);
-        // }
-        // if (fileDocument.getHtml() != null) {
-        //     this.blobType = BlobType.html;
-        //     this.blob = fileDocument.getHtml().getBytes(StandardCharsets.UTF_8);
-        // }
+        this.hasContent = fileDocument.getContent() != null;
+        this.hasContentText = CharSequenceUtil.isNotBlank(fileDocument.getContentText());
+        this.hasHtml = CharSequenceUtil.isNotBlank(fileDocument.getHtml());
+
         this.LuceneIndex = fileDocument.getIndex();
     }
 

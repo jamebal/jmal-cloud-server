@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model.file;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
@@ -26,7 +27,10 @@ public class ArticleDO extends AuditableEntity implements Reflective {
     private Boolean release;
     private Boolean alonePage;
     private Integer pageSort;
-    private String draftPath;
+    /**
+     * ${rootDir}/${dbDir}/data/${fileId}/draft/${fileId}
+     */
+    private Boolean hasDraft;
     private String cover;
     private String slug;
 
@@ -51,7 +55,9 @@ public class ArticleDO extends AuditableEntity implements Reflective {
         this.release = fileDocument.getRelease();
         this.alonePage = fileDocument.getAlonePage();
         this.pageSort = fileDocument.getPageSort();
-        // this.draft = fileDocument.getDraft();
+
+        this.hasDraft = CharSequenceUtil.isNotBlank(fileDocument.getDraft());
+
         this.cover = fileDocument.getCover();
         this.slug = fileDocument.getSlug();
         this.categoryIds = fileDocument.getCategoryIds() != null ? List.of(fileDocument.getCategoryIds()) : null;

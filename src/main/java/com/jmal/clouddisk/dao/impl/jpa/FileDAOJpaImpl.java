@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
@@ -32,6 +33,8 @@ public class FileDAOJpaImpl implements IFileDAO {
     private final FilePropsRepository filePropsRepository;
 
     private final LuceneQueryService luceneQueryService;
+
+    private final FileProperties fileProperties;
 
     @Transactional(readOnly = true)
     @Override
@@ -138,7 +141,7 @@ public class FileDAOJpaImpl implements IFileDAO {
         }
         List<String> foundIds = filesToDelete.stream().map(FileMetadataDO::getId).toList();
         fileMetadataRepository.deleteAllByIdInBatch(foundIds);
-        return filesToDelete.stream().map(FileMetadataDO::toFileDocument).toList();
+        return filesToDelete.stream().map(fileMetadataDO -> fileMetadataDO.toFileDocument()).toList();
     }
 
     @Override

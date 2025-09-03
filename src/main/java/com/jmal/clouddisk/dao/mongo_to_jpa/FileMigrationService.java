@@ -6,6 +6,7 @@ import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.model.file.ArticleDO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
+import com.jmal.clouddisk.service.impl.FilePersistenceService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,8 @@ public class FileMigrationService {
     private final FileMetadataRepository fileMetadataRepository;
 
     private final ArticleRepository articleRepository;
+
+    private final FilePersistenceService filePersistenceService;
 
     /**
      * 迁移 File 数据从 MongoDB 到 JPA
@@ -65,6 +68,7 @@ public class FileMigrationService {
                     // 转换 FileDocument 到 FileEntityDO
                     List<FileMetadataDO> fileEntityDOList = mongoDataList.stream().map(fileDocument -> {
                         FileMetadataDO fileMetadataDO = new FileMetadataDO(fileDocument);
+                        filePersistenceService.persistContents(fileDocument);
                         if (fileDocument.getSlug() != null) {
                             ArticleDO articleDO = new ArticleDO(fileDocument);
                             articleDO.setFileMetadata(fileMetadataDO);

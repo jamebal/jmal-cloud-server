@@ -117,15 +117,6 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
         fileDocument.setPath(this.path);
         fileDocument.setSuffix(this.suffix);
         fileDocument.setIsFavorite(this.isFavorite);
-        // if (this.props.getBlobType() == BlobType.thumbnail) {
-        //     fileDocument.setContent(this.props.getBlob());
-        // }
-        // if (this.props.getBlobType() == BlobType.contentText) {
-        //     fileDocument.setContentText(new String(this.props.getBlob(), StandardCharsets.UTF_8));
-        // }
-        // if (this.props.getBlobType() == BlobType.html) {
-        //     fileDocument.setHtml(new String(this.props.getBlob(), StandardCharsets.UTF_8));
-        // }
         fileDocument.setOssPlatform(this.props.getProps().getOssPlatform());
         fileDocument.setOssFolder(this.props.getProps().getOssFolder());
         fileDocument.setIsPublic(this.props.getShareProps().getIsPublic());
