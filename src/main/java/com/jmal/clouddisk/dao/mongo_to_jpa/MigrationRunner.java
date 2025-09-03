@@ -22,6 +22,7 @@ public class MigrationRunner {
     private final FileMigrationService fileMigrationService;
     private final TagMigrationService tagMigrationService;
     private final ShareMigrationService shareMigrationService;
+    private final RoleMigrationService roleMigrationService;
 
     // 可以在应用启动时自动执行
     @EventListener(ApplicationReadyEvent.class)
@@ -55,6 +56,11 @@ public class MigrationRunner {
         MigrationResult shareResult = shareMigrationService.migrateShareData();
         if (shareResult.getTotalProcessed() > 0) {
             log.info("分享数据迁移完成: {}", shareResult);
+        }
+
+        MigrationResult roleResult = roleMigrationService.migrateRoleData();
+        if (roleResult.getTotalProcessed() > 0) {
+            log.info("角色数据迁移完成: {}", roleResult);
         }
     }
 

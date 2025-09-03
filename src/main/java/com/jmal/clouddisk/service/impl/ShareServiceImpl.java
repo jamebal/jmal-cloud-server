@@ -24,8 +24,6 @@ import com.jmal.clouddisk.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -214,8 +212,6 @@ public class ShareServiceImpl implements IShareService {
         String ossPath = CaffeineUtil.getOssPath(path);
         if (ossPath != null) {
             // oss 文件 或 目录
-            Query query = new Query();
-            query.addCriteria(Criteria.where("_id").is(file.getId()));
             if (!fileDAO.existsById(file.getId())) {
                 fileDAO.save(file);
             }

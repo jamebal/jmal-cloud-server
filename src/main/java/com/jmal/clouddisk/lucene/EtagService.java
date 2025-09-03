@@ -15,6 +15,8 @@ import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.util.HashUtil;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.result.UpdateResult;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +39,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -87,7 +88,7 @@ public class EtagService {
         if (executorMarkedFoldersService == null) {
             executorMarkedFoldersService = ThreadUtil.newFixedExecutor(1, 1, "EtagWorker-", false);
         }
-        CompletableFuture.runAsync(() -> {
+        Completable.fromAction(() -> {
             Query queryNoEtagQuery = new Query();
             queryNoEtagQuery.addCriteria(Criteria.where(Constants.ETAG).exists(false).and(Constants.IS_FOLDER).is(true));
             long countOfFoldersWithoutEtag = mongoTemplate.count(queryNoEtagQuery, FileDocument.class);
@@ -99,7 +100,8 @@ public class EtagService {
             processRootFolderFiles();
             log.debug("Initial ETag setup finished. Ensuring ETag processing worker is active if needed.");
             ensureProcessingMarkedFolders();
-        });
+        }).subscribeOn(Schedulers.io())
+                .subscribe();
     }
 
     /**

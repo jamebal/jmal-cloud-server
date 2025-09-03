@@ -15,6 +15,8 @@ import io.minio.messages.DeleteError;
 import io.minio.messages.DeleteObject;
 import io.minio.messages.Item;
 import io.minio.messages.Part;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -24,7 +26,6 @@ import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -60,7 +61,8 @@ public class MinIOService implements IOssService {
                 .build());
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor, ossConfigDTO);
-        CompletableFuture.runAsync(this::getMultipartUploads);
+        Completable.fromAction(this::getMultipartUploads).subscribeOn(Schedulers.io())
+                .subscribe();
     }
 
     @Override
@@ -379,7 +381,7 @@ public class MinIOService implements IOssService {
                 isTruncated = partResult.result().isTruncated();
 
                 if (isTruncated) {
-                    partNumberMarker = currentParts.get(currentParts.size() - 1).partNumber();
+                    partNumberMarker = currentParts.getLast().partNumber();
                 }
             } while (isTruncated);
 

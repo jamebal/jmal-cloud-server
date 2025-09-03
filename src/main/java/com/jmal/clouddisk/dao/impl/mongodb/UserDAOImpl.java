@@ -10,6 +10,7 @@ import com.jmal.clouddisk.dao.util.PageableUtil;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.RoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
@@ -21,6 +22,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 
 @Service
@@ -126,5 +128,14 @@ public class UserDAOImpl implements IUserDAO {
             return consumerDO.getUsername();
         }
         return null;
+    }
+
+    @Override
+    public List<String> findUsernamesByRoleIdList(Collection<String> roleIdList) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(RoleService.ROLES).in(roleIdList));
+        query.fields().include(IUserService.USERNAME);
+        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class);
+        return userList.stream().map(ConsumerDO::getUsername).toList();
     }
 }

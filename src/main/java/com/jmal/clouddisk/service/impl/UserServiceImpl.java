@@ -24,6 +24,8 @@ import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
@@ -36,7 +38,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @author jmal
@@ -59,8 +60,6 @@ public class UserServiceImpl implements IUserService {
     private final MessageService messageService;
 
     private final IShareService shareService;
-
-    private final MenuService menuService;
 
     private final RoleService roleService;
 
@@ -212,7 +211,9 @@ public class UserServiceImpl implements IUserService {
         updateConsumer(userId, query, update);
         if (user.getRoles() != null) {
             // 修改用户角色后更新相关角色用户的权限缓存
-            CompletableFuture.runAsync(() -> roleService.updateUserCacheByRole(user.getRoles()));
+            Completable.fromAction(() -> roleService.updateUserCacheByRole(user.getRoles()))
+                    .subscribeOn(Schedulers.io())
+                    .subscribe();
         }
         return ResultUtil.success(fileId);
     }

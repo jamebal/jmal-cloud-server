@@ -33,7 +33,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -101,7 +100,7 @@ public class LogService {
                 responseResult = (ResponseResult<Object>) result;
                 logOperation.setStatus(responseResult.getCode());
                 if (responseResult.getCode() != 0) {
-                    logOperation.setRemarks(responseResult.getMessage().toString());
+                    logOperation.setRemarks(responseResult.getMessage());
                 }
             } catch (Exception e) {
                 setStatus(logOperation, response);
@@ -302,10 +301,11 @@ public class LogService {
     }
 
     public void asyncAddLog(LogOperation logOperation) {
-        CompletableFuture.runAsync(() -> {
+        Completable.fromAction(() -> {
             logOperation.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             mongoTemplate.save(logOperation);
-        });
+        }).subscribeOn(Schedulers.io())
+                .subscribe();
     }
 
     public void addLog(LogOperation logOperation) {

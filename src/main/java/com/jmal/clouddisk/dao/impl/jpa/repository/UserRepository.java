@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -30,4 +32,39 @@ public interface UserRepository extends JpaRepository<ConsumerDO, String>, JpaSp
     Page<ConsumerDO> findUserList( @Param("username") String username, @Param("showName") String showName, Pageable pageable);
 
     Optional<ConsumerDO> findByShowName(String showName);
+
+    /**
+     * 根据 roleId 列表查询所有匹配的用户名 (PostgreSQL 版本)
+     * 使用 ?| 操作符，它检查左边的 jsonb 数组是否与右边的 text 数组有任何共同的元素。
+     * JPA/Hibernate 会自动将 List<String> 绑定为 PostgreSQL 的数组类型。
+     *
+     * @param roleIdList 要查询的角色ID列表
+     * @return 匹配的用户名列表
+     */
+    @Query(value = "SELECT username FROM consumers WHERE roles ?| :roleIdList",
+            nativeQuery = true)
+    List<String> findUsernamesByRoleIdList_PostgreSQL(@Param("roleIdList") Collection<String> roleIdList);
+
+    /**
+     * 根据 roleId 列表查询所有匹配的用户名 (MySQL 版本)
+     * 使用 JSON_OVERLAPS 函数，它检查两个JSON数组是否有共同元素。
+     *
+     * @param roleIdListAsJson 一个已经格式化为JSON数组的字符串, 例如 "[\"role1\", \"role2\"]"
+     * @return 匹配的用户名列表
+     */
+    @Query(value = "SELECT username FROM consumers WHERE JSON_OVERLAPS(roles, :roleIdListAsJson)",
+            nativeQuery = true)
+    List<String> findUsernamesByRoleIdList_MySQL(@Param("roleIdListAsJson") String roleIdListAsJson);
+
+    /**
+     * 根据 roleId 列表查询所有匹配的用户名 (SQLite 版本)
+     * 将 roles 数组展开，然后使用标准的 IN 子句来匹配列表中的任何一个roleId。
+     * 必须使用 DISTINCT，因为一个用户可能匹配列表中的多个角色，这会导致用户名重复。
+     *
+     * @param roleIdList 要查询的角色ID列表
+     * @return 匹配的用户名列表
+     */
+    @Query(value = "SELECT DISTINCT c.username FROM consumers c, json_each(c.roles) je WHERE je.value IN (:roleIdList)",
+            nativeQuery = true)
+    List<String> findUsernamesByRoleIdList_SQLite(@Param("roleIdList") Collection<String> roleIdList);
 }

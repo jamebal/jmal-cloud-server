@@ -6,6 +6,7 @@ import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import org.springframework.data.domain.Page;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface IUserDAO {
@@ -31,4 +32,6 @@ public interface IUserDAO {
     ConsumerDO findByShowName(String showName);
 
     String getUsernameById(String userId);
+
+    List<String> findUsernamesByRoleIdList(Collection<String> roleId);
 }

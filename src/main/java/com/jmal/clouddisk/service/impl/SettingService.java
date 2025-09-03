@@ -21,6 +21,8 @@ import com.jmal.clouddisk.util.HybridThrottleExecutor;
 import com.jmal.clouddisk.util.MyFileUtils;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -32,7 +34,6 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -267,7 +268,7 @@ public class SettingService {
     private void ensureProcessCalculateFolderSize() {
         if (calculateFolderSizeScheduled.compareAndSet(false, true)) {
             String notifyUsername = userLoginHolder.getUsername();
-            CompletableFuture.runAsync(() -> {
+            Completable.fromAction(() -> {
                 try {
                     // 清除之前的文件夹大小数据
                     folderSizeDAO.clearFolderSizInDb();
@@ -286,7 +287,8 @@ public class SettingService {
                     }
                 }
 
-            });
+            }).subscribeOn(Schedulers.io())
+                    .subscribe();
         }
     }
 

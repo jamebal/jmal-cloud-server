@@ -1,8 +1,10 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.convert.Convert;
-import com.jmal.clouddisk.dao.IUserDAO;
+import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.DataSourceType;
+import com.jmal.clouddisk.dao.IUserDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository;
 import com.jmal.clouddisk.dao.mapping.UserField;
 import com.jmal.clouddisk.dao.util.MyQuery;
@@ -11,6 +13,7 @@ import com.jmal.clouddisk.dao.util.PageableUtil;
 import com.jmal.clouddisk.dao.util.QuerySpecificationUtil;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.util.JacksonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
@@ -19,6 +22,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +33,8 @@ import java.util.Optional;
 public class UserDAOJpaImpl implements IUserDAO {
 
     private final UserRepository userRepository;
+
+    private final DataSourceProperties dataSourceProperties;
 
     @Override
     public ConsumerDO save(ConsumerDO consumerDO) {
@@ -109,6 +115,20 @@ public class UserDAOJpaImpl implements IUserDAO {
             return consumerDO.getUsername();
         }
         return null;
+    }
+
+    @Override
+    public List<String> findUsernamesByRoleIdList(Collection<String> roleIdList) {
+        if (dataSourceProperties.getType() == DataSourceType.pgsql){
+            return userRepository.findUsernamesByRoleIdList_PostgreSQL(roleIdList);
+        } else if (dataSourceProperties.getType() == DataSourceType.mysql) {
+            // 格式化为JSON数组的字符串, 例如 "[\"role1\", \"role2\"]"
+            String roleIdListAsJson = JacksonUtil.toJSONString(roleIdList);
+            return userRepository.findUsernamesByRoleIdList_MySQL(roleIdListAsJson);
+        } else if (dataSourceProperties.getType() == DataSourceType.sqlite) {
+            return userRepository.findUsernamesByRoleIdList_SQLite(roleIdList);
+        }
+        return List.of();
     }
 
     public void applyUpdateToEntity(ConsumerDO entity, MyUpdate update) {

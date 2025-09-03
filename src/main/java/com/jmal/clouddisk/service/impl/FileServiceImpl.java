@@ -34,6 +34,7 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.servlet.http.HttpServletRequest;
@@ -69,7 +70,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 import static com.jmal.clouddisk.service.IUserService.USER_ID;
 
@@ -853,7 +853,7 @@ public class FileServiceImpl implements IFileService {
         String finalUsername = username;
         String operator = userLoginHolder.getUsername();
         LogOperation logOperation = logService.getLogOperation();
-        CompletableFuture.runAsync(() -> {
+        Completable.fromAction(() -> {
             try {
                 String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
                 if (ossPath != null) {
@@ -867,7 +867,8 @@ public class FileServiceImpl implements IFileService {
             } catch (Exception e) {
                 commonFileService.pushMessageOperationFileError(finalUsername, Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR), "重命名");
             }
-        });
+        }).subscribeOn(Schedulers.io())
+                .subscribe();
         return ResultUtil.success();
     }
 
@@ -1007,7 +1008,7 @@ public class FileServiceImpl implements IFileService {
         upload.setUserId(userLoginHolder.getUserId());
         upload.setUsername(userLoginHolder.getUsername());
         LogOperation logOperation = logService.getLogOperation();
-        CompletableFuture.runAsync(() -> {
+        Completable.fromAction(() -> {
             try {
                 String currentDirectory = getOssFileCurrentDirectory(upload, froms);
                 String fromFileIdOne = froms.get(0);
@@ -1033,7 +1034,8 @@ public class FileServiceImpl implements IFileService {
             } catch (Exception e) {
                 commonFileService.pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR), "移动");
             }
-        });
+        }).subscribeOn(Schedulers.io())
+                .subscribe();
         return ResultUtil.success();
     }
 
@@ -1080,7 +1082,7 @@ public class FileServiceImpl implements IFileService {
         upload.setUserId(userLoginHolder.getUserId());
         upload.setUsername(userLoginHolder.getUsername());
         LogOperation logOperation = logService.getLogOperation();
-        CompletableFuture.runAsync(() -> {
+        Completable.fromAction(() -> {
             try {
                 // 复制成功
                 getCopyResult(upload, froms, to, false, logOperation);
@@ -1089,7 +1091,8 @@ public class FileServiceImpl implements IFileService {
             } catch (Exception e) {
                 commonFileService.pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR), "复制");
             }
-        });
+        }).subscribeOn(Schedulers.io())
+                .subscribe();
         return ResultUtil.success();
     }
 

@@ -2,12 +2,10 @@ package com.jmal.clouddisk.dao.impl.jpa.repository;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.model.ShareDO;
-import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,7 +17,7 @@ import java.util.Optional;
 
 @Repository
 @Conditional(RelationalDataSourceCondition.class)
-public interface ShareRepository extends JpaRepository<ShareDO, String>, JpaSpecificationExecutor<ConsumerDO> {
+public interface ShareRepository extends JpaRepository<ShareDO, String> {
 
     // 更新需要设置提取码的分享
     @Modifying

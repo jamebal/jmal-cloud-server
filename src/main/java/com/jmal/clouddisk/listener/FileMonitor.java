@@ -11,6 +11,8 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.SystemUtil;
 import io.methvin.watcher.DirectoryWatcher;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +27,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @Description 启动时开启文件目录监控
@@ -67,10 +68,11 @@ public class FileMonitor {
         // 检查新版本
         // 启动文件监控服务
         startFileMonitoringAsync();
-        CompletableFuture.runAsync(() -> {
+        Completable.fromAction(() -> {
             String newVersion = SystemUtil.getNewVersion();
             log.debug("Current version: {}, Latest version: {}", version, newVersion);
-        });
+        }).subscribeOn(Schedulers.io())
+                .subscribe();
     }
 
     /**
@@ -81,7 +83,7 @@ public class FileMonitor {
         if (Boolean.FALSE.equals(fileProperties.getMonitor())) {
             return;
         }
-        CompletableFuture.runAsync(() -> {
+        Completable.fromAction(() -> {
             synchronized (watcherLock) {
                 try {
                     // 如果已经存在一个watcher (可能是重载逻辑调用)，先安全关闭
@@ -98,7 +100,8 @@ public class FileMonitor {
                     log.error("文件监控服务启动失败: {}", e.getMessage());
                 }
             }
-        });
+        }).subscribeOn(Schedulers.io())
+                .subscribe();
     }
 
     private void newDirectoryWatcher() throws IOException {
