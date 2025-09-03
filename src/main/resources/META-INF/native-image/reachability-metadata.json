@@ -49,9 +49,6 @@
       "type": "[Ljava.nio.charset.Charset;"
     },
     {
-      "type": "[Lkotlin.annotation.AnnotationTarget;"
-    },
-    {
       "type": "[Lorg.apache.lucene.index.TermStates$PendingTermLookup;"
     },
     {
@@ -1905,6 +1902,20 @@
       "type": "com.jmal.clouddisk.controller.record.MfaVerifyRequest"
     },
     {
+      "type": "com.jmal.clouddisk.controller.rest.AppCheckController",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "healthCheck",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.controller.rest.AuthController",
       "allDeclaredFields": true,
       "methods": [
@@ -1950,6 +1961,12 @@
         {
           "name": "<init>",
           "parameterTypes": []
+        },
+        {
+          "name": "tree",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
         }
       ]
     },
@@ -2210,6 +2227,14 @@
           "name": "editTextByPath",
           "parameterTypes": [
             "com.jmal.clouddisk.model.UploadApiParamDTO"
+          ]
+        },
+        {
+          "name": "getMarkDownContent",
+          "parameterTypes": [
+            "com.jmal.clouddisk.model.ArticleDTO",
+            "java.lang.Integer",
+            "java.lang.Integer"
           ]
         }
       ]
@@ -2492,7 +2517,26 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.controller.rest.sse.Message"
+      "type": "com.jmal.clouddisk.controller.rest.sse.Message",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "getBody",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSpace",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUrl",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUsername",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.controller.rest.sse.SseController",
@@ -2501,6 +2545,13 @@
         {
           "name": "<init>",
           "parameterTypes": []
+        },
+        {
+          "name": "events",
+          "parameterTypes": [
+            "java.lang.String",
+            "java.lang.String"
+          ]
         },
         {
           "name": "heartbeat",
@@ -2743,6 +2794,10 @@
       "methods": [
         {
           "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "handleAsyncRequestTimeoutException",
           "parameterTypes": []
         }
       ]
@@ -3240,7 +3295,74 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.ArticleDTO"
+      "type": "com.jmal.clouddisk.model.ArticleDTO",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIsAlonePage",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIsDraft",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIsRelease",
+          "parameterTypes": []
+        },
+        {
+          "name": "getPageIndex",
+          "parameterTypes": []
+        },
+        {
+          "name": "getPageSize",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUserId",
+          "parameterTypes": []
+        },
+        {
+          "name": "setIsAlonePage",
+          "parameterTypes": [
+            "java.lang.Boolean"
+          ]
+        },
+        {
+          "name": "setIsDraft",
+          "parameterTypes": [
+            "java.lang.Boolean"
+          ]
+        },
+        {
+          "name": "setIsRelease",
+          "parameterTypes": [
+            "java.lang.Boolean"
+          ]
+        },
+        {
+          "name": "setPageIndex",
+          "parameterTypes": [
+            "java.lang.Integer"
+          ]
+        },
+        {
+          "name": "setPageSize",
+          "parameterTypes": [
+            "java.lang.Integer"
+          ]
+        },
+        {
+          "name": "setUserId",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.ArticleParamDTO",
@@ -3361,6 +3483,9 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.model.ArticlesQueryVO"
+    },
+    {
       "type": "com.jmal.clouddisk.model.CategoryDO",
       "allDeclaredFields": true
     },
@@ -3372,7 +3497,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.DirectLink_Accessor_q74cap",
+      "type": "com.jmal.clouddisk.model.DirectLink_Accessor_qdenxq",
       "methods": [
         {
           "name": "<init>",
@@ -3383,7 +3508,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.DirectLink_Instantiator_q74cap",
+      "type": "com.jmal.clouddisk.model.DirectLink_Instantiator_qdenxq",
       "methods": [
         {
           "name": "<init>",
@@ -3420,7 +3545,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.LogOperation$IpInfo_Accessor_yswypx",
+      "type": "com.jmal.clouddisk.model.LogOperation$IpInfo_Accessor_my87of",
       "methods": [
         {
           "name": "<init>",
@@ -3437,7 +3562,7 @@
       "type": "com.jmal.clouddisk.model.LogOperationDTO"
     },
     {
-      "type": "com.jmal.clouddisk.model.LogOperation_Accessor_sln9aw",
+      "type": "com.jmal.clouddisk.model.LogOperation_Accessor_gmn0e5",
       "methods": [
         {
           "name": "<init>",
@@ -3460,11 +3585,23 @@
           "parameterTypes": []
         },
         {
+          "name": "getCategoryIds",
+          "parameterTypes": []
+        },
+        {
           "name": "getCover",
           "parameterTypes": []
         },
         {
+          "name": "getRelease",
+          "parameterTypes": []
+        },
+        {
           "name": "getSlug",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTagIds",
           "parameterTypes": []
         },
         {
@@ -3521,15 +3658,20 @@
     },
     {
       "type": "com.jmal.clouddisk.model.MarkdownVO",
-      "fields": [
+      "allDeclaredFields": true,
+      "methods": [
         {
-          "name": "hashCode"
+          "name": "getAgoTime",
+          "parameterTypes": []
         },
         {
-          "name": "toString"
-        }
-      ],
-      "methods": [
+          "name": "getDraft",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUserId",
+          "parameterTypes": []
+        },
         {
           "name": "setAgoTime",
           "parameterTypes": [
@@ -3549,7 +3691,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.Metadata_Accessor_v5ijg2",
+      "type": "com.jmal.clouddisk.model.Metadata_Accessor_j0uiqp",
       "methods": [
         {
           "name": "<init>",
@@ -3564,7 +3706,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.Music_Accessor_kj3msm",
+      "type": "com.jmal.clouddisk.model.Music_Accessor_mmzy8c",
       "methods": [
         {
           "name": "<init>",
@@ -3575,7 +3717,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.Music_Instantiator_kj3msm",
+      "type": "com.jmal.clouddisk.model.Music_Instantiator_mmzy8c",
       "methods": [
         {
           "name": "<init>",
@@ -3641,7 +3783,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.ShareDO_Accessor_iqfqes",
+      "type": "com.jmal.clouddisk.model.ShareDO_Accessor_f3scvf",
       "methods": [
         {
           "name": "<init>",
@@ -3711,7 +3853,53 @@
     },
     {
       "type": "com.jmal.clouddisk.model.TagDO",
-      "allDeclaredFields": true
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "getColor",
+          "parameterTypes": []
+        },
+        {
+          "name": "getName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSlug",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSort",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTagBackground",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUserId",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.model.TagDO_Accessor_hvvf14",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.model.TagDO"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.model.TagDO_Instantiator_hvvf14",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.TagDTO"
@@ -3729,11 +3917,23 @@
           "parameterTypes": []
         },
         {
+          "name": "getCurrentDirectory",
+          "parameterTypes": []
+        },
+        {
+          "name": "getOrder",
+          "parameterTypes": []
+        },
+        {
           "name": "getPageIndex",
           "parameterTypes": []
         },
         {
           "name": "getPageSize",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSortableProp",
           "parameterTypes": []
         },
         {
@@ -3746,6 +3946,18 @@
         },
         {
           "name": "setContentText",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setCurrentDirectory",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setOrder",
           "parameterTypes": [
             "java.lang.String"
           ]
@@ -3764,6 +3976,12 @@
         },
         {
           "name": "setRelativePath",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setSortableProp",
           "parameterTypes": [
             "java.lang.String"
           ]
@@ -3796,7 +4014,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_Accessor_cs04fk",
+      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_Accessor_99jewl",
       "methods": [
         {
           "name": "<init>",
@@ -3908,6 +4126,54 @@
           ]
         },
         {
+          "name": "setBackgroundSite",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setCopyright",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setFooterHtml",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setNetworkRecordNumber",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setNetworkRecordNumberStr",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setOperatingButtons",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setRecordPermissionNum",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setSiteLogo",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
           "name": "setSiteName",
           "parameterTypes": [
             "java.lang.String"
@@ -3922,7 +4188,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.WebsiteSettingDO_Accessor_9kwus1",
+      "type": "com.jmal.clouddisk.model.WebsiteSettingDO_Accessor_igzhqh",
       "methods": [
         {
           "name": "<init>",
@@ -3933,7 +4199,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.WebsiteSettingDO_Instantiator_9kwus1",
+      "type": "com.jmal.clouddisk.model.WebsiteSettingDO_Instantiator_igzhqh",
       "methods": [
         {
           "name": "<init>",
@@ -4184,14 +4450,29 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.WebsiteSettingDTO$OperatingButton"
+      "type": "com.jmal.clouddisk.model.WebsiteSettingDTO$OperatingButton",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "getStyle",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTitle",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUrl",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.file.ExifInfo",
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.file.ExifInfo_Accessor_f2t1or",
+      "type": "com.jmal.clouddisk.model.file.ExifInfo_Accessor_xvdvw8",
       "methods": [
         {
           "name": "<init>",
@@ -4202,7 +4483,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.file.ExifInfo_Instantiator_f2t1or",
+      "type": "com.jmal.clouddisk.model.file.ExifInfo_Instantiator_xvdvw8",
       "methods": [
         {
           "name": "<init>",
@@ -4501,7 +4782,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.file.FileDocument_Accessor_4jagbm",
+      "type": "com.jmal.clouddisk.model.file.FileDocument_Accessor_gk7tu6",
       "methods": [
         {
           "name": "<init>",
@@ -4512,7 +4793,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.file.FileDocument_Instantiator_4jagbm",
+      "type": "com.jmal.clouddisk.model.file.FileDocument_Instantiator_gk7tu6",
       "methods": [
         {
           "name": "<init>",
@@ -4815,7 +5096,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.file.FileIntroVO_Accessor_ahlv3o",
+      "type": "com.jmal.clouddisk.model.file.FileIntroVO_Accessor_ewuvlb",
       "methods": [
         {
           "name": "<init>",
@@ -4826,7 +5107,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.file.FileIntroVO_Instantiator_ahlv3o",
+      "type": "com.jmal.clouddisk.model.file.FileIntroVO_Instantiator_ewuvlb",
       "methods": [
         {
           "name": "<init>",
@@ -4847,8 +5128,18 @@
           "parameterTypes": []
         },
         {
+          "name": "getName",
+          "parameterTypes": []
+        },
+        {
           "name": "getUserId",
           "parameterTypes": []
+        },
+        {
+          "name": "setName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
         },
         {
           "name": "setUserId",
@@ -4872,7 +5163,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO_Accessor_t5nv2s",
+      "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO_Accessor_oyxorg",
       "methods": [
         {
           "name": "<init>",
@@ -5005,7 +5296,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_i7rwri",
+      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_4168eu",
       "methods": [
         {
           "name": "<init>",
@@ -5016,7 +5307,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Instantiator_i7rwri",
+      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Instantiator_4168eu",
       "methods": [
         {
           "name": "<init>",
@@ -5144,6 +5435,12 @@
           "name": "setQuota",
           "parameterTypes": [
             "java.lang.Integer"
+          ]
+        },
+        {
+          "name": "setRememberMe",
+          "parameterTypes": [
+            "java.lang.Boolean"
           ]
         },
         {
@@ -5305,7 +5602,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Accessor_lrpxcn",
+      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Accessor_ks1ak1",
       "methods": [
         {
           "name": "<init>",
@@ -5316,7 +5613,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Instantiator_lrpxcn",
+      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Instantiator_ks1ak1",
       "methods": [
         {
           "name": "<init>",
@@ -5505,7 +5802,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.RoleDO_Accessor_isj4uq",
+      "type": "com.jmal.clouddisk.model.rbac.RoleDO_Accessor_kq2th7",
       "methods": [
         {
           "name": "<init>",
@@ -5516,7 +5813,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.RoleDO_Instantiator_isj4uq",
+      "type": "com.jmal.clouddisk.model.rbac.RoleDO_Instantiator_kq2th7",
       "methods": [
         {
           "name": "<init>",
@@ -7779,7 +8076,13 @@
       "type": "java.lang.Boolean"
     },
     {
-      "type": "java.lang.CharSequence"
+      "type": "java.lang.CharSequence",
+      "methods": [
+        {
+          "name": "length",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "java.lang.Character"
@@ -7916,7 +8219,13 @@
     },
     {
       "type": "java.lang.String",
-      "allDeclaredFields": true
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "isBlank",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "java.lang.StringBuilder"
@@ -8080,6 +8389,10 @@
       "methods": [
         {
           "name": "getActualTypeArguments",
+          "parameterTypes": []
+        },
+        {
+          "name": "getOwnerType",
           "parameterTypes": []
         },
         {
@@ -8313,6 +8626,9 @@
       "allDeclaredFields": true
     },
     {
+      "type": "java.util.ImmutableCollections$SubList"
+    },
+    {
       "type": "java.util.Iterator"
     },
     {
@@ -8376,7 +8692,13 @@
       "type": "java.util.concurrent.ArrayBlockingQueue"
     },
     {
-      "type": "java.util.concurrent.Callable"
+      "type": "java.util.concurrent.Callable",
+      "methods": [
+        {
+          "name": "call",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "java.util.concurrent.CompletableFuture"
@@ -8589,6 +8911,9 @@
     },
     {
       "type": "kotlin.Any"
+    },
+    {
+      "type": "kotlin.Array"
     },
     {
       "type": "kotlin.Boolean"
@@ -14789,12 +15114,6 @@
           ]
         },
         {
-          "name": "setEncoding",
-          "parameterTypes": [
-            "java.nio.charset.Charset"
-          ]
-        },
-        {
           "name": "setMode",
           "parameterTypes": [
             "java.lang.String"
@@ -19321,6 +19640,16 @@
       "type": "org.thymeleaf.dialect.IDialect"
     },
     {
+      "type": "org.thymeleaf.engine.IterationStatusVar",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "getIndex",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "org.thymeleaf.extras.springsecurity6.dialect.SpringSecurityDialect"
     },
     {
@@ -20263,6 +20592,9 @@
       "glob": "com/jmal/clouddisk/controller/FileViewController.class"
     },
     {
+      "glob": "com/jmal/clouddisk/controller/rest/AppCheckController.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/controller/rest/AuthController.class"
     },
     {
@@ -20711,6 +21043,18 @@
     },
     {
       "glob": "i18n/messages_en_US.properties"
+    },
+    {
+      "glob": "i18n/messages_zh.properties"
+    },
+    {
+      "glob": "i18n/messages_zh_CN.properties"
+    },
+    {
+      "glob": "i18n/messages_zh_Hans.properties"
+    },
+    {
+      "glob": "i18n/messages_zh_Hans_CN.properties"
     },
     {
       "glob": "io/methvin/watcher/DirectoryChangeListener.class"
@@ -22747,6 +23091,12 @@
       "glob": "springdoc.config.properties"
     },
     {
+      "glob": "static/articles/o/c"
+    },
+    {
+      "glob": "static/articles/o/d"
+    },
+    {
       "glob": "static/index.html"
     },
     {
@@ -22833,7 +23183,8 @@
     {
       "name": "i18n/messages",
       "locales": [
-        "en-US"
+        "en-US",
+        "zh-CN"
       ]
     },
     {

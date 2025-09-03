@@ -76,3 +76,4 @@ logging:
         lucene:
           util:
             HotspotVMOptions: error
+      jaudiotagger: error
