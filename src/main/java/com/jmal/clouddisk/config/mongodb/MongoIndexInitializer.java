@@ -44,7 +44,7 @@ public class MongoIndexInitializer {
             return;
         }
 
-        log.info("Found {} @Document entity classes from resource file for index creation.", entityClasses.size());
+        log.debug("Found {} @Document entity classes from resource file for index creation.", entityClasses.size());
 
         // 2. 使用 MongoMappingContext 来创建解析器
         MongoMappingContext mappingContext = (MongoMappingContext) mongoTemplate.getConverter().getMappingContext();

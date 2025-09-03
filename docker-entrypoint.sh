@@ -5,16 +5,14 @@ USER_UID=${PUID:-0}
 USER_GID=${PGID:-0}
 TZ=${TZ:-Asia/Shanghai}
 
-mkdir -p /log
-
+mkdir -p /app/log
 chown ${USER_UID}:${USER_GID} /jmalcloud
 
 chown -R ${USER_UID}:${USER_GID} /jmalcloud/models
 chown -R ${USER_UID}:${USER_GID} /jmalcloud/tess4j
 chown ${USER_UID}:${USER_GID} /jmalcloud/ip2region.xdb
 chown -R ${USER_UID}:${USER_GID} /usr/local/mxcad
-chown -R ${USER_UID}:${USER_GID} log
-chow  -R ${USER_UID}:${USER_GID} /app
+chown -R ${USER_UID}:${USER_GID} /app
 
 exec gosu ${USER_UID}:${USER_GID} /app/jmalcloud ${JVM_OPTS} \
  -Duser.timezone=${TZ} \

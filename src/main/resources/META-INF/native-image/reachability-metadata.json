@@ -766,22 +766,6 @@
       "type": "com.github.benmanes.caffeine.cache.AsyncCacheLoader"
     },
     {
-      "type": "com.github.benmanes.caffeine.cache.BBHeader$ReadAndWriteCounterRef",
-      "fields": [
-        {
-          "name": "writeCounter"
-        }
-      ]
-    },
-    {
-      "type": "com.github.benmanes.caffeine.cache.BBHeader$ReadCounterRef",
-      "fields": [
-        {
-          "name": "readCounter"
-        }
-      ]
-    },
-    {
       "type": "com.github.benmanes.caffeine.cache.BLCHeader$DrainStatusRef",
       "fields": [
         {
@@ -876,7 +860,24 @@
       ]
     },
     {
+      "type": "com.github.benmanes.caffeine.cache.PSWMS",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.github.benmanes.caffeine.cache.SSMSA",
+      "fields": [
+        {
+          "name": "FACTORY"
+        }
+      ]
+    },
+    {
+      "type": "com.github.benmanes.caffeine.cache.SSMSW",
       "fields": [
         {
           "name": "FACTORY"
@@ -1949,19 +1950,6 @@
         {
           "name": "<init>",
           "parameterTypes": []
-        },
-        {
-          "name": "list",
-          "parameterTypes": [
-            "java.lang.String",
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "tree",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
         }
       ]
     },
@@ -2013,16 +2001,14 @@
           "parameterTypes": []
         },
         {
-          "name": "getTranscodeStatus",
-          "parameterTypes": []
-        },
-        {
-          "name": "isSync",
-          "parameterTypes": []
-        },
-        {
           "name": "loadLdapConfig",
           "parameterTypes": []
+        },
+        {
+          "name": "sync",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
         }
       ]
     },
@@ -2092,15 +2078,19 @@
           ]
         },
         {
-          "name": "coverOfMedia",
+          "name": "delFile",
           "parameterTypes": [
+            "java.lang.String",
             "java.lang.String"
           ]
         },
         {
-          "name": "isAllowPackageDownload",
+          "name": "delete",
           "parameterTypes": [
-            "java.util.List"
+            "java.lang.String",
+            "java.lang.String[]",
+            "java.lang.String",
+            "java.lang.Boolean"
           ]
         },
         {
@@ -2110,64 +2100,10 @@
           ]
         },
         {
-          "name": "listFiles",
-          "parameterTypes": [
-            "java.lang.String",
-            "java.lang.String",
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "packageDownload",
-          "parameterTypes": [
-            "jakarta.servlet.http.HttpServletRequest",
-            "jakarta.servlet.http.HttpServletResponse",
-            "java.lang.String[]"
-          ]
-        },
-        {
-          "name": "previewText",
-          "parameterTypes": [
-            "java.lang.String",
-            "java.lang.String",
-            "java.lang.String",
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "previewTextStream",
-          "parameterTypes": [
-            "java.lang.String",
-            "java.lang.String",
-            "java.lang.String"
-          ]
-        },
-        {
           "name": "searchFile",
           "parameterTypes": [
             "com.jmal.clouddisk.model.UploadApiParamDTO",
             "java.lang.String"
-          ]
-        },
-        {
-          "name": "searchFileAndOpenDir",
-          "parameterTypes": [
-            "com.jmal.clouddisk.model.UploadApiParamDTO",
-            "java.lang.String",
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setTag",
-          "parameterTypes": [
-            "com.jmal.clouddisk.model.EditTagDTO"
-          ]
-        },
-        {
-          "name": "thumbnail",
-          "parameterTypes": [
-            "java.lang.String",
-            "java.lang.Boolean"
           ]
         }
       ]
@@ -2191,14 +2127,6 @@
           "name": "<init>",
           "parameterTypes": [
             "com.jmal.clouddisk.service.IFileVersionService"
-          ]
-        },
-        {
-          "name": "listByPath",
-          "parameterTypes": [
-            "java.lang.String",
-            "java.lang.Integer",
-            "java.lang.Integer"
           ]
         }
       ]
@@ -2256,12 +2184,6 @@
           "parameterTypes": [
             "com.jmal.clouddisk.lucene.SearchFileService"
           ]
-        },
-        {
-          "name": "recentlySearchHistory",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
         }
       ]
     },
@@ -2288,14 +2210,6 @@
           "name": "editTextByPath",
           "parameterTypes": [
             "com.jmal.clouddisk.model.UploadApiParamDTO"
-          ]
-        },
-        {
-          "name": "getMarkDownContent",
-          "parameterTypes": [
-            "com.jmal.clouddisk.model.ArticleDTO",
-            "java.lang.Integer",
-            "java.lang.Integer"
           ]
         }
       ]
@@ -2393,13 +2307,6 @@
         {
           "name": "<init>",
           "parameterTypes": []
-        },
-        {
-          "name": "list",
-          "parameterTypes": [
-            "java.lang.String",
-            "com.jmal.clouddisk.model.query.QueryRoleDTO"
-          ]
         }
       ]
     },
@@ -2430,21 +2337,9 @@
           ]
         },
         {
-          "name": "cancelShare",
-          "parameterTypes": [
-            "java.lang.String[]"
-          ]
-        },
-        {
           "name": "generateLink",
           "parameterTypes": [
             "com.jmal.clouddisk.model.ShareDO"
-          ]
-        },
-        {
-          "name": "hasSubShare",
-          "parameterTypes": [
-            "java.util.List"
           ]
         }
       ]
@@ -2576,6 +2471,12 @@
         {
           "name": "getWebsiteSetting",
           "parameterTypes": []
+        },
+        {
+          "name": "update",
+          "parameterTypes": [
+            "com.jmal.clouddisk.model.WebsiteSettingDO"
+          ]
         }
       ]
     },
@@ -2591,26 +2492,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.controller.rest.sse.Message",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getBody",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSpace",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUrl",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUsername",
-          "parameterTypes": []
-        }
-      ]
+      "type": "com.jmal.clouddisk.controller.rest.sse.Message"
     },
     {
       "type": "com.jmal.clouddisk.controller.rest.sse.SseController",
@@ -2619,13 +2501,6 @@
         {
           "name": "<init>",
           "parameterTypes": []
-        },
-        {
-          "name": "events",
-          "parameterTypes": [
-            "java.lang.String",
-            "java.lang.String"
-          ]
         },
         {
           "name": "heartbeat",
@@ -2833,6 +2708,12 @@
         {
           "name": "getPreviewConfig",
           "parameterTypes": []
+        },
+        {
+          "name": "upsert",
+          "parameterTypes": [
+            "com.jmal.clouddisk.model.WebsiteSettingDO"
+          ]
         }
       ]
     },
@@ -2862,20 +2743,6 @@
       "methods": [
         {
           "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "handleAsyncRequestNotUsableException",
-          "parameterTypes": [
-            "java.io.IOException"
-          ]
-        },
-        {
-          "name": "handleAsyncRequestTimeoutException",
-          "parameterTypes": []
-        },
-        {
-          "name": "handleNoResourceException",
           "parameterTypes": []
         }
       ]
@@ -2995,10 +2862,6 @@
         },
         {
           "name": "cleanup",
-          "parameterTypes": []
-        },
-        {
-          "name": "getNewVersion",
           "parameterTypes": []
         },
         {
@@ -3377,74 +3240,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.ArticleDTO",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIsAlonePage",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIsDraft",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIsRelease",
-          "parameterTypes": []
-        },
-        {
-          "name": "getPageIndex",
-          "parameterTypes": []
-        },
-        {
-          "name": "getPageSize",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUserId",
-          "parameterTypes": []
-        },
-        {
-          "name": "setIsAlonePage",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setIsDraft",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setIsRelease",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setPageIndex",
-          "parameterTypes": [
-            "java.lang.Integer"
-          ]
-        },
-        {
-          "name": "setPageSize",
-          "parameterTypes": [
-            "java.lang.Integer"
-          ]
-        },
-        {
-          "name": "setUserId",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
+      "type": "com.jmal.clouddisk.model.ArticleDTO"
     },
     {
       "type": "com.jmal.clouddisk.model.ArticleParamDTO",
@@ -3576,32 +3372,27 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.EditTagDTO",
-      "allDeclaredFields": true,
+      "type": "com.jmal.clouddisk.model.DirectLink_Accessor_q74cap",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.model.DirectLink"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.model.DirectLink_Instantiator_q74cap",
       "methods": [
         {
           "name": "<init>",
           "parameterTypes": []
-        },
-        {
-          "name": "setFileIds",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setRemoveTagIds",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setTagList",
-          "parameterTypes": [
-            "java.util.List"
-          ]
         }
       ]
+    },
+    {
+      "type": "com.jmal.clouddisk.model.EditTagDTO"
     },
     {
       "type": "com.jmal.clouddisk.model.FileIndex"
@@ -3629,7 +3420,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.LogOperation$IpInfo_Accessor_nkroe9",
+      "type": "com.jmal.clouddisk.model.LogOperation$IpInfo_Accessor_yswypx",
       "methods": [
         {
           "name": "<init>",
@@ -3646,7 +3437,7 @@
       "type": "com.jmal.clouddisk.model.LogOperationDTO"
     },
     {
-      "type": "com.jmal.clouddisk.model.LogOperation_Accessor_5mmk5l",
+      "type": "com.jmal.clouddisk.model.LogOperation_Accessor_sln9aw",
       "methods": [
         {
           "name": "<init>",
@@ -3669,23 +3460,11 @@
           "parameterTypes": []
         },
         {
-          "name": "getCategoryIds",
-          "parameterTypes": []
-        },
-        {
           "name": "getCover",
           "parameterTypes": []
         },
         {
-          "name": "getRelease",
-          "parameterTypes": []
-        },
-        {
           "name": "getSlug",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTagIds",
           "parameterTypes": []
         },
         {
@@ -3742,20 +3521,15 @@
     },
     {
       "type": "com.jmal.clouddisk.model.MarkdownVO",
-      "allDeclaredFields": true,
+      "fields": [
+        {
+          "name": "hashCode"
+        },
+        {
+          "name": "toString"
+        }
+      ],
       "methods": [
-        {
-          "name": "getAgoTime",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDraft",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUserId",
-          "parameterTypes": []
-        },
         {
           "name": "setAgoTime",
           "parameterTypes": [
@@ -3775,7 +3549,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.Metadata_Accessor_np1mhe",
+      "type": "com.jmal.clouddisk.model.Metadata_Accessor_v5ijg2",
       "methods": [
         {
           "name": "<init>",
@@ -3787,28 +3561,10 @@
     },
     {
       "type": "com.jmal.clouddisk.model.Music",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getAlbum",
-          "parameterTypes": []
-        },
-        {
-          "name": "getCoverBase64",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSinger",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSongName",
-          "parameterTypes": []
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.Music_Accessor_a9nka1",
+      "type": "com.jmal.clouddisk.model.Music_Accessor_kj3msm",
       "methods": [
         {
           "name": "<init>",
@@ -3819,7 +3575,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.Music_Instantiator_a9nka1",
+      "type": "com.jmal.clouddisk.model.Music_Instantiator_kj3msm",
       "methods": [
         {
           "name": "<init>",
@@ -3885,22 +3641,13 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.ShareDO_Accessor_prpo83",
+      "type": "com.jmal.clouddisk.model.ShareDO_Accessor_iqfqes",
       "methods": [
         {
           "name": "<init>",
           "parameterTypes": [
             "com.jmal.clouddisk.model.ShareDO"
           ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.ShareDO_Instantiator_prpo83",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
         }
       ]
     },
@@ -3960,179 +3707,14 @@
     },
     {
       "type": "com.jmal.clouddisk.model.Tag",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getColor",
-          "parameterTypes": []
-        },
-        {
-          "name": "getName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTagId",
-          "parameterTypes": []
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
       "type": "com.jmal.clouddisk.model.TagDO",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getColor",
-          "parameterTypes": []
-        },
-        {
-          "name": "getName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSlug",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSort",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTagBackground",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUserId",
-          "parameterTypes": []
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.TagDO_Accessor_5ikkhi",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "com.jmal.clouddisk.model.TagDO"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.TagDO_Instantiator_5ikkhi",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.TagDTO",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "getArticleNum",
-          "parameterTypes": []
-        },
-        {
-          "name": "getColor",
-          "parameterTypes": []
-        },
-        {
-          "name": "getFontSize",
-          "parameterTypes": []
-        },
-        {
-          "name": "getId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSlug",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSort",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTagBackground",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUserId",
-          "parameterTypes": []
-        },
-        {
-          "name": "setColor",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setId",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setName",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setSlug",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setSort",
-          "parameterTypes": [
-            "java.lang.Integer"
-          ]
-        },
-        {
-          "name": "setTagBackground",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setUserId",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.Tag_Accessor_hiympx",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "com.jmal.clouddisk.model.Tag"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.Tag_Instantiator_hiympx",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
+      "type": "com.jmal.clouddisk.model.TagDTO"
     },
     {
       "type": "com.jmal.clouddisk.model.Trash",
@@ -4147,39 +3729,11 @@
           "parameterTypes": []
         },
         {
-          "name": "getCurrentDirectory",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExactSearch",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIncludeFileContent",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIncludeFileName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIncludeTagName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getOrder",
-          "parameterTypes": []
-        },
-        {
           "name": "getPageIndex",
           "parameterTypes": []
         },
         {
           "name": "getPageSize",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSortableProp",
           "parameterTypes": []
         },
         {
@@ -4192,42 +3746,6 @@
         },
         {
           "name": "setContentText",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setCurrentDirectory",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setExactSearch",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setIncludeFileContent",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setIncludeFileName",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setIncludeTagName",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setOrder",
           "parameterTypes": [
             "java.lang.String"
           ]
@@ -4246,12 +3764,6 @@
         },
         {
           "name": "setRelativePath",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setSortableProp",
           "parameterTypes": [
             "java.lang.String"
           ]
@@ -4281,28 +3793,10 @@
     },
     {
       "type": "com.jmal.clouddisk.model.UserAccessTokenDO",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getCreateTime",
-          "parameterTypes": []
-        },
-        {
-          "name": "getLastActiveTime",
-          "parameterTypes": []
-        },
-        {
-          "name": "getName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUsername",
-          "parameterTypes": []
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_Accessor_4sfapr",
+      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_Accessor_cs04fk",
       "methods": [
         {
           "name": "<init>",
@@ -4313,74 +3807,16 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_Instantiator_4sfapr",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.UserAccessTokenDTO",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getCreateTime",
-          "parameterTypes": []
-        },
-        {
-          "name": "getId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getLastActiveTime",
-          "parameterTypes": []
-        },
-        {
-          "name": "getName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUsername",
-          "parameterTypes": []
-        },
-        {
-          "name": "setCreateTime",
-          "parameterTypes": [
-            "java.time.LocalDateTime"
-          ]
-        },
-        {
-          "name": "setId",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setLastActiveTime",
-          "parameterTypes": [
-            "java.time.LocalDateTime"
-          ]
-        },
-        {
-          "name": "setName",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setUsername",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
+      "type": "com.jmal.clouddisk.model.UserAccessTokenDTO"
     },
     {
       "type": "com.jmal.clouddisk.model.WebsiteSettingDO",
       "allDeclaredFields": true,
       "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
         {
           "name": "getAlonePages",
           "parameterTypes": []
@@ -4464,11 +3900,29 @@
         {
           "name": "getTagBackground",
           "parameterTypes": []
+        },
+        {
+          "name": "setAlonePages",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        },
+        {
+          "name": "setSiteName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setSiteUrl",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
         }
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.WebsiteSettingDO_Accessor_v385hg",
+      "type": "com.jmal.clouddisk.model.WebsiteSettingDO_Accessor_9kwus1",
       "methods": [
         {
           "name": "<init>",
@@ -4479,7 +3933,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.WebsiteSettingDO_Instantiator_v385hg",
+      "type": "com.jmal.clouddisk.model.WebsiteSettingDO_Instantiator_9kwus1",
       "methods": [
         {
           "name": "<init>",
@@ -4734,76 +4188,10 @@
     },
     {
       "type": "com.jmal.clouddisk.model.file.ExifInfo",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getAperture",
-          "parameterTypes": []
-        },
-        {
-          "name": "getDateTimeOriginal",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExposureProgram",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExposureTime",
-          "parameterTypes": []
-        },
-        {
-          "name": "getFNumber",
-          "parameterTypes": []
-        },
-        {
-          "name": "getFlash",
-          "parameterTypes": []
-        },
-        {
-          "name": "getFocalLength",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIsoEquivalent",
-          "parameterTypes": []
-        },
-        {
-          "name": "getLatitude",
-          "parameterTypes": []
-        },
-        {
-          "name": "getLongitude",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMake",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMeteringMode",
-          "parameterTypes": []
-        },
-        {
-          "name": "getModel",
-          "parameterTypes": []
-        },
-        {
-          "name": "getResolution",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSoftware",
-          "parameterTypes": []
-        },
-        {
-          "name": "getWhiteBalanceMode",
-          "parameterTypes": []
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.file.ExifInfo_Accessor_n78y3j",
+      "type": "com.jmal.clouddisk.model.file.ExifInfo_Accessor_f2t1or",
       "methods": [
         {
           "name": "<init>",
@@ -4814,7 +4202,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.file.ExifInfo_Instantiator_n78y3j",
+      "type": "com.jmal.clouddisk.model.file.ExifInfo_Instantiator_f2t1or",
       "methods": [
         {
           "name": "<init>",
@@ -5113,7 +4501,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.file.FileDocument_Accessor_x1vvq4",
+      "type": "com.jmal.clouddisk.model.file.FileDocument_Accessor_4jagbm",
       "methods": [
         {
           "name": "<init>",
@@ -5124,7 +4512,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.file.FileDocument_Instantiator_x1vvq4",
+      "type": "com.jmal.clouddisk.model.file.FileDocument_Instantiator_4jagbm",
       "methods": [
         {
           "name": "<init>",
@@ -5427,7 +4815,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.file.FileIntroVO_Accessor_hg5xim",
+      "type": "com.jmal.clouddisk.model.file.FileIntroVO_Accessor_ahlv3o",
       "methods": [
         {
           "name": "<init>",
@@ -5438,7 +4826,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.file.FileIntroVO_Instantiator_hg5xim",
+      "type": "com.jmal.clouddisk.model.file.FileIntroVO_Instantiator_ahlv3o",
       "methods": [
         {
           "name": "<init>",
@@ -5448,25 +4836,7 @@
     },
     {
       "type": "com.jmal.clouddisk.model.query.QueryBaseDTO",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getPage",
-          "parameterTypes": []
-        },
-        {
-          "name": "getPageSize",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSortOrder",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSortProp",
-          "parameterTypes": []
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
       "type": "com.jmal.clouddisk.model.query.QueryMenuDTO",
@@ -5477,18 +4847,8 @@
           "parameterTypes": []
         },
         {
-          "name": "getName",
-          "parameterTypes": []
-        },
-        {
           "name": "getUserId",
           "parameterTypes": []
-        },
-        {
-          "name": "setName",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
         },
         {
           "name": "setUserId",
@@ -5499,150 +4859,26 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.query.QueryRoleDTO",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "getName",
-          "parameterTypes": []
-        },
-        {
-          "name": "setName",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
+      "type": "com.jmal.clouddisk.model.query.QueryRoleDTO"
     },
     {
       "type": "com.jmal.clouddisk.model.query.QueryUserDTO"
     },
     {
-      "type": "com.jmal.clouddisk.model.query.SearchDTO",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getCurrentDirectory",
-          "parameterTypes": []
-        },
-        {
-          "name": "getExactSearch",
-          "parameterTypes": []
-        },
-        {
-          "name": "getFolder",
-          "parameterTypes": []
-        },
-        {
-          "name": "getId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIncludeFileContent",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIncludeFileName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIncludeTagName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIsFavorite",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIsFolder",
-          "parameterTypes": []
-        },
-        {
-          "name": "getIsMount",
-          "parameterTypes": []
-        },
-        {
-          "name": "getKeyword",
-          "parameterTypes": []
-        },
-        {
-          "name": "getModifyEnd",
-          "parameterTypes": []
-        },
-        {
-          "name": "getModifyStart",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMountUserId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSearchMount",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSearchOverall",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSearchUserId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSizeMax",
-          "parameterTypes": []
-        },
-        {
-          "name": "getSizeMin",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTagId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getType",
-          "parameterTypes": []
-        },
-        {
-          "name": "getUserId",
-          "parameterTypes": []
-        },
-        {
-          "name": "isSearchMountSubFolder",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.query.SearchDTO$SearchDTOBuilder"
+      "type": "com.jmal.clouddisk.model.query.SearchDTO"
     },
     {
       "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO",
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO_Accessor_g0turs",
+      "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO_Accessor_t5nv2s",
       "methods": [
         {
           "name": "<init>",
           "parameterTypes": [
             "com.jmal.clouddisk.model.query.SearchOptionHistoryDO"
           ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO_Instantiator_g0turs",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
         }
       ]
     },
@@ -5769,7 +5005,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_uqepi5",
+      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_i7rwri",
       "methods": [
         {
           "name": "<init>",
@@ -5780,7 +5016,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Instantiator_uqepi5",
+      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Instantiator_i7rwri",
       "methods": [
         {
           "name": "<init>",
@@ -5908,12 +5144,6 @@
           "name": "setQuota",
           "parameterTypes": [
             "java.lang.Integer"
-          ]
-        },
-        {
-          "name": "setRememberMe",
-          "parameterTypes": [
-            "java.lang.Boolean"
           ]
         },
         {
@@ -6075,7 +5305,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Accessor_mucp9f",
+      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Accessor_lrpxcn",
       "methods": [
         {
           "name": "<init>",
@@ -6086,7 +5316,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Instantiator_mucp9f",
+      "type": "com.jmal.clouddisk.model.rbac.MenuDO_Instantiator_lrpxcn",
       "methods": [
         {
           "name": "<init>",
@@ -6275,7 +5505,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.RoleDO_Accessor_jmowlt",
+      "type": "com.jmal.clouddisk.model.rbac.RoleDO_Accessor_isj4uq",
       "methods": [
         {
           "name": "<init>",
@@ -6286,7 +5516,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.RoleDO_Instantiator_jmowlt",
+      "type": "com.jmal.clouddisk.model.rbac.RoleDO_Instantiator_isj4uq",
       "methods": [
         {
           "name": "<init>",
@@ -6296,53 +5526,7 @@
     },
     {
       "type": "com.jmal.clouddisk.model.rbac.RoleDTO",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getCode",
-          "parameterTypes": []
-        },
-        {
-          "name": "getCreateTime",
-          "parameterTypes": []
-        },
-        {
-          "name": "getId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMenuIds",
-          "parameterTypes": []
-        },
-        {
-          "name": "getName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getRemarks",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.rbac.RoleDTO_Accessor_t7h16p",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "com.jmal.clouddisk.model.rbac.RoleDTO"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.rbac.RoleDTO_Instantiator_t7h16p",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
+      "allDeclaredFields": true
     },
     {
       "type": "com.jmal.clouddisk.model.rbac.UserLoginContext"
@@ -6651,12 +5835,10 @@
           ]
         },
         {
-          "name": "getPlatformList",
-          "parameterTypes": []
-        },
-        {
-          "name": "ossConfigList",
-          "parameterTypes": []
+          "name": "putOssConfig",
+          "parameterTypes": [
+            "com.jmal.clouddisk.oss.web.model.OssConfigDTO"
+          ]
         }
       ]
     },
@@ -6713,7 +5895,56 @@
       "allDeclaredFields": true
     },
     {
-      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDTO"
+      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDTO",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setAccessKey",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setBucket",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setEndpoint",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setFolderName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setPlatform",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setSecretKey",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setUserId",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.service.IAuthService"
@@ -7896,6 +7127,25 @@
       "type": "io.micrometer.context.ContextSnapshot"
     },
     {
+      "type": "io.minio.BucketExistsArgs",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "io.minio.messages.LocationConstraint",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "io.netty.buffer.PooledByteBufAllocator"
     },
     {
@@ -8495,22 +7745,11 @@
       "type": "java.io.FileNotFoundException"
     },
     {
-      "type": "java.io.IOException",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
+      "type": "java.io.IOException"
     },
     {
       "type": "java.io.InputStream",
       "allDeclaredFields": true
-    },
-    {
-      "type": "java.io.ObjectInputStream"
     },
     {
       "type": "java.io.OutputStream"
@@ -8522,8 +7761,7 @@
       "type": "java.io.Reader"
     },
     {
-      "type": "java.io.Serializable",
-      "allDeclaredFields": true
+      "type": "java.io.Serializable"
     },
     {
       "type": "java.io.UnsupportedEncodingException"
@@ -8845,10 +8083,6 @@
           "parameterTypes": []
         },
         {
-          "name": "getOwnerType",
-          "parameterTypes": []
-        },
-        {
           "name": "getRawType",
           "parameterTypes": []
         }
@@ -8925,8 +8159,7 @@
       ]
     },
     {
-      "type": "java.net.URI",
-      "allDeclaredFields": true
+      "type": "java.net.URI"
     },
     {
       "type": "java.net.URL"
@@ -9038,10 +8271,6 @@
       "allDeclaredFields": true
     },
     {
-      "type": "java.util.AbstractMap",
-      "allDeclaredFields": true
-    },
-    {
       "type": "java.util.ArrayList"
     },
     {
@@ -9054,8 +8283,7 @@
       "type": "java.util.Comparator"
     },
     {
-      "type": "java.util.Date",
-      "allDeclaredFields": true
+      "type": "java.util.Date"
     },
     {
       "type": "java.util.EnumSet"
@@ -9081,15 +8309,7 @@
       "allDeclaredFields": true
     },
     {
-      "type": "java.util.ImmutableCollections$AbstractImmutableMap",
-      "allDeclaredFields": true
-    },
-    {
       "type": "java.util.ImmutableCollections$ListN",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "java.util.ImmutableCollections$MapN",
       "allDeclaredFields": true
     },
     {
@@ -9156,13 +8376,7 @@
       "type": "java.util.concurrent.ArrayBlockingQueue"
     },
     {
-      "type": "java.util.concurrent.Callable",
-      "methods": [
-        {
-          "name": "call",
-          "parameterTypes": []
-        }
-      ]
+      "type": "java.util.concurrent.Callable"
     },
     {
       "type": "java.util.concurrent.CompletableFuture"
@@ -9196,9 +8410,6 @@
     },
     {
       "type": "java.util.concurrent.atomic.AtomicBoolean"
-    },
-    {
-      "type": "java.util.concurrent.atomic.AtomicInteger"
     },
     {
       "type": "java.util.concurrent.atomic.AtomicReference"
@@ -9380,25 +8591,7 @@
       "type": "kotlin.Any"
     },
     {
-      "type": "kotlin.Array"
-    },
-    {
       "type": "kotlin.Boolean"
-    },
-    {
-      "type": "kotlin.BooleanArray"
-    },
-    {
-      "type": "kotlin.Byte"
-    },
-    {
-      "type": "kotlin.ByteArray"
-    },
-    {
-      "type": "kotlin.Char"
-    },
-    {
-      "type": "kotlin.CharArray"
     },
     {
       "type": "kotlin.Comparable"
@@ -9407,25 +8600,10 @@
       "type": "kotlin.Double"
     },
     {
-      "type": "kotlin.DoubleArray"
-    },
-    {
-      "type": "kotlin.Float"
-    },
-    {
-      "type": "kotlin.FloatArray"
-    },
-    {
       "type": "kotlin.Int"
     },
     {
-      "type": "kotlin.IntArray"
-    },
-    {
       "type": "kotlin.Long"
-    },
-    {
-      "type": "kotlin.LongArray"
     },
     {
       "type": "kotlin.Metadata",
@@ -9474,12 +8652,6 @@
           "name": "_value"
         }
       ]
-    },
-    {
-      "type": "kotlin.Short"
-    },
-    {
-      "type": "kotlin.ShortArray"
     },
     {
       "type": "kotlin.String"
@@ -11381,8 +10553,7 @@
       ]
     },
     {
-      "type": "org.bson.Document",
-      "allDeclaredFields": true
+      "type": "org.bson.Document"
     },
     {
       "type": "org.bson.UuidRepresentation"
@@ -11403,21 +10574,7 @@
       "type": "org.bson.conversions.Bson"
     },
     {
-      "type": "org.bson.types.ObjectId",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getDate",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTimestamp",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bson.types.ObjectId$SerializationProxy"
+      "type": "org.bson.types.ObjectId"
     },
     {
       "type": "org.cache2k.Cache2kBuilder"
@@ -12736,6 +11893,19 @@
     },
     {
       "type": "org.reactivestreams.Publisher"
+    },
+    {
+      "type": "org.simpleframework.xml.core.TextLabel",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.simpleframework.xml.core.Contact",
+            "org.simpleframework.xml.Text",
+            "org.simpleframework.xml.stream.Format"
+          ]
+        }
+      ]
     },
     {
       "type": "org.slf4j.Logger"
@@ -15616,6 +14786,12 @@
           "name": "setCache",
           "parameterTypes": [
             "boolean"
+          ]
+        },
+        {
+          "name": "setEncoding",
+          "parameterTypes": [
+            "java.nio.charset.Charset"
           ]
         },
         {
@@ -18910,40 +18086,7 @@
       "type": "org.springframework.http.HttpStatus"
     },
     {
-      "type": "org.springframework.http.HttpStatusCode"
-    },
-    {
       "type": "org.springframework.http.MediaType"
-    },
-    {
-      "type": "org.springframework.http.ProblemDetail",
-      "allDeclaredFields": true,
-      "methods": [
-        {
-          "name": "getDetail",
-          "parameterTypes": []
-        },
-        {
-          "name": "getInstance",
-          "parameterTypes": []
-        },
-        {
-          "name": "getProperties",
-          "parameterTypes": []
-        },
-        {
-          "name": "getStatus",
-          "parameterTypes": []
-        },
-        {
-          "name": "getTitle",
-          "parameterTypes": []
-        },
-        {
-          "name": "getType",
-          "parameterTypes": []
-        }
-      ]
     },
     {
       "type": "org.springframework.http.ReactiveHttpInputMessage"
@@ -19009,10 +18152,6 @@
     },
     {
       "type": "org.springframework.http.converter.json.MappingJackson2HttpMessageConverter",
-      "allDeclaredFields": true
-    },
-    {
-      "type": "org.springframework.http.converter.json.ProblemDetailJacksonXmlMixin",
       "allDeclaredFields": true
     },
     {
@@ -20847,13 +19986,6 @@
     {
       "type": {
         "proxy": [
-          "org.springframework.web.bind.annotation.ResponseStatus"
-        ]
-      }
-    },
-    {
-      "type": {
-        "proxy": [
           "org.springframework.web.bind.annotation.RestController"
         ]
       }
@@ -20862,6 +19994,9 @@
   "resources": [
     {
       "glob": ""
+    },
+    {
+      "glob": "META-INF/MANIFEST.MF"
     },
     {
       "glob": "META-INF/build-info.properties"
@@ -21576,18 +20711,6 @@
     },
     {
       "glob": "i18n/messages_en_US.properties"
-    },
-    {
-      "glob": "i18n/messages_zh.properties"
-    },
-    {
-      "glob": "i18n/messages_zh_CN.properties"
-    },
-    {
-      "glob": "i18n/messages_zh_Hans.properties"
-    },
-    {
-      "glob": "i18n/messages_zh_Hans_CN.properties"
     },
     {
       "glob": "io/methvin/watcher/DirectoryChangeListener.class"
@@ -23417,9 +22540,6 @@
       "glob": "org/springframework/boot/web/server/WebServerFactoryCustomizer.class"
     },
     {
-      "glob": "org/springframework/boot/web/server/mime-mappings.properties"
-    },
-    {
       "glob": "org/springframework/cache/annotation/AbstractCachingConfiguration$CachingConfigurerSupplier.class"
     },
     {
@@ -23627,54 +22747,6 @@
       "glob": "springdoc.config.properties"
     },
     {
-      "glob": "static/articles/api/public/s/view/thumbnail"
-    },
-    {
-      "glob": "static/articles/css/light/index-2.15.0.css"
-    },
-    {
-      "glob": "static/articles/favicon.ico"
-    },
-    {
-      "glob": "static/articles/font-awesome/free-6.4.2/css/all.min.css"
-    },
-    {
-      "glob": "static/articles/font-awesome/free-6.4.2/webfonts/fa-solid-900.woff2"
-    },
-    {
-      "glob": "static/articles/js/font_2024484_qwtkvngfp5b.js"
-    },
-    {
-      "glob": "static/articles/js/jquery-3.5.1.min.js"
-    },
-    {
-      "glob": "static/articles/js/jquery.pjax.js"
-    },
-    {
-      "glob": "static/articles/layui/css/layui.css"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/css/content-theme/custom-light.css"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/index.css"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/index.min.js"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/highlight.js/styles/androidstudio.min.css"
-    },
-    {
-      "glob": "static/articles/vditor@3.11.1/dist/js/highlight.js/styles/github.min.css"
-    },
-    {
-      "glob": "static/articles/viewerjs/viewer.min.css"
-    },
-    {
-      "glob": "static/articles/viewerjs/viewer.min.js"
-    },
-    {
       "glob": "static/index.html"
     },
     {
@@ -23734,6 +22806,10 @@
     },
     {
       "module": "java.base",
+      "glob": "jdk/internal/icu/impl/data/icudt76b/nfkc.nrm"
+    },
+    {
+      "module": "java.base",
       "glob": "jdk/internal/icu/impl/data/icudt76b/uprops.icu"
     },
     {
@@ -23757,8 +22833,7 @@
     {
       "name": "i18n/messages",
       "locales": [
-        "en-US",
-        "zh-CN"
+        "en-US"
       ]
     },
     {
