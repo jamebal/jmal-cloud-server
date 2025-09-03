@@ -384,9 +384,6 @@ public class UserServiceImpl implements IUserService {
         if (count < 1) {
             ConsumerDO user = new ConsumerDO();
             BeanUtils.copyProperties(consumerDTO, user);
-            // 首先初始化菜单和角色
-            menuService.initMenus();
-            roleService.initRoles();
             // 再初始化创建者
             String roleId = roleService.getRoleIdByCode(RoleService.ADMINISTRATORS);
             user.setRoles(Collections.singletonList(roleId));

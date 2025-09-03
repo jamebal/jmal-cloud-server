@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.dao.impl.mongodb;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 import com.jmal.clouddisk.util.MongoUtil;
@@ -61,7 +62,7 @@ public class WebsiteSettingDAOImpl implements IWebsiteSettingDAO {
 
     @Override
     public void updatePreviewConfig(String iframe) {
-        if (iframe.isBlank()) {
+        if (CharSequenceUtil.isBlank(iframe)) {
             return;
         }
         Update update = new Update();

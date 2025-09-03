@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.webdav;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.impl.LogService;
@@ -50,7 +51,7 @@ public class WebdavAuthenticator extends BasicAuthenticator {
 
     private static void setScheme(Request request) {
         String destinationHeader = request.getHeader("Destination");
-        if (!destinationHeader.isBlank()) {
+        if (CharSequenceUtil.isNotBlank(destinationHeader)) {
             URI destinationUri;
             try {
                 destinationUri = new URI(destinationHeader);

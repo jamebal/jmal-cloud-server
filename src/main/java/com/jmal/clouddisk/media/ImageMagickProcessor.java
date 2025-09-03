@@ -4,6 +4,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.lang.ObjectId;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
@@ -256,7 +257,7 @@ public class ImageMagickProcessor {
      * 解析质量参数 (0.0 - 1.0), 默认 0.8.
      */
     private static double parseQuality(String q) {
-        if (q == null || q.isBlank()) {
+        if (CharSequenceUtil.isBlank(q)) {
             return 0.8;
         }
         try {
@@ -271,7 +272,7 @@ public class ImageMagickProcessor {
      * 解析尺寸参数, 默认 -1.
      */
     private static int parseDimension(String dim) {
-        if (dim == null || dim.isBlank()) {
+        if (CharSequenceUtil.isBlank(dim)) {
             return -1;
         }
         try {

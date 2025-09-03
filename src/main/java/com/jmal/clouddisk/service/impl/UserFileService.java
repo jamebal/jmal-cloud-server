@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.exception.CommonException;
@@ -75,7 +76,7 @@ public class UserFileService {
     }
 
     public void setPublic(String fileId) {
-        if (fileId.isBlank()) {
+        if (CharSequenceUtil.isBlank(fileId)) {
             return;
         }
         fileDAO.updateIsPublicById(fileId);

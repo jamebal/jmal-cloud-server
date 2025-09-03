@@ -58,10 +58,10 @@
                             <div class="article-entry" itemprop="articleBody">
                                 <p>
                                     <img class="blog-background articles-list" style="display: none"
-                                         th:src="${article.cover.isBlank() ? setting.backgroundSite : article.cover }"
+                                         th:src="${(article.cover == null or article.cover.isBlank()) ? setting.backgroundSite : article.cover }"
                                          th:onload='loadArticlesImage(this,document.getElementById([[${article.id}]]))'/>
                                     <img th:id="${article.id}" class="blog-background articles-list loading"
-                                         th:src="${article.cover.isBlank() ? setting.backgroundSite+'?o=thumbnail' : article.cover+'?o=thumbnail'}"/>
+                                         th:src="${(article.cover == null or article.cover.isBlank()) ? setting.backgroundSite+'?o=thumbnail' : article.cover+'?o=thumbnail'}"/>
                                 </p>
                             </div>
                         </a>

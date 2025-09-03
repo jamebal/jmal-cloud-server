@@ -26,10 +26,10 @@ public class FileIndex implements Reflective {
         this.isFavorite = fileIntroVO.getIsFavorite();
         this.remark = fileIntroVO.getRemark();
         this.tagName = getTagName(fileIntroVO);
-        if (fileIntroVO.getTags() != null) {
+        if (fileIntroVO.getTags() != null && !fileIntroVO.getTags().isEmpty()) {
             fileIntroVO.getTags().forEach(tag -> tagIds.add(tag.getTagId()));
         }
-        if (fileIntroVO.getTagIds() != null) {
+        if (fileIntroVO.getTagIds() != null && !fileIntroVO.getTagIds().isEmpty()) {
             tagIds.addAll(fileIntroVO.getTagIds());
         }
     }
@@ -69,6 +69,7 @@ public class FileIndex implements Reflective {
                         safe(path) + delimiter +
                         safe(name) + delimiter +
                         safe(tagName) + delimiter +
+                        String.join(",", tagIds) + delimiter +
                         isFavorite + delimiter +
                         safe(remark) + delimiter +
                         modified + delimiter +

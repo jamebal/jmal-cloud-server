@@ -458,7 +458,7 @@ public class EtagService {
                 if (rep == null) {
                     return false;
                 }
-                if (!rep.isBlank()) {
+                if (CharSequenceUtil.isNotBlank(rep)) {
                     combinedRepresentation.append(rep).append(";");
                 }
             }

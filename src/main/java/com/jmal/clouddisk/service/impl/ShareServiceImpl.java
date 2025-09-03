@@ -438,7 +438,7 @@ public class ShareServiceImpl implements IShareService {
             FileDocument shareBaseFile = commonFileService.getById(shareDO.getFileId());
             // 4. 获取挂载信息
             String mountFilePath = getPathByMountFile(shareDO.getFileId(), userLoginHolder.getUserId());
-            if (mountFilePath.isBlank()) {
+            if (CharSequenceUtil.isBlank(mountFilePath)) {
                 return "";
             }
             String folderName = Paths.get(path).toFile().getName();
