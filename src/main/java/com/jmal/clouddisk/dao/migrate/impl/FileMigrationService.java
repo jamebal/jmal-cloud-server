@@ -1,8 +1,11 @@
-package com.jmal.clouddisk.dao.mongo_to_jpa;
+package com.jmal.clouddisk.dao.migrate.impl;
 
+import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
+import com.jmal.clouddisk.dao.migrate.IMigrationService;
+import com.jmal.clouddisk.dao.migrate.MigrationResult;
 import com.jmal.clouddisk.model.file.ArticleDO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
@@ -24,7 +27,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "jmalcloud.datasource.migration")
 @Conditional(RelationalDataSourceCondition.class)
-public class FileMigrationService {
+public class FileMigrationService implements IMigrationService {
 
     private final MongoTemplate mongoTemplate;
 
@@ -34,18 +37,27 @@ public class FileMigrationService {
 
     private final FilePersistenceService filePersistenceService;
 
+    private final DataSourceProperties dataSourceProperties;
+
+    @Override
+    public String getName() {
+        return "文件";
+    }
+
     /**
      * 迁移 File 数据从 MongoDB 到 JPA
      */
+    @Override
     @Transactional
-    public MigrationResult migrateConsumerData() {
+    public MigrationResult migrateData() {
+        MigrationResult result = new MigrationResult("文件");
         if (fileMetadataRepository.count() > 0) {
-            return new MigrationResult();
+            return result;
         }
 
-        log.info("开始迁移 File 数据从 MongoDB 到 JPA");
+        log.debug("开始 [{}] 数据迁移: MongoDB -> {}", getName(), dataSourceProperties.getType().getDescription());
 
-        MigrationResult result = new MigrationResult();
+
         int batchSize = 1000; // 批量处理大小
         int skip = 0;
 
@@ -59,7 +71,7 @@ public class FileMigrationService {
                     break; // 没有更多数据
                 }
 
-                log.debug("正在处理第 {} 批数据，数量: {}", (skip / batchSize) + 1, mongoDataList.size());
+                log.debug("[{}] 正在处理第 {} 批数据，数量: {}", getName(), (skip / batchSize) + 1, mongoDataList.size());
 
                 try {
 
@@ -87,9 +99,9 @@ public class FileMigrationService {
                     }
                     result.addSuccess(mongoDataList.size());
                     result.addProcessed(mongoDataList.size());
-                    log.debug("成功保存 {} 条记录到 SQLite", mongoDataList.size());
+                    log.debug("[{}] 成功批量保存 {} 条记录", getName(), mongoDataList.size());
                 } catch (Exception e) {
-                    log.error("批量保存到 SQLite 失败: {}", e.getMessage());
+                    log.warn("[{}] 批量保存失败，将回退到逐条保存。错误: {}", getName(), e.getMessage());
 
                     // 如果批量保存失败，尝试逐条保存
                     for (FileDocument mongoData : mongoDataList) {
@@ -98,7 +110,7 @@ public class FileMigrationService {
                             result.addSuccess(1);
                             result.incrementProcessed();
                         } catch (Exception ex) {
-                            log.error("保存 File 数据失败, ID: {}, 错误: {}", mongoData.getId(), ex.getMessage());
+                            log.error("[{}] 保存单条数据失败, ID: {}, 错误: {}", getName(), mongoData.getId(), ex.getMessage());
                             result.addError(mongoData.getId(), ex.getMessage());
                             result.incrementProcessed();
                         }
@@ -109,7 +121,7 @@ public class FileMigrationService {
             }
 
         } catch (Exception e) {
-            log.error("迁移过程中发生错误: {}", e.getMessage(), e);
+            log.error("[{}] 迁移过程中发生严重错误: {}", getName(), e.getMessage(), e);
             result.setFatalError(e.getMessage());
         }
 
