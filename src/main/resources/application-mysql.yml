@@ -10,10 +10,12 @@ spring:
           lob:
             non_contextual_creation: true
   datasource:
-    url: jdbc:mysql://localhost:3306/jmalcloud?useUnicode=true&characterEncoding=UTF8&useSSL=false&useUnicode=true&serverTimezone=GMT&connectTimeout=60000&socketTimeout=60000
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:jmalcloud}?useUnicode=true&characterEncoding=UTF8&useSSL=false&useUnicode=true&serverTimezone=GMT&connectTimeout=60000&socketTimeout=60000
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: xxx
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+  flyway:
+    enabled: false
 jmalcloud:
   datasource:
     type: mysql

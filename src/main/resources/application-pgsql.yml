@@ -10,10 +10,10 @@ spring:
           lob:
             non_contextual_creation: true
   datasource:
-    url: jdbc:postgresql://192.168.0.12:5432/jmalcloud?currentSchema=public
+    url: jdbc:postgresql://${PGSQL_HOST:localhost}:${PGSQL_PORT:5432}/${PGSQL_DATABASE:jmalcloud}
     driver-class-name: org.postgresql.Driver
-    username: jmalcloud
-    password: xxx
+    username: ${PGSQL_USER:jmalcloud}
+    password: ${PGSQL_PASSWORD:jmalcloud}
 jmalcloud:
   datasource:
     type: pgsql
