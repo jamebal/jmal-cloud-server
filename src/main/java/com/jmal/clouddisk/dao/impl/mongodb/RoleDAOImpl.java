@@ -101,4 +101,9 @@ public class RoleDAOImpl implements IRoleDAO {
         query.addCriteria(Criteria.where("code").is(roleCode));
         return mongoTemplate.findOne(query, RoleDO.class);
     }
+
+    @Override
+    public void saveAll(List<RoleDO> roleDOList) {
+        mongoTemplate.insertAll(roleDOList);
+    }
 }

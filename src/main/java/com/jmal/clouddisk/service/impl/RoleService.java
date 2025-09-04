@@ -3,6 +3,7 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.IoUtil;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
+import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.dao.IRoleDAO;
 import com.jmal.clouddisk.dao.IUserDAO;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
@@ -43,6 +44,8 @@ public class RoleService {
     private final IRoleDAO roleDAO;
 
     private final IUserDAO userDAO;
+
+    private final DataSourceProperties dataSourceProperties;
 
     private final CommonUserService commonUserService;
 
@@ -230,14 +233,20 @@ public class RoleService {
      * 初始化角色数据
      */
     public void initRoles() {
+        if (dataSourceProperties.getMigration()) {
+            return;
+        }
         TimeInterval timeInterval = new TimeInterval();
         List<RoleDO> roleDOList = getRoleDOListByConfigJSON();
         if (roleDOList.isEmpty()) return;
+        List<RoleDO> needUpdateRoleList = new ArrayList<>();
         roleDOList.forEach(roleDO -> {
             if (!roleDAO.existsById(roleDO.getId())) {
-                roleDAO.save(roleDO);
+                needUpdateRoleList.add(roleDO);
             }
         });
+        if (needUpdateRoleList.isEmpty()) return;
+        roleDAO.saveAll(needUpdateRoleList);
         log.info("更新角色， 耗时:{}ms", timeInterval.intervalMs());
     }
 

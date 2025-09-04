@@ -25,7 +25,7 @@ public class MigrationRunner {
     public void onApplicationReady() {
 
         // 将各个具体的迁移服务按类型注入
-        migrationServices.forEach(service -> {
+        migrationServices.parallelStream().forEach(service -> {
             MigrationResult result = service.migrateData();
             if (result.getTotalProcessed() == 0) {
                 return;

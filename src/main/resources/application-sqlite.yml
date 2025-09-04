@@ -11,7 +11,7 @@ spring:
           lob:
             non_contextual_creation: true
   datasource:
-    url: jdbc:sqlite:${file.rootDir}/${file.dbDir}/db/jmalcloud.db
+    url: jdbc:sqlite:${file.rootDir}/${file.dbDir}/db/jmalcloud.db?_journal_mode=WAL&_busy_timeout=5000
     driver-class-name: org.sqlite.JDBC
     name: jmalcloud
     username:

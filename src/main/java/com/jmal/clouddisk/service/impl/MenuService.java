@@ -3,36 +3,23 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import com.jmal.clouddisk.config.jpa.DataSourceProperties;
+import com.jmal.clouddisk.dao.IMenuDAO;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
-import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.MenuDTO;
-import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.stream.Collectors;
+import java.util.*;
 
-/**
- * @Description 菜单管理
- * &#064;blame  jmal
- * @Date 2021/1/7 7:45 下午
- */
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -40,9 +27,11 @@ public class MenuService {
 
     public static final String COLLECTION_NAME = "menu";
 
-    private final MongoTemplate mongoTemplate;
+    private final DataSourceProperties dataSourceProperties;
 
     private final MessageUtil messageUtil;
+
+    private final IMenuDAO menuDAO;
 
     /***
      * 菜单树
@@ -50,81 +39,14 @@ public class MenuService {
      * @return 菜单数列表
      */
     public List<MenuDTO> tree(QueryMenuDTO queryDTO) {
-        Query query = new Query();
-        if(!CharSequenceUtil.isBlank(queryDTO.getName())){
-            query.addCriteria(Criteria.where("name").regex(queryDTO.getName(), "i"));
-        }
-        List<String> menuIdList = null;
-        if(!CharSequenceUtil.isBlank(queryDTO.getUserId())){
-            menuIdList = getMenuIdListByUserId(queryDTO.getUserId());
-        }
-        if(!CharSequenceUtil.isBlank(queryDTO.getRoleId())) {
-            if(menuIdList != null){
-                menuIdList.addAll(getMenuIdListByRoleId(queryDTO.getRoleId()));
-            } else {
-                menuIdList = getMenuIdListByRoleId(queryDTO.getRoleId());
-            }
-        }
-        if(menuIdList != null){
-            query.addCriteria(Criteria.where("_id").in(menuIdList));
-        }
-        if(!CharSequenceUtil.isBlank(queryDTO.getPath())){
-            query.addCriteria(Criteria.where("path").regex(queryDTO.getPath(), "i"));
-            query.addCriteria(Criteria.where("component").regex(queryDTO.getPath(), "i"));
-        }
-        List<MenuDO> menuDOList = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME);
+        List<MenuDO> menuDOList = menuDAO.treeMenu(queryDTO);
         Locale locale = LocaleContextHolder.getLocale();
-        List<MenuDTO> menuDTOList = menuDOList.parallelStream().map(menuDO -> {
-            MenuDTO menuDTO = new MenuDTO();
-            BeanUtils.copyProperties(menuDO, menuDTO);
+        List<MenuDTO> menuDTOList = menuDOList.stream().map(menuDO -> {
+            MenuDTO menuDTO = menuDO.toDTO();
             menuDTO.setName(messageUtil.getMessage(menuDO.getName(), locale));
             return menuDTO;
         }).toList();
         return getSubMenu(null, menuDTOList);
-    }
-
-    /**
-     * 获取角色的菜单id列表
-     * @param roleId 角色id
-     * @return 菜单id列表
-     */
-    public List<String> getMenuIdListByRoleId(String roleId) {
-        List<String> menuIdList = new ArrayList<>();
-        RoleDO roleDO = mongoTemplate.findById(roleId, RoleDO.class);
-        if(roleDO != null && roleDO.getMenuIds() != null && !roleDO.getMenuIds().isEmpty()){
-            menuIdList = roleDO.getMenuIds();
-        }
-        return menuIdList;
-    }
-
-    public List<String> getMenuIdListByUserId(String userId) {
-        List<String> menuIdList = new ArrayList<>();
-        ConsumerDO consumerDO = mongoTemplate.findById(userId, ConsumerDO.class);
-        if (consumerDO == null || consumerDO.getRoles() == null) {
-            return menuIdList;
-        }
-        if (consumerDO.getCreator() != null && consumerDO.getCreator()) {
-            // 如果是创建者则返回所有菜单
-            return getAllMenuIdList();
-        }
-        return getMenuIdListByRoleIdList(consumerDO.getRoles());
-    }
-
-    /***
-     * 根据角色id列表获取菜单id列表
-     * @param roleIdList 角色id列表
-     * @return 菜单id列表
-     */
-    public List<String> getMenuIdListByRoleIdList(List<String> roleIdList) {
-        List<String> menuIdList = new ArrayList<>();
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(roleIdList));
-        List<RoleDO> roleDOList = mongoTemplate.find(query, RoleDO.class);
-        List<String> finalMenuIdList = menuIdList;
-        roleDOList.forEach(roleDO -> finalMenuIdList.addAll(roleDO.getMenuIds()));
-        // 去重
-        menuIdList = menuIdList.stream().distinct().collect(Collectors.toList());
-        return menuIdList;
     }
 
     /**
@@ -159,9 +81,7 @@ public class MenuService {
      * @return 一个菜单信息
      */
     public MenuDO getMenuInfo(String menuId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(menuId));
-        return mongoTemplate.findOne(query, MenuDO.class, COLLECTION_NAME);
+        return menuDAO.findById(menuId);
     }
 
     /***
@@ -170,9 +90,7 @@ public class MenuService {
      * @return boolean
      */
     private boolean existsMenuName(String name){
-        Query query = new Query();
-        query.addCriteria(Criteria.where("name").is(name));
-        return mongoTemplate.exists(query, COLLECTION_NAME);
+        return menuDAO.existsByName(name);
     }
 
     /***
@@ -196,7 +114,7 @@ public class MenuService {
         LocalDateTime dateNow = LocalDateTime.now(TimeUntils.ZONE_ID);
         menuDO.setCreateTime(dateNow);
         menuDO.setUpdateTime(dateNow);
-        mongoTemplate.save(menuDO, COLLECTION_NAME);
+        menuDAO.save(menuDO);
         return ResultUtil.success();
     }
 
@@ -209,19 +127,13 @@ public class MenuService {
         if (getMenuInfo(menuDTO.getId()) == null) {
             return ResultUtil.warning("该菜单不存在");
         }
-        Query query1 = new Query();
-        query1.addCriteria(Criteria.where("_id").nin(menuDTO.getId()));
-        query1.addCriteria(Criteria.where("name").is(menuDTO.getName()));
-        if(mongoTemplate.exists(query1, COLLECTION_NAME)){
+        if(menuDAO.existsByNameAndIdNot(menuDTO.getName(), menuDTO.getId())){
             return ResultUtil.warning("该菜单名称已存在");
         }
         MenuDO menuDO = new MenuDO();
         BeanUtils.copyProperties(menuDTO, menuDO);
         menuDO.setUpdateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(menuDTO.getId()));
-        Update update = MongoUtil.getUpdate(menuDO);
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        menuDAO.save(menuDO);
         return ResultUtil.success();
     }
 
@@ -230,32 +142,49 @@ public class MenuService {
      * @param menuIdList 菜单Id列表
      */
     public void delete(List<String> menuIdList) {
-        List<String> menuIds = findLoopMenu(true, menuIdList);
+        Set<String> menuIds = findSelfAndAllDescendantIds(menuIdList);
         // 删除所有关联的菜单
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(menuIds));
-        mongoTemplate.remove(query, COLLECTION_NAME);
+        menuDAO.removeByIdIn(menuIds);
     }
 
-    /***
-     * 递归查找菜单id及其子菜单id列表
-     * @param firstFind 是否是第一次查找
-     * @param menuIdList 菜单Id列表
+    /**
+     * 获取指定菜单ID列表及其所有子孙菜单的ID。
+     * 此方法使用Java迭代查询实现，不依赖任何数据库的特定语法，
+     * 保证了在MySQL, PostgreSQL, SQLite等多种数据库上的可移植性。
+     *
+     * @param initialMenuIds 初始的菜单ID列表
+     * @return 包含初始ID及其所有后代ID的列表 (已去重)
      */
-    private List<String> findLoopMenu(boolean firstFind, List<String> menuIdList) {
-        final List<String> menuIds = new ArrayList<>();
-        Query query = new Query();
-        if (firstFind) {
-            query.addCriteria(Criteria.where("_id").in(menuIdList));
-        } else {
-            query.addCriteria(Criteria.where("parentId").in(menuIdList));
-            menuIds.addAll(menuIdList);
+    public Set<String> findSelfAndAllDescendantIds(List<String> initialMenuIds) {
+        if (initialMenuIds == null || initialMenuIds.isEmpty()) {
+            return Collections.emptySet();
         }
-        List<String> menuIdList1 = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME).stream().map(MenuDO::getId).toList();
-        if (!menuIdList1.isEmpty()) {
-            menuIds.addAll(findLoopMenu(false, menuIdList1));
+
+        final Set<String> allIds = new HashSet<>(initialMenuIds);
+
+        // 使用Deque（双端队列）作为待处理队列，存放需要查找其子节点的父节点ID。
+        // 这是实现广度优先搜索（BFS）的标准数据结构。
+        final Deque<String> idsToSearch = new ArrayDeque<>(initialMenuIds);
+
+        while (!idsToSearch.isEmpty()) {
+            List<String> currentBatchToSearch = new ArrayList<>(idsToSearch);
+            idsToSearch.clear();
+
+            List<String> childIds = menuDAO.findIdsByParentIdIn(currentBatchToSearch);
+
+            if (!childIds.isEmpty()) {
+                for (String childId : childIds) {
+                    // add方法如果元素已存在，会返回false。
+                    // 这样可以防止因数据问题（如循环引用）导致的无限循环。
+                    if (allIds.add(childId)) {
+                        // 如果是一个全新的ID，则将其加入下一次的待查找队列
+                        idsToSearch.add(childId);
+                    }
+                }
+            }
         }
-        return menuIds;
+
+        return allIds;
     }
 
     /***
@@ -264,33 +193,28 @@ public class MenuService {
      * @return 权限列表
      */
     public List<String> getAuthorities(List<String> menuIdList) {
-        List<String> authorities = new ArrayList<>();
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(menuIdList));
-        List<MenuDO> menuDOList = mongoTemplate.find(query, MenuDO.class, COLLECTION_NAME);
-        menuDOList.forEach(menuDO -> {
-            if(!CharSequenceUtil.isBlank(menuDO.getAuthority())){
-                authorities.add(menuDO.getAuthority());
-            }
-        });
-        return authorities;
+        return menuDAO.findAuthorityAllByIds(menuIdList);
     }
 
     /***
      * 初始化菜单数据
      */
     public void initMenus() {
+        if (dataSourceProperties.getMigration()) {
+            return;
+        }
         TimeInterval timeInterval = new TimeInterval();
         List<MenuDO> menuDOList = getMenuDOListByConfigJSON();
         if (menuDOList.isEmpty()) return;
+        // 提取出需要更新的菜单
+        List<MenuDO> needUpdateMenuList = new ArrayList<>();
         menuDOList.forEach(menuDO -> {
-            Query query = new Query();
-            query.addCriteria(Criteria.where("_id").is(menuDO.getId()));
-            boolean exists = mongoTemplate.exists(query, COLLECTION_NAME);
-            if (!exists) {
-                mongoTemplate.insert(menuDO);
+            if (!menuDAO.existsById(menuDO.getId())) {
+                needUpdateMenuList.add(menuDO);
             }
         });
+        if (needUpdateMenuList.isEmpty()) return;
+        menuDAO.saveAll(needUpdateMenuList);
         log.info("更新菜单， 耗时:{}ms", timeInterval.intervalMs());
     }
 
@@ -307,26 +231,9 @@ public class MenuService {
     }
 
     /***
-     * 获取所有菜单
-     * @return List<MenuDO>
-     */
-    public List<MenuDO> getAllMenus() {
-        return mongoTemplate.findAll(MenuDO.class, COLLECTION_NAME);
-    }
-
-    /***
-     * 获取所有菜单Id
-     * @return List<String>
-     */
-    public List<String> getAllMenuIdList() {
-        List<MenuDO> menuDOList = getAllMenus();
-        return menuDOList.stream().map(MenuDO::getId).toList();
-    }
-
-    /***
      * 是否存在菜单
      */
     public boolean existsMenu(){
-       return mongoTemplate.exists(new Query(), COLLECTION_NAME);
+       return menuDAO.exists();
     }
 }

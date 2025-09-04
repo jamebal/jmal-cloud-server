@@ -16,7 +16,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Repository
@@ -79,13 +81,19 @@ public class RoleDAOJpaImpl implements IRoleDAO {
     @Override
     @Transactional(readOnly = true)
     public List<RoleDO> findAllByIdIn(List<String> roleIdList) {
-        return roleRepository.findAllByIdIn(roleIdList);
+        Set<RoleDO> roleDOSet = roleRepository.findAllByIdIn(roleIdList);
+        return new ArrayList<>(roleDOSet);
     }
 
     @Override
     @Transactional(readOnly = true)
     public RoleDO findByCode(String roleCode) {
         return roleRepository.findByCode(roleCode);
+    }
+
+    @Override
+    public void saveAll(List<RoleDO> roleDOList) {
+        roleRepository.saveAll(roleDOList);
     }
 
     /**

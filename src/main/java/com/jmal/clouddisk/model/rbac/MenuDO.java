@@ -70,4 +70,21 @@ public class MenuDO extends AuditableEntity implements Reflective {
      */
     @JsonDeserialize(using = LocalDateTimeFromTimestampDeserializer.class)
     LocalDateTime updateTime;
+
+    public MenuDTO toDTO() {
+        MenuDTO menuDTO = new MenuDTO();
+        menuDTO.setId(this.getId());
+        menuDTO.setParentId(this.getParentId());
+        menuDTO.setName(this.getName());
+        menuDTO.setAuthority(this.getAuthority());
+        menuDTO.setPath(this.getPath());
+        menuDTO.setComponent(this.getComponent());
+        menuDTO.setIcon(this.getIcon());
+        menuDTO.setSortNumber(this.getSortNumber());
+        menuDTO.setMenuType(this.getMenuType());
+        menuDTO.setHide(this.getHide());
+        menuDTO.setCreateTime(this.getCreateTime());
+        menuDTO.setUpdateTime(this.getUpdateTime());
+        return menuDTO;
+    }
 }
