@@ -1,42 +1,29 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.convert.Convert;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.jmal.clouddisk.controller.rest.sse.Message;
 import com.jmal.clouddisk.controller.rest.sse.SseController;
+import com.jmal.clouddisk.dao.ITrashDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ThrottleExecutor;
-import com.mongodb.client.AggregateIterable;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.BsonNull;
 import org.bson.Document;
-import org.bson.conversions.Bson;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-
-import static com.mongodb.client.model.Accumulators.sum;
-import static com.mongodb.client.model.Aggregates.group;
-import static com.mongodb.client.model.Aggregates.match;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
 
 @Service
 @RequiredArgsConstructor
@@ -49,8 +36,7 @@ public class MessageService {
 
     private final CommonUserService commonUserService;
 
-    private final MongoTemplate mongoTemplate;
-
+    private final ITrashDAO trashDAO;
 
     private final Cache<String, Map<String, ThrottleExecutor>> throttleExecutorCache = Caffeine.newBuilder()
             .expireAfterAccess(10, TimeUnit.MINUTES) // 用户10分钟不活跃后，缓存自动过期
@@ -101,18 +87,7 @@ public class MessageService {
     }
 
     public Single<Long> getOccupiedSpaceAsync(String userId, String collectionName) {
-        return Single.fromCallable(() -> getOccupiedSpace(userId, collectionName)).subscribeOn(Schedulers.io()).doOnError(e -> log.error(e.getMessage(), e));
-    }
-
-    public long getOccupiedSpace(String userId, String collectionName) {
-        Long space = 0L;
-        List<Bson> list = Arrays.asList(match(and(eq(IUserService.USER_ID, userId), eq(Constants.IS_FOLDER, false))), group(new BsonNull(), sum(Constants.TOTAL_SIZE, "$size")));
-        AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(collectionName).aggregate(list);
-        Document doc = aggregateIterable.first();
-        if (doc != null) {
-            space = Convert.toLong(doc.get(Constants.TOTAL_SIZE), 0L);
-        }
-        return space;
+        return Single.fromCallable(() -> trashDAO.getOccupiedSpace(userId, collectionName)).subscribeOn(Schedulers.io()).doOnError(e -> log.error(e.getMessage(), e));
     }
 
     public void pushMessage(String username, Object message, String url) {

@@ -1,8 +1,7 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
-import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FilePropsRepository;
 import com.jmal.clouddisk.dao.util.MyQuery;
@@ -33,8 +32,6 @@ public class FileDAOJpaImpl implements IFileDAO {
     private final FilePropsRepository filePropsRepository;
 
     private final LuceneQueryService luceneQueryService;
-
-    private final FileProperties fileProperties;
 
     @Transactional(readOnly = true)
     @Override
