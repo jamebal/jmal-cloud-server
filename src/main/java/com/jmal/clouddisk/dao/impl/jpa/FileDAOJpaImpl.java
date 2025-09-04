@@ -141,7 +141,7 @@ public class FileDAOJpaImpl implements IFileDAO {
         }
         List<String> foundIds = filesToDelete.stream().map(FileMetadataDO::getId).toList();
         fileMetadataRepository.deleteAllByIdInBatch(foundIds);
-        return filesToDelete.stream().map(fileMetadataDO -> fileMetadataDO.toFileDocument()).toList();
+        return filesToDelete.stream().map(FileMetadataDO::toFileDocument).toList();
     }
 
     @Override
