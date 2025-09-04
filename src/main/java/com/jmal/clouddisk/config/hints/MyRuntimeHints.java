@@ -1,10 +1,9 @@
 package com.jmal.clouddisk.config.hints;
 
-import org.springframework.aot.hint.MemberCategory;
-import org.springframework.aot.hint.RuntimeHints;
-import org.springframework.aot.hint.RuntimeHintsRegistrar;
+import org.springframework.aot.hint.*;
 
 import java.io.IOException;
+import java.util.Collections;
 
 public class MyRuntimeHints implements RuntimeHintsRegistrar {
 
@@ -13,5 +12,17 @@ public class MyRuntimeHints implements RuntimeHintsRegistrar {
         hints.reflection().registerType(CharSequence.class, MemberCategory.INVOKE_PUBLIC_METHODS);
 
         hints.reflection().registerType(IOException.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+        hints.reflection().registerType(org.bson.Document.class, MemberCategory.DECLARED_FIELDS);
+        hints.reflection().registerType(
+                TypeReference.of(org.bson.types.ObjectId.class),
+                hint -> hint
+                        .withMembers(MemberCategory.DECLARED_FIELDS)
+                        .withMethod("getDate", Collections.emptyList(), ExecutableMode.INVOKE)
+                        .withMethod("getTimestamp", Collections.emptyList(), ExecutableMode.INVOKE)
+        );
+        hints.reflection().registerType(
+                TypeReference.of("org.bson.types.ObjectId$SerializationProxy"),
+                hint -> hint.withMembers(MemberCategory.INVOKE_DECLARED_CONSTRUCTORS)
+        );
     }
 }
