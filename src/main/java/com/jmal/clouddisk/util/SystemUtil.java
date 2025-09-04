@@ -38,11 +38,14 @@ public class SystemUtil {
             if (result == null) {
                 return null;
             }
+            JsonNode jsonObject = JacksonUtil.parseObject(result, JsonNode.class);
+            if (jsonObject == null || jsonObject.get("tag_name") == null) {
+                return null;
+            }
+            return Convert.toStr(jsonObject.get("tag_name").asText());
         } catch (Exception e) {
             log.warn(e.getMessage());
-            return null;
         }
-        JsonNode jsonObject = JacksonUtil.parseObject(result, JsonNode.class);
-        return Convert.toStr(jsonObject.get("tag_name"));
+        return null;
     }
 }
