@@ -44,7 +44,6 @@ public class ThrottleExecutor {
                 log.error("Error occurred: ", e);
             }
         }
-
         throttleExecutor.shutdown();
     }
 }
