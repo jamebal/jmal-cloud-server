@@ -2,6 +2,7 @@ package com.jmal.clouddisk.dao.migrate.impl;
 
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.impl.jpa.IWriteCommon;
 import com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository;
 import com.jmal.clouddisk.dao.migrate.IMigrationService;
 import com.jmal.clouddisk.dao.migrate.MigrationResult;
@@ -27,6 +28,8 @@ public class UserMigrationService implements IMigrationService {
 
     private final DataSourceProperties dataSourceProperties;
 
+    private final IWriteCommon<ConsumerDO> writeCommon;
+
     @Override
     public String getName() {
         return "用户";
@@ -39,6 +42,7 @@ public class UserMigrationService implements IMigrationService {
                 getName(),
                 mongoTemplate,
                 userRepository,
+                writeCommon,
                 ConsumerDO.class,
                 1000 // Batch size
         );

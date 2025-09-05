@@ -311,7 +311,7 @@ public class FileListener implements DirectoryChangeListener {
     @PreDestroy
     public void shutdown() {
         scheduler.shutdown();
-        processExecutor.shutdown();
+        processExecutor.shutdownNow();
         try {
             // 等待处理线程池在指定时间内完成任务
             if (!processExecutor.awaitTermination(1, TimeUnit.SECONDS)) {

@@ -2,8 +2,9 @@ package com.jmal.clouddisk.dao.migrate.impl;
 
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
-import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
+import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
+import com.jmal.clouddisk.dao.impl.jpa.write.file.FileOperation;
 import com.jmal.clouddisk.dao.migrate.IMigrationService;
 import com.jmal.clouddisk.dao.migrate.MigrationResult;
 import com.jmal.clouddisk.model.file.ArticleDO;
@@ -33,7 +34,7 @@ public class FileMigrationService implements IMigrationService {
 
     private final FileMetadataRepository fileMetadataRepository;
 
-    private final ArticleRepository articleRepository;
+    private final IWriteService writeService;
 
     private final FilePersistenceService filePersistenceService;
 
@@ -89,32 +90,18 @@ public class FileMigrationService implements IMigrationService {
                         return fileMetadataDO;
                     }).toList();
 
-
                     // 直接批量保存到 SQLite，无需转换
-                    fileMetadataRepository.saveAll(fileEntityDOList);
+                    writeService.submit(new FileOperation.CreateAllFileMetadata(fileEntityDOList));
 
                     // 保存文章
                     if (!articleDOList.isEmpty()) {
-                        articleRepository.saveAll(articleDOList);
+                        writeService.submit(new FileOperation.CreateAllArticle(articleDOList));
                     }
                     result.addSuccess(mongoDataList.size());
                     result.addProcessed(mongoDataList.size());
                     log.debug("[{}] 成功批量保存 {} 条记录", getName(), mongoDataList.size());
                 } catch (Exception e) {
                     log.warn("[{}] 批量保存失败，将回退到逐条保存。错误: {}", getName(), e.getMessage());
-
-                    // 如果批量保存失败，尝试逐条保存
-                    for (FileDocument mongoData : mongoDataList) {
-                        try {
-                            fileMetadataRepository.save(new FileMetadataDO(mongoData));
-                            result.addSuccess(1);
-                            result.incrementProcessed();
-                        } catch (Exception ex) {
-                            log.error("[{}] 保存单条数据失败, ID: {}, 错误: {}", getName(), mongoData.getId(), ex.getMessage());
-                            result.addError(mongoData.getId(), ex.getMessage());
-                            result.incrementProcessed();
-                        }
-                    }
                 }
 
                 skip += batchSize;

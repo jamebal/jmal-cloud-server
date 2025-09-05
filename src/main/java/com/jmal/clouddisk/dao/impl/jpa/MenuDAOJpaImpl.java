@@ -6,6 +6,8 @@ import com.jmal.clouddisk.dao.IMenuDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.MenuRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.RoleRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository;
+import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
+import com.jmal.clouddisk.dao.impl.jpa.write.menu.MenuOperation;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
@@ -26,8 +28,9 @@ import java.util.stream.Collectors;
 @Repository
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class MenuDAOJpaImpl implements IMenuDAO {
+public class MenuDAOJpaImpl implements IMenuDAO, IWriteCommon<MenuDO> {
 
+    private final IWriteService writeService;
     private final MenuRepository menuRepository;
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
@@ -212,5 +215,10 @@ public class MenuDAOJpaImpl implements IMenuDAO {
         Set<List<String>> roleDOList = roleRepository.findMenuIdsByIdIn(roleIdList);
         roleDOList.forEach(menuIdList::addAll);
         return menuIdList;
+    }
+
+    @Override
+    public void AsyncSaveAll(Iterable<MenuDO> entities) {
+        writeService.submit(new MenuOperation.CreateAll(entities));
     }
 }

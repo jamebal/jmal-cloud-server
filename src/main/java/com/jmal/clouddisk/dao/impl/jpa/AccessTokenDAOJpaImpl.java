@@ -1,9 +1,11 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.jmal.clouddisk.dao.IAccessTokenDAO;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.IAccessTokenDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.AccessTokenRepository;
+import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
+import com.jmal.clouddisk.dao.impl.jpa.write.access_token.AccessTokenOperation;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
@@ -25,9 +27,11 @@ import java.util.stream.Collectors;
 @Repository
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class AccessTokenDAOJpaImpl implements IAccessTokenDAO {
+public class AccessTokenDAOJpaImpl implements IAccessTokenDAO, IWriteCommon<UserAccessTokenDO> {
 
     private final AccessTokenRepository accessTokenRepository;
+
+    private final IWriteService writeService;
 
     @Override
     @Transactional(readOnly = true)
@@ -151,5 +155,10 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO {
         if (CharSequenceUtil.isBlank(userAccessTokenDO.getAccessToken())) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), "访问令牌不能为空");
         }
+    }
+
+    @Override
+    public void AsyncSaveAll(Iterable<UserAccessTokenDO> entities) {
+        writeService.submit(new AccessTokenOperation.CreateAll(entities));
     }
 }

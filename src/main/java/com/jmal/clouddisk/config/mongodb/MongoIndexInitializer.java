@@ -57,9 +57,9 @@ public class MongoIndexInitializer {
                 mappingContext.getPersistentEntity(entityClass);
                 IndexOperations indexOps = mongoTemplate.indexOps(entityClass);
                 resolver.resolveIndexFor(entityClass).forEach(indexOps::createIndex);
-                log.debug("Successfully processed indices for entity: {}", entityClass.getSimpleName());
+                log.debug("Successfully processed indices for entity: {}", entityClass.getName());
             } catch (Exception e) {
-                log.error("Error creating indices for entity class: {}", entityClass.getSimpleName(), e);
+                log.error("Error creating indices for entity class: {}", entityClass.getName(), e);
             }
         }
     }

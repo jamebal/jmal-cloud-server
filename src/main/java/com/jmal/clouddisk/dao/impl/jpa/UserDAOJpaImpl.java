@@ -6,6 +6,8 @@ import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.DataSourceType;
 import com.jmal.clouddisk.dao.IUserDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository;
+import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
+import com.jmal.clouddisk.dao.impl.jpa.write.consumer.UserOperation;
 import com.jmal.clouddisk.dao.mapping.UserField;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.dao.util.MyUpdate;
@@ -30,11 +32,13 @@ import java.util.Optional;
 @Repository
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class UserDAOJpaImpl implements IUserDAO {
+public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
 
     private final UserRepository userRepository;
 
     private final DataSourceProperties dataSourceProperties;
+
+    private final IWriteService writeService;
 
     @Override
     public ConsumerDO save(ConsumerDO consumerDO) {
@@ -171,4 +175,8 @@ public class UserDAOJpaImpl implements IUserDAO {
         }
     }
 
+    @Override
+    public void AsyncSaveAll(Iterable<ConsumerDO> entities) {
+        writeService.submit(new UserOperation.CreateAll(entities));
+    }
 }

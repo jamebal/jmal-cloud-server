@@ -1,0 +1,21 @@
+package com.jmal.clouddisk.dao.impl.jpa.write.role;
+
+import com.jmal.clouddisk.dao.impl.jpa.repository.RoleRepository;
+import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperationHandler;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+@Component
+@RequiredArgsConstructor
+public class RoleOperationHandler implements IDataOperationHandler<IRoleOperation> {
+
+    private final RoleRepository roleRepository;
+
+    @Override
+    public void handle(IRoleOperation operation) {
+        switch (operation) {
+            case RoleOperation.CreateAll createOp -> roleRepository.saveAll(createOp.entities());
+        }
+    }
+
+}

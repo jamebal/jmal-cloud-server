@@ -4,6 +4,8 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IRoleDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.RoleRepository;
+import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
+import com.jmal.clouddisk.dao.impl.jpa.write.role.RoleOperation;
 import com.jmal.clouddisk.dao.util.PageableUtil;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
@@ -24,9 +26,11 @@ import java.util.Set;
 @Repository
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class RoleDAOJpaImpl implements IRoleDAO {
+public class RoleDAOJpaImpl implements IRoleDAO, IWriteCommon<RoleDO> {
 
     private final RoleRepository roleRepository;
+
+    private final IWriteService writeService;
 
     @Override
     @Transactional(readOnly = true)
@@ -104,4 +108,8 @@ public class RoleDAOJpaImpl implements IRoleDAO {
                 criteriaBuilder.like(criteriaBuilder.lower(root.get(filed)), "%" + keyword.toLowerCase() + "%");
     }
 
+    @Override
+    public void AsyncSaveAll(Iterable<RoleDO> entities) {
+        writeService.submit(new RoleOperation.CreateAll(entities));
+    }
 }

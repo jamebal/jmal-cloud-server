@@ -2,6 +2,7 @@ package com.jmal.clouddisk.dao.migrate;
 
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import com.jmal.clouddisk.dao.DataSourceType;
+import com.jmal.clouddisk.dao.impl.jpa.IWriteCommon;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
@@ -34,6 +35,7 @@ public final class MigrationUtils {
             String migrationName,
             MongoTemplate mongoTemplate,
             CrudRepository<T, String> jpaRepository,
+            IWriteCommon<T> iWriteCommon,
             Class<T> entityClass,
             int batchSize) {
 
@@ -62,23 +64,11 @@ public final class MigrationUtils {
 
                 try {
                     // 3. 尝试批量保存到目标数据库
-                    jpaRepository.saveAll(mongoDataList);
+                    iWriteCommon.AsyncSaveAll(mongoDataList);
                     result.addSuccess(mongoDataList.size());
                     log.debug("[{}] 成功批量保存 {} 条记录", migrationName, mongoDataList.size());
                 } catch (Exception e) {
                     log.warn("[{}] 批量保存失败，将回退到逐条保存。错误: {}", migrationName, e.getMessage());
-
-                    // 4. 如果批量保存失败，则逐条保存
-                    for (T mongoData : mongoDataList) {
-                        try {
-                            jpaRepository.save(mongoData);
-                            result.addSuccess(1);
-                        } catch (Exception ex) {
-                            String entityId = mongoData.getId();
-                            log.error("[{}] 保存单条数据失败, ID: {}, 错误: {}", migrationName, entityId, ex.getMessage());
-                            result.addError(String.valueOf(entityId), ex.getMessage());
-                        }
-                    }
                 }
                 skip += batchSize;
             }

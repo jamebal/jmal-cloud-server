@@ -1,9 +1,11 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.jmal.clouddisk.dao.ITagDAO;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.ITagDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.TagRepository;
+import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
+import com.jmal.clouddisk.dao.impl.jpa.write.tag.TagOperation;
 import com.jmal.clouddisk.model.TagDO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,9 +19,11 @@ import java.util.List;
 @Repository
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class TagDAOJpaImpl implements ITagDAO {
+public class TagDAOJpaImpl implements ITagDAO, IWriteCommon<TagDO> {
 
     private final TagRepository tagRepository;
+
+    private final IWriteService writeService;
 
     @Override
     @Transactional(readOnly = true)
@@ -84,4 +88,8 @@ public class TagDAOJpaImpl implements ITagDAO {
         tagRepository.updateSortById(tagId, sort);
     }
 
+    @Override
+    public void AsyncSaveAll(Iterable<TagDO> entities) {
+        writeService.submit(new TagOperation.CreateAll(entities));
+    }
 }

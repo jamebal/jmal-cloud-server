@@ -3,6 +3,8 @@ package com.jmal.clouddisk.dao.impl.jpa;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IShareDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.ShareRepository;
+import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
+import com.jmal.clouddisk.dao.impl.jpa.write.share.ShareOperation;
 import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import lombok.RequiredArgsConstructor;
@@ -18,9 +20,11 @@ import java.util.List;
 @Repository
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class ShareDAOJpaImpl implements IShareDAO {
+public class ShareDAOJpaImpl implements IShareDAO, IWriteCommon<ShareDO> {
 
     private final ShareRepository shareRepository;
+
+    private final IWriteService writeService;
 
 
     @Override
@@ -113,4 +117,8 @@ public class ShareDAOJpaImpl implements IShareDAO {
         shareRepository.removeByUserId(userId);
     }
 
+    @Override
+    public void AsyncSaveAll(Iterable<ShareDO> entities) {
+        writeService.submit(new ShareOperation.CreateAll(entities));
+    }
 }

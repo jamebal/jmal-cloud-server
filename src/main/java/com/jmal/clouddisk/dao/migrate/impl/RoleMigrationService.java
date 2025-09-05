@@ -2,6 +2,7 @@ package com.jmal.clouddisk.dao.migrate.impl;
 
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.impl.jpa.IWriteCommon;
 import com.jmal.clouddisk.dao.impl.jpa.repository.RoleRepository;
 import com.jmal.clouddisk.dao.migrate.IMigrationService;
 import com.jmal.clouddisk.dao.migrate.MigrationResult;
@@ -27,6 +28,8 @@ public class RoleMigrationService implements IMigrationService {
 
     private final DataSourceProperties dataSourceProperties;
 
+    private final IWriteCommon<RoleDO> writeCommon;
+
     @Override
     public String getName() {
         return "角色";
@@ -39,6 +42,7 @@ public class RoleMigrationService implements IMigrationService {
                 getName(),
                 mongoTemplate,
                 roleRepository,
+                writeCommon,
                 RoleDO.class,
                 1000 // Batch size
         );

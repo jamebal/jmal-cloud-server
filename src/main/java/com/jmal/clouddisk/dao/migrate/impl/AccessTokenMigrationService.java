@@ -2,6 +2,7 @@ package com.jmal.clouddisk.dao.migrate.impl;
 
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.impl.jpa.IWriteCommon;
 import com.jmal.clouddisk.dao.impl.jpa.repository.AccessTokenRepository;
 import com.jmal.clouddisk.dao.migrate.IMigrationService;
 import com.jmal.clouddisk.dao.migrate.MigrationResult;
@@ -27,6 +28,8 @@ public class AccessTokenMigrationService implements IMigrationService {
 
     private final DataSourceProperties dataSourceProperties;
 
+    private final IWriteCommon<UserAccessTokenDO> writeCommon;
+
     @Override
     public String getName() {
         return "用户访问令牌";
@@ -39,6 +42,7 @@ public class AccessTokenMigrationService implements IMigrationService {
                 getName(),
                 mongoTemplate,
                 accessTokenRepository,
+                writeCommon,
                 UserAccessTokenDO.class,
                 1000 // Batch size
         );
