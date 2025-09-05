@@ -7,9 +7,9 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.UploadResponse;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -82,7 +79,9 @@ public class MultipartUpload {
         // 这时保存的每个块, 块先存好, 后续会调合并接口, 将所有块合成一个大文件
         // 保存在用户的tmp目录下
         File chunkFile = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), md5, Convert.toStr(upload.getChunkNumber())).toFile();
-        FileUtil.writeFromStream(file.getInputStream(), chunkFile);
+        try (InputStream inputStream = file.getInputStream()) {
+            FileUtil.writeFromStream(inputStream, chunkFile);
+        }
         setResumeCache(upload);
         uploadResponse.setUpload(true);
         // 追加分片
@@ -141,25 +140,25 @@ public class MultipartUpload {
         int chunkNumber = upload.getChunkNumber();
         String md5 = upload.getIdentifier();
         // 未写入的分片
-        CopyOnWriteArrayList<Integer> unWrittenChunks = unWrittenCache.get(md5, key -> new CopyOnWriteArrayList<>());
+        CopyOnWriteArrayList<Integer> unWrittenChunks = unWrittenCache.get(md5, _ -> new CopyOnWriteArrayList<>());
         if (unWrittenChunks != null && !unWrittenChunks.contains(chunkNumber)) {
             unWrittenChunks.add(chunkNumber);
             unWrittenCache.put(md5, unWrittenChunks);
         }
         // 已写入的分片
-        CopyOnWriteArrayList<Integer> writtenChunks = writtenCache.get(md5, key -> new CopyOnWriteArrayList<>());
+        CopyOnWriteArrayList<Integer> writtenChunks = writtenCache.get(md5, _ -> new CopyOnWriteArrayList<>());
         Path filePath = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), upload.getFilename());
         if (unWrittenChunks == null || writtenChunks == null) {
             return;
         }
-        Lock lock = chunkWriteLockCache.get(md5, key -> new ReentrantLock());
+        Lock lock = chunkWriteLockCache.get(md5, _ -> new ReentrantLock());
         if (lock != null) {
             lock.lock();
         }
         try {
             if (Files.exists(filePath) && !writtenChunks.isEmpty()) {
                 // 继续追加
-                unWrittenChunks.forEach(unWrittenChunk -> appendFile(upload, unWrittenChunks, writtenChunks));
+                unWrittenChunks.forEach(_ -> appendFile(upload, unWrittenChunks, writtenChunks));
             } else {
                 // 首次写入
                 if (Files.exists(filePath)) {
@@ -217,7 +216,7 @@ public class MultipartUpload {
                 uploadResponse.setPass(true);
             } else {
                 int totalChunks = upload.getTotalChunks();
-                List<Integer> chunks = resumeCache.get(md5, key -> createResumeCache(upload));
+                List<Integer> chunks = resumeCache.get(md5, _ -> createResumeCache(upload));
                 // 返回已存在的分片
                 uploadResponse.setResume(chunks);
                 assert chunks != null;
@@ -241,7 +240,7 @@ public class MultipartUpload {
         // 需要继续追加分片索引
         int chunk = 1;
         if (!writtenChunks.isEmpty()) {
-            chunk = writtenChunks.get(writtenChunks.size() - 1) + 1;
+            chunk = writtenChunks.getLast() + 1;
         }
         if (!unWrittenChunks.contains(chunk)) {
             return;
@@ -251,13 +250,17 @@ public class MultipartUpload {
         File chunkFile = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), md5, String.valueOf(chunk)).toFile();
         // 目标文件
         File outputFile = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), upload.getUsername(), upload.getFilename()).toFile();
-        long position = outputFile.length();
         try (FileOutputStream fileOutputStream = new FileOutputStream(outputFile, true);
-             FileChannel outChannel = fileOutputStream.getChannel()) {
-            ByteBuffer byteBuffer = ByteBuffer.wrap(FileUtil.readBytes(chunkFile));
-            int writeLength = outChannel.write(byteBuffer, position);
-            if (writeLength != chunkFile.length()) {
-                log.error("writeLength: {}, chunkFileLength: {}", writeLength, chunkFile.length());
+             FileChannel outChannel = fileOutputStream.getChannel();
+             // 为源文件（分片）也创建一个输入流和通道
+             FileInputStream fileInputStream = new FileInputStream(chunkFile);
+             FileChannel inChannel = fileInputStream.getChannel()) {
+            // 使用 transferTo 方法直接从输入通道传输数据到输出通道
+            // transferTo(起始位置, 传输长度, 目标通道)
+            long transferredBytes = inChannel.transferTo(0, inChannel.size(), outChannel);
+
+            if (transferredBytes != chunkFile.length()) {
+                log.error("transferredBytes: {}, chunkFileLength: {}", transferredBytes, chunkFile.length());
             }
             writtenChunks.add(chunk);
             writtenCache.put(md5, writtenChunks);
@@ -275,7 +278,7 @@ public class MultipartUpload {
     private void setResumeCache(UploadApiParamDTO upload) {
         int chunkNumber = upload.getChunkNumber();
         String md5 = upload.getIdentifier();
-        CopyOnWriteArrayList<Integer> chunks = resumeCache.get(md5, key -> createResumeCache(upload));
+        CopyOnWriteArrayList<Integer> chunks = resumeCache.get(md5, _ -> createResumeCache(upload));
         assert chunks != null;
         if (!chunks.contains(chunkNumber)) {
             chunks.add(chunkNumber);
@@ -288,7 +291,7 @@ public class MultipartUpload {
      */
     private CopyOnWriteArrayList<Integer> getSavedChunk(UploadApiParamDTO upload) {
         String md5 = upload.getIdentifier();
-        return resumeCache.get(md5, key -> createResumeCache(upload));
+        return resumeCache.get(md5, _ -> createResumeCache(upload));
     }
 
     /***

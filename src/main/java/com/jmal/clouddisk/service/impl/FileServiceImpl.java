@@ -61,6 +61,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -1797,7 +1798,6 @@ public class FileServiceImpl implements IFileService {
 
         int currentChunkSize = upload.getCurrentChunkSize();
         long totalSize = upload.getTotalSize();
-        String filename = upload.getFilename();
         String md5 = upload.getIdentifier();
         MultipartFile file = upload.getFile();
         //用户磁盘目录
@@ -1810,11 +1810,9 @@ public class FileServiceImpl implements IFileService {
 
         if (currentChunkSize == totalSize) {
             // 没有分片,直接存
-            // 保存文件信息
-            upload.setInputStream(file.getInputStream());
-            upload.setContentType(file.getContentType());
-            upload.setSuffix(MyFileUtils.extName(filename));
-            FileUtil.writeFromStream(file.getInputStream(), chunkFile);
+            try (InputStream inputStream = file.getInputStream()) {
+                FileUtil.writeFromStream(inputStream, chunkFile);
+            }
             // 设置文件最后修改时间
             CommonUserFileService.setLastModifiedTime(chunkFile.toPath(), upload.getLastModified());
             uploadFile(upload.getUsername(), chunkFile);
