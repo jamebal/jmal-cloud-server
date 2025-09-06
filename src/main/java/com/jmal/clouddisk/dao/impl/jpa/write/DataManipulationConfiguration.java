@@ -1,6 +1,8 @@
 package com.jmal.clouddisk.dao.impl.jpa.write;
 
+import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 import java.lang.reflect.ParameterizedType;
@@ -12,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Configuration
+@Conditional(RelationalDataSourceCondition.class)
 public class DataManipulationConfiguration {
 
     @Bean

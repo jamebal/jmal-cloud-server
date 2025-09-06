@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.dao.impl.jpa.write;
 
+import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.config.jpa.RelationalNotSqliteDataSourceCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -8,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 @Configuration
+@Conditional(RelationalDataSourceCondition.class)
 public class WriteServiceConfiguration {
 
     @Bean("directWriteService")
