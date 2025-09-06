@@ -13,7 +13,9 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.lucene.EtagService;
 import com.jmal.clouddisk.lucene.LuceneIndexQueueEvent;
 import com.jmal.clouddisk.media.VideoProcessService;
-import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.OperationPermission;
+import com.jmal.clouddisk.model.ShareDO;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.file.FileBase;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileIntroVO;
@@ -92,7 +94,13 @@ public class CommonFileService {
 
     public ResponseEntity<Object> getObjectResponseEntity(FileDocument fileDocument) {
         if (fileDocument != null) {
-            return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType()).header(HttpHeaders.CONNECTION, "close").header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent() != null ? fileDocument.getContent().length : 0)).header(HttpHeaders.CONTENT_ENCODING, "utf-8").header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800").body(fileDocument.getContent());
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
+                    .header(HttpHeaders.CONNECTION, "close")
+                    .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent() != null ? fileDocument.getContent().length : 0))
+                    .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
+                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
+                    .body(fileDocument.getContent());
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件");
         }

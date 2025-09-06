@@ -676,11 +676,6 @@ public class FileServiceImpl implements IFileService {
         if (fileDocument != null && fileDocument.getContent() != null) {
             return Optional.of(fileDocument);
         }
-        if (Boolean.TRUE.equals(CaffeineUtil.hasThumbnailRequestCache(id))) {
-            return Optional.empty();
-        } else {
-            CaffeineUtil.setThumbnailRequestCache(id);
-        }
         String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
         if (ossPath != null) {
             // S3存储
