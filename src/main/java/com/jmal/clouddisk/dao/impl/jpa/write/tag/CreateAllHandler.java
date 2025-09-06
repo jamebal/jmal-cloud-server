@@ -7,18 +7,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("tagCreateAllHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class TagOperationHandler implements IDataOperationHandler<ITagOperation> {
+public class CreateAllHandler implements IDataOperationHandler<TagOperation.CreateAll, Void> {
 
-    private final TagRepository tagRepository;
+    private final TagRepository repo;
 
     @Override
-    public void handle(ITagOperation operation) {
-        switch (operation) {
-            case TagOperation.CreateAll createOp -> tagRepository.saveAll(createOp.entities());
-        }
+    public Void handle(TagOperation.CreateAll op) {
+        repo.saveAll(op.entities());
+        return null;
     }
-
 }

@@ -1,8 +1,6 @@
 package com.jmal.clouddisk.dao.impl.jpa.write;
 
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 import java.lang.reflect.ParameterizedType;
@@ -10,82 +8,60 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Configuration
-@Conditional(RelationalDataSourceCondition.class)
 public class DataManipulationConfiguration {
 
     @Bean
-    public Map<Class<? extends IDataOperation>, IDataOperationHandler<?>> operationHandlers(
-            List<IDataOperationHandler<?>> handlerList) {
+    public Map<Class<? extends IDataOperation<?>>, IDataOperationHandler<?, ?>> operationHandlers(
+            List<IDataOperationHandler<?, ?>> handlerList) {
 
         return handlerList.stream()
-                .flatMap(this::createEntriesForHandler) // 将复杂的逻辑提取到辅助方法中
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (h1, _) -> h1));
+                .collect(Collectors.toMap(
+                        // Key Mapper: 负责从Handler中解析出它处理的操作类型 (Class)
+                        this::findOperationTypeForHandler,
+                        // Value Mapper: Handler实例本身
+                        Function.identity(),
+                        // Merge Function: 如果有重复的Handler注册了同一个操作，保留第一个
+                        (existing, _) -> existing
+                ));
     }
 
     /**
-     * 为单个Handler创建其所有支持的操作类型的映射条目。
-     * @param handler 要处理的Handler
-     * @return 一个包含 (操作Class -> Handler实例) 映射条目的流
+     * 一个私有的辅助方法，使用Java反射API来安全地解析出
+     * IDataOperationHandler<T, R> 中第一个泛型参数 T 的具体 Class。
+     * @param handler 要解析的处理器实例
+     * @return 该处理器处理的操作的Class对象
      */
-    private Stream<Map.Entry<Class<? extends IDataOperation>, IDataOperationHandler<?>>> createEntriesForHandler(
-            IDataOperationHandler<?> handler) {
-
-        // 1. 通过反射安全地找到Handler实现的 IDataOperationHandler<T> 泛型接口
-        Type operationInterfaceType = Arrays.stream(handler.getClass().getGenericInterfaces())
+    private Class<? extends IDataOperation<?>> findOperationTypeForHandler(IDataOperationHandler<?, ?> handler) {
+        // 1. 遍历handler实现的所有泛型接口
+        return Arrays.stream(handler.getClass().getGenericInterfaces())
                 .filter(type -> type instanceof ParameterizedType)
                 .map(type -> (ParameterizedType) type)
-                .filter(pt -> IDataOperationHandler.class.isAssignableFrom(getRawType(pt)))
+                // 2. 找到原始类型是 IDataOperationHandler 的那个接口
+                .filter(pt -> pt.getRawType().equals(IDataOperationHandler.class))
                 .findFirst()
+                // 3. 获取它的第一个泛型参数 (T)
                 .map(pt -> pt.getActualTypeArguments()[0])
-                .orElseThrow(() -> new IllegalStateException("Handler must implement IDataOperationHandler with a generic type: " + handler.getClass()));
-
-        // 2. 从泛型接口Type中获取其原始的Class，并断言它是一个sealed接口
-        Class<?> sealedInterface = getRawType(operationInterfaceType);
-        if (!sealedInterface.isSealed()) {
-            throw new IllegalStateException("Operation interface " + sealedInterface.getName() + " must be sealed.");
-        }
-
-        // 3. 获取所有允许的子类，并对每一个子类进行安全的类型检查和转换
-        return Arrays.stream(sealedInterface.getPermittedSubclasses())
-                .map(subclass -> safelyCastToOperationClass(subclass, handler))
-                .map(checkedClass -> Map.entry(checkedClass, handler));
+                // 4. 将这个Type解析为其底层的Class
+                .map(this::getRawTypeFrom)
+                .orElseThrow(() -> new IllegalStateException("Could not resolve operation type for handler: " + handler.getClass().getName()));
     }
 
     /**
-     * 安全地将一个Class<?>转换为Class<? extends IDataOperation>。
-     * @param clazz 待转换的Class
-     * @param handler 相关的handler，仅用于错误信息
-     * @return 经过类型检查和转换后的Class
+     * 从一个Type中提取其原始的Class类型。
+     * @param type 要解析的Type
+     * @return 对应的原始Class
      */
     @SuppressWarnings("unchecked")
-    private Class<? extends IDataOperation> safelyCastToOperationClass(Class<?> clazz, IDataOperationHandler<?> handler) {
-        // 我们在运行时检查这个子类是否真的实现了IDataOperation接口。
-        if (IDataOperation.class.isAssignableFrom(clazz)) {
-            // 只有在检查通过后，才进行强制类型转换。
-            return (Class<? extends IDataOperation>) clazz;
-        } else {
-            throw new IllegalStateException(
-                    "The permitted subclass " + clazz.getName() +
-                            " of sealed interface used by handler " + handler.getClass().getName() +
-                            " does not implement IDataOperation."
-            );
-        }
-    }
-
-    /**
-     * 从一个Type中提取其原始的Class类型 (保持不变)
-     */
-    private Class<?> getRawType(Type type) {
+    private Class<? extends IDataOperation<?>> getRawTypeFrom(Type type) {
         if (type instanceof Class<?>) {
-            return (Class<?>) type;
+            return (Class<? extends IDataOperation<?>>) type;
         } else if (type instanceof ParameterizedType) {
-            return (Class<?>) ((ParameterizedType) type).getRawType();
-        } else {
-            throw new IllegalArgumentException("Cannot resolve raw type from: " + type);
+            return (Class<? extends IDataOperation<?>>) ((ParameterizedType) type).getRawType();
         }
+        throw new IllegalArgumentException("Cannot resolve raw type from: " + type);
     }
 }

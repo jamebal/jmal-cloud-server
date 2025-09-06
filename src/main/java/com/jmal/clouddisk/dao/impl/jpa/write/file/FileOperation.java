@@ -9,13 +9,15 @@ import java.util.Set;
 public final class FileOperation {
     private FileOperation() {}
 
-    public record CreateFileMetadata(FileMetadataDO entity) implements IFileOperation {}
-    public record CreateAllArticle(Iterable<ArticleDO> entities) implements IFileOperation {}
-    public record CreateAllFileMetadata(Iterable<FileMetadataDO> entities) implements IFileOperation {}
-    public record DeleteById(FileMetadataDO entity) implements IFileOperation {}
+    public record Default() implements IFileOperation<Void> {}
 
-    public record SetShareBaseOperation(String fileId) implements IFileOperation {}
-    public record UnsetShareBaseOperation(String fileId) implements IFileOperation {}
-    public record UpdateTagsForFile(String fileId, Set<Tag> tags) implements IFileOperation {}
+    public record CreateFileMetadata(FileMetadataDO entity) implements IFileOperation<FileMetadataDO> {}
+    public record CreateAllArticle(Iterable<ArticleDO> entities) implements IFileOperation<Integer> {}
+    public record CreateAllFileMetadata(Iterable<FileMetadataDO> entities) implements IFileOperation<Integer> {}
+    public record DeleteById(String fileId) implements IFileOperation<Void> {}
+
+    public record SetShareBaseOperation(String fileId) implements IFileOperation<Void> {}
+    public record UnsetShareBaseOperation(String fileId) implements IFileOperation<Void> {}
+    public record UpdateTagsForFile(String fileId, Set<Tag> tags) implements IFileOperation<Void> {}
 
 }

@@ -7,18 +7,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("shareCreateAllHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class ShareOperationHandler implements IDataOperationHandler<IShareOperation> {
+public class CreateAllHandler implements IDataOperationHandler<ShareOperation.CreateAll, Void> {
 
-    private final ShareRepository shareRepository;
+    private final ShareRepository repo;
 
     @Override
-    public void handle(IShareOperation operation) {
-        switch (operation) {
-            case ShareOperation.CreateAll createOp -> shareRepository.saveAll(createOp.entities());
-        }
+    public Void handle(ShareOperation.CreateAll op) {
+        repo.saveAll(op.entities());
+        return null;
     }
-
 }

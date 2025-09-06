@@ -7,18 +7,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("consumerCreateAllHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class UserOperationHandler implements IDataOperationHandler<IUserOperation> {
+public class CreateAllHandler implements IDataOperationHandler<UserOperation.CreateAll, Void> {
 
-    private final UserRepository userRepository;
+    private final UserRepository repo;
 
     @Override
-    public void handle(IUserOperation operation) {
-        switch (operation) {
-            case UserOperation.CreateAll createOp -> userRepository.saveAll(createOp.entities());
-        }
+    public Void handle(UserOperation.CreateAll op) {
+        repo.saveAll(op.entities());
+        return null;
     }
-
 }

@@ -5,7 +5,7 @@ import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IAccessTokenDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.AccessTokenRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.access_token.AccessTokenOperation;
+import com.jmal.clouddisk.dao.impl.jpa.write.accesstoken.AccessTokenOperation;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;

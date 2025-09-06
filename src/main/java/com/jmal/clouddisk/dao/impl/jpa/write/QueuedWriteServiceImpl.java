@@ -15,24 +15,18 @@ import java.util.concurrent.*;
 public class QueuedWriteServiceImpl implements IWriteService {
 
     // 内部任务封装类
-    private static class WriteTask {
-        private final IDataOperation operation;
-        private final CompletableFuture<Void> future;
+    private static class WriteTask<R> {
+        private final IDataOperation<R> operation;
+        private final CompletableFuture<R> future;
 
-        private WriteTask(IDataOperation operation, CompletableFuture<Void> future) {
+        private WriteTask(IDataOperation<R> operation, CompletableFuture<R> future) {
             this.operation = operation;
             this.future = future;
         }
 
-        /**
-         * 工厂方法，用于创建常规任务
-         */
-        static WriteTask forOperation(IDataOperation operation) {
-            return new WriteTask(operation, new CompletableFuture<>());
-        }
     }
 
-    private static final class PoisonPill extends WriteTask {
+    private static final class PoisonPill extends WriteTask<Void> {
         // 毒丸是一个特殊的WriteTask
         private PoisonPill() {
             // payload和future都可以是null，因为它只是一个信号
@@ -40,9 +34,9 @@ public class QueuedWriteServiceImpl implements IWriteService {
         }
     }
 
-    private static final WriteTask POISON_PILL = new PoisonPill();
+    private static final WriteTask<?> POISON_PILL = new PoisonPill();
 
-    private final BlockingQueue<WriteTask> writeQueue = new LinkedBlockingQueue<>(10000);
+    private final BlockingQueue<WriteTask<?>> writeQueue = new LinkedBlockingQueue<>(10000);
     private final ExecutorService writerExecutor = Executors.newSingleThreadExecutor();
     private final DataManipulationService dataManipulationService;
 
@@ -52,8 +46,8 @@ public class QueuedWriteServiceImpl implements IWriteService {
     }
 
     @Override
-    public CompletableFuture<Void> submit(IDataOperation operation) {
-        WriteTask task = WriteTask.forOperation(operation);
+    public <R> CompletableFuture<R> submit(IDataOperation<R> operation) {
+        WriteTask<R> task = new WriteTask<>(operation, new CompletableFuture<>());
 
         boolean offered = writeQueue.offer(task);
 
@@ -74,7 +68,7 @@ public class QueuedWriteServiceImpl implements IWriteService {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     // 使用 take() 高效阻塞，直到有任务或毒丸到来
-                    WriteTask task = writeQueue.take();
+                    WriteTask<?> task = writeQueue.take();
 
                     // 检查是否是关闭信号
                     if (task == POISON_PILL) {
@@ -96,11 +90,11 @@ public class QueuedWriteServiceImpl implements IWriteService {
         });
     }
 
-    private void processTask(WriteTask task) {
+    private void processTask(WriteTask<?> task) {
         try {
             log.debug("处理操作任务 {}", task.operation.getClass().getName());
-            dataManipulationService.execute(task.operation);
-            task.future.complete(null);
+            Object result = dataManipulationService.execute(task.operation);
+            completeFuture(task.future, result);
         } catch (Exception e) {
             log.error("处理操作写入任务时出错 {}", task.operation.getClass().getName(), e);
             if (task.future != null) {
@@ -109,8 +103,13 @@ public class QueuedWriteServiceImpl implements IWriteService {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private <R> void completeFuture(CompletableFuture<R> future, Object result) {
+        future.complete((R) result);
+    }
+
     private void drainQueueOnShutdown() {
-        WriteTask remainingTask;
+        WriteTask<?> remainingTask;
         int drainedCount = 0;
         while ((remainingTask = writeQueue.poll()) != null) {
             if (remainingTask != POISON_PILL) {

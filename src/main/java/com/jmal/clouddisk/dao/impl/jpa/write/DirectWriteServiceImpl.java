@@ -20,13 +20,13 @@ public class DirectWriteServiceImpl implements IWriteService {
     }
 
     @Override
-    public CompletableFuture<Void> submit(IDataOperation operation) {
+    public <R> CompletableFuture<R> submit(IDataOperation<R> operation) {
         try {
             // 直接、同步地调用通用的数据操作执行器
-            dataManipulationService.execute(operation);
+            R result = dataManipulationService.execute(operation);
 
             // 操作成功，返回一个已经完成的Future
-            return CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(result);
         } catch (Exception e) {
             log.error("Direct write failed for operation {}", operation.getClass().getName(), e);
 

@@ -5,5 +5,5 @@ import com.jmal.clouddisk.model.file.TrashEntityDO;
 public final class TrashOperation {
     private TrashOperation() {}
 
-    public record CreateAll(Iterable<TrashEntityDO> entities) implements ITrashOperation {}
+    public record CreateAll(Iterable<TrashEntityDO> entities) implements ITrashOperation<Void> {}
 }

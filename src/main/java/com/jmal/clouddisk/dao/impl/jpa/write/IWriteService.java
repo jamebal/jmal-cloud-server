@@ -11,14 +11,11 @@ import java.util.concurrent.CompletableFuture;
 public interface IWriteService {
 
     /**
-     * 提交一个数据操作任务。
-     *
-     * @param operation 要执行的数据操作，必须是 IDataOperation 的一个实例。
-     * @return a CompletableFuture that completes when the write operation is confirmed,
-     *         or completes exceptionally if it fails. For queued implementations,
-     *         this completion happens when the task is processed by the consumer.
-     *         For direct implementations, this completion happens immediately.
+     * 提交一个数据操作任务，并异步返回其结果。
+     * @param operation 要执行的数据操作。
+     * @param <R> 操作期望返回的结果类型。
+     * @return 一个 CompletableFuture，最终将保存操作的结果。
      */
-    CompletableFuture<Void> submit(IDataOperation operation);
+    <R> CompletableFuture<R> submit(IDataOperation<R> operation);
 
 }

@@ -5,5 +5,5 @@ import com.jmal.clouddisk.model.TagDO;
 public final class TagOperation {
     private TagOperation() {}
 
-    public record CreateAll(Iterable<TagDO> entities) implements ITagOperation {}
+    public record CreateAll(Iterable<TagDO> entities) implements ITagOperation<Void> {}
 }

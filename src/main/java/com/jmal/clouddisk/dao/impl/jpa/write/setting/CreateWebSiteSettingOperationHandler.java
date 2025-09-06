@@ -7,18 +7,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("createWebSiteSettingOperationHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class WebSiteSettingOperationHandler implements IDataOperationHandler<IWebSiteSettingOperation> {
+public class CreateWebSiteSettingOperationHandler implements IDataOperationHandler<WebSiteSettingOperation.CreateAll, Void> {
 
-    private final WebsiteSettingRepository websiteSettingRepository;
+    private final WebsiteSettingRepository repo;
 
     @Override
-    public void handle(IWebSiteSettingOperation operation) {
-        switch (operation) {
-            case WebSiteSettingOperation.CreateAll createOp -> websiteSettingRepository.saveAll(createOp.entities());
-        }
+    public Void handle(WebSiteSettingOperation.CreateAll op) {
+        repo.saveAll(op.entities());
+        return null;
     }
-
 }

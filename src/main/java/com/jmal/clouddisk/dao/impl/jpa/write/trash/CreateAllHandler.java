@@ -7,18 +7,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("trashCreateAllHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class TrashOperationHandler implements IDataOperationHandler<ITrashOperation> {
+public class CreateAllHandler implements IDataOperationHandler<TrashOperation.CreateAll, Void> {
 
-    private final TrashRepository trashRepository;
+    private final TrashRepository repo;
 
     @Override
-    public void handle(ITrashOperation operation) {
-        switch (operation) {
-            case TrashOperation.CreateAll createOp -> trashRepository.saveAll(createOp.entities());
-        }
+    public Void handle(TrashOperation.CreateAll op) {
+        repo.saveAll(op.entities());
+        return null;
     }
-
 }

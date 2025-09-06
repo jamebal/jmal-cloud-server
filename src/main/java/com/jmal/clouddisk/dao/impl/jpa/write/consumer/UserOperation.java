@@ -5,5 +5,5 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 public final class UserOperation {
     private UserOperation() {}
 
-    public record CreateAll(Iterable<ConsumerDO> entities) implements IUserOperation {}
+    public record CreateAll(Iterable<ConsumerDO> entities) implements IUserOperation<Void> {}
 }

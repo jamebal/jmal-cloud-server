@@ -5,5 +5,5 @@ import com.jmal.clouddisk.model.WebsiteSettingDO;
 public final class WebSiteSettingOperation {
     private WebSiteSettingOperation() {}
 
-    public record CreateAll(Iterable<WebsiteSettingDO> entities) implements IWebSiteSettingOperation {}
+    public record CreateAll(Iterable<WebsiteSettingDO> entities) implements IWebSiteSettingOperation<Void> {}
 }

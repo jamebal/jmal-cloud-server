@@ -5,5 +5,5 @@ import com.jmal.clouddisk.model.rbac.RoleDO;
 public final class RoleOperation {
     private RoleOperation() {}
 
-    public record CreateAll(Iterable<RoleDO> entities) implements IRoleOperation {}
+    public record CreateAll(Iterable<RoleDO> entities) implements IRoleOperation<Void> {}
 }
