@@ -2,8 +2,11 @@ package com.jmal.clouddisk.dao.impl.jpa;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IFileDAO;
+import com.jmal.clouddisk.dao.impl.jpa.dto.FileTagsDTO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FilePropsRepository;
+import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
+import com.jmal.clouddisk.dao.impl.jpa.write.file.FileOperation;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
 import com.jmal.clouddisk.model.Tag;
@@ -33,6 +36,8 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     private final LuceneQueryService luceneQueryService;
 
+    private final IWriteService writeService;
+
     @Transactional(readOnly = true)
     @Override
     public void deleteAllByIdInBatch(List<String> userIdList) {
@@ -58,19 +63,25 @@ public class FileDAOJpaImpl implements IFileDAO {
         if (affectedFileIds == null || affectedFileIds.isEmpty()) {
             return;
         }
-        List<FilePropsDO> propsToUpdate = filePropsRepository.findAllById(affectedFileIds);
-        for (FilePropsDO props : propsToUpdate) {
-            if (props.getTags() == null) continue;
-            for (Tag tag : props.getTags()) {
+        List<FileTagsDTO> fileTagsDTOList = filePropsRepository.findTagsByIdIn(affectedFileIds);
+
+        for (FileTagsDTO dto : fileTagsDTOList) {
+            if (dto.getTags() == null) continue;
+
+            boolean tagFoundAndUpdated = false;
+            for (Tag tag : dto.getTags()) {
                 if (tagId.equals(tag.getTagId())) {
-                    // 更新 name 和 color
                     tag.setName(newTagName);
                     tag.setColor(newColor);
+                    tagFoundAndUpdated = true;
                     break;
                 }
             }
+
+            if (tagFoundAndUpdated) {
+                writeService.submit(new FileOperation.UpdateTagsForFile(dto.getId(), dto.getTags()));
+            }
         }
-        filePropsRepository.saveAll(propsToUpdate);
     }
 
     @Transactional(readOnly = true)
@@ -98,7 +109,7 @@ public class FileDAOJpaImpl implements IFileDAO {
     @Override
     public void save(FileDocument file) {
         FileMetadataDO fileMetadataDO = new FileMetadataDO(file);
-        fileMetadataRepository.save(fileMetadataDO);
+        writeService.submit(new FileOperation.CreateFileMetadata(fileMetadataDO));
     }
 
     @Transactional

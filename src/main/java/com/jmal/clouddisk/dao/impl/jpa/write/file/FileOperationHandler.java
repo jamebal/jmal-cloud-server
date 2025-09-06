@@ -27,6 +27,7 @@ public class FileOperationHandler implements IDataOperationHandler<IFileOperatio
             case FileOperation.SetShareBaseOperation setShareBaseOperation -> filePropsRepository.setSubShareByFileId(setShareBaseOperation.fileId());
             case FileOperation.UnsetShareBaseOperation unsetShareBaseOperation -> filePropsRepository.unsetSubShareByFileId(unsetShareBaseOperation.fileId());
             case FileOperation.DeleteById deleteById -> fileMetadataRepository.deleteById(deleteById.entity().getId());
+            case FileOperation.UpdateTagsForFile updateTagsForFile -> filePropsRepository.updateTagsForFile(updateTagsForFile.fileId(), updateTagsForFile.tags());
         }
     }
 }
