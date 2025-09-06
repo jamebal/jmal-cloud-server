@@ -19,10 +19,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Repository
@@ -38,14 +39,12 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     private final IWriteService writeService;
 
-    @Transactional(readOnly = true)
     @Override
     public void deleteAllByIdInBatch(List<String> userIdList) {
-        fileMetadataRepository.deleteAllByIdInBatch(userIdList);
+        writeService.submit(new FileOperation.DeleteAllByUserIdInBatch(userIdList));
     }
 
     @Override
-    @Transactional(readOnly = true)
     public void updateIsPublicById(String fileId) {
         FilePropsDO props = filePropsRepository.findById(fileId)
                 .orElseThrow(() -> new EntityNotFoundException("FilePropsDO not found with id: " + fileId));
@@ -57,7 +56,6 @@ public class FileDAOJpaImpl implements IFileDAO {
     }
 
     @Override
-    @Transactional
     public void updateTagInfoInFiles(String tagId, String newTagName, String newColor) {
         Set<String> affectedFileIds = luceneQueryService.findByTagId(tagId);
         if (affectedFileIds == null || affectedFileIds.isEmpty()) {
@@ -84,7 +82,6 @@ public class FileDAOJpaImpl implements IFileDAO {
         }
     }
 
-    @Transactional(readOnly = true)
     @Override
     public List<String> findIdSubShare(String userId, String pathPrefix) {
         // 对 prefix 中的特殊字符进行转义，并将 '%' 附加到末尾
@@ -92,55 +89,53 @@ public class FileDAOJpaImpl implements IFileDAO {
         return fileMetadataRepository.findIdSubShares(userId, pathPrefixForLike);
     }
 
-    @Transactional(readOnly = true)
     @Override
     public boolean existsFolderSubShare(String userId, String pathPrefix) {
         String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(pathPrefix) + "%";
         return fileMetadataRepository.existsFolderSubShare(userId, pathPrefixForLike);
     }
 
-    @Transactional(readOnly = true)
     @Override
     public boolean existsById(String id) {
         return fileMetadataRepository.existsById(id);
     }
 
-    @Transactional
     @Override
     public void save(FileDocument file) {
         FileMetadataDO fileMetadataDO = new FileMetadataDO(file);
         writeService.submit(new FileOperation.CreateFileMetadata(fileMetadataDO));
     }
 
-    @Transactional
     @Override
     public String upsertMountFile(FileDocument fileDocument) {
         fileDocument.setRemark("挂载 mount");
         FileMetadataDO fileMetadataDO = fileMetadataRepository.findByNameAndUserIdAndPath(fileDocument.getName(), fileDocument.getUserId(), fileDocument.getPath()).orElse(new FileMetadataDO(fileDocument));
-        FileMetadataDO fileMetadata = fileMetadataRepository.save(fileMetadataDO);
-        return fileMetadata.getId();
+        CompletableFuture<FileMetadataDO> future = writeService.submit(new FileOperation.CreateFileMetadata(fileMetadataDO));
+        try {
+            FileMetadataDO file = future.get(10, TimeUnit.SECONDS);
+            return file.getId();
+        } catch (Exception e) {
+            log.error("upsertMountFile error", e);
+        }
+        return null;
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean existsByUserIdAndMountFileId(String userId, String fileId) {
         return fileMetadataRepository.existsByUserIdAndMountFileId(userId, fileId);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public String findMountFilePath(String fileId, String userId) {
         return fileMetadataRepository.findMountFilePath(fileId, userId).orElse(null);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<String> findByIdIn(List<String> fileIdList) {
         return fileMetadataRepository.findByIdIn(fileIdList);
     }
 
     @Override
-    @Transactional
     public List<FileDocument> findAllAndRemoveByUserIdAndIdPrefix(String userId, String idPrefix) {
         String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(idPrefix) + "%";
         List<FileMetadataDO> filesToDelete = fileMetadataRepository.findAllByUserIdAndIdPrefix(userId, pathPrefixForLike);
@@ -148,32 +143,33 @@ public class FileDAOJpaImpl implements IFileDAO {
             return List.of();
         }
         List<String> foundIds = filesToDelete.stream().map(FileMetadataDO::getId).toList();
-        fileMetadataRepository.deleteAllByIdInBatch(foundIds);
+        CompletableFuture<Void> future = writeService.submit(new FileOperation.DeleteAllByIdInBatch(foundIds));
+        try {
+            future.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.error("findAllAndRemoveByUserIdAndIdPrefix error", e);
+        }
         return filesToDelete.stream().map(FileMetadataDO::toFileDocument).toList();
     }
 
     @Override
-    @Transactional
     public void saveAll(List<FileDocument> fileDocumentList) {
         List<FileMetadataDO> fileMetadataDOList = fileDocumentList.stream().map(FileMetadataDO::new).toList();
-        fileMetadataRepository.saveAll(fileMetadataDOList);
+        writeService.submit(new FileOperation.CreateAllFileMetadata(fileMetadataDOList));
     }
 
     @Override
-    @Transactional
     public void removeByMountFileId(String fileId) {
-        fileMetadataRepository.removeByMountFileId(fileId);
+        writeService.submit(new FileOperation.RemoveByMountFileId(fileId));
     }
 
     @Override
-    @Transactional
     public void setSubShareByFileId(String fileId) {
-        filePropsRepository.setSubShareByFileId(fileId);
+        writeService.submit(new FileOperation.SetShareBaseOperation(fileId));
     }
 
     @Override
-    @Transactional
     public void unsetSubShareByFileId(String fileId) {
-        filePropsRepository.unsetSubShareByFileId(fileId);
+        writeService.submit(new FileOperation.UnsetShareBaseOperation(fileId));
     }
 }

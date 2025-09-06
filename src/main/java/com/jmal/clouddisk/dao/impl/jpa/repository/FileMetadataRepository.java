@@ -4,6 +4,7 @@ import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -60,4 +61,10 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, St
      */
     @Query("SELECT COALESCE(SUM(f.size), 0) FROM FileMetadataDO f WHERE f.userId = :userId AND f.isFolder = false")
     Long calculateTotalSizeByUserId(@Param("userId") String userId);
+
+
+    @Modifying
+    @Query("DELETE FROM FileMetadataDO f WHERE f.userId IN :userIds")
+    void deleteAllByUserIdInBatch(List<String> userIdList);
+
 }

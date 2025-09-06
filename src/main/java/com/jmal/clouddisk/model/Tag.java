@@ -10,4 +10,14 @@ public class Tag implements Reflective {
     String tagId;
     String name;
     String color;
+
+    public Tag(String tagId, String oldName, String blue) {
+        this.tagId = tagId;
+        this.name = oldName;
+        this.color = blue;
+    }
+
+    public Tag() {
+
+    }
 }

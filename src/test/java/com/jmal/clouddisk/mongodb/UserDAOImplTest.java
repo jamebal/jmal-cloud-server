@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.media.mongodb;
+package com.jmal.clouddisk.mongodb;
 
 import com.jmal.clouddisk.dao.impl.mongodb.UserDAOImpl;
 import com.jmal.clouddisk.dao.util.MyQuery;

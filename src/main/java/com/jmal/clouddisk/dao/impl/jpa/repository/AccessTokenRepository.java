@@ -48,7 +48,7 @@ public interface AccessTokenRepository extends JpaRepository<UserAccessTokenDO, 
      */
     @Modifying
     @Query("UPDATE UserAccessTokenDO u SET u.lastActiveTime = :lastActiveTime WHERE u.username = :username AND u.accessToken = :token")
-    int updateLastActiveTimeByUsernameAndToken(@Param("username") String username,
+    void updateLastActiveTimeByUsernameAndToken(@Param("username") String username,
                                               @Param("token") String token,
                                               @Param("lastActiveTime") LocalDateTime lastActiveTime);
 }

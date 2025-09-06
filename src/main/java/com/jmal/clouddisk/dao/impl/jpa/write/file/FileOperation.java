@@ -4,6 +4,7 @@ import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.ArticleDO;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
 
+import java.util.List;
 import java.util.Set;
 
 public final class FileOperation {
@@ -19,5 +20,11 @@ public final class FileOperation {
     public record SetShareBaseOperation(String fileId) implements IFileOperation<Void> {}
     public record UnsetShareBaseOperation(String fileId) implements IFileOperation<Void> {}
     public record UpdateTagsForFile(String fileId, Set<Tag> tags) implements IFileOperation<Void> {}
+
+    public record DeleteAllByIdInBatch(List<String> fileIdList) implements IFileOperation<Void> {}
+
+    public record DeleteAllByUserIdInBatch(List<String> userIdList) implements IFileOperation<Void> {}
+
+    public record RemoveByMountFileId(String fileId) implements IFileOperation<Void> {}
 
 }

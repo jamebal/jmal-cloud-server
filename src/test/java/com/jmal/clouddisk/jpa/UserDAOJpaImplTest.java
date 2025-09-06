@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.media.jpa;
+package com.jmal.clouddisk.jpa;
 
 import com.jmal.clouddisk.dao.impl.jpa.UserDAOJpaImpl;
 import com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository;
