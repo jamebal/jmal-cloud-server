@@ -18,6 +18,10 @@ public class AccessTokenOperationHandler implements IDataOperationHandler<IAcces
     public void handle(IAccessTokenOperation operation) {
         switch (operation) {
             case AccessTokenOperation.CreateAll createAll -> accessTokenRepository.saveAll(createAll.entities());
+            case AccessTokenOperation.Create create -> accessTokenRepository.save(create.entity());
+            case AccessTokenOperation.DeleteByUsernameIn deleteByUsernameIn -> accessTokenRepository.deleteByUsernameIn(deleteByUsernameIn.usernames());
+            case AccessTokenOperation.UpdateLastActiveTimeByUsernameAndToken update -> accessTokenRepository.updateLastActiveTimeByUsernameAndToken(update.username(), update.token(), update.lastActiveTime());
+            case AccessTokenOperation.DeleteById deleteById -> accessTokenRepository.deleteById(deleteById.id());
         }
     }
 

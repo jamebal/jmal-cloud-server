@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -58,9 +60,12 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO, IWriteCommon<User
             }
             // 设置创建时间并保存
             userAccessTokenDO.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
-            accessTokenRepository.save(userAccessTokenDO);
+            CompletableFuture<Void> future = writeService.submit(new AccessTokenOperation.Create(userAccessTokenDO));
+            future.get(10, TimeUnit.SECONDS);
         } catch (CommonException e) {
             throw e;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error("JPA创建AccessToken失败: name={}, error={}",
                     userAccessTokenDO.getName(), e.getMessage(), e);
@@ -80,8 +85,7 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO, IWriteCommon<User
             List<String> usernames = userList.stream()
                     .map(ConsumerDO::getUsername)
                     .collect(Collectors.toList());
-
-            accessTokenRepository.deleteByUsernameIn(usernames);
+            writeService.submit(new AccessTokenOperation.DeleteByUsernameIn(usernames));
         } catch (Exception e) {
             log.error("JPA删除用户Token失败: userCount={}, error={}",
                     userList.size(), e.getMessage(), e);
@@ -113,14 +117,8 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO, IWriteCommon<User
     @Transactional
     public void updateAccessToken(String username, String token) {
         try {
-            int updatedCount = accessTokenRepository.updateLastActiveTimeByUsernameAndToken(
-                    username, token, LocalDateTime.now(TimeUntils.ZONE_ID));
+            writeService.submit(new AccessTokenOperation.UpdateLastActiveTimeByUsernameAndToken(username, token, LocalDateTime.now(TimeUntils.ZONE_ID)));
 
-            if (updatedCount > 0) {
-                log.debug("JPA更新AccessToken活跃时间成功: username={}", username);
-            } else {
-                log.warn("JPA更新AccessToken活跃时间无效果: username={}, token可能不存在", username);
-            }
         } catch (Exception e) {
             log.error("JPA更新AccessToken失败: username={}, error={}", username, e.getMessage(), e);
             throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), "数据库操作失败");
@@ -132,7 +130,7 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO, IWriteCommon<User
     public void deleteAccessToken(String id) {
         try {
             if (accessTokenRepository.existsById(id)) {
-                accessTokenRepository.deleteById(id);
+                writeService.submit(new AccessTokenOperation.DeleteById(id));
             } else {
                 log.warn("JPA删除AccessToken失败: 令牌不存在, id={}", id);
                 throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), "访问令牌不存在");
