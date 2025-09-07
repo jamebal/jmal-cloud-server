@@ -1,8 +1,10 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
-import com.jmal.clouddisk.dao.IFolderSizeDAO;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.IFolderSizeDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FolderSizeRepository;
+import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
+import com.jmal.clouddisk.dao.impl.jpa.write.file.FileOperation;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
 import lombok.RequiredArgsConstructor;
@@ -11,9 +13,10 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Repository
@@ -21,16 +24,17 @@ import java.util.List;
 @Conditional(RelationalDataSourceCondition.class)
 public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
 
-    private final FolderSizeRepository fileDocumentRepository;
+    private final FolderSizeRepository folderSizeRepository;
+
+    private final IWriteService writeService;
 
     @Override
-    @Transactional(readOnly = true)
     public List<FileDocument> findFoldersNeedUpdateSize(int batchSize) {
         log.debug("查询需要更新大小的文件夹，批次大小: {}", batchSize);
 
         try {
             Pageable pageable = PageRequest.of(0, batchSize);
-            List<FileMetadataDO> folders = fileDocumentRepository.findFoldersWithoutSize(pageable);
+            List<FileMetadataDO> folders = folderSizeRepository.findFoldersWithoutSize(pageable);
 
             List<FileDocument> fileDocuments = folders.stream().map(fileMetadataDO -> {
                 FileDocument fileDocument = new FileDocument();
@@ -49,13 +53,12 @@ public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
     }
 
     @Override
-    @Transactional
     public void updateFileSize(String fileId, long size) {
         log.debug("更新文件大小: fileId={}, size={}", fileId, size);
 
         try {
-            int updatedCount = fileDocumentRepository.updateFileSize(fileId, size);
-
+            CompletableFuture<Integer> future = writeService.submit(new FileOperation.UpdateFileSize(fileId, size));
+            int updatedCount = future.get(10, TimeUnit.SECONDS);
             if (updatedCount > 0) {
                 log.debug("文件大小更新成功: fileId={}, size={}", fileId, size);
             } else {
@@ -68,12 +71,11 @@ public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean hasNeedUpdateSizeInDb() {
         log.debug("检查是否还有需要更新大小的文件夹");
 
         try {
-            boolean exists = fileDocumentRepository.existsFoldersWithoutSize();
+            boolean exists = folderSizeRepository.existsFoldersWithoutSize();
             log.debug("是否存在需要更新大小的文件夹: {}", exists);
             return exists;
         } catch (Exception e) {
@@ -83,12 +85,11 @@ public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public long totalSizeNeedUpdateSizeInDb() {
         log.debug("统计需要更新大小的文件夹数量");
 
         try {
-            long count = fileDocumentRepository.countFoldersWithoutSize();
+            long count = folderSizeRepository.countFoldersWithoutSize();
             log.debug("需要更新大小的文件夹数量: {}", count);
             return count;
         } catch (Exception e) {
@@ -98,13 +99,13 @@ public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
     }
 
     @Override
-    @Transactional
     public void clearFolderSizInDb() {
-        log.info("清空数据库中所有文件夹的大小信息");
+        log.debug("清空数据库中所有文件夹的大小信息");
 
         try {
-            int updatedCount = fileDocumentRepository.clearAllFolderSizes();
-            log.info("已清空 {} 个文件夹的大小信息", updatedCount);
+            CompletableFuture<Integer> future = writeService.submit(new FileOperation.ClearAllFolderSizes());
+            int updatedCount = future.get(10, TimeUnit.SECONDS);
+            log.debug("已清空 {} 个文件夹的大小信息", updatedCount);
         } catch (Exception e) {
             log.error("清空文件夹大小信息失败: {}", e.getMessage(), e);
             throw new RuntimeException("清空文件夹大小信息失败", e);

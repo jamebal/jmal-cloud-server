@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,7 +35,6 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO, IWriteCommon<User
     private final IWriteService writeService;
 
     @Override
-    @Transactional(readOnly = true)
     public UserAccessTokenDO getUserNameByAccessToken(String accessToken) {
         try {
             UserAccessTokenDO result = accessTokenRepository.findByAccessToken(accessToken).orElse(null);
@@ -49,7 +47,6 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO, IWriteCommon<User
     }
 
     @Override
-    @Transactional
     public void generateAccessToken(UserAccessTokenDO userAccessTokenDO) {
         validateUserAccessToken(userAccessTokenDO);
 
@@ -74,7 +71,6 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO, IWriteCommon<User
     }
 
     @Override
-    @Transactional
     public void deleteAllByUser(List<ConsumerDO> userList) {
         if (userList == null || userList.isEmpty()) {
             log.debug("用户列表为空，无需删除Token");
@@ -94,7 +90,6 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO, IWriteCommon<User
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<UserAccessTokenDTO> accessTokenList(String username) {
         try {
             List<UserAccessTokenDO> tokenList = accessTokenRepository.findByUsername(username);
@@ -114,7 +109,6 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO, IWriteCommon<User
     }
 
     @Override
-    @Transactional
     public void updateAccessToken(String username, String token) {
         try {
             writeService.submit(new AccessTokenOperation.UpdateLastActiveTimeByUsernameAndToken(username, token, LocalDateTime.now(TimeUntils.ZONE_ID)));
@@ -126,11 +120,11 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO, IWriteCommon<User
     }
 
     @Override
-    @Transactional
     public void deleteAccessToken(String id) {
         try {
             if (accessTokenRepository.existsById(id)) {
-                writeService.submit(new AccessTokenOperation.DeleteById(id));
+                CompletableFuture<Void> future = writeService.submit(new AccessTokenOperation.DeleteById(id));
+                future.get(10, TimeUnit.SECONDS);
             } else {
                 log.warn("JPA删除AccessToken失败: 令牌不存在, id={}", id);
                 throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), "访问令牌不存在");

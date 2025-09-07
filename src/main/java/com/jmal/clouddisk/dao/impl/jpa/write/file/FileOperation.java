@@ -27,4 +27,7 @@ public final class FileOperation {
 
     public record RemoveByMountFileId(String fileId) implements IFileOperation<Void> {}
 
+    public record UpdateFileSize(String fileId, Long size) implements IFileOperation<Integer> {}
+    public record ClearAllFolderSizes() implements IFileOperation<Integer> {}
+
 }
