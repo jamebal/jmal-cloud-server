@@ -1,8 +1,10 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
-import com.jmal.clouddisk.dao.IHeartwingsDAO;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.IHeartwingsDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.HeartwingsRepository;
+import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
+import com.jmal.clouddisk.dao.impl.jpa.write.setting.WebSiteSettingOperation;
 import com.jmal.clouddisk.model.HeartwingsDO;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -14,7 +16,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,8 +28,9 @@ public class HeartwingsDAOJpaImpl implements IHeartwingsDAO {
 
     private final HeartwingsRepository heartwingsRepository;
 
+    private final IWriteService writeService;
+
     @Override
-    @Transactional
     public void save(HeartwingsDO heartwingsDO) {
         log.debug("保存心语: username={}, heartwings={}",
                  heartwingsDO.getUsername(),
@@ -38,21 +40,11 @@ public class HeartwingsDAOJpaImpl implements IHeartwingsDAO {
             // 如果是新记录，设置创建时间
             if (heartwingsDO.getId() == null || heartwingsDO.getId().trim().isEmpty()) {
                 heartwingsDO.setCreateTime(LocalDateTime.now());
-
-                // 生成ID（如果需要自定义ID生成策略）
-                if (heartwingsDO.getId() == null) {
-                    heartwingsDO.setId(generateId());
-                }
             }
 
             validateHeartwingsDO(heartwingsDO);
 
-            HeartwingsDO savedHeartwings = heartwingsRepository.save(heartwingsDO);
-
-            log.info("心语保存成功: id={}, username={}, createTime={}",
-                    savedHeartwings.getId(),
-                    savedHeartwings.getUsername(),
-                    savedHeartwings.getCreateTime());
+            writeService.submit(new WebSiteSettingOperation.CreateHeartwings(heartwingsDO));
 
         } catch (Exception e) {
             log.error("保存心语失败: username={}, heartwings={}, error={}",
@@ -64,7 +56,6 @@ public class HeartwingsDAOJpaImpl implements IHeartwingsDAO {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public ResponseResult<List<HeartwingsDO>> getWebsiteHeartwings(Integer page, Integer pageSize, String order) {
         log.debug("查询网站心语列表: page={}, pageSize={}, order={}", page, pageSize, order);
 
@@ -132,10 +123,4 @@ public class HeartwingsDAOJpaImpl implements IHeartwingsDAO {
         }
     }
 
-    /**
-     * 生成ID（简单实现，实际项目中可能需要更复杂的ID生成策略）
-     */
-    private String generateId() {
-        return java.util.UUID.randomUUID().toString().replace("-", "");
-    }
 }
