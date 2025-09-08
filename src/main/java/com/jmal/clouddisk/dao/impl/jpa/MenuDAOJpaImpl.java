@@ -19,9 +19,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -36,7 +37,6 @@ public class MenuDAOJpaImpl implements IMenuDAO, IWriteCommon<MenuDO> {
     private final UserRepository userRepository;
 
     @Override
-    @Transactional(readOnly = true)
     public List<MenuDO> treeMenu(QueryMenuDTO queryDTO) {
 
         // 使用JPA Specification动态构建查询
@@ -78,43 +78,46 @@ public class MenuDAOJpaImpl implements IMenuDAO, IWriteCommon<MenuDO> {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public MenuDO findById(String menuId) {
         return menuRepository.findById(menuId).orElse(null);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean existsByName(String name) {
         return menuRepository.existsByName(name);
     }
 
     @Override
-    @Transactional
     public void save(MenuDO menuDO) {
-        menuRepository.save(menuDO);
+        CompletableFuture<Void> future = writeService.submit(new MenuOperation.Create(menuDO));
+        try {
+            future.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.error("MenuDAOJpaImpl save error", e);
+        }
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean existsByNameAndIdNot(String name, String id) {
         return menuRepository.existsByNameAndIdNot(name, id);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<String> findIdsByParentIdIn(List<String> ids) {
         return menuRepository.findIdsByParentIdIn(ids);
     }
 
     @Override
-    @Transactional
     public void removeByIdIn(Collection<String> idList) {
-        menuRepository.removeByIdIn(idList);
+        CompletableFuture<Void> future = writeService.submit(new MenuOperation.RemoveByIdIn(idList));
+        try {
+            future.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.error("MenuDAOJpaImpl save error", e);
+        }
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<String> findAuthorityAllByIds(List<String> menuIdList) {
         if (menuIdList == null || menuIdList.isEmpty()) {
             return Collections.emptyList();
@@ -123,21 +126,18 @@ public class MenuDAOJpaImpl implements IMenuDAO, IWriteCommon<MenuDO> {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean existsById(String id) {
         return menuRepository.existsById(id);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean exists() {
         return menuRepository.count() > 0;
     }
 
     @Override
-    @Transactional
     public void saveAll(List<MenuDO> menuDOList) {
-        menuRepository.saveAll(menuDOList);
+        writeService.submit(new MenuOperation.CreateAll(menuDOList));
     }
 
     /**
