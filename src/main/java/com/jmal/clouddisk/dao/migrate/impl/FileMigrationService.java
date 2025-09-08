@@ -11,7 +11,6 @@ import com.jmal.clouddisk.model.file.ArticleDO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
 import com.jmal.clouddisk.service.impl.FilePersistenceService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -49,7 +48,6 @@ public class FileMigrationService implements IMigrationService {
      * 迁移 File 数据从 MongoDB 到 JPA
      */
     @Override
-    @Transactional
     public MigrationResult migrateData() {
         MigrationResult result = new MigrationResult("文件");
         if (fileMetadataRepository.count() > 0) {
