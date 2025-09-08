@@ -113,7 +113,7 @@ public class MenuDAOJpaImpl implements IMenuDAO, IWriteCommon<MenuDO> {
         try {
             future.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
-            log.error("MenuDAOJpaImpl save error", e);
+            log.error("MenuDAOJpaImpl removeByIdIn error", e);
         }
     }
 

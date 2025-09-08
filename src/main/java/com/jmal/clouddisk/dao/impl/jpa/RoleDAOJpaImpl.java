@@ -16,11 +16,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Repository
@@ -33,7 +34,6 @@ public class RoleDAOJpaImpl implements IRoleDAO, IWriteCommon<RoleDO> {
     private final IWriteService writeService;
 
     @Override
-    @Transactional(readOnly = true)
     public Page<RoleDO> page(QueryRoleDTO queryDTO) {
         Specification<RoleDO> spec = (_, _, criteriaBuilder) -> criteriaBuilder.conjunction();
 
@@ -53,51 +53,54 @@ public class RoleDAOJpaImpl implements IRoleDAO, IWriteCommon<RoleDO> {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean existsByCode(String roleCode) {
         return roleRepository.existsByCode(roleCode);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean existsById(String roleId) {
         return roleRepository.existsById(roleId);
     }
 
     @Override
-    @Transactional
     public void save(RoleDO roleDO) {
-        roleRepository.save(roleDO);
+        CompletableFuture<Void> future = writeService.submit(new RoleOperation.Create(roleDO));
+        try {
+            future.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.error("Save roleDO failed: {}", e.getMessage(), e);
+        }
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean existsByCodeAndIdNot(String code, String id) {
         return roleRepository.existsByCodeAndIdNot(code, id);
     }
 
     @Override
-    @Transactional
     public void removeByIdIn(List<String> roleIdList) {
-        roleRepository.removeByIdIn(roleIdList);
+        CompletableFuture<Void> future = writeService.submit(new RoleOperation.removeByIdIn(roleIdList));
+        try {
+            future.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.error("Remove roleDO by id list failed: {}", e.getMessage(), e);
+        }
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<RoleDO> findAllByIdIn(List<String> roleIdList) {
         Set<RoleDO> roleDOSet = roleRepository.findAllByIdIn(roleIdList);
         return new ArrayList<>(roleDOSet);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public RoleDO findByCode(String roleCode) {
         return roleRepository.findByCode(roleCode);
     }
 
     @Override
     public void saveAll(List<RoleDO> roleDOList) {
-        roleRepository.saveAll(roleDOList);
+        writeService.submit(new RoleOperation.CreateAll(roleDOList));
     }
 
     /**
