@@ -7,6 +7,7 @@ import com.jmal.clouddisk.model.OperationPermission;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.Trash;
 import com.jmal.clouddisk.service.impl.CommonFileService;
+import jakarta.persistence.Transient;
 import lombok.Data;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
@@ -239,6 +240,12 @@ public class FileDocument extends FileBase implements Reflective {
      * 最后Etag更新错误
      */
     private String lastEtagUpdateError;
+
+    /**
+     * 临时字段，不存数据库，表示是否有草稿
+     */
+    @Transient
+    private boolean hasDraft;
 
     @Override
     public boolean equals(Object obj) {

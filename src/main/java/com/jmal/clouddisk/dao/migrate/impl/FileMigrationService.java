@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.dao.migrate.impl;
 
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
@@ -38,6 +39,10 @@ public class FileMigrationService implements IMigrationService {
     private final FilePersistenceService filePersistenceService;
 
     private final DataSourceProperties dataSourceProperties;
+
+    private final FileProperties fileProperties;
+
+    private int articlesCount;
 
     @Override
     public String getName() {
@@ -80,7 +85,7 @@ public class FileMigrationService implements IMigrationService {
                     List<FileMetadataDO> fileEntityDOList = mongoDataList.stream().map(fileDocument -> {
                         FileMetadataDO fileMetadataDO = new FileMetadataDO(fileDocument);
                         filePersistenceService.persistContents(fileDocument);
-                        if (fileDocument.getSlug() != null) {
+                        if (fileDocument.getSlug() != null || (fileDocument.getPath().startsWith(fileProperties.getDocumentDir()) && "md".equals(fileDocument.getSuffix()))) {
                             ArticleDO articleDO = new ArticleDO(fileDocument);
                             articleDO.setFileMetadata(fileMetadataDO);
                             articleDOList.add(articleDO);
@@ -94,6 +99,7 @@ public class FileMigrationService implements IMigrationService {
                     // 保存文章
                     if (!articleDOList.isEmpty()) {
                         writeService.submit(new FileOperation.CreateAllArticle(articleDOList));
+                        articlesCount += articleDOList.size();
                     }
                     result.addSuccess(mongoDataList.size());
                     result.addProcessed(mongoDataList.size());
@@ -109,6 +115,8 @@ public class FileMigrationService implements IMigrationService {
             log.error("[{}] 迁移过程中发生严重错误: {}", getName(), e.getMessage(), e);
             result.setFatalError(e.getMessage());
         }
+
+        log.info("成功迁移 {} 条 [文章] 数据",  articlesCount);
 
         return result;
     }

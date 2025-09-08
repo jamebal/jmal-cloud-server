@@ -6,11 +6,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
@@ -68,7 +69,7 @@ public class WebsiteSettingDO extends AuditableEntity implements Reflective {
     /***
      * 需要显示的独立页面
      */
-    @Transient
+    @JdbcTypeCode(SqlTypes.JSON)
     List<String> alonePages;
     /***
      * 操作按钮

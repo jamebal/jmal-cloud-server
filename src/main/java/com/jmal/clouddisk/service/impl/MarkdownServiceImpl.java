@@ -5,7 +5,7 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.HttpException;
@@ -13,6 +13,7 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.config.WebConfig;
+import com.jmal.clouddisk.dao.IArticleDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.Either;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -33,7 +34,6 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -64,8 +64,6 @@ import static com.mongodb.client.model.Aggregates.skip;
 @RequiredArgsConstructor
 public class MarkdownServiceImpl implements IMarkdownService {
 
-    private final MongoTemplate mongoTemplate;
-
     private final IUserService userService;
 
     private final FileProperties fileProperties;
@@ -87,6 +85,9 @@ public class MarkdownServiceImpl implements IMarkdownService {
     private final LogService logService;
     private final UserLoginHolder userLoginHolder;
 
+    private final MongoTemplate mongoTemplate;
+    private final IArticleDAO articleDAO;
+
 
     @Override
     public ResponseResult<FileDocument> getMarkDownOne(ArticleDTO articleDTO) {
@@ -94,15 +95,12 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (CharSequenceUtil.isBlank(mark)) {
             return ResultUtil.success(new FileDocument());
         }
-        FileDocument fileDocument = mongoTemplate.findById(mark, FileDocument.class, CommonFileService.COLLECTION_NAME);
-        if (fileDocument != null) {
-            String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
-            fileDocument.setUsername(username);
-            String currentDirectory = commonFileService.getUserDirectory(fileDocument.getPath());
-            File file = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName()).toFile();
-            String content = FileUtil.readString(file, MyFileUtils.getFileCharset(file));
-            fileDocument.setContentText(content);
+        FileDocument fileDocument = articleDAO.getMarkdownOne(mark);
+        if (fileDocument == null) {
+            return ResultUtil.warning("该文章不存在");
         }
+        String username = userService.userInfoById(fileDocument.getUserId()).getUsername();
+        fileDocument.setUsername(username);
         return ResultUtil.success(fileDocument);
     }
 
@@ -170,12 +168,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
     }
 
     private List<FileDocument> getArticlesUrl() {
-        Query query = new Query();
-        // 查询条件
-        query.skip(0).limit(5000);
-        query.addCriteria(Criteria.where(Constants.SUFFIX).is("md"));
-        query.addCriteria(Criteria.where(Constants.RELEASE).is(true));
-        return mongoTemplate.find(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
+        return articleDAO.getAllReleaseArticles();
     }
 
     @Override
@@ -361,80 +354,14 @@ public class MarkdownServiceImpl implements IMarkdownService {
      */
     @Override
     public ResponseResult<List<MarkdownVO>> getMarkdownList(ArticleDTO articleDTO) {
-        int skip = 0;
-        int limit = 0;
-        long count = 0;
-        Integer pageIndex = articleDTO.getPageIndex();
-        Integer pageSize = articleDTO.getPageSize();
-        if (pageIndex != null && pageSize != null) {
-            skip = (pageIndex - 1) * pageSize;
-            limit = pageSize;
-        }
-        Query query = new Query();
-        // 查询条件
-        boolean isDraft;
-        isDraft = setProperty(articleDTO, query);
-        if (limit > 0) {
-            count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
-        }
-        // 排序
-        if (!CharSequenceUtil.isBlank(articleDTO.getSortableProp()) && !CharSequenceUtil.isBlank(articleDTO.getOrder())) {
-            if ("descending".equals(articleDTO.getOrder())) {
-                query.with(Sort.by(Sort.Direction.DESC, articleDTO.getSortableProp()));
-            } else {
-                query.with(Sort.by(Sort.Direction.ASC, articleDTO.getSortableProp()));
-            }
-        } else {
-            query.with(Sort.by(Sort.Direction.DESC, Constants.UPLOAD_DATE));
-        }
-        query.skip(skip);
-        if (limit > 0) {
-            query.limit(limit);
-        }
-        List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
-        List<MarkdownVO> markdownVOList;
-        boolean finalIsDraft = isDraft;
-        markdownVOList = fileDocumentList.parallelStream().map(Either.wrap(fileDocument -> getMarkdownVO(fileDocument, finalIsDraft))).toList();
-        ResponseResult<List<MarkdownVO>> result = ResultUtil.success(markdownVOList);
-        result.setCount(count);
-        return result;
-    }
-
-    private static boolean setProperty(ArticleDTO articleDTO, Query query) {
-        boolean isDraft = false;
-        query.addCriteria(Criteria.where(Constants.SUFFIX).is("md"));
-        query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape("/Document/")));
-        if (!CharSequenceUtil.isBlank(articleDTO.getUserId())) {
-            query.addCriteria(Criteria.where(IUserService.USER_ID).is(articleDTO.getUserId()));
-        }
-        if (articleDTO.getIsRelease() != null && articleDTO.getIsRelease()) {
-            query.addCriteria(Criteria.where(Constants.RELEASE).is(true));
-        }
-        if (articleDTO.getIsAlonePage() != null && articleDTO.getIsAlonePage()) {
-            query.addCriteria(Criteria.where(Constants.ALONE_PAGE).exists(true));
-            query.with(Sort.by(Sort.Direction.ASC, "pageSort"));
-        } else {
-            query.addCriteria(Criteria.where(Constants.ALONE_PAGE).exists(false));
-        }
-        if (articleDTO.getIsDraft() != null && articleDTO.getIsDraft()) {
-            isDraft = true;
-            query.addCriteria(Criteria.where(Constants.DRAFT).exists(true));
-        }
-        if (articleDTO.getCategoryIds() != null && articleDTO.getCategoryIds().length > 0) {
-            query.addCriteria(Criteria.where("categoryIds").in((Object[]) articleDTO.getCategoryIds()));
-        }
-        if (articleDTO.getTagIds() != null && articleDTO.getTagIds().length > 0) {
-            query.addCriteria(Criteria.where(Constants.TAG_IDS).in((Object[]) articleDTO.getTagIds()));
-        }
-        if (!CharSequenceUtil.isBlank(articleDTO.getKeyword())) {
-            query.addCriteria(Criteria.where("contentText").regex(articleDTO.getKeyword(), "i"));
-        }
-        return isDraft;
+        org.springframework.data.domain.Page<FileDocument> page = articleDAO.getMarkdownList(articleDTO);
+        List<MarkdownVO> markdownVOList = page.getContent().parallelStream().map(Either.wrap(fileDocument -> getMarkdownVO(fileDocument, BooleanUtil.isTrue(articleDTO.getIsDraft())))).toList();
+        return ResultUtil.success(markdownVOList).setCount(page.getTotalElements());
     }
 
     private MarkdownVO getMarkdownVO(FileDocument fileDocument, boolean isDraft) {
         MarkdownVO markdownVO = new MarkdownVO();
-        if (isDraft) {
+        if (isDraft && fileDocument.getDraft() != null) {
             markdownVO = JacksonUtil.parseObject(fileDocument.getDraft(), MarkdownVO.class);
             markdownVO.setId(fileDocument.getId());
         } else {

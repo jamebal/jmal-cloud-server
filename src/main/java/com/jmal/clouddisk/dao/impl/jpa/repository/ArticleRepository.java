@@ -8,18 +8,23 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
+
 @Repository
 @Conditional(RelationalDataSourceCondition.class)
 public interface ArticleRepository extends JpaRepository<ArticleDO, String> {
 
-    /**
-     * 计算引用了特定 tagId 并且已发布的文章数量。
-     *
-     * @param tagIdJson 要查询的标签ID。
-     * @return 满足条件的文章数量。
-     */
-    @Query("SELECT COUNT(a) FROM ArticleDO a " +
-            "WHERE a.release = true AND function('JSON_CONTAINS', a.tagIds, :tagIdJson) = 1")
-    long countByTagIdAndReleased(@Param("tagIdJson") String tagIdJson);
+
+    @Query("SELECT a FROM ArticleDO a " +
+            "JOIN FETCH a.fileMetadata fm " +
+            "JOIN FETCH a.fileMetadata.props fp " +
+            "WHERE a.fileMetadata.id = :fileId")
+    Optional<ArticleDO> findMarkdownByFileId(@Param("fileId") String fileId);
+
+    @Query("SELECT new ArticleDO(a.id, a.alonePage, a.slug, f.updateDate) FROM ArticleDO a " +
+            "JOIN a.fileMetadata f " +
+            "WHERE a.release = true")
+    List<ArticleDO> findByReleaseIsTrue();
 
 }

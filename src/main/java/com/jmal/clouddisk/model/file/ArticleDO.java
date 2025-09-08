@@ -12,6 +12,7 @@ import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -50,6 +51,14 @@ public class ArticleDO extends AuditableEntity implements Reflective {
             foreignKey = @ForeignKey(name = "fk_article_to_file")) // DDL生成时外键约束的名称
     private FileMetadataDO fileMetadata;
 
+    public ArticleDO(String id, Boolean alonePage, String slug, LocalDateTime updateDate) {
+        this.id = id;
+        this.alonePage = alonePage;
+        this.slug = slug;
+        this.fileMetadata = new FileMetadataDO();
+        this.fileMetadata.setUpdateDate(updateDate);
+    }
+
     public ArticleDO(FileDocument fileDocument) {
         this.id = fileDocument.getId();
         this.release = fileDocument.getRelease();
@@ -62,5 +71,23 @@ public class ArticleDO extends AuditableEntity implements Reflective {
         this.slug = fileDocument.getSlug();
         this.categoryIds = fileDocument.getCategoryIds() != null ? List.of(fileDocument.getCategoryIds()) : null;
         this.tagIds = fileDocument.getTagIds() != null ? List.of(fileDocument.getTagIds()) : null;
+    }
+
+    public FileDocument toFileDocument() {
+        FileDocument fileDocument;
+        if (this.fileMetadata != null) {
+            fileDocument = this.fileMetadata.toFileDocument();
+        } else {
+            fileDocument = new FileDocument();
+            fileDocument.setId(this.id);
+        }
+        fileDocument.setRelease(this.release);
+        fileDocument.setAlonePage(this.alonePage);
+        fileDocument.setPageSort(this.pageSort);
+        fileDocument.setCover(this.cover);
+        fileDocument.setSlug(this.slug);
+        fileDocument.setCategoryIds(this.categoryIds != null ? this.categoryIds.toArray(new String[0]) : null);
+        fileDocument.setTagIds(this.tagIds != null ? this.tagIds.toArray(new String[0]) : null);
+        return fileDocument;
     }
 }
