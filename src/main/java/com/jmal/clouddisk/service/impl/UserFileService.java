@@ -40,6 +40,14 @@ public class UserFileService {
             return;
         }
         List<String> userIdList = userList.stream().map(ConsumerDO::getId).toList();
+        List<String> usernames = userList.stream().map(ConsumerDO::getUsername).toList();
+        // 删除用户文件夹
+        for (String username : usernames) {
+            Path userDir = Paths.get(fileProperties.getRootDir(), username);
+            if (FileUtil.exist(userDir.toFile())) {
+                FileUtil.del(userDir);
+            }
+        }
         fileDAO.deleteAllByIdInBatch(userIdList);
     }
 

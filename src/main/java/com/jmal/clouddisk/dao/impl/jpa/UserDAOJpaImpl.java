@@ -60,7 +60,12 @@ public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
 
     @Override
     public void deleteAllById(List<String> idList) {
-        writeService.submit(new UserOperation.DeleteAllById(idList));
+        CompletableFuture<Void> future = writeService.submit(new UserOperation.DeleteAllById(idList));
+        try {
+            future.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
     }
 
     @Override
