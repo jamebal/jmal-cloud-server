@@ -13,6 +13,7 @@ import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.dao.util.MyUpdate;
 import com.jmal.clouddisk.dao.util.PageableUtil;
 import com.jmal.clouddisk.dao.util.QuerySpecificationUtil;
+import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.JacksonUtil;
@@ -22,11 +23,12 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Repository
@@ -42,7 +44,13 @@ public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
 
     @Override
     public ConsumerDO save(ConsumerDO consumerDO) {
-        return userRepository.save(consumerDO);
+        CompletableFuture<ConsumerDO> future = writeService.submit(new UserOperation.Create(consumerDO));
+        try {
+            return future.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.error("Error saving ConsumerDO: {}", e.getMessage());
+            throw new CommonException(e.getMessage());
+        }
     }
 
     @Override
@@ -52,17 +60,15 @@ public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
 
     @Override
     public void deleteAllById(List<String> idList) {
-        userRepository.deleteAllById(idList);
+        writeService.submit(new UserOperation.DeleteAllById(idList));
     }
 
     @Override
-    @Transactional(readOnly = true)
     public ConsumerDO findById(String userId) {
         return userRepository.findById(userId).orElse(null);
     }
 
     @Override
-    @Transactional
     public void upsert(MyQuery myQuery, MyUpdate myUpdate) {
 
         Specification<ConsumerDO> spec = QuerySpecificationUtil.toSpecification(myQuery, UserField.allFields());
@@ -78,41 +84,40 @@ public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
             applyQueryToEntity(entity, myQuery);
         }
         applyUpdateToEntity(entity, myUpdate);
-        userRepository.save(entity);
+        CompletableFuture<ConsumerDO> future = writeService.submit(new UserOperation.Create(entity));
+        try {
+            future.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
     }
 
     @Override
-    @Transactional(readOnly = true)
     public ConsumerDO findByUsername(String username) {
         return userRepository.findByUsername(username).orElse(null);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public ConsumerDO findOneByCreatorTrue() {
         return userRepository.findOneByCreatorTrue().orElse(null);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public long count() {
         return userRepository.count();
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Page<ConsumerDO> findUserList(QueryUserDTO queryDTO) {
         return userRepository.findUserList(queryDTO.getUsername(), queryDTO.getShowName(), PageableUtil.buildPageable(queryDTO));
     }
 
     @Override
-    @Transactional(readOnly = true)
     public ConsumerDO findByShowName(String showName) {
         return userRepository.findByShowName(showName).orElse(null);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public String getUsernameById(String userId) {
         ConsumerDO consumerDO = findById(userId);
         if (consumerDO != null) {
