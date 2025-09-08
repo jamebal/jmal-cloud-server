@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Repository
@@ -28,7 +27,6 @@ public class TrashDAOJpaImpl implements ITrashDAO, IWriteCommon<TrashEntityDO> {
 
 
     @Override
-    @Transactional(readOnly = true)
     public long getOccupiedSpace(String userId, String collectionName) {
         if (CommonFileService.COLLECTION_NAME.equals(collectionName)) {
             Long space = fileMetadataRepository.calculateTotalSizeByUserId(userId);
