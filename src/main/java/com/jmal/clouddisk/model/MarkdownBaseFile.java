@@ -51,4 +51,8 @@ public class MarkdownBaseFile extends FileBase implements Reflective {
      */
     private List<TagDO> tags;
 
+    private String userId;
+
+    private String suffix;
+
 }

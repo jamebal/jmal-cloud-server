@@ -255,25 +255,21 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     @Override
     public ArticleVO getMarkDownContentBySlug(String slug) {
-        FileDocument fileDocument;
+        ArticleVO articleVO;
         if (CharSequenceUtil.isBlank(slug)) {
             return null;
         }
-        Query query = new Query();
-        query.addCriteria(Criteria.where("slug").is(slug));
-        fileDocument = mongoTemplate.findOne(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
-        if (fileDocument == null) {
-            fileDocument = mongoTemplate.findById(slug, FileDocument.class, CommonFileService.COLLECTION_NAME);
+        articleVO = articleDAO.findBySlug(slug);
+        if (articleVO == null) {
+            articleVO = articleDAO.findById(slug);
         }
-        if (fileDocument == null) {
+        if (articleVO == null) {
             return null;
         }
-        String username = userService.userInfoById(fileDocument.getUserId()).getShowName();
-        fileDocument.setUsername(username);
-        String filename = fileDocument.getName();
-        fileDocument.setName(filename.substring(0, filename.length() - fileDocument.getSuffix().length() - 1));
-        ArticleVO articleVO = new ArticleVO();
-        BeanUtils.copyProperties(fileDocument, articleVO);
+        String username = userService.userInfoById(articleVO.getUserId()).getShowName();
+        articleVO.setUsername(username);
+        String filename = articleVO.getName();
+        articleVO.setName(filename.substring(0, filename.length() - articleVO.getSuffix().length() - 1));
         setOtherProperties(articleVO);
         return articleVO;
     }

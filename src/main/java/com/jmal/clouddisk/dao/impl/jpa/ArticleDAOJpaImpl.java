@@ -10,6 +10,7 @@ import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
 import com.jmal.clouddisk.model.ArchivesVO;
 import com.jmal.clouddisk.model.ArticleDTO;
+import com.jmal.clouddisk.model.ArticleVO;
 import com.jmal.clouddisk.model.file.ArticleDO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.Constants;
@@ -77,8 +78,8 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         // 1. 构建动态SQL和参数
         Map<String, Object> params = new HashMap<>();
         StringBuilder sqlBuilder = new StringBuilder(
-                "SELECT DISTINCT a.file_id,a.category_ids,a.has_draft,a.slug,a.tag_ids,a.is_release," +
-                        "f.content_type,f.name,f.update_date,f.upload_date,f.user_id,f.suffix " +
+                "SELECT DISTINCT a.file_id,a.category_ids,a.has_draft,a.slug,a.tag_ids,a.is_release,a.cover" +
+                        ",f.content_type,f.name,f.update_date,f.upload_date,f.user_id,f.suffix " +
                         "FROM articles a "
         );
 
@@ -179,6 +180,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         List<FileDocument> articles = jdbcTemplate.query(sqlBuilder.toString(), params, (rs, _) -> {
             FileDocument fileDocument = new FileDocument();
             fileDocument.setId(rs.getString("file_id"));
+            fileDocument.setCover(rs.getString("cover"));
             fileDocument.setUserId(rs.getString("user_id"));
             fileDocument.setName(rs.getString("name"));
             fileDocument.setContentType(rs.getString("content_type"));
@@ -227,4 +229,50 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         }
         return articleRepository.findArchives(pageable);
     }
+
+    @Override
+    public ArticleVO findBySlug(String slug) {
+        ArticleDO articleDO = articleRepository.findBySlug(slug).orElse(null);
+        if (articleDO == null) {
+            return null;
+        }
+        ArticleVO articleVO = articleDO.toArticleVO();
+        articleVOFilePersistence(articleDO, articleVO);
+        return  articleVO;
+    }
+
+    @Override
+    public ArticleVO findById(String fileId) {
+        ArticleDO articleDO = articleRepository.findMarkdownByFileId(fileId).orElse(null);
+        if (articleDO == null) {
+            return null;
+        }
+        ArticleVO articleVO = articleDO.toArticleVO();
+        articleVOFilePersistence(articleDO, articleVO);
+        return  articleVO;
+    }
+
+    private void articleVOFilePersistence(ArticleDO articleDO, ArticleVO articleVO) {
+        if (BooleanUtil.isTrue(articleDO.getFileMetadata().getProps().getHasHtml())) {
+            filePersistenceService.readContent(articleDO.getFileMetadata().id, "html").ifPresent(inputStream -> {
+                try (inputStream) {
+                    String contentText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                    articleVO.setHtml(contentText);
+                } catch (Exception e) {
+                    log.error("读取 html 失败, fileId: {}", articleDO.getFileMetadata().id, e);
+                }
+            });
+        }
+        if (BooleanUtil.isTrue(articleDO.getFileMetadata().getProps().getHasContentText())) {
+            filePersistenceService.readContent(articleDO.getFileMetadata().id, "contentText").ifPresent(inputStream -> {
+                try (inputStream) {
+                    String contentText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                    articleVO.setContentText(contentText);
+                } catch (Exception e) {
+                    log.error("读取 contentText 失败, fileId: {}", articleDO.getFileMetadata().id, e);
+                }
+            });
+        }
+    }
+
 }

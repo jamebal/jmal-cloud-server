@@ -9,6 +9,7 @@ import com.jmal.clouddisk.dao.impl.mongodb.repository.FileDocumentRepository;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
 import com.jmal.clouddisk.model.ArchivesVO;
 import com.jmal.clouddisk.model.ArticleDTO;
+import com.jmal.clouddisk.model.ArticleVO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
@@ -102,6 +103,22 @@ public class ArticleDAOImpl implements IArticleDAO {
             articleDTO.setSortableProp(Constants.UPLOAD_DATE);
         }
 
+        // 只保留需要的字段
+        query.fields()
+                .include("_id")
+                .include("cover")
+                .include(Constants.FILENAME_FIELD)
+                .include(IUserService.USER_ID)
+                .include(Constants.CONTENT_TYPE)
+                .include(Constants.UPDATE_DATE)
+                .include(Constants.UPLOAD_DATE)
+                .include(Constants.DRAFT)
+                .include("slug")
+                .include("suffix")
+                .include(Constants.RELEASE)
+                .include("tagIds")
+                .include("categoryIds");
+
         long total = mongoTemplate.count(query, FileDocument.class);
 
         Pageable pageable = articleDTO.getPageable();
@@ -109,6 +126,8 @@ public class ArticleDAOImpl implements IArticleDAO {
             return Page.empty(pageable);
         }
         query.with(pageable);
+
+
         List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
         return  new PageImpl<>(fileDocumentList, pageable, total);
     }
@@ -136,6 +155,18 @@ public class ArticleDAOImpl implements IArticleDAO {
         List<ArchivesVO> projections = fileDocumentRepository.findArchives(pageable);
 
         return new PageImpl<>(projections, pageable, totalCount);
+    }
+
+    @Override
+    public ArticleVO findBySlug(String slug) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("slug").is(slug));
+        return mongoTemplate.findOne(query, ArticleVO.class, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public ArticleVO findById(String fileId) {
+        return mongoTemplate.findById(fileId, ArticleVO.class, CommonFileService.COLLECTION_NAME);
     }
 
 }

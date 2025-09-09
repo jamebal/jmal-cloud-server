@@ -42,4 +42,9 @@ public interface ArticleRepository extends JpaRepository<ArticleDO, String> {
             "ORDER BY fm.uploadDate DESC")
     Page<ArchivesVO> findArchives(Pageable pageable);
 
+    @Query("SELECT a FROM ArticleDO a " +
+            "JOIN FETCH a.fileMetadata fm " +
+            "JOIN FETCH a.fileMetadata.props fp " +
+            "WHERE a.slug = :slug")
+    Optional<ArticleDO> findBySlug(String slug);
 }

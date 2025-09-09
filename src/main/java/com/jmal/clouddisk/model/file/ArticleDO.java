@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import com.jmal.clouddisk.model.ArticleVO;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -89,5 +90,21 @@ public class ArticleDO extends AuditableEntity implements Reflective {
         fileDocument.setCategoryIds(this.categoryIds != null ? this.categoryIds.toArray(new String[0]) : null);
         fileDocument.setTagIds(this.tagIds != null ? this.tagIds.toArray(new String[0]) : null);
         return fileDocument;
+    }
+
+    public ArticleVO toArticleVO() {
+        ArticleVO articleVO = new ArticleVO();
+        articleVO.setRelease(this.release);
+        articleVO.setCover(this.cover);
+        articleVO.setSlug(this.slug);
+        articleVO.setUserId(this.fileMetadata.getUserId());
+        articleVO.setCategoryIds(this.categoryIds != null ? this.categoryIds.toArray(new String[0]) : null);
+        articleVO.setTagIds(this.tagIds != null ? this.tagIds.toArray(new String[0]) : null);
+        articleVO.setSuffix(this.fileMetadata.getSuffix());
+        articleVO.setAlonePage(this.alonePage);
+        articleVO.setName(this.fileMetadata.getName());
+        articleVO.setUpdateDate(this.fileMetadata.getUpdateDate());
+        articleVO.setUploadDate(this.fileMetadata.getUploadDate());
+        return articleVO;
     }
 }
