@@ -13,7 +13,7 @@ public class SafeWriteServiceDecorator implements IWriteService {
     private final IWriteService delegate;
 
     @Override
-    public <R> CompletableFuture<R> submit(IDataOperation<R> operation) {
+    public <R> CompletableFuture<R> submit(IDataOperation<R> operation, Priority priority) {
         return delegate.submit(operation)
                 .exceptionally(ex -> {
                     log.error("在未处理的后台写入任务中发生了一个异常，涉及某个操作 : {}",

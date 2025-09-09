@@ -20,7 +20,7 @@ public class DirectWriteServiceImpl implements IWriteService {
     }
 
     @Override
-    public <R> CompletableFuture<R> submit(IDataOperation<R> operation) {
+    public <R> CompletableFuture<R> submit(IDataOperation<R> operation, Priority priority) {
         try {
             // 直接、同步地调用通用的数据操作执行器
             R result = dataManipulationService.execute(operation);

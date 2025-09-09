@@ -5,57 +5,77 @@ import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 队列化写入服务的实现。
+ * 带有优先级的队列化写入服务的实现。
  * 当数据源是SQLite时激活。
- * 它将写入任务放入一个内存队列，由一个后台单线程消费者串行执行。
+ * 它将写入任务放入一个内存优先级队列，由一个后台单线程消费者串行执行。
+ * 高优先级的任务（如用户操作）会比普通优先级的任务（如后台任务）先被执行。
  */
 @Slf4j
 public class QueuedWriteServiceImpl implements IWriteService {
 
-    // 内部任务封装类
-    private static class WriteTask<R> {
+    // 内部任务封装类，现在实现了 Comparable 接口
+    private static class WriteTask<R> implements Comparable<WriteTask<?>> {
+
+        // 用于在优先级相同时，保证先进先出
+        private static final AtomicLong sequencer = new AtomicLong();
+
         private final IDataOperation<R> operation;
         private final CompletableFuture<R> future;
+        private final Priority priority;
+        private final long sequenceNumber; // 序列号
 
-        private WriteTask(IDataOperation<R> operation, CompletableFuture<R> future) {
+        private WriteTask(IDataOperation<R> operation, CompletableFuture<R> future, Priority priority) {
             this.operation = operation;
             this.future = future;
+            this.priority = priority;
+            this.sequenceNumber = sequencer.getAndIncrement();
         }
 
+        @Override
+        public int compareTo(WriteTask<?> other) {
+            // 首先比较优先级。枚举的 ordinal() 返回其定义顺序（从0开始），值越小优先级越高。
+            int priorityDiff = this.priority.ordinal() - other.priority.ordinal();
+            if (priorityDiff != 0) {
+                return priorityDiff;
+            }
+            // 如果优先级相同，则比较序列号，保证FIFO（先进先出）
+            return Long.compare(this.sequenceNumber, other.sequenceNumber);
+        }
     }
 
+    // 毒丸是一个特殊的WriteTask，拥有最低优先级
     private static final class PoisonPill extends WriteTask<Void> {
-        // 毒丸是一个特殊的WriteTask
         private PoisonPill() {
-            // payload和future都可以是null，因为它只是一个信号
-            super(null, null);
+            super(null, null, Priority.LOWEST);
         }
     }
 
     private static final WriteTask<?> POISON_PILL = new PoisonPill();
 
-    private final BlockingQueue<WriteTask<?>> writeQueue = new LinkedBlockingQueue<>(10000);
+    private final BlockingQueue<WriteTask<?>> writeQueue = new PriorityBlockingQueue<>(10000);
     private final ExecutorService writerExecutor = Executors.newSingleThreadExecutor();
     private final DataManipulationService dataManipulationService;
 
     public QueuedWriteServiceImpl(DataManipulationService dataManipulationService) {
         this.dataManipulationService = dataManipulationService;
-        log.debug("写入策略初始化：异步队列写入（适用于SQLite）。");
+        log.debug("写入策略初始化：带优先级的异步队列写入（适用于SQLite）。");
     }
 
     @Override
-    public <R> CompletableFuture<R> submit(IDataOperation<R> operation) {
-        WriteTask<R> task = new WriteTask<>(operation, new CompletableFuture<>());
+    public <R> CompletableFuture<R> submit(IDataOperation<R> operation, Priority priority) {
+        WriteTask<R> task = new WriteTask<>(operation, new CompletableFuture<>(), priority);
 
         boolean offered = writeQueue.offer(task);
 
         if (!offered) {
-            String errorMessage = "写入队列已满, 操作任务 " + operation.getClass().getName() + " 被拒绝。";
+            String errorMessage = "写入队列已满, " + priority + " 优先级的操作任务 " + operation.getClass().getName() + " 被拒绝。";
             log.error(errorMessage);
-            // 如果队列已满，立即让Future失败
             task.future.completeExceptionally(new RejectedExecutionException(errorMessage));
+        } else {
+            log.debug("任务 {} 已提交，优先级: {}", operation.getClass().getSimpleName(), priority);
         }
 
         return task.future;
@@ -67,19 +87,14 @@ public class QueuedWriteServiceImpl implements IWriteService {
             log.debug("队列写入服务消费者线程已启动。");
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    // 使用 take() 高效阻塞，直到有任务或毒丸到来
                     WriteTask<?> task = writeQueue.take();
 
-                    // 检查是否是关闭信号
                     if (task == POISON_PILL) {
                         log.debug("毒丸接收。消费者线程正在优雅地停止。");
-                        // 清理队列中剩余的任务
                         drainQueueOnShutdown();
-                        // 退出循环，结束线程
                         break;
                     }
 
-                    // 处理常规任务
                     processTask(task);
 
                 } catch (InterruptedException e) {
@@ -92,7 +107,7 @@ public class QueuedWriteServiceImpl implements IWriteService {
 
     private void processTask(WriteTask<?> task) {
         try {
-            log.debug("处理操作任务 {}", task.operation.getClass().getName());
+            log.debug("处理操作任务 {}, 优先级: {}", task.operation.getClass().getName(), task.priority);
             Object result = dataManipulationService.execute(task.operation);
             completeFuture(task.future, result);
         } catch (Exception e) {
@@ -128,20 +143,13 @@ public class QueuedWriteServiceImpl implements IWriteService {
     @PreDestroy
     private void stopConsumer() {
         log.debug("启动QueuedWriteService的优雅关闭...");
-
-        // 1. 命令执行器不再接受新任务
         writerExecutor.shutdown();
-
-        // 2. 向队列中放入“毒丸”，以唤醒并终止消费者线程
         try {
-            // 使用put确保毒丸一定能被放入队列，即使队列满了（虽然不太可能）
             writeQueue.put(POISON_PILL);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("尝试发送毒丸时被中断。");
         }
-
-        // 3. 等待线程池彻底终止
         try {
             if (!writerExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
                 log.warn("消费者线程未及时终止。强制关闭...");
