@@ -5,7 +5,9 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IArticleDAO;
+import com.jmal.clouddisk.dao.impl.mongodb.repository.FileDocumentRepository;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
+import com.jmal.clouddisk.model.ArchivesVO;
 import com.jmal.clouddisk.model.ArticleDTO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.Constants;
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -24,8 +27,7 @@ import org.springframework.stereotype.Repository;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Repository
 @RequiredArgsConstructor
@@ -33,6 +35,8 @@ import java.util.Set;
 public class ArticleDAOImpl implements IArticleDAO {
 
     private final MongoTemplate mongoTemplate;
+
+    private final FileDocumentRepository fileDocumentRepository;
 
     private final IUserService userService;
 
@@ -114,6 +118,24 @@ public class ArticleDAOImpl implements IArticleDAO {
         Query query = new Query();
         query.addCriteria(Criteria.where(Constants.RELEASE).is(true));
         return mongoTemplate.find(query, FileDocument.class);
+    }
+
+    @Override
+    public Page<ArchivesVO> getArchives(Integer page, Integer pageSize) {
+        // 1. 获取总数
+        long totalCount = fileDocumentRepository.countByReleaseIsTrueAndAlonePageExists(true, false);
+
+        // 2. 准备分页参数
+        boolean pagination = (page != null && pageSize != null);
+        Pageable pageable = Pageable.unpaged();
+        if (pagination) {
+            pageable = PageRequest.of(page - 1, pageSize);
+        }
+
+        // 3. 执行聚合查询
+        List<ArchivesVO> projections = fileDocumentRepository.findArchives(pageable);
+
+        return new PageImpl<>(projections, pageable, totalCount);
     }
 
 }

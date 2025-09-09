@@ -1,8 +1,11 @@
 package com.jmal.clouddisk.dao.impl.jpa.repository;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.model.ArchivesVO;
 import com.jmal.clouddisk.model.file.ArticleDO;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -26,5 +29,17 @@ public interface ArticleRepository extends JpaRepository<ArticleDO, String> {
             "JOIN a.fileMetadata f " +
             "WHERE a.release = true")
     List<ArticleDO> findByReleaseIsTrue();
+
+
+    @Query("SELECT new com.jmal.clouddisk.model.ArchivesVO(" +
+            "fm.id, " +
+            "fm.name, " +
+            "a.slug," +
+            "fm.uploadDate" +
+            ") " +
+            "FROM ArticleDO a JOIN a.fileMetadata fm " +
+            "WHERE a.release = true AND a.alonePage IS NULL " +
+            "ORDER BY fm.uploadDate DESC")
+    Page<ArchivesVO> findArchives(Pageable pageable);
 
 }

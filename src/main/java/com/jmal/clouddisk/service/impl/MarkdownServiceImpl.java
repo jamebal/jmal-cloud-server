@@ -27,11 +27,8 @@ import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
-import com.mongodb.client.AggregateIterable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -50,9 +47,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
-
-import static com.mongodb.client.model.Aggregates.limit;
-import static com.mongodb.client.model.Aggregates.skip;
 
 /**
  * @author jmal
@@ -228,55 +222,21 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     @Override
     public Page<Object> getArchives(Integer page, Integer pageSize) {
-        boolean pagination = false;
-        int skip = 0;
-        int limit = 10;
-        if (page != null && pageSize != null) {
-            skip = (page - 1) * pageSize;
-            limit = pageSize;
-            pagination = true;
-        }
-        Query query = new Query();
-        query.addCriteria(Criteria.where(Constants.RELEASE).is(true));
-        long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
-        List<Bson> list = new ArrayList<>(Arrays.asList(new Document("$match",
-                        new Document(Constants.RELEASE, true)
-                                .append(Constants.ALONE_PAGE,
-                                        new Document("$exists", false))),
-                new Document("$sort",
-                        new Document(Constants.UPLOAD_DATE, -1L)),
-                new Document("$project",
-                        new Document("date", "$uploadDate")
-                                .append("day",
-                                        new Document("$dateToString",
-                                                new Document("format", "%Y-%m")
-                                                        .append("date", "$uploadDate")))
-                                .append("name", 1L)
-                                .append("slug", 1L))));
-        if (pagination) {
-            list.add(skip(skip));
-            list.add(limit(limit));
-        }
+        boolean pagination = page != null && pageSize != null;
+        org.springframework.data.domain.Page<ArchivesVO> archivesVOPage = articleDAO.getArchives(page, pageSize);
         Map<String, List<ArchivesVO>> resultMap = new LinkedHashMap<>();
-        AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(list);
-        for (Document doc : aggregateIterable) {
-            String day = doc.getString("day");
-            List<ArchivesVO> aList;
-            if (resultMap.containsKey(day)) {
-                aList = resultMap.get(day);
-            } else {
-                aList = new ArrayList<>();
-            }
+        for (ArchivesVO proj : archivesVOPage.getContent()) {
+            String day = proj.getDay();
+            resultMap.computeIfAbsent(day, _ -> new ArrayList<>());
             ArchivesVO archivesVO = new ArchivesVO();
-            String name = doc.getString("name");
+            archivesVO.setId(proj.getId());
+            String name = proj.getName();
             archivesVO.setName(name.substring(0, name.length() - 3));
-            Date time = doc.get("date", Date.class);
-            archivesVO.setDate(time);
-            archivesVO.setId(doc.getObjectId("_id").toHexString());
-            archivesVO.setSlug(doc.getString("slug"));
-            aList.add(archivesVO);
-            resultMap.put(day, aList);
+            archivesVO.setSlug(proj.getSlug());
+            archivesVO.setDate(proj.getDate());
+            resultMap.get(day).add(archivesVO);
         }
+
         if (page == null) {
             page = 1;
         }
@@ -285,9 +245,9 @@ public class MarkdownServiceImpl implements IMarkdownService {
         }
         Page<Object> pageResult;
         if (pagination) {
-            pageResult = new Page<>(page - 1, pageSize, Convert.toInt(count));
+            pageResult = new Page<>(page - 1, pageSize, Convert.toInt(archivesVOPage.getTotalElements()));
         } else {
-            pageResult = new Page<>(Convert.toInt(count));
+            pageResult = new Page<>(Convert.toInt(archivesVOPage.getTotalElements()));
         }
         pageResult.setData(resultMap.values());
         return pageResult;

@@ -21,7 +21,7 @@ public class TimeUntils {
     public static final DateTimeFormatter DATE_DAY = DateTimeFormatter.ofPattern("MM-dd");
 
     private static final DateTimeFormatter FORMAT_FILE_DAY = DateTimeFormatter.ofPattern("yyyyMMdd");
-    private static final DateTimeFormatter FORMAT_FILE_MONTH = DateTimeFormatter.ofPattern("yyyy-MM");
+    public static final DateTimeFormatter FORMAT_FILE_MONTH = DateTimeFormatter.ofPattern("yyyy-MM");
 
     public static final ZoneId ZONE_ID = ZoneId.systemDefault();
 

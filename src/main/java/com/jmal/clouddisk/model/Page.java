@@ -108,7 +108,7 @@ public class Page<T> extends ArrayList<T> implements Reflective {
 
     /**
      * 分页彩虹算法<br>
-     * 来自：https://github.com/iceroot/iceroot/blob/master/src/main/java/com/icexxx/util/IceUtil.java<br>
+     * 来自：<a href="https://github.com/iceroot/iceroot/blob/master/src/main/java/com/icexxx/util/IceUtil.java">...</a><br>
      * 通过传入的信息，生成一个分页列表显示
      * @return 分页条
      */
@@ -118,7 +118,7 @@ public class Page<T> extends ArrayList<T> implements Reflective {
 
     /**
      * 分页彩虹算法<br>
-     * 来自：https://github.com/iceroot/iceroot/blob/master/src/main/java/com/icexxx/util/IceUtil.java<br>
+     * 来自：<a href="https://github.com/iceroot/iceroot/blob/master/src/main/java/com/icexxx/util/IceUtil.java">...</a><br>
      * 通过传入的信息，生成一个分页列表显示
      * @param displayCount 每屏展示的页数
      * @return 分页条

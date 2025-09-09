@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.dao;
 
+import com.jmal.clouddisk.model.ArchivesVO;
 import com.jmal.clouddisk.model.ArticleDTO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import org.springframework.data.domain.Page;
@@ -14,4 +15,5 @@ public interface IArticleDAO {
 
     List<FileDocument> getAllReleaseArticles();
 
+    Page<ArchivesVO> getArchives(Integer page, Integer pageSize);
 }
