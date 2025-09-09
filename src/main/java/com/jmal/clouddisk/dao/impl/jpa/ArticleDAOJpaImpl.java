@@ -7,6 +7,8 @@ import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.DataSourceType;
 import com.jmal.clouddisk.dao.IArticleDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
+import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
+import com.jmal.clouddisk.dao.impl.jpa.write.article.ArticleOperation;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
 import com.jmal.clouddisk.model.ArchivesVO;
 import com.jmal.clouddisk.model.ArticleDTO;
@@ -28,7 +30,10 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Repository
@@ -45,6 +50,8 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
     private final FilePersistenceService filePersistenceService;
 
     private final LuceneQueryService luceneQueryService;
+
+    private final IWriteService writeService;
 
     @Override
     public FileDocument getMarkdownOne(String fileId) {
@@ -164,7 +171,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         // 排序逻辑
         StringBuilder orderByClause = new StringBuilder("ORDER BY ");
         if (articleDTO.getIsAlonePage() != null && articleDTO.getIsAlonePage()) {
-            orderByClause.append("a.page_sort DESC ");
+            orderByClause.append("a.page_sort ASC ");
         } else {
             orderByClause.append("f.upload_date DESC ");
         }
@@ -250,6 +257,11 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         ArticleVO articleVO = articleDO.toArticleVO();
         articleVOFilePersistence(articleDO, articleVO);
         return  articleVO;
+    }
+
+    @Override
+    public void updatePageSort(List<FileDocument> sortList) {
+        sortList.forEach(fileDocument -> writeService.submit(new ArticleOperation.UpdatePageSortById(fileDocument.getId(), fileDocument.getPageSort())));
     }
 
     private void articleVOFilePersistence(ArticleDO articleDO, ArticleVO articleVO) {

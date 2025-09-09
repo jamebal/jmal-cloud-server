@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.dao.impl.jpa.write.file;
 
 import com.jmal.clouddisk.model.Tag;
-import com.jmal.clouddisk.model.file.ArticleDO;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
 
 import java.util.List;
@@ -13,7 +12,6 @@ public final class FileOperation {
     public record Default() implements IFileOperation<Void> {}
 
     public record CreateFileMetadata(FileMetadataDO entity) implements IFileOperation<FileMetadataDO> {}
-    public record CreateAllArticle(Iterable<ArticleDO> entities) implements IFileOperation<Integer> {}
     public record CreateAllFileMetadata(Iterable<FileMetadataDO> entities) implements IFileOperation<Integer> {}
     public record DeleteById(String fileId) implements IFileOperation<Void> {}
 

@@ -24,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.io.File;
@@ -113,6 +114,7 @@ public class ArticleDAOImpl implements IArticleDAO {
                 .include(Constants.UPDATE_DATE)
                 .include(Constants.UPLOAD_DATE)
                 .include(Constants.DRAFT)
+                .include("pageSort")
                 .include("slug")
                 .include("suffix")
                 .include(Constants.RELEASE)
@@ -167,6 +169,17 @@ public class ArticleDAOImpl implements IArticleDAO {
     @Override
     public ArticleVO findById(String fileId) {
         return mongoTemplate.findById(fileId, ArticleVO.class, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public void updatePageSort(List<FileDocument> list) {
+        list.parallelStream().forEach(doc -> {
+            Query query = new Query();
+            query.addCriteria(Criteria.where("_id").is(doc.getId()));
+            Update update = new Update();
+            update.set("pageSort", doc.getPageSort());
+            mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
+        });
     }
 
 }

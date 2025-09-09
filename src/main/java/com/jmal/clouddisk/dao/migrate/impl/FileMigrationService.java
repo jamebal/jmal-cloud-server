@@ -5,6 +5,7 @@ import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
+import com.jmal.clouddisk.dao.impl.jpa.write.article.ArticleOperation;
 import com.jmal.clouddisk.dao.impl.jpa.write.file.FileOperation;
 import com.jmal.clouddisk.dao.migrate.IMigrationService;
 import com.jmal.clouddisk.dao.migrate.MigrationResult;
@@ -98,7 +99,7 @@ public class FileMigrationService implements IMigrationService {
 
                     // 保存文章
                     if (!articleDOList.isEmpty()) {
-                        writeService.submit(new FileOperation.CreateAllArticle(articleDOList));
+                        writeService.submit(new ArticleOperation.CreateAll(articleDOList));
                         articlesCount += articleDOList.size();
                     }
                     result.addSuccess(mongoDataList.size());

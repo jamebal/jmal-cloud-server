@@ -21,4 +21,6 @@ public interface IArticleDAO {
     ArticleVO findBySlug(String slug);
 
     ArticleVO findById(String fileId);
+
+    void updatePageSort(List<FileDocument> list);
 }

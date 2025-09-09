@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -47,4 +48,8 @@ public interface ArticleRepository extends JpaRepository<ArticleDO, String> {
             "JOIN FETCH a.fileMetadata.props fp " +
             "WHERE a.slug = :slug")
     Optional<ArticleDO> findBySlug(String slug);
+
+    @Modifying
+    @Query("UPDATE ArticleDO a SET a.pageSort = :pageSort WHERE a.id = :id")
+    void updatePageSortById(String id, Integer pageSort);
 }

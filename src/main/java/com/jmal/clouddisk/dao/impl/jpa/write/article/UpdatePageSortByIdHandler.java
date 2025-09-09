@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.dao.impl.jpa.write.file;
+package com.jmal.clouddisk.dao.impl.jpa.write.article;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
@@ -7,15 +7,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Component("fileCreateAllArticleHandler")
+@Component("articleUpdatePageSortByIdHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class CreateAllArticleHandler implements IDataOperationHandler<FileOperation.CreateAllArticle, Integer> {
+public class UpdatePageSortByIdHandler implements IDataOperationHandler<ArticleOperation.UpdatePageSortById, Void> {
 
     private final ArticleRepository repo;
 
     @Override
-    public Integer handle(FileOperation.CreateAllArticle op) {
-        return repo.saveAll(op.entities()).size();
+    public Void handle(ArticleOperation.UpdatePageSortById op) {
+        repo.updatePageSortById(op.id(), op.pageSort());
+        return null;
     }
 }

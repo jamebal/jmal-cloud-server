@@ -294,13 +294,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             fileDocument.setId(fileIdList.get(i));
             list.add(fileDocument);
         }
-        list.parallelStream().forEach(doc -> {
-            Query query = new Query();
-            query.addCriteria(Criteria.where("_id").is(doc.getId()));
-            Update update = new Update();
-            update.set("pageSort", doc.getPageSort());
-            mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
-        });
+        articleDAO.updatePageSort(list);
         return ResultUtil.success();
     }
 
