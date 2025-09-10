@@ -84,6 +84,9 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
 
     public FileMetadataDO(FileDocument fileDocument) {
         this.id = fileDocument.getId();
+        this.covert(fileDocument);
+    }
+    public FileMetadataDO covert(FileDocument fileDocument) {
         this.userId = fileDocument.getUserId();
         this.path = fileDocument.getPath();
         this.isFolder = fileDocument.getIsFolder();
@@ -101,6 +104,7 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
         this.lastEtagUpdateRequestAt = fileDocument.getLastEtagUpdateRequestAt();
         this.lastEtagUpdateError = fileDocument.getLastEtagUpdateError();
         this.props = new FilePropsDO(fileDocument);
+        return this;
     }
 
     public FileDocument toFileDocument() {

@@ -1,8 +1,10 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.dao.impl.jpa.dto.FileTagsDTO;
+import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FilePropsRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
@@ -10,16 +12,14 @@ import com.jmal.clouddisk.dao.impl.jpa.write.file.FileOperation;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
 import com.jmal.clouddisk.model.Tag;
-import com.jmal.clouddisk.model.file.FileDocument;
-import com.jmal.clouddisk.model.file.FileMetadataDO;
-import com.jmal.clouddisk.model.file.FilePropsDO;
-import com.jmal.clouddisk.model.file.ShareProperties;
+import com.jmal.clouddisk.model.file.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -32,6 +32,8 @@ import java.util.concurrent.TimeUnit;
 public class FileDAOJpaImpl implements IFileDAO {
 
     private final FileMetadataRepository fileMetadataRepository;
+
+    private final ArticleRepository articleRepository;
 
     private final FilePropsRepository filePropsRepository;
 
@@ -171,5 +173,18 @@ public class FileDAOJpaImpl implements IFileDAO {
     @Override
     public void unsetSubShareByFileId(String fileId) {
         writeService.submit(new FileOperation.UnsetShareBaseOperation(fileId));
+    }
+
+    @Override
+    public boolean existsByNameAndIdNotIn(String filename, String fileId) {
+        return fileMetadataRepository.existsByNameAndIdNotIn(filename, Collections.singleton(fileId));
+    }
+
+    @Override
+    public boolean existsBySlugAndIdNot(String slug, String fileId) {
+        if (CharSequenceUtil.isBlank(slug)) {
+            return articleRepository.existsBySlug(slug);
+        }
+        return articleRepository.existsBySlugAndIdNot(slug, fileId);
     }
 }

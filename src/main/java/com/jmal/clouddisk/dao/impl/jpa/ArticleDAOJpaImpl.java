@@ -1,20 +1,26 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.DataSourceType;
 import com.jmal.clouddisk.dao.IArticleDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
+import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
 import com.jmal.clouddisk.dao.impl.jpa.write.article.ArticleOperation;
+import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
 import com.jmal.clouddisk.model.ArchivesVO;
 import com.jmal.clouddisk.model.ArticleDTO;
+import com.jmal.clouddisk.model.ArticleParamDTO;
 import com.jmal.clouddisk.model.ArticleVO;
 import com.jmal.clouddisk.model.file.ArticleDO;
 import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.FileMetadataDO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.FilePersistenceService;
@@ -29,11 +35,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Repository
@@ -49,6 +58,10 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
 
     private final FilePersistenceService filePersistenceService;
 
+    private final FileMetadataRepository fileMetadataRepository;
+
+    private final FileProperties fileProperties;
+
     private final LuceneQueryService luceneQueryService;
 
     private final IWriteService writeService;
@@ -61,7 +74,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         }
         FileDocument fileDocument = articleDO.toFileDocument();
         if (BooleanUtil.isTrue(articleDO.getFileMetadata().getProps().getHasContentText())) {
-            filePersistenceService.readContent(articleDO.getId(), "contentText").ifPresent(inputStream -> {
+            filePersistenceService.readContent(articleDO.getId(), Constants.CONTENT_TEXT).ifPresent(inputStream -> {
                 try (inputStream) {
                     String contentText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                     fileDocument.setContentText(contentText);
@@ -71,7 +84,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
             });
         }
         if (BooleanUtil.isTrue(articleDO.getHasDraft())) {
-            filePersistenceService.readContent(articleDO.getId(), "draft").ifPresent(inputStream -> {
+            filePersistenceService.readContent(articleDO.getId(), Constants.CONTENT_DRAFT).ifPresent(inputStream -> {
                 try (inputStream) {
                     String contentText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                     fileDocument.setDraft(contentText);
@@ -217,7 +230,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
 
         articles.parallelStream().forEach(doc -> {
             if (BooleanUtil.isTrue(doc.getHasDraft())) {
-                filePersistenceService.readContent(doc.getId(), "draft").ifPresent(inputStream -> {
+                filePersistenceService.readContent(doc.getId(), Constants.CONTENT_DRAFT).ifPresent(inputStream -> {
                     try (inputStream) {
                         String contentText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                         doc.setDraft(contentText);
@@ -259,7 +272,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
     }
 
     @Override
-    public ArticleVO findById(String fileId) {
+    public ArticleVO findByFileId(String fileId) {
         ArticleDO articleDO = articleRepository.findMarkdownByFileId(fileId).orElse(null);
         if (articleDO == null) {
             return null;
@@ -274,9 +287,93 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         sortList.forEach(fileDocument -> writeService.submit(new ArticleOperation.UpdatePageSortById(fileDocument.getId(), fileDocument.getPageSort())));
     }
 
+    @Override
+    public FileDocument findByFileId(String fileId, String... excludeFields) {
+        ArticleDO articleDO = articleRepository.findMarkdownByFileId(fileId).orElse(null);
+        if (articleDO == null) {
+            return null;
+        }
+        return articleDO.toFileDocument();
+    }
+
+    @Override
+    public String newArticle(FileDocument fileDocument) {
+        try {
+            ArticleDO articleDO = writeService.submit(new ArticleOperation.Create(fileDocument)).get(10, TimeUnit.SECONDS);
+            return articleDO.getId();
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public void upsert(ArticleParamDTO upload, boolean isUpdate, FileDocument fileDocument) {
+        boolean isDraft = Boolean.TRUE.equals(upload.getIsDraft());
+        fileDocument.setContentText(upload.getContentText());
+        fileDocument.setDraft(null);
+        if (isDraft) {
+            // 保存草稿
+            fileDocument.setDraft(null);
+            filePersistenceService.persistDraft(fileDocument.getId(), JacksonUtil.toJSONStringWithDateFormat(fileDocument, "yyyy-MM-dd HH:mm:ss"));
+            fileDocument.setDraft("draft");
+        } else {
+            fileDocument.setRelease(true);
+            fileDocument.setHtml(upload.getHtml());
+            if (isUpdate) {
+                fileDocument.setDraft(null);
+                // 删除草稿
+                filePersistenceService.delDraft(fileDocument.getId());
+            }
+        }
+        if (!isUpdate) {
+            String newFileId = newArticle(fileDocument);
+            upload.setFileId(newFileId);
+        } else {
+            if (!isDraft) {
+                // 更新文章内容
+                String newFileId = newArticle(fileDocument);
+                upload.setFileId(newFileId);
+                // 持久化内容到文件系统
+                filePersistenceService.persistContents(fileDocument);
+            } else {
+                writeService.submit(new ArticleOperation.updateHasDraftById(fileDocument.getId(), true));
+            }
+        }
+    }
+
+    @Override
+    public void deleteDraft(String fileId, String username) {
+        ArticleDO articleDO = articleRepository.findMarkdownByFileId(fileId).orElse(null);
+        if (articleDO == null || BooleanUtil.isFalse(articleDO.getHasDraft())) {
+            return;
+        }
+        FileMetadataDO fileMetadataDO = fileMetadataRepository.findById(fileId).orElse(null);
+        if (fileMetadataDO == null) {
+            return;
+        }
+        filePersistenceService.readContent(articleDO.getId(), Constants.CONTENT_DRAFT).ifPresent(inputStream -> {
+            try (inputStream) {
+                FileDocument draft = JacksonUtil.parseObject(inputStream, FileDocument.class);
+                File draftFile = Paths.get(fileProperties.getRootDir(), username, draft.getPath(), draft.getName()).toFile();
+                FileUtil.del(draftFile);
+            } catch (Exception e) {
+                log.error("删除草稿文件失败, fileId: {}", fileId, e);
+            }
+        });
+        File file = Paths.get(fileProperties.getRootDir(), username, fileMetadataDO.getPath(), fileMetadataDO.getName()).toFile();
+        filePersistenceService.readContent(articleDO.getId(), Constants.CONTENT_TEXT).ifPresent(inputStream -> {
+            try (inputStream) {
+                FileUtil.writeFromStream(inputStream, file);
+            } catch (Exception e) {
+                log.error("删除草稿后恢复 contentText 失败, fileId: {}", fileId, e);
+            }
+        });
+        writeService.submit(new ArticleOperation.updateHasDraftById(fileId, false));
+    }
+
     private void articleVOFilePersistence(ArticleDO articleDO, ArticleVO articleVO) {
         if (BooleanUtil.isTrue(articleDO.getFileMetadata().getProps().getHasHtml())) {
-            filePersistenceService.readContent(articleDO.getFileMetadata().id, "html").ifPresent(inputStream -> {
+            filePersistenceService.readContent(articleDO.getFileMetadata().id, Constants.CONTENT_HTML).ifPresent(inputStream -> {
                 try (inputStream) {
                     String contentText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                     articleVO.setHtml(contentText);
@@ -286,7 +383,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
             });
         }
         if (BooleanUtil.isTrue(articleDO.getFileMetadata().getProps().getHasContentText())) {
-            filePersistenceService.readContent(articleDO.getFileMetadata().id, "contentText").ifPresent(inputStream -> {
+            filePersistenceService.readContent(articleDO.getFileMetadata().id, Constants.CONTENT_TEXT).ifPresent(inputStream -> {
                 try (inputStream) {
                     String contentText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                     articleVO.setContentText(contentText);

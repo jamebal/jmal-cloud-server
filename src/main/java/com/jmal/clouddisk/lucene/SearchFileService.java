@@ -310,10 +310,10 @@ public class SearchFileService {
             org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
             query.addCriteria(Criteria.where("userId").is(searchDTO.getUserId()));
             query.addCriteria(Criteria.where("mountFileId").exists(true));
-            query.fields().exclude("content");
+            query.fields().exclude(Constants.CONTENT);
             query.fields().exclude("video");
             query.fields().exclude("music");
-            query.fields().exclude("contentText");
+            query.fields().exclude(Constants.CONTENT_TEXT);
             query.fields().exclude("exif");
             List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class);
             fileDocumentList.parallelStream().forEach(fileDocument -> {
@@ -391,7 +391,7 @@ public class SearchFileService {
         List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match",
                         new org.bson.Document("_id",
                                 new org.bson.Document("$in", objectIds))),
-                new org.bson.Document("$project", new org.bson.Document("order", 0L).append("contentText", 0L).append("content", 0L)),
+                new org.bson.Document("$project", new org.bson.Document("order", 0L).append(Constants.CONTENT_TEXT, 0L).append(Constants.CONTENT, 0L)),
                 new org.bson.Document("$addFields",
                         new org.bson.Document("order",
                                 new org.bson.Document("$indexOfArray", Arrays.asList(objectIds, "$_id")))),

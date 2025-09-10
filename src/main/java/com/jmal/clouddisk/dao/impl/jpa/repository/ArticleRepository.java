@@ -52,4 +52,11 @@ public interface ArticleRepository extends JpaRepository<ArticleDO, String> {
     @Modifying
     @Query("UPDATE ArticleDO a SET a.pageSort = :pageSort WHERE a.id = :id")
     void updatePageSortById(String id, Integer pageSort);
+
+    boolean existsBySlug(String slug);
+    boolean existsBySlugAndIdNot(String slug, String id);
+
+    @Modifying
+    @Query("UPDATE ArticleDO a SET a.hasDraft = :hasDraft WHERE a.id = :id")
+    void updateHasDraftById(String id, Boolean hasDraft);
 }

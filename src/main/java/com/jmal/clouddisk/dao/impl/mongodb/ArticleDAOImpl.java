@@ -3,17 +3,21 @@ package com.jmal.clouddisk.dao.impl.mongodb;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IArticleDAO;
 import com.jmal.clouddisk.dao.impl.mongodb.repository.FileDocumentRepository;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
 import com.jmal.clouddisk.model.ArchivesVO;
 import com.jmal.clouddisk.model.ArticleDTO;
+import com.jmal.clouddisk.model.ArticleParamDTO;
 import com.jmal.clouddisk.model.ArticleVO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.util.JacksonUtil;
+import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.MyFileUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,8 +32,10 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 
 @Repository
 @RequiredArgsConstructor
@@ -85,7 +91,7 @@ public class ArticleDAOImpl implements IArticleDAO {
             query.addCriteria(Criteria.where(Constants.ALONE_PAGE).exists(false));
         }
         if (articleDTO.getIsDraft() != null && articleDTO.getIsDraft()) {
-            query.addCriteria(Criteria.where(Constants.DRAFT).exists(true));
+            query.addCriteria(Criteria.where(Constants.CONTENT_DRAFT).exists(true));
         }
         if (articleDTO.getCategoryIds() != null && articleDTO.getCategoryIds().length > 0) {
             query.addCriteria(Criteria.where("categoryIds").in((Object[]) articleDTO.getCategoryIds()));
@@ -113,7 +119,7 @@ public class ArticleDAOImpl implements IArticleDAO {
                 .include(Constants.CONTENT_TYPE)
                 .include(Constants.UPDATE_DATE)
                 .include(Constants.UPLOAD_DATE)
-                .include(Constants.DRAFT)
+                .include(Constants.CONTENT_DRAFT)
                 .include("pageSort")
                 .include("slug")
                 .include("suffix")
@@ -167,7 +173,7 @@ public class ArticleDAOImpl implements IArticleDAO {
     }
 
     @Override
-    public ArticleVO findById(String fileId) {
+    public ArticleVO findByFileId(String fileId) {
         return mongoTemplate.findById(fileId, ArticleVO.class, CommonFileService.COLLECTION_NAME);
     }
 
@@ -180,6 +186,80 @@ public class ArticleDAOImpl implements IArticleDAO {
             update.set("pageSort", doc.getPageSort());
             mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
         });
+    }
+
+    @Override
+    public FileDocument findByFileId(String fileId, String... excludeFields) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        if (excludeFields != null) {
+            query.fields().exclude(excludeFields);
+        }
+        return mongoTemplate.findOne(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public String newArticle(FileDocument fileDocument) {
+        FileDocument saved = mongoTemplate.save(fileDocument, CommonFileService.COLLECTION_NAME);
+        return saved.getId();
+    }
+
+    @Override
+    public void upsert(ArticleParamDTO upload, boolean isUpdate, FileDocument fileDocument) {
+        Update update = getUpdate(upload, isUpdate, fileDocument);
+        if (!isUpdate) {
+            String newFileId = newArticle(fileDocument);
+            upload.setFileId(newFileId);
+        }
+        mongoTemplate.upsert(new Query().addCriteria(Criteria.where("_id").is(upload.getFileId())), update, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public void deleteDraft(String fileId, String username) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
+        if (fileDocument == null || fileDocument.getDraft() == null) {
+            return;
+        }
+        FileDocument draft = JacksonUtil.parseObject(fileDocument.getDraft(), FileDocument.class);
+        File draftFile = Paths.get(fileProperties.getRootDir(), username, draft.getPath(), draft.getName()).toFile();
+        FileUtil.del(draftFile);
+
+        File file = Paths.get(fileProperties.getRootDir(), username, fileDocument.getPath(), fileDocument.getName()).toFile();
+        FileUtil.writeString(fileDocument.getContentText(), file, StandardCharsets.UTF_8);
+        Update update = new Update();
+        update.unset(Constants.CONTENT_DRAFT);
+        mongoTemplate.upsert(query, update, CommonFileService.COLLECTION_NAME);
+    }
+
+    private static Update getUpdate(ArticleParamDTO upload, boolean isUpdate, FileDocument fileDocument) {
+        boolean isDraft = false;
+        if (Boolean.TRUE.equals(upload.getIsDraft())) {
+            isDraft = true;
+        } else {
+            fileDocument.setRelease(true);
+            fileDocument.setContentText(upload.getContentText());
+            fileDocument.setHtml(upload.getHtml());
+        }
+        if (!isDraft) {
+            fileDocument.setDraft(null);
+        }
+        Update update = MongoUtil.getUpdate(fileDocument);
+        if (isDraft) {
+            // 保存草稿
+            if (isUpdate && !StrUtil.isBlankIfStr(upload.getIsRelease())) {
+                update = new Update();
+            }
+            fileDocument.setContentText(upload.getContentText());
+            fileDocument.setDraft(null);
+            update.set(Constants.CONTENT_DRAFT, JacksonUtil.toJSONStringWithDateFormat(fileDocument, "yyyy-MM-dd HH:mm:ss"));
+        } else {
+            if (upload.getFileId() != null) {
+                update.unset(Constants.CONTENT_DRAFT);
+            }
+        }
+        return update;
     }
 
 }

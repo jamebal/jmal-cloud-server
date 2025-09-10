@@ -34,9 +34,9 @@ public class FileService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
         if (excludeContent) {
-            query.fields().exclude("content");
+            query.fields().exclude(Constants.CONTENT);
         }
-        query.fields().exclude("contentText");
+        query.fields().exclude(Constants.CONTENT_TEXT);
         return mongoTemplate.findOne(query, FileDocument.class);
     }
 

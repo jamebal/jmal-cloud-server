@@ -27,6 +27,7 @@ public interface TagRepository extends JpaRepository<TagDO, String> {
 
     boolean existsByNameAndIdNot(String name, String id);
 
+    boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, String id);
 
     void removeByIdIn(List<String> idList);

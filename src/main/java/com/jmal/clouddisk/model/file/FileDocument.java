@@ -245,7 +245,7 @@ public class FileDocument extends FileBase implements Reflective {
      * 临时字段，不存数据库，表示是否有草稿
      */
     @Transient
-    private boolean hasDraft;
+    private Boolean hasDraft;
 
     @Override
     public boolean equals(Object obj) {

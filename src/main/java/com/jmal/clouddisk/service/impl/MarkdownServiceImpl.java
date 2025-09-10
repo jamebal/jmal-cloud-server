@@ -14,6 +14,7 @@ import cn.hutool.http.HttpResponse;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.config.WebConfig;
 import com.jmal.clouddisk.dao.IArticleDAO;
+import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.Either;
 import com.jmal.clouddisk.exception.ExceptionType;
@@ -29,12 +30,11 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.types.ObjectId;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -77,10 +77,12 @@ public class MarkdownServiceImpl implements IMarkdownService {
     private final LuceneService luceneService;
 
     private final LogService logService;
+
     private final UserLoginHolder userLoginHolder;
 
-    private final MongoTemplate mongoTemplate;
     private final IArticleDAO articleDAO;
+
+    private final IFileDAO fileDAO;
 
 
     @Override
@@ -261,7 +263,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         }
         articleVO = articleDAO.findBySlug(slug);
         if (articleVO == null) {
-            articleVO = articleDAO.findById(slug);
+            articleVO = articleDAO.findByFileId(slug);
         }
         if (articleVO == null) {
             return null;
@@ -346,13 +348,9 @@ public class MarkdownServiceImpl implements IMarkdownService {
     @Override
     public ResponseResult<Object> editMarkdown(ArticleParamDTO upload) {
         // 参数判断
-        Query query1 = new Query();
-        query1.addCriteria(Criteria.where("_id").nin(upload.getFileId()));
-        query1.addCriteria(Criteria.where("name").is(upload.getFilename()));
-        if (mongoTemplate.exists(query1, CommonFileService.COLLECTION_NAME)) {
+        if (fileDAO.existsByNameAndIdNotIn(upload.getFilename(), upload.getFileId())) {
             return ResultUtil.warning("该标题已存在");
         }
-        boolean isDraft = false;
         boolean isUpdate = false;
         LocalDateTime nowDate = LocalDateTime.now(TimeUntils.ZONE_ID);
         LocalDateTime uploadDate = nowDate;
@@ -361,17 +359,18 @@ public class MarkdownServiceImpl implements IMarkdownService {
         }
         FileDocument fileDocument = new FileDocument();
         Query query = new Query();
-        if (upload.getFileId() != null) {
-            // 修改
+        if (CharSequenceUtil.isNotBlank(upload.getFileId())) {
             isUpdate = true;
             query.addCriteria(Criteria.where("_id").is(upload.getFileId()));
-            fileDocument = mongoTemplate.findById(upload.getFileId(), FileDocument.class, CommonFileService.COLLECTION_NAME);
+            fileDocument = articleDAO.findByFileId(upload.getFileId(), Constants.CONTENT_TEXT, Constants.CONTENT_DRAFT, Constants.CONTENT_HTML);
             if (fileDocument == null) {
                 return ResultUtil.warning("该文档不存在");
             }
             if (CommonFileService.isLock(fileDocument)) {
                 throw new CommonException(ExceptionType.LOCKED_RESOURCES);
             }
+        } else {
+            fileDocument.setId(new ObjectId().toHexString());
         }
         String filename = upload.getFilename();
         // 同步文档文件
@@ -390,52 +389,15 @@ public class MarkdownServiceImpl implements IMarkdownService {
         fileDocument.setCategoryIds(upload.getCategoryIds());
         fileDocument.setTagIds(tagService.getTagIdsByNames(upload.getTagNames()));
         fileDocument.setIsFolder(false);
-        Update update = getUpdate(upload, isDraft, isUpdate, fileDocument);
-        String fileId = upload.getFileId();
-        if (!isUpdate) {
-            FileDocument saved = mongoTemplate.save(fileDocument, CommonFileService.COLLECTION_NAME);
-            upload.setFileId(saved.getId());
-            query.addCriteria(Criteria.where("_id").is(saved.getId()));
-            fileId = saved.getId();
-        }
-        mongoTemplate.upsert(query, update, CommonFileService.COLLECTION_NAME);
-        luceneService.pushCreateIndexQueue(fileId);
-        return ResultUtil.success(upload.getFileId());
-    }
-
-    @NotNull
-    private static Update getUpdate(ArticleParamDTO upload, boolean isDraft, boolean isUpdate, FileDocument fileDocument) {
         if (upload.getIsAlonePage() != null && upload.getIsAlonePage()) {
             fileDocument.setAlonePage(true);
         }
         if (upload.getPageSort() != null) {
             fileDocument.setPageSort(upload.getPageSort());
         }
-        if (Boolean.TRUE.equals(upload.getIsDraft())) {
-            isDraft = true;
-        } else {
-            fileDocument.setRelease(true);
-            fileDocument.setContentText(upload.getContentText());
-            fileDocument.setHtml(upload.getHtml());
-        }
-        if (!isDraft) {
-            fileDocument.setDraft(null);
-        }
-        Update update = MongoUtil.getUpdate(fileDocument);
-        if (isDraft) {
-            // 保存草稿
-            if (isUpdate && !StrUtil.isBlankIfStr(upload.getIsRelease())) {
-                update = new Update();
-            }
-            fileDocument.setContentText(upload.getContentText());
-            fileDocument.setDraft(null);
-            update.set(Constants.DRAFT, JacksonUtil.toJSONStringWithDateFormat(fileDocument, "yyyy-MM-dd HH:mm:ss"));
-        } else {
-            if (upload.getFileId() != null) {
-                update.unset(Constants.DRAFT);
-            }
-        }
-        return update;
+        articleDAO.upsert(upload, isUpdate, fileDocument);
+        luceneService.pushCreateIndexQueue(upload.getFileId());
+        return ResultUtil.success(upload.getFileId());
     }
 
     /***
@@ -478,21 +440,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     @Override
     public ResponseResult<Object> deleteDraft(String fileId, String username) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(fileId));
-        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
-        if (fileDocument == null || fileDocument.getDraft() == null) {
-            return ResultUtil.success();
-        }
-        FileDocument draft = JacksonUtil.parseObject(fileDocument.getDraft(), FileDocument.class);
-        File draftFile = Paths.get(fileProperties.getRootDir(), username, draft.getPath(), draft.getName()).toFile();
-        FileUtil.del(draftFile);
-
-        File file = Paths.get(fileProperties.getRootDir(), username, fileDocument.getPath(), fileDocument.getName()).toFile();
-        FileUtil.writeString(fileDocument.getContentText(), file, StandardCharsets.UTF_8);
-        Update update = new Update();
-        update.unset(Constants.DRAFT);
-        mongoTemplate.upsert(query, update, CommonFileService.COLLECTION_NAME);
+        articleDAO.deleteDraft(fileId, username);
         return ResultUtil.success();
     }
 
@@ -507,7 +455,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             query.addCriteria(Criteria.where("_id").nin(fileId));
         }
         query.addCriteria(Criteria.where("slug").is(slug));
-        if (mongoTemplate.exists(query, CommonFileService.COLLECTION_NAME)) {
+        if (fileDAO.existsBySlugAndIdNot(slug, fileId)) {
             return slug + "-1";
         }
         return slug;

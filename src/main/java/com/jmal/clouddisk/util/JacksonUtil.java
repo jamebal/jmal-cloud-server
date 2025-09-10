@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.util;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,6 +8,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,7 @@ public class JacksonUtil {
         mapper.setDateFormat(new StdDateFormat().withColonInTimeZone(true));
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.registerModule(new JavaTimeModule());
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
     /**
@@ -56,6 +59,17 @@ public class JacksonUtil {
     public static <T> T parseObject(String json, Class<T> clazz) {
         try {
             return mapper.readValue(json, clazz);
+        } catch (Exception e) {
+            throw new RuntimeException("JSON反序列化失败", e);
+        }
+    }
+
+    /**
+     * JSON 输入流转对象
+     */
+    public static <T> T parseObject(InputStream inputStream, Class<T> clazz) {
+        try {
+            return mapper.readValue(inputStream, clazz);
         } catch (Exception e) {
             throw new RuntimeException("JSON反序列化失败", e);
         }

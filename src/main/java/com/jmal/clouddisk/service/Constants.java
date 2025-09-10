@@ -13,7 +13,10 @@ public class Constants {
     public static final String SUFFIX = "suffix";
     public static final String RELEASE = "release";
     public static final String ALONE_PAGE = "alonePage";
-    public static final String DRAFT = "draft";
+    public static final String CONTENT_DRAFT = "draft";
+    public static final String CONTENT_TEXT = "contentText";
+    public static final String CONTENT = "content";
+    public static final String CONTENT_HTML = "html";
     public static final String IS_FOLDER = "isFolder";
     public static final String IS_FAVORITE = "isFavorite";
     public static final String TAG_IDS = "tagIds";

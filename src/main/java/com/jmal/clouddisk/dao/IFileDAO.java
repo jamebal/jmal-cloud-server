@@ -57,4 +57,8 @@ public interface IFileDAO {
     void setSubShareByFileId(String fileId);
 
     void unsetSubShareByFileId(String fileId);
+
+    boolean existsByNameAndIdNotIn(String filename, String fileId);
+
+    boolean existsBySlugAndIdNot(String slug, String fileId);
 }

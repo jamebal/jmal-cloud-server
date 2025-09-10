@@ -2,6 +2,7 @@ package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.FileNameUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -30,9 +31,9 @@ public class ArticleParamDTO implements Reflective {
     String filename;
     String fileId;
     @NotNull(message = "contentText不能为空")
-    @Schema(name = "contentText", title = "markdown内容", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(name = Constants.CONTENT_TEXT, title = "markdown内容", requiredMode = Schema.RequiredMode.REQUIRED)
     String contentText;
-    @Schema(name = "html", title = "html内容")
+    @Schema(name = Constants.CONTENT_HTML, title = "html内容")
     String html;
     @Schema(name = "currentDirectory", title = "当前目录,用户的网盘目录,如果为空则为'/'")
     String currentDirectory;

@@ -63,6 +63,9 @@ public class TagDAOJpaImpl implements ITagDAO, IWriteCommon<TagDO> {
 
     @Override
     public boolean existsBySlugAndIdNot(String slug, String id) {
+        if (CharSequenceUtil.isBlank(slug)) {
+            return tagRepository.existsBySlug(slug);
+        }
         return tagRepository.existsBySlugAndIdNot(slug, id);
     }
 

@@ -124,7 +124,7 @@ public class MessageService {
             if (message instanceof Document setDoc) {
                 Object set = setDoc.get("$set");
                 if (set instanceof Document doc) {
-                    doc.remove("content");
+                    doc.remove(Constants.CONTENT);
                     Boolean isFolder = doc.getBoolean(Constants.IS_FOLDER);
                     if (Boolean.TRUE.equals(isFolder)) {
                         pushMsg(username, message, url);

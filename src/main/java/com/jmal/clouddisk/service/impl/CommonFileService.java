@@ -433,7 +433,7 @@ public class CommonFileService {
             if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
                 // 写入markdown内容
                 String markDownContent = FileUtil.readString(file, MyFileUtils.getFileCharset(file));
-                update.set("contentText", markDownContent);
+                update.set(Constants.CONTENT_TEXT, markDownContent);
             }
             messageService.pushMessage(username, fileDocument, Constants.UPDATE_FILE);
             if (updateResult.getModifiedCount() > 0) {

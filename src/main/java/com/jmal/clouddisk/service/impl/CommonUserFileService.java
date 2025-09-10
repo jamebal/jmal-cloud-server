@@ -379,7 +379,7 @@ public class CommonUserFileService {
             if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
                 // 写入markdown内容
                 String markDownContent = FileUtil.readString(file, MyFileUtils.getFileCharset(file));
-                update.set("contentText", markDownContent);
+                update.set(Constants.CONTENT_TEXT, markDownContent);
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -402,7 +402,7 @@ public class CommonUserFileService {
             if (update == null) {
                 update = new Update();
             }
-            update.set("content", PathUtil.readBytes(Paths.get(coverPath)));
+            update.set(Constants.CONTENT, PathUtil.readBytes(Paths.get(coverPath)));
             update.set("video", videoInfo.toVideoInfoDO());
             videoProcessService.convertToM3U8(fileId);
             update.set("mediaCover", true);
@@ -552,9 +552,9 @@ public class CommonUserFileService {
     public FileDocument getFileDocumentByPath(String path, String filename, String userId, boolean excludeContent) {
         Query query = CommonFileService.getQuery(path, filename, userId);
         if (excludeContent) {
-            query.fields().exclude("content");
+            query.fields().exclude(Constants.CONTENT);
         }
-        query.fields().exclude("contentText");
+        query.fields().exclude(Constants.CONTENT_TEXT);
         return mongoTemplate.findOne(query, FileDocument.class);
     }
 

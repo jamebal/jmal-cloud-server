@@ -247,7 +247,7 @@ public class FileServiceImpl implements IFileService {
         } else {
             query.with(Sort.by(Sort.Direction.DESC, Constants.IS_FOLDER));
         }
-        query.fields().exclude("content").exclude("music.coverBase64").exclude("contentText");
+        query.fields().exclude(Constants.CONTENT).exclude("music.coverBase64").exclude(Constants.CONTENT_TEXT);
         String collectionName = BooleanUtil.isTrue(upload.getIsTrash()) ? CommonFileService.TRASH_COLLECTION_NAME : CommonFileService.COLLECTION_NAME;
         if (CommonFileService.TRASH_COLLECTION_NAME.equals(collectionName)) {
             query.addCriteria(Criteria.where("hidden").is(false));
@@ -713,7 +713,7 @@ public class FileServiceImpl implements IFileService {
                 fileDocument.setContent(FileUtil.readBytes(imagePath));
                 if (hasOldFileDocument) {
                     Update update = new Update();
-                    update.set("content", fileDocument.getContent());
+                    update.set(Constants.CONTENT, fileDocument.getContent());
                     mongoTemplate.upsert(query, update, FileDocument.class);
                 } else {
                     mongoTemplate.save(fileDocument);

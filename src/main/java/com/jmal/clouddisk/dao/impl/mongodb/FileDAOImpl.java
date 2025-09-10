@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.dao.impl.mongodb;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.Constants;
@@ -168,5 +169,23 @@ public class FileDAOImpl implements IFileDAO {
         Update update = new Update();
         update.unset(Constants.SUB_SHARE);
         mongoTemplate.updateFirst(query, update, FileDocument.class);
+    }
+
+    @Override
+    public boolean existsByNameAndIdNotIn(String filename, String fileId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("name").is(filename));
+        query.addCriteria(Criteria.where("_id").ne(fileId));
+        return mongoTemplate.exists(query, FileDocument.class);
+    }
+
+    @Override
+    public boolean existsBySlugAndIdNot(String slug, String fileId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("slug").is(slug));
+        if (CharSequenceUtil.isNotBlank(fileId)) {
+            query.addCriteria(Criteria.where("_id").ne(fileId));
+        }
+        return mongoTemplate.exists(query, FileDocument.class);
     }
 }

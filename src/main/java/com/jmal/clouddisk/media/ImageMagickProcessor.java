@@ -9,6 +9,7 @@ import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.CommandUtil;
 import lombok.Builder;
 import lombok.Getter;
@@ -64,7 +65,7 @@ public class ImageMagickProcessor {
         try {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             cropImage(file, "1", "256", "256", byteArrayOutputStream);
-            update.set("content", byteArrayOutputStream.toByteArray());
+            update.set(Constants.CONTENT, byteArrayOutputStream.toByteArray());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (IOException e) {

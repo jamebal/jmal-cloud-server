@@ -610,7 +610,7 @@ public class WebOssService extends WebOssCommonService {
                 if (fileDocument != null) {
                     Query query = new Query().addCriteria(Criteria.where("_id").is(pathName));
                     Update update = new Update();
-                    update.set("content", thumbnailDoc.getContent());
+                    update.set(Constants.CONTENT, thumbnailDoc.getContent());
                     mongoTemplate.upsert(query, update, FileDocument.class);
                 } else {
                     mongoTemplate.save(thumbnailDoc);

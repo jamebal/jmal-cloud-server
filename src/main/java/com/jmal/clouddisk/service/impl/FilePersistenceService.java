@@ -3,7 +3,9 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.service.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,10 +32,18 @@ public class FilePersistenceService {
             return;
         }
 
-        writeContentToFile(fileDocument.getId(), "content", fileDocument.getContent());
-        writeContentToFile(fileDocument.getId(), "contentText", fileDocument.getContentText());
-        writeContentToFile(fileDocument.getId(), "html", fileDocument.getHtml());
-        writeContentToFile(fileDocument.getId(), "draft", fileDocument.getDraft());
+        writeContentToFile(fileDocument.getId(), Constants.CONTENT, fileDocument.getContent());
+        writeContentToFile(fileDocument.getId(), Constants.CONTENT_TEXT, fileDocument.getContentText());
+        writeContentToFile(fileDocument.getId(), Constants.CONTENT_HTML, fileDocument.getHtml());
+        writeContentToFile(fileDocument.getId(), Constants.CONTENT_DRAFT, fileDocument.getDraft());
+    }
+
+    public void persistDraft(String fileId, String content) {
+        writeContentToFile(fileId, Constants.CONTENT_DRAFT, content);
+    }
+
+    public void delDraft(String fileId) {
+        deleteContents(fileId, Constants.CONTENT_DRAFT);
     }
 
     /**
@@ -69,12 +79,24 @@ public class FilePersistenceService {
      */
     public void deleteContents(String fileId) {
         if (CharSequenceUtil.isBlank(fileId) || fileId.length() < 4) {
-            log.warn("Attempted to delete contents with an invalid fileId: {}", fileId);
-            return;
+            throw new CommonException("Attempted to delete contents with an invalid fileId: " + fileId);
         }
         // 构建最内层的、包含所有内容的父目录
         Path fileContainerPath = buildFilePathForDelete(fileId);
         FileUtil.del(fileContainerPath);
+    }
+
+    /**
+     * 删除与一个文件ID相关的所有内容和目录
+     * @param fileId 要删除的文件ID
+     */
+    public void deleteContents(String fileId, String subDir) {
+        if (CharSequenceUtil.isBlank(fileId) || fileId.length() < 4) {
+            throw new CommonException("Attempted to delete contents with an invalid fileId: " + fileId);
+        }
+        // 构建最内层的、包含所有内容的父目录
+        File file = buildFilePathForRead(fileId, subDir);
+        FileUtil.del(file);
     }
 
     private void writeContentToFile(String fileId, String subDir, byte[] content) {

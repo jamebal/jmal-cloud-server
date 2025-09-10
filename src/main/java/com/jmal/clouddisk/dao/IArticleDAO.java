@@ -2,6 +2,7 @@ package com.jmal.clouddisk.dao;
 
 import com.jmal.clouddisk.model.ArchivesVO;
 import com.jmal.clouddisk.model.ArticleDTO;
+import com.jmal.clouddisk.model.ArticleParamDTO;
 import com.jmal.clouddisk.model.ArticleVO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import org.springframework.data.domain.Page;
@@ -20,7 +21,15 @@ public interface IArticleDAO {
 
     ArticleVO findBySlug(String slug);
 
-    ArticleVO findById(String fileId);
+    ArticleVO findByFileId(String fileId);
 
     void updatePageSort(List<FileDocument> list);
+
+    FileDocument findByFileId(String fileId, String... excludeFields);
+
+    String newArticle(FileDocument fileDocument);
+
+    void upsert(ArticleParamDTO upload, boolean isUpdate, FileDocument fileDocument);
+
+    void deleteDraft(String fileId, String username);
 }

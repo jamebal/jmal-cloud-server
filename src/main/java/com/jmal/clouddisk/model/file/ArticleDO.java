@@ -62,16 +62,19 @@ public class ArticleDO extends AuditableEntity implements Reflective {
 
     public ArticleDO(FileDocument fileDocument) {
         this.id = fileDocument.getId();
+        this.convert(fileDocument);
+    }
+
+    public ArticleDO convert(FileDocument fileDocument) {
         this.release = fileDocument.getRelease();
         this.alonePage = fileDocument.getAlonePage();
         this.pageSort = fileDocument.getPageSort();
-
         this.hasDraft = CharSequenceUtil.isNotBlank(fileDocument.getDraft());
-
         this.cover = fileDocument.getCover();
         this.slug = fileDocument.getSlug();
         this.categoryIds = fileDocument.getCategoryIds() != null ? List.of(fileDocument.getCategoryIds()) : null;
         this.tagIds = fileDocument.getTagIds() != null ? List.of(fileDocument.getTagIds()) : null;
+        return this;
     }
 
     public FileDocument toFileDocument() {

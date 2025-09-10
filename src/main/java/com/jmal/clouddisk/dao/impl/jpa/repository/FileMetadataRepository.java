@@ -67,4 +67,6 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, St
     @Query("DELETE FROM FileMetadataDO f WHERE f.userId IN :userIdList")
     void deleteAllByUserIdInBatch(List<String> userIdList);
 
+    boolean existsByNameAndIdNotIn(String name, Collection<String> ids);
+
 }
