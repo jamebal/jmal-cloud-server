@@ -70,6 +70,16 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
                 }
             });
         }
+        if (BooleanUtil.isTrue(articleDO.getHasDraft())) {
+            filePersistenceService.readContent(articleDO.getId(), "draft").ifPresent(inputStream -> {
+                try (inputStream) {
+                    String contentText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                    fileDocument.setDraft(contentText);
+                } catch (Exception e) {
+                    log.error("读取 ArticleDO draft 失败, fileId: {}", fileId, e);
+                }
+            });
+        }
         return fileDocument;
     }
 
@@ -206,7 +216,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         });
 
         articles.parallelStream().forEach(doc -> {
-            if (BooleanUtil.isTrue(doc.isHasDraft())) {
+            if (BooleanUtil.isTrue(doc.getHasDraft())) {
                 filePersistenceService.readContent(doc.getId(), "draft").ifPresent(inputStream -> {
                     try (inputStream) {
                         String contentText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
