@@ -85,7 +85,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         // 1. 构建动态SQL和参数
         Map<String, Object> params = new HashMap<>();
         StringBuilder sqlBuilder = new StringBuilder(
-                "SELECT DISTINCT a.file_id,a.category_ids,a.has_draft,a.slug,a.tag_ids,a.is_release,a.cover" +
+                "SELECT DISTINCT a.file_id,a.category_ids,a.has_draft,a.slug,a.tag_ids,a.is_release,a.cover,a.page_sort" +
                         ",f.content_type,f.name,f.update_date,f.upload_date,f.user_id,f.suffix " +
                         "FROM articles a "
         );
