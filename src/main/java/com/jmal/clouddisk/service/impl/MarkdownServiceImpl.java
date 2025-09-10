@@ -33,8 +33,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -358,10 +356,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
             uploadDate = upload.getUploadDate();
         }
         FileDocument fileDocument = new FileDocument();
-        Query query = new Query();
         if (CharSequenceUtil.isNotBlank(upload.getFileId())) {
             isUpdate = true;
-            query.addCriteria(Criteria.where("_id").is(upload.getFileId()));
             fileDocument = articleDAO.findByFileId(upload.getFileId(), Constants.CONTENT_TEXT, Constants.CONTENT_DRAFT, Constants.CONTENT_HTML);
             if (fileDocument == null) {
                 return ResultUtil.warning("该文档不存在");
@@ -445,16 +441,11 @@ public class MarkdownServiceImpl implements IMarkdownService {
     }
 
     private String getSlug(ArticleParamDTO upload) {
-        Query query = new Query();
         String slug = upload.getSlug();
         if (CharSequenceUtil.isBlank(slug)) {
             return upload.getFilename();
         }
         String fileId = upload.getFileId();
-        if (fileId != null) {
-            query.addCriteria(Criteria.where("_id").nin(fileId));
-        }
-        query.addCriteria(Criteria.where("slug").is(slug));
         if (fileDAO.existsBySlugAndIdNot(slug, fileId)) {
             return slug + "-1";
         }
