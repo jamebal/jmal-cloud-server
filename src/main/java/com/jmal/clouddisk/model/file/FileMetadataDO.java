@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.model.file;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
@@ -68,12 +67,6 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
     @PrimaryKeyJoinColumn
     private FilePropsDO props;
 
-    @OneToOne(mappedBy = "fileMetadata",
-            cascade = CascadeType.REMOVE,
-            orphanRemoval = true)
-    @JsonIgnore
-    private ArticleDO article;
-
     // =========================== ETag相关字段 ===========================
     @Column(length = 64)
     private String etag;
@@ -85,8 +78,19 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
     public FileMetadataDO(FileDocument fileDocument) {
         this.id = fileDocument.getId();
         this.covert(fileDocument);
+        this.props = new FilePropsDO(fileDocument);
     }
-    public FileMetadataDO covert(FileDocument fileDocument) {
+
+    public void updateFields(FileDocument fileDocument) {
+        this.covert(fileDocument);
+        if (this.props == null) {
+            this.props = new FilePropsDO(fileDocument);
+        } else {
+            this.props.updateFields(fileDocument);
+        }
+    }
+
+    private void covert(FileDocument fileDocument) {
         this.userId = fileDocument.getUserId();
         this.path = fileDocument.getPath();
         this.isFolder = fileDocument.getIsFolder();
@@ -103,8 +107,6 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
         this.needsEtagUpdate = fileDocument.getNeedsEtagUpdate();
         this.lastEtagUpdateRequestAt = fileDocument.getLastEtagUpdateRequestAt();
         this.lastEtagUpdateError = fileDocument.getLastEtagUpdateError();
-        this.props = new FilePropsDO(fileDocument);
-        return this;
     }
 
     public FileDocument toFileDocument() {

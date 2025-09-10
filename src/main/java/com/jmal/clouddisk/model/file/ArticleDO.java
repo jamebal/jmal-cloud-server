@@ -44,7 +44,7 @@ public class ArticleDO extends AuditableEntity implements Reflective {
     @JdbcTypeCode(SqlTypes.JSON)
     private List<String> tagIds;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(fetch = FetchType.LAZY, optional = false, cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
     @JoinColumn(name = "file_id", // 在 articles 表中创建的外键列名
             referencedColumnName = "id", // file_id 列引用的是 files 表的 id 列
             unique = true, // 确保一个文件只能被一篇文章引用，强制一对一
@@ -62,10 +62,15 @@ public class ArticleDO extends AuditableEntity implements Reflective {
 
     public ArticleDO(FileDocument fileDocument) {
         this.id = fileDocument.getId();
-        this.convert(fileDocument);
+        this.cover(fileDocument);
     }
 
-    public ArticleDO convert(FileDocument fileDocument) {
+    public void updateFields(FileDocument fileDocument) {
+        cover(fileDocument);
+        this.fileMetadata.updateFields(fileDocument);
+    }
+
+    private void cover(FileDocument fileDocument) {
         this.release = fileDocument.getRelease();
         this.alonePage = fileDocument.getAlonePage();
         this.pageSort = fileDocument.getPageSort();
@@ -74,7 +79,6 @@ public class ArticleDO extends AuditableEntity implements Reflective {
         this.slug = fileDocument.getSlug();
         this.categoryIds = fileDocument.getCategoryIds() != null ? List.of(fileDocument.getCategoryIds()) : null;
         this.tagIds = fileDocument.getTagIds() != null ? List.of(fileDocument.getTagIds()) : null;
-        return this;
     }
 
     public FileDocument toFileDocument() {

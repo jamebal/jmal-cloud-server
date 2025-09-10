@@ -71,6 +71,14 @@ public class FilePropsDO implements Reflective {
 
     public FilePropsDO(FileDocument fileDocument) {
         this.id = fileDocument.getId();
+        cover(fileDocument);
+    }
+
+    public void updateFields(FileDocument fileDocument) {
+        cover(fileDocument);
+    }
+
+    private void cover(FileDocument fileDocument) {
         this.shareBase = fileDocument.getShareBase();
         this.subShare = fileDocument.getSubShare();
         this.shareId = fileDocument.getShareId();
