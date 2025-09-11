@@ -5,6 +5,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.controller.record.LoginResponse;
+import com.jmal.clouddisk.dao.ILdapConfigDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
@@ -20,8 +21,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.ldap.AuthenticationException;
 import org.springframework.ldap.CommunicationException;
 import org.springframework.ldap.core.AttributesMapper;
@@ -45,7 +44,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements IAuthService {
 
-    private final MongoTemplate mongoTemplate;
+    private final ILdapConfigDAO ldapConfigDAO;
 
     private LdapTemplate ldapTemplate;
 
@@ -78,7 +77,7 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     public void init() {
-        LdapConfigDO ldapConfigDO = mongoTemplate.findOne(new Query(), LdapConfigDO.class);
+        LdapConfigDO ldapConfigDO = ldapConfigDAO.findOne();
         if (ldapConfigDO != null) {
             LdapConfigDTO ldapConfigDTO = ldapConfigDO.toLdapConfigDTO(textEncryptor);
             LdapContextSource ldapContextSource = loadLdapConfig(ldapConfigDTO);
@@ -202,7 +201,7 @@ public class AuthServiceImpl implements IAuthService {
         } catch (Exception e) {
             return ResultUtil.error(loginError());
         }
-        LdapConfigDO ldapConfigDO = mongoTemplate.findOne(new Query(), LdapConfigDO.class);
+        LdapConfigDO ldapConfigDO = ldapConfigDAO.findOne();
         if (ldapConfigDO != null) {
             // 创建账号
             consumerDTO.setRoles(ldapConfigDO.getDefaultRoleList());
@@ -242,7 +241,7 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public ResponseResult<Object> validOldPass(String userId, String password) {
-        ConsumerDO user = mongoTemplate.findById(userId, ConsumerDO.class, UserServiceImpl.COLLECTION_NAME);
+        ConsumerDO user = userService.userInfoById(userId);
         if (user == null) {
             return ResultUtil.warning(loginError());
         } else {
@@ -265,7 +264,7 @@ public class AuthServiceImpl implements IAuthService {
             throw new CommonException(ExceptionType.PERMISSION_DENIED);
         }
         LdapConfigDO ldapConfigDO = ldapConfigDTO.toLdapConfigDO(consumerDO.getId(), textEncryptor);
-        mongoTemplate.save(ldapConfigDO);
+        ldapConfigDAO.save(ldapConfigDO);
         // 重新加载ldap配置
         init();
         return ResultUtil.success();
@@ -292,7 +291,7 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public LdapConfigDTO loadLdapConfig() {
-        LdapConfigDO ldapConfigDO = mongoTemplate.findOne(new Query(), LdapConfigDO.class);
+        LdapConfigDO ldapConfigDO = ldapConfigDAO.findOne();
         if (ldapConfigDO == null) {
             return null;
         }
