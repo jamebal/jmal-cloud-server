@@ -59,8 +59,6 @@ public class LogDAOJpaImpl implements ILogDAO, IWriteCommon<LogOperation> {
 
     @Override
     public Page<LogOperation> findFileOperationHistoryByFileId(LogOperationDTO logOperationDTO, String fileId, String currentUserId, String currentUsername) {
-        logOperationDTO.setSortProp("createTime");
-        logOperationDTO.setSortOrder("descending");
         Specification<LogOperation> spec = fileHistoryFor(fileId, currentUserId, currentUsername);
         return logRepository.findAll(spec, logOperationDTO.getPageable());
     }

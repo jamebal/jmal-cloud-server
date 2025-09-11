@@ -240,7 +240,7 @@ public class FileServiceImpl implements IFileService {
         if (!CharSequenceUtil.isBlank(order)) {
             String sortableProp = upload.getSortableProp();
             Sort.Direction direction = Sort.Direction.ASC;
-            if ("descending".equals(order)) {
+            if (Constants.DESCENDING.equals(order)) {
                 direction = Sort.Direction.DESC;
             }
             query.with(Sort.by(direction, sortableProp));

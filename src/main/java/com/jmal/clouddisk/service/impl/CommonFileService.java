@@ -456,7 +456,7 @@ public class CommonFileService {
         }
         if (!CharSequenceUtil.isBlank(order) && "name".equals(upload.getSortableProp())) {
             fileIntroVOList = fileIntroVOList.stream().sorted(this::compareByFileName).toList();
-            if ("descending".equals(order)) {
+            if (Constants.DESCENDING.equals(order)) {
                 fileIntroVOList = fileIntroVOList.stream().sorted(this::desc).toList();
             }
         }

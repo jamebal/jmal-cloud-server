@@ -253,7 +253,7 @@ public class WebOssService extends WebOssCommonService {
             String sortableProp = upload.getSortableProp();
             // 按文件大小排序
             if ("size".equals(sortableProp)) {
-                if ("descending".equals(order)) {
+                if (Constants.DESCENDING.equals(order)) {
                     // 倒序
                     fileIntroVOList = fileIntroVOList.stream().sorted(commonFileService::compareBySizeDesc).toList();
                 } else {
@@ -263,7 +263,7 @@ public class WebOssService extends WebOssCommonService {
             }
             // 按文件最近修改时间排序
             if (Constants.UPDATE_DATE.equals(sortableProp)) {
-                if ("descending".equals(order)) {
+                if (Constants.DESCENDING.equals(order)) {
                     // 倒序
                     fileIntroVOList = fileIntroVOList.stream().sorted(commonFileService::compareByUpdateDateDesc).toList();
                 } else {

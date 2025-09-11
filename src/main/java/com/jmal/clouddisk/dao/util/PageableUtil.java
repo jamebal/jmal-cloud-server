@@ -2,6 +2,7 @@ package com.jmal.clouddisk.dao.util;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.model.query.QueryBaseDTO;
+import com.jmal.clouddisk.service.Constants;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -32,7 +33,7 @@ public class PageableUtil {
         // 检查是否存在排序参数
         if (!CharSequenceUtil.isBlank(queryBaseDTO.getSortProp())) {
             // 根据排序顺序字符串决定排序方向
-            Sort.Direction direction = "descending".equalsIgnoreCase(queryBaseDTO.getSortOrder())
+            Sort.Direction direction = Constants.DESCENDING.equalsIgnoreCase(queryBaseDTO.getSortOrder())
                     ? Sort.Direction.DESC
                     : Sort.Direction.ASC;
             Sort sort = Sort.by(direction, queryBaseDTO.getSortProp());

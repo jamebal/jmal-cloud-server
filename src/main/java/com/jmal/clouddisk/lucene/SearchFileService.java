@@ -200,7 +200,7 @@ public class SearchFileService {
         }
 
         // 确定排序方向
-        boolean reverse = "descending".equalsIgnoreCase(sortOrder);
+        boolean reverse = Constants.DESCENDING.equalsIgnoreCase(sortOrder);
 
         // 根据排序属性创建对应的 SortField
         SortField sortField;

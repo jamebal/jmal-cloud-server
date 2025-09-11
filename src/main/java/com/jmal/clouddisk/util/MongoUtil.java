@@ -3,6 +3,7 @@ package com.jmal.clouddisk.util;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.model.query.QueryBaseDTO;
+import com.jmal.clouddisk.service.Constants;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -64,7 +65,7 @@ public class MongoUtil {
             query.limit(queryBaseDTO.getPageSize());
         }
         if(!CharSequenceUtil.isBlank(queryBaseDTO.getSortProp()) && !CharSequenceUtil.isBlank(queryBaseDTO.getSortOrder())){
-            if ("descending".equals(queryBaseDTO.getSortOrder())) {
+            if (Constants.DESCENDING.equals(queryBaseDTO.getSortOrder())) {
                 query.with(Sort.by(Sort.Direction.DESC, queryBaseDTO.getSortProp()));
             } else {
                 query.with(Sort.by(Sort.Direction.ASC, queryBaseDTO.getSortProp()));

@@ -33,7 +33,7 @@ public class HeartwingsDAOImpl implements IHeartwingsDAO {
         query.skip((long) pageSize * (page - 1));
         query.limit(pageSize);
         Sort.Direction direction = Sort.Direction.ASC;
-        if ("descending".equals(order)) {
+        if (Constants.DESCENDING.equals(order)) {
             direction = Sort.Direction.DESC;
         }
         query.with(Sort.by(direction, Constants.CREATE_TIME));

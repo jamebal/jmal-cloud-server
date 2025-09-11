@@ -1,11 +1,12 @@
 package com.jmal.clouddisk.model;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.dao.util.PageableUtil;
 import com.jmal.clouddisk.model.query.QueryBaseDTO;
+import com.jmal.clouddisk.service.Constants;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import lombok.Data;
 import org.springframework.data.domain.Pageable;
 
@@ -91,6 +92,10 @@ public class LogOperationDTO implements Reflective {
     }
 
     public Pageable getPageable() {
+        if (CharSequenceUtil.isBlank(getSortOrder()) || CharSequenceUtil.isBlank(getSortProp())) {
+            setSortProp(Constants.CREATE_TIME);
+            setSortOrder(Constants.DESCENDING);
+        }
         return PageableUtil.buildPageable(toQueryBaseDTO());
     }
 }

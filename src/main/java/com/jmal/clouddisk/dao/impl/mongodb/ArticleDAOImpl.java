@@ -106,7 +106,7 @@ public class ArticleDAOImpl implements IArticleDAO {
         }
 
         if (CharSequenceUtil.isBlank(articleDTO.getSortableProp()) || CharSequenceUtil.isBlank(articleDTO.getOrder())) {
-            articleDTO.setOrder("descending");
+            articleDTO.setOrder(Constants.DESCENDING);
             articleDTO.setSortableProp(Constants.UPLOAD_DATE);
         }
 
