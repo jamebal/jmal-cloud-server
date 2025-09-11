@@ -12,7 +12,7 @@ import com.jmal.clouddisk.dao.migrate.MigrationResult;
 import com.jmal.clouddisk.model.file.ArticleDO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
-import com.jmal.clouddisk.service.impl.FilePersistenceService;
+import com.jmal.clouddisk.dao.impl.jpa.FilePersistenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

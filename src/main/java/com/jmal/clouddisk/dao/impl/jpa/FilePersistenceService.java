@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.service.impl;
+package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
