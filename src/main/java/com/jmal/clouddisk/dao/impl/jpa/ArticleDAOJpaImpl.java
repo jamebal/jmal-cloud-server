@@ -73,7 +73,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
             return null;
         }
         FileDocument fileDocument = articleDO.toFileDocument();
-        if (BooleanUtil.isTrue(articleDO.getFileMetadata().getProps().getHasContentText())) {
+        if (BooleanUtil.isTrue(articleDO.getFileMetadata().getHasContentText())) {
             filePersistenceService.readContent(articleDO.getId(), Constants.CONTENT_TEXT).ifPresent(inputStream -> {
                 try (inputStream) {
                     String contentText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
@@ -372,7 +372,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
     }
 
     private void articleVOFilePersistence(ArticleDO articleDO, ArticleVO articleVO) {
-        if (BooleanUtil.isTrue(articleDO.getFileMetadata().getProps().getHasHtml())) {
+        if (BooleanUtil.isTrue(articleDO.getFileMetadata().getHasHtml())) {
             filePersistenceService.readContent(articleDO.getFileMetadata().id, Constants.CONTENT_HTML).ifPresent(inputStream -> {
                 try (inputStream) {
                     String contentText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
@@ -382,7 +382,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
                 }
             });
         }
-        if (BooleanUtil.isTrue(articleDO.getFileMetadata().getProps().getHasContentText())) {
+        if (BooleanUtil.isTrue(articleDO.getFileMetadata().getHasContentText())) {
             filePersistenceService.readContent(articleDO.getFileMetadata().id, Constants.CONTENT_TEXT).ifPresent(inputStream -> {
                 try (inputStream) {
                     String contentText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);

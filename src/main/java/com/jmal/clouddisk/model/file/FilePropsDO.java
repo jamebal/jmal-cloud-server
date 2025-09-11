@@ -1,14 +1,10 @@
 package com.jmal.clouddisk.model.file;
 
-import cn.hutool.core.text.CharSequenceUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.model.Tag;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -33,27 +29,13 @@ import java.util.Set;
 public class FilePropsDO implements Reflective {
 
     @Id
+    @Column(length = 24)
     private String id;
-
-    /**
-     * 用于存储不同类型的二进制数据，如缩略图、文本内容, 使用文件存储, contentPath就是文件路径 ${rootDir}/${dbDir}/data/${fileId}/content/${fileId}
-     */
-    private Boolean hasContent;
-
-    /**
-     * ${rootDir}/${dbDir}/data/${fileId}/contentText/${fileId}
-     */
-    private Boolean hasContentText;
-
-    /**
-     * ${rootDir}/${dbDir}/data/${fileId}/html/${fileId}
-     */
-    private Boolean hasHtml;
 
     private Boolean shareBase;
     private Boolean subShare;
+    @Column(length = 24)
     private String shareId;
-    private Integer LuceneIndex;
 
     @Column(name = "share_props")
     @JdbcTypeCode(SqlTypes.JSON)
@@ -66,8 +48,6 @@ public class FilePropsDO implements Reflective {
     @Column(name = "tags")
     @JdbcTypeCode(SqlTypes.JSON)
     private Set<Tag> tags = new HashSet<>();
-
-    private Integer delTag;
 
     public FilePropsDO(FileDocument fileDocument) {
         this.id = fileDocument.getId();
@@ -89,13 +69,27 @@ public class FilePropsDO implements Reflective {
         if (fileDocument.getTags() != null) {
             this.tags.addAll(fileDocument.getTags());
         }
-        this.delTag = fileDocument.getDelete();
+    }
 
-        this.hasContent = fileDocument.getContent() != null;
-        this.hasContentText = CharSequenceUtil.isNotBlank(fileDocument.getContentText());
-        this.hasHtml = CharSequenceUtil.isNotBlank(fileDocument.getHtml());
-
-        this.LuceneIndex = fileDocument.getIndex();
+    public void toFileDocumentFragment(FileDocument fileDocument) {
+        fileDocument.setIsPublic(this.shareProps.getIsPublic());
+        fileDocument.setIsShare(this.shareProps.getIsShare());
+        fileDocument.setIsPrivacy(this.shareProps.getIsPrivacy());
+        fileDocument.setExtractionCode(this.shareProps.getExtractionCode());
+        fileDocument.setExpiresAt(this.shareProps.getExpiresAt());
+        fileDocument.setOperationPermissionList(this.shareProps.getOperationPermissionList());
+        fileDocument.setOssPlatform(this.props.getOssPlatform());
+        fileDocument.setOssFolder(this.props.getOssFolder());
+        fileDocument.setMusic(this.props.getMusic());
+        fileDocument.setExif(this.props.getExif());
+        fileDocument.setVideo(this.props.getVideo());
+        fileDocument.setW(this.props.getW());
+        fileDocument.setH(this.props.getH());
+        fileDocument.setMediaCover(this.props.getMediaCover());
+        fileDocument.setM3u8(this.props.getM3u8());
+        fileDocument.setVtt(this.props.getVtt());
+        fileDocument.setShowCover(this.props.getShowCover());
+        fileDocument.setRemark(this.props.getRemark());
     }
 
 

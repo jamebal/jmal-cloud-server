@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model.file;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -52,7 +53,9 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
     private String name;
     private String path;
     private Long size;
+    @Column(length = 128)
     private String contentType;
+    @Column(length = 32)
     private String suffix;
     private Boolean isFavorite;
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
@@ -61,11 +64,28 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateDate;
+    @Column(length = 24)
     private String mountFileId;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = false, orphanRemoval = true)
     @PrimaryKeyJoinColumn
     private FilePropsDO props;
+
+    private Integer delTag;
+    /**
+     * 用于存储不同类型的二进制数据，如缩略图、文本内容, 使用文件存储, contentPath就是文件路径 ${rootDir}/${dbDir}/data/${fileId}/content/${fileId}
+     */
+    private Boolean hasContent;
+    /**
+     * ${rootDir}/${dbDir}/data/${fileId}/contentText/${fileId}
+     */
+    private Boolean hasContentText;
+    /**
+     * ${rootDir}/${dbDir}/data/${fileId}/html/${fileId}
+     */
+    private Boolean hasHtml;
+
+    private Integer LuceneIndex;
 
     // =========================== ETag相关字段 ===========================
     @Column(length = 64)
@@ -106,7 +126,12 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
         this.etagUpdateFailedAttempts = fileDocument.getEtagUpdateFailedAttempts();
         this.needsEtagUpdate = fileDocument.getNeedsEtagUpdate();
         this.lastEtagUpdateRequestAt = fileDocument.getLastEtagUpdateRequestAt();
-        this.lastEtagUpdateError = fileDocument.getLastEtagUpdateError();
+
+        this.delTag = fileDocument.getDelete();
+        this.hasContent = fileDocument.getContent() != null;
+        this.hasContentText = CharSequenceUtil.isNotBlank(fileDocument.getContentText());
+        this.hasHtml = CharSequenceUtil.isNotBlank(fileDocument.getHtml());
+        this.LuceneIndex = fileDocument.getIndex();
     }
 
     public FileDocument toFileDocument() {
@@ -124,37 +149,21 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
         fileDocument.setSuffix(this.suffix);
         fileDocument.setIsFavorite(this.isFavorite);
         if (this.props != null) {
-            fileDocument.setOssPlatform(this.props.getProps().getOssPlatform());
-            fileDocument.setOssFolder(this.props.getProps().getOssFolder());
-            fileDocument.setIsPublic(this.props.getShareProps().getIsPublic());
-            fileDocument.setIsShare(this.props.getShareProps().getIsShare());
-            fileDocument.setIsPrivacy(this.props.getShareProps().getIsPrivacy());
-            fileDocument.setExtractionCode(this.props.getShareProps().getExtractionCode());
             fileDocument.setShareId(this.props.getShareId());
             fileDocument.setShareBase(this.props.getShareBase());
             fileDocument.setSubShare(this.props.getSubShare());
-            fileDocument.setExpiresAt(this.props.getShareProps().getExpiresAt());
-            fileDocument.setMusic(this.props.getProps().getMusic());
-            fileDocument.setExif(this.props.getProps().getExif());
-            fileDocument.setVideo(this.props.getProps().getVideo());
-            fileDocument.setW(this.props.getProps().getW());
-            fileDocument.setH(this.props.getProps().getH());
-            fileDocument.setMediaCover(this.props.getProps().getMediaCover());
-            fileDocument.setM3u8(this.props.getProps().getM3u8());
-            fileDocument.setVtt(this.props.getProps().getVtt());
             List<Tag> tagList = new ArrayList<>(this.props.getTags());
             fileDocument.setTags(tagList);
-            fileDocument.setDelete(this.getProps().getDelTag());
-            fileDocument.setShowCover(this.props.getProps().getShowCover());
-            fileDocument.setRemark(this.props.getProps().getRemark());
-            fileDocument.setIndex(this.props.getLuceneIndex());
-            fileDocument.setOperationPermissionList(this.props.getShareProps().getOperationPermissionList());
+
+            this.props.toFileDocumentFragment(fileDocument);
         }
+        fileDocument.setDelete(this.getDelTag());
+        fileDocument.setIndex(this.getLuceneIndex());
         fileDocument.setEtag(this.etag);
         fileDocument.setEtagUpdateFailedAttempts(this.etagUpdateFailedAttempts);
         fileDocument.setNeedsEtagUpdate(this.needsEtagUpdate);
         fileDocument.setLastEtagUpdateRequestAt(this.lastEtagUpdateRequestAt);
-        fileDocument.setLastEtagUpdateError(this.lastEtagUpdateError);
+        this.lastEtagUpdateError = fileDocument.getLastEtagUpdateError();
         fileDocument.setMountFileId(this.mountFileId);
         return fileDocument;
     }
