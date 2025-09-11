@@ -1,14 +1,20 @@
 package com.jmal.clouddisk.dao.impl.mongodb;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.dao.IFileDAO;
+import com.jmal.clouddisk.model.OperationPermission;
 import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.ShareProperties;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.mongodb.client.result.UpdateResult;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -26,6 +32,8 @@ import static com.jmal.clouddisk.service.IUserService.USER_ID;
 public class FileDAOImpl implements IFileDAO {
 
     private final MongoTemplate mongoTemplate;
+
+    private final UserLoginHolder userLoginHolder;
 
     @Override
     public void deleteAllByIdInBatch(List<String> userIdList) {
@@ -187,5 +195,94 @@ public class FileDAOImpl implements IFileDAO {
             query.addCriteria(Criteria.where("_id").ne(fileId));
         }
         return mongoTemplate.exists(query, FileDocument.class);
+    }
+
+    @Override
+    public boolean existsByUserIdAndPathAndNameIn(String path, String userId, List<String> filenames) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        query.addCriteria(Criteria.where(Constants.PATH_FIELD).is(path));
+        query.addCriteria(Criteria.where(Constants.FILENAME_FIELD).in(filenames));
+        return mongoTemplate.exists(query, FileDocument.class);
+    }
+
+    @Override
+    public boolean existsByUserIdAndPathAndMd5(String userId, String path, String md5) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        query.addCriteria(Criteria.where(Constants.PATH_FIELD).is(path));
+        query.addCriteria(Criteria.where("md5").is(md5));
+        return mongoTemplate.exists(query, FileDocument.class);
+    }
+
+    @Override
+    public void updateShareProps(FileDocument file, String shareId, ShareProperties shareProperties, boolean isFolder) {
+        Query query = getUpdateSharePropsQuery(file, isFolder);
+        Update update = new Update();
+        setShareAttribute(update, shareProperties.getExpiresAt(), shareId, shareProperties.getIsPrivacy(), shareProperties.getExtractionCode(), shareProperties.getOperationPermissionList());
+        mongoTemplate.updateMulti(query, update, FileDocument.class);
+    }
+
+    @Override
+    public void updateShareFirst(String fileId, boolean shareBase) {
+        Update update = new Update();
+        if (shareBase) {
+            update.set(Constants.SHARE_BASE, true);
+        } else {
+            update.unset(Constants.SHARE_BASE);
+        }
+        Query query1 = new Query();
+        query1.addCriteria(Criteria.where("_id").is(fileId));
+        mongoTemplate.updateFirst(query1, update, FileDocument.class);
+    }
+
+    @Override
+    public void unsetShareProps(FileDocument file, boolean isFolder) {
+        Query query = getUpdateSharePropsQuery(file, isFolder);
+        Update update = new Update();
+        update.unset(Constants.SHARE_ID);
+        update.unset(Constants.IS_SHARE);
+        update.unset(Constants.SUB_SHARE);
+        update.unset(Constants.EXPIRES_AT);
+        update.unset(Constants.IS_PRIVACY);
+        update.unset(Constants.OPERATION_PERMISSION_LIST);
+        update.unset(Constants.EXTRACTION_CODE);
+        mongoTemplate.updateMulti(query, update, FileDocument.class);
+    }
+
+    @NotNull
+    private Query getUpdateSharePropsQuery(FileDocument file, boolean isFolder) {
+        Query query = new Query();
+        if (isFolder) {
+            query.addCriteria(Criteria.where(USER_ID).is(userLoginHolder.getUserId()));
+            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName() + "/")));
+        } else {
+            query = new Query();
+            query.addCriteria(Criteria.where("_id").is(file.getId()));
+        }
+        return query;
+    }
+
+    /**
+     * 设置共享属性
+     *
+     * @param expiresAt      过期时间
+     * @param shareId        shareId
+     * @param isPrivacy      isPrivacy
+     * @param extractionCode extractionCode
+     */
+    public static void setShareAttribute(Update update, long expiresAt, String shareId, Boolean isPrivacy, String extractionCode, List<OperationPermission> operationPermissionListList) {
+        update.set(Constants.IS_SHARE, true);
+        update.set(Constants.SHARE_ID, shareId);
+        update.set(Constants.EXPIRES_AT, expiresAt);
+        update.set(Constants.IS_PRIVACY, isPrivacy);
+        if (operationPermissionListList != null) {
+            update.set(Constants.OPERATION_PERMISSION_LIST, operationPermissionListList);
+        }
+        if (BooleanUtil.isTrue(isPrivacy)) {
+            update.set(Constants.EXTRACTION_CODE, extractionCode);
+        } else {
+            update.unset(Constants.EXTRACTION_CODE);
+        }
     }
 }

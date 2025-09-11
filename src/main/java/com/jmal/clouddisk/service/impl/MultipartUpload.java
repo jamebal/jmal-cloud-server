@@ -5,11 +5,11 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.UploadResponse;
-import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +46,8 @@ public class MultipartUpload {
     private final WebOssService webOssService;
 
     private final LogService logService;
+
+    private final IFileDAO fileDAO;
 
     /***
      * 断点恢复上传缓存(已上传的缓存)
@@ -198,8 +200,7 @@ public class MultipartUpload {
         String path = commonFileService.getUserDirectory(upload.getCurrentDirectory());
         if (checkExist) {
             // 将upload.getFiles()中的filename提取出来
-            FileDocument fileDocument = commonFileService.exist(path, upload.getUserId(), upload.getFilenames());
-            if (fileDocument != null) {
+            if (fileDAO.existsByUserIdAndPathAndNameIn(path, upload.getUserId(), upload.getFilenames())) {
                 // 文件已存在
                 uploadResponse.setPass(true);
                 uploadResponse.setExist(true);
@@ -210,8 +211,7 @@ public class MultipartUpload {
             String relativePath = upload.getRelativePath();
             path += relativePath.substring(0, relativePath.length() - upload.getFilename().length());
 
-            FileDocument fileDocument = commonFileService.getByMd5(path, upload.getUserId(), md5);
-            if (fileDocument != null) {
+            if (fileDAO.existsByUserIdAndPathAndMd5(upload.getUserId(), path, md5)) {
                 // 文件已存在
                 uploadResponse.setPass(true);
             } else {

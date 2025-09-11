@@ -8,6 +8,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.dao.impl.mongodb.FileDAOImpl;
 import com.jmal.clouddisk.lucene.EtagService;
 import com.jmal.clouddisk.lucene.LuceneIndexQueueEvent;
 import com.jmal.clouddisk.lucene.RebuildIndexTaskService;
@@ -250,7 +251,7 @@ public class CommonUserFileService {
         if (shareDocument.get(Constants.OPERATION_PERMISSION_LIST) != null) {
             operationPermissionList = Convert.toList(OperationPermission.class, shareDocument.get(Constants.OPERATION_PERMISSION_LIST));
         }
-        CommonFileService.setShareAttribute(update, expiresAt, shareId, isPrivacy, extractionCode, operationPermissionList);
+        FileDAOImpl.setShareAttribute(update, expiresAt, shareId, isPrivacy, extractionCode, operationPermissionList);
     }
 
     /**

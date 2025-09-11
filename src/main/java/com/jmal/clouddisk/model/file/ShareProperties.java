@@ -26,4 +26,12 @@ public class ShareProperties {
         this.expiresAt = fileDocument.getExpiresAt();
         this.isShare = fileDocument.getIsShare();
     }
+
+    public ShareProperties(Boolean isPrivacy, String extractionCode, Long expiresAt, List<OperationPermission> operationPermissionList, Boolean isShare) {
+        this.isPrivacy = isPrivacy;
+        this.extractionCode = extractionCode;
+        this.expiresAt = expiresAt;
+        this.operationPermissionList = operationPermissionList;
+        this.isShare = isShare;
+    }
 }

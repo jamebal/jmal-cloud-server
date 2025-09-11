@@ -35,7 +35,6 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -1362,10 +1361,8 @@ public class FileServiceImpl implements IFileService {
         Query query = new Query();
         if (Boolean.TRUE.equals(file.getIsFolder())) {
             // 共享文件夹及其下的所有文件
-            query.addCriteria(Criteria.where(USER_ID).is(userLoginHolder.getUserId()));
-            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName() + "/")));
             // 设置共享属性
-            commonFileService.setShareAttribute(file, expiresAt, share, query);
+            commonFileService.setShareAttribute(file, expiresAt, share, true);
             // 修改文件夹下已经共享的文件
             query.addCriteria(Criteria.where(Constants.SHARE_BASE).is(true));
             Update update = new Update();
@@ -1373,9 +1370,8 @@ public class FileServiceImpl implements IFileService {
             update.set(Constants.SUB_SHARE, true);
             mongoTemplate.updateMulti(query, update, FileDocument.class);
         } else {
-            query.addCriteria(Criteria.where("_id").is(file.getId()));
             // 设置共享属性
-            commonFileService.setShareAttribute(file, expiresAt, share, query);
+            commonFileService.setShareAttribute(file, expiresAt, share, false);
         }
     }
 
@@ -1384,24 +1380,21 @@ public class FileServiceImpl implements IFileService {
         if (file == null) {
             return;
         }
-        Query query = new Query();
         Path path = Paths.get(file.getId());
         String ossPath = CaffeineUtil.getOssPath(path);
         if (ossPath != null) {
+            Query query = new Query();
             query.addCriteria(Criteria.where("_id").is(file.getId()));
             mongoTemplate.remove(query, FileDocument.class);
             return;
         }
         if (Boolean.TRUE.equals(file.getIsFolder())) {
             // 解除共享文件夹及其下的所有文件
-            query.addCriteria(Criteria.where(USER_ID).is(userLoginHolder.getUserId()));
-            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName() + "/")));
             // 解除共享属性
-            commonFileService.unsetShareAttribute(file, query);
+            commonFileService.unsetShareAttribute(file, true);
         } else {
-            query.addCriteria(Criteria.where("_id").is(file.getId()));
             // 解除共享属性
-            commonFileService.unsetShareAttribute(file, query);
+            commonFileService.unsetShareAttribute(file, false);
         }
     }
 

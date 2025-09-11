@@ -8,6 +8,7 @@ import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.lucene.EtagService;
@@ -19,6 +20,7 @@ import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.file.FileBase;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileIntroVO;
+import com.jmal.clouddisk.model.file.ShareProperties;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IUserService;
@@ -80,6 +82,8 @@ public class CommonFileService {
 
     private final MongoTemplate mongoTemplate;
 
+    private final IFileDAO fileDAO;
+
     private final FileProperties fileProperties;
 
     private final VideoProcessService videoProcessService;
@@ -121,38 +125,6 @@ public class CommonFileService {
             }
         }
         return currentDirectory;
-    }
-
-    /**
-     * 是否存在该文件
-     *
-     * @param path      文件的相对路径
-     * @param userId    userId 用户Id
-     * @param filenames 文件名列表
-     * @return FileDocument
-     */
-    FileDocument exist(String path, String userId, List<String> filenames) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        query.addCriteria(Criteria.where("path").is(path));
-        query.addCriteria(Criteria.where("name").in(filenames));
-        return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
-    }
-
-    /**
-     * 是否存在该文件
-     *
-     * @param path   文件的相对路径
-     * @param userId userId
-     * @param md5    md5
-     * @return FileDocument
-     */
-    FileDocument getByMd5(String path, String userId, String md5) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        query.addCriteria(Criteria.where("md5").is(md5));
-        query.addCriteria(Criteria.where("path").is(path));
-        return mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
     }
 
     public static Query getQuery(FileDocument fileDocument) {
@@ -265,67 +237,25 @@ public class CommonFileService {
      * 设置共享属性
      * @param fileDocument FileDocument
      * @param expiresAt 过期时间
-     * @param query 查询条件
+     * @param share ShareDO
+     * @param isFolder 是否是文件夹
      */
-    void setShareAttribute(FileDocument fileDocument, long expiresAt, ShareDO share, Query query) {
-        Update update = new Update();
-        setShareAttribute(update, expiresAt, share.getId(), share.getIsPrivacy(), share.getExtractionCode(), share.getOperationPermissionList());
-        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
+    void setShareAttribute(FileDocument fileDocument, long expiresAt, ShareDO share, boolean isFolder) {
+        ShareProperties shareProperties = new ShareProperties(share.getIsPrivacy(), share.getExtractionCode(), expiresAt, share.getOperationPermissionList(), true);
+        fileDAO.updateShareProps(fileDocument, share.getId(), shareProperties, isFolder);
         // 修改第一个文件/文件夹
-        updateShareFirst(fileDocument, update, true);
-    }
-
-    private void updateShareFirst(FileDocument fileDocument, Update update, boolean share) {
-        if (share) {
-            update.set(Constants.SHARE_BASE, true);
-        } else {
-            update.unset(Constants.SHARE_BASE);
-        }
-        Query query1 = new Query();
-        query1.addCriteria(Criteria.where("_id").is(fileDocument.getId()));
-        mongoTemplate.updateFirst(query1, update, COLLECTION_NAME);
-    }
-
-    /**
-     * 设置共享属性
-     *
-     * @param expiresAt      过期时间
-     * @param shareId        shareId
-     * @param isPrivacy      isPrivacy
-     * @param extractionCode extractionCode
-     */
-    public static void setShareAttribute(Update update, long expiresAt, String shareId, Boolean isPrivacy, String extractionCode, List<OperationPermission> operationPermissionListList) {
-        update.set(Constants.IS_SHARE, true);
-        update.set(Constants.SHARE_ID, shareId);
-        update.set(Constants.EXPIRES_AT, expiresAt);
-        update.set(Constants.IS_PRIVACY, isPrivacy);
-        if (operationPermissionListList != null) {
-            update.set(Constants.OPERATION_PERMISSION_LIST, operationPermissionListList);
-        }
-        if (BooleanUtil.isTrue(isPrivacy)) {
-            update.set(Constants.EXTRACTION_CODE, extractionCode);
-        } else {
-            update.unset(Constants.EXTRACTION_CODE);
-        }
+        fileDAO.updateShareFirst(fileDocument.getId(), true);
     }
 
     /***
      * 解除共享属性
      * @param fileDocument FileDocument
-     * @param query 查询条件
+     * @param isFolder 是否是文件夹
      */
-    void unsetShareAttribute(FileDocument fileDocument, Query query) {
-        Update update = new Update();
-        update.unset(Constants.SHARE_ID);
-        update.unset(Constants.IS_SHARE);
-        update.unset(Constants.SUB_SHARE);
-        update.unset(Constants.EXPIRES_AT);
-        update.unset(Constants.IS_PRIVACY);
-        update.unset(Constants.OPERATION_PERMISSION_LIST);
-        update.unset(Constants.EXTRACTION_CODE);
-        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
+    void unsetShareAttribute(FileDocument fileDocument, boolean isFolder) {
+        fileDAO.unsetShareProps(fileDocument, isFolder);
         // 修改第一个文件/文件夹
-        updateShareFirst(fileDocument, update, false);
+        fileDAO.updateShareFirst(fileDocument.getId(), false);
     }
 
     public void checkPermissionUsername(String username, String currentUsername, List<OperationPermission> operationPermissionList, OperationPermission operationPermission) {

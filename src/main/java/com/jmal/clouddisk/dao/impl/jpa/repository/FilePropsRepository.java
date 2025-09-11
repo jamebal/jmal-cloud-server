@@ -4,6 +4,7 @@ import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.dto.FileTagsDTO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.FilePropsDO;
+import com.jmal.clouddisk.model.file.ShareProperties;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -36,5 +37,57 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, String> 
     @Modifying
     @Query("UPDATE FilePropsDO p SET p.tags = :tags WHERE p.id = :id")
     void updateTagsForFile(@Param("id") String fileId, @Param("tags") Set<Tag> tags);
+
+    @Modifying
+    @Query("UPDATE FilePropsDO fp SET " +
+            "fp.shareId = :shareId, " +
+            "fp.shareProps = :shareProps " +
+            "WHERE fp.id IN (" +
+            "    SELECT fm.id FROM FileMetadataDO fm " +
+            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix%" +
+            ")")
+    int updateFolderShareProps(
+            @Param("userId") String userId,
+            @Param("pathPrefix") String pathPrefix,
+            @Param("shareId") String shareId,
+            @Param("shareProps") ShareProperties shareProps);
+
+    @Modifying
+    @Query("UPDATE FilePropsDO fp SET " +
+            "fp.shareId = :shareId, " +
+            "fp.shareProps = :shareProps " +
+            "WHERE fp.id IN (" +
+            "    SELECT fm.id FROM FileMetadataDO fm " +
+            "    WHERE fm.id = :fileId" +
+            ")")
+    int updateFileShareProps(
+            @Param("fileId") String fileId,
+            @Param("shareId") String shareId,
+            @Param("shareProps") ShareProperties shareProps);
+
+    @Query("update FilePropsDO f set f.shareBase = :shareBase where f.id = :id")
+    @Modifying
+    int updateShareBaseById(Boolean shareBase, String id);
+
+    @Modifying
+    @Query("UPDATE FilePropsDO fp SET " +
+            "fp.shareId = null, " +
+            "fp.subShare = null, " +
+            "fp.shareProps = :shareProps " +
+            "WHERE fp.id IN (" +
+            "    SELECT fm.id FROM FileMetadataDO fm " +
+            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix%" +
+            ")")
+    int unsetFolderShareProps(@Param("userId") String userId,
+                              @Param("pathPrefix") String pathPrefix,
+                              @Param("shareProps") ShareProperties shareProps);
+
+    @Modifying
+    @Query("UPDATE FilePropsDO fp SET " +
+            "fp.shareId = null, " +
+            "fp.subShare = null, " +
+            "fp.shareProps = :shareProps " +
+            "WHERE fp.id = :fileId")
+    int unsetFileShareProps(@Param("fileId") String fileId, @Param("shareProps") ShareProperties shareProps);
 
 }

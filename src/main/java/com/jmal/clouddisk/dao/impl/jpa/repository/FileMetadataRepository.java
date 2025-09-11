@@ -73,4 +73,8 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, St
     @Query("SELECT new com.jmal.clouddisk.model.file.FileBaseDTO(f.name, f.path, f.userId) FROM FileMetadataDO f WHERE f.id = :id")
     Optional<FileBaseDTO> findFileBaseDTO(String id);
 
+    boolean existsByUserIdAndPathAndNameIn(String userId, String path, Collection<String> names);
+
+    boolean existsByUserIdAndPathAndMd5(String userId, String path, String md5);
+
 }

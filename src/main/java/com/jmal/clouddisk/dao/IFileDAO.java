@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.dao;
 
 import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.ShareProperties;
 
 import java.util.List;
 
@@ -61,4 +62,14 @@ public interface IFileDAO {
     boolean existsByNameAndIdNotIn(String filename, String fileId);
 
     boolean existsBySlugAndIdNot(String slug, String fileId);
+
+    boolean existsByUserIdAndPathAndNameIn(String path, String userId, List<String> filenames);
+
+    boolean existsByUserIdAndPathAndMd5(String userId, String path, String md5);
+
+    void updateShareProps(FileDocument fileDocument, String shareId, ShareProperties shareProperties, boolean isFolder);
+
+    void updateShareFirst(String fileId, boolean shareBase);
+
+    void unsetShareProps(FileDocument file, boolean isFolder);
 }

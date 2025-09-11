@@ -51,6 +51,8 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
     private String userId;
     private Boolean isFolder;
     private String name;
+    @Column(length = 64)
+    private String md5;
     private String path;
     private Long size;
     @Column(length = 128)
@@ -139,7 +141,7 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
         fileDocument.setId(this.id);
         fileDocument.setIsFolder(this.isFolder);
         fileDocument.setName(this.name);
-        fileDocument.setMd5(this.size + this.path + this.name);
+        fileDocument.setMd5(this.md5);
         fileDocument.setSize(this.size);
         fileDocument.setContentType(this.contentType);
         fileDocument.setUploadDate(this.uploadDate);

@@ -3,5 +3,5 @@ package com.jmal.clouddisk.dao.impl.jpa.write.file;
 import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperation;
 
 public sealed interface IFileOperation<R> extends IDataOperation<R>
-        permits FileOperation.ClearAllFolderSizes, FileOperation.CreateAllFileMetadata, FileOperation.CreateFileMetadata, FileOperation.Default, FileOperation.DeleteAllByIdInBatch, FileOperation.DeleteAllByUserIdInBatch, FileOperation.DeleteById, FileOperation.RemoveByMountFileId, FileOperation.SetShareBaseOperation, FileOperation.UnsetShareBaseOperation, FileOperation.UpdateFileSize, FileOperation.UpdateTagsForFile {
+        permits FileOperation.ClearAllFolderSizes, FileOperation.CreateAllFileMetadata, FileOperation.CreateFileMetadata, FileOperation.Default, FileOperation.DeleteAllByIdInBatch, FileOperation.DeleteAllByUserIdInBatch, FileOperation.DeleteById, FileOperation.RemoveByMountFileId, FileOperation.SetShareBaseOperation, FileOperation.UnsetShareBaseOperation, FileOperation.UnsetShareProps, FileOperation.UpdateFileSize, FileOperation.UpdateShareProps, FileOperation.UpdateTagsForFile, FileOperation.updateShareBaseById {
 }

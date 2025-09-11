@@ -187,4 +187,44 @@ public class FileDAOJpaImpl implements IFileDAO {
         }
         return articleRepository.existsBySlugAndIdNot(slug, fileId);
     }
+
+    @Override
+    public boolean existsByUserIdAndPathAndNameIn(String path, String userId, List<String> filenames) {
+        return fileMetadataRepository.existsByUserIdAndPathAndNameIn(userId, path, filenames);
+    }
+
+    @Override
+    public boolean existsByUserIdAndPathAndMd5(String userId, String path, String md5) {
+        return fileMetadataRepository.existsByUserIdAndPathAndMd5(userId, path, md5);
+    }
+
+    @Override
+    public void updateShareProps(FileDocument file, String shareId, ShareProperties shareProperties, boolean isFolder) {
+        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(file.getPath()) + "%";
+        writeService.submit(new FileOperation.UpdateShareProps(
+                file.getId(),
+                file.getUserId(),
+                pathPrefixForLike,
+                shareId,
+                shareProperties,
+                isFolder
+        ));
+    }
+
+    @Override
+    public void updateShareFirst(String fileId, boolean shareBase) {
+        writeService.submit(new FileOperation.updateShareBaseById(fileId, shareBase));
+    }
+
+    @Override
+    public void unsetShareProps(FileDocument file, boolean isFolder) {
+        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(file.getPath()) + "%";
+        writeService.submit(new FileOperation.UnsetShareProps(
+                file.getId(),
+                file.getUserId(),
+                pathPrefixForLike,
+                new ShareProperties(),
+                isFolder
+        ));
+    }
 }
