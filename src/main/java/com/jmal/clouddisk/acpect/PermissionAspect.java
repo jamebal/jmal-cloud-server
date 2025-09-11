@@ -3,18 +3,17 @@ package com.jmal.clouddisk.acpect;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
-import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResultUtil;
+import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -26,13 +25,12 @@ import java.util.List;
  */
 @Aspect
 @Component
+@RequiredArgsConstructor
 public class PermissionAspect {
 
-    @Autowired
-    private UserLoginHolder userLoginHolder;
+    private final UserLoginHolder userLoginHolder;
 
-    @Autowired
-    private UserServiceImpl userService;
+    private final CommonUserService commonUserService;
 
     @Pointcut("@annotation(com.jmal.clouddisk.annotation.Permission)")
     public void privilege() {
@@ -50,7 +48,7 @@ public class PermissionAspect {
         boolean onlyCreator = permission.onlyCreator();
         if (onlyCreator) {
             // 只有创建者才有权限
-            if (userService.getIsCreator(userLoginHolder.getUserId())) {
+            if (commonUserService.getIsCreator(userLoginHolder.getUserId())) {
                 return joinPoint.proceed();
             } else {
                 return ResultUtil.error(ExceptionType.PERMISSION_DENIED);

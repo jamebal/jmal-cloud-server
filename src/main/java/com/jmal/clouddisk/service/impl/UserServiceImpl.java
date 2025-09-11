@@ -464,15 +464,6 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public boolean getIsCreator(String userId) {
-        ConsumerDO consumerDO = userDAO.findById(userId);
-        if (consumerDO == null) {
-            return false;
-        }
-        return consumerDO.getCreator() != null && consumerDO.getCreator();
-    }
-
-    @Override
     public String getUserIdByShowName(String showName) {
         ConsumerDO consumerDO = userDAO.findByShowName(showName);
         if (consumerDO != null) {

@@ -115,12 +115,6 @@ public interface IUserService {
     String getUserNameById(String userId);
 
     /***
-     * 判断该用户是否为创建者
-     * @param userId userId
-     */
-    boolean getIsCreator(String userId);
-
-    /***
      * 获取用户userId
      * @param showName 用户名
      * @return userId

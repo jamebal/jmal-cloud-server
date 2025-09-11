@@ -70,6 +70,14 @@ public class CommonUserService {
         return getUserInfoByUsername(username);
     }
 
+    public boolean getIsCreator(String userId) {
+        ConsumerDO consumerDO = getUserInfoById(userId);
+        if (consumerDO == null) {
+            return false;
+        }
+        return consumerDO.getCreator() != null && consumerDO.getCreator();
+    }
+
     /**
      * 获取创建者的用户名
      * @return 用户名

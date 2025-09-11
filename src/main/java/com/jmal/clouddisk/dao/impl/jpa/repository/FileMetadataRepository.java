@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.dao.impl.jpa.repository;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.model.file.FileBaseDTO;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -68,5 +69,8 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, St
     void deleteAllByUserIdInBatch(List<String> userIdList);
 
     boolean existsByNameAndIdNotIn(String name, Collection<String> ids);
+
+    @Query("SELECT new com.jmal.clouddisk.model.file.FileBaseDTO(f.name, f.path, f.userId) FROM FileMetadataDO f WHERE f.id = :id")
+    Optional<FileBaseDTO> findFileBaseDTO(String id);
 
 }

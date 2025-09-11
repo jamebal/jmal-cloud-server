@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import jakarta.persistence.Column;
@@ -53,14 +54,17 @@ public class LogOperation extends AuditableEntity implements Reflective {
     /***
      * ip地址
      */
+    @Column(length = 40)
     private String ip;
     /***
      * 操作模块
      */
+    @Column(length = 24)
     private String operationModule;
     /***
      * 操作功能
      */
+    @Column(length = 32)
     private String operationFun;
     /***
      * 请求地址
@@ -69,18 +73,22 @@ public class LogOperation extends AuditableEntity implements Reflective {
     /***
      * 请求方式
      */
+    @Column(length = 10)
     private String method;
     /***
      * 设备型号
      */
+    @Column(length = 64)
     private String deviceModel;
     /***
      * 操作系统
      */
+    @Column(length = 64)
     private String operatingSystem;
     /***
      * 浏览器
      */
+    @Column(length = 64)
     private String browser;
     /***
      * 耗时
@@ -102,6 +110,7 @@ public class LogOperation extends AuditableEntity implements Reflective {
     /***
      * 日志类型
      */
+    @Column(length = 16)
     private String type;
 
     @Column(name = "ip_info")
@@ -116,10 +125,12 @@ public class LogOperation extends AuditableEntity implements Reflective {
     /**
      * 文件所属用户
      */
+    @Column(length = 24)
     private String fileUserId;
 
     @Setter
     @Getter
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class IpInfo {
         /***
          * 国家

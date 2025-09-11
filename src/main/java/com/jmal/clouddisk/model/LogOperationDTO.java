@@ -2,9 +2,12 @@ package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.dao.util.PageableUtil;
+import com.jmal.clouddisk.model.query.QueryBaseDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import lombok.Data;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 
@@ -77,4 +80,17 @@ public class LogOperationDTO implements Reflective {
      * 操作功能
      */
     private String operationFun;
+
+    public QueryBaseDTO toQueryBaseDTO() {
+        QueryBaseDTO queryBaseDTO = new QueryBaseDTO();
+        queryBaseDTO.setPage(getPage());
+        queryBaseDTO.setPageSize(getPageSize());
+        queryBaseDTO.setSortOrder(getSortOrder());
+        queryBaseDTO.setSortProp(getSortProp());
+        return queryBaseDTO;
+    }
+
+    public Pageable getPageable() {
+        return PageableUtil.buildPageable(toQueryBaseDTO());
+    }
 }
