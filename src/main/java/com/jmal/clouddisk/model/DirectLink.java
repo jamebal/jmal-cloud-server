@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import com.jmal.clouddisk.service.impl.DirectLinkService;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -27,10 +28,13 @@ import java.time.LocalDateTime;
 @Table(name = DirectLinkService.COLLECTION_NAME)
 public class DirectLink extends AuditableEntity implements Reflective {
 
+    @Column(length = 24)
     String fileId;
 
+    @Column(length = 24)
     String userId;
 
+    @Column(length = 16)
     String mark;
 
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")

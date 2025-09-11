@@ -1,19 +1,14 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.codec.Base64;
+import com.jmal.clouddisk.dao.IDirectLinkDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.DirectLink;
 import com.jmal.clouddisk.model.file.FileDocument;
-import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IUserService;
-import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -27,7 +22,7 @@ public class DirectLinkService {
     public static final String MARK = "mark";
     private final CommonFileService commonFileService;
     private final UserLoginHolder userLoginHolder;
-    private final MongoTemplate mongoTemplate;
+    private final IDirectLinkDAO directLinkDAO;
 
     public String createDirectLink(String fileId) {
         String userId = userLoginHolder.getUserId();
@@ -37,7 +32,7 @@ public class DirectLinkService {
             return directLink.getMark();
         }
         String mark = generateMark();
-        Single.create(emitter -> upsertDirectLink(fileId, mark, userId)).subscribeOn(Schedulers.io()).subscribe();
+        Completable.fromAction(() ->  upsertDirectLink(fileId, mark, userId)).subscribeOn(Schedulers.io()).subscribe();
         return mark;
     }
 
@@ -45,22 +40,18 @@ public class DirectLinkService {
         String userId = userLoginHolder.getUserId();
         checkOwnership(fileId, userId);
         String mark = generateMark();
-        Single.create(emitter -> upsertDirectLink(fileId, mark, userId)).subscribeOn(Schedulers.io()).subscribe();
+        Completable.fromAction(() ->  upsertDirectLink(fileId, mark, userId)).subscribeOn(Schedulers.io()).subscribe();
         return mark;
     }
 
     public String resetAllDirectLink(String fileId) {
         checkOwnership(fileId, userLoginHolder.getUserId());
-        Query query = new Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userLoginHolder.getUserId()));
-        mongoTemplate.remove(query, COLLECTION_NAME);
+        directLinkDAO.removeByUserId(userLoginHolder.getUserId());
         return resetDirectLink(fileId);
     }
 
     public String getFileIdByMark(String mark) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(MARK).is(mark));
-        DirectLink directLink = mongoTemplate.findOne(query, DirectLink.class, COLLECTION_NAME);
+        DirectLink directLink = directLinkDAO.findByMark(mark);
         if (directLink == null) {
             return null;
         }
@@ -68,14 +59,7 @@ public class DirectLinkService {
     }
 
     private void upsertDirectLink(String fileId, String mark, String userId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(Constants.FILE_ID).is(fileId));
-        Update update = new Update();
-        update.set(MARK, mark);
-        update.set(Constants.FILE_ID, fileId);
-        update.set(IUserService.USER_ID, userId);
-        update.set(Constants.UPDATE_DATE, LocalDateTime.now());
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+        directLinkDAO.updateByFileId(fileId, mark, userId, LocalDateTime.now());
     }
 
     private String generateMark() {
@@ -89,15 +73,11 @@ public class DirectLinkService {
     }
 
     private boolean isExistsMark(String mark) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(MARK).is(mark));
-        return mongoTemplate.exists(query, DirectLink.class, COLLECTION_NAME);
+       return directLinkDAO.existsByMark(mark);
     }
 
     private DirectLink getDirectLink(String fileId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(Constants.FILE_ID).is(fileId));
-        return mongoTemplate.findOne(query, DirectLink.class, COLLECTION_NAME);
+        return directLinkDAO.findByFileId(fileId);
     }
 
     /**

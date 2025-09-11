@@ -2110,7 +2110,7 @@ public class FileServiceImpl implements IFileService {
     public ResponseResult<Object> restore(List<String> fileIds, String username) {
         LogOperation logOperation = logService.getLogOperation();
         logOperation.setOperationFun("从回收站还原文件");
-        Single.create(emitter -> {
+        Completable.fromAction(() ->  {
             restoreFile(username, fileIds, logOperation);
             OperationTips operationTips = OperationTips.builder().success(true).operation("还原").build();
             messageService.pushMessage(username, operationTips, Constants.OPERATION_TIPS);
@@ -2121,7 +2121,7 @@ public class FileServiceImpl implements IFileService {
     @Override
     public ResponseResult<Object> sweep(List<String> fileIds, String username) {
         LogOperation logOperation = logService.getLogOperation();
-        Single.create(emitter -> {
+        Completable.fromAction(() ->  {
             Query query = new Query(Criteria.where("_id").in(fileIds));
             commonFileService.deleteDependencies(username, fileIds, true);
             deleteTrash(username, query, logOperation);
@@ -2137,7 +2137,7 @@ public class FileServiceImpl implements IFileService {
             return ResultUtil.error("文件不存在");
         }
         LogOperation logOperation = logService.getLogOperation();
-        Single.create(emitter -> {
+        Completable.fromAction(() ->  {
             // 文件操作日志
             FileDocument fileDocument = commonFileService.getById(fileIds.get(0));
             if (fileDocument == null) {
@@ -2159,7 +2159,7 @@ public class FileServiceImpl implements IFileService {
     public ResponseResult<Object> clearTrash(String username) {
         LogOperation logOperation = logService.getLogOperation();
         logOperation.setOperationFun("清空回收站");
-        Single.create(emitter -> {
+        Completable.fromAction(() ->  {
             Query query = new Query();
             query.fields().include("_id");
             List<Trash> trashList = mongoTemplate.findAllAndRemove(new Query(), Trash.class, CommonFileService.TRASH_COLLECTION_NAME);
