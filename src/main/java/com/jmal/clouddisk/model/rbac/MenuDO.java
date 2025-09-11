@@ -5,6 +5,7 @@ import com.jmal.clouddisk.config.LocalDateTimeFromTimestampDeserializer;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import com.jmal.clouddisk.service.impl.MenuService;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -27,14 +28,17 @@ public class MenuDO extends AuditableEntity implements Reflective {
     /***
      * 父级菜单Id
      */
+    @Column(length = 24)
     String parentId;
     /***
      * 菜单名称
      */
+    @Column(length = 32)
     String name;
     /***
      * 权限标识
      */
+    @Column(length = 64)
     String authority;
     /***
      * 路由地址

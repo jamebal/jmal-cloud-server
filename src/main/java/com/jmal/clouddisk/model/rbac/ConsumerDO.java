@@ -41,6 +41,7 @@ public class ConsumerDO extends ConsumerBase implements Reflective {
     @Schema(title = "头像", example = "https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif")
     String avatar;
     @Schema(name = "slogan", title = "标语")
+    @Column(columnDefinition = "TEXT")
     String slogan;
     @Schema(name = "introduction", title = "简介")
     String introduction;

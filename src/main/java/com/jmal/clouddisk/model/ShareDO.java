@@ -3,6 +3,7 @@ package com.jmal.clouddisk.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -29,16 +30,20 @@ public class ShareDO extends AuditableEntity implements Reflective {
     /**
      * 父级分享Id
      */
+    @Column(length = 24)
     private String fatherShareId;
+    @Column(length = 24)
     private String shortId;
     private Boolean shareBase;
     /**
      * 链接拥有者
      */
+    @Column(length = 24)
     private String userId;
     /**
      * 文件Id
      */
+    @Column(length = 24)
     private String fileId;
     /**
      * 文件名
@@ -47,6 +52,7 @@ public class ShareDO extends AuditableEntity implements Reflective {
     /**
      * 文件类型
      */
+    @Column(length = 128)
     private String contentType;
     /**
      * 是否为文件夹
@@ -71,6 +77,7 @@ public class ShareDO extends AuditableEntity implements Reflective {
     /**
      * 提取码
      */
+    @Column(length = 8)
     private String extractionCode;
     /**
      * 操作权限

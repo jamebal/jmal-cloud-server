@@ -26,11 +26,14 @@ import java.time.LocalDateTime;
 @Table(name = "trash")
 public class TrashEntityDO extends AuditableEntity implements Reflective {
 
+    @Column(length = 24)
     private String userId;
     private Boolean isFolder;
     private String name;
+    @Column(length = 64)
     private String md5;
     private Long size;
+    @Column(length = 128)
     private String contentType;
     /**
      * 上传时间

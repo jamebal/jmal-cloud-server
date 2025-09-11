@@ -27,18 +27,22 @@ public class CategoryDO extends AuditableEntity implements Comparable<CategoryDO
     /***
      * 用户Id
      */
+    @Column(length = 24)
     private String userId;
     /***
      * 分类名称
      */
+    @Column(length = 32)
     private String name;
     /***
      * 缩略名，默认为name
      */
+    @Column(length = 24)
     private String slug;
     /***
      * 父级分类Id
      */
+    @Column(length = 24)
     private String parentCategoryId;
     /***
      * 是否为默认分类

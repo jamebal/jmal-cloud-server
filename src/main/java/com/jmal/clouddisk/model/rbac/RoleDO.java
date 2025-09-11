@@ -29,10 +29,12 @@ public class RoleDO extends AuditableEntity implements Reflective {
     /***
      * 角色名称
      */
+    @Column(length = 32)
     String name;
     /***
      * 角色标识
      */
+    @Column(length = 32)
     String code;
     /***
      * 备注
