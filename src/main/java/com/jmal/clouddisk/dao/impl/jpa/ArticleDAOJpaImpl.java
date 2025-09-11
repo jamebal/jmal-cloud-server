@@ -146,31 +146,11 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         }
 
         if (articleDTO.getCategoryIds() != null && articleDTO.getCategoryIds().length > 0) {
-            if (dataSourceProperties.getType() == DataSourceType.sqlite) {
-                whereBuild.append("AND jec.value IN (:categoryIds) ");
-                params.put("categoryIds", List.of(articleDTO.getCategoryIds()));
-            } else if (dataSourceProperties.getType() == DataSourceType.pgsql) {
-                whereBuild.append("AND category_ids ?| :categoryIds ");
-                params.put("categoryIds", List.of(articleDTO.getCategoryIds()));
-            } else if (dataSourceProperties.getType() == DataSourceType.mysql) {
-                whereBuild.append("AND JSON_OVERLAPS(category_ids, :categoryIdListAsJson) ");
-                String categoryIdListAsJson = JacksonUtil.toJSONString(articleDTO.getCategoryIds());
-                params.put("categoryIdListAsJson", categoryIdListAsJson);
-            }
+            buildCategoryIdsQuery(List.of(articleDTO.getCategoryIds()), whereBuild, params);
         }
 
         if (articleDTO.getTagIds() != null && articleDTO.getTagIds().length > 0) {
-            if (dataSourceProperties.getType() == DataSourceType.sqlite) {
-                whereBuild.append("AND jet.value IN (:tagIds) ");
-                params.put("tagIds", List.of(articleDTO.getTagIds()));
-            } else if (dataSourceProperties.getType() == DataSourceType.pgsql) {
-                whereBuild.append("AND tag_ids ?| :tagIds ");
-                params.put("tagIds", List.of(articleDTO.getTagIds()));
-            } else if (dataSourceProperties.getType() == DataSourceType.mysql) {
-                whereBuild.append("AND JSON_OVERLAPS(tag_ids, :tagIdListAsJson) ");
-                String tagIdListAsJson = JacksonUtil.toJSONString(articleDTO.getTagIds());
-                params.put("tagIdListAsJson", tagIdListAsJson);
-            }
+            buildTagIdsQuery(whereBuild, params, List.of(articleDTO.getTagIds()));
         }
 
         if (luceneFileIds != null) {
@@ -242,6 +222,34 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         });
 
         return new PageImpl<>(articles, articleDTO.getPageable(), total);
+    }
+
+    private void buildTagIdsQuery(StringBuilder whereBuild, Map<String, Object> params, List<String> tagIds) {
+        if (dataSourceProperties.getType() == DataSourceType.sqlite) {
+            whereBuild.append("AND jet.value IN (:tagIds) ");
+            params.put("tagIds", tagIds);
+        } else if (dataSourceProperties.getType() == DataSourceType.pgsql) {
+            whereBuild.append("AND tag_ids ?| :tagIds ");
+            params.put("tagIds", tagIds);
+        } else if (dataSourceProperties.getType() == DataSourceType.mysql) {
+            whereBuild.append("AND JSON_OVERLAPS(tag_ids, :tagIdListAsJson) ");
+            String tagIdListAsJson = JacksonUtil.toJSONString(tagIds);
+            params.put("tagIdListAsJson", tagIdListAsJson);
+        }
+    }
+
+    private void buildCategoryIdsQuery(List<String> categoryIds, StringBuilder whereBuild, Map<String, Object> params) {
+        if (dataSourceProperties.getType() == DataSourceType.sqlite) {
+            whereBuild.append("AND jec.value IN (:categoryIds) ");
+            params.put("categoryIds", categoryIds);
+        } else if (dataSourceProperties.getType() == DataSourceType.pgsql) {
+            whereBuild.append("AND category_ids ?| :categoryIds ");
+            params.put("categoryIds", categoryIds);
+        } else if (dataSourceProperties.getType() == DataSourceType.mysql) {
+            whereBuild.append("AND JSON_OVERLAPS(category_ids, :categoryIdListAsJson) ");
+            String categoryIdListAsJson = JacksonUtil.toJSONString(categoryIds);
+            params.put("categoryIdListAsJson", categoryIdListAsJson);
+        }
     }
 
     @Override
@@ -369,6 +377,26 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
             }
         });
         writeService.submit(new ArticleOperation.updateHasDraftById(fileId, false));
+    }
+
+    @Override
+    public long countByCategoryIdsAndRelease(String id) {
+
+        Map<String, Object> params = new HashMap<>();
+
+        StringBuilder whereBuild = new StringBuilder();
+        if (dataSourceProperties.getType() == DataSourceType.sqlite) {
+            whereBuild.append(", json_each(a.category_ids) jec ");
+        }
+        whereBuild.append("JOIN files f ON a.file_id = f.id " +
+                "WHERE a.is_release = :release ");
+        params.put(Constants.RELEASE, true);
+
+        buildCategoryIdsQuery(List.of(id), whereBuild, params);
+
+        String countSql = "SELECT count(DISTINCT a.file_id) FROM articles a " + whereBuild;
+        Long count = jdbcTemplate.queryForObject(countSql, params, Long.class);
+        return count == null ? 0 : count;
     }
 
     private void articleVOFilePersistence(ArticleDO articleDO, ArticleVO articleVO) {

@@ -78,4 +78,31 @@ public class CategoryDO extends AuditableEntity implements Comparable<CategoryDO
         articlesQueryVO.setName("分类 - "+name);
         return articlesQueryVO;
     }
+
+    public void updateFields(CategoryDO category) {
+        if (category == null) {
+            return;
+        }
+        if (category.getUserId() != null) {
+            this.setUserId(category.getUserId());
+        }
+        if (category.getName() != null) {
+            this.setName(category.getName());
+        }
+        if (category.getSlug() != null) {
+            this.setSlug(category.getSlug());
+        }
+        if (category.getDesc() != null) {
+            this.setDesc(category.getDesc());
+        }
+        if (category.getCategoryBackground() != null) {
+            this.setCategoryBackground(category.getCategoryBackground());
+        }
+        if (category.getParentCategoryId() != null) {
+            this.setParentCategoryId(category.getParentCategoryId());
+        }
+        if (category.getIsDefault() != null) {
+            this.setIsDefault(category.getIsDefault());
+        }
+    }
 }

@@ -233,6 +233,14 @@ public class ArticleDAOImpl implements IArticleDAO {
         mongoTemplate.upsert(query, update, CommonFileService.COLLECTION_NAME);
     }
 
+    @Override
+    public long countByCategoryIdsAndRelease(String id) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("categoryIds").is(id));
+        query.addCriteria(Criteria.where(Constants.RELEASE).is(true));
+        return mongoTemplate.count(query, FileDocument.class);
+    }
+
     private static Update getUpdate(ArticleParamDTO upload, boolean isUpdate, FileDocument fileDocument) {
         boolean isDraft = false;
         if (Boolean.TRUE.equals(upload.getIsDraft())) {

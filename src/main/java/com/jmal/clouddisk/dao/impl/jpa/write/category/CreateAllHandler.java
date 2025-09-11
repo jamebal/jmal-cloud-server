@@ -1,21 +1,21 @@
-package com.jmal.clouddisk.dao.impl.jpa.write.ldapconfig;
+package com.jmal.clouddisk.dao.impl.jpa.write.category;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
-import com.jmal.clouddisk.dao.impl.jpa.repository.LdapConfigRepository;
+import com.jmal.clouddisk.dao.impl.jpa.repository.CategoryRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperationHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Component("ldapConfigAllHandler")
+@Component("categoryCreateAllHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class LdapConfigAllHandler implements IDataOperationHandler<LdapConfigOperation.CreateAll, Void> {
+public class CreateAllHandler implements IDataOperationHandler<CategoryOperation.CreateAll, Void> {
 
-    private final LdapConfigRepository repo;
+    private final CategoryRepository repo;
 
     @Override
-    public Void handle(LdapConfigOperation.CreateAll op) {
+    public Void handle(CategoryOperation.CreateAll op) {
         repo.saveAll(op.entities());
         return null;
     }

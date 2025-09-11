@@ -32,4 +32,6 @@ public interface IArticleDAO {
     void upsert(ArticleParamDTO upload, boolean isUpdate, FileDocument fileDocument);
 
     void deleteDraft(String fileId, String username);
+
+    long countByCategoryIdsAndRelease(String id);
 }
