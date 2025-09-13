@@ -32,7 +32,6 @@ public class OtherProperties {
     private Boolean showCover;
     private String remark;
     private String ossPlatform;
-    private String ossFolder;
 
     public OtherProperties(FileDocument fileDocument) {
         this.w = fileDocument.getW();
@@ -46,6 +45,5 @@ public class OtherProperties {
         this.showCover = fileDocument.getShowCover();
         this.remark = fileDocument.getRemark();
         this.ossPlatform = fileDocument.getOssPlatform();
-        this.ossFolder = fileDocument.getOssFolder();
     }
 }

@@ -2,7 +2,10 @@ package com.jmal.clouddisk.dao;
 
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.ShareProperties;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface IFileDAO {
@@ -72,4 +75,46 @@ public interface IFileDAO {
     void updateShareFirst(String fileId, boolean shareBase);
 
     void unsetShareProps(FileDocument file, boolean isFolder);
+
+    void setSubShareFormShareBase(FileDocument file);
+
+    FileDocument findByUserIdAndPathAndName(String userId, String path, String name, String... excludeFields);
+
+    FileBaseDTO findFileBaseDTOByUserIdAndPathAndName(String userId, String path, String name);
+
+    String findIdByUserIdAndPathAndName(String userId, String path, String name);
+
+    long updateModifyFile(String id, long length, String md5, String suffix, String fileContentType, LocalDateTime updateTime);
+
+    List<FileBaseDTO> findAllFileBaseDTOAndRemoveByIdIn(List<String> fileIds);
+
+    void removeAllByFolder(FileBaseDTO FileBaseDTO);
+
+    List<String> findAllIdsAndRemoveByFolder(FileBaseDTO fileBaseDTO);
+
+    List<FileDocument> findAllAndRemoveByFolder(FileBaseDTO fileBaseDTO);
+
+    FileBaseOssPathDTO findFileBaseOssPathDTOById(String id);
+
+    List<FileBaseOssPathDTO> findFileBaseOssPathDTOByIdIn(List<String> fileIds);
+
+    void removeByUserIdAndPathAndName(String userId, String path, String name);
+
+    long countByDelTag(int delTag);
+
+    List<FileBaseDTO> findFileBaseDTOByDelTagOfLimit(int delTag, int limit);
+
+    void removeById(String fileId);
+
+    long unsetDelTag(String fileId);
+
+    void removeByIdIn(List<String> fileIds);
+
+    List<FileDocument> findAllAndRemoveByIdIn(List<String> fileIds);
+
+    FileBaseDTO findFileBaseDTOById(String fileId);
+
+    void setIsFavoriteByIdIn(List<String> fileIds, boolean isFavorite);
+
+    void setNameAndSuffixById(String name, String suffix, String fileId);
 }

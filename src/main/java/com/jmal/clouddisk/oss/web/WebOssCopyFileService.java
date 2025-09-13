@@ -6,6 +6,7 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.oss.*;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.CommonFileService;
@@ -18,6 +19,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.file.SimplePathVisitor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -348,15 +350,16 @@ public class WebOssCopyFileService extends WebOssCommonService {
      */
     private void copyDir(FileDocument fromFileDocument, IOssService ossServiceTo, String objectNameTo, String ossPathTo) {
         // 锁文件
-        CommonFileService.lockFile(fromFileDocument);
+        CommonFileService.lockFile(new FileBaseDTO(fromFileDocument));
         Path fromPath = Paths.get(fileProperties.getRootDir(), fromFileDocument.getUsername(), fromFileDocument.getPath(), fromFileDocument.getName());
         try {
             // 首先在目标oss创建文件夹
             if (ossServiceTo.mkdir(objectNameTo)) {
                 // 遍历fromPath下的所有目录和文件上传至目标oss
                 PathUtil.walkFiles(fromPath, new SimplePathVisitor() {
+                    @NotNull
                     @Override
-                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    public FileVisitResult preVisitDirectory(@NotNull Path dir, @NotNull BasicFileAttributes attrs) throws IOException {
                         if (!dir.equals(fromPath)) {
                             String objectName = objectNameTo + dir.toString().substring(fromPath.toString().length());
                             ossServiceTo.mkdir(objectName);
@@ -365,8 +368,9 @@ public class WebOssCopyFileService extends WebOssCommonService {
                         return super.preVisitDirectory(dir, attrs);
                     }
 
+                    @NotNull
                     @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    public FileVisitResult visitFile(@NotNull Path file, @NotNull BasicFileAttributes attrs) throws IOException {
                         String objectName = objectNameTo + file.toString().substring(fromPath.toString().length());
                         File fromFile = file.toFile();
                         try (InputStream inputStream = new FileInputStream(fromFile)) {
@@ -383,7 +387,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
             throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
         } finally {
             // 解锁文件
-            CommonFileService.unLockFile(fromFileDocument);
+            CommonFileService.unLockFile(new FileBaseDTO(fromFileDocument));
         }
     }
 
@@ -397,7 +401,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
      */
     private void copyFile(FileDocument fromFileDocument, IOssService ossServiceTo, String objectNameTo, String ossPathTo) {
         // 锁文件
-        CommonFileService.lockFile(fromFileDocument);
+        CommonFileService.lockFile(new FileBaseDTO(fromFileDocument));
         // 上传文件
         File fromFile = Paths.get(fileProperties.getRootDir(), fromFileDocument.getUsername(), fromFileDocument.getPath(), fromFileDocument.getName()).toFile();
         try (InputStream intStream = new FileInputStream(fromFile)) {
@@ -407,7 +411,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
             throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
         } finally {
             // 解锁文件
-            CommonFileService.unLockFile(fromFileDocument);
+            CommonFileService.unLockFile(new FileBaseDTO(fromFileDocument));
         }
     }
 }

@@ -6,7 +6,8 @@ import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.dao.IFileDAO;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.ocr.OcrService;
 import com.jmal.clouddisk.service.impl.*;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -74,6 +75,8 @@ public class RebuildIndexTaskService {
     private final MessageService messageService;
 
     private final MongoTemplate mongoTemplate;
+
+    private final IFileDAO fileDAO;
 
     private ExecutorService syncFileVisitorService;
 
@@ -498,10 +501,11 @@ public class RebuildIndexTaskService {
                 log.error("createFile error {}{}", e.getMessage(), file, e);
                 Query query = new Query();
                 query.fields().include("_id");
-                FileDocument fileDocument = commonFileService.getFileDocument(username, file.toFile().getAbsolutePath(), query);
-                if (fileDocument != null) {
+                FileBaseDTO fileBaseDTO = commonFileService.getFileBaseDTO(username, file.toFile().getAbsolutePath());
+                String fileId = fileDAO.findIdByUserIdAndPathAndName(fileBaseDTO.getUserId(), fileBaseDTO.getName(), fileBaseDTO.getPath());
+                if (fileId != null) {
                     // 需要移除删除标记
-                    removeDeletedFlag(Collections.singletonList(fileDocument.getId()));
+                    removeDeletedFlag(Collections.singletonList(fileId));
                 }
             }
         }

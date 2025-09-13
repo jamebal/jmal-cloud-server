@@ -5,6 +5,7 @@ import com.jmal.clouddisk.model.file.FileMetadataDO;
 import com.jmal.clouddisk.model.file.ShareProperties;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -22,6 +23,8 @@ public final class FileOperation {
     public record UpdateTagsForFile(String fileId, Set<Tag> tags) implements IFileOperation<Void> {}
 
     public record DeleteAllByIdInBatch(List<String> fileIdList) implements IFileOperation<Void> {}
+    public record RemoveAllByUserIdAndPathPrefix(String userId, String pathPrefix) implements IFileOperation<Integer> {}
+    public record RemoveByUserIdAndPathAndName(String userId, String path, String name) implements IFileOperation<Void> {}
 
     public record DeleteAllByUserIdInBatch(List<String> userIdList) implements IFileOperation<Void> {}
 
@@ -37,8 +40,19 @@ public final class FileOperation {
             @Param("shareId") String shareId,
             @Param("shareProps") ShareProperties shareProps,
             @Param("isFolder") Boolean isFolder) implements IFileOperation<Integer> {}
-    public record updateShareBaseById(String fileId, Boolean shareBase) implements IFileOperation<Integer> {}
+    public record UpdateShareBaseById(String fileId, Boolean shareBase) implements IFileOperation<Integer> {}
 
     public record UnsetShareProps(String fileId, String userId, String pathPrefixForLike, ShareProperties shareProperties,
                                   boolean isFolder) implements IFileOperation<Integer> {}
+
+    public record SetSubShareFormShareBase(String userId, String pathPrefixForLike) implements IFileOperation<Integer> {}
+
+    public record UpdateModifyFile(String id, long length, String md5, String suffix, String fileContentType,
+                                   LocalDateTime updateTime) implements IFileOperation<Long> {}
+
+    public record UnsetDelTag(String fileId) implements IFileOperation<Long> {}
+
+    public record SetIsFavoriteByIdIn(List<String> fileIds, boolean isFavorite) implements IFileOperation<Void> {}
+
+    public record SetNameAndSuffixById(String fileId, String name, String suffix) implements IFileOperation<Void> {}
 }

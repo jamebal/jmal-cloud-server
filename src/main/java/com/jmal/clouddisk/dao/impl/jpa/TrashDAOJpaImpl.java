@@ -6,6 +6,9 @@ import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.TrashRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
 import com.jmal.clouddisk.dao.impl.jpa.write.trash.TrashOperation;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.model.Trash;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.TrashEntityDO;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import lombok.RequiredArgsConstructor;
@@ -13,11 +16,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 @Slf4j
 @Repository
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class TrashDAOJpaImpl implements ITrashDAO, IWriteCommon<TrashEntityDO> {
+public class TrashDAOJpaImpl implements ITrashDAO {
 
     private final TrashRepository trashRepository;
 
@@ -39,7 +45,39 @@ public class TrashDAOJpaImpl implements ITrashDAO, IWriteCommon<TrashEntityDO> {
     }
 
     @Override
-    public void AsyncSaveAll(Iterable<TrashEntityDO> entities) {
-        writeService.submit(new TrashOperation.CreateAll(entities));
+    public void saveAll(List<Trash> trashList) {
+        try {
+            writeService.submit(new TrashOperation.CreateAll(trashList)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
     }
+
+    @Override
+    public FileDocument findAndRemoveById(String trashFileId) {
+        TrashEntityDO trashEntityDO = trashRepository.findById(trashFileId).orElse(null);
+        if (trashEntityDO != null) {
+            try {
+                writeService.submit(new TrashOperation.DeleteById(trashFileId)).get(10, TimeUnit.SECONDS);
+                return trashEntityDO.toFileDocument();
+            } catch (Exception e) {
+                throw new CommonException(e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public List<String> findAllIdsAndRemove() {
+        List<String> ids = trashRepository.findAllIds();
+        if (!ids.isEmpty()) {
+            try {
+                writeService.submit(new TrashOperation.DeleteAll(ids)).get(10, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                throw new CommonException(e.getMessage());
+            }
+        }
+        return ids;
+    }
+
 }

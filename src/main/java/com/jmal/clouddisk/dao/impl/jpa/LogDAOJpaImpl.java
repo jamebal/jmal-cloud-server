@@ -9,7 +9,7 @@ import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
 import com.jmal.clouddisk.dao.impl.jpa.write.log.LogDataOperation;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.LogOperationDTO;
-import com.jmal.clouddisk.model.file.FileBaseDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.util.TimeUntils;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;

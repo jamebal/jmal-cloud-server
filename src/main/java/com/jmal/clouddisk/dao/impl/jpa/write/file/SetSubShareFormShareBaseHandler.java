@@ -7,15 +7,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Component("fileUpdateShareBaseByIdHandler")
+@Component("fileSetSubShareFormShareBaseHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class UpdateShareBaseByIdHandler implements IDataOperationHandler<FileOperation.UpdateShareBaseById, Integer> {
+public class SetSubShareFormShareBaseHandler implements IDataOperationHandler<FileOperation.SetSubShareFormShareBase, Integer> {
 
     private final FilePropsRepository repo;
 
     @Override
-    public Integer handle(FileOperation.UpdateShareBaseById op) {
-        return repo.updateShareBaseById(op.shareBase(), op.fileId());
+    public Integer handle(FileOperation.SetSubShareFormShareBase op) {
+        return repo.setSubShareFormShareBase(op.userId(), op.pathPrefixForLike());
     }
 }

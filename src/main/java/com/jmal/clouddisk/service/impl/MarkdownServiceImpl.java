@@ -22,6 +22,7 @@ import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
@@ -362,7 +363,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             if (fileDocument == null) {
                 return ResultUtil.warning("该文档不存在");
             }
-            if (CommonFileService.isLock(fileDocument)) {
+            if (CommonFileService.isLock(new FileBaseDTO(fileDocument))) {
                 throw new CommonException(ExceptionType.LOCKED_RESOURCES);
             }
         } else {

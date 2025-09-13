@@ -1,25 +1,22 @@
 package com.jmal.clouddisk.dao.impl.jpa.write.file;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
-import com.jmal.clouddisk.dao.impl.jpa.FilePersistenceService;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperationHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Component("fileDeleteByIdHandler")
+@Component("fileSetNameAndSuffixByIdHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class DeleteByIdHandler implements IDataOperationHandler<FileOperation.DeleteById, Void> {
+public class SetNameAndSuffixByIdHandler implements IDataOperationHandler<FileOperation.SetNameAndSuffixById, Void> {
 
     private final FileMetadataRepository repo;
-    private final FilePersistenceService filePersistenceService;
 
     @Override
-    public Void handle(FileOperation.DeleteById op) {
-        repo.deleteById(op.fileId());
-        filePersistenceService.deleteContents(op.fileId());
+    public Void handle(FileOperation.SetNameAndSuffixById op) {
+        repo.setNameAndSuffixById(op.fileId(), op.name(), op.suffix());
         return null;
     }
 }

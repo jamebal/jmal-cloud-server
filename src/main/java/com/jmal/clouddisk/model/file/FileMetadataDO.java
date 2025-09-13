@@ -68,6 +68,7 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
     private LocalDateTime updateDate;
     @Column(length = 24)
     private String mountFileId;
+    private String ossFolder;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = false, orphanRemoval = true)
     @PrimaryKeyJoinColumn
@@ -124,6 +125,7 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
         this.suffix = fileDocument.getSuffix();
         this.isFavorite = fileDocument.getIsFavorite();
         this.mountFileId = fileDocument.getMountFileId();
+        this.ossFolder = fileDocument.getOssFolder();
         this.etag = fileDocument.getEtag();
         this.etagUpdateFailedAttempts = fileDocument.getEtagUpdateFailedAttempts();
         this.needsEtagUpdate = fileDocument.getNeedsEtagUpdate();
@@ -167,6 +169,7 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
         fileDocument.setLastEtagUpdateRequestAt(this.lastEtagUpdateRequestAt);
         this.lastEtagUpdateError = fileDocument.getLastEtagUpdateError();
         fileDocument.setMountFileId(this.mountFileId);
+        fileDocument.setOssFolder(this.ossFolder);
         return fileDocument;
     }
 

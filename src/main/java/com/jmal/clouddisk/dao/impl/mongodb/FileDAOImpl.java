@@ -7,6 +7,8 @@ import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.model.OperationPermission;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.ShareProperties;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
@@ -16,12 +18,14 @@ import com.mongodb.client.result.UpdateResult;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static com.jmal.clouddisk.service.IUserService.USER_ID;
@@ -248,6 +252,178 @@ public class FileDAOImpl implements IFileDAO {
         update.unset(Constants.OPERATION_PERMISSION_LIST);
         update.unset(Constants.EXTRACTION_CODE);
         mongoTemplate.updateMulti(query, update, FileDocument.class);
+    }
+
+    @Override
+    public void setSubShareFormShareBase(FileDocument file) {
+        Query query = getUpdateSharePropsQuery(file, true);
+        query.addCriteria(Criteria.where(Constants.SHARE_BASE).is(true));
+        Update update = new Update();
+        update.unset(Constants.SHARE_BASE);
+        update.set(Constants.SUB_SHARE, true);
+        mongoTemplate.updateMulti(query, update, FileDocument.class);
+    }
+
+    @Override
+    public FileDocument findByUserIdAndPathAndName(String userId, String path, String name, String... excludeFields) {
+        Query query = CommonFileService.getQuery(userId, path, name);
+        query.fields().exclude(excludeFields);
+        return mongoTemplate.findOne(query, FileDocument.class);
+    }
+
+    @Override
+    public FileBaseDTO findFileBaseDTOByUserIdAndPathAndName(String userId, String relativePath, String fileName) {
+        Query query = CommonFileService.getQuery(userId, relativePath, fileName);
+        return mongoTemplate.findOne(query, FileBaseDTO.class, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public String findIdByUserIdAndPathAndName(String userId, String path, String name) {
+        Query query = CommonFileService.getQuery(userId, path, name);
+        query.fields().include("_id");
+        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
+        return fileDocument != null ? fileDocument.getId() : null;
+    }
+
+    @Override
+    public long updateModifyFile(String id, long length, String md5, String suffix, String fileContentType, LocalDateTime updateTime) {
+        Update update = new Update();
+        update.set(Constants.SIZE, length);
+        update.set("md5", md5);
+        update.set(Constants.SUFFIX, suffix);
+        update.set(Constants.CONTENT_TYPE, fileContentType);
+        update.set(Constants.UPDATE_DATE, updateTime);
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(id));
+        UpdateResult updateResult = mongoTemplate.upsert(query, update, FileDocument.class);
+        return updateResult.getModifiedCount();
+    }
+
+    @Override
+    public List<FileBaseDTO> findAllFileBaseDTOAndRemoveByIdIn(List<String> fileIds) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIds));
+        return mongoTemplate.findAllAndRemove(query, FileBaseDTO.class, CommonFileService.COLLECTION_NAME);
+    }
+
+    private Query getAllByFolderQuery(FileBaseDTO fileBaseDTO) {
+        Query query1 = new Query();
+        query1.addCriteria(Criteria.where(USER_ID).is(fileBaseDTO.getUserId()));
+        query1.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileBaseDTO.getPath() + fileBaseDTO.getName() + "/")));
+        return query1;
+    }
+
+    @Override
+    public void removeAllByFolder(FileBaseDTO fileBaseDTO) {
+        Query query = getAllByFolderQuery(fileBaseDTO);
+        mongoTemplate.remove(query, FileDocument.class);
+    }
+
+    @Override
+    public List<String> findAllIdsAndRemoveByFolder(FileBaseDTO fileBaseDTO) {
+        Query query = getAllByFolderQuery(fileBaseDTO);
+        query.fields().include("_id");
+        List<FileDocument> list = mongoTemplate.findAllAndRemove(query, FileDocument.class);
+        return list.stream().map(FileDocument::getId).toList();
+    }
+
+    @Override
+    public List<FileDocument> findAllAndRemoveByFolder(FileBaseDTO fileBaseDTO) {
+        Query query = getAllByFolderQuery(fileBaseDTO);
+        return mongoTemplate.findAllAndRemove(query, FileDocument.class);
+    }
+
+    @Override
+    public FileBaseOssPathDTO findFileBaseOssPathDTOById(String id) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(id));
+        return mongoTemplate.findOne(query, FileBaseOssPathDTO.class, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public List<FileBaseOssPathDTO> findFileBaseOssPathDTOByIdIn(List<String> fileIds) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIds));
+        return mongoTemplate.find(query, FileBaseOssPathDTO.class, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public void removeByUserIdAndPathAndName(String userId, String path, String name) {
+        Query query = CommonFileService.getQuery(userId, path, name);
+        mongoTemplate.remove(query, FileDocument.class);
+    }
+
+    @Override
+    public long countByDelTag(int delTag) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("delete").is(1));
+        return mongoTemplate.count(query, FileDocument.class);
+    }
+
+    @Override
+    public List<FileBaseDTO> findFileBaseDTOByDelTagOfLimit(int delTag, int limit) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("delete").is(delTag));
+        query.with(Sort.by(Sort.Direction.DESC, Constants.IS_FOLDER));
+        query.limit(limit);
+        return mongoTemplate.find(query, FileBaseDTO.class, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public void removeById(String fileId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        mongoTemplate.remove(query, FileDocument.class);
+    }
+
+    @Override
+    public long unsetDelTag(String fileId) {
+        Query removeDeletequery = new Query();
+        removeDeletequery.addCriteria(Criteria.where("_id").is(fileId).and("delete").is(1));
+        Update update = new Update();
+        update.unset("delete");
+        UpdateResult result = mongoTemplate.updateMulti(removeDeletequery, update, CommonFileService.COLLECTION_NAME);
+        return result.getModifiedCount();
+    }
+
+    @Override
+    public void removeByIdIn(List<String> fileIds) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIds));
+        mongoTemplate.remove(query, FileDocument.class);
+    }
+
+    @Override
+    public List<FileDocument> findAllAndRemoveByIdIn(List<String> fileIds) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIds));
+        return mongoTemplate.findAllAndRemove(query, FileDocument.class);
+    }
+
+    @Override
+    public FileBaseDTO findFileBaseDTOById(String fileId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        return mongoTemplate.findOne(query, FileBaseDTO.class, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public void setIsFavoriteByIdIn(List<String> fileIds, boolean isFavorite) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIds));
+        Update update = new Update();
+        update.set(Constants.IS_FAVORITE, isFavorite);
+        mongoTemplate.updateMulti(query, update, FileDocument.class);
+    }
+
+    @Override
+    public void setNameAndSuffixById(String name, String suffix, String fileId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        Update update = new Update();
+        update.set(Constants.FILENAME_FIELD, name);
+        update.set(Constants.SUFFIX, suffix);
+        mongoTemplate.updateFirst(query, update, FileDocument.class);
     }
 
     @NotNull

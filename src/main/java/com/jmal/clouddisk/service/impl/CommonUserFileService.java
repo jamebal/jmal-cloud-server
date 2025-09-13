@@ -12,11 +12,14 @@ import com.jmal.clouddisk.dao.impl.mongodb.FileDAOImpl;
 import com.jmal.clouddisk.lucene.EtagService;
 import com.jmal.clouddisk.lucene.LuceneIndexQueueEvent;
 import com.jmal.clouddisk.lucene.RebuildIndexTaskService;
-import com.jmal.clouddisk.media.*;
-import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.media.ImageMagickProcessor;
+import com.jmal.clouddisk.media.VideoInfo;
+import com.jmal.clouddisk.media.VideoInfoDO;
+import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.model.Music;
 import com.jmal.clouddisk.model.OperationPermission;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.service.Constants;
@@ -34,7 +37,6 @@ import org.bson.types.ObjectId;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
@@ -86,10 +88,8 @@ public class CommonUserFileService {
 
     private final ImageMagickProcessor imageMagickProcessor;
 
-    public FileDocument getFileDocument(String userId, String fileName, String relativePath, Query query) {
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        query.addCriteria(Criteria.where("path").is(relativePath));
-        query.addCriteria(Criteria.where("name").is(fileName));
+    public FileDocument getFileDocument(String userId, String fileName, String relativePath) {
+        Query query = CommonFileService.getQuery(relativePath, fileName, userId);
         // 文件是否存在
         return mongoTemplate.findOne(query, FileDocument.class);
     }
@@ -120,14 +120,14 @@ public class CommonUserFileService {
         String contentType = CommonFileService.getContentType(file, FileContentTypeUtils.getContentType(file, suffix));
         if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE)) {
             // 换成webp格式的图片
-            file = replaceWebp(userId, file, username);
+            file = replaceWebp(userId, file);
             if (file == null) {
                 return null;
             }
         }
 
         String fileAbsolutePath = file.getAbsolutePath();
-        Lock lock = uploadFileLockCache.get(fileAbsolutePath, key -> new ReentrantLock());
+        Lock lock = uploadFileLockCache.get(fileAbsolutePath, _ -> new ReentrantLock());
         if (lock != null) {
             lock.lock();
         }
@@ -137,8 +137,8 @@ public class CommonUserFileService {
         try {
             String relativePath = pathService.getRelativePath(username, fileAbsolutePath, fileName);
             if (relativePath == null) return null;
-            Query query = new Query();
-            FileDocument fileExists = getFileDocument(userId, fileName, relativePath, query);
+            Query query = CommonFileService.getQuery(relativePath, fileName, userId);
+            FileDocument fileExists = getFileDocument(userId, fileName, relativePath);
             if (fileExists != null) {
                 // 添加文件索引
                 // 获取tagName
@@ -430,7 +430,7 @@ public class CommonUserFileService {
         imageMagickProcessor.generateThumbnail(file, update);
     }
 
-    private File replaceWebp(String userId, File file, String username) {
+    private File replaceWebp(String userId, File file) {
         String suffix = FileUtil.getSuffix(file).toLowerCase();
 
         if (getDisabledWebp(userId) || ("ico".equals(suffix))) {

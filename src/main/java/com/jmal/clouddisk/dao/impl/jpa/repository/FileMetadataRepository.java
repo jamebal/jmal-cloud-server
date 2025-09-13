@@ -1,15 +1,18 @@
 package com.jmal.clouddisk.dao.impl.jpa.repository;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
-import com.jmal.clouddisk.model.file.FileBaseDTO;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +42,12 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, St
             "AND f.id LIKE :idPrefix ESCAPE '\\'")
     List<FileMetadataDO> findAllByUserIdAndIdPrefix(String userId, String idPrefix);
 
+    @Query("SELECT f " +
+            "FROM FileMetadataDO f JOIN f.props p " +
+            "WHERE f.userId = :user " +
+            "AND f.path = :path " +
+            "AND f.name = :name"
+    )
     Optional<FileMetadataDO> findByNameAndUserIdAndPath(String name, String userId, String path);
 
     boolean existsByUserIdAndMountFileId(String userId, String mountFileId);
@@ -70,11 +79,120 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, St
 
     boolean existsByNameAndIdNotIn(String name, Collection<String> ids);
 
-    @Query("SELECT new com.jmal.clouddisk.model.file.FileBaseDTO(f.name, f.path, f.userId) FROM FileMetadataDO f WHERE f.id = :id")
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseDTO(f.name, f.path, f.userId) FROM FileMetadataDO f WHERE f.id = :id")
     Optional<FileBaseDTO> findFileBaseDTO(String id);
 
     boolean existsByUserIdAndPathAndNameIn(String userId, String path, Collection<String> names);
 
     boolean existsByUserIdAndPathAndMd5(String userId, String path, String md5);
 
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseDTO(f.id, f.name, f.path, f.userId, f.isFolder) " +
+            "FROM FileMetadataDO f " +
+            "WHERE f.userId = :user " +
+            "AND f.path = :path " +
+            "AND f.name = :name"
+    )
+    Optional<FileBaseDTO> findFileBaseDTOByUserIdAndPathAndName(String userId, String path, String name);
+
+    @Query("SELECT f.id " +
+            "FROM FileMetadataDO f " +
+            "WHERE f.userId = :user " +
+            "AND f.path = :path " +
+            "AND f.name = :name"
+    )
+    Optional<String> findIdByUserIdAndPathAndName(String userId, String path, String name);
+
+    @Modifying
+    @Query("UPDATE FileMetadataDO f SET " +
+            "f.size = :length, " +
+            "f.md5 = :md5, " +
+            "f.suffix = :suffix, " +
+            "f.contentType = :contentType, " +
+            "f.updateDate = :updateDate " +
+            "WHERE f.id = :id"
+    )
+    long updateModifyFile(
+            String id,
+            Long size,
+            String md5,
+            String suffix,
+            String contentType,
+            LocalDateTime updateDate
+    );
+
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseDTO(f.id, f.name, f.path, f.userId, f.isFolder) " +
+            "FROM FileMetadataDO f " +
+            "WHERE f.id in :fileIds"
+    )
+    List<FileBaseDTO> findAllFileBaseDTOByIdIn(List<String> fileIds);
+
+    @Query("SELECT f.id " +
+            "FROM FileMetadataDO f " +
+            "WHERE f.userId = :userId " +
+            "AND f.path LIKE :pathPrefix ESCAPE '\\'")
+    List<String> findAllIdsByUserIdAndPathPrefix(String userId, String pathPrefix);
+
+    @Modifying
+    @Query("DELETE FROM FileMetadataDO f " +
+            "WHERE f.userId = :userId " +
+            "AND f.path LIKE :pathPrefix ESCAPE '\\'")
+    Integer removeAllByUserIdAndPathPrefix(String userId, String pathPrefix);
+
+    @Query("SELECT f " +
+            "FROM FileMetadataDO f JOIN f.props p " +
+            "WHERE f.userId = :userId " +
+            "AND f.path LIKE :pathPrefix ESCAPE '\\'")
+    List<FileMetadataDO> findAllByUserIdAndPathPrefix(String userId, String pathPrefix);
+
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO(f.id, f.name, f.path, f.userId, f.isFolder, f.ossFolder) " +
+            "FROM FileMetadataDO f " +
+            "WHERE f.id = :id")
+    Optional<FileBaseOssPathDTO> findFileBaseOssPathDTOById(String id);
+
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO(f.id, f.name, f.path, f.userId, f.isFolder, f.ossFolder) " +
+            "FROM FileMetadataDO f " +
+            "WHERE f.id in :ids")
+    List<FileBaseOssPathDTO> findFileBaseOssPathDTOByIdIn(List<String> ids);
+
+    @Modifying
+    @Query("DELETE " +
+            "FROM FileMetadataDO f " +
+            "WHERE f.userId = :user " +
+            "AND f.path = :path " +
+            "AND f.name = :name"
+    )
+    void removeByUserIdAndPathAndName(String userId, String path, String name);
+
+    long countByDelTag(Integer delTag);
+
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseDTO(f.id, f.name, f.path, f.userId, f.isFolder) " +
+            "FROM FileMetadataDO f " +
+            "WHERE f.delTag = :delTag " +
+            "ORDER BY f.isFolder DESC"
+    )
+    List<FileBaseDTO> findFileBaseDTOByDelTagOfLimit(Integer delTag, Pageable pageable);
+
+    @Modifying
+    @Query("UPDATE FileMetadataDO f SET " +
+            "f.delTag = 0 " +
+            "WHERE f.id = :fileId AND f.delTag = 1"
+    )
+    long unsetDelTag(String fileId);
+
+    @Query("SELECT f.id FROM FileMetadataDO f WHERE f.userId IN :userIdList")
+    List<String> findAllIdsByUserIdIn(List<String> userIdList);
+
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseDTO(f.id, f.name, f.path, f.userId, f.isFolder) " +
+            "FROM FileMetadataDO f " +
+            "WHERE f.id = :id"
+    )
+    Optional<FileBaseDTO> findFileBaseDTOById(String id);
+
+    @Modifying
+    @Query("UPDATE FileMetadataDO f SET f.isFavorite = :isFavorite WHERE f.id IN :fileIds")
+    void setIsFavoriteByIdIn(List<String> fileIds, boolean isFavorite);
+
+    @Modifying
+    @Query("UPDATE FileMetadataDO f SET f.name = :name, f.suffix = :suffix WHERE f.id = :fileId")
+    void setNameAndSuffixById(String fileId, String name, String suffix);
 }

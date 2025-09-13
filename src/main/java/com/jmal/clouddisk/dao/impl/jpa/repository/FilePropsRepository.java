@@ -90,4 +90,18 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, String> 
             "WHERE fp.id = :fileId")
     int unsetFileShareProps(@Param("fileId") String fileId, @Param("shareProps") ShareProperties shareProps);
 
+    @Modifying
+    @Query("UPDATE FilePropsDO fp SET " +
+            "fp.shareBase = null, " +
+            "fp.subShare = true " +
+            "WHERE fp.id IN (" +
+            "    SELECT fm.id FROM FileMetadataDO fm " +
+            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix% " +
+            "    AND fp.shareBase = true" +
+            ")")
+    int setSubShareFormShareBase(@Param("userId") String userId,
+                                 @Param("pathPrefix") String pathPrefix);
+
+    @Query("SELECT p.shareProps FROM FilePropsDO p WHERE p.id = :id")
+    ShareProperties findSharePropsById(String id);
 }

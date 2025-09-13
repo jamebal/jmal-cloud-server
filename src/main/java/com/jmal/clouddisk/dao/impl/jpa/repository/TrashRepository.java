@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 @Conditional(RelationalDataSourceCondition.class)
 public interface TrashRepository extends JpaRepository<TrashEntityDO, String> {
@@ -20,4 +22,7 @@ public interface TrashRepository extends JpaRepository<TrashEntityDO, String> {
      */
     @Query("SELECT COALESCE(SUM(t.size), 0) FROM TrashEntityDO t WHERE t.userId = :userId AND t.isFolder = false")
     Long calculateTotalSizeByUserId(@Param("userId") String userId);
+
+    @Query("SELECT t.id FROM TrashEntityDO t")
+    List<String> findAllIds();
 }

@@ -8,18 +8,22 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Component("fileDeleteByIdHandler")
+@Component("fileRemoveByUserIdAndPathAndNameHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class DeleteByIdHandler implements IDataOperationHandler<FileOperation.DeleteById, Void> {
+public class RemoveByUserIdAndPathAndNameHandler implements IDataOperationHandler<FileOperation.RemoveByUserIdAndPathAndName, Void> {
 
     private final FileMetadataRepository repo;
     private final FilePersistenceService filePersistenceService;
 
     @Override
-    public Void handle(FileOperation.DeleteById op) {
-        repo.deleteById(op.fileId());
-        filePersistenceService.deleteContents(op.fileId());
+    public Void handle(FileOperation.RemoveByUserIdAndPathAndName op) {
+        String fileId = repo.findIdByUserIdAndPathAndName(op.userId() , op.path(), op.name()).orElse(null);
+        if (fileId == null) {
+            return null;
+        }
+        filePersistenceService.deleteContents(fileId);
+        repo.removeByUserIdAndPathAndName(op.userId() , op.path(), op.name());
         return null;
     }
 }

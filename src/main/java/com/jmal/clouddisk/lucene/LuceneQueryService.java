@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static com.jmal.clouddisk.lucene.LuceneService.FIELD_TAG_NAME_FUZZY;
@@ -68,6 +69,16 @@ public class LuceneQueryService {
         Term term = new Term(LuceneService.FIELD_TAG_ID, tagId);
         Query query = new TermQuery(term);
         return find(query);
+    }
+
+    public Set<String> findByTagIdIn(List<String> tagIds) {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        for (String tagId : tagIds) {
+            Term term = new Term(LuceneService.FIELD_TAG_ID, tagId);
+            Query query = new TermQuery(term);
+            builder.add(query, BooleanClause.Occur.SHOULD);
+        }
+        return find(builder.build());
     }
 
     public long count(Query query) {

@@ -79,7 +79,6 @@ public class FilePropsDO implements Reflective {
         fileDocument.setExpiresAt(this.shareProps.getExpiresAt());
         fileDocument.setOperationPermissionList(this.shareProps.getOperationPermissionList());
         fileDocument.setOssPlatform(this.props.getOssPlatform());
-        fileDocument.setOssFolder(this.props.getOssFolder());
         fileDocument.setMusic(this.props.getMusic());
         fileDocument.setExif(this.props.getExif());
         fileDocument.setVideo(this.props.getVideo());

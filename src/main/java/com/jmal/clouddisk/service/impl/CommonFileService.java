@@ -1,14 +1,13 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.io.CharsetDetector;
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IFileDAO;
+import com.jmal.clouddisk.dao.IShareDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.lucene.EtagService;
@@ -21,6 +20,7 @@ import com.jmal.clouddisk.model.file.FileBase;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.model.file.ShareProperties;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IUserService;
@@ -28,17 +28,12 @@ import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.MyFileUtils;
 import com.jmal.clouddisk.util.TimeUntils;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
-import com.mongodb.client.AggregateIterable;
-import com.mongodb.client.result.UpdateResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.types.ObjectId;
 import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,11 +45,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.Collator;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-
-import static com.jmal.clouddisk.service.Constants.UPDATE_DATE;
-import static com.jmal.clouddisk.service.IUserService.USER_ID;
 
 /**
  * @author jmal
@@ -80,9 +75,11 @@ public class CommonFileService {
 
     public static final String TRASH_COLLECTION_NAME = "trash";
 
-    private final MongoTemplate mongoTemplate;
+    // private final MongoTemplate mongoTemplate;
 
     private final IFileDAO fileDAO;
+
+    private final IShareDAO shareDAO;
 
     private final FileProperties fileProperties;
 
@@ -134,8 +131,8 @@ public class CommonFileService {
     public static Query getQuery(String path, String name, String userId) {
         Query query = new Query();
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        query.addCriteria(Criteria.where("name").is(name));
-        query.addCriteria(Criteria.where("path").is(path));
+        query.addCriteria(Criteria.where(Constants.PATH_FIELD).is(path));
+        query.addCriteria(Criteria.where(Constants.FILENAME_FIELD).is(name));
         return query;
     }
 
@@ -162,11 +159,7 @@ public class CommonFileService {
         return etagService.getFolderSize(collectionName, userId, path);
     }
 
-    public FileDocument getFileDocument(String userId, String fileName, String relativePath, Query query) {
-        return commonUserFileService.getFileDocument(userId, fileName, relativePath, query);
-    }
-
-    public FileDocument getFileDocument(String username, String fileAbsolutePath, Query query) {
+    public FileBaseDTO getFileBaseDTO(String username, String fileAbsolutePath) {
         String userId = userService.getUserIdByUserName(username);
         if (CharSequenceUtil.isBlank(userId)) {
             return null;
@@ -177,13 +170,7 @@ public class CommonFileService {
         }
         String fileName = file.getName();
         String relativePath = fileAbsolutePath.substring(fileProperties.getRootDir().length() + username.length() + 1, fileAbsolutePath.length() - fileName.length());
-        return getFileDocument(userId, fileName, relativePath, query);
-    }
-
-    public FileDocument getFileDocument(String userId, String fileName, String relativePath) {
-        Query query = new Query();
-        // 文件是否存在
-        return getFileDocument(userId, fileName, relativePath, query);
+        return new FileBaseDTO(fileName, relativePath, userId);
     }
 
     public static String getContentType(File file, String contentType) {
@@ -288,18 +275,9 @@ public class CommonFileService {
             videoProcessService.deleteVideoCacheByIds(username, fileIds);
         }
         // delete share
-        Query shareQuery = new Query();
-        shareQuery.addCriteria(Criteria.where(Constants.FILE_ID).in(fileIds));
-        mongoTemplate.remove(shareQuery, ShareDO.class);
+        shareDAO.removeByFileIdIn(fileIds);
         // delete index
         eventPublisher.publishEvent(new LuceneIndexQueueEvent(this, fileIds));
-    }
-
-    public Query getAllByFolderQuery(FileDocument fileDocument) {
-        Query query1 = new Query();
-        query1.addCriteria(Criteria.where(USER_ID).is(fileDocument.getUserId()));
-        query1.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileDocument.getPath() + fileDocument.getName() + "/")));
-        return query1;
     }
 
     public void deleteFile(String username, File file) {
@@ -310,16 +288,15 @@ public class CommonFileService {
         if (CharSequenceUtil.isBlank(userId)) {
             return;
         }
-        Query query = new Query();
         // 文件是否存在
-        FileDocument fileDocument = getFileDocument(userId, fileName, relativePath, query);
-        if (fileDocument != null) {
-            deleteDependencies(username, Collections.singletonList(fileDocument.getId()), false);
-            mongoTemplate.remove(query, COLLECTION_NAME);
-            if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
+        FileBaseDTO fileBaseDTO = fileDAO.findFileBaseDTOByUserIdAndPathAndName(userId, relativePath, fileName);
+        if (fileBaseDTO != null) {
+            deleteDependencies(username, Collections.singletonList(fileBaseDTO.getId()), false);
+            fileDAO.removeByUserIdAndPathAndName(userId, relativePath, fileName);
+            if (BooleanUtil.isTrue(fileBaseDTO.getIsFolder())) {
                 // 删除文件夹及其下的所有文件
-                mongoTemplate.remove(getAllByFolderQuery(fileDocument), FileDocument.class);
-                eventPublisher.publishEvent(new LuceneIndexQueueEvent(this, Collections.singletonList(fileDocument.getId())));
+                fileDAO.removeAllByFolder(fileBaseDTO);
+                eventPublisher.publishEvent(new LuceneIndexQueueEvent(this, Collections.singletonList(fileBaseDTO.getId())));
             }
         }
         messageService.pushMessage(username, relativePath, Constants.DELETE_FILE);
@@ -337,36 +314,29 @@ public class CommonFileService {
         if (CharSequenceUtil.isBlank(userId)) {
             return;
         }
-        Query query = new Query();
         // 文件是否存在
-        FileDocument fileDocument = getFileDocument(userId, fileName, relativePath, query);
-
+        FileDocument fileDocument = fileDAO.findByUserIdAndPathAndName(userId, relativePath, fileName);
         String suffix = MyFileUtils.extName(file.getName());
         String contentType = FileContentTypeUtils.getContentType(file, suffix);
         // 文件是否存在
         if (fileDocument != null) {
-            Update update = new Update();
-            update.set("size", file.length());
-            update.set("md5", file.length() + "/" + fileDocument.getName());
-            update.set(Constants.SUFFIX, suffix);
-            String fileContentType = getContentType(file, contentType);
-            update.set(Constants.CONTENT_TYPE, fileContentType);
             LocalDateTime updateTime = CommonUserFileService.getFileLastModifiedTime(file);
-            update.set(UPDATE_DATE, updateTime);
             // 如果size相同，不更新,且更新时间在1秒内,则不更新
             if (TimeUntils.isWithinOneSecond(fileDocument.getUpdateDate(), updateTime)) {
                 return;
             }
-            UpdateResult updateResult = mongoTemplate.upsert(query, update, COLLECTION_NAME);
+            String fileContentType = getContentType(file, contentType);
+            String md5 = file.length() + "/" + fileDocument.getName();
+            long modifiedCount = fileDAO.updateModifyFile(fileDocument.getId(), file.length(), md5, suffix, fileContentType, updateTime);
+            // if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
+            //     // 写入markdown内容
+            //     String markDownContent = FileUtil.readString(file, MyFileUtils.getFileCharset(file));
+            //     update.set(Constants.CONTENT_TEXT, markDownContent);
+            // }
             fileDocument.setSize(file.length());
             fileDocument.setUpdateDate(updateTime);
-            if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
-                // 写入markdown内容
-                String markDownContent = FileUtil.readString(file, MyFileUtils.getFileCharset(file));
-                update.set(Constants.CONTENT_TEXT, markDownContent);
-            }
             messageService.pushMessage(username, fileDocument, Constants.UPDATE_FILE);
-            if (updateResult.getModifiedCount() > 0) {
+            if (modifiedCount > 0) {
                 eventPublisher.publishEvent(new LuceneIndexQueueEvent(this, fileDocument.getId()));
             }
             // 判断文件类型中是否包含utf-8
@@ -447,7 +417,7 @@ public class CommonFileService {
         return f2.getUpdateDate().compareTo(f1.getUpdateDate());
     }
 
-    public static boolean isLock(FileDocument fileDocument) {
+    public static boolean isLock(FileBaseDTO fileDocument) {
         String filePath = getLockFilePath(fileDocument);
         // 完全匹配
         return isLock(filePath);
@@ -458,13 +428,13 @@ public class CommonFileService {
         return isLock(filePath);
     }
 
-    public static void lockFile(FileDocument fileDocument) {
+    public static void lockFile(FileBaseDTO fileDocument) {
         String filePath = getLockFilePath(fileDocument);
         CommonFileService.FILE_PATH_LOCK.add(getLockFilePath(fileDocument));
         log.info("lock file path: {}", filePath);
     }
 
-    public static void unLockFile(FileDocument fileDocument) {
+    public static void unLockFile(FileBaseDTO fileDocument) {
         CommonFileService.FILE_PATH_LOCK.remove(getLockFilePath(fileDocument));
     }
 
@@ -477,7 +447,7 @@ public class CommonFileService {
         return CommonFileService.FILE_PATH_LOCK.stream().anyMatch(filePath::startsWith);
     }
 
-    private static String getLockFilePath(FileDocument fileDocument) {
+    private static String getLockFilePath(FileBaseDTO fileDocument) {
         return fileDocument.getPath() + fileDocument.getName() + (Boolean.TRUE.equals(fileDocument.getIsFolder()) ? MyWebdavServlet.PATH_DELIMITER : "");
     }
 
@@ -507,40 +477,29 @@ public class CommonFileService {
             boolean run = true;
             log.debug("开始删除有删除标记的文档");
             while (run) {
-                Query query = new Query();
-                query.addCriteria(Criteria.where("delete").is(1));
-                long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
+                long count = fileDAO.countByDelTag(1);
                 if (count == 0) {
                     run = false;
                 }
-                List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match", new org.bson.Document("delete", 1)), new org.bson.Document("$project", new org.bson.Document("_id", 1).append("name", 1).append("path", 1).append("userId", 1)), new org.bson.Document("$sort", new org.bson.Document("isFolder", 1L)), new org.bson.Document("$limit", 1));
-                AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
-                for (org.bson.Document document : aggregateIterable) {
-                    Object ObjectId = document.get("_id");
-                    String fileId = null;
-                    if (ObjectId instanceof ObjectId) {
-                        fileId = document.getObjectId("_id").toHexString();
-                    }
-                    if (ObjectId instanceof String) {
-                        fileId = document.getString("_id");
-                    }
-                    String userId = document.getString("userId");
-                    String username = userService.getUserNameById(userId);
-                    String name = document.getString("name");
-                    String path = document.getString("path");
-                    File file = new File(Paths.get(fileProperties.getRootDir(), username, path, name).toString());
+                // List<org.bson.Document> pipeline = Arrays.asList(
+                //         new org.bson.Document("$match", new org.bson.Document("delete", 1)),
+                //         new org.bson.Document("$project", new org.bson.Document("_id", 1).append("name", 1).append("path", 1).append("userId", 1)),
+                //         new org.bson.Document("$sort", new org.bson.Document("isFolder", 1L)),
+                //         new org.bson.Document("$limit", 1));
+                // AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
+                List<FileBaseDTO> fileBaseDTOList = fileDAO.findFileBaseDTOByDelTagOfLimit(1, 6);
+                for (FileBaseDTO fileBaseDTO : fileBaseDTOList) {
+                    String fileId = fileBaseDTO.getId();
+                    String username = userService.getUserNameById(fileBaseDTO.getUserId());
+                    File file = new File(Paths.get(fileProperties.getRootDir(), username, fileBaseDTO.getPath(), fileBaseDTO.getName()).toString());
                     if (!file.exists() || fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(file.getName()::startsWith)) {
                         deleteFile(username, file);
                         log.info("删除不存在的文档: {}", file.getAbsolutePath());
-                        mongoTemplate.remove(new Query().addCriteria(Criteria.where("_id").is(fileId)), CommonFileService.COLLECTION_NAME);
+                        fileDAO.removeById(fileId);
                     } else {
                         if (fileId != null) {
-                            Query removeDeletequery = new Query();
-                            removeDeletequery.addCriteria(Criteria.where("_id").in(fileId).and("delete").is(1));
-                            Update update = new Update();
-                            update.unset("delete");
-                            UpdateResult result = mongoTemplate.updateMulti(removeDeletequery, update, CommonFileService.COLLECTION_NAME);
-                            if (result.getModifiedCount() == 0) {
+                            long getModifiedCount = fileDAO.unsetDelTag(fileId);
+                            if (getModifiedCount < 1) {
                                 log.warn("Failed to unset delete flag for file: {}", file.getAbsolutePath());
                             }
                         }
