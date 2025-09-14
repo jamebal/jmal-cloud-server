@@ -35,7 +35,6 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Set;
 
 @Repository
 @RequiredArgsConstructor
@@ -101,7 +100,7 @@ public class ArticleDAOImpl implements IArticleDAO {
         }
 
         if (!CharSequenceUtil.isBlank(articleDTO.getKeyword())) {
-            Set<String> luceneFileIds = luceneQueryService.findByArticleKeyword(articleDTO.getKeyword());
+            List<String> luceneFileIds = luceneQueryService.findByArticleKeyword(articleDTO.getKeyword());
             query.addCriteria(Criteria.where("_id").in(luceneFileIds));
         }
 

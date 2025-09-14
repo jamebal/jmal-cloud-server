@@ -14,8 +14,7 @@ import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 /**
  * FileDocument 文件模型
@@ -50,7 +49,7 @@ public class FilePropsDO implements Reflective {
 
     @Column(name = "tags")
     @JdbcTypeCode(SqlTypes.JSON)
-    private Set<Tag> tags = new HashSet<>();
+    private List<Tag> tags;
 
     public FilePropsDO(FileDocument fileDocument) {
         this.id = fileDocument.getId();
@@ -68,7 +67,6 @@ public class FilePropsDO implements Reflective {
 
         this.shareProps = new ShareProperties(fileDocument);
         this.props = new OtherProperties(fileDocument);
-        this.tags = new HashSet<>();
         if (fileDocument.getTags() != null) {
             this.tags.addAll(fileDocument.getTags());
         }

@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.BytesRef;
 import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.context.ApplicationListener;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -478,9 +479,12 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
             if (CharSequenceUtil.isNotBlank(fileName)) {
                 newDocument.add(new Field(FIELD_FILENAME_NGRAM, fileName, TextField.TYPE_NOT_STORED));
                 newDocument.add(new TextField(FIELD_FILENAME_FUZZY, fileName, Field.Store.NO));
+                int extractIndex = Math.min(fileName.length() - 1, 2);
+                newDocument.add(new SortedDocValuesField("name_sort", new BytesRef(fileName.substring(0, extractIndex).toLowerCase().getBytes(StandardCharsets.UTF_8))));
             }
             if (isFolder != null) {
                 newDocument.add(new IntPoint(Constants.IS_FOLDER, isFolder ? 1 : 0));
+                newDocument.add(new NumericDocValuesField("is_folder_sort", isFolder ? 1 : 0));
             }
             if (isFavorite != null) {
                 newDocument.add(new IntPoint(Constants.IS_FAVORITE, isFavorite ? 1 : 0));
@@ -525,15 +529,12 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
 
             if (fileIndex.getModified() != null) {
                 newDocument.add(new NumericDocValuesField("modified", fileIndex.getModified()));
-                // newDocument.add(new SortedNumericDocValuesField("modified_sort", fileIndex.getModified()));
             }
             if (fileIndex.getCreated() != null) {
                 newDocument.add(new NumericDocValuesField("created", fileIndex.getCreated()));
-                // newDocument.add(new SortedNumericDocValuesField("created_sort", fileIndex.getCreated()));
             }
             if (fileIndex.getSize() != null) {
                 newDocument.add(new NumericDocValuesField(Constants.SIZE, fileIndex.getSize()));
-                // newDocument.add(new SortedNumericDocValuesField("size_sort", fileIndex.getModified()));
             }
             indexWriter.updateDocument(new Term("id", fileId), newDocument);
         } catch (IOException e) {

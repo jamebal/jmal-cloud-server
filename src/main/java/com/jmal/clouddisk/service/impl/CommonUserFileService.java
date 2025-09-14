@@ -246,7 +246,7 @@ public class CommonUserFileService {
         String ossPath = CaffeineUtil.getOssPath(prePath);
         if (ossPath != null) {
             fileDocument.setOssFolder(CaffeineUtil.getOssDiameterPrefixCache(ossPath).getFolderName());
-            fileDocument.setOssFolder(OssConfigService.getOssStorageService(ossPath).getPlatform().getValue());
+            fileDocument.setOssPlatform(OssConfigService.getOssStorageService(ossPath).getPlatform().getValue());
         }
     }
 
@@ -331,7 +331,7 @@ public class CommonUserFileService {
             fileDocument.setSize(size);
             fileDocument.setMd5(size + relativePath + fileName);
             fileDocument.setContentType(contentType);
-            fileDocument.setSuffix(fileId);
+            fileDocument.setSuffix(suffix);
             if (contentType.contains(Constants.AUDIO)) {
                 setMusic(file, fileDocument);
             }

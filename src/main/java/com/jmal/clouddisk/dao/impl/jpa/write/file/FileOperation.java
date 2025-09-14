@@ -10,7 +10,6 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 public final class FileOperation {
     private FileOperation() {}
@@ -23,8 +22,8 @@ public final class FileOperation {
 
     public record SetShareBaseOperation(String fileId) implements IFileOperation<Void> {}
     public record UnsetShareBaseOperation(String fileId) implements IFileOperation<Void> {}
-    public record UpdateTagsForFile(String fileId, Set<Tag> tags) implements IFileOperation<Void> {}
-    public record UpdateTagsForFiles(List<String> fileIds, Set<Tag> tags) implements IFileOperation<Void> {}
+    public record UpdateTagsForFile(String fileId, List<Tag> tags) implements IFileOperation<Void> {}
+    public record UpdateTagsForFiles(List<String> fileIds, List<Tag> tags) implements IFileOperation<Void> {}
 
     public record DeleteAllByIdInBatch(List<String> fileIdList) implements IFileOperation<Void> {}
     public record RemoveAllByUserIdAndPathPrefix(String userId, String pathPrefix) implements IFileOperation<Integer> {}

@@ -4,7 +4,6 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IFileDAO;
-import com.jmal.clouddisk.dao.impl.jpa.dto.FileTagsDTO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FilePropsRepository;
@@ -31,7 +30,10 @@ import org.springframework.stereotype.Repository;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -74,13 +76,13 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public void updateTagInfoInFiles(String tagId, String newTagName, String newColor) {
-        Set<String> affectedFileIds = luceneQueryService.findByTagId(tagId);
+        List<String> affectedFileIds = luceneQueryService.findByTagId(tagId);
         if (affectedFileIds == null || affectedFileIds.isEmpty()) {
             return;
         }
-        List<FileTagsDTO> fileTagsDTOList = filePropsRepository.findTagsByIdIn(affectedFileIds);
+        List<FileBaseTagsDTO> fileTagsDTOList = filePropsRepository.findTagsByIdIn(affectedFileIds);
 
-        for (FileTagsDTO dto : fileTagsDTOList) {
+        for (FileBaseTagsDTO dto : fileTagsDTOList) {
             if (dto.getTags() == null) continue;
 
             boolean tagFoundAndUpdated = false;
@@ -523,7 +525,7 @@ public class FileDAOJpaImpl implements IFileDAO {
     public void removeTagsByTagIdIn(List<String> tagIds) {
         List<FileBaseTagsDTO> fileBaseTagsDTOList = filePropsRepository.findAllFileBaseTagsDTOByTagIdIn(tagIds);
         fileBaseTagsDTOList.forEach(fileBaseTagsDTO -> {
-            Set<Tag> tags = fileBaseTagsDTO.getTags();
+            List<Tag> tags = fileBaseTagsDTO.getTags();
             tags.removeIf(tag -> tagIds.contains(tag.getTagId()));
             try {
                 writeService.submit(new FileOperation.UpdateTagsForFile(fileBaseTagsDTO.getId(), tags)).get(10, TimeUnit.SECONDS);
@@ -535,7 +537,7 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public List<String> getFileIdListByTagId(String tagId) {
-        Set<String> ids = luceneQueryService.findByTagId(tagId);
+        List<String> ids = luceneQueryService.findByTagId(tagId);
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
@@ -545,8 +547,7 @@ public class FileDAOJpaImpl implements IFileDAO {
     @Override
     public void setTagsByIdIn(List<String> fileIds, List<Tag> tagList) {
         try {
-            Set<Tag> tagSet = Set.copyOf(tagList);
-            writeService.submit(new FileOperation.UpdateTagsForFiles(fileIds, tagSet)).get(10, TimeUnit.SECONDS);
+            writeService.submit(new FileOperation.UpdateTagsForFiles(fileIds, tagList)).get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new CommonException(e.getMessage());
         }

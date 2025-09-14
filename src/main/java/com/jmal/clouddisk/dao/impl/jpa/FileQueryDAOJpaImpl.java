@@ -16,6 +16,7 @@ import com.jmal.clouddisk.model.file.dto.FileBaseMountDTO;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.util.TimeUntils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
@@ -25,7 +26,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
@@ -43,7 +48,7 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
 
     @Override
     public Page<FileIntroVO> getFileIntroVO(UploadApiParamDTO upload) {
-        Page<String> page = Page.empty();
+        Page<String> page = null;
         Pageable pageable = upload.getPageable();
         SearchDTO searchDTO = SearchDTO.builder().build();
         searchDTO.setPage(upload.getPageIndex());
@@ -87,7 +92,7 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
                 }
             }
         }
-        if (page.isEmpty()) {
+        if (page == null) {
             page = luceneQueryService.findByUserIdAndPath(upload.getUserId(), currentDirectory, searchDTO);
         }
         if (page.isEmpty()) {
@@ -98,9 +103,26 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
             return Page.empty(pageable);
         }
 
-        List<FileIntroVO> fileIntroVOList = getFileIntroVOs(page.getContent());
+        List<String> ids = page.getContent();
+
+        List<FileIntroVO> fileIntroVOList = getFileIntroVOs(ids);
+
+        Map<String, FileIntroVO> resultMap = fileIntroVOList.stream()
+                .collect(Collectors.toMap(FileIntroVO::getId, f -> f));
+        List<FileIntroVO> sorted = ids.stream()
+                .map(resultMap::get)
+                .filter(Objects::nonNull) // 防止有的 id 查不到
+                .toList();
+
+        long now = System.currentTimeMillis();
+        sorted = sorted.parallelStream().peek(fileIntroVO -> {
+            LocalDateTime updateDate = fileIntroVO.getUpdateDate();
+            long update = TimeUntils.getMilli(updateDate);
+            fileIntroVO.setAgoTime(now - update);
+        }).toList();
+
         // fileIntroVOList = FileSortService.sortByFileName(upload, fileIntroVOList, upload.getOrder());
-        return new PageImpl<>(fileIntroVOList, pageable, total);
+        return new PageImpl<>(sorted, pageable, total);
     }
 
     private List<FileIntroVO> getFileIntroVOs(List<String> ids) {

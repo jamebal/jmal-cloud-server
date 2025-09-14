@@ -23,9 +23,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import static com.jmal.clouddisk.lucene.LuceneService.FIELD_TAG_NAME_FUZZY;
 
@@ -42,33 +41,15 @@ public class LuceneQueryService {
     private final FileProperties fileProperties;
 
     public boolean existsSha256(String fileIndexHash) {
-        IndexSearcher indexSearcher = null;
-        try {
-            searcherManager.maybeRefresh();
-            indexSearcher = searcherManager.acquire();
-            Term term = new Term(Constants.ETAG, fileIndexHash);
-            Query query = new TermQuery(term);
-            TopDocs topDocs = indexSearcher.search(query, 1);
-            return topDocs.totalHits.value() > 0;
-        } catch (IOException e) {
-            log.error("检查 {} 是否存在失败", Constants.ETAG, e);
-        } finally {
-            if (indexSearcher != null) {
-                try {
-                    searcherManager.release(indexSearcher);
-                } catch (IOException e) {
-                    log.error("释放搜索器失败", e);
-                }
-            }
-        }
-        return false;
+        long count = count(getEtagQuery(fileIndexHash));
+        return count > 0;
     }
 
     public long countByTagId(String tagId) {
         return count(getTagIdQuery(tagId));
     }
 
-    public Set<String> findByTagId(String tagId) {
+    public List<String> findByTagId(String tagId) {
         return find(getTagIdQuery(tagId));
     }
 
@@ -119,6 +100,10 @@ public class LuceneQueryService {
         return new TermQuery(new Term(LuceneService.FIELD_TAG_ID, tagId));
     }
 
+    public Query getEtagQuery(String etag) {
+        return new TermQuery(new Term(Constants.ETAG, etag));
+    }
+
     public Query getPathQuery(String path) {
         return new TermQuery(new Term(Constants.PATH_FIELD, path));
     }
@@ -152,7 +137,7 @@ public class LuceneQueryService {
         return 0;
     }
 
-    public Set<String> findByArticleKeyword(String keyword) {
+    public List<String> findByArticleKeyword(String keyword) {
         SearchDTO.SearchDTOBuilder builder = SearchDTO.builder();
         builder.keyword(keyword)
                 .exactSearch(fileProperties.getExactSearch())
@@ -189,8 +174,8 @@ public class LuceneQueryService {
             }
             int count = indexSearcher.count(query);
             TopDocs topDocs = indexSearcher.searchAfter(lastScoreDoc, query, pageSize, sort);
-            Set<String> fileIds = getFileIds(indexSearcher, topDocs);
-            return new PageImpl<>(List.copyOf(fileIds), Pageable.ofSize(pageSize).withPage(pageNum - 1), count);
+            List<String> fileIds = getFileIds(indexSearcher, topDocs);
+            return new PageImpl<>(fileIds, Pageable.ofSize(pageSize).withPage(pageNum - 1), count);
         } catch (IOException e) {
             log.error("查询失败, query: {}", query.toString(), e);
         } finally {
@@ -205,7 +190,7 @@ public class LuceneQueryService {
         return Page.empty();
     }
 
-    public Set<String> find(Query query) {
+    public List<String> find(Query query) {
         IndexSearcher indexSearcher = null;
         try {
             searcherManager.maybeRefresh();
@@ -223,11 +208,11 @@ public class LuceneQueryService {
                 }
             }
         }
-        return Set.of();
+        return List.of();
     }
 
-    private Set<String> getFileIds(IndexSearcher indexSearcher, TopDocs topDocs) throws IOException {
-        Set<String> fileIds = new HashSet<>();
+    private List<String> getFileIds(IndexSearcher indexSearcher, TopDocs topDocs) throws IOException {
+        List<String> fileIds = new ArrayList<>();
         StoredFields storedFields = indexSearcher.storedFields();
         for (ScoreDoc hit : topDocs.scoreDocs) {
             Document doc = storedFields.document(hit.doc);
@@ -425,23 +410,28 @@ public class LuceneQueryService {
         SortField sortField;
         switch (sortProp.toLowerCase()) {
             case "isfolder":
-                sortField = new SortField(Constants.IS_FOLDER, SortField.Type.INT, reverse);
+                sortField = new SortField("is_folder_sort", SortField.Type.LONG, reverse);
+                break;
+            case "uploaddate":
+                sortField = new SortField("created", SortField.Type.LONG, reverse);
                 break;
             case "updatedate":
                 sortField = new SortField("modified", SortField.Type.LONG, reverse);
                 break;
-            case Constants.SIZE:
-                sortField = new SortField(Constants.SIZE, SortField.Type.LONG, reverse);
+            case "size":
+                sortField = new SortField("size", SortField.Type.LONG, reverse);
                 break;
             case "name":
-                return reverse ? Sort.RELEVANCE : new Sort(new SortField(null, SortField.Type.SCORE, true));
-            // case "name":
-            //     sortField = new SortField(LuceneService.FIELD_FILENAME_FUZZY, SortField.Type.STRING, reverse);
+                if (CharSequenceUtil.isNotBlank(searchDTO.getKeyword())) {
+                    return reverse ? Sort.RELEVANCE : new Sort(new SortField(null, SortField.Type.SCORE, true));
+                }
+                sortField = new SortField("name_sort", SortField.Type.STRING, reverse);
+                break;
             default:
                 // 对于不支持的排序字段，默认按相关度倒序
                 return Sort.RELEVANCE;
         }
 
-        return new Sort(sortField);
+        return new Sort(new SortField("is_folder_sort", SortField.Type.LONG, true), sortField);
     }
 }

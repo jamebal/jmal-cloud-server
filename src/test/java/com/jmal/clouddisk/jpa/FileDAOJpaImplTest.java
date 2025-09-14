@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.jpa;
 
 import com.jmal.clouddisk.dao.impl.jpa.FileDAOJpaImpl;
-import com.jmal.clouddisk.dao.impl.jpa.dto.FileTagsDTO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FilePropsRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperation;
@@ -11,6 +10,7 @@ import com.jmal.clouddisk.lucene.LuceneQueryService;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
+import com.jmal.clouddisk.model.file.dto.FileBaseTagsDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,10 +21,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -129,14 +127,14 @@ class FileDAOJpaImplTest {
         void updateTagInfoInFiles_shouldSubmitUpdateOperationsForModifiedFiles() {
             // Arrange
             String tagId = "tag123";
-            Set<String> affectedFileIds = Set.of("file1", "file2", "file3");
+            List<String> affectedFileIds = List.of("file1", "file2", "file3");
 
             Tag tagToUpdate = new Tag(tagId, "Old Name", "blue");
             Tag otherTag = new Tag("otherTag", "Other", "red");
 
-            FileTagsDTO dto1 = new FileTagsDTO("file1", new HashSet<>(Set.of(tagToUpdate)));
-            FileTagsDTO dto2 = new FileTagsDTO("file2", new HashSet<>(Set.of(otherTag))); // This one shouldn't be updated
-            FileTagsDTO dto3 = new FileTagsDTO("file3", new HashSet<>(Set.of(tagToUpdate, otherTag)));
+            FileBaseTagsDTO dto1 = new FileBaseTagsDTO("file1", List.of(tagToUpdate));
+            FileBaseTagsDTO dto2 = new FileBaseTagsDTO("file2", List.of(otherTag)); // This one shouldn't be updated
+            FileBaseTagsDTO dto3 = new FileBaseTagsDTO("file3", List.of(tagToUpdate, otherTag));
 
             when(luceneQueryService.findByTagId(tagId)).thenReturn(affectedFileIds);
             when(filePropsRepository.findTagsByIdIn(affectedFileIds)).thenReturn(List.of(dto1, dto2, dto3));

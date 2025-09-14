@@ -6,8 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 /**
  * @author jmal
@@ -19,10 +18,10 @@ import java.util.Set;
 @NoArgsConstructor
 public class FileBaseTagsDTO extends FileBaseDTO implements Reflective {
 
-    Set<Tag> tags = new HashSet<>();
+    List<Tag> tags;
 
 
-    public FileBaseTagsDTO(String id, Set<Tag> tags) {
+    public FileBaseTagsDTO(String id, List<Tag> tags) {
         this.id = id;
         this.tags = tags;
     }

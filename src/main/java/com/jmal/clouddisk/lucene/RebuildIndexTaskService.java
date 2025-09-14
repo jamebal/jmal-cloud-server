@@ -241,16 +241,21 @@ public class RebuildIndexTaskService {
      */
     private void deleteAllIndex(String path) {
         if (StrUtil.isBlank(path)) {
-            path = "/";
-        }
-        // 查询path下的所有索引
-        Term prefixTerm = new Term("path", path);
-        PrefixQuery prefixQuery = new PrefixQuery(prefixTerm);
-        try {
-            indexWriter.deleteDocuments(prefixQuery);
-            indexWriter.commit();
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            try {
+                indexWriter.deleteAll();
+                indexWriter.forceMergeDeletes();
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            }
+        } else {
+            // 查询path下的所有索引
+            Term prefixTerm = new Term("path", path);
+            PrefixQuery prefixQuery = new PrefixQuery(prefixTerm);
+            try {
+                indexWriter.deleteDocuments(prefixQuery);
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            }
         }
     }
 

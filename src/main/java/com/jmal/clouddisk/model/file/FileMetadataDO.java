@@ -156,9 +156,10 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
             fileDocument.setShareId(this.props.getShareId());
             fileDocument.setShareBase(this.props.getShareBase());
             fileDocument.setSubShare(this.props.getSubShare());
-            List<Tag> tagList = new ArrayList<>(this.props.getTags());
-            fileDocument.setTags(tagList);
-
+            if (this.props.getTags() != null) {
+                List<Tag> tagList = new ArrayList<>(this.props.getTags());
+                fileDocument.setTags(tagList);
+            }
             this.props.toFileDocumentFragment(fileDocument);
         }
         fileDocument.setDelete(this.getDelTag());
@@ -190,8 +191,10 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
         if (this.props != null) {
             fileDocument.setShareBase(this.props.getShareBase());
             fileDocument.setSubShare(this.props.getSubShare());
-            List<Tag> tagList = new ArrayList<>(this.props.getTags());
-            fileDocument.setTags(tagList);
+            if (this.props.getTags() != null) {
+                List<Tag> tagList = new ArrayList<>(this.props.getTags());
+                fileDocument.setTags(tagList);
+            }
 
             this.props.toFileIntroVOFragment(fileDocument);
         }

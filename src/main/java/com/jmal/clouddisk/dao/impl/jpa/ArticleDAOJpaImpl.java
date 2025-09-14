@@ -40,7 +40,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -99,7 +98,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
     public Page<FileDocument> getMarkdownList(ArticleDTO articleDTO) {
 
         // 全文检索查询符合关键字的文章ID
-        Set<String> luceneFileIds = null;
+        List<String> luceneFileIds = null;
         if (CharSequenceUtil.isNotBlank(articleDTO.getKeyword())) {
             luceneFileIds = luceneQueryService.findByArticleKeyword(articleDTO.getKeyword());
         }

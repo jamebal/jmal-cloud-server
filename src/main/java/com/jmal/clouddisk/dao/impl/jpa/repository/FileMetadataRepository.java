@@ -37,7 +37,7 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, St
 
     @Query("SELECT f FROM FileMetadataDO f JOIN FETCH f.props p " +
             "WHERE f.id IN :ids")
-    List<FileMetadataDO> findAllByIdIn(Collection<String> ids);
+    List<FileMetadataDO> findAllByIdIn(List<String> ids);
 
     @Query("SELECT f FROM FileMetadataDO f JOIN FETCH f.props p " +
             "WHERE f.id = :id")
