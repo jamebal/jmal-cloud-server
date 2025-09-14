@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.model.Tag;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -87,6 +90,23 @@ public class FilePropsDO implements Reflective {
         fileDocument.setMediaCover(this.props.getMediaCover());
         fileDocument.setM3u8(this.props.getM3u8());
         fileDocument.setVtt(this.props.getVtt());
+        fileDocument.setShowCover(this.props.getShowCover());
+        fileDocument.setRemark(this.props.getRemark());
+    }
+
+    public void toFileIntroVOFragment(FileIntroVO fileDocument) {
+        fileDocument.setIsShare(this.shareProps.getIsShare());
+        fileDocument.setIsPrivacy(this.shareProps.getIsPrivacy());
+        fileDocument.setExpiresAt(this.shareProps.getExpiresAt());
+        fileDocument.setOperationPermissionList(this.shareProps.getOperationPermissionList());
+        fileDocument.setOssPlatform(this.props.getOssPlatform());
+        fileDocument.setMusic(this.props.getMusic());
+        fileDocument.setExif(this.props.getExif());
+        fileDocument.setVideo(this.props.getVideo());
+        fileDocument.setW(this.props.getW());
+        fileDocument.setH(this.props.getH());
+        fileDocument.setMediaCover(this.props.getMediaCover());
+        fileDocument.setM3u8(this.props.getM3u8());
         fileDocument.setShowCover(this.props.getShowCover());
         fileDocument.setRemark(this.props.getRemark());
     }

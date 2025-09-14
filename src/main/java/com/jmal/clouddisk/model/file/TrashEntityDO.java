@@ -121,4 +121,28 @@ public class TrashEntityDO extends AuditableEntity implements Reflective {
         return fileDocument;
     }
 
+    public FileIntroVO toFileIntroVO() {
+        FileIntroVO fileIntroVO = new FileIntroVO();
+        fileIntroVO.setId(this.getId());
+        fileIntroVO.setUserId(this.getUserId());
+        fileIntroVO.setIsFolder(this.getIsFolder());
+        fileIntroVO.setName(this.getName());
+        fileIntroVO.setMd5(this.getMd5());
+        fileIntroVO.setPath(this.getPath());
+        fileIntroVO.setSize(this.getSize());
+        fileIntroVO.setContentType(this.getContentType());
+        fileIntroVO.setSuffix(this.getSuffix());
+        fileIntroVO.setUploadDate(this.getUploadDate());
+        fileIntroVO.setUpdateDate(this.getUpdateDate());
+        if (this.getProps() != null) {
+            fileIntroVO.setW(this.getProps().getW());
+            fileIntroVO.setH(this.getProps().getH());
+            fileIntroVO.setMusic(this.getProps().getMusic());
+            fileIntroVO.setExif(this.getProps().getExif());
+            fileIntroVO.setVideo(this.getProps().getVideo());
+            fileIntroVO.setM3u8(this.getProps().getM3u8());
+        }
+        return fileIntroVO;
+    }
+
 }

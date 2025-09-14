@@ -3,6 +3,8 @@ package com.jmal.clouddisk.dao.impl.jpa.repository;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.model.file.TrashEntityDO;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,4 +27,6 @@ public interface TrashRepository extends JpaRepository<TrashEntityDO, String> {
 
     @Query("SELECT t.id FROM TrashEntityDO t")
     List<String> findAllIds();
+
+    Page<TrashEntityDO> findAllByHiddenIsFalse(Pageable pageable);
 }

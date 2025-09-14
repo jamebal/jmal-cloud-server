@@ -33,4 +33,6 @@ public interface IShareDAO {
     void removeByFatherShareId(String id);
 
     void removeByUserId(String userId);
+
+    void setFileNameByFileId(String fileId, String newFileName);
 }

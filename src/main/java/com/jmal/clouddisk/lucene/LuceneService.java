@@ -525,9 +525,15 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
 
             if (fileIndex.getModified() != null) {
                 newDocument.add(new NumericDocValuesField("modified", fileIndex.getModified()));
+                // newDocument.add(new SortedNumericDocValuesField("modified_sort", fileIndex.getModified()));
+            }
+            if (fileIndex.getCreated() != null) {
+                newDocument.add(new NumericDocValuesField("created", fileIndex.getCreated()));
+                // newDocument.add(new SortedNumericDocValuesField("created_sort", fileIndex.getCreated()));
             }
             if (fileIndex.getSize() != null) {
-                newDocument.add(new NumericDocValuesField("size", fileIndex.getSize()));
+                newDocument.add(new NumericDocValuesField(Constants.SIZE, fileIndex.getSize()));
+                // newDocument.add(new SortedNumericDocValuesField("size_sort", fileIndex.getModified()));
             }
             indexWriter.updateDocument(new Term("id", fileId), newDocument);
         } catch (IOException e) {
@@ -603,7 +609,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
     public FileIntroVO getFileIntroVO(String fileId) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
-        query.fields().include("id", "name", "userId", "path", "isFolder", "isFavorite", "remark", "tags", "etag", "size");
+        query.fields().include("id", "name", "userId", "path", "isFolder", "isFavorite", "remark", "tags", "etag", "size", "uploadDate");
         return mongoTemplate.findOne(query, FileIntroVO.class, COLLECTION_NAME);
     }
 

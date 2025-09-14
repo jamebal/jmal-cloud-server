@@ -1,8 +1,11 @@
 package com.jmal.clouddisk.dao.impl.jpa.write.file;
 
 import com.jmal.clouddisk.model.Tag;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
+import com.jmal.clouddisk.model.file.OtherProperties;
 import com.jmal.clouddisk.model.file.ShareProperties;
+import com.jmal.clouddisk.model.file.dto.UpdateFile;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
@@ -21,6 +24,7 @@ public final class FileOperation {
     public record SetShareBaseOperation(String fileId) implements IFileOperation<Void> {}
     public record UnsetShareBaseOperation(String fileId) implements IFileOperation<Void> {}
     public record UpdateTagsForFile(String fileId, Set<Tag> tags) implements IFileOperation<Void> {}
+    public record UpdateTagsForFiles(List<String> fileIds, Set<Tag> tags) implements IFileOperation<Void> {}
 
     public record DeleteAllByIdInBatch(List<String> fileIdList) implements IFileOperation<Void> {}
     public record RemoveAllByUserIdAndPathPrefix(String userId, String pathPrefix) implements IFileOperation<Integer> {}
@@ -50,9 +54,22 @@ public final class FileOperation {
     public record UpdateModifyFile(String id, long length, String md5, String suffix, String fileContentType,
                                    LocalDateTime updateTime) implements IFileOperation<Long> {}
 
-    public record UnsetDelTag(String fileId) implements IFileOperation<Long> {}
+    public record UnsetDelTag(String fileId) implements IFileOperation<Integer> {}
 
     public record SetIsFavoriteByIdIn(List<String> fileIds, boolean isFavorite) implements IFileOperation<Void> {}
 
     public record SetNameAndSuffixById(String fileId, String name, String suffix) implements IFileOperation<Void> {}
+
+    public record SetContent(String id, byte[] content) implements IFileOperation<Void> {}
+
+    public record SetMediaCoverIsTrue(String id, OtherProperties otherProperties) implements IFileOperation<Void> {}
+
+    public record SetPathById(String id, String newFilePath) implements IFileOperation<Void> {}
+
+    public record SetNameByMountFileId(String fileId, String newFileName) implements IFileOperation<Void> {}
+
+    public record UpdateFileByUserIdAndPathAndName(String userId, String path, String name, UpdateFile updateFile) implements IFileOperation<Void> {}
+
+    public record UpsertByUserIdAndPathAndName(String userId, String path, String name, FileDocument fileDocument) implements IFileOperation<String> {}
+
 }

@@ -1,9 +1,13 @@
 package com.jmal.clouddisk.dao;
 
+import com.jmal.clouddisk.model.ShareBaseInfoDTO;
+import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.ShareProperties;
+import com.jmal.clouddisk.model.file.dto.FileBaseAllDTO;
 import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO;
+import com.jmal.clouddisk.model.file.dto.UpdateFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,7 +39,7 @@ public interface IFileDAO {
 
     boolean existsById(String id);
 
-    void save(FileDocument file);
+    String save(FileDocument file);
 
     String upsertMountFile(FileDocument fileDocument);
 
@@ -117,4 +121,34 @@ public interface IFileDAO {
     void setIsFavoriteByIdIn(List<String> fileIds, boolean isFavorite);
 
     void setNameAndSuffixById(String name, String suffix, String fileId);
+
+    void setContent(String id, byte[] content);
+
+    void setMediaCoverIsTrue(String id);
+
+    List<FileBaseDTO> findAllFileBaseDTOByIdIn(List<String> fileIdList);
+
+    List<FileBaseDTO> findAllByUserIdAndPathPrefix(String userId, String pathPrefix);
+
+    void setPathById(String id, String newFilePath);
+
+    List<FileDocument> findAllByUserIdAndPathAndNameIn(String userId, String toPath, List<String> fromFilenameList);
+
+    List<String> findFilenameListByIdIn(List<String> ids);
+
+    List<FileBaseAllDTO> findAllFileBaseAllDTOByUserIdAndPath(String userId, String path);
+
+    void removeTagsByTagIdIn(List<String> removeTagIds);
+
+    List<String> getFileIdListByTagId(String tagId);
+
+    void setTagsByIdIn(List<String> fileIds, List<Tag> tagList);
+
+    void setNameByMountFileId(String fileId, String newFileName);
+
+    ShareBaseInfoDTO getShareBaseByPath(String relativePath);
+
+    void updateFileByUserIdAndPathAndName(String userId, String path, String name, UpdateFile updateFile);
+
+    String upsertByUserIdAndPathAndName(String userId, String relativePath, String fileName, FileDocument fileDocument);
 }

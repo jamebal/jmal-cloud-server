@@ -1,21 +1,22 @@
 package com.jmal.clouddisk.dao.impl.jpa.write.file;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
-import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
+import com.jmal.clouddisk.dao.impl.jpa.repository.FilePropsRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperationHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Component("fileUnsetDelTagHandler")
+@Component("fileUpdateTagsForFilesHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class UnsetDelTagHandler implements IDataOperationHandler<FileOperation.UnsetDelTag, Integer> {
+public class UpdateTagsForFilesHandler implements IDataOperationHandler<FileOperation.UpdateTagsForFiles, Void> {
 
-    private final FileMetadataRepository repo;
+    private final FilePropsRepository repo;
 
     @Override
-    public Integer handle(FileOperation.UnsetDelTag op) {
-        return repo.unsetDelTag(op.fileId());
+    public Void handle(FileOperation.UpdateTagsForFiles op) {
+        repo.updateTagsForFiles(op.fileIds(), op.tags());
+        return null;
     }
 }

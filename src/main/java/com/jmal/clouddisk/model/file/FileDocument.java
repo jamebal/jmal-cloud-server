@@ -137,7 +137,7 @@ public class FileDocument extends FileBase implements Reflective {
     /**
      * 媒体封面
      */
-    private String mediaCover;
+    private Boolean mediaCover;
     /**
      * m3u8文件路径(相对路径)
      */

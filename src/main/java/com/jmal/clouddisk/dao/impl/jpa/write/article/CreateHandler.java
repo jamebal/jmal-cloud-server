@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.dao.impl.jpa.write.article;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.impl.jpa.FilePersistenceService;
 import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperationHandler;
 import com.jmal.clouddisk.model.file.ArticleDO;
@@ -19,6 +20,8 @@ public class CreateHandler implements IDataOperationHandler<ArticleOperation.Cre
 
     private final ArticleRepository repo;
 
+    private final FilePersistenceService filePersistenceService;
+
     @Override
     public ArticleDO handle(ArticleOperation.Create op) {
         FileDocument fileDocument = op.fileDocument();
@@ -35,6 +38,7 @@ public class CreateHandler implements IDataOperationHandler<ArticleOperation.Cre
         } else {
             // --- 创建逻辑 ---
             FileMetadataDO newMetadata = new FileMetadataDO(fileDocument);
+            filePersistenceService.persistContents(fileDocument);
             ArticleDO newArticle = new ArticleDO(fileDocument);
             newArticle.setFileMetadata(newMetadata);
             return repo.save(newArticle);

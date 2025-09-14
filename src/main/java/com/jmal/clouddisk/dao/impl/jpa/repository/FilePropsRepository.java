@@ -4,9 +4,12 @@ import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.dto.FileTagsDTO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.FilePropsDO;
+import com.jmal.clouddisk.model.file.OtherProperties;
 import com.jmal.clouddisk.model.file.ShareProperties;
+import com.jmal.clouddisk.model.file.dto.FileBaseTagsDTO;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,7 +21,7 @@ import java.util.Set;
 
 @Repository
 @Conditional(RelationalDataSourceCondition.class)
-public interface FilePropsRepository extends JpaRepository<FilePropsDO, String> {
+public interface FilePropsRepository extends JpaRepository<FilePropsDO, String> , JpaSpecificationExecutor<FilePropsDO> {
 
     @Query("UPDATE FilePropsDO p SET p.shareBase = true WHERE p.id = :fileId")
     @Modifying
@@ -37,6 +40,10 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, String> 
     @Modifying
     @Query("UPDATE FilePropsDO p SET p.tags = :tags WHERE p.id = :id")
     void updateTagsForFile(@Param("id") String fileId, @Param("tags") Set<Tag> tags);
+
+    @Modifying
+    @Query("UPDATE FilePropsDO p SET p.tags = :tags WHERE p.id IN :fileIds")
+    void updateTagsForFiles(@Param("fileIds") List<String> fileIds, @Param("tags") Set<Tag> tags);
 
     @Modifying
     @Query("UPDATE FilePropsDO fp SET " +
@@ -104,4 +111,15 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, String> 
 
     @Query("SELECT p.shareProps FROM FilePropsDO p WHERE p.id = :id")
     ShareProperties findSharePropsById(String id);
+
+    @Modifying
+    @Query("UPDATE FilePropsDO fp SET " +
+            "fp.props = :props " +
+            "WHERE fp.id = :fileId")
+    void setPropsById(String fileId, OtherProperties props);
+
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseTagsDTO(fp.id, fp.tags) " +
+            "FROM FilePropsDO fp " +
+            "WHERE fp.id IN :tagIds")
+    List<FileBaseTagsDTO> findAllFileBaseTagsDTOByTagIdIn(List<String> attr0);
 }

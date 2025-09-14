@@ -22,14 +22,13 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.bson.types.ObjectId;
+import org.springframework.data.domain.Page;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
@@ -58,7 +57,6 @@ public class SearchFileService {
             return ResultUtil.success(Collections.emptyList());
         }
         ResponseResult<List<FileIntroVO>> result = ResultUtil.genResult();
-        IndexSearcher indexSearcher = null;
         try {
             beforeQuery(searchDTO);
             if (!searchDTO.getUserId().equals(userLoginHolder.getUserId())) {
@@ -67,37 +65,19 @@ public class SearchFileService {
                 result.setProps(props);
             }
 
-            int pageNum = searchDTO.getPage();
-            int pageSize = searchDTO.getPageSize();
-            searcherManager.maybeRefresh();
-            List<String> seenIds = new ArrayList<>();
-            indexSearcher = searcherManager.acquire();
             Query query = getQuery(searchDTO);
-            Sort sort = getSort(searchDTO);
-            ScoreDoc lastScoreDoc = null;
-            if (pageNum > 1) {
-                int totalHitsToSkip = (pageNum - 1) * pageSize;
-                TopDocs topDocs = indexSearcher.search(query, totalHitsToSkip, sort);
-                if (topDocs.scoreDocs.length == totalHitsToSkip) {
-                    lastScoreDoc = topDocs.scoreDocs[totalHitsToSkip - 1];
-                }
-            }
-            int count = indexSearcher.count(query);
-            TopDocs topDocs = indexSearcher.searchAfter(lastScoreDoc, query, pageSize, sort);
-            StoredFields storedFields = indexSearcher.storedFields();
-            for (ScoreDoc hit : topDocs.scoreDocs) {
-                Document doc = storedFields.document(hit.doc);
-                String id = doc.get("id");
-                seenIds.add(id);
-            }
-            List<FileIntroVO> fileIntroVOList = getFileIntroVOs(seenIds);
+            searcherManager.maybeRefresh();
+
+            Page<String> page = luceneQueryService.find(query, searchDTO);
+
+            List<FileIntroVO> fileIntroVOList = getFileIntroVOs(page.getContent());
             long now = System.currentTimeMillis();
             fileIntroVOList.forEach(fileIntroVO -> {
                 long updateMilli = TimeUntils.getMilli(fileIntroVO.getUpdateDate());
                 fileIntroVO.setAgoTime(now - updateMilli);
             });
             result.setData(fileIntroVOList);
-            result.setCount(count);
+            result.setCount(page.getTotalElements());
 
             String userId = userLoginHolder.getUserId();
             // 添加搜索历史
@@ -107,14 +87,6 @@ public class SearchFileService {
         } catch (IOException | ParseException | java.lang.IllegalArgumentException e) {
             log.error("搜索失败", e);
             return result.setData(Collections.emptyList()).setCount(0);
-        } finally {
-            if (indexSearcher != null) {
-                try {
-                    searcherManager.release(indexSearcher);
-                } catch (IOException e) {
-                    log.error("释放搜索器失败", e);
-                }
-            }
         }
     }
 
@@ -177,49 +149,6 @@ public class SearchFileService {
         org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
         mongoTemplate.remove(query, SearchOptionHistoryDO.class);
-    }
-
-    /**
-     * 获取排序规则
-     *
-     * @param searchDTO searchDTO
-     * @return Sort
-     */
-    private static Sort getSort(SearchDTO searchDTO) {
-        // 如果 searchDTO 为 null，返回默认相关度倒序排序
-        if (searchDTO == null) {
-            return Sort.RELEVANCE;
-        }
-
-        String sortProp = searchDTO.getSortProp();
-        String sortOrder = searchDTO.getSortOrder();
-
-        // 如果排序属性或顺序为空，默认按相关度倒序排序
-        if (CharSequenceUtil.isBlank(sortProp) || CharSequenceUtil.isBlank(sortOrder)) {
-            return Sort.RELEVANCE;
-        }
-
-        // 确定排序方向
-        boolean reverse = Constants.DESCENDING.equalsIgnoreCase(sortOrder);
-
-        // 根据排序属性创建对应的 SortField
-        SortField sortField;
-        switch (sortProp.toLowerCase()) {
-            case "updatedate":
-                sortField = new SortField("modified", SortField.Type.LONG, reverse);
-                break;
-            case "size":
-                sortField = new SortField("size", SortField.Type.LONG, reverse);
-                break;
-            case "name":  // 显式支持相关度排序
-                // 注意：FIELD_SCORE 本身是降序的，如果要求升序需要特殊处理
-                return reverse ? Sort.RELEVANCE : new Sort(new SortField(null, SortField.Type.SCORE, true));
-            default:
-                // 对于不支持的排序字段，默认按相关度倒序
-                return Sort.RELEVANCE;
-        }
-
-        return new Sort(sortField);
     }
 
     /**

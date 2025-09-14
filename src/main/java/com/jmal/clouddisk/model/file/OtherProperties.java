@@ -26,7 +26,7 @@ public class OtherProperties {
     private Music music;
     private ExifInfo exif;
     private VideoInfoDO video;
-    private String mediaCover;
+    private Boolean mediaCover;
     private String m3u8;
     private String vtt;
     private Boolean showCover;

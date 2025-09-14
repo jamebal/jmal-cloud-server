@@ -13,24 +13,25 @@ import com.jmal.clouddisk.dao.impl.jpa.write.file.FileOperation;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
+import com.jmal.clouddisk.model.ShareBaseInfoDTO;
 import com.jmal.clouddisk.model.Tag;
-import com.jmal.clouddisk.model.file.FileDocument;
-import com.jmal.clouddisk.model.file.FileMetadataDO;
-import com.jmal.clouddisk.model.file.FilePropsDO;
-import com.jmal.clouddisk.model.file.ShareProperties;
-import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
-import com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO;
+import com.jmal.clouddisk.model.file.*;
+import com.jmal.clouddisk.model.file.dto.*;
+import com.jmal.clouddisk.service.Constants;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -51,6 +52,9 @@ public class FileDAOJpaImpl implements IFileDAO {
     private final FilePersistenceService filePersistenceService;
 
     private final IWriteService writeService;
+
+    @PersistenceContext
+    private EntityManager em;
 
     @Override
     public void deleteAllByIdInBatch(List<String> userIdList) {
@@ -114,9 +118,15 @@ public class FileDAOJpaImpl implements IFileDAO {
     }
 
     @Override
-    public void save(FileDocument file) {
+    public String save(FileDocument file) {
         FileMetadataDO fileMetadataDO = new FileMetadataDO(file);
-        writeService.submit(new FileOperation.CreateFileMetadata(fileMetadataDO));
+        filePersistenceService.persistContents(file);
+        try {
+            FileMetadataDO saved = writeService.submit(new FileOperation.CreateFileMetadata(fileMetadataDO)).get(10, TimeUnit.SECONDS);
+            return saved.getId();
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
     }
 
     @Override
@@ -256,10 +266,27 @@ public class FileDAOJpaImpl implements IFileDAO {
     @Override
     public FileDocument findByUserIdAndPathAndName(String userId, String path, String name, String... excludeFields) {
         FileMetadataDO fileMetadataDO = fileMetadataRepository.findByNameAndUserIdAndPath(name, userId, path).orElse(null);
-        if (fileMetadataDO != null) {
-            return fileMetadataDO.toFileDocument();
+        boolean readContent = false;
+        for (String field : excludeFields) {
+            if (Constants.CONTENT.equals(field)) {
+                readContent = true;
+                break;
+            }
         }
-        return null;
+        if (fileMetadataDO == null) {
+            return null;
+        }
+        FileDocument fileDocument = fileMetadataDO.toFileDocument();
+        if (readContent && fileMetadataDO.getHasContent()) {
+            filePersistenceService.readContent(fileMetadataDO.getId(), Constants.CONTENT).ifPresent(inputStream -> {
+                try (inputStream) {
+                    fileDocument.setContent(inputStream.readAllBytes());
+                } catch (Exception e) {
+                    log.error("读取 ArticleDO contentText 失败, fileId: {}", fileMetadataDO.getId(), e);
+                }
+            });
+        }
+        return fileDocument;
     }
 
     @Override
@@ -381,7 +408,7 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public long unsetDelTag(String fileId) {
-        CompletableFuture<Long> future = writeService.submit(new FileOperation.UnsetDelTag(fileId));
+        CompletableFuture<Integer> future = writeService.submit(new FileOperation.UnsetDelTag(fileId));
         try {
             return future.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
@@ -427,6 +454,180 @@ public class FileDAOJpaImpl implements IFileDAO {
     public void setNameAndSuffixById(String name, String suffix, String fileId) {
         try {
             writeService.submit(new FileOperation.SetNameAndSuffixById(fileId, name, suffix)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public void setContent(String id, byte[] content) {
+        try {
+            writeService.submit(new FileOperation.SetContent(id, content)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public void setMediaCoverIsTrue(String id) {
+        try {
+            FilePropsDO filePropsDO = filePropsRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("FilePropsDO not found with id: " + id));
+            OtherProperties otherProperties = filePropsDO.getProps();
+            otherProperties.setMediaCover(true);
+            writeService.submit(new FileOperation.SetMediaCoverIsTrue(id, otherProperties)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public List<FileBaseDTO> findAllFileBaseDTOByIdIn(List<String> fileIdList) {
+        return fileMetadataRepository.findAllFileBaseDTOByIdIn(fileIdList);
+    }
+
+    @Override
+    public List<FileBaseDTO> findAllByUserIdAndPathPrefix(String userId, String pathPrefix) {
+        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(pathPrefix) + "%";
+        return fileMetadataRepository.findFileBaseDTOAllByUserIdAndPathPrefix(userId, pathPrefixForLike);
+    }
+
+    @Override
+    public void setPathById(String id, String newFilePath) {
+        try {
+            writeService.submit(new FileOperation.SetPathById(id, newFilePath)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public List<FileDocument> findAllByUserIdAndPathAndNameIn(String userId, String toPath, List<String> fromFilenameList) {
+        List<FileMetadataDO> fileMetadataDOList = fileMetadataRepository.findAllByUserIdAndPathAndNameIn(userId, toPath, fromFilenameList);
+        if (fileMetadataDOList.isEmpty()) {
+            return List.of();
+        }
+        return getFileDocuments(fileMetadataDOList);
+    }
+
+    @Override
+    public List<String> findFilenameListByIdIn(List<String> ids) {
+        return fileMetadataRepository.findFilenameListByIdIn(ids);
+    }
+
+    @Override
+    public List<FileBaseAllDTO> findAllFileBaseAllDTOByUserIdAndPath(String userId, String path) {
+        return fileMetadataRepository.findAllFileBaseAllDTOByUserIdAndPath(userId, path);
+    }
+
+    @Override
+    public void removeTagsByTagIdIn(List<String> tagIds) {
+        List<FileBaseTagsDTO> fileBaseTagsDTOList = filePropsRepository.findAllFileBaseTagsDTOByTagIdIn(tagIds);
+        fileBaseTagsDTOList.forEach(fileBaseTagsDTO -> {
+            Set<Tag> tags = fileBaseTagsDTO.getTags();
+            tags.removeIf(tag -> tagIds.contains(tag.getTagId()));
+            try {
+                writeService.submit(new FileOperation.UpdateTagsForFile(fileBaseTagsDTO.getId(), tags)).get(10, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                throw new CommonException(e.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public List<String> getFileIdListByTagId(String tagId) {
+        Set<String> ids = luceneQueryService.findByTagId(tagId);
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return ids.stream().toList();
+    }
+
+    @Override
+    public void setTagsByIdIn(List<String> fileIds, List<Tag> tagList) {
+        try {
+            Set<Tag> tagSet = Set.copyOf(tagList);
+            writeService.submit(new FileOperation.UpdateTagsForFiles(fileIds, tagSet)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public void setNameByMountFileId(String fileId, String newFileName) {
+        try {
+            writeService.submit(new FileOperation.SetNameByMountFileId(fileId, newFileName)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public ShareBaseInfoDTO getShareBaseByPath(String relativePath) {
+        Path path = Paths.get(relativePath);
+        if (path.getNameCount() == 0) {
+            return null;
+        }
+        StringBuilder whereClause = new StringBuilder();
+        Map<String, Object> params = new HashMap<>();
+        StringBuilder pathStr = new StringBuilder("/");
+
+        for (int i = 0; i < path.getNameCount(); i++) {
+            if (i > 0) {
+                whereClause.append(" OR ");
+            }
+            String filename = path.getName(i).toString();
+            String pathParamName = Constants.PATH_FIELD + i;
+            String nameParamName = Constants.FILENAME_FIELD + i;
+
+            whereClause.append("(f.path = :").append(pathParamName).append(" AND f.name = :").append(nameParamName).append(")");
+
+            params.put(pathParamName, pathStr.toString());
+            params.put(nameParamName, filename);
+
+            if (i > 0) {
+                pathStr.append("/");
+            }
+            pathStr.append(filename);
+        }
+
+        String jpql = "SELECT new com.jmal.clouddisk.model.ShareBaseInfoDTO(" +
+                "p.shareId, p.shareProps" +
+                ") " +
+                "FROM FileMetadataDO f JOIN f.props p " +
+                "WHERE p.shareBase = true AND (" + whereClause + ")";
+
+        TypedQuery<ShareBaseInfoDTO> query = em.createQuery(jpql, ShareBaseInfoDTO.class);
+        params.forEach(query::setParameter);
+
+        List<ShareBaseInfoDTO> results = query.getResultList();
+
+
+        if (results.isEmpty()) {
+            return null;
+        } else {
+            return results.getLast();
+        }
+
+    }
+
+    @Override
+    public void updateFileByUserIdAndPathAndName(String userId, String path, String name, UpdateFile updateFile) {
+        try {
+            writeService.submit(new FileOperation.UpdateFileByUserIdAndPathAndName(
+                    userId,
+                    path,
+                    name,
+                    updateFile
+            )).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public String upsertByUserIdAndPathAndName(String userId, String path, String name, FileDocument fileDocument) {
+        try {
+            return writeService.submit(new FileOperation.UpsertByUserIdAndPathAndName(userId, path, name, fileDocument)).get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new CommonException(e.getMessage());
         }

@@ -6,15 +6,20 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.service.IUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -60,25 +65,70 @@ public class LuceneQueryService {
     }
 
     public long countByTagId(String tagId) {
-        Term term = new Term(LuceneService.FIELD_TAG_ID, tagId);
-        Query query = new TermQuery(term);
-        return count(query);
+        return count(getTagIdQuery(tagId));
     }
 
     public Set<String> findByTagId(String tagId) {
-        Term term = new Term(LuceneService.FIELD_TAG_ID, tagId);
-        Query query = new TermQuery(term);
-        return find(query);
+        return find(getTagIdQuery(tagId));
     }
 
-    public Set<String> findByTagIdIn(List<String> tagIds) {
+    public Page<String> findByUserIdAndType(String userId, String type, SearchDTO searchDTO) {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        for (String tagId : tagIds) {
-            Term term = new Term(LuceneService.FIELD_TAG_ID, tagId);
-            Query query = new TermQuery(term);
-            builder.add(query, BooleanClause.Occur.SHOULD);
-        }
-        return find(builder.build());
+        builder.add(getUserIdQuery(userId), BooleanClause.Occur.MUST);
+        builder.add(getTypeQuery(type), BooleanClause.Occur.MUST);
+        return find(builder.build(), searchDTO);
+    }
+
+    public Page<String> findByUserIdAndTagId(String userId, String tagId, SearchDTO searchDTO) {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        builder.add(getUserIdQuery(userId), BooleanClause.Occur.MUST);
+        builder.add(getTagIdQuery(tagId), BooleanClause.Occur.MUST);
+        return find(builder.build(), searchDTO);
+    }
+
+    public Page<String> findByUserIdAndPath(String userId, String path, SearchDTO searchDTO) {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        builder.add(getUserIdQuery(userId), BooleanClause.Occur.MUST);
+        builder.add(getPathQuery(path), BooleanClause.Occur.MUST);
+        return find(builder.build(), searchDTO);
+    }
+
+    public Page<String> findByUserIdAndIsFolder(String userId, Boolean isFolder, SearchDTO searchDTO) {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        builder.add(getUserIdQuery(userId), BooleanClause.Occur.MUST);
+        builder.add(getIsFolderQuery(isFolder), BooleanClause.Occur.MUST);
+        return find(builder.build(), searchDTO);
+    }
+
+    public Page<String> findByUserIdAndIsFavorite(String userId, Boolean isFavorite, SearchDTO searchDTO) {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        builder.add(getUserIdQuery(userId), BooleanClause.Occur.MUST);
+        builder.add(getIsFavoriteQuery(isFavorite), BooleanClause.Occur.MUST);
+        return find(builder.build(), searchDTO);
+    }
+
+    public Query getIsFolderQuery(Boolean isFolder) {
+        return IntPoint.newExactQuery(Constants.IS_FOLDER, isFolder ? 1 : 0);
+    }
+
+    public Query getIsFavoriteQuery(Boolean isFavorite) {
+        return IntPoint.newExactQuery(Constants.IS_FAVORITE, isFavorite ? 1 : 0);
+    }
+
+    public Query getTagIdQuery(String tagId) {
+        return new TermQuery(new Term(LuceneService.FIELD_TAG_ID, tagId));
+    }
+
+    public Query getPathQuery(String path) {
+        return new TermQuery(new Term(Constants.PATH_FIELD, path));
+    }
+
+    public Query getTypeQuery(String type) {
+        return new TermQuery(new Term("type", type));
+    }
+
+    public Query getUserIdQuery(String userId) {
+        return new TermQuery(new Term(IUserService.USER_ID, userId));
     }
 
     public long count(Query query) {
@@ -121,21 +171,26 @@ public class LuceneQueryService {
         }
     }
 
-    public Set<String> find(Query query) {
+    public Page<String> find(Query query, SearchDTO searchDTO) {
         IndexSearcher indexSearcher = null;
-        Set<String> fileIds = new HashSet<>();
         try {
             searcherManager.maybeRefresh();
             indexSearcher = searcherManager.acquire();
-            TopDocs topDocs = indexSearcher.search(query, Integer.MAX_VALUE);
-            StoredFields storedFields = indexSearcher.storedFields();
-            for (ScoreDoc hit : topDocs.scoreDocs) {
-                Document doc = storedFields.document(hit.doc);
-                String id = doc.get("id");
-                if (id != null) {
-                    fileIds.add(id);
+            ScoreDoc lastScoreDoc = null;
+            int pageNum = searchDTO.getPage();
+            int pageSize = searchDTO.getPageSize();
+            Sort sort = getSort(searchDTO);
+            if (pageNum > 1) {
+                int totalHitsToSkip = (pageNum - 1) * pageSize;
+                TopDocs topDocs = indexSearcher.search(query, totalHitsToSkip, sort);
+                if (topDocs.scoreDocs.length == totalHitsToSkip) {
+                    lastScoreDoc = topDocs.scoreDocs[totalHitsToSkip - 1];
                 }
             }
+            int count = indexSearcher.count(query);
+            TopDocs topDocs = indexSearcher.searchAfter(lastScoreDoc, query, pageSize, sort);
+            Set<String> fileIds = getFileIds(indexSearcher, topDocs);
+            return new PageImpl<>(List.copyOf(fileIds), Pageable.ofSize(pageSize).withPage(pageNum - 1), count);
         } catch (IOException e) {
             log.error("查询失败, query: {}", query.toString(), e);
         } finally {
@@ -145,6 +200,40 @@ public class LuceneQueryService {
                 } catch (IOException e) {
                     log.error("释放搜索器失败", e);
                 }
+            }
+        }
+        return Page.empty();
+    }
+
+    public Set<String> find(Query query) {
+        IndexSearcher indexSearcher = null;
+        try {
+            searcherManager.maybeRefresh();
+            indexSearcher = searcherManager.acquire();
+            TopDocs topDocs = indexSearcher.search(query, Integer.MAX_VALUE);
+            return getFileIds(indexSearcher, topDocs);
+        } catch (IOException e) {
+            log.error("查询失败, query: {}", query.toString(), e);
+        } finally {
+            if (indexSearcher != null) {
+                try {
+                    searcherManager.release(indexSearcher);
+                } catch (IOException e) {
+                    log.error("释放搜索器失败", e);
+                }
+            }
+        }
+        return Set.of();
+    }
+
+    private Set<String> getFileIds(IndexSearcher indexSearcher, TopDocs topDocs) throws IOException {
+        Set<String> fileIds = new HashSet<>();
+        StoredFields storedFields = indexSearcher.storedFields();
+        for (ScoreDoc hit : topDocs.scoreDocs) {
+            Document doc = storedFields.document(hit.doc);
+            String id = doc.get("id");
+            if (id != null) {
+                fileIds.add(id);
             }
         }
         return fileIds;
@@ -307,5 +396,52 @@ public class LuceneQueryService {
         pathQueryBuilder.add(new TermQuery(pathTerm), BooleanClause.Occur.SHOULD);
         pathQueryBuilder.add(prefixQuery, BooleanClause.Occur.SHOULD);
         return pathQueryBuilder.build();
+    }
+
+    /**
+     * 获取排序规则
+     *
+     * @param searchDTO searchDTO
+     * @return Sort
+     */
+    private static Sort getSort(SearchDTO searchDTO) {
+        // 如果 searchDTO 为 null，返回默认相关度倒序排序
+        if (searchDTO == null) {
+            return Sort.RELEVANCE;
+        }
+
+        String sortProp = searchDTO.getSortProp();
+        String sortOrder = searchDTO.getSortOrder();
+
+        // 如果排序属性或顺序为空，默认按相关度倒序排序
+        if (CharSequenceUtil.isBlank(sortProp) || CharSequenceUtil.isBlank(sortOrder)) {
+            return Sort.RELEVANCE;
+        }
+
+        // 确定排序方向
+        boolean reverse = Constants.DESCENDING.equalsIgnoreCase(sortOrder);
+
+        // 根据排序属性创建对应的 SortField
+        SortField sortField;
+        switch (sortProp.toLowerCase()) {
+            case "isfolder":
+                sortField = new SortField(Constants.IS_FOLDER, SortField.Type.INT, reverse);
+                break;
+            case "updatedate":
+                sortField = new SortField("modified", SortField.Type.LONG, reverse);
+                break;
+            case Constants.SIZE:
+                sortField = new SortField(Constants.SIZE, SortField.Type.LONG, reverse);
+                break;
+            case "name":
+                return reverse ? Sort.RELEVANCE : new Sort(new SortField(null, SortField.Type.SCORE, true));
+            // case "name":
+            //     sortField = new SortField(LuceneService.FIELD_FILENAME_FUZZY, SortField.Type.STRING, reverse);
+            default:
+                // 对于不支持的排序字段，默认按相关度倒序
+                return Sort.RELEVANCE;
+        }
+
+        return new Sort(sortField);
     }
 }

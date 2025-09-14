@@ -173,6 +173,34 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
         return fileDocument;
     }
 
+    public FileIntroVO toFileIntroVO() {
+        FileIntroVO fileDocument = new FileIntroVO();
+        fileDocument.setId(this.id);
+        fileDocument.setIsFolder(this.isFolder);
+        fileDocument.setName(this.name);
+        fileDocument.setMd5(this.md5);
+        fileDocument.setSize(this.size);
+        fileDocument.setContentType(this.contentType);
+        fileDocument.setUploadDate(this.uploadDate);
+        fileDocument.setUpdateDate(this.updateDate);
+        fileDocument.setUserId(this.userId);
+        fileDocument.setPath(this.path);
+        fileDocument.setSuffix(this.suffix);
+        fileDocument.setIsFavorite(this.isFavorite);
+        if (this.props != null) {
+            fileDocument.setShareBase(this.props.getShareBase());
+            fileDocument.setSubShare(this.props.getSubShare());
+            List<Tag> tagList = new ArrayList<>(this.props.getTags());
+            fileDocument.setTags(tagList);
+
+            this.props.toFileIntroVOFragment(fileDocument);
+        }
+        fileDocument.setEtag(this.etag);
+        fileDocument.setMountFileId(this.mountFileId);
+        fileDocument.setOssFolder(this.ossFolder);
+        return fileDocument;
+    }
+
     public FileMetadataDO(String id, String path, String name, String userId) {
         this.id = id;
         this.path = path;

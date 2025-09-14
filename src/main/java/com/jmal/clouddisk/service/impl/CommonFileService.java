@@ -15,10 +15,8 @@ import com.jmal.clouddisk.lucene.LuceneIndexQueueEvent;
 import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.model.OperationPermission;
 import com.jmal.clouddisk.model.ShareDO;
-import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.file.FileBase;
 import com.jmal.clouddisk.model.file.FileDocument;
-import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.model.file.ShareProperties;
 import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.service.Constants;
@@ -43,10 +41,8 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.Collator;
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -125,10 +121,10 @@ public class CommonFileService {
     }
 
     public static Query getQuery(FileDocument fileDocument) {
-        return getQuery(fileDocument.getPath(), fileDocument.getName(), fileDocument.getUserId());
+        return getQuery(fileDocument.getUserId(), fileDocument.getPath(), fileDocument.getName());
     }
 
-    public static Query getQuery(String path, String name, String userId) {
+    public static Query getQuery(String userId, String path, String name) {
         Query query = new Query();
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
         query.addCriteria(Criteria.where(Constants.PATH_FIELD).is(path));
@@ -150,13 +146,6 @@ public class CommonFileService {
 
     public FileDocument getFileDocumentByOssPath(String ossPath, String pathName) {
         return fileService.getFileDocumentByOssPath(ossPath, pathName);
-    }
-
-    /**
-     * 统计文件夹的大小
-     */
-    public long getFolderSize(String collectionName, String userId, String path) {
-        return etagService.getFolderSize(collectionName, userId, path);
     }
 
     public FileBaseDTO getFileBaseDTO(String username, String fileAbsolutePath) {
@@ -299,6 +288,8 @@ public class CommonFileService {
                 eventPublisher.publishEvent(new LuceneIndexQueueEvent(this, Collections.singletonList(fileBaseDTO.getId())));
             }
         }
+        // update parent folder etag
+        etagService.handleItemDeletionAsync(username, file);
         messageService.pushMessage(username, relativePath, Constants.DELETE_FILE);
     }
 
@@ -347,46 +338,6 @@ public class CommonFileService {
         } else {
             commonUserFileService.createFile(username, file, userId, null);
         }
-    }
-
-    public List<FileIntroVO> sortByFileName(UploadApiParamDTO upload, List<FileIntroVO> fileIntroVOList, String order) {
-        // 按文件名排序
-        if (CharSequenceUtil.isBlank(order)) {
-            fileIntroVOList = fileIntroVOList.stream().sorted(this::compareByFileName).toList();
-        }
-        if (!CharSequenceUtil.isBlank(order) && "name".equals(upload.getSortableProp())) {
-            fileIntroVOList = fileIntroVOList.stream().sorted(this::compareByFileName).toList();
-            if (Constants.DESCENDING.equals(order)) {
-                fileIntroVOList = fileIntroVOList.stream().sorted(this::desc).toList();
-            }
-        }
-        return fileIntroVOList;
-    }
-
-    public int desc(FileBase f1, FileBase f2) {
-        return -1;
-    }
-
-    /***
-     * 根据文件名排序
-     * @param f1 f1
-     * @param f2 f2
-     */
-    public int compareByFileName(FileBase f1, FileBase f2) {
-        if (Boolean.TRUE.equals(f1.getIsFolder()) && !f2.getIsFolder()) {
-            return -1;
-        } else if (f1.getIsFolder() && f2.getIsFolder()) {
-            return compareByName(f1, f2);
-        } else if (!f1.getIsFolder() && Boolean.TRUE.equals(f2.getIsFolder())) {
-            return 1;
-        } else {
-            return compareByName(f1, f2);
-        }
-    }
-
-    public int compareByName(FileBase f1, FileBase f2) {
-        Comparator<Object> cmp = Collator.getInstance(java.util.Locale.CHINA);
-        return cmp.compare(f1.getName(), f2.getName());
     }
 
     /**

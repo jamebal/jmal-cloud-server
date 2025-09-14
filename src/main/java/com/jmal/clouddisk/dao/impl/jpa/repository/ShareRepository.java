@@ -29,6 +29,10 @@ public interface ShareRepository extends JpaRepository<ShareDO, String> {
             @Param("extractionCode") String extractionCode
     );
 
+    @Modifying
+    @Query("UPDATE ShareDO p SET p.fileName = :newFileName WHERE p.fileId = :fileId")
+    void SetFileNameByFileId(String fileId, String newFileName);
+
     // 更新不需要设置提取码的分享
     @Modifying
     @Query("UPDATE ShareDO p SET p.fatherShareId = :fatherShareId, p.isPrivacy = false, p.extractionCode = null " +

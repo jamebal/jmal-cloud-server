@@ -7,16 +7,18 @@ import cn.hutool.core.lang.ObjectId;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.config.jpa.DataSourceProperties;
+import com.jmal.clouddisk.dao.DataSourceType;
+import com.jmal.clouddisk.dao.impl.jpa.FilePersistenceService;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.util.CommandUtil;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.exec.CommandLine;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -37,6 +39,10 @@ import java.nio.file.Paths;
 public class ImageMagickProcessor {
 
     private final FileProperties fileProperties;
+
+    private final DataSourceProperties dataSourceProperties;
+
+    private final FilePersistenceService filePersistenceService;
 
     public String generateOrcTempImagePath(String username) {
         return generateTempImagePath(username);
@@ -59,13 +65,16 @@ public class ImageMagickProcessor {
      * 生成缩略图
      *
      * @param file   File
-     * @param update org.springframework.data.mongodb.core.query.UpdateDefinition
      */
-    public void generateThumbnail(File file, Update update) {
+    public void generateThumbnail(File file, FileDocument fileDocument) {
         try {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             cropImage(file, "1", "256", "256", byteArrayOutputStream);
-            update.set(Constants.CONTENT, byteArrayOutputStream.toByteArray());
+            if (dataSourceProperties.getType() == DataSourceType.mongodb) {
+                fileDocument.setContent(byteArrayOutputStream.toByteArray());
+            } else {
+                filePersistenceService.persistContent(fileDocument.getId(), byteArrayOutputStream);
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (IOException e) {

@@ -7,15 +7,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Component("fileUnsetDelTagHandler")
+@Component("fileSetPathByIdHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class UnsetDelTagHandler implements IDataOperationHandler<FileOperation.UnsetDelTag, Integer> {
+public class SetPathByIdHandler implements IDataOperationHandler<FileOperation.SetPathById, Void> {
 
     private final FileMetadataRepository repo;
 
     @Override
-    public Integer handle(FileOperation.UnsetDelTag op) {
-        return repo.unsetDelTag(op.fileId());
+    public Void handle(FileOperation.SetPathById op) {
+        repo.setPathById(op.id(), op.newFilePath());
+        return null;
     }
 }

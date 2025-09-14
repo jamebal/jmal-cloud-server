@@ -147,4 +147,13 @@ public class ShareDAOImpl implements IShareDAO {
         mongoTemplate.remove(query, ShareDO.class);
     }
 
+    @Override
+    public void setFileNameByFileId(String fileId, String newFileName) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(Constants.FILE_ID).is(fileId));
+        Update update = new Update();
+        update.set("fileName", newFileName);
+        mongoTemplate.updateMulti(query, update, ShareDO.class);
+    }
+
 }

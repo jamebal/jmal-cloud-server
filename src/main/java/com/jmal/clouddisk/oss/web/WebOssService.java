@@ -15,16 +15,14 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.model.OperationPermission;
-import com.jmal.clouddisk.model.ShareDO;
-import com.jmal.clouddisk.model.UploadApiParamDTO;
-import com.jmal.clouddisk.model.UploadResponse;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.file.FileBase;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.oss.*;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
+import com.jmal.clouddisk.service.impl.FileSortService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
@@ -33,7 +31,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
-import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -153,7 +150,7 @@ public class WebOssService extends WebOssCommonService {
     private List<FileIntroVO> setAdditionalAttributes(String ossPath, UploadApiParamDTO upload, List<FileInfo> list, String objectName, String finalUserId) {
         List<FileIntroVO> fileIntroVOList;
         // 检测上级目录是否有分享属性
-        Document shareBaseDocument = commonUserFileService.getShareBaseDocument(getPath(list.get(0).getKey(), getOssRootFolderName(ossPath)));
+        ShareBaseInfoDTO shareBaseDocument = commonUserFileService.getShareBaseDocument(getPath(list.getFirst().getKey(), getOssRootFolderName(ossPath)));
 
         List<FileDocument> fileDocumentList = getFileDocuments(ossPath, objectName);
 
@@ -179,11 +176,11 @@ public class WebOssService extends WebOssCommonService {
             // 设置文件的额外属性:分享属性和收藏属性
             FileDocument fileDocument = fileDocumentList.stream().filter(f -> f.getId().equals(fileIntroVO.getId())).findFirst().orElse(null);
             if (shareBaseDocument != null) {
-                fileIntroVO.setIsPrivacy(Convert.toBool(shareBaseDocument.get(Constants.IS_PRIVACY), null));
-                fileIntroVO.setExpiresAt(Convert.toLong(shareBaseDocument.get(Constants.EXPIRES_AT), null));
+                fileIntroVO.setIsPrivacy(Convert.toBool(shareBaseDocument.getIsPrivacy(), null));
+                fileIntroVO.setExpiresAt(Convert.toLong(shareBaseDocument.getExpireDate(), null));
                 fileIntroVO.setIsShare(true);
-                if (shareBaseDocument.get(Constants.OPERATION_PERMISSION_LIST) != null) {
-                    List<OperationPermission> operationPermissionList = Convert.toList(OperationPermission.class, shareBaseDocument.get(Constants.OPERATION_PERMISSION_LIST));
+                if (shareBaseDocument.getOperationPermissionList() != null) {
+                    List<OperationPermission> operationPermissionList = Convert.toList(OperationPermission.class, shareBaseDocument.getOperationPermissionList());
                     fileIntroVO.setOperationPermissionList(operationPermissionList);
                 }
                 if (fileDocument == null) {
@@ -192,8 +189,8 @@ public class WebOssService extends WebOssCommonService {
                     fileDocumentToBeAdded.setExpiresAt(fileIntroVO.getExpiresAt());
                     fileDocumentToBeAdded.setIsShare(fileIntroVO.getIsShare());
                     fileDocumentToBeAdded.setOperationPermissionList(fileIntroVO.getOperationPermissionList());
-                    fileDocumentToBeAdded.setExtractionCode(Convert.toStr(shareBaseDocument.getString(Constants.EXTRACTION_CODE), null));
-                    fileDocumentToBeAdded.setShareId(Convert.toStr(shareBaseDocument.getString(Constants.SHARE_ID), null));
+                    fileDocumentToBeAdded.setExtractionCode(Convert.toStr(shareBaseDocument.getExtractionCode(), null));
+                    fileDocumentToBeAdded.setShareId(Convert.toStr(shareBaseDocument.getShareId(), null));
                     listToBeAdded.add(fileDocumentToBeAdded);
                 }
             }
@@ -273,7 +270,7 @@ public class WebOssService extends WebOssCommonService {
             }
         }
         // 默认按文件排序
-        fileIntroVOList = commonFileService.sortByFileName(upload, fileIntroVOList, order);
+        fileIntroVOList = FileSortService.sortByFileName(upload, fileIntroVOList, order);
         return fileIntroVOList;
     }
 
@@ -348,7 +345,7 @@ public class WebOssService extends WebOssCommonService {
         String objectName = getObjectName(prePth, ossPath, false);
         String uploadId = ossService.getUploadId(objectName);
         // 已上传的分片号
-        List<Integer> chunks = LIST_PARTS_CACHE.get(uploadId, key -> ossService.getListParts(objectName, uploadId));
+        List<Integer> chunks = LIST_PARTS_CACHE.get(uploadId, _ -> ossService.getListParts(objectName, uploadId));
         // 返回已存在的分片
         uploadResponse.setResume(chunks);
         assert chunks != null;
@@ -417,7 +414,7 @@ public class WebOssService extends WebOssCommonService {
             String uploadId = ossService.getUploadId(objectName);
 
             // 已上传的分片号列表
-            CopyOnWriteArrayList<Integer> chunks = LIST_PARTS_CACHE.get(uploadId, key -> ossService.getListParts(objectName, uploadId));
+            CopyOnWriteArrayList<Integer> chunks = LIST_PARTS_CACHE.get(uploadId, _ -> ossService.getListParts(objectName, uploadId));
 
             // 上传本次的分片
             boolean success = ossService.uploadPart(file.getInputStream(), objectName, currentChunkSize, upload.getChunkNumber(), uploadId);

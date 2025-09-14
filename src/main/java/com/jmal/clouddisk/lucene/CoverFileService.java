@@ -2,6 +2,7 @@ package com.jmal.clouddisk.lucene;
 
 import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.service.Constants;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -32,9 +33,12 @@ public class CoverFileService {
         }
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(new ObjectId(fileId)));
+        FileDocument fileDocument = new FileDocument();
+        fileDocument.setId(fileId);
         Update update = new Update();
-        imageMagickProcessor.generateThumbnail(coverFile, update);
+        imageMagickProcessor.generateThumbnail(coverFile, fileDocument);
         update.set("showCover", true);
+        update.set(Constants.CONTENT, fileDocument.getContent());
         mongoTemplate.updateFirst(query, update, FileDocument.class);
     }
 

@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.jmal.clouddisk.dao.IFileQueryDAO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.FileInfo;
@@ -11,7 +12,6 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class FileService {
 
     private final CommonUserService userService;
 
-    private final MongoTemplate mongoTemplate;
+    private final IFileQueryDAO fileQueryDAO;
 
     public FileDocument getFileDocumentById(String fileId, boolean excludeContent) {
         if (CharSequenceUtil.isBlank(fileId) || Constants.REGION_DEFAULT.equals(fileId)) {
@@ -37,7 +37,7 @@ public class FileService {
             query.fields().exclude(Constants.CONTENT);
         }
         query.fields().exclude(Constants.CONTENT_TEXT);
-        return mongoTemplate.findOne(query, FileDocument.class);
+        return fileQueryDAO.findBaseFileDocumentById(fileId, excludeContent);
     }
 
     public FileDocument getById(String fileId) {

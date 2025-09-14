@@ -110,6 +110,11 @@ public class ShareDAOJpaImpl implements IShareDAO, IWriteCommon<ShareDO> {
     }
 
     @Override
+    public void setFileNameByFileId(String fileId, String newFileName) {
+        writeService.submit(new ShareOperation.SetFileNameByFileId(fileId, newFileName));
+    }
+
+    @Override
     public void AsyncSaveAll(Iterable<ShareDO> entities) {
         writeService.submit(new ShareOperation.CreateAll(entities));
     }

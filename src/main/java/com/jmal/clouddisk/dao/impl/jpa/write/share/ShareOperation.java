@@ -14,4 +14,6 @@ public final class ShareOperation {
     public record removeByUserId(String userId) implements IShareOperation<Void> {}
     public record Create(ShareDO entity) implements IShareOperation<ShareDO> {}
     public record UpdateSubShare(List<String> subShareFileIdList, String id, Boolean isPrivacy, String extractionCode) implements IShareOperation<Void> {}
+
+    public record SetFileNameByFileId(String fileId, String newFileName) implements IShareOperation<Void> {}
 }

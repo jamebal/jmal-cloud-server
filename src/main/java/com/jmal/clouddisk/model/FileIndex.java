@@ -3,6 +3,7 @@ package com.jmal.clouddisk.model;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.util.HashUtil;
+import com.jmal.clouddisk.util.TimeUntils;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -32,6 +33,7 @@ public class FileIndex implements Reflective {
         if (fileIntroVO.getTagIds() != null && !fileIntroVO.getTagIds().isEmpty()) {
             tagIds.addAll(fileIntroVO.getTagIds());
         }
+        this.created = TimeUntils.getMilli(fileIntroVO.getUploadDate());
     }
 
     private String getTagName(FileIntroVO fileIntroVO) {
@@ -52,6 +54,7 @@ public class FileIndex implements Reflective {
     private String tagName;
     private Set<String> tagIds = new HashSet<>();
     private Long modified;
+    private Long created;
     private Long size;
     private Boolean isFolder;
     private Boolean isFavorite;

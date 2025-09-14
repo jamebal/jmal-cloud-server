@@ -4,18 +4,26 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.dao.IFileDAO;
-import com.jmal.clouddisk.model.OperationPermission;
+import com.jmal.clouddisk.media.VideoInfoDO;
+import com.jmal.clouddisk.model.ShareBaseInfoDTO;
+import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.ShareProperties;
+import com.jmal.clouddisk.model.file.dto.FileBaseAllDTO;
 import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO;
+import com.jmal.clouddisk.model.file.dto.UpdateFile;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.MongoUtil;
+import com.mongodb.client.AggregateIterable;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.result.UpdateResult;
 import lombok.RequiredArgsConstructor;
+import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Sort;
@@ -25,7 +33,11 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.jmal.clouddisk.service.IUserService.USER_ID;
@@ -62,11 +74,12 @@ public class FileDAOImpl implements IFileDAO {
         Update update = new Update();
         update.set("tags.$.color", newColor);
         update.set("tags.$.name", newTagName);
-        mongoTemplate.updateMulti(query1,update, FileDocument.class);
+        mongoTemplate.updateMulti(query1, update, FileDocument.class);
     }
 
     /**
      * 获取文件夹下的子分享的查询条件
+     *
      * @return Query
      */
     private static Query getFolderSubShareQuery(String userId, String pathPrefix) {
@@ -99,8 +112,9 @@ public class FileDAOImpl implements IFileDAO {
     }
 
     @Override
-    public void save(FileDocument file) {
-        mongoTemplate.save(file);
+    public String save(FileDocument file) {
+        FileDocument saved = mongoTemplate.save(file);
+        return saved.getId();
     }
 
     @Override
@@ -223,7 +237,18 @@ public class FileDAOImpl implements IFileDAO {
     public void updateShareProps(FileDocument file, String shareId, ShareProperties shareProperties, boolean isFolder) {
         Query query = getUpdateSharePropsQuery(file, isFolder);
         Update update = new Update();
-        setShareAttribute(update, shareProperties.getExpiresAt(), shareId, shareProperties.getIsPrivacy(), shareProperties.getExtractionCode(), shareProperties.getOperationPermissionList());
+        update.set(Constants.IS_SHARE, true);
+        update.set(Constants.SHARE_ID, shareId);
+        update.set(Constants.EXPIRES_AT, shareProperties.getExpiresAt());
+        update.set(Constants.IS_PRIVACY, shareProperties.getIsPrivacy());
+        if (shareProperties.getOperationPermissionList() != null) {
+            update.set(Constants.OPERATION_PERMISSION_LIST, shareProperties.getOperationPermissionList());
+        }
+        if (BooleanUtil.isTrue(shareProperties.getIsPrivacy())) {
+            update.set(Constants.EXTRACTION_CODE, shareProperties.getExtractionCode());
+        } else {
+            update.unset(Constants.EXTRACTION_CODE);
+        }
         mongoTemplate.updateMulti(query, update, FileDocument.class);
     }
 
@@ -426,6 +451,187 @@ public class FileDAOImpl implements IFileDAO {
         mongoTemplate.updateFirst(query, update, FileDocument.class);
     }
 
+    @Override
+    public void setContent(String id, byte[] content) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(id));
+        Update update = new Update();
+        update.set(Constants.CONTENT, content);
+        mongoTemplate.updateFirst(query, update, FileDocument.class);
+    }
+
+    @Override
+    public void setMediaCoverIsTrue(String id) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(id));
+        Update update = new Update();
+        update.set("mediaCover", true);
+        mongoTemplate.updateFirst(query, update, FileDocument.class);
+    }
+
+    @Override
+    public List<FileBaseDTO> findAllFileBaseDTOByIdIn(List<String> fileIdList) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIdList));
+        return mongoTemplate.find(query, FileBaseDTO.class, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public List<FileBaseDTO> findAllByUserIdAndPathPrefix(String userId, String pathPrefix) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        query.addCriteria(Criteria.where("path").regex("^" + pathPrefix));
+        return mongoTemplate.find(query, FileBaseDTO.class, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public void setPathById(String id, String newFilePath) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(id));
+        Update update = new Update();
+        update.set(Constants.PATH_FIELD, newFilePath);
+        mongoTemplate.updateFirst(query, update, FileDocument.class);
+    }
+
+    @Override
+    public List<FileDocument> findAllByUserIdAndPathAndNameIn(String userId, String toPath, List<String> fromFilenameList) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        query.addCriteria(Criteria.where(Constants.PATH_FIELD).is(toPath));
+        query.addCriteria(Criteria.where(Constants.FILENAME_FIELD).in(fromFilenameList));
+        return mongoTemplate.find(query, FileDocument.class);
+    }
+
+    @Override
+    public List<String> findFilenameListByIdIn(List<String> ids) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(ids));
+        query.fields().include("name");
+        return mongoTemplate.find(query, FileDocument.class).stream().map(FileDocument::getName).toList();
+    }
+
+    @Override
+    public List<FileBaseAllDTO> findAllFileBaseAllDTOByUserIdAndPath(String userId, String path) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        query.addCriteria(Criteria.where(Constants.PATH_FIELD).is(path));
+        return mongoTemplate.find(query, FileBaseAllDTO.class, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public void removeTagsByTagIdIn(List<String> removeTagIds) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("tags.tagId").in(removeTagIds));
+        List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class);
+        fileDocumentList.parallelStream().forEach(fileDocument -> {
+            List<Tag> tagList = fileDocument.getTags();
+            tagList.removeIf(tagDTO -> removeTagIds.contains(tagDTO.getTagId()));
+            Update update = new Update();
+            update.set("tags", mongoTemplate.getConverter().convertToMongoType(tagList));
+            mongoTemplate.updateMulti(query, update, FileDocument.class);
+        });
+    }
+
+    @Override
+    public List<String> getFileIdListByTagId(String tagId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("tags.tagId").is(tagId));
+        query.fields().include("_id");
+        List<FileDocument> list = mongoTemplate.find(query, FileDocument.class);
+        return list.stream().map(FileDocument::getId).toList();
+    }
+
+    @Override
+    public void setTagsByIdIn(List<String> fileIds, List<Tag> tagList) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIds));
+        Update update = new Update();
+        update.set("tags", mongoTemplate.getConverter().convertToMongoType(tagList));
+        mongoTemplate.updateMulti(query, update, FileDocument.class);
+    }
+
+    @Override
+    public void setNameByMountFileId(String fileId, String newFileName) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("mountFileId").is(fileId));
+        Update update = new Update();
+        update.set(Constants.FILENAME_FIELD, newFileName);
+        mongoTemplate.updateMulti(query, update, FileDocument.class);
+    }
+
+    @Override
+    public ShareBaseInfoDTO getShareBaseByPath(String relativePath) {
+        Path path = Paths.get(relativePath);
+        StringBuilder pathStr = new StringBuilder("/");
+        List<Document> documentList = new ArrayList<>(path.getNameCount());
+        for (int i = 0; i < path.getNameCount(); i++) {
+            String filename = path.getName(i).toString();
+            if (i > 0) {
+                pathStr.append("/");
+            }
+            Document document = new Document("path", pathStr.toString()).append("name", filename);
+            documentList.add(document);
+            pathStr.append(filename);
+        }
+        if (documentList.isEmpty()) {
+            return null;
+        }
+        List<Document> list = Arrays.asList(new Document("$match", new Document("$or", documentList)), new Document("$match", new Document(Constants.SHARE_BASE, true)));
+        AggregateIterable<Document> result = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(list);
+        Document shareDocument = null;
+        try (MongoCursor<Document> mongoCursor = result.iterator()) {
+            while (mongoCursor.hasNext()) {
+                shareDocument = mongoCursor.next();
+            }
+        }
+        if (shareDocument == null) {
+            return null;
+        }
+        return mongoTemplate.getConverter().read(ShareBaseInfoDTO.class, shareDocument);
+    }
+
+    @Override
+    public void updateFileByUserIdAndPathAndName(String userId, String path, String name, UpdateFile updateFile) {
+        Query query = CommonFileService.getQuery(userId, path, name);
+        Update update = new Update();
+        if (updateFile.getExif() != null) {
+            update.set("exif", updateFile.getExif());
+        }
+        if (updateFile.getSuffix() != null) {
+            update.set(Constants.SUFFIX, updateFile.getSuffix());
+        }
+        if (updateFile.getVideo() != null) {
+            VideoInfoDO videoInfoDO = updateFile.getVideo();
+            update.set("video.bitrate", videoInfoDO.getBitrate());
+            update.set("video.bitrateNum", videoInfoDO.getBitrateNum());
+            update.set("video.format", videoInfoDO.getFormat());
+            update.set("video.duration", videoInfoDO.getDuration());
+            update.set("video.durationNum", videoInfoDO.getDurationNum());
+            update.set("video.width", videoInfoDO.getWidth());
+            update.set("video.height", videoInfoDO.getHeight());
+            update.set("video.frameRate", videoInfoDO.getFrameRate());
+        }
+        if (updateFile.getContentType() != null) {
+            update.set(Constants.CONTENT_TYPE, updateFile.getContentType());
+        }
+        if (updateFile.getUpdateDate() != null) {
+            update.set(Constants.UPDATE_DATE, updateFile.getUpdateDate());
+        }
+        mongoTemplate.updateFirst(query, update, FileDocument.class);
+    }
+
+    @Override
+    public String upsertByUserIdAndPathAndName(String userId, String relativePath, String fileName, FileDocument fileDocument) {
+        Update update = MongoUtil.getUpdate(fileDocument);
+        update.set("_id", new ObjectId(fileDocument.getId()));
+        Query query = CommonFileService.getQuery(userId, relativePath, fileName);
+        UpdateResult updateResult = mongoTemplate.upsert(query, update, FileDocument.class);
+        if (updateResult.getUpsertedId() != null) {
+            return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
+        }
+        return null;
+    }
+
     @NotNull
     private Query getUpdateSharePropsQuery(FileDocument file, boolean isFolder) {
         Query query = new Query();
@@ -439,26 +645,4 @@ public class FileDAOImpl implements IFileDAO {
         return query;
     }
 
-    /**
-     * 设置共享属性
-     *
-     * @param expiresAt      过期时间
-     * @param shareId        shareId
-     * @param isPrivacy      isPrivacy
-     * @param extractionCode extractionCode
-     */
-    public static void setShareAttribute(Update update, long expiresAt, String shareId, Boolean isPrivacy, String extractionCode, List<OperationPermission> operationPermissionListList) {
-        update.set(Constants.IS_SHARE, true);
-        update.set(Constants.SHARE_ID, shareId);
-        update.set(Constants.EXPIRES_AT, expiresAt);
-        update.set(Constants.IS_PRIVACY, isPrivacy);
-        if (operationPermissionListList != null) {
-            update.set(Constants.OPERATION_PERMISSION_LIST, operationPermissionListList);
-        }
-        if (BooleanUtil.isTrue(isPrivacy)) {
-            update.set(Constants.EXTRACTION_CODE, extractionCode);
-        } else {
-            update.unset(Constants.EXTRACTION_CODE);
-        }
-    }
 }

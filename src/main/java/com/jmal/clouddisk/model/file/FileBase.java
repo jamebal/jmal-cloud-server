@@ -3,9 +3,11 @@ package com.jmal.clouddisk.model.file;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.util.TimeUntils;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -19,6 +21,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @MappedSuperclass
+@NoArgsConstructor
 public class FileBase extends AuditableEntity implements Reflective {
 
     /***
@@ -68,6 +71,11 @@ public class FileBase extends AuditableEntity implements Reflective {
      */
     public String uploadTime(){
         return uploadDate.format(TimeUntils.UPLOAD_FORMAT_TIME);
+    }
+
+    public FileBase(FileBaseDTO fileBaseDTO) {
+        this.name = fileBaseDTO.getName();
+        this.isFolder = fileBaseDTO.getIsFolder();
     }
 
 }

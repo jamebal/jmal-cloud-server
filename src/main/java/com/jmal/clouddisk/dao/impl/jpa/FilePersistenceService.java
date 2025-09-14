@@ -159,16 +159,41 @@ public class FilePersistenceService {
         FileUtil.del(file);
     }
 
+    public void persistContent(String fileId, ByteArrayOutputStream byteArrayOutputStream) {
+        File targetFile = buildFilePathForWrite(fileId, Constants.CONTENT);
+        try (OutputStream fos = new FileOutputStream(targetFile)) {
+            byteArrayOutputStream.writeTo(fos);
+        } catch (IOException e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    public void persistContent(String fileId, Path path) {
+        if (path == null || !path.toFile().exists()) {
+            return;
+        }
+        try (InputStream stream = new FileInputStream(path.toFile())) {
+            File targetFile = buildFilePathForWrite(fileId, Constants.CONTENT);
+            FileUtil.writeFromStream(stream, targetFile);
+        } catch (IOException e) {
+            throw new FilePersistenceException("Failed to write content for fileId: " + fileId, e);
+        }
+    }
+
     private void writeContentToFile(String fileId, String subDir, byte[] content) {
         if (content == null) {
             return;
         }
         try (ByteArrayInputStream stream = new ByteArrayInputStream(content)) {
-            File targetFile = buildFilePathForWrite(fileId, subDir);
-            FileUtil.writeFromStream(stream, targetFile);
+            writeContentToFile(fileId, subDir, stream);
         } catch (IOException e) {
             throw new FilePersistenceException("Failed to write content for fileId: " + fileId, e);
         }
+    }
+
+    private void writeContentToFile(String fileId, String subDir, ByteArrayInputStream byteArrayInputStream) {
+        File targetFile = buildFilePathForWrite(fileId, subDir);
+        FileUtil.writeFromStream(byteArrayInputStream, targetFile);
     }
 
     private void writeContentToFile(String fileId, String subDir, String content) {
