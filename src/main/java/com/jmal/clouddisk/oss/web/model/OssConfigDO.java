@@ -1,9 +1,14 @@
 package com.jmal.clouddisk.oss.web.model;
 
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.PlatformOSS;
-import lombok.Data;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
@@ -13,11 +18,13 @@ import org.springframework.security.crypto.encrypt.TextEncryptor;
  * @Description oss 配置
  * @date 2023/4/4 16:08
  */
-@Data
+@Getter
+@Setter
 @Document(collection = OssConfigService.COLLECTION_NAME)
 @CompoundIndex(name = "userId_1", def = "{'userId': 1}")
-public class OssConfigDO implements Reflective {
-    private String id;
+@Entity
+@Table(name = "oss_config")
+public class OssConfigDO extends AuditableEntity implements Reflective {
     private PlatformOSS platform;
     private String folderName;
     private String endpoint;
@@ -25,6 +32,7 @@ public class OssConfigDO implements Reflective {
     private String secretKey;
     private String region;
     private String bucket;
+    @Column(length = 24)
     private String userId;
 
     public OssConfigDTO toOssConfigDTO(TextEncryptor textEncryptor) {
