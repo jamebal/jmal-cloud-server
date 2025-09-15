@@ -64,49 +64,54 @@ public class FilePropsDO implements Reflective {
         this.shareBase = fileDocument.getShareBase();
         this.subShare = fileDocument.getSubShare();
         this.shareId = fileDocument.getShareId();
-
         this.shareProps = new ShareProperties(fileDocument);
         this.props = new OtherProperties(fileDocument);
-        if (fileDocument.getTags() != null) {
-            this.tags.addAll(fileDocument.getTags());
-        }
+        this.tags = fileDocument.getTags();
     }
 
     public void toFileDocumentFragment(FileDocument fileDocument) {
-        fileDocument.setIsPublic(this.shareProps.getIsPublic());
-        fileDocument.setIsShare(this.shareProps.getIsShare());
-        fileDocument.setIsPrivacy(this.shareProps.getIsPrivacy());
-        fileDocument.setExtractionCode(this.shareProps.getExtractionCode());
-        fileDocument.setExpiresAt(this.shareProps.getExpiresAt());
-        fileDocument.setOperationPermissionList(this.shareProps.getOperationPermissionList());
-        fileDocument.setOssPlatform(this.props.getOssPlatform());
-        fileDocument.setMusic(this.props.getMusic());
-        fileDocument.setExif(this.props.getExif());
-        fileDocument.setVideo(this.props.getVideo());
-        fileDocument.setW(this.props.getW());
-        fileDocument.setH(this.props.getH());
-        fileDocument.setMediaCover(this.props.getMediaCover());
-        fileDocument.setM3u8(this.props.getM3u8());
-        fileDocument.setVtt(this.props.getVtt());
-        fileDocument.setShowCover(this.props.getShowCover());
-        fileDocument.setRemark(this.props.getRemark());
+        if (this.shareProps != null) {
+            fileDocument.setIsPublic(this.shareProps.getIsPublic());
+            fileDocument.setIsShare(this.shareProps.getIsShare());
+            fileDocument.setIsPrivacy(this.shareProps.getIsPrivacy());
+            fileDocument.setExtractionCode(this.shareProps.getExtractionCode());
+            fileDocument.setExpiresAt(this.shareProps.getExpiresAt());
+            fileDocument.setOperationPermissionList(this.shareProps.getOperationPermissionList());
+        }
+        if (this.props != null) {
+            fileDocument.setOssPlatform(this.props.getOssPlatform());
+            fileDocument.setMusic(this.props.getMusic());
+            fileDocument.setExif(this.props.getExif());
+            fileDocument.setVideo(this.props.getVideo());
+            fileDocument.setW(this.props.getW());
+            fileDocument.setH(this.props.getH());
+            fileDocument.setMediaCover(this.props.getMediaCover());
+            fileDocument.setM3u8(this.props.getM3u8());
+            fileDocument.setVtt(this.props.getVtt());
+            fileDocument.setShowCover(this.props.getShowCover());
+            fileDocument.setRemark(this.props.getRemark());
+        }
     }
 
     public void toFileIntroVOFragment(FileIntroVO fileDocument) {
-        fileDocument.setIsShare(this.shareProps.getIsShare());
-        fileDocument.setIsPrivacy(this.shareProps.getIsPrivacy());
-        fileDocument.setExpiresAt(this.shareProps.getExpiresAt());
-        fileDocument.setOperationPermissionList(this.shareProps.getOperationPermissionList());
-        fileDocument.setOssPlatform(this.props.getOssPlatform());
-        fileDocument.setMusic(this.props.getMusic());
-        fileDocument.setExif(this.props.getExif());
-        fileDocument.setVideo(this.props.getVideo());
-        fileDocument.setW(this.props.getW());
-        fileDocument.setH(this.props.getH());
-        fileDocument.setMediaCover(this.props.getMediaCover());
-        fileDocument.setM3u8(this.props.getM3u8());
-        fileDocument.setShowCover(this.props.getShowCover());
-        fileDocument.setRemark(this.props.getRemark());
+        if (this.shareProps != null) {
+            fileDocument.setIsShare(this.shareProps.getIsShare());
+            fileDocument.setIsPrivacy(this.shareProps.getIsPrivacy());
+            fileDocument.setExpiresAt(this.shareProps.getExpiresAt());
+            fileDocument.setOperationPermissionList(this.shareProps.getOperationPermissionList());
+        }
+        if (this.props != null) {
+            fileDocument.setOssPlatform(this.props.getOssPlatform());
+            fileDocument.setMusic(this.props.getMusic());
+            fileDocument.setExif(this.props.getExif());
+            fileDocument.setVideo(this.props.getVideo());
+            fileDocument.setW(this.props.getW());
+            fileDocument.setH(this.props.getH());
+            fileDocument.setMediaCover(this.props.getMediaCover());
+            fileDocument.setM3u8(this.props.getM3u8());
+            fileDocument.setShowCover(this.props.getShowCover());
+            fileDocument.setRemark(this.props.getRemark());
+        }
     }
 
 

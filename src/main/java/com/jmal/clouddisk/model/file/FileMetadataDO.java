@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
-import com.jmal.clouddisk.model.Tag;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,8 +13,6 @@ import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * FileDocument 文件模型
@@ -156,10 +153,7 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
             fileDocument.setShareId(this.props.getShareId());
             fileDocument.setShareBase(this.props.getShareBase());
             fileDocument.setSubShare(this.props.getSubShare());
-            if (this.props.getTags() != null) {
-                List<Tag> tagList = new ArrayList<>(this.props.getTags());
-                fileDocument.setTags(tagList);
-            }
+            fileDocument.setTags(this.props.getTags());
             this.props.toFileDocumentFragment(fileDocument);
         }
         fileDocument.setDelete(this.getDelTag());
@@ -191,10 +185,7 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
         if (this.props != null) {
             fileDocument.setShareBase(this.props.getShareBase());
             fileDocument.setSubShare(this.props.getSubShare());
-            if (this.props.getTags() != null) {
-                List<Tag> tagList = new ArrayList<>(this.props.getTags());
-                fileDocument.setTags(tagList);
-            }
+            fileDocument.setTags(this.props.getTags());
 
             this.props.toFileIntroVOFragment(fileDocument);
         }

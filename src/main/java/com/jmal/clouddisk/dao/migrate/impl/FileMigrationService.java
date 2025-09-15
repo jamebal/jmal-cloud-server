@@ -106,7 +106,7 @@ public class FileMigrationService implements IMigrationService {
                     result.addProcessed(mongoDataList.size());
                     log.debug("[{}] 成功批量保存 {} 条记录", getName(), mongoDataList.size());
                 } catch (Exception e) {
-                    log.warn("[{}] 批量保存失败，将回退到逐条保存。错误: {}", getName(), e.getMessage());
+                    log.warn("[{}] 批量保存失败。错误: {}", getName(), e.getMessage());
                 }
 
                 skip += batchSize;
