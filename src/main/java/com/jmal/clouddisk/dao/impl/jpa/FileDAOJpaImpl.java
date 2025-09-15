@@ -303,7 +303,7 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public long updateModifyFile(String id, long length, String md5, String suffix, String fileContentType, LocalDateTime updateTime) {
-        CompletableFuture<Long> future = writeService.submit(new FileOperation.UpdateModifyFile(
+        CompletableFuture<Integer> future = writeService.submit(new FileOperation.UpdateModifyFile(
                 id,
                 length,
                 md5,
@@ -629,6 +629,15 @@ public class FileDAOJpaImpl implements IFileDAO {
     public String upsertByUserIdAndPathAndName(String userId, String path, String name, FileDocument fileDocument) {
         try {
             return writeService.submit(new FileOperation.UpsertByUserIdAndPathAndName(userId, path, name, fileDocument)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public void setUpdateDateById(String fileId, LocalDateTime time) {
+        try {
+            writeService.submit(new FileOperation.SetUpdateDateById(fileId, time)).get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new CommonException(e.getMessage());
         }

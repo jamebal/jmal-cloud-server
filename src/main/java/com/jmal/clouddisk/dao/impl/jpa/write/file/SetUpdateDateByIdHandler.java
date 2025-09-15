@@ -7,15 +7,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Component("fileUpdateModifyFileHandler")
+@Component("fileSetUpdateDateByIdHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class UpdateModifyFileHandler implements IDataOperationHandler<FileOperation.UpdateModifyFile, Integer> {
+public class SetUpdateDateByIdHandler implements IDataOperationHandler<FileOperation.SetUpdateDateById, Void> {
 
     private final FileMetadataRepository repo;
 
     @Override
-    public Integer handle(FileOperation.UpdateModifyFile op) {
-        return repo.updateModifyFile(op.id(), op.length(), op.md5(), op.suffix(), op.fileContentType(), op.updateTime());
+    public Void handle(FileOperation.SetUpdateDateById op) {
+        repo.setUpdateDateById(op.fileId(), op.time());
+        return null;
     }
 }

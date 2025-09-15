@@ -51,7 +51,7 @@ public final class FileOperation {
     public record SetSubShareFormShareBase(String userId, String pathPrefixForLike) implements IFileOperation<Integer> {}
 
     public record UpdateModifyFile(String id, long length, String md5, String suffix, String fileContentType,
-                                   LocalDateTime updateTime) implements IFileOperation<Long> {}
+                                   LocalDateTime updateTime) implements IFileOperation<Integer> {}
 
     public record UnsetDelTag(String fileId) implements IFileOperation<Integer> {}
 
@@ -71,4 +71,5 @@ public final class FileOperation {
 
     public record UpsertByUserIdAndPathAndName(String userId, String path, String name, FileDocument fileDocument) implements IFileOperation<String> {}
 
+    public record SetUpdateDateById(String fileId, LocalDateTime time) implements IFileOperation<Void> {}
 }

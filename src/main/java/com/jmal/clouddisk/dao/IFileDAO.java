@@ -151,4 +151,6 @@ public interface IFileDAO {
     void updateFileByUserIdAndPathAndName(String userId, String path, String name, UpdateFile updateFile);
 
     String upsertByUserIdAndPathAndName(String userId, String relativePath, String fileName, FileDocument fileDocument);
+
+    void setUpdateDateById(String fileId, LocalDateTime time);
 }

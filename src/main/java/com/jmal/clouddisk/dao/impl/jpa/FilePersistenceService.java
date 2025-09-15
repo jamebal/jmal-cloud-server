@@ -55,6 +55,19 @@ public class FilePersistenceService {
         writeContentToFile(trash.getId(), Constants.CONTENT, trash.getContent());
     }
 
+    public void persistFileHistory(String fileId, InputStream inputStream, String fileHistoryId) {
+        writeContentToFile(fileId, inputStream, fileHistoryId);
+    }
+
+    public InputStream getFileHistoryInputStream(String fileId, String fileHistoryId) {
+        return readContent(fileId, Constants.HISTORY, fileHistoryId)
+                .orElseThrow(() -> new FilePersistenceException("File history not found for fileId: " + fileId + ", historyId: " + fileHistoryId, null));
+    }
+
+    public void deleteFileHistory(String fileId, String fileHistoryId) {
+        deleteContents(fileId, Constants.HISTORY, fileHistoryId);
+    }
+
     public void readContents(FileMetadataDO fileMetadataDO, FileDocument fileDocument) {
         if (fileMetadataDO == null || fileMetadataDO.getId() == null || fileDocument == null) {
             return;
@@ -107,9 +120,21 @@ public class FilePersistenceService {
      * @return 文件的输入流 (InputStream)。如果文件不存在，返回 Optional.empty()
      */
     public Optional<InputStream> readContent(String fileId, String subDir) {
+        return readContent(fileId, subDir, fileId);
+    }
+
+    /**
+     * 根据文件ID和内容类型读取文件内容
+     *
+     * @param fileId 文件ID
+     * @param subDir 内容类型 (content, contentText, html)
+     * @param filename 具体的文件名
+     * @return 文件的输入流 (InputStream)。如果文件不存在，返回 Optional.empty()
+     */
+    public Optional<InputStream> readContent(String fileId, String subDir, String filename) {
         try {
             // 1. 复用完全相同的路径构建逻辑
-            File fileToRead = buildFilePathForRead(fileId, subDir);
+            File fileToRead = buildFilePathForRead(fileId, subDir, filename);
 
             // 2. 检查文件是否存在且可读
             if (fileToRead.exists() && fileToRead.isFile() && fileToRead.canRead()) {
@@ -151,11 +176,21 @@ public class FilePersistenceService {
      * @param fileId 要删除的文件ID
      */
     public void deleteContents(String fileId, String subDir) {
+        deleteContents(fileId, subDir, fileId);
+    }
+
+    /**
+     * 删除与一个文件ID相关的所有内容和目录
+     * @param fileId 要删除的文件ID
+     * @param subDir 子目录
+     * @param filename 具体的文件名
+     */
+    public void deleteContents(String fileId, String subDir, String filename) {
         if (CharSequenceUtil.isBlank(fileId) || fileId.length() < 4) {
             throw new CommonException("Attempted to delete contents with an invalid fileId: " + fileId);
         }
         // 构建最内层的、包含所有内容的父目录
-        File file = buildFilePathForRead(fileId, subDir);
+        File file = buildFilePathForRead(fileId, subDir, filename);
         FileUtil.del(file);
     }
 
@@ -191,9 +226,14 @@ public class FilePersistenceService {
         }
     }
 
-    private void writeContentToFile(String fileId, String subDir, ByteArrayInputStream byteArrayInputStream) {
+    private void writeContentToFile(String fileId, String subDir, InputStream inputStream) {
         File targetFile = buildFilePathForWrite(fileId, subDir);
-        FileUtil.writeFromStream(byteArrayInputStream, targetFile);
+        FileUtil.writeFromStream(inputStream, targetFile);
+    }
+
+    private void writeContentToFile(String fileId, InputStream inputStream, String filename) {
+        File targetFile = buildFilePathForWrite(fileId, Constants.HISTORY, filename);
+        FileUtil.writeFromStream(inputStream, targetFile);
     }
 
     private void writeContentToFile(String fileId, String subDir, String content) {
@@ -205,8 +245,13 @@ public class FilePersistenceService {
 
     /**
      * 为读取操作创建一个独立的路径构建方法
+     *
+     * @param fileId   文件ID
+     * @param subDir   子目录 (content, contentText, html, 等等)
+     * @param filename 具体的文件名
+     * @return 构建好的文件路径
      */
-    private File buildFilePathForRead(String fileId, String subDir) {
+    private File buildFilePathForRead(String fileId, String subDir, String filename) {
         if (CharSequenceUtil.isBlank(fileId) || fileId.length() < 4) {
             throw new IllegalArgumentException("File ID is invalid for sharding: " + fileId);
         }
@@ -219,18 +264,35 @@ public class FilePersistenceService {
                 getLevel2(fileId),     // 第二级分片目录
                 fileId,     // 文件ID作为最内层目录
                 subDir,     // 功能子目录
-                fileId      // 最终的文件名
+                filename      // 最终的文件名
         ).toFile();
     }
 
+    /**
+     * 为删除操作创建一个独立的路径构建方法
+     *
+     * @param fileId 文件ID
+     * @return 构建好的文件路径
+     */
     private Path buildFilePathForDelete(String fileId) {
+        return buildFilePathForDelete(fileId, fileId);
+    }
+
+    /**
+     * 为删除操作创建一个独立的路径构建方法
+     *
+     * @param fileId   文件ID
+     * @param filename 具体的文件名
+     * @return 构建好的文件路径
+     */
+    private Path buildFilePathForDelete(String fileId, String filename) {
         return Paths.get(
                 fileProperties.getRootDir(),
                 fileProperties.getJmalcloudDBDir(),
                 "data",
                 getLevel1(fileId),
                 getLevel2(fileId),
-                fileId
+                filename
         );
     }
 
@@ -243,7 +305,11 @@ public class FilePersistenceService {
     }
 
     private File buildFilePathForWrite(String fileId, String subDir) {
-        File file = buildFilePathForRead(fileId, subDir); // 复用路径构建逻辑
+        return buildFilePathForWrite(fileId, subDir, fileId);
+    }
+
+    private File buildFilePathForWrite(String fileId, String subDir, String filename) {
+        File file = buildFilePathForRead(fileId, subDir, filename); // 复用路径构建逻辑
         File parentDir = file.getParentFile();
         if (!parentDir.exists()) {
             FileUtil.mkdir(parentDir);

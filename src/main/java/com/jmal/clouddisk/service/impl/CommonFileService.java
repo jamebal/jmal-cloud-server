@@ -71,8 +71,6 @@ public class CommonFileService {
 
     public static final String TRASH_COLLECTION_NAME = "trash";
 
-    // private final MongoTemplate mongoTemplate;
-
     private final IFileDAO fileDAO;
 
     private final IShareDAO shareDAO;
@@ -406,18 +404,6 @@ public class CommonFileService {
         Path absolutePath = file.toPath();
         Path relativePath = absolutePath.subpath(Paths.get(rooDir, username).getNameCount(), absolutePath.getNameCount());
         return MyWebdavServlet.PATH_DELIMITER + relativePath + (file.isDirectory() ? MyWebdavServlet.PATH_DELIMITER : "");
-    }
-
-    public static void setPage(Integer pageSize, Integer pageIndex, Query query) {
-        if (pageSize == null) {
-            pageSize = 10;
-        }
-        if (pageIndex == null) {
-            pageIndex = 1;
-        }
-        long skip = (long) (pageIndex - 1) * pageSize;
-        query.skip(skip);
-        query.limit(pageSize);
     }
 
     /**

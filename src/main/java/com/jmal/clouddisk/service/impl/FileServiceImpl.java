@@ -129,8 +129,6 @@ public class FileServiceImpl implements IFileService {
 
     private final LogService logService;
 
-    // private final MongoTemplate mongoTemplate;
-
     @Override
     public ResponseResult<Object> listFiles(UploadApiParamDTO upload) throws CommonException {
         ResponseResult<Object> result = ResultUtil.genResult();

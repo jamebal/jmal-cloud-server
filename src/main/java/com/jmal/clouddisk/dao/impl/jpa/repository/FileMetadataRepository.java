@@ -123,9 +123,9 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, St
             "f.updateDate = :updateDate " +
             "WHERE f.id = :id"
     )
-    long updateModifyFile(
+    int updateModifyFile(
             String id,
-            Long size,
+            Long length,
             String md5,
             String suffix,
             String contentType,
@@ -245,5 +245,7 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, St
             "AND f.path = :path")
     List<FileBaseAllDTO> findAllFileBaseAllDTOByUserIdAndPath(String userId, String path);
 
-
+    @Modifying
+    @Query("UPDATE FileMetadataDO f SET f.updateDate = :time WHERE f.id = :id")
+    void setUpdateDateById(String id, LocalDateTime time);
 }

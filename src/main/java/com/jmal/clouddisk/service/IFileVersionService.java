@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.service;
 
-import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.GridFSBO;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.office.OfficeHistory;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -10,8 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 
 /**
@@ -44,13 +42,6 @@ public interface IFileVersionService {
      * @param fileId fileId
      */
     void saveFileVersion(AbstractOssObject abstractOssObject, String fileId);
-
-    /**
-     * 读取文件
-     * @param id GridFSId
-     * @return InputStream
-     */
-    InputStream readFileVersion(String id) throws IOException;
 
     /**
      * 列出文件的历史版本

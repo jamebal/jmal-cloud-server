@@ -632,6 +632,15 @@ public class FileDAOImpl implements IFileDAO {
         return null;
     }
 
+    @Override
+    public void setUpdateDateById(String fileId, LocalDateTime time) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        Update update = new Update();
+        update.set(Constants.UPDATE_DATE, time);
+        mongoTemplate.updateFirst(query, update, FileDocument.class);
+    }
+
     @NotNull
     private Query getUpdateSharePropsQuery(FileDocument file, boolean isFolder) {
         Query query = new Query();
