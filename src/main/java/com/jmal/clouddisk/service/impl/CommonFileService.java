@@ -21,7 +21,6 @@ import com.jmal.clouddisk.model.file.ShareProperties;
 import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
-import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.MyFileUtils;
 import com.jmal.clouddisk.util.TimeUntils;
@@ -30,8 +29,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -116,18 +113,6 @@ public class CommonFileService {
             }
         }
         return currentDirectory;
-    }
-
-    public static Query getQuery(FileDocument fileDocument) {
-        return getQuery(fileDocument.getUserId(), fileDocument.getPath(), fileDocument.getName());
-    }
-
-    public static Query getQuery(String userId, String path, String name) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        query.addCriteria(Criteria.where(Constants.PATH_FIELD).is(path));
-        query.addCriteria(Criteria.where(Constants.FILENAME_FIELD).is(name));
-        return query;
     }
 
     public FileDocument getFileDocumentById(String fileId, boolean excludeContent) {

@@ -12,8 +12,6 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Paths;
@@ -31,12 +29,6 @@ public class FileService {
         if (CharSequenceUtil.isBlank(fileId) || Constants.REGION_DEFAULT.equals(fileId)) {
             return null;
         }
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(fileId));
-        if (excludeContent) {
-            query.fields().exclude(Constants.CONTENT);
-        }
-        query.fields().exclude(Constants.CONTENT_TEXT);
         return fileQueryDAO.findBaseFileDocumentById(fileId, excludeContent);
     }
 

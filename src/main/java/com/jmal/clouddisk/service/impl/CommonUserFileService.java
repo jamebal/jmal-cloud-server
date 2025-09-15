@@ -37,7 +37,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -521,11 +520,6 @@ public class CommonUserFileService {
      * @return FileDocument
      */
     public FileDocument getFileDocumentByPath(String path, String filename, String userId, boolean excludeContent) {
-        Query query = CommonFileService.getQuery(userId, path, filename);
-        if (excludeContent) {
-            query.fields().exclude(Constants.CONTENT);
-        }
-        query.fields().exclude(Constants.CONTENT_TEXT);
         if (excludeContent) {
             return fileDAO.findByUserIdAndPathAndName(userId, path, filename, Constants.CONTENT, Constants.CONTENT_DRAFT, Constants.CONTENT_DRAFT, Constants.CONTENT_HTML);
         } else {

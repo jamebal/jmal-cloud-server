@@ -53,8 +53,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mozilla.universalchardet.ReaderFactory;
 import org.springframework.data.domain.Page;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -74,8 +72,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-
-import static com.jmal.clouddisk.service.IUserService.USER_ID;
 
 
 /**
@@ -613,8 +609,6 @@ public class FileServiceImpl implements IFileService {
         //设置压缩包的名字
         setDownloadName(request, response, filename + ".zip");
 
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(fileIdList));
         List<FileBaseDTO> fileDocuments = fileDAO.findAllFileBaseDTOByIdIn(fileIdList);
         // 选中的文件
         List<Path> selectFileList = fileDocuments.stream().map(fileDoc -> {
@@ -661,8 +655,6 @@ public class FileServiceImpl implements IFileService {
         if (ossPath != null) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "暂不支持打包下载");
         }
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(fileId));
         FileBaseDTO fileDocument = fileDAO.findFileBaseDTOById(fileId);
         if (fileDocument == null) {
             return null;
@@ -1032,9 +1024,6 @@ public class FileServiceImpl implements IFileService {
         if (!path.endsWith(File.separator)) {
             path += File.separator;
         }
-        Query query = new Query();
-        query.addCriteria(Criteria.where("path").is(path));
-        query.addCriteria(Criteria.where(USER_ID).is(userId));
         List<FileBaseAllDTO> fileDocuments = fileDAO.findAllFileBaseAllDTOByUserIdAndPath(userId, path);
         return fileDocuments.stream().map(fileDocument -> {
             FileIntroVO fileIntroVO = new FileIntroVO();
@@ -1965,8 +1954,6 @@ public class FileServiceImpl implements IFileService {
 
     public void restoreFile(String username, List<String> trashFileIdList, LogOperation logOperation) {
         trashFileIdList.forEach(trashFileId -> {
-            Query query = new Query();
-            query.addCriteria(Criteria.where("_id").is(trashFileId));
             FileDocument trashFileDocument = trashDAO.findAndRemoveById(trashFileId);
             if (trashFileDocument != null) {
                 if (BooleanUtil.isTrue(trashFileDocument.getMove())) {

@@ -121,7 +121,7 @@ public class FileDAOImpl implements IFileDAO {
     public String upsertMountFile(FileDocument fileDocument) {
         Update update = MongoUtil.getUpdate(fileDocument);
         update.set("remark", "挂载 mount");
-        Query query = CommonFileService.getQuery(fileDocument);
+        Query query = getQuery(fileDocument.getUserId(), fileDocument.getPath(), fileDocument.getName());
         UpdateResult updateResult = mongoTemplate.upsert(query, update, FileDocument.class);
         if (updateResult.getUpsertedId() != null) {
             return updateResult.getUpsertedId().asString().getValue();
@@ -291,20 +291,20 @@ public class FileDAOImpl implements IFileDAO {
 
     @Override
     public FileDocument findByUserIdAndPathAndName(String userId, String path, String name, String... excludeFields) {
-        Query query = CommonFileService.getQuery(userId, path, name);
+        Query query = getQuery(userId, path, name);
         query.fields().exclude(excludeFields);
         return mongoTemplate.findOne(query, FileDocument.class);
     }
 
     @Override
     public FileBaseDTO findFileBaseDTOByUserIdAndPathAndName(String userId, String relativePath, String fileName) {
-        Query query = CommonFileService.getQuery(userId, relativePath, fileName);
+        Query query = getQuery(userId, relativePath, fileName);
         return mongoTemplate.findOne(query, FileBaseDTO.class, CommonFileService.COLLECTION_NAME);
     }
 
     @Override
     public String findIdByUserIdAndPathAndName(String userId, String path, String name) {
-        Query query = CommonFileService.getQuery(userId, path, name);
+        Query query = getQuery(userId, path, name);
         query.fields().include("_id");
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
         return fileDocument != null ? fileDocument.getId() : null;
@@ -374,7 +374,7 @@ public class FileDAOImpl implements IFileDAO {
 
     @Override
     public void removeByUserIdAndPathAndName(String userId, String path, String name) {
-        Query query = CommonFileService.getQuery(userId, path, name);
+        Query query = getQuery(userId, path, name);
         mongoTemplate.remove(query, FileDocument.class);
     }
 
@@ -592,7 +592,7 @@ public class FileDAOImpl implements IFileDAO {
 
     @Override
     public void updateFileByUserIdAndPathAndName(String userId, String path, String name, UpdateFile updateFile) {
-        Query query = CommonFileService.getQuery(userId, path, name);
+        Query query = getQuery(userId, path, name);
         Update update = new Update();
         if (updateFile.getExif() != null) {
             update.set("exif", updateFile.getExif());
@@ -624,7 +624,7 @@ public class FileDAOImpl implements IFileDAO {
     public String upsertByUserIdAndPathAndName(String userId, String relativePath, String fileName, FileDocument fileDocument) {
         Update update = MongoUtil.getUpdate(fileDocument);
         update.set("_id", new ObjectId(fileDocument.getId()));
-        Query query = CommonFileService.getQuery(userId, relativePath, fileName);
+        Query query = getQuery(userId, relativePath, fileName);
         UpdateResult updateResult = mongoTemplate.upsert(query, update, FileDocument.class);
         if (updateResult.getUpsertedId() != null) {
             return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
@@ -651,6 +651,14 @@ public class FileDAOImpl implements IFileDAO {
             query = new Query();
             query.addCriteria(Criteria.where("_id").is(file.getId()));
         }
+        return query;
+    }
+
+    public static Query getQuery(String userId, String path, String name) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        query.addCriteria(Criteria.where(Constants.PATH_FIELD).is(path));
+        query.addCriteria(Criteria.where(Constants.FILENAME_FIELD).is(name));
         return query;
     }
 
