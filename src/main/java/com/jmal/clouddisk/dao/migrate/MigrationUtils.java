@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.dao.migrate;
 
-import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import com.jmal.clouddisk.config.jpa.Identifiable;
 import com.jmal.clouddisk.dao.DataSourceType;
 import com.jmal.clouddisk.dao.impl.jpa.IWriteCommon;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +30,7 @@ public final class MigrationUtils {
      * @param <T>           实体类型，必须继承自 AuditableEntity 以便在日志中获取ID。
      * @return MigrationResult 包含迁移的详细结果。
      */
-    public static <T extends AuditableEntity> MigrationResult migrateMongoToJpa(
+    public static <T extends Identifiable> MigrationResult migrateMongoToJpa(
             DataSourceType dataSourceType,
             String migrationName,
             MongoTemplate mongoTemplate,

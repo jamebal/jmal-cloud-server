@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
-import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import com.jmal.clouddisk.config.jpa.AuditablePerformanceEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,31 +25,26 @@ import java.time.LocalDateTime;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Entity
-@Table(name = "files"
-        // indexes = {
-        //         @Index(name = "idx_name", columnList = "name"),
-        //         @Index(name = "idx_size", columnList = "size"),
-        //         @Index(name = "idx_update_date", columnList = "updateDate"),
-        //         @Index(name = "idx_path_name", columnList = "path, name"),
-        //         @Index(name = "idx_user_md5_path", columnList = "userId, path"),
-        //         @Index(name = "idx_user_path", columnList = "userId, path"),
-        //         @Index(name = "idx_user_path_name", columnList = "userId, path, name"),
-        //         @Index(name = "idx_user_is_folder_path", columnList = "userId, isFolder, path"),
-        //         @Index(name = "idx_user_is_folder_path_name", columnList = "userId, isFolder, path, name"),
-        //         @Index(name = "idx_user_is_folder", columnList = "userId, isFolder"),
-        //         @Index(name = "idx_user_is_favorite", columnList = "userId, isFavorite"),
-        //         @Index(name = "idx_user_content_type", columnList = "userId, contentType"),
-        //         @Index(name = "idx_process_marked_folders", columnList = "needsEtagUpdate, isFolder, lastEtagUpdateRequestAt")
-        // }
-)
-public class FileMetadataDO extends AuditableEntity implements Reflective {
+@Table(name = "files",
+        indexes = {
+                @Index(name = "idx_name", columnList = "name"),
+                @Index(name = "idx_size", columnList = "size"),
+                @Index(name = "idx_update_date", columnList = "updateDate"),
+                @Index(name = "idx_upload_date", columnList = "uploadDate"),
+                @Index(name = "idx_user_id", columnList = "userId"),
+                @Index(name = "idx_path", columnList = "path"),
 
-    @Column(length = 24)
+        }
+)
+public class FileMetadataDO extends AuditablePerformanceEntity implements Reflective {
+
+    @Column(length = 24, nullable = false)
     private String userId;
     private Boolean isFolder;
+    @Column(nullable = false)
     private String name;
-    @Column(length = 64)
     private String md5;
+    @Column(nullable = false)
     private String path;
     private Long size;
     @Column(length = 128)
@@ -59,9 +54,11 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
     private Boolean isFavorite;
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(nullable = false)
     private LocalDateTime uploadDate;
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(nullable = false)
     private LocalDateTime updateDate;
     @Column(length = 24)
     private String mountFileId;
@@ -75,14 +72,17 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
     /**
      * 用于存储不同类型的二进制数据，如缩略图、文本内容, 使用文件存储, contentPath就是文件路径 ${rootDir}/${dbDir}/data/${fileId}/content/${fileId}
      */
+    @Column(nullable = false)
     private Boolean hasContent;
     /**
      * ${rootDir}/${dbDir}/data/${fileId}/contentText/${fileId}
      */
+    @Column(nullable = false)
     private Boolean hasContentText;
     /**
      * ${rootDir}/${dbDir}/data/${fileId}/html/${fileId}
      */
+    @Column(nullable = false)
     private Boolean hasHtml;
 
     private Integer LuceneIndex;
@@ -96,7 +96,7 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
     private String lastEtagUpdateError;
 
     public FileMetadataDO(FileDocument fileDocument) {
-        this.id = fileDocument.getId();
+        this.setId(fileDocument.getId());
         this.covert(fileDocument);
         this.props = new FilePropsDO(fileDocument);
     }
@@ -137,7 +137,7 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
 
     public FileDocument toFileDocument() {
         FileDocument fileDocument = new FileDocument();
-        fileDocument.setId(this.id);
+        fileDocument.setId(this.getId());
         fileDocument.setIsFolder(this.isFolder);
         fileDocument.setName(this.name);
         fileDocument.setMd5(this.md5);
@@ -170,7 +170,7 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
 
     public FileIntroVO toFileIntroVO() {
         FileIntroVO fileDocument = new FileIntroVO();
-        fileDocument.setId(this.id);
+        fileDocument.setId(this.getId());
         fileDocument.setIsFolder(this.isFolder);
         fileDocument.setName(this.name);
         fileDocument.setMd5(this.md5);
@@ -196,7 +196,7 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
     }
 
     public FileMetadataDO(String id, String path, String name, String userId) {
-        this.id = id;
+        setId(id);
         this.path = path;
         this.name = name;
         this.userId = userId;
@@ -205,7 +205,7 @@ public class FileMetadataDO extends AuditableEntity implements Reflective {
     @Override
     public int hashCode() {
         int hash = 8;
-        hash = 89 * hash + (this.id != null ? this.id.hashCode() : 0);
+        hash = 89 * hash + (this.getId() != null ? this.getId().hashCode() : 0);
         return hash;
     }
 

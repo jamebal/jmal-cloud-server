@@ -18,7 +18,7 @@ public class DeleteByIdHandler implements IDataOperationHandler<FileOperation.De
 
     @Override
     public Void handle(FileOperation.DeleteById op) {
-        repo.deleteById(op.fileId());
+        repo.deleteByPublicId(op.fileId());
         filePersistenceService.deleteContents(op.fileId());
         return null;
     }

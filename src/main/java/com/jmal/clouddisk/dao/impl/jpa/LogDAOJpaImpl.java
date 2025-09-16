@@ -7,6 +7,7 @@ import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.LogRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
 import com.jmal.clouddisk.dao.impl.jpa.write.log.LogDataOperation;
+import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.LogOperationDTO;
 import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Repository
@@ -38,12 +40,16 @@ public class LogDAOJpaImpl implements ILogDAO, IWriteCommon<LogOperation> {
 
     @Override
     public void AsyncSaveAll(Iterable<LogOperation> entities) {
-        writeService.submit(new LogDataOperation.CreateAll(entities) );
+        try {
+            writeService.submit(new LogDataOperation.CreateAll(entities)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
     }
 
     @Override
     public void save(LogOperation logOperation) {
-        writeService.submit(new LogDataOperation.Create(logOperation) );
+        writeService.submit(new LogDataOperation.Create(logOperation));
     }
 
     @Override

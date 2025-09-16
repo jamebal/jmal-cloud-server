@@ -59,7 +59,6 @@ public class ConsumerDO extends ConsumerBase implements Reflective {
     @Schema(name = "quota", title = "默认配额, 10G", example = "10")
     Integer quota;
     @Schema(name = "takeUpSpace", title = "已使用的空间")
-
     Long takeUpSpace;
     @Schema(name = "creator", title = "网盘创建者", hidden = true)
     Boolean creator;

@@ -16,6 +16,7 @@ public class CreateAllFileMetadataHandler implements IDataOperationHandler<FileO
 
     @Override
     public Integer handle(FileOperation.CreateAllFileMetadata op) {
+        // 修改publicId 为 objectId
         return repo.saveAll(op.entities()).size();
     }
 }

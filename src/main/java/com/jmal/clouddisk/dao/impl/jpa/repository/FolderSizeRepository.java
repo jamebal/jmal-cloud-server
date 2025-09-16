@@ -19,7 +19,7 @@ public interface FolderSizeRepository extends JpaRepository<FileMetadataDO, Stri
     /**
      * 查询需要更新大小的文件夹（size字段为null）
      */
-    @Query("SELECT new FileMetadataDO(f.id, f.path, f.name, f.userId) FROM FileMetadataDO f WHERE f.isFolder = true AND f.size IS NULL")
+    @Query("SELECT new FileMetadataDO(f.publicId, f.path, f.name, f.userId) FROM FileMetadataDO f WHERE f.isFolder = true AND f.size IS NULL")
     List<FileMetadataDO> findFoldersWithoutSize(Pageable pageable);
 
     /**

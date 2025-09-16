@@ -2,7 +2,7 @@ package com.jmal.clouddisk.model.file;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
-import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import com.jmal.clouddisk.config.jpa.AuditablePerformanceEntity;
 import com.jmal.clouddisk.model.Trash;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import jakarta.persistence.Column;
@@ -27,13 +27,12 @@ import java.time.LocalDateTime;
 @Entity
 @NoArgsConstructor
 @Table(name = CommonFileService.TRASH_COLLECTION_NAME)
-public class TrashEntityDO extends AuditableEntity implements Reflective {
+public class TrashEntityDO extends AuditablePerformanceEntity implements Reflective {
 
     @Column(length = 24)
     private String userId;
     private Boolean isFolder;
     private String name;
-    @Column(length = 64)
     private String md5;
     private String path;
     private Long size;
@@ -66,12 +65,12 @@ public class TrashEntityDO extends AuditableEntity implements Reflective {
     @Override
     public int hashCode() {
         int hash = 17;
-        hash = 89 * hash + (this.id != null ? this.id.hashCode() : 0);
+        hash = 89 * hash + (this.getId() != null ? this.getId().hashCode() : 0);
         return hash;
     }
 
     public TrashEntityDO(Trash trash) {
-        this.id = trash.getId();
+        setId(trash.getId());
         this.userId = trash.getUserId();
         this.isFolder = trash.getIsFolder();
         this.name = trash.getName();

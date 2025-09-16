@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.model.rbac;
 
 import com.jmal.clouddisk.config.Reflective;
-import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import com.jmal.clouddisk.config.jpa.AuditableTimeEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
@@ -14,7 +14,7 @@ import lombok.ToString;
 @ToString
 @RequiredArgsConstructor
 @MappedSuperclass
-public class ConsumerBase extends AuditableEntity implements Reflective {
+public class ConsumerBase extends AuditableTimeEntity implements Reflective {
 
     @Schema(name = "password", title = "密码", example = "123456")
     String password;

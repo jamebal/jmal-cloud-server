@@ -16,39 +16,40 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @Conditional(RelationalDataSourceCondition.class)
 public interface FilePropsRepository extends JpaRepository<FilePropsDO, String> , JpaSpecificationExecutor<FilePropsDO> {
 
-    @Query("UPDATE FilePropsDO p SET p.shareBase = true WHERE p.id = :fileId")
+    @Query("UPDATE FilePropsDO p SET p.shareBase = true WHERE p.publicId = :fileId")
     @Modifying
     void setSubShareByFileId(String fileId);
 
-    @Query("UPDATE FilePropsDO p SET p.shareBase = null WHERE p.id = :fileId")
+    @Query("UPDATE FilePropsDO p SET p.shareBase = null WHERE p.publicId = :fileId")
     @Modifying
     void unsetSubShareByFileId(String fileId);
 
-    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseTagsDTO(p.id, p.tags) FROM FilePropsDO p WHERE p.id IN :fileIds")
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseTagsDTO(p.publicId, p.tags) FROM FilePropsDO p WHERE p.publicId IN :fileIds")
     List<FileBaseTagsDTO> findTagsByIdIn(@Param("fileIds") Collection<String> fileIds);
 
     /**
      * 只更新tags字段
      */
     @Modifying
-    @Query("UPDATE FilePropsDO p SET p.tags = :tags WHERE p.id = :id")
+    @Query("UPDATE FilePropsDO p SET p.tags = :tags WHERE p.publicId = :id")
     void updateTagsForFile(@Param("id") String fileId, @Param("tags") List<Tag> tags);
 
     @Modifying
-    @Query("UPDATE FilePropsDO p SET p.tags = :tags WHERE p.id IN :fileIds")
+    @Query("UPDATE FilePropsDO p SET p.tags = :tags WHERE p.publicId IN :fileIds")
     void updateTagsForFiles(@Param("fileIds") List<String> fileIds, @Param("tags") List<Tag> tags);
 
     @Modifying
     @Query("UPDATE FilePropsDO fp SET " +
             "fp.shareId = :shareId, " +
             "fp.shareProps = :shareProps " +
-            "WHERE fp.id IN (" +
-            "    SELECT fm.id FROM FileMetadataDO fm " +
+            "WHERE fp.publicId IN (" +
+            "    SELECT fm.publicId FROM FileMetadataDO fm " +
             "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix%" +
             ")")
     int updateFolderShareProps(
@@ -61,16 +62,16 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, String> 
     @Query("UPDATE FilePropsDO fp SET " +
             "fp.shareId = :shareId, " +
             "fp.shareProps = :shareProps " +
-            "WHERE fp.id IN (" +
-            "    SELECT fm.id FROM FileMetadataDO fm " +
-            "    WHERE fm.id = :fileId" +
+            "WHERE fp.publicId IN (" +
+            "    SELECT fm.publicId FROM FileMetadataDO fm " +
+            "    WHERE fm.publicId = :fileId" +
             ")")
     int updateFileShareProps(
             @Param("fileId") String fileId,
             @Param("shareId") String shareId,
             @Param("shareProps") ShareProperties shareProps);
 
-    @Query("update FilePropsDO f set f.shareBase = :shareBase where f.id = :id")
+    @Query("update FilePropsDO f set f.shareBase = :shareBase where f.publicId = :id")
     @Modifying
     int updateShareBaseById(Boolean shareBase, String id);
 
@@ -79,8 +80,8 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, String> 
             "fp.shareId = null, " +
             "fp.subShare = null, " +
             "fp.shareProps = :shareProps " +
-            "WHERE fp.id IN (" +
-            "    SELECT fm.id FROM FileMetadataDO fm " +
+            "WHERE fp.publicId IN (" +
+            "    SELECT fm.publicId FROM FileMetadataDO fm " +
             "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix%" +
             ")")
     int unsetFolderShareProps(@Param("userId") String userId,
@@ -92,32 +93,34 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, String> 
             "fp.shareId = null, " +
             "fp.subShare = null, " +
             "fp.shareProps = :shareProps " +
-            "WHERE fp.id = :fileId")
+            "WHERE fp.publicId = :fileId")
     int unsetFileShareProps(@Param("fileId") String fileId, @Param("shareProps") ShareProperties shareProps);
 
     @Modifying
     @Query("UPDATE FilePropsDO fp SET " +
             "fp.shareBase = null, " +
             "fp.subShare = true " +
-            "WHERE fp.id IN (" +
-            "    SELECT fm.id FROM FileMetadataDO fm " +
+            "WHERE fp.publicId IN (" +
+            "    SELECT fm.publicId FROM FileMetadataDO fm " +
             "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix% " +
             "    AND fp.shareBase = true" +
             ")")
     int setSubShareFormShareBase(@Param("userId") String userId,
                                  @Param("pathPrefix") String pathPrefix);
 
-    @Query("SELECT p.shareProps FROM FilePropsDO p WHERE p.id = :id")
+    @Query("SELECT p.shareProps FROM FilePropsDO p WHERE p.publicId = :id")
     ShareProperties findSharePropsById(String id);
 
     @Modifying
     @Query("UPDATE FilePropsDO fp SET " +
             "fp.props = :props " +
-            "WHERE fp.id = :fileId")
+            "WHERE fp.publicId = :fileId")
     void setPropsById(String fileId, OtherProperties props);
 
-    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseTagsDTO(fp.id, fp.tags) " +
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseTagsDTO(fp.publicId, fp.tags) " +
             "FROM FilePropsDO fp " +
-            "WHERE fp.id IN :tagIds")
+            "WHERE fp.publicId IN :tagIds")
     List<FileBaseTagsDTO> findAllFileBaseTagsDTOByTagIdIn(List<String> attr0);
+
+    Optional<FilePropsDO> findByPublicId(String publicId);
 }

@@ -17,7 +17,7 @@ public final class FileOperation {
     public record Default() implements IFileOperation<Void> {}
 
     public record CreateFileMetadata(FileMetadataDO entity) implements IFileOperation<FileMetadataDO> {}
-    public record CreateAllFileMetadata(Iterable<FileMetadataDO> entities) implements IFileOperation<Integer> {}
+    public record CreateAllFileMetadata(List<FileMetadataDO> entities) implements IFileOperation<Integer> {}
     public record DeleteById(String fileId) implements IFileOperation<Void> {}
 
     public record SetShareBaseOperation(String fileId) implements IFileOperation<Void> {}

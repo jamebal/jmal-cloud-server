@@ -16,7 +16,7 @@ public class DeleteByIdHandler implements IDataOperationHandler<TrashOperation.D
 
     @Override
     public Void handle(TrashOperation.DeleteById op) {
-        repo.deleteById(op.trashFileId());
+        repo.deleteByPublicId(op.trashFileId());
         return null;
     }
 }

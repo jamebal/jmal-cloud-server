@@ -65,7 +65,7 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public void updateIsPublicById(String fileId) {
-        FilePropsDO props = filePropsRepository.findById(fileId)
+        FilePropsDO props = filePropsRepository.findByPublicId(fileId)
                 .orElseThrow(() -> new EntityNotFoundException("FilePropsDO not found with id: " + fileId));
 
         if (props.getShareProps() == null) {
@@ -116,7 +116,7 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public boolean existsById(String id) {
-        return fileMetadataRepository.existsById(id);
+        return fileMetadataRepository.existsByPublicId(id);
     }
 
     @Override
@@ -157,7 +157,7 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public List<String> findByIdIn(List<String> fileIdList) {
-        return fileMetadataRepository.findByIdIn(fileIdList);
+        return fileMetadataRepository.findByPublicIdIn(fileIdList);
     }
 
     @Override
@@ -429,7 +429,7 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public List<FileDocument> findAllAndRemoveByIdIn(List<String> fileIds) {
-        List<FileMetadataDO> fileMetadataDOList = fileMetadataRepository.findAllById(fileIds);
+        List<FileMetadataDO> fileMetadataDOList = fileMetadataRepository.findAllByIdIn(fileIds);
         if (fileMetadataDOList.isEmpty()) {
             return List.of();
         }
@@ -473,7 +473,7 @@ public class FileDAOJpaImpl implements IFileDAO {
     @Override
     public void setMediaCoverIsTrue(String id) {
         try {
-            FilePropsDO filePropsDO = filePropsRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("FilePropsDO not found with id: " + id));
+            FilePropsDO filePropsDO = filePropsRepository.findByPublicId(id).orElseThrow(() -> new EntityNotFoundException("FilePropsDO not found with id: " + id));
             OtherProperties otherProperties = filePropsDO.getProps();
             otherProperties.setMediaCover(true);
             writeService.submit(new FileOperation.SetMediaCoverIsTrue(id, otherProperties)).get(10, TimeUnit.SECONDS);

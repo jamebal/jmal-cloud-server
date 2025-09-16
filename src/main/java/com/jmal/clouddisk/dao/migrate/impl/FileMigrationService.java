@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -94,16 +95,19 @@ public class FileMigrationService implements IMigrationService {
                         return fileMetadataDO;
                     }).toList();
 
-                    // 直接批量保存到 SQLite，无需转换
-                    writeService.submit(new FileOperation.CreateAllFileMetadata(fileEntityDOList));
+                    try {
+                        int count = writeService.submit(new FileOperation.CreateAllFileMetadata(fileEntityDOList)).get(10, TimeUnit.SECONDS);
+                        result.addSuccess(count);
+                        result.addProcessed(count);
+                    } catch (Exception e) {
+                        log.warn("[{}] 批量保存文件元数据失败。错误: {}", getName(), e.getMessage());
+                    }
 
                     // 保存文章
                     if (!articleDOList.isEmpty()) {
                         writeService.submit(new ArticleOperation.CreateAll(articleDOList));
                         articlesCount += articleDOList.size();
                     }
-                    result.addSuccess(mongoDataList.size());
-                    result.addProcessed(mongoDataList.size());
                     log.debug("[{}] 成功批量保存 {} 条记录", getName(), mongoDataList.size());
                 } catch (Exception e) {
                     log.warn("[{}] 批量保存失败。错误: {}", getName(), e.getMessage());

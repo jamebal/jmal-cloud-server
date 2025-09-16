@@ -3,10 +3,10 @@ package com.jmal.clouddisk.model.file;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.config.jpa.AuditablePerformanceEntity;
 import com.jmal.clouddisk.model.Tag;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,11 +28,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Entity
 @Table(name = "file_props")
-public class FilePropsDO implements Reflective {
-
-    @Id
-    @Column(length = 24)
-    private String id;
+public class FilePropsDO extends AuditablePerformanceEntity implements Reflective {
 
     private Boolean shareBase;
     private Boolean subShare;
@@ -52,7 +48,7 @@ public class FilePropsDO implements Reflective {
     private List<Tag> tags;
 
     public FilePropsDO(FileDocument fileDocument) {
-        this.id = fileDocument.getId();
+        setId(fileDocument.getId());
         cover(fileDocument);
     }
 
@@ -118,7 +114,7 @@ public class FilePropsDO implements Reflective {
     @Override
     public int hashCode() {
         int hash = 9;
-        hash = 99 * hash + (this.id != null ? this.id.hashCode() : 0);
+        hash = 99 * hash + (this.getId() != null ? this.getId().hashCode() : 0);
         return hash;
     }
 

@@ -23,7 +23,7 @@ public interface ArticleRepository extends JpaRepository<ArticleDO, String> {
     @Query("SELECT a FROM ArticleDO a " +
             "JOIN FETCH a.fileMetadata fm " +
             "JOIN FETCH a.fileMetadata.props fp " +
-            "WHERE a.fileMetadata.id = :fileId")
+            "WHERE a.fileMetadata.publicId = :fileId")
     Optional<ArticleDO> findMarkdownByFileId(@Param("fileId") String fileId);
 
     @Query("SELECT new ArticleDO(a.id, a.alonePage, a.slug, f.updateDate) FROM ArticleDO a " +
@@ -33,7 +33,7 @@ public interface ArticleRepository extends JpaRepository<ArticleDO, String> {
 
 
     @Query("SELECT new com.jmal.clouddisk.model.ArchivesVO(" +
-            "fm.id, " +
+            "fm.publicId, " +
             "fm.name, " +
             "a.slug," +
             "fm.uploadDate" +

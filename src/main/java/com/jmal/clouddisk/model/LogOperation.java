@@ -3,7 +3,7 @@ package com.jmal.clouddisk.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
-import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import com.jmal.clouddisk.config.jpa.AuditablePerformanceEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -42,7 +42,7 @@ import java.time.LocalDateTime;
 @CompoundIndex(name = "fileUserId_type_1", def = "{'fileUserId': 1, 'type': 1}")
 @Entity
 @Table(name = "log")
-public class LogOperation extends AuditableEntity implements Reflective {
+public class LogOperation extends AuditablePerformanceEntity implements Reflective {
     /***
      * 账号
      */
@@ -64,7 +64,7 @@ public class LogOperation extends AuditableEntity implements Reflective {
     /***
      * 操作功能
      */
-    @Column(length = 32)
+    @Column(length = 96)
     private String operationFun;
     /***
      * 请求地址

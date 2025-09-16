@@ -399,22 +399,22 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
 
     private void articleVOFilePersistence(ArticleDO articleDO, ArticleVO articleVO) {
         if (BooleanUtil.isTrue(articleDO.getFileMetadata().getHasHtml())) {
-            filePersistenceService.readContent(articleDO.getFileMetadata().id, Constants.CONTENT_HTML).ifPresent(inputStream -> {
+            filePersistenceService.readContent(articleDO.getFileMetadata().getId(), Constants.CONTENT_HTML).ifPresent(inputStream -> {
                 try (inputStream) {
                     String contentText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                     articleVO.setHtml(contentText);
                 } catch (Exception e) {
-                    log.error("读取 html 失败, fileId: {}", articleDO.getFileMetadata().id, e);
+                    log.error("读取 html 失败, fileId: {}", articleDO.getFileMetadata().getId(), e);
                 }
             });
         }
         if (BooleanUtil.isTrue(articleDO.getFileMetadata().getHasContentText())) {
-            filePersistenceService.readContent(articleDO.getFileMetadata().id, Constants.CONTENT_TEXT).ifPresent(inputStream -> {
+            filePersistenceService.readContent(articleDO.getFileMetadata().getId(), Constants.CONTENT_TEXT).ifPresent(inputStream -> {
                 try (inputStream) {
                     String contentText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                     articleVO.setContentText(contentText);
                 } catch (Exception e) {
-                    log.error("读取 contentText 失败, fileId: {}", articleDO.getFileMetadata().id, e);
+                    log.error("读取 contentText 失败, fileId: {}", articleDO.getFileMetadata().getId(), e);
                 }
             });
         }
