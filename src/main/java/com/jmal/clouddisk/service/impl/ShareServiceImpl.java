@@ -26,7 +26,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -364,7 +363,7 @@ public class ShareServiceImpl implements IShareService {
         FileDocument fileDocument = new FileDocument();
         fileDocument.setIsFolder(true);
         fileDocument.setName(fromFileDocument.getName());
-        fileDocument.setPath(toFileDocument.getPath() + toFileDocument.getName() + File.separator);
+        fileDocument.setPath(toFileDocument.getPath() + toFileDocument.getName() + "/");
         fileDocument.setUserId(upload.getUserId());
         fileDocument.setIsFavorite(false);
         fileDocument.setUploadDate(fromFileDocument.getUploadDate());

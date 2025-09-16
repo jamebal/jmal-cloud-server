@@ -18,7 +18,7 @@ public abstract class AuditablePerformanceEntity implements Identifiable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private Long p_id;
+    private Long primaryId;
 
     @Column(name = "public_id", unique = true, nullable = false)
     private String publicId;

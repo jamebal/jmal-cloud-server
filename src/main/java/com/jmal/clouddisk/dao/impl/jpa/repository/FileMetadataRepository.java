@@ -69,9 +69,8 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, St
             "AND f.mountFileId = :mountFileId ")
     Optional<String> findMountFilePath(String userId, String mountFileId);
 
-    @Query("SELECT f.publicId FROM FileMetadataDO f " +
-            "WHERE f.publicId in :ids ")
-    List<String> findByIdIn(Collection<String> ids);
+    @Query("SELECT f.publicId FROM FileMetadataDO f WHERE f.publicId IN :publicIds")
+    List<String> findByPublicIdIn(Collection<String> publicIds);
 
     void removeByMountFileId(String mountFileId);
 
@@ -249,10 +248,9 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, St
     @Query("UPDATE FileMetadataDO f SET f.updateDate = :time WHERE f.publicId = :id")
     void setUpdateDateById(String id, LocalDateTime time);
 
-    @Query("SELECT f.publicId FROM FileMetadataDO f WHERE f.publicId IN :publicIds")
-    List<String> findByPublicIdIn(Collection<String> publicIds);
-
     boolean existsByPublicId(String publicId);
 
     void deleteByPublicId(String publicId);
+
+    Optional<FileMetadataDO> findByPublicId(String publicId);
 }

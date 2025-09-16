@@ -121,10 +121,8 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public String save(FileDocument file) {
-        FileMetadataDO fileMetadataDO = new FileMetadataDO(file);
-        filePersistenceService.persistContents(file);
         try {
-            FileMetadataDO saved = writeService.submit(new FileOperation.CreateFileMetadata(fileMetadataDO)).get(10, TimeUnit.SECONDS);
+            FileMetadataDO saved = writeService.submit(new FileOperation.CreateFileMetadata(file)).get(10, TimeUnit.SECONDS);
             return saved.getId();
         } catch (Exception e) {
             throw new CommonException(e.getMessage());
@@ -134,8 +132,7 @@ public class FileDAOJpaImpl implements IFileDAO {
     @Override
     public String upsertMountFile(FileDocument fileDocument) {
         fileDocument.setRemark("挂载 mount");
-        FileMetadataDO fileMetadataDO = fileMetadataRepository.findByNameAndUserIdAndPath(fileDocument.getName(), fileDocument.getUserId(), fileDocument.getPath()).orElse(new FileMetadataDO(fileDocument));
-        CompletableFuture<FileMetadataDO> future = writeService.submit(new FileOperation.CreateFileMetadata(fileMetadataDO));
+        CompletableFuture<FileMetadataDO> future = writeService.submit(new FileOperation.CreateFileMetadata(fileDocument));
         try {
             FileMetadataDO file = future.get(10, TimeUnit.SECONDS);
             return file.getId();
