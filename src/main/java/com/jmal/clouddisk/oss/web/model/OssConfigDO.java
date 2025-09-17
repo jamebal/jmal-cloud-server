@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.oss.web.model;
 
 import com.jmal.clouddisk.config.Reflective;
-import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import com.jmal.clouddisk.config.jpa.AuditableTimeEntity;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.PlatformOSS;
 import jakarta.persistence.Column;
@@ -24,7 +24,7 @@ import org.springframework.security.crypto.encrypt.TextEncryptor;
 @CompoundIndex(name = "userId_1", def = "{'userId': 1}")
 @Entity
 @Table(name = "oss_config")
-public class OssConfigDO extends AuditableEntity implements Reflective {
+public class OssConfigDO extends AuditableTimeEntity implements Reflective {
     private PlatformOSS platform;
     private String folderName;
     private String endpoint;

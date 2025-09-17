@@ -3,6 +3,7 @@ package com.jmal.clouddisk.ocr;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jmal.clouddisk.dao.IOcrConfigDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.lucene.TaskProgressService;
@@ -10,10 +11,8 @@ import com.jmal.clouddisk.lucene.TaskType;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+
 import java.io.File;
 import java.io.Writer;
 import java.nio.file.Files;
@@ -32,7 +31,7 @@ public class OcrService {
 
     private final TaskProgressService taskProgressService;
 
-    private final MongoTemplate mongoTemplate;
+    private final IOcrConfigDAO ocrConfigDAO;
 
     // 初始设置为1个并发请求
     private final Semaphore semaphore = new Semaphore(1);
@@ -103,8 +102,8 @@ public class OcrService {
     }
 
     public OcrConfig getOcrConfig() {
-        return ocrConfigCache.get("ocrConfig", key -> {
-            OcrConfig config = mongoTemplate.findOne(new Query(), OcrConfig.class);
+        return ocrConfigCache.get("ocrConfig", _ -> {
+            OcrConfig config = ocrConfigDAO.findOcrConfig();
             if (config != null) {
                 setMaxConcurrentRequests(config.getMaxTasks());
                 return config;
@@ -113,34 +112,27 @@ public class OcrService {
         });
     }
 
-    private static Update getOcrConfigUpdate(OcrConfig config) {
-        Update update = new Update();
-        update.set("enable", config.getEnable());
-        update.set("maxTasks", config.getMaxTasks());
-        update.set("ocrEngine", config.getOcrEngine());
-        return update;
-    }
-
     /**
      * 设置Ocr配置
      *
      * @param config OcrConfig
      */
-    public long setOcrConfig(OcrConfig config) {
+    public synchronized long setOcrConfig(OcrConfig config) {
         if (config == null) {
             throw new CommonException(ExceptionType.PARAMETERS_VALUE);
         }
-        Query query = new Query();
-        OcrConfig ocrConfig = mongoTemplate.findOne(query, OcrConfig.class);
+        OcrConfig ocrConfig = ocrConfigDAO.findOcrConfig();
         if (ocrConfig == null) {
-            mongoTemplate.save(config);
+            ocrConfigDAO.save(config);
         } else {
-            Update update = getOcrConfigUpdate(config);
-            mongoTemplate.updateFirst(query, update, OcrConfig.class);
             if (!semaphore.hasQueuedThreads() && semaphore.availablePermits() == ocrConfig.getMaxTasks()) {
                 semaphore.drainPermits();
                 semaphore.release(config.getMaxTasks());
             }
+            ocrConfig.setEnable(config.getEnable());
+            ocrConfig.setMaxTasks(config.getMaxTasks());
+            ocrConfig.setOcrEngine(config.getOcrEngine());
+            ocrConfigDAO.save(ocrConfig);
         }
         ocrConfigCache.put("ocrConfig", config);
         return 0;
