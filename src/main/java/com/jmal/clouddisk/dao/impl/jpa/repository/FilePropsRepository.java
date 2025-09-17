@@ -20,7 +20,7 @@ import java.util.Optional;
 
 @Repository
 @Conditional(RelationalDataSourceCondition.class)
-public interface FilePropsRepository extends JpaRepository<FilePropsDO, String> , JpaSpecificationExecutor<FilePropsDO> {
+public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , JpaSpecificationExecutor<FilePropsDO> {
 
     @Query("UPDATE FilePropsDO p SET p.shareBase = true WHERE p.publicId = :fileId")
     @Modifying

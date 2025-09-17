@@ -11,10 +11,11 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @Conditional(RelationalDataSourceCondition.class)
-public interface TrashRepository extends JpaRepository<TrashEntityDO, String> {
+public interface TrashRepository extends JpaRepository<TrashEntityDO, Long> {
 
     /**
      * 计算用户在回收站中的文件总大小
@@ -31,4 +32,6 @@ public interface TrashRepository extends JpaRepository<TrashEntityDO, String> {
     Page<TrashEntityDO> findAllByHiddenIsFalse(Pageable pageable);
 
     void deleteByPublicId(String publicId);
+
+    Optional<TrashEntityDO> findByPublicId(String publicId);
 }

@@ -55,7 +55,7 @@ public class TrashDAOJpaImpl implements ITrashDAO {
 
     @Override
     public FileDocument findAndRemoveById(String trashFileId) {
-        TrashEntityDO trashEntityDO = trashRepository.findById(trashFileId).orElse(null);
+        TrashEntityDO trashEntityDO = trashRepository.findByPublicId(trashFileId).orElse(null);
         if (trashEntityDO != null) {
             try {
                 writeService.submit(new TrashOperation.DeleteById(trashFileId)).get(10, TimeUnit.SECONDS);

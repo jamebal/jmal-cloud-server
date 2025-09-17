@@ -353,7 +353,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         if (articleDO == null || BooleanUtil.isFalse(articleDO.getHasDraft())) {
             return;
         }
-        FileMetadataDO fileMetadataDO = fileMetadataRepository.findById(fileId).orElse(null);
+        FileMetadataDO fileMetadataDO = fileMetadataRepository.findByPublicId(fileId).orElse(null);
         if (fileMetadataDO == null) {
             return;
         }

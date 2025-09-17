@@ -20,7 +20,7 @@ import java.util.Optional;
 
 @Repository
 @Conditional(RelationalDataSourceCondition.class)
-public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, String> , JpaSpecificationExecutor<FileMetadataDO> {
+public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Long> , JpaSpecificationExecutor<FileMetadataDO> {
 
     @Query("SELECT f.publicId FROM FileMetadataDO f JOIN f.props p " +
             "WHERE f.userId = :userId " +
