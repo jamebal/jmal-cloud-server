@@ -1,19 +1,15 @@
 package com.jmal.clouddisk.office;
 
-import cn.hutool.core.codec.Base62;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.KeyUtil;
-import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.signers.JWTSigner;
 import cn.hutool.jwt.signers.JWTSignerUtil;
+import com.jmal.clouddisk.dao.IOfficeConfigDAO;
 import com.jmal.clouddisk.office.model.OfficeConfigDO;
 import com.jmal.clouddisk.office.model.OfficeConfigDTO;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -24,7 +20,9 @@ public class OfficeConfigService {
 
     public final static String VO_KEY = "****************";
 
-    private final MongoTemplate mongoTemplate;
+    private final IOfficeConfigDAO officeConfigDAO;
+
+    private final TextEncryptor textEncryptor;
 
     private volatile OfficeConfigDTO officeConfigDTO;
 
@@ -32,11 +30,11 @@ public class OfficeConfigService {
         if (officeConfigDTO == null) {
             synchronized (this) {
                 if (officeConfigDTO == null) {
-                    OfficeConfigDO officeConfigDO = mongoTemplate.findOne(new Query(), OfficeConfigDO.class);
+                    OfficeConfigDO officeConfigDO = officeConfigDAO.findOne();
                     if (officeConfigDO == null) {
                         officeConfigDTO = new OfficeConfigDTO();
                     } else {
-                        officeConfigDTO = officeConfigDO.toOfficeConfigCache();
+                        officeConfigDTO = officeConfigDO.toOfficeConfigCache(textEncryptor);
                     }
                 }
             }
@@ -68,18 +66,8 @@ public class OfficeConfigService {
     }
 
     public void setOfficeConfig(OfficeConfigDTO officeConfigDTO) {
-        OfficeConfigDO officeConfigDO = officeConfigDTO.toOfficeConfigDO();
-        Query query = new Query();
-        Update update = new Update()
-                .set("documentServer", officeConfigDO.getDocumentServer())
-                .set("callbackServer", officeConfigDO.getCallbackServer())
-                .set("tokenEnabled", officeConfigDO.getTokenEnabled())
-                .set("format", officeConfigDO.getFormat());
-        if (!VO_KEY.equals(officeConfigDTO.getSecret())) {
-            update.set("encrypted", officeConfigDO.getEncrypted());
-            update.set("key", officeConfigDO.getKey());
-        }
-        mongoTemplate.upsert(query, update, OfficeConfigDO.class);
+        OfficeConfigDO officeConfigDO = officeConfigDTO.toOfficeConfigDO(textEncryptor);
+        officeConfigDAO.upsert(officeConfigDO);
 
         // 重置缓存的密钥，使其在下次访问时重新加载
         synchronized (this) {
@@ -96,11 +84,5 @@ public class OfficeConfigService {
                 this.officeConfigDTO.setSecret(null);
             }
         }
-    }
-
-    public static String generateKey() {
-        byte[] keyBytes = KeyUtil.generateKey(SymmetricAlgorithm.AES.getValue(), 256).getEncoded();
-        String base62Key = Base62.encode(keyBytes);
-        return base62Key.length() > 32 ? base62Key.substring(0, 32) : base62Key;
     }
 }
