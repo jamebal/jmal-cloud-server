@@ -72,6 +72,7 @@ public class FileDAOJpaImpl implements IFileDAO {
             props.setShareProps(new ShareProperties());
         }
         props.getShareProps().setIsPublic(true);
+        writeService.submit(new FileOperation.UpdateSharePropsById(fileId, props.getShareProps()));
     }
 
     @Override
@@ -166,7 +167,7 @@ public class FileDAOJpaImpl implements IFileDAO {
         }
         List<String> foundIds = filesToDelete.stream().map(FileMetadataDO::getId).toList();
         removeAllByIdIn(foundIds);
-        return getFileDocuments(filesToDelete);
+        return getFileDocuments(filesToDelete, true);
     }
 
     @Override
@@ -263,10 +264,10 @@ public class FileDAOJpaImpl implements IFileDAO {
     }
 
     @Override
-    public FileDocument findByUserIdAndPathAndName(String userId, String path, String name, String... excludeFields) {
+    public FileDocument findByUserIdAndPathAndName(String userId, String path, String name, String... includeFields) {
         FileMetadataDO fileMetadataDO = fileMetadataRepository.findByNameAndUserIdAndPath(name, userId, path).orElse(null);
         boolean readContent = false;
-        for (String field : excludeFields) {
+        for (String field : includeFields) {
             if (Constants.CONTENT.equals(field)) {
                 readContent = true;
                 break;
@@ -277,13 +278,7 @@ public class FileDAOJpaImpl implements IFileDAO {
         }
         FileDocument fileDocument = fileMetadataDO.toFileDocument();
         if (readContent && fileMetadataDO.getHasContent()) {
-            filePersistenceService.readContent(fileMetadataDO.getId(), Constants.CONTENT).ifPresent(inputStream -> {
-                try (inputStream) {
-                    fileDocument.setContent(inputStream.readAllBytes());
-                } catch (Exception e) {
-                    log.error("读取 ArticleDO contentText 失败, fileId: {}", fileMetadataDO.getId(), e);
-                }
-            });
+            filePersistenceService.readContent(fileMetadataDO.getId(), Constants.CONTENT).ifPresent(fileDocument::setInputStream);
         }
         return fileDocument;
     }
@@ -364,7 +359,7 @@ public class FileDAOJpaImpl implements IFileDAO {
             return List.of();
         }
         removeAllByFolder(fileBaseDTO);
-        return getFileDocuments(fileMetadataDOList);
+        return getFileDocuments(fileMetadataDOList, true);
     }
 
     @Override
@@ -432,7 +427,7 @@ public class FileDAOJpaImpl implements IFileDAO {
         }
         List<String> foundIds = fileMetadataDOList.stream().map(FileMetadataDO::getId).toList();
         removeByIdIn(foundIds);
-        return getFileDocuments(fileMetadataDOList);
+        return getFileDocuments(fileMetadataDOList, true);
     }
 
     @Override
@@ -505,7 +500,7 @@ public class FileDAOJpaImpl implements IFileDAO {
         if (fileMetadataDOList.isEmpty()) {
             return List.of();
         }
-        return getFileDocuments(fileMetadataDOList);
+        return getFileDocuments(fileMetadataDOList, false);
     }
 
     @Override
@@ -640,10 +635,68 @@ public class FileDAOJpaImpl implements IFileDAO {
         }
     }
 
-    private List<FileDocument> getFileDocuments(List<FileMetadataDO> fileMetadataDOList) {
+    @Override
+    public List<FileDocument> findByPath(String path) {
+        List<FileMetadataDO> fileMetadataDOList = fileMetadataRepository.findAllByPath(path);
+        if (fileMetadataDOList.isEmpty()) {
+            return List.of();
+        }
+        return getFileDocuments(fileMetadataDOList, false);
+    }
+
+    @Override
+    public List<FileDocument> findAllAndRemoveByPathPrefix(String pathName) {
+        String pathPrefixForLike = pathName + "%";
+        List<FileMetadataDO> fileMetadataDOList = fileMetadataRepository.findAllByPathPrefix(pathPrefixForLike);
+        if (fileMetadataDOList.isEmpty()) {
+            return List.of();
+        }
+        List<String> foundIds = fileMetadataDOList.stream().map(FileMetadataDO::getId).toList();
+        removeByIdIn(foundIds);
+        return getFileDocuments(fileMetadataDOList, true);
+    }
+
+    @Override
+    public List<FileDocument> findAllAndRemoveByMountFileIdPrefix(String pathName) {
+        String pathPrefixForLike = pathName + "%";
+        List<FileMetadataDO> fileMetadataDOList = fileMetadataRepository.findAllByMountFileIdPrefix(pathPrefixForLike);
+        if (fileMetadataDOList.isEmpty()) {
+            return List.of();
+        }
+        List<String> foundIds = fileMetadataDOList.stream().map(FileMetadataDO::getId).toList();
+        removeByIdIn(foundIds);
+        return getFileDocuments(fileMetadataDOList, true);
+    }
+
+    @Override
+    public List<String> findIdsAndRemoveByIdPrefix(String pathName) {
+        String pathPrefixForLike = pathName + "%";
+        List<FileMetadataDO> fileMetadataDOList = fileMetadataRepository.findAllByIdPrefix(pathPrefixForLike);
+        if (fileMetadataDOList.isEmpty()) {
+            return List.of();
+        }
+        List<String> foundIds = fileMetadataDOList.stream().map(FileMetadataDO::getId).toList();
+        removeByIdIn(foundIds);
+        return foundIds;
+    }
+
+    @Override
+    public FileDocument findThumbnailContentInputStreamById(String id) {
+        boolean exists = fileMetadataRepository.existsByPublicId(id);
+        if (!exists) {
+            return null;
+        }
+        FileDocument fileDocument = new FileDocument();
+        filePersistenceService.readContent(id, Constants.CONTENT).ifPresent(fileDocument::setInputStream);
+        return fileDocument;
+    }
+
+    private List<FileDocument> getFileDocuments(List<FileMetadataDO> fileMetadataDOList, boolean readContent) {
         return fileMetadataDOList.stream().map(fileMetadataDO -> {
             FileDocument fileDocument = fileMetadataDO.toFileDocument();
-            filePersistenceService.readContents(fileMetadataDO, fileDocument);
+            if (readContent) {
+                filePersistenceService.readContents(fileMetadataDO, fileDocument);
+            }
             return fileDocument;
         }).toList();
     }

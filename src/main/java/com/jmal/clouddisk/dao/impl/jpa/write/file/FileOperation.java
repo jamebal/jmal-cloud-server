@@ -72,4 +72,6 @@ public final class FileOperation {
     public record UpsertByUserIdAndPathAndName(String userId, String path, String name, FileDocument fileDocument) implements IFileOperation<String> {}
 
     public record SetUpdateDateById(String fileId, LocalDateTime time) implements IFileOperation<Void> {}
+
+    public record UpdateSharePropsById(String fileId, ShareProperties shareProps) implements IFileOperation<Void> {}
 }

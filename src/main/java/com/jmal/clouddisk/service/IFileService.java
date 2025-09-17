@@ -7,11 +7,13 @@ import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.util.ResponseResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -178,7 +180,7 @@ public interface IFileService {
      * @param id fileId
      * @return FileDocument
      */
-    Optional<FileDocument> getMxweb(String id);
+    Optional<FileDocument> getMxweb(String id) throws FileNotFoundException;
 
     /**
      * 显示缩略图(媒体文件封面)
@@ -188,7 +190,8 @@ public interface IFileService {
      */
     Optional<FileDocument> coverOfMedia(String id, String username);
 
-    ResponseEntity<Object> getObjectResponseEntity(FileDocument fileDocument);
+    ResponseEntity<InputStreamResource> getImageInputStreamResourceEntity(FileDocument fileDocument);
+    ResponseEntity<InputStreamResource> getInputStreamResourceEntity(FileDocument fileDocument);
 
     /**
      * 分享里的打包下载

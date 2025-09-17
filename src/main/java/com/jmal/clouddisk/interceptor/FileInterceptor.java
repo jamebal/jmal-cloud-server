@@ -321,7 +321,7 @@ public class FileInterceptor implements HandlerInterceptor {
         }
         Path relativePath = uriPath.subpath(MIN_COUNT - 1, uriPath.getNameCount());
         InputStream inputStream;
-        if (fileDocument.getContent() == null) {
+        if (fileDocument.getInputStream() == null) {
             File file = Paths.get(fileProperties.getRootDir(), relativePath.toString()).toFile();
             if (!file.exists() || !file.isFile() || !file.canRead()) {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -329,7 +329,7 @@ public class FileInterceptor implements HandlerInterceptor {
             }
             inputStream = new FileInputStream(file);
         } else {
-            inputStream = new ByteArrayInputStream(fileDocument.getContent());
+            inputStream = fileDocument.getInputStream();
         }
         responseImageFileHeader(response, fileDocument.getName());
         try (ServletOutputStream outputStream = response.getOutputStream()) {

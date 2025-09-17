@@ -21,6 +21,7 @@ public class FileBaseDTO implements Reflective {
     String path;
     String userId;
     Boolean isFolder;
+    String username;
 
     public FileBaseDTO(String name, String path, String userId) {
         this.name = name;

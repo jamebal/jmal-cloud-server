@@ -156,4 +156,16 @@ public class ShareDAOImpl implements IShareDAO {
         mongoTemplate.updateMulti(query, update, ShareDO.class);
     }
 
+    @Override
+    public List<ShareDO> findAllAndRemoveByFileIdPrefix(String pathName) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(Constants.FILE_ID).regex("^" + pathName));
+        return mongoTemplate.findAllAndRemove(query, ShareDO.class);
+    }
+
+    @Override
+    public void saveAll(List<ShareDO> newShareDOList) {
+        mongoTemplate.insertAll(newShareDOList);
+    }
+
 }

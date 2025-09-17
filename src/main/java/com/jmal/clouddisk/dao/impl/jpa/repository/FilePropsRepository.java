@@ -98,6 +98,12 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, String> 
 
     @Modifying
     @Query("UPDATE FilePropsDO fp SET " +
+            "fp.shareProps = :shareProps " +
+            "WHERE fp.publicId = :fileId")
+    void updateSharePropsByFileId(@Param("fileId") String fileId, @Param("shareProps") ShareProperties shareProps);
+
+    @Modifying
+    @Query("UPDATE FilePropsDO fp SET " +
             "fp.shareBase = null, " +
             "fp.subShare = true " +
             "WHERE fp.publicId IN (" +

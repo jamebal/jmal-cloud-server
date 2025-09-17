@@ -33,6 +33,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -290,10 +291,24 @@ public class FileDAOImpl implements IFileDAO {
     }
 
     @Override
-    public FileDocument findByUserIdAndPathAndName(String userId, String path, String name, String... excludeFields) {
+    public FileDocument findByUserIdAndPathAndName(String userId, String path, String name, String... includeFields) {
         Query query = getQuery(userId, path, name);
-        query.fields().exclude(excludeFields);
-        return mongoTemplate.findOne(query, FileDocument.class);
+        query.fields().exclude(includeFields);
+        boolean readContent = false;
+        for (String field : includeFields) {
+            if (Constants.CONTENT.equals(field)) {
+                readContent = true;
+                break;
+            }
+        }
+        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
+        if (fileDocument == null) {
+            return null;
+        }
+        if (readContent && fileDocument.getContent() != null) {
+            fileDocument.setInputStream(new ByteArrayInputStream(fileDocument.getContent()));
+        }
+        return fileDocument;
     }
 
     @Override
@@ -639,6 +654,50 @@ public class FileDAOImpl implements IFileDAO {
         Update update = new Update();
         update.set(Constants.UPDATE_DATE, time);
         mongoTemplate.updateFirst(query, update, FileDocument.class);
+    }
+
+    @Override
+    public List<FileDocument> findByPath(String path) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("path").is(path));
+        query.fields().exclude(Constants.CONTENT, Constants.CONTENT_DRAFT, Constants.CONTENT_TEXT, Constants.CONTENT_HTML);
+        return mongoTemplate.find(query, FileDocument.class);
+    }
+
+    @Override
+    public List<FileDocument> findAllAndRemoveByPathPrefix(String pathName) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("path").regex("^" + pathName));
+        return mongoTemplate.findAllAndRemove(query, FileDocument.class);
+    }
+
+    @Override
+    public List<FileDocument> findAllAndRemoveByMountFileIdPrefix(String pathName) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("mountFileId").regex("^" + pathName));
+        return mongoTemplate.findAllAndRemove(query, FileDocument.class);
+    }
+
+    @Override
+    public List<String> findIdsAndRemoveByIdPrefix(String pathName) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").regex("^" + pathName));
+        query.fields().include("_id");
+        List<FileDocument> list = mongoTemplate.findAllAndRemove(query, FileDocument.class);
+        return list.stream().map(FileDocument::getId).toList();
+    }
+
+    @Override
+    public FileDocument findThumbnailContentInputStreamById(String id) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(id));
+        query.fields().include(Constants.CONTENT);
+        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
+        if (fileDocument == null || fileDocument.getContent() == null) {
+            return null;
+        }
+        fileDocument.setInputStream(new ByteArrayInputStream(fileDocument.getContent()));
+        return fileDocument;
     }
 
     @NotNull

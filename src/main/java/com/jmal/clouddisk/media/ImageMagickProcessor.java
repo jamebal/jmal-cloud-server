@@ -146,7 +146,7 @@ public class ImageMagickProcessor {
 
     /**
      * 使用 ImageMagick 替换原有的 imageCrop 方法。
-     * 根据给定参数对图片进行缩放和质量调整，并返回 JPG 格式的字节数组。
+     * 根据给定参数对图片进行缩放和质量调整，并返回 png 格式的字节数组。
      *
      * @param srcFile 源文件
      * @param q       剪裁后的质量 (字符串 "0.0" 到 "1.0")

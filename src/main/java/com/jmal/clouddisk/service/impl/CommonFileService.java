@@ -29,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -84,17 +85,23 @@ public class CommonFileService {
 
     protected static final Set<String> FILE_PATH_LOCK = new CopyOnWriteArraySet<>();
 
-    public ResponseEntity<Object> getObjectResponseEntity(FileDocument fileDocument) {
-        if (fileDocument != null) {
+    public ResponseEntity<InputStreamResource> getImageInputStreamResourceEntity(FileDocument fileDocument) {
+        return getInputStreamResourceEntity(fileDocument, fileDocument.getContentType());
+    }
+
+    public ResponseEntity<InputStreamResource> getInputStreamResourceEntity(FileDocument fileDocument, String contentType) {
+        if (fileDocument != null && fileDocument.getInputStream() != null) {
+            if (CharSequenceUtil.isBlank(contentType)) {
+                contentType = "application/octet-stream";
+            }
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
+                    .header(HttpHeaders.CONTENT_TYPE, contentType)
                     .header(HttpHeaders.CONNECTION, "close")
-                    .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent() != null ? fileDocument.getContent().length : 0))
                     .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
                     .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
-                    .body(fileDocument.getContent());
+                    .body(new InputStreamResource(fileDocument.getInputStream()));
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 

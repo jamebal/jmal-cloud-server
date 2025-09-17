@@ -60,7 +60,6 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Column(nullable = false)
     private LocalDateTime updateDate;
-    @Column(length = 24)
     private String mountFileId;
     private String ossFolder;
 

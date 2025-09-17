@@ -6,7 +6,9 @@ import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.EditTagDTO;
+import com.jmal.clouddisk.model.LogOperation;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.oss.web.WebOssCommonService;
@@ -26,6 +28,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -33,6 +36,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -251,29 +255,29 @@ public class FileController {
     @GetMapping("/view/mxweb/{fileId}")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> getMxweb(@PathVariable String fileId) {
+    public ResponseEntity<InputStreamResource> getMxweb(@PathVariable String fileId) throws FileNotFoundException {
         Optional<FileDocument> file = fileService.getMxweb(fileId);
-        return file.map(fileService::getObjectResponseEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+        return file.map(fileService::getInputStreamResourceEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     @Operation(summary = "显示缩略图")
     @GetMapping("/view/thumbnail")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> thumbnail(@RequestParam String id, Boolean showCover) {
+    public ResponseEntity<InputStreamResource> thumbnail(@RequestParam String id, Boolean showCover) {
         String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
         if (ossPath != null) {
             return webOssService.thumbnail(ossPath, id);
         }
         Optional<FileDocument> file = fileService.thumbnail(id, showCover);
-        return file.map(fileService::getObjectResponseEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+        return file.map(fileService::getImageInputStreamResourceEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     @Operation(summary = "显示缩略图")
     @GetMapping("/view/thumbnail/user/{username}")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> thumbnailByUsername(@PathVariable String username, Boolean showCover) {
+    public ResponseEntity<InputStreamResource> thumbnailByUsername(@PathVariable String username, Boolean showCover) {
         String avatar = userService.getAvatarByUsername(username);
         return thumbnail(avatar, showCover);
     }
@@ -282,7 +286,7 @@ public class FileController {
     @GetMapping("/view/thumbnail/{filename}")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> thumbnailName(@RequestParam String id, Boolean showCover) {
+    public ResponseEntity<InputStreamResource> thumbnailName(@RequestParam String id, Boolean showCover) {
         return thumbnail(id, showCover);
     }
 
@@ -290,10 +294,10 @@ public class FileController {
     @GetMapping("/view/cover")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> coverOfMedia(String id) {
+    public ResponseEntity<InputStreamResource> coverOfMedia(String id) {
         ResultUtil.checkParamIsNull(id);
         Optional<FileDocument> file = fileService.coverOfMedia(id, null);
-        return file.map(fileService::getObjectResponseEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+        return file.map(fileService::getImageInputStreamResourceEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     @Operation(summary = "收藏文件或文件夹")

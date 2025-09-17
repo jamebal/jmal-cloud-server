@@ -75,7 +75,7 @@ public class FilePersistenceService {
 
         if (BooleanUtil.isTrue(fileMetadataDO.getHasContent())) {
             readContent(fileDocument.getId(), Constants.CONTENT).ifPresent(inputStream -> {
-                try {
+                try (inputStream) {
                     fileDocument.setContent(inputStream.readAllBytes());
                 } catch (IOException e) {
                     throw new FilePersistenceException("Failed to read content for fileId: " + fileDocument.getId(), e);

@@ -1,14 +1,11 @@
 package com.jmal.clouddisk.lucene;
 
+import com.jmal.clouddisk.config.jpa.DataSourceProperties;
+import com.jmal.clouddisk.dao.DataSourceType;
+import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.model.file.FileDocument;
-import com.jmal.clouddisk.service.Constants;
 import lombok.RequiredArgsConstructor;
-import org.bson.types.ObjectId;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -19,7 +16,9 @@ public class CoverFileService {
 
     private final ImageMagickProcessor imageMagickProcessor;
 
-    private final MongoTemplate mongoTemplate;
+    private final IFileDAO fileDAO;
+
+    private final DataSourceProperties dataSourceProperties;
 
     /**
      * 更新文件封面
@@ -31,15 +30,13 @@ public class CoverFileService {
         if (coverFile == null || !coverFile.exists()) {
             return;
         }
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(new ObjectId(fileId)));
         FileDocument fileDocument = new FileDocument();
         fileDocument.setId(fileId);
-        Update update = new Update();
         imageMagickProcessor.generateThumbnail(coverFile, fileDocument);
-        update.set("showCover", true);
-        update.set(Constants.CONTENT, fileDocument.getContent());
-        mongoTemplate.updateFirst(query, update, FileDocument.class);
+        if (dataSourceProperties.getType() == DataSourceType.mongodb) {
+            fileDAO.setContent(fileId, fileDocument.getContent());
+        }
+        fileDAO.setMediaCoverIsTrue(fileId);
     }
 
 }

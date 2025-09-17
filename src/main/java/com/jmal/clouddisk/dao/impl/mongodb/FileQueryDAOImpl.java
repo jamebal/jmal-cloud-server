@@ -26,6 +26,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -97,7 +98,14 @@ public class FileQueryDAOImpl implements IFileQueryDAO {
         if (excludeContent) {
             query.fields().exclude(Constants.CONTENT);
         }
-        return mongoTemplate.findOne(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
+        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
+        if (fileDocument == null) {
+            return null;
+        }
+        if (!excludeContent && fileDocument.getContent() != null) {
+            fileDocument.setInputStream(new ByteArrayInputStream(fileDocument.getContent()));
+        }
+        return fileDocument;
     }
 
     /***

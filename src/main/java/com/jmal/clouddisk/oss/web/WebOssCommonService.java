@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.oss.web;
 
+import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.oss.BaseOssService;
@@ -12,8 +13,7 @@ import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.service.impl.MessageService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
+import com.oracle.svm.core.annotate.Inject;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -28,20 +28,20 @@ import java.time.LocalDateTime;
 @Service
 public class WebOssCommonService {
 
-    @Autowired
-    MongoTemplate mongoTemplate;
-
-    @Autowired
+    @Inject
     CommonUserService userService;
 
-    @Autowired
+    @Inject
     CommonUserFileService commonUserFileService;
 
-    @Autowired
+    @Inject
     MessageService messageService;
 
-    @Autowired
+    @Inject
     CommonFileService commonFileService;
+
+    @Inject
+    IFileDAO fileDAO;
 
     public void notifyCreateFile(String username, String objectName, String ossRootFolderName) {
         FileIntroVO fileIntroVO = new FileIntroVO();
@@ -114,7 +114,7 @@ public class WebOssCommonService {
         }
         String rootName = getOssRootFolderName(ossPath);
         commonUserFileService.checkShareBase(fileDocument, getPath(objectName, rootName));
-        mongoTemplate.save(fileDocument);
+        fileDAO.save(fileDocument);
     }
 
 }

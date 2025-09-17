@@ -18,7 +18,7 @@ public class DeleteAllByIdInBatchHandler implements IDataOperationHandler<FileOp
 
     @Override
     public Void handle(FileOperation.DeleteAllByIdInBatch op) {
-        repo.deleteAllByIdInBatch(op.fileIdList());
+        repo.deleteAllByPublicIdIn(op.fileIdList());
         filePersistenceService.deleteContents(op.fileIdList());
         return null;
     }

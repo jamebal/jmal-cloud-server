@@ -25,7 +25,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -155,13 +154,7 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
         FileDocument fileDocument = fileMetadataDO.toFileDocument();
         if (!excludeContent) {
             if (BooleanUtil.isTrue(fileMetadataDO.getHasContent())) {
-                filePersistenceService.readContent(fileMetadataDO.getId(), Constants.CONTENT).ifPresent(inputStream -> {
-                    try {
-                        fileDocument.setContent(inputStream.readAllBytes());
-                    } catch (IOException e) {
-                        throw new FilePersistenceService.FilePersistenceException("Failed to read content for fileId: " + fileDocument.getId(), e);
-                    }
-                });
+                filePersistenceService.readContent(fileMetadataDO.getId(), Constants.CONTENT).ifPresent(fileDocument::setInputStream);
             }
         }
         return fileDocument;

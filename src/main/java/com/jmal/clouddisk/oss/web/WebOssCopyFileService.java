@@ -5,7 +5,6 @@ import cn.hutool.core.io.file.PathUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.oss.*;
 import com.jmal.clouddisk.service.Constants;
@@ -193,14 +192,14 @@ public class WebOssCopyFileService extends WebOssCommonService {
         String objectNameFrom = sourceObjectNamePath.substring(ossPathFrom.length());
         boolean isFolder = objectNameFrom.endsWith("/");
 
-        FileDocument destFileDocument;
+        FileBaseDTO destFileDocument;
         if (Constants.REGION_DEFAULT.equals(fileId)) {
             // 根目录
-            destFileDocument = new FileDocument();
+            destFileDocument = new FileBaseDTO();
             destFileDocument.setName("");
             destFileDocument.setPath("/");
         } else {
-            destFileDocument = mongoTemplate.findById(fileId, FileDocument.class);
+            destFileDocument = fileDAO.findFileBaseDTOById(fileId);
             if (destFileDocument == null) {
                 throw new CommonException(ExceptionType.DIR_NOT_FIND);
             }
@@ -227,7 +226,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
      * @param objectNameFrom   源objectName
      * @param destFileDocument 目标fileDocument
      */
-    private void copyDir(IOssService ossServiceFrom, String objectNameFrom, FileDocument destFileDocument) {
+    private void copyDir(IOssService ossServiceFrom, String objectNameFrom, FileBaseDTO destFileDocument) {
         // 锁对象
         ossServiceFrom.lock(objectNameFrom);
         try {
@@ -274,7 +273,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
      * @param objectNameFrom   源objectName
      * @param destFileDocument 目标fileDocument
      */
-    private void copyFile(IOssService ossServiceFrom, String objectNameFrom, FileDocument destFileDocument) {
+    private void copyFile(IOssService ossServiceFrom, String objectNameFrom, FileBaseDTO destFileDocument) {
         // 锁对象
         ossServiceFrom.lock(objectNameFrom);
         try (AbstractOssObject abstractOssObject = ossServiceFrom.getAbstractOssObject(objectNameFrom);
@@ -304,7 +303,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
      */
     public ResponseResult<Object> copyLocalToOss(String ossPathTo, String fileId, String destObjectNamePath, boolean isMove) {
         IOssService ossServiceTo = OssConfigService.getOssStorageService(ossPathTo);
-        FileDocument fromFileDocument = mongoTemplate.findById(fileId, FileDocument.class);
+        FileBaseDTO fromFileDocument = fileDAO.findFileBaseDTOById(fileId);
         if (fromFileDocument == null) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
@@ -348,9 +347,9 @@ public class WebOssCopyFileService extends WebOssCommonService {
      * @param objectNameTo     目标objectName
      * @param ossPathTo        目标ossPath
      */
-    private void copyDir(FileDocument fromFileDocument, IOssService ossServiceTo, String objectNameTo, String ossPathTo) {
+    private void copyDir(FileBaseDTO fromFileDocument, IOssService ossServiceTo, String objectNameTo, String ossPathTo) {
         // 锁文件
-        CommonFileService.lockFile(new FileBaseDTO(fromFileDocument));
+        CommonFileService.lockFile(fromFileDocument);
         Path fromPath = Paths.get(fileProperties.getRootDir(), fromFileDocument.getUsername(), fromFileDocument.getPath(), fromFileDocument.getName());
         try {
             // 首先在目标oss创建文件夹
@@ -387,7 +386,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
             throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
         } finally {
             // 解锁文件
-            CommonFileService.unLockFile(new FileBaseDTO(fromFileDocument));
+            CommonFileService.unLockFile(fromFileDocument);
         }
     }
 
@@ -399,9 +398,9 @@ public class WebOssCopyFileService extends WebOssCommonService {
      * @param objectNameTo     目标objectName
      * @param ossPathTo        目标ossPath
      */
-    private void copyFile(FileDocument fromFileDocument, IOssService ossServiceTo, String objectNameTo, String ossPathTo) {
+    private void copyFile(FileBaseDTO fromFileDocument, IOssService ossServiceTo, String objectNameTo, String ossPathTo) {
         // 锁文件
-        CommonFileService.lockFile(new FileBaseDTO(fromFileDocument));
+        CommonFileService.lockFile(fromFileDocument);
         // 上传文件
         File fromFile = Paths.get(fileProperties.getRootDir(), fromFileDocument.getUsername(), fromFileDocument.getPath(), fromFileDocument.getName()).toFile();
         try (InputStream intStream = new FileInputStream(fromFile)) {
@@ -411,7 +410,7 @@ public class WebOssCopyFileService extends WebOssCommonService {
             throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), e.getMessage());
         } finally {
             // 解锁文件
-            CommonFileService.unLockFile(new FileBaseDTO(fromFileDocument));
+            CommonFileService.unLockFile(fromFileDocument);
         }
     }
 }

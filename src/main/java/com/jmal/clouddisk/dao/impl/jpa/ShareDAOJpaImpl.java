@@ -115,6 +115,26 @@ public class ShareDAOJpaImpl implements IShareDAO, IWriteCommon<ShareDO> {
     }
 
     @Override
+    public List<ShareDO> findAllAndRemoveByFileIdPrefix(String pathName) {
+        String pathPrefixForLike = pathName + "%";
+        List<ShareDO> sharesToDelete = shareRepository.findByFileIdStartingWith(pathPrefixForLike);
+        if (sharesToDelete.isEmpty()) {
+            return List.of();
+        }
+        List<String> foundIds = sharesToDelete.stream().map(ShareDO::getId).toList();
+        writeService.submit(new ShareOperation.DeleteAllByIdInBatch(foundIds));
+        return sharesToDelete;
+    }
+
+    @Override
+    public void saveAll(List<ShareDO> newShareDOList) {
+        if (newShareDOList == null || newShareDOList.isEmpty()) {
+            return;
+        }
+        writeService.submit(new ShareOperation.CreateAll(newShareDOList));
+    }
+
+    @Override
     public void AsyncSaveAll(Iterable<ShareDO> entities) {
         writeService.submit(new ShareOperation.CreateAll(entities));
     }

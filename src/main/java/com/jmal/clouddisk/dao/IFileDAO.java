@@ -82,7 +82,7 @@ public interface IFileDAO {
 
     void setSubShareFormShareBase(FileDocument file);
 
-    FileDocument findByUserIdAndPathAndName(String userId, String path, String name, String... excludeFields);
+    FileDocument findByUserIdAndPathAndName(String userId, String path, String name, String... includeFields);
 
     FileBaseDTO findFileBaseDTOByUserIdAndPathAndName(String userId, String path, String name);
 
@@ -153,4 +153,14 @@ public interface IFileDAO {
     String upsertByUserIdAndPathAndName(String userId, String relativePath, String fileName, FileDocument fileDocument);
 
     void setUpdateDateById(String fileId, LocalDateTime time);
+
+    List<FileDocument> findByPath(String path);
+
+    List<FileDocument> findAllAndRemoveByPathPrefix(String pathName);
+
+    List<FileDocument> findAllAndRemoveByMountFileIdPrefix(String pathName);
+
+    List<String> findIdsAndRemoveByIdPrefix(String pathName);
+
+    FileDocument findThumbnailContentInputStreamById(String id);
 }

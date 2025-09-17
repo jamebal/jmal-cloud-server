@@ -13,6 +13,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -246,6 +247,9 @@ public class FileDocument extends FileBase implements Reflective {
      */
     @Transient
     private Boolean hasDraft;
+
+    @Transient
+    private InputStream inputStream;
 
     @Override
     public boolean equals(Object obj) {

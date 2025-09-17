@@ -5,7 +5,10 @@ import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.FileInterceptor;
-import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.LogOperation;
+import com.jmal.clouddisk.model.ShareDO;
+import com.jmal.clouddisk.model.SharerDTO;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.web.WebOssService;
@@ -22,12 +25,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -194,43 +198,43 @@ public class ShareController {
     @Operation(summary = "显示缩略图")
     @GetMapping("/articles/s/view/thumbnail")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> articlesThumbnail(String id, Boolean showCover) {
+    public ResponseEntity<InputStreamResource> articlesThumbnail(String id, Boolean showCover) {
         return thumbnail(id, showCover, null);
     }
 
     @Operation(summary = "显示缩略图")
     @GetMapping("/public/s/view/thumbnail")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> publicThumbnail(String id, Boolean showCover, HttpServletRequest request) {
+    public ResponseEntity<InputStreamResource> publicThumbnail(String id, Boolean showCover, HttpServletRequest request) {
         return thumbnail(id, showCover, request);
     }
 
     @Operation(summary = "获取dwg文件对应的mxweb文件")
     @GetMapping("/public/s/view/mxweb/{fileId}/{shareId}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> publicGetMxweb(HttpServletRequest request, @PathVariable String shareId, @PathVariable String fileId) {
+    public ResponseEntity<InputStreamResource> publicGetMxweb(HttpServletRequest request, @PathVariable String shareId, @PathVariable String fileId) throws FileNotFoundException {
         validShare(request, shareId);
         Optional<FileDocument> file = fileService.getMxweb(fileId);
-        return file.map(fileService::getObjectResponseEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+        return file.map(fileService::getImageInputStreamResourceEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     @Operation(summary = "显示缩略图")
     @GetMapping("/public/s/view/thumbnail/{filename}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> publicThumbnailName(String id, Boolean showCover, HttpServletRequest request) {
+    public ResponseEntity<InputStreamResource> publicThumbnailName(String id, Boolean showCover, HttpServletRequest request) {
         return publicThumbnail(id, showCover, request);
     }
 
     @Operation(summary = "显示缩略图(媒体封面)")
     @GetMapping("/public/s/view/cover")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<Object> coverOfMedia(String id, String name) {
+    public ResponseEntity<InputStreamResource> coverOfMedia(String id, String name) {
         ResultUtil.checkParamIsNull(id, name);
         Optional<FileDocument> file = fileService.coverOfMedia(id, name);
-        return file.map(fileService::getObjectResponseEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+        return file.map(fileService::getImageInputStreamResourceEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
-    private ResponseEntity<Object> thumbnail(String id, Boolean showCover, HttpServletRequest request) {
+    private ResponseEntity<InputStreamResource> thumbnail(String id, Boolean showCover, HttpServletRequest request) {
         ResultUtil.checkParamIsNull(id);
         Optional<FileDocument> file = fileService.thumbnail(id, showCover);
         if (fileInterceptor.isNotAllowAccess(file.orElse(null), request)) {
@@ -240,14 +244,7 @@ public class ShareController {
         if (ossPath != null) {
             return webOssService.thumbnail(ossPath, id);
         }
-        return file.<ResponseEntity<Object>>map(fileDocument ->
-                ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_TYPE, fileDocument.getContentType())
-                        .header(HttpHeaders.CONNECTION, "close")
-                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getContent().length))
-                        .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
-                        .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
-                        .body(fileDocument.getContent())).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到该文件"));
+        return file.map(fileService::getImageInputStreamResourceEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     @Operation(summary = "读取simText文件")

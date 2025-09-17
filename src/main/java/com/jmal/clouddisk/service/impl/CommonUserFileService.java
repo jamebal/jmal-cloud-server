@@ -521,9 +521,9 @@ public class CommonUserFileService {
      */
     public FileDocument getFileDocumentByPath(String path, String filename, String userId, boolean excludeContent) {
         if (excludeContent) {
-            return fileDAO.findByUserIdAndPathAndName(userId, path, filename, Constants.CONTENT, Constants.CONTENT_DRAFT, Constants.CONTENT_DRAFT, Constants.CONTENT_HTML);
+            return fileDAO.findByUserIdAndPathAndName(userId, path, filename);
         } else {
-            return fileDAO.findByUserIdAndPathAndName(userId, path, filename, Constants.CONTENT_DRAFT, Constants.CONTENT_DRAFT, Constants.CONTENT_HTML);
+            return fileDAO.findByUserIdAndPathAndName(userId, path, filename, Constants.CONTENT);
         }
     }
 

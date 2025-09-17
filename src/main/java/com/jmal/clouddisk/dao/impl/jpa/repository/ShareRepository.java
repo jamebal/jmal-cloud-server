@@ -63,4 +63,7 @@ public interface ShareRepository extends JpaRepository<ShareDO, String> {
     void removeByFatherShareId(String fatherShareId);
 
     void removeByUserId(String userId);
+
+    @Query("SELECT s FROM ShareDO s WHERE s.fileId LIKE :pathPrefix ESCAPE '\\'")
+    List<ShareDO> findByFileIdStartingWith(String pathPrefix);
 }

@@ -252,5 +252,25 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, St
 
     void deleteByPublicId(String publicId);
 
+    void deleteAllByPublicIdIn(Collection<String> publicIds);
+
     Optional<FileMetadataDO> findByPublicId(String publicId);
+
+    @Query("SELECT f FROM FileMetadataDO f JOIN f.props p WHERE f.path = :path")
+    List<FileMetadataDO> findAllByPath(String path);
+
+    @Query("SELECT f " +
+            "FROM FileMetadataDO f JOIN FETCH f.props p " +
+            "WHERE f.path LIKE :pathPrefix ESCAPE '\\'")
+    List<FileMetadataDO> findAllByPathPrefix(String pathPrefix);
+
+    @Query("SELECT f " +
+            "FROM FileMetadataDO f JOIN FETCH f.props p " +
+            "WHERE f.mountFileId LIKE :pathPrefix ESCAPE '\\'")
+    List<FileMetadataDO> findAllByMountFileIdPrefix(String pathPrefix);
+
+    @Query("SELECT f " +
+            "FROM FileMetadataDO f JOIN FETCH f.props p " +
+            "WHERE f.publicId LIKE :idPrefix ESCAPE '\\'")
+    List<FileMetadataDO> findAllByIdPrefix(String idPrefix);
 }

@@ -43,7 +43,6 @@ public class ShareDO extends AuditableEntity implements Reflective {
     /**
      * 文件Id
      */
-    @Column(length = 24)
     private String fileId;
     /**
      * 文件名

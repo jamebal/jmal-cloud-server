@@ -35,4 +35,8 @@ public interface IShareDAO {
     void removeByUserId(String userId);
 
     void setFileNameByFileId(String fileId, String newFileName);
+
+    List<ShareDO> findAllAndRemoveByFileIdPrefix(String pathName);
+
+    void saveAll(List<ShareDO> newShareDOList);
 }

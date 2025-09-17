@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.codec.Base64;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.LocalDateTimeUtil;
@@ -49,9 +48,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
 import org.apache.commons.compress.utils.Lists;
+import org.apache.tools.ant.filters.StringInputStream;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mozilla.universalchardet.ReaderFactory;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -59,10 +60,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -495,15 +493,23 @@ public class FileServiceImpl implements IFileService {
             if (BooleanUtil.isTrue(showCover) && BooleanUtil.isTrue(fileDocument.getShowCover())) {
                 File file = FileContentUtil.getCoverPath(pathService.getVideoCacheDir(username, id));
                 if (file.exists()) {
-                    fileDocument.setContent(FileUtil.readBytes(file));
+                    try {
+                        fileDocument.setInputStream(new FileInputStream(file));
+                    } catch (FileNotFoundException e) {
+                        throw new CommonException(ExceptionType.FILE_NOT_FIND);
+                    }
                     return Optional.of(fileDocument);
                 }
             }
-            if (fileDocument.getContent() == null) {
+            if (fileDocument.getInputStream() == null) {
                 String currentDirectory = commonFileService.getUserDirectory(fileDocument.getPath());
                 File file = new File(fileProperties.getRootDir() + File.separator + username + currentDirectory + fileDocument.getName());
                 if (file.exists()) {
-                    fileDocument.setContent(FileUtil.readBytes(file));
+                    try {
+                        fileDocument.setInputStream(new FileInputStream(file));
+                    } catch (FileNotFoundException e) {
+                        throw new CommonException(ExceptionType.FILE_NOT_FIND);
+                    }
                 }
             }
             return Optional.of(fileDocument);
@@ -512,13 +518,13 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public Optional<FileDocument> getMxweb(String id) {
+    public Optional<FileDocument> getMxweb(String id) throws FileNotFoundException {
         FileDocument fileDocument = fileQueryDAO.findBaseFileDocumentById(id, true);
         if (fileDocument != null) {
             String username = userService.getUserNameById(fileDocument.getUserId());
             File file = Paths.get(pathService.getVideoCacheDir(username, id), fileDocument.getName() + Constants.MXWEB_SUFFIX).toFile();
             if (file.exists()) {
-                fileDocument.setContent(FileUtil.readBytes(file));
+                fileDocument.setInputStream(new FileInputStream(file));
                 return Optional.of(fileDocument);
             }
         }
@@ -529,7 +535,7 @@ public class FileServiceImpl implements IFileService {
     public Optional<FileDocument> coverOfMedia(String id, String username) throws CommonException {
         username = userLoginHolder.getUsername();
         FileDocument fileDocument = commonFileService.getFileDocumentById(id, false);
-        if (fileDocument != null && fileDocument.getContent() != null) {
+        if (fileDocument != null && fileDocument.getInputStream() != null) {
             return Optional.of(fileDocument);
         }
         String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
@@ -554,8 +560,13 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseEntity<Object> getObjectResponseEntity(FileDocument fileDocument) {
-        return commonFileService.getObjectResponseEntity(fileDocument);
+    public ResponseEntity<InputStreamResource> getImageInputStreamResourceEntity(FileDocument fileDocument) {
+        return commonFileService.getInputStreamResourceEntity(fileDocument, "image/png");
+    }
+
+    @Override
+    public ResponseEntity<InputStreamResource> getInputStreamResourceEntity(FileDocument fileDocument) {
+        return commonFileService.getInputStreamResourceEntity(fileDocument, fileDocument.getContentType());
     }
 
     private void setMediaCover(String id, String username, FileDocument fileDocument, boolean hasOldFileDocument) {
@@ -565,6 +576,11 @@ public class FileServiceImpl implements IFileService {
             VideoInfo videoInfo = videoProcessService.getVideoCover(id, username, fileDocument.getPath(), fileDocument.getName());
             String imagePath = videoInfo.getCovertPath();
             if (!CharSequenceUtil.isBlank(imagePath)) {
+                try {
+                    fileDocument.setInputStream(new FileInputStream(imagePath));
+                } catch (FileNotFoundException e) {
+                    throw new CommonException(ExceptionType.FILE_NOT_FIND);
+                }
                 fileDocument.setContent(FileUtil.readBytes(imagePath));
                 if (hasOldFileDocument) {
                     fileDAO.setContent(id, fileDocument.getContent());
@@ -580,7 +596,7 @@ public class FileServiceImpl implements IFileService {
         } else {
             // 音频文件
             String base64 = Optional.of(fileDocument).map(FileDocument::getMusic).map(Music::getCoverBase64).orElse("");
-            fileDocument.setContent(Base64.decode(base64));
+            fileDocument.setInputStream(new StringInputStream(base64));
         }
         fileDocument.setContentType("image/png");
         fileDocument.setName("cover");
