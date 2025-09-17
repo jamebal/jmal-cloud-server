@@ -52,7 +52,6 @@ public class OssConfigService {
 
     private final FileMonitor fileMonitor;
 
-    // private final MongoTemplate mongoTemplate;
     private final IOssConfigDAO ossConfigDAO;
     private final IFileDAO fileDAO;
 
@@ -282,9 +281,6 @@ public class OssConfigService {
             String key = MyWebdavServlet.getPathDelimiter(username, ossConfigDO.getFolderName());
             destroyOssService(key);
             // 删除相关缓存
-            // Query removeQuery = new Query();
-            // removeQuery.addCriteria(Criteria.where("_id").regex("^" + ReUtil.escape(Paths.get(username, ossConfigDO.getFolderName()) + "/")));
-            // mongoTemplate.remove(removeQuery, FileDocument.class);
             fileDAO.findAllAndRemoveByUserIdAndIdPrefix(ossConfigDO.getUserId(), ReUtil.escape(Paths.get(username, ossConfigDO.getFolderName()) + "/"));
             PathUtil.del(Paths.get(fileProperties.getRootDir(), key));
         }

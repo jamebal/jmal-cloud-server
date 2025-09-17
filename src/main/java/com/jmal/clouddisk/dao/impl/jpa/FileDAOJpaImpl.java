@@ -691,6 +691,11 @@ public class FileDAOJpaImpl implements IFileDAO {
         return fileDocument;
     }
 
+    @Override
+    public FileBaseOperationPermissionDTO findFileBaseOperationPermissionDTOById(String fileId) {
+        return fileMetadataRepository.findFileBaseOperationPermissionDTOById(fileId).orElse(null);
+    }
+
     private List<FileDocument> getFileDocuments(List<FileMetadataDO> fileMetadataDOList, boolean readContent) {
         return fileMetadataDOList.stream().map(fileMetadataDO -> {
             FileDocument fileDocument = fileMetadataDO.toFileDocument();

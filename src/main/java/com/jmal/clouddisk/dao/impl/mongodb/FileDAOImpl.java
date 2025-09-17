@@ -9,10 +9,7 @@ import com.jmal.clouddisk.model.ShareBaseInfoDTO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.ShareProperties;
-import com.jmal.clouddisk.model.file.dto.FileBaseAllDTO;
-import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
-import com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO;
-import com.jmal.clouddisk.model.file.dto.UpdateFile;
+import com.jmal.clouddisk.model.file.dto.*;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
@@ -698,6 +695,13 @@ public class FileDAOImpl implements IFileDAO {
         }
         fileDocument.setInputStream(new ByteArrayInputStream(fileDocument.getContent()));
         return fileDocument;
+    }
+
+    @Override
+    public FileBaseOperationPermissionDTO findFileBaseOperationPermissionDTOById(String fileId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        return mongoTemplate.findOne(query, FileBaseOperationPermissionDTO.class, CommonFileService.COLLECTION_NAME);
     }
 
     @NotNull

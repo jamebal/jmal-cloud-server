@@ -2,10 +2,7 @@ package com.jmal.clouddisk.dao.impl.jpa.repository;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
-import com.jmal.clouddisk.model.file.dto.FileBaseAllDTO;
-import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
-import com.jmal.clouddisk.model.file.dto.FileBaseMountDTO;
-import com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO;
+import com.jmal.clouddisk.model.file.dto.*;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -273,4 +270,10 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, St
             "FROM FileMetadataDO f JOIN FETCH f.props p " +
             "WHERE f.publicId LIKE :idPrefix ESCAPE '\\'")
     List<FileMetadataDO> findAllByIdPrefix(String idPrefix);
+
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseOperationPermissionDTO(" +
+            "f.publicId, f.name, f.path, f.userId, f.isFolder, f.props.shareProps) " +
+            "FROM FileMetadataDO f JOIN f.props p " +
+            "WHERE f.publicId = :id")
+    Optional<FileBaseOperationPermissionDTO> findFileBaseOperationPermissionDTOById(String id);
 }

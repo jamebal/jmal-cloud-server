@@ -4,10 +4,7 @@ import com.jmal.clouddisk.model.ShareBaseInfoDTO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.ShareProperties;
-import com.jmal.clouddisk.model.file.dto.FileBaseAllDTO;
-import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
-import com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO;
-import com.jmal.clouddisk.model.file.dto.UpdateFile;
+import com.jmal.clouddisk.model.file.dto.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -163,4 +160,6 @@ public interface IFileDAO {
     List<String> findIdsAndRemoveByIdPrefix(String pathName);
 
     FileDocument findThumbnailContentInputStreamById(String id);
+
+    FileBaseOperationPermissionDTO findFileBaseOperationPermissionDTOById(String fileId);
 }
