@@ -47,6 +47,8 @@ public class FilePropsDO extends AuditablePerformanceEntity implements Reflectiv
     @JdbcTypeCode(SqlTypes.JSON)
     private List<Tag> tags;
 
+    private Integer transcodeVideo;
+
     public FilePropsDO(FileDocument fileDocument) {
         setId(fileDocument.getId());
         cover(fileDocument);
@@ -57,6 +59,7 @@ public class FilePropsDO extends AuditablePerformanceEntity implements Reflectiv
     }
 
     private void cover(FileDocument fileDocument) {
+        this.transcodeVideo = fileDocument.getTranscodeVideo();
         this.shareBase = fileDocument.getShareBase();
         this.subShare = fileDocument.getSubShare();
         this.shareId = fileDocument.getShareId();

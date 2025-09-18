@@ -44,6 +44,6 @@ public class OfficeConfigDAOJpaImpl implements IOfficeConfigDAO, IWriteCommon<Of
 
     @Override
     public OfficeConfigDO findOne() {
-        return officeConfigRepository.findAll().getFirst();
+        return officeConfigRepository.findAll().stream().findFirst().orElse(null);
     }
 }

@@ -18,10 +18,7 @@ public class UpsertHandler implements IDataOperationHandler<OfficeConfigOperatio
     @Override
     public Void handle(OfficeConfigOperation.Upsert op) {
         OfficeConfigDO update = op.officeConfigDO();
-        OfficeConfigDO officeConfigDO = repo.findAll().getFirst();
-        if (officeConfigDO != null) {
-            update.setId(officeConfigDO.getId());
-        }
+        repo.findAll().stream().findFirst().ifPresent(officeConfigDO -> update.setId(officeConfigDO.getId()));
         repo.save(update);
         return null;
     }

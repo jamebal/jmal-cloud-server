@@ -1,8 +1,11 @@
 package com.jmal.clouddisk.dao;
 
+import com.jmal.clouddisk.media.TranscodeConfig;
+import com.jmal.clouddisk.media.VideoInfoDO;
 import com.jmal.clouddisk.model.ShareBaseInfoDTO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.OtherProperties;
 import com.jmal.clouddisk.model.file.ShareProperties;
 import com.jmal.clouddisk.model.file.dto.*;
 
@@ -162,4 +165,18 @@ public interface IFileDAO {
     FileDocument findThumbnailContentInputStreamById(String id);
 
     FileBaseOperationPermissionDTO findFileBaseOperationPermissionDTOById(String fileId);
+
+    void unsetTranscodeVideo();
+
+    long updateTranscodeVideoByIdIn(List<String> fileIdList, int status);
+
+    long countNotTranscodeVideo();
+
+    List<FileBaseDTO> findFileBaseDTOByNotTranscodeVideo();
+
+    VideoInfoDO findVideoInfoById(String fileId);
+
+    void setTranscodeVideoInfoByUserIdAndPathAndName(OtherProperties otherProperties, String userId, String path, String name);
+
+    List<String> findTranscodeConfigIds(TranscodeConfig config);
 }

@@ -171,7 +171,7 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
     @Modifying
     @Query("DELETE " +
             "FROM FileMetadataDO f " +
-            "WHERE f.userId = :user " +
+            "WHERE f.userId = :userId " +
             "AND f.path = :path " +
             "AND f.name = :name"
     )
@@ -276,4 +276,10 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
             "FROM FileMetadataDO f JOIN f.props p " +
             "WHERE f.publicId = :id")
     Optional<FileBaseOperationPermissionDTO> findFileBaseOperationPermissionDTOById(String id);
+
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseDTO(f.publicId, f.name, f.path, f.userId, f.isFolder) " +
+            "FROM FileMetadataDO f JOIN f.props p " +
+            "WHERE p.transcodeVideo = :status"
+    )
+    List<FileBaseDTO> findFileBaseDTOByNotTranscodeVideo(int status);
 }

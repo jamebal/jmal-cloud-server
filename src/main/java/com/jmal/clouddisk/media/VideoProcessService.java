@@ -5,34 +5,29 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.dao.IFileDAO;
+import com.jmal.clouddisk.dao.ITranscodeConfigDAO;
 import com.jmal.clouddisk.lucene.TaskProgressService;
 import com.jmal.clouddisk.lucene.TaskType;
 import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.OtherProperties;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.oss.IOssService;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.service.impl.MessageService;
 import com.jmal.clouddisk.service.impl.PathService;
 import com.jmal.clouddisk.util.CaffeineUtil;
-import com.mongodb.client.AggregateIterable;
-import com.mongodb.client.result.UpdateResult;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.bson.conversions.Bson;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -63,7 +58,9 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
 
     private final TaskProgressService taskProgressService;
 
-    private final MongoTemplate mongoTemplate;
+    private final ITranscodeConfigDAO transcodeConfigDAO;
+
+    private final IFileDAO fileDAO;
 
     /**
      * 视频转码线程池
@@ -96,7 +93,7 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
      */
     private final ReentrantLock toBeTranscodeLock = new ReentrantLock();
 
-    private final static String TRANSCODE_VIDEO = "transcodeVideo";
+    public final static String TRANSCODE_VIDEO = "transcodeVideo";
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -144,11 +141,7 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
      */
     public void cancelTranscodeTask() {
         // 修改所有未转码的视频文件状态
-        Query query = new Query();
-        query.addCriteria(Criteria.where(TRANSCODE_VIDEO).is(TranscodeStatus.NOT_TRANSCODE.getStatus()));
-        Update update = new Update();
-        update.unset(TRANSCODE_VIDEO);
-        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+        fileDAO.unsetTranscodeVideo();
         // 取消process任务
         processesTasks.forEach(p -> {
             if (p.isAlive()) {
@@ -188,17 +181,16 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
         if (config == null) {
             return 0;
         }
-        Query query = new Query();
-        TranscodeConfig tc = mongoTemplate.findOne(query, TranscodeConfig.class);
+        TranscodeConfig tc = transcodeConfigDAO.findTranscodeConfig();
         if (tc == null) {
-            mongoTemplate.save(config);
+            transcodeConfigDAO.save(config);
         } else {
-            Update update = getTranscodeConfigUpdate(config);
-            mongoTemplate.updateFirst(query, update, TranscodeConfig.class);
+            toDo(tc, config);
             if (!ObjectUtil.equals(tc.getMaxThreads(), config.getMaxThreads())) {
                 // 重新加载转码线程池
                 addTranscodingTaskService.execute(this::getVideoTranscodingService);
             }
+            transcodeConfigDAO.save(tc);
             // 检查是否需要重新转码
             if (BooleanUtil.isTrue(config.getIsReTranscode())) {
                 // 检查转码参数是否变化
@@ -215,72 +207,36 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
      */
     private long checkTranscodeConfigChange(TranscodeConfig config) {
         // 更新所有视频文件的转码状态
-        List<String> fileIdList = getTranscodeConfigQuery(config);
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(fileIdList));
-        Update update = new Update();
-        update.set(TRANSCODE_VIDEO, TranscodeStatus.NOT_TRANSCODE.getStatus());
-        UpdateResult updateResult = mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
-        if (updateResult.getModifiedCount() > 0) {
-            log.info("需要重新转码的数量: {}", updateResult.getModifiedCount());
+        List<String> fileIdList = fileDAO.findTranscodeConfigIds(config);
+        if (fileIdList.isEmpty()) {
+            return 0;
+        }
+        long count = fileDAO.updateTranscodeVideoByIdIn(fileIdList, TranscodeStatus.NOT_TRANSCODE.getStatus());
+        if (count > 0) {
+            log.info("需要重新转码的数量: {}", count);
             createExecutor(config.getMaxThreads());
             // 重新转码
             startProcessFilesToBeIndexed();
-            return updateResult.getModifiedCount();
+            return count;
         }
         return 0;
     }
 
-    private List<String> getTranscodeConfigQuery(TranscodeConfig config) {
-        List<Bson> pipeline = Arrays.asList(new Document("$match",
-                        new Document("video",
-                                new Document("$exists", true))),
-                new Document("$match",
-                        new Document("$or", Arrays.asList(
-                                new Document("video.height",
-                                        new Document("$exists", false)),
-                                new Document("video.height",
-                                        new Document("$gt", config.getHeightCond())),
-                                new Document("video.bitrateNum",
-                                        new Document("$gt", config.getBitrateCond() * 1000)),
-                                new Document("video.frameRate",
-                                        new Document("$gt", config.getFrameRateCond()))))),
-                new Document("$match",
-                        new Document("$or", Arrays.asList(new Document("video.toHeight",
-                                        new Document("$ne", config.getHeight())),
-                                new Document("video.toBitrate",
-                                        new Document("$ne", config.getBitrate())),
-                                new Document("video.toFrameRate",
-                                        new Document("$ne", config.getFrameRate()))))),
-                new Document("$project",
-                        new Document("_id", 1L)));
-        List<String> fileIdList = new ArrayList<>();
-        AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
-        for (org.bson.Document document : aggregateIterable) {
-            String fileId = document.getObjectId("_id").toHexString();
-            fileIdList.add(fileId);
-        }
-        return fileIdList;
-    }
-
-    private static @NotNull Update getTranscodeConfigUpdate(TranscodeConfig config) {
-        Update update = new Update();
-        update.set("enable", config.getEnable());
-        update.set("maxThreads", config.getMaxThreads());
-        update.set("bitrate", config.getBitrate());
-        update.set("height", config.getHeight());
-        update.set("frameRate", config.getFrameRate());
-        update.set("bitrateCond", config.getBitrateCond());
-        update.set("heightCond", config.getHeightCond());
-        update.set("frameRateCond", config.getFrameRateCond());
-        update.set("vttThumbnailCount", config.getVttThumbnailCount());
-        update.set("isReTranscode", config.getIsReTranscode());
-        return update;
+    private static void toDo(TranscodeConfig dao, TranscodeConfig dto) {
+        dao.setEnable(dto.getEnable());
+        dao.setMaxThreads(dto.getMaxThreads());
+        dao.setBitrate(dto.getBitrate());
+        dao.setHeight(dto.getHeight());
+        dao.setFrameRate(dto.getFrameRate());
+        dao.setBitrateCond(dto.getBitrateCond());
+        dao.setHeightCond(dto.getHeightCond());
+        dao.setFrameRateCond(dto.getFrameRateCond());
+        dao.setVttThumbnailCount(dto.getVttThumbnailCount());
+        dao.setIsReTranscode(dto.getIsReTranscode());
     }
 
     public TranscodeConfig getTranscodeConfig() {
-        Query query = new Query();
-        TranscodeConfig config = mongoTemplate.findOne(query, TranscodeConfig.class);
+        TranscodeConfig config = transcodeConfigDAO.findTranscodeConfig();
         if (config == null) {
             config = new TranscodeConfig();
         }
@@ -295,15 +251,7 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
      */
     private void updateTranscodeVideo(String fileId, TranscodeStatus transcodeStatus) {
         // 设置未转码标记
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(fileId));
-        Update update = new Update();
-        if (transcodeStatus == TranscodeStatus.TRANSCENDED) {
-            update.unset(TRANSCODE_VIDEO);
-        } else {
-            update.set(TRANSCODE_VIDEO, transcodeStatus.getStatus());
-        }
-        mongoTemplate.updateFirst(query, update, CommonFileService.COLLECTION_NAME);
+        fileDAO.updateTranscodeVideoByIdIn(Collections.singletonList(fileId), transcodeStatus.getStatus());
     }
 
     public Map<String, Integer> getTranscodeStatus() {
@@ -317,9 +265,7 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
         boolean run = true;
         log.debug("开始处理待转码文件");
         while (run) {
-            Query query = new Query();
-            query.addCriteria(Criteria.where(TRANSCODE_VIDEO).is(TranscodeStatus.NOT_TRANSCODE.getStatus()));
-            long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
+            long count = fileDAO.countNotTranscodeVideo();
             // 更新待转码文件数量
             waitingTranscodingCount.set((int) count);
             // 更新转码状态
@@ -328,9 +274,8 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
                 log.debug("待转码文件处理完成");
                 run = false;
             }
-            query.limit(1);
-            List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class, CommonFileService.COLLECTION_NAME);
-            for (FileDocument fileDocument : fileDocumentList) {
+            List<FileBaseDTO> fileDocumentList = fileDAO.findFileBaseDTOByNotTranscodeVideo();
+            for (FileBaseDTO fileDocument : fileDocumentList) {
                 String fileId = fileDocument.getId();
                 String username = userService.getUserNameById(fileDocument.getUserId());
                 String relativePath = fileDocument.getPath();
@@ -622,11 +567,7 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
     private boolean checkTranscodeChange(String fileId, TranscodeConfig config) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
-        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
-        if (fileDocument == null) {
-            return true;
-        }
-        VideoInfoDO videoInfo = fileDocument.getVideo();
+        VideoInfoDO videoInfo = fileDAO.findVideoInfoById(fileId);
         if (videoInfo == null) {
             return true;
         }
@@ -684,26 +625,22 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
     }
 
     private void startConvert(String username, String relativePath, String fileName, String fileId, TranscodeConfig transcodeConfig) {
-        Query query = new Query();
         String userId = userService.getUserIdByUserName(username);
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        query.addCriteria(Criteria.where("path").is(relativePath));
-        query.addCriteria(Criteria.where("name").is(fileName));
-        Update update = new Update();
         String m3u8 = Paths.get(username, fileId + ".m3u8").toString();
-        update.set("m3u8", m3u8);
         String vtt = Paths.get(username, fileId + ".vtt").toString();
-        update.set("vtt", vtt);
-
-        update.set("video.toHeight", transcodeConfig.getHeight());
-        update.set("video.toBitrate", transcodeConfig.getBitrate());
-        update.set("video.toFrameRate", transcodeConfig.getFrameRate());
-
-        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
+        FileDocument fileDocument = fileDAO.findByUserIdAndPathAndName(userId, relativePath, fileName);
         if (fileDocument == null) {
             return;
         }
-        mongoTemplate.upsert(query, update, FileDocument.class);
+        OtherProperties otherProperties = new OtherProperties(fileDocument);
+        otherProperties.setM3u8(m3u8);
+        otherProperties.setVtt(vtt);
+        VideoInfoDO videoInfo = new VideoInfoDO();
+        videoInfo.setToHeight(transcodeConfig.getHeight());
+        videoInfo.setToBitrate(transcodeConfig.getBitrate());
+        videoInfo.setToFrameRate(transcodeConfig.getFrameRate());
+        fileDAO.setTranscodeVideoInfoByUserIdAndPathAndName(otherProperties, userId, relativePath, fileName);
+
         fileDocument.setM3u8(m3u8);
         messageService.pushMessage(username, fileDocument, Constants.UPDATE_FILE);
     }

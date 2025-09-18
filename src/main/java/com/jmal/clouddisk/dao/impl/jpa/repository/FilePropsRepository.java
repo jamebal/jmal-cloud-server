@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.dao.impl.jpa.repository;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.media.VideoInfoDO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.FilePropsDO;
 import com.jmal.clouddisk.model.file.OtherProperties;
@@ -48,8 +49,8 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
     @Query("UPDATE FilePropsDO fp SET " +
             "fp.shareId = :shareId, " +
             "fp.shareProps = :shareProps " +
-            "WHERE fp.publicId IN (" +
-            "    SELECT fm.publicId FROM FileMetadataDO fm " +
+            "WHERE fp.primaryId IN (" +
+            "    SELECT fm.primaryId FROM FileMetadataDO fm " +
             "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix%" +
             ")")
     int updateFolderShareProps(
@@ -62,8 +63,8 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
     @Query("UPDATE FilePropsDO fp SET " +
             "fp.shareId = :shareId, " +
             "fp.shareProps = :shareProps " +
-            "WHERE fp.publicId IN (" +
-            "    SELECT fm.publicId FROM FileMetadataDO fm " +
+            "WHERE fp.primaryId IN (" +
+            "    SELECT fm.primaryId FROM FileMetadataDO fm " +
             "    WHERE fm.publicId = :fileId" +
             ")")
     int updateFileShareProps(
@@ -80,8 +81,8 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
             "fp.shareId = null, " +
             "fp.subShare = null, " +
             "fp.shareProps = :shareProps " +
-            "WHERE fp.publicId IN (" +
-            "    SELECT fm.publicId FROM FileMetadataDO fm " +
+            "WHERE fp.primaryId IN (" +
+            "    SELECT fm.primaryId FROM FileMetadataDO fm " +
             "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix%" +
             ")")
     int unsetFolderShareProps(@Param("userId") String userId,
@@ -106,8 +107,8 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
     @Query("UPDATE FilePropsDO fp SET " +
             "fp.shareBase = null, " +
             "fp.subShare = true " +
-            "WHERE fp.publicId IN (" +
-            "    SELECT fm.publicId FROM FileMetadataDO fm " +
+            "WHERE fp.primaryId IN (" +
+            "    SELECT fm.primaryId FROM FileMetadataDO fm " +
             "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix% " +
             "    AND fp.shareBase = true" +
             ")")
@@ -123,10 +124,121 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
             "WHERE fp.publicId = :fileId")
     void setPropsById(String fileId, OtherProperties props);
 
-    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseTagsDTO(fp.publicId, fp.tags) " +
-            "FROM FilePropsDO fp " +
-            "WHERE fp.publicId IN :tagIds")
-    List<FileBaseTagsDTO> findAllFileBaseTagsDTOByTagIdIn(List<String> attr0);
-
     Optional<FilePropsDO> findByPublicId(String publicId);
+
+    @Modifying
+    @Query("UPDATE FilePropsDO fp SET fp.transcodeVideo = null WHERE fp.transcodeVideo = 0")
+    void unsetTranscodeVideo();
+
+    @Modifying
+    @Query("UPDATE FilePropsDO fp SET fp.transcodeVideo = :status WHERE fp.publicId IN :fileIds")
+    int updateTranscodeVideoByIdIn(List<String> fileIds, int status);
+
+    long countByTranscodeVideo(Integer transcodeVideo);
+
+    @Query("SELECT fp " +
+            "FROM FilePropsDO fp " +
+            "WHERE fp.publicId IN :fileId")
+    VideoInfoDO findVideoInfoById(String id);
+
+    @Modifying
+    @Query("UPDATE FilePropsDO fp SET " +
+            "fp.props = :otherProperties " +
+            "WHERE fp.primaryId IN (" +
+            "    SELECT fm.primaryId FROM FileMetadataDO fm " +
+            "    WHERE fm.userId = :userId " +
+            "    AND fm.path = :path " +
+            "    AND fm.name = :name" +
+            ")")
+    void setOtherPropsByUserIdAndPathAndName(OtherProperties otherProperties, String userId, String path, String name);
+
+    @Query(
+            value = "SELECT p.public_id FROM file_props p " +
+                    "JOIN files f ON p.id = f.id " +
+                    "WHERE " +
+                    "f.content_type LIKE 'video%' AND " +
+                    // 条件组2: 原始视频不符合标准
+                    "(" +
+                    "   JSON_UNQUOTE(JSON_EXTRACT(p.props, '$.video.height')) IS NULL OR " +
+                    "   CAST(JSON_UNQUOTE(JSON_EXTRACT(p.props, '$.video.height')) AS UNSIGNED) > :heightCond OR " +
+                    "   CAST(JSON_UNQUOTE(JSON_EXTRACT(p.props, '$.video.bitrateNum')) AS UNSIGNED) > :bitrateCond OR " +
+                    "   CAST(JSON_UNQUOTE(JSON_EXTRACT(p.props, '$.video.frameRate')) AS UNSIGNED) > :frameRateCond" +
+                    ") AND " +
+                    // 条件组3: 转码后视频不符合目标
+                    "(" +
+                    // 对于非相等比较，确保进行正确的类型转换
+                    "   CAST(JSON_UNQUOTE(JSON_EXTRACT(p.props, '$.video.toHeight')) AS UNSIGNED) != :targetHeight OR " +
+                    "   CAST(JSON_UNQUOTE(JSON_EXTRACT(p.props, '$.video.toBitrate')) AS UNSIGNED) != :targetBitrate OR " +
+                    "   CAST(JSON_UNQUOTE(JSON_EXTRACT(p.props, '$.video.toFrameRate')) AS DECIMAL(10,2)) != :targetFrameRate" +
+                    ")",
+            nativeQuery = true
+    )
+    List<String> findFileIdsToTranscodeMySQL(
+            @Param("heightCond") int heightCond,
+            @Param("bitrateCond") int bitrateCond,
+            @Param("frameRateCond") int frameRateCond,
+            @Param("targetHeight") int targetHeight,
+            @Param("targetBitrate") int targetBitrate,
+            @Param("targetFrameRate") double targetFrameRate
+    );
+
+    @Query(
+            value = "SELECT p.public_id FROM file_props p " +
+                    "JOIN files f ON p.id = f.id " +
+                    "WHERE " +
+                    // PostgreSQL的LIKE连接符是 ||
+                    "f.content_type LIKE 'video' || '%' AND " +
+                    // 条件组2: 原始视频不符合标准
+                    "(" +
+                    "   (p.props -> 'video' ->> 'height') IS NULL OR " +
+                    "   (p.props -> 'video' ->> 'height')::int > :heightCond OR " +
+                    "   (p.props -> 'video' ->> 'bitrateNum')::int > :bitrateCond OR " +
+                    "   (p.props -> 'video' ->> 'frameRate')::int > :frameRateCond" +
+                    ") AND " +
+                    // 条件组3: 转码后视频不符合目标
+                    "(" +
+                    "   (p.props -> 'video' ->> 'toHeight')::int != :targetHeight OR " +
+                    "   (p.props -> 'video' ->> 'toBitrate')::int != :targetBitrate OR " +
+                    "   (p.props -> 'video' ->> 'toFrameRate')::float != :targetFrameRate" +
+                    ")",
+            nativeQuery = true
+    )
+    List<String> findFileIdsToTranscodePostgreSQL(
+            @Param("heightCond") int heightCond,
+            @Param("bitrateCond") int bitrateCond,
+            @Param("frameRateCond") int frameRateCond,
+            @Param("targetHeight") int targetHeight,
+            @Param("targetBitrate") int targetBitrate,
+            @Param("targetFrameRate") double targetFrameRate
+    );
+
+    @Query(
+            value = "SELECT p.public_id FROM file_props p " +
+                    "JOIN files f ON p.id = f.id " +
+                    "WHERE " +
+                    "f.content_type LIKE 'video' || '%' AND " +
+                    // 条件组2: 原始视频不符合标准
+                    "(" +
+                    // SQLite的json_extract直接返回基本类型，无需 unquote
+                    "   json_extract(p.props, '$.video.height') IS NULL OR " +
+                    "   CAST(json_extract(p.props, '$.video.height') AS INTEGER) > :heightCond OR " +
+                    "   CAST(json_extract(p.props, '$.video.bitrateNum') AS INTEGER) > :bitrateCond OR " +
+                    "   CAST(json_extract(p.props, '$.video.frameRate') AS INTEGER) > :frameRateCond" +
+                    ") AND " +
+                    // 条件组3: 转码后视频不符合目标
+                    "(" +
+                    "   CAST(json_extract(p.props, '$.video.toHeight') AS INTEGER) != :targetHeight OR " +
+                    "   CAST(json_extract(p.props, '$.video.toBitrate') AS INTEGER) != :targetBitrate OR " +
+                    "   CAST(json_extract(p.props, '$.video.toFrameRate') AS REAL) != :targetFrameRate" +
+                    ")",
+            nativeQuery = true
+    )
+    List<String> findFileIdsToTranscodeSQLite(
+            @Param("heightCond") int heightCond,
+            @Param("bitrateCond") int bitrateCond,
+            @Param("frameRateCond") int frameRateCond,
+            @Param("targetHeight") int targetHeight,
+            @Param("targetBitrate") int targetBitrate,
+            @Param("targetFrameRate") double targetFrameRate
+    );
 }

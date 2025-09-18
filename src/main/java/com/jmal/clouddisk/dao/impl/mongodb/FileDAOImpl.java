@@ -4,10 +4,14 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.dao.IFileDAO;
+import com.jmal.clouddisk.media.TranscodeConfig;
+import com.jmal.clouddisk.media.TranscodeStatus;
 import com.jmal.clouddisk.media.VideoInfoDO;
+import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.model.ShareBaseInfoDTO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.OtherProperties;
 import com.jmal.clouddisk.model.file.ShareProperties;
 import com.jmal.clouddisk.model.file.dto.*;
 import com.jmal.clouddisk.service.Constants;
@@ -20,6 +24,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.result.UpdateResult;
 import lombok.RequiredArgsConstructor;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -702,6 +707,98 @@ public class FileDAOImpl implements IFileDAO {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
         return mongoTemplate.findOne(query, FileBaseOperationPermissionDTO.class, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public void unsetTranscodeVideo() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(VideoProcessService.TRANSCODE_VIDEO).is(TranscodeStatus.NOT_TRANSCODE.getStatus()));
+        Update update = new Update();
+        update.unset(VideoProcessService.TRANSCODE_VIDEO);
+        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public long updateTranscodeVideoByIdIn(List<String> fileIdList, int status) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIdList));
+        Update update = new Update();
+        update.set(VideoProcessService.TRANSCODE_VIDEO, status);
+        UpdateResult updateResult = mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+        return updateResult.getModifiedCount();
+    }
+
+    @Override
+    public long countNotTranscodeVideo() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(VideoProcessService.TRANSCODE_VIDEO).is(TranscodeStatus.NOT_TRANSCODE.getStatus()));
+        return mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public List<FileBaseDTO> findFileBaseDTOByNotTranscodeVideo() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(VideoProcessService.TRANSCODE_VIDEO).is(TranscodeStatus.NOT_TRANSCODE.getStatus()));
+        return mongoTemplate.find(query, FileBaseDTO.class, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public VideoInfoDO findVideoInfoById(String fileId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        query.fields().include("video");
+        FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
+        if (fileDocument == null) {
+            return null;
+        }
+        return fileDocument.getVideo();
+    }
+
+    @Override
+    public void setTranscodeVideoInfoByUserIdAndPathAndName(OtherProperties otherProperties, String userId, String path, String name) {
+        Query query = getQuery(userId, path, name);
+        Update update = new Update();
+        update.set("m3u8", otherProperties.getM3u8());
+        update.set("vtt", otherProperties.getVtt());
+        if (otherProperties.getVideo() != null) {
+            update.set("video.toHeight", otherProperties.getVideo().getHeight());
+            update.set("video.toBitrate", otherProperties.getVideo().getBitrate());
+            update.set("video.toFrameRate", otherProperties.getVideo().getFrameRate());
+        }
+        mongoTemplate.updateFirst(query, update, FileDocument.class);
+    }
+
+    @Override
+    public List<String> findTranscodeConfigIds(TranscodeConfig config) {
+        List<Bson> pipeline = Arrays.asList(new Document("$match",
+                        new Document("video",
+                                new Document("$exists", true))),
+                new Document("$match",
+                        new Document("$or", Arrays.asList(
+                                new Document("video.height",
+                                        new Document("$exists", false)),
+                                new Document("video.height",
+                                        new Document("$gt", config.getHeightCond())),
+                                new Document("video.bitrateNum",
+                                        new Document("$gt", config.getBitrateCond() * 1000)),
+                                new Document("video.frameRate",
+                                        new Document("$gt", config.getFrameRateCond()))))),
+                new Document("$match",
+                        new Document("$or", Arrays.asList(new Document("video.toHeight",
+                                        new Document("$ne", config.getHeight())),
+                                new Document("video.toBitrate",
+                                        new Document("$ne", config.getBitrate())),
+                                new Document("video.toFrameRate",
+                                        new Document("$ne", config.getFrameRate()))))),
+                new Document("$project",
+                        new Document("_id", 1L)));
+        List<String> fileIdList = new ArrayList<>();
+        AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
+        for (org.bson.Document document : aggregateIterable) {
+            String fileId = document.getObjectId("_id").toHexString();
+            fileIdList.add(fileId);
+        }
+        return fileIdList;
     }
 
     @NotNull

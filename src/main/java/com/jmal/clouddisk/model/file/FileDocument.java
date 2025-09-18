@@ -212,6 +212,8 @@ public class FileDocument extends FileBase implements Reflective {
      */
     private Integer index;
 
+    private Integer transcodeVideo;
+
     /**
      * 操作权限
      */

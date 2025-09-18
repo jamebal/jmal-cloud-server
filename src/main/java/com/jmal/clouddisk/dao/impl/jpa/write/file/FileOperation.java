@@ -74,4 +74,10 @@ public final class FileOperation {
     public record SetUpdateDateById(String fileId, LocalDateTime time) implements IFileOperation<Void> {}
 
     public record UpdateSharePropsById(String fileId, ShareProperties shareProps) implements IFileOperation<Void> {}
+
+    public record UnsetTranscodeVideo() implements IFileOperation<Void> {}
+
+    public record UpdateTranscodeVideoByIdIn(List<String> fileIdList, int status) implements IFileOperation<Integer> {}
+
+    public record setOtherPropsByUserIdAndPathAndName(OtherProperties otherProperties, String userId, String path, String name) implements IFileOperation<Void> {}
 }

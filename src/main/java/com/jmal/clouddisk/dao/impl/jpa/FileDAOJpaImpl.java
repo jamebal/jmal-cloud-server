@@ -6,34 +6,26 @@ import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
-import com.jmal.clouddisk.dao.impl.jpa.repository.FilePropsRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
 import com.jmal.clouddisk.dao.impl.jpa.write.file.FileOperation;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.exception.CommonException;
-import com.jmal.clouddisk.lucene.LuceneQueryService;
+import com.jmal.clouddisk.media.TranscodeConfig;
+import com.jmal.clouddisk.media.VideoInfoDO;
 import com.jmal.clouddisk.model.ShareBaseInfoDTO;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.*;
 import com.jmal.clouddisk.model.file.dto.*;
 import com.jmal.clouddisk.service.Constants;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -47,16 +39,11 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     private final ArticleRepository articleRepository;
 
-    private final FilePropsRepository filePropsRepository;
-
-    private final LuceneQueryService luceneQueryService;
+    private final FilePropsDAO filePropsDAO;
 
     private final FilePersistenceService filePersistenceService;
 
     private final IWriteService writeService;
-
-    @PersistenceContext
-    private EntityManager em;
 
     @Override
     public void deleteAllByIdInBatch(List<String> userIdList) {
@@ -65,41 +52,12 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public void updateIsPublicById(String fileId) {
-        FilePropsDO props = filePropsRepository.findByPublicId(fileId)
-                .orElseThrow(() -> new EntityNotFoundException("FilePropsDO not found with id: " + fileId));
-
-        if (props.getShareProps() == null) {
-            props.setShareProps(new ShareProperties());
-        }
-        props.getShareProps().setIsPublic(true);
-        writeService.submit(new FileOperation.UpdateSharePropsById(fileId, props.getShareProps()));
+        filePropsDAO.updateIsPublicById(fileId);
     }
 
     @Override
     public void updateTagInfoInFiles(String tagId, String newTagName, String newColor) {
-        List<String> affectedFileIds = luceneQueryService.findByTagId(tagId);
-        if (affectedFileIds == null || affectedFileIds.isEmpty()) {
-            return;
-        }
-        List<FileBaseTagsDTO> fileTagsDTOList = filePropsRepository.findTagsByIdIn(affectedFileIds);
-
-        for (FileBaseTagsDTO dto : fileTagsDTOList) {
-            if (dto.getTags() == null) continue;
-
-            boolean tagFoundAndUpdated = false;
-            for (Tag tag : dto.getTags()) {
-                if (tagId.equals(tag.getTagId())) {
-                    tag.setName(newTagName);
-                    tag.setColor(newColor);
-                    tagFoundAndUpdated = true;
-                    break;
-                }
-            }
-
-            if (tagFoundAndUpdated) {
-                writeService.submit(new FileOperation.UpdateTagsForFile(dto.getId(), dto.getTags()));
-            }
-        }
+        filePropsDAO.updateTagInfoInFiles(tagId, newTagName, newColor);
     }
 
     @Override
@@ -183,12 +141,12 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public void setSubShareByFileId(String fileId) {
-        writeService.submit(new FileOperation.SetShareBaseOperation(fileId));
+        filePropsDAO.setSubShareByFileId(fileId);
     }
 
     @Override
     public void unsetSubShareByFileId(String fileId) {
-        writeService.submit(new FileOperation.UnsetShareBaseOperation(fileId));
+        filePropsDAO.unsetSubShareByFileId(fileId);
     }
 
     @Override
@@ -216,51 +174,22 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public void updateShareProps(FileDocument file, String shareId, ShareProperties newShareProperties, boolean isFolder) {
-        ShareProperties shareProperties = filePropsRepository.findSharePropsById(file.getId());
-        if (shareProperties != null) {
-            shareProperties.setIsShare(newShareProperties.getIsShare());
-            shareProperties.setIsPrivacy(newShareProperties.getIsPrivacy());
-            shareProperties.setExtractionCode(newShareProperties.getExtractionCode());
-            shareProperties.setExpiresAt(newShareProperties.getExpiresAt());
-            shareProperties.setOperationPermissionList(newShareProperties.getOperationPermissionList());
-        } else {
-            shareProperties = newShareProperties;
-        }
-        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(file.getPath()) + "%";
-        writeService.submit(new FileOperation.UpdateShareProps(
-                file.getId(),
-                file.getUserId(),
-                pathPrefixForLike,
-                shareId,
-                shareProperties,
-                isFolder
-        ));
+        filePropsDAO.updateShareProps(file, shareId, newShareProperties, isFolder);
     }
 
     @Override
     public void updateShareFirst(String fileId, boolean shareBase) {
-        writeService.submit(new FileOperation.UpdateShareBaseById(fileId, shareBase));
+        filePropsDAO.updateShareFirst(fileId, shareBase);
     }
 
     @Override
     public void unsetShareProps(FileDocument file, boolean isFolder) {
-        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(file.getPath()) + "%";
-        writeService.submit(new FileOperation.UnsetShareProps(
-                file.getId(),
-                file.getUserId(),
-                pathPrefixForLike,
-                new ShareProperties(),
-                isFolder
-        ));
+        filePropsDAO.unsetShareProps(file, isFolder);
     }
 
     @Override
     public void setSubShareFormShareBase(FileDocument file) {
-        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(file.getPath()) + "%";
-        writeService.submit(new FileOperation.SetSubShareFormShareBase(
-                file.getUserId(),
-                pathPrefixForLike
-        ));
+        filePropsDAO.setSubShareFormShareBase(file);
     }
 
     @Override
@@ -465,7 +394,7 @@ public class FileDAOJpaImpl implements IFileDAO {
     @Override
     public void setMediaCoverIsTrue(String id) {
         try {
-            FilePropsDO filePropsDO = filePropsRepository.findByPublicId(id).orElseThrow(() -> new EntityNotFoundException("FilePropsDO not found with id: " + id));
+            FilePropsDO filePropsDO = filePropsDAO.findById(id);
             OtherProperties otherProperties = filePropsDO.getProps();
             otherProperties.setMediaCover(true);
             writeService.submit(new FileOperation.SetMediaCoverIsTrue(id, otherProperties)).get(10, TimeUnit.SECONDS);
@@ -515,34 +444,17 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public void removeTagsByTagIdIn(List<String> tagIds) {
-        List<FileBaseTagsDTO> fileBaseTagsDTOList = filePropsRepository.findAllFileBaseTagsDTOByTagIdIn(tagIds);
-        fileBaseTagsDTOList.forEach(fileBaseTagsDTO -> {
-            List<Tag> tags = fileBaseTagsDTO.getTags();
-            tags.removeIf(tag -> tagIds.contains(tag.getTagId()));
-            try {
-                writeService.submit(new FileOperation.UpdateTagsForFile(fileBaseTagsDTO.getId(), tags)).get(10, TimeUnit.SECONDS);
-            } catch (Exception e) {
-                throw new CommonException(e.getMessage());
-            }
-        });
+        filePropsDAO.removeTagsByTagIdIn(tagIds);
     }
 
     @Override
     public List<String> getFileIdListByTagId(String tagId) {
-        List<String> ids = luceneQueryService.findByTagId(tagId);
-        if (ids == null || ids.isEmpty()) {
-            return List.of();
-        }
-        return ids.stream().toList();
+        return filePropsDAO.getFileIdListByTagId(tagId);
     }
 
     @Override
     public void setTagsByIdIn(List<String> fileIds, List<Tag> tagList) {
-        try {
-            writeService.submit(new FileOperation.UpdateTagsForFiles(fileIds, tagList)).get(10, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            throw new CommonException(e.getMessage());
-        }
+        filePropsDAO.setTagsByIdIn(fileIds, tagList);
     }
 
     @Override
@@ -556,51 +468,7 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public ShareBaseInfoDTO getShareBaseByPath(String relativePath) {
-        Path path = Paths.get(relativePath);
-        if (path.getNameCount() == 0) {
-            return null;
-        }
-        StringBuilder whereClause = new StringBuilder();
-        Map<String, Object> params = new HashMap<>();
-        StringBuilder pathStr = new StringBuilder("/");
-
-        for (int i = 0; i < path.getNameCount(); i++) {
-            if (i > 0) {
-                whereClause.append(" OR ");
-            }
-            String filename = path.getName(i).toString();
-            String pathParamName = Constants.PATH_FIELD + i;
-            String nameParamName = Constants.FILENAME_FIELD + i;
-
-            whereClause.append("(f.path = :").append(pathParamName).append(" AND f.name = :").append(nameParamName).append(")");
-
-            params.put(pathParamName, pathStr.toString());
-            params.put(nameParamName, filename);
-
-            if (i > 0) {
-                pathStr.append("/");
-            }
-            pathStr.append(filename);
-        }
-
-        String jpql = "SELECT new com.jmal.clouddisk.model.ShareBaseInfoDTO(" +
-                "p.shareId, p.shareProps" +
-                ") " +
-                "FROM FileMetadataDO f JOIN f.props p " +
-                "WHERE p.shareBase = true AND (" + whereClause + ")";
-
-        TypedQuery<ShareBaseInfoDTO> query = em.createQuery(jpql, ShareBaseInfoDTO.class);
-        params.forEach(query::setParameter);
-
-        List<ShareBaseInfoDTO> results = query.getResultList();
-
-
-        if (results.isEmpty()) {
-            return null;
-        } else {
-            return results.getLast();
-        }
-
+        return filePropsDAO.getShareBaseByPath(relativePath);
     }
 
     @Override
@@ -694,6 +562,41 @@ public class FileDAOJpaImpl implements IFileDAO {
     @Override
     public FileBaseOperationPermissionDTO findFileBaseOperationPermissionDTOById(String fileId) {
         return fileMetadataRepository.findFileBaseOperationPermissionDTOById(fileId).orElse(null);
+    }
+
+    @Override
+    public void unsetTranscodeVideo() {
+        filePropsDAO.unsetTranscodeVideo();
+    }
+
+    @Override
+    public long updateTranscodeVideoByIdIn(List<String> fileIdList, int status) {
+        return filePropsDAO.updateTranscodeVideoByIdIn(fileIdList, status);
+    }
+
+    @Override
+    public long countNotTranscodeVideo() {
+        return filePropsDAO.countNotTranscodeVideo();
+    }
+
+    @Override
+    public List<FileBaseDTO> findFileBaseDTOByNotTranscodeVideo() {
+        return fileMetadataRepository.findFileBaseDTOByNotTranscodeVideo(0);
+    }
+
+    @Override
+    public VideoInfoDO findVideoInfoById(String fileId) {
+        return filePropsDAO.findVideoInfoById(fileId);
+    }
+
+    @Override
+    public void setTranscodeVideoInfoByUserIdAndPathAndName(OtherProperties otherProperties, String userId, String path, String name) {
+        filePropsDAO.setTranscodeVideoInfoByUserIdAndPathAndName(otherProperties, userId, path, name);
+    }
+
+    @Override
+    public List<String> findTranscodeConfigIds(TranscodeConfig config) {
+        return filePropsDAO.findTranscodeConfigIds(config);
     }
 
     private List<FileDocument> getFileDocuments(List<FileMetadataDO> fileMetadataDOList, boolean readContent) {

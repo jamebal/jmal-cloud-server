@@ -17,6 +17,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
+import org.apache.lucene.util.BytesRef;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -51,6 +52,14 @@ public class LuceneQueryService {
 
     public List<String> findByTagId(String tagId) {
         return find(getTagIdQuery(tagId));
+    }
+
+    public List<String> findByTagIdIn(List<String> tagIds) {
+        List<BytesRef> terms = new ArrayList<>();
+        for (String tagId : tagIds) {
+            terms.add(new BytesRef(tagId));
+        }
+        return find(new TermInSetQuery(LuceneService.FIELD_TAG_ID, terms));
     }
 
     public Page<String> findByUserIdAndType(String userId, String type, SearchDTO searchDTO) {

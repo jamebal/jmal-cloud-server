@@ -36,7 +36,7 @@ public class OcrConfigDAOJpaImpl implements IOcrConfigDAO, IWriteCommon<OcrConfi
 
     @Override
     public OcrConfig findOcrConfig() {
-        return ocrConfigRepository.findAll().getFirst();
+        return ocrConfigRepository.findAll().stream().findFirst().orElse(null);
     }
 
     @Override
