@@ -282,4 +282,20 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
             "WHERE p.transcodeVideo = :status"
     )
     List<FileBaseDTO> findFileBaseDTOByNotTranscodeVideo(int status);
+
+    @Modifying
+    @Query("UPDATE FileMetadataDO f SET f.luceneIndex = :luceneIndex WHERE f.publicId IN :fileIdList")
+    void updateLuceneIndexStatusByIdIn(List<String> fileIdList, int luceneIndex);
+
+    long countByLuceneIndex(int luceneIndex);
+
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseLuceneDTO(f.publicId, f.name, f.path, f.userId, f.isFolder, f.isFavorite, p.remark, p.tags, a.tagIds, f.etag, f.size, f.uploadDate) " +
+            "FROM FileMetadataDO f LEFT JOIN ArticleDO a ON a.fileMetadata = f JOIN f.props p " +
+            "WHERE f.luceneIndex = :status")
+    List<FileBaseLuceneDTO> findFileBaseLuceneDTOByLuceneIndex(int status, Pageable pageable);
+
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseLuceneDTO(f.publicId, f.name, f.path, f.userId, f.isFolder, f.isFavorite, p.remark, p.tags, a.tagIds, f.etag, f.size, f.uploadDate) " +
+            "FROM FileMetadataDO f LEFT JOIN ArticleDO a ON a.fileMetadata = f JOIN f.props p " +
+            "WHERE f.publicId IN :fileIdList")
+    List<FileBaseLuceneDTO> findFileBaseLuceneDTOByIdIn(List<String> fileIdList);
 }

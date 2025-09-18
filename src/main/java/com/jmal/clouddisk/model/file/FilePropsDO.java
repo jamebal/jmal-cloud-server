@@ -35,6 +35,8 @@ public class FilePropsDO extends AuditablePerformanceEntity implements Reflectiv
     @Column(length = 24)
     private String shareId;
 
+    private String remark;
+
     @Column(name = "share_props")
     @JdbcTypeCode(SqlTypes.JSON)
     private ShareProperties shareProps;
@@ -63,6 +65,7 @@ public class FilePropsDO extends AuditablePerformanceEntity implements Reflectiv
         this.shareBase = fileDocument.getShareBase();
         this.subShare = fileDocument.getSubShare();
         this.shareId = fileDocument.getShareId();
+        this.remark = fileDocument.getRemark();
         this.shareProps = new ShareProperties(fileDocument);
         this.props = new OtherProperties(fileDocument);
         this.tags = fileDocument.getTags();
@@ -88,7 +91,6 @@ public class FilePropsDO extends AuditablePerformanceEntity implements Reflectiv
             fileDocument.setM3u8(this.props.getM3u8());
             fileDocument.setVtt(this.props.getVtt());
             fileDocument.setShowCover(this.props.getShowCover());
-            fileDocument.setRemark(this.props.getRemark());
         }
     }
 
@@ -109,7 +111,6 @@ public class FilePropsDO extends AuditablePerformanceEntity implements Reflectiv
             fileDocument.setMediaCover(this.props.getMediaCover());
             fileDocument.setM3u8(this.props.getM3u8());
             fileDocument.setShowCover(this.props.getShowCover());
-            fileDocument.setRemark(this.props.getRemark());
         }
     }
 

@@ -200,7 +200,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
             fileDocument.setHasDraft(rs.getBoolean("has_draft"));
             String categoryIdsJson = rs.getString("category_ids");
             if (CharSequenceUtil.isNotBlank(categoryIdsJson)) {
-                String[] categoryIds = JacksonUtil.parseArray(categoryIdsJson, String.class).toArray(new String[0]);
+                List<String> categoryIds = JacksonUtil.parseArray(categoryIdsJson, String.class);
                 fileDocument.setCategoryIds(categoryIds);
             }
             return fileDocument;

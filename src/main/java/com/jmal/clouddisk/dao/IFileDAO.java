@@ -179,4 +179,12 @@ public interface IFileDAO {
     void setTranscodeVideoInfoByUserIdAndPathAndName(OtherProperties otherProperties, String userId, String path, String name);
 
     List<String> findTranscodeConfigIds(TranscodeConfig config);
+
+    void updateLuceneIndexStatusByIdIn(List<String> fileIdList, int indexStatus);
+
+    long countByLuceneIndex(int status);
+
+    List<FileBaseLuceneDTO> findFileBaseLuceneDTOByLuceneIndex(int status, int limit);
+
+    List<FileBaseLuceneDTO> findFileBaseLuceneDTOByIdIn(List<String> fileIdList);
 }

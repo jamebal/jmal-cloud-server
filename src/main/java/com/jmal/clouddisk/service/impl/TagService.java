@@ -246,8 +246,8 @@ public class TagService {
      * @param tagIds 标签id集合
      * @return 标签列表
      */
-    public List<TagDO> getTagListByIds(String[] tagIds) {
-        return tagDAO.findAllById(List.of(tagIds));
+    public List<TagDO> getTagListByIds(List<String> tagIds) {
+        return tagDAO.findAllById(tagIds);
     }
 
     /**

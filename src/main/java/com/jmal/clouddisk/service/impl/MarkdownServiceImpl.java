@@ -383,8 +383,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
         fileDocument.setName(filename);
         fileDocument.setCover(upload.getCover());
         fileDocument.setSlug(getSlug(upload));
-        fileDocument.setCategoryIds(upload.getCategoryIds());
-        fileDocument.setTagIds(tagService.getTagIdsByNames(upload.getTagNames()));
+        fileDocument.setCategoryIds(List.of(upload.getCategoryIds()));
+        fileDocument.setTagIds(List.of(tagService.getTagIdsByNames(upload.getTagNames())));
         fileDocument.setIsFolder(false);
         if (upload.getIsAlonePage() != null && upload.getIsAlonePage()) {
             fileDocument.setAlonePage(true);

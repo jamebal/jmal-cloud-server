@@ -174,11 +174,11 @@ public class FileDocument extends FileBase implements Reflective {
     /***
      * 分类Id集合
      */
-    private String[] categoryIds;
+    private List<String> categoryIds;
     /***
      * 标签Id集合
      */
-    private String[] tagIds;
+    private List<String> tagIds;
 
     /**
      * 标签集合

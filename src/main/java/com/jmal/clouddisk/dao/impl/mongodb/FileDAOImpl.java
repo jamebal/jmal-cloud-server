@@ -4,6 +4,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.dao.IFileDAO;
+import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.media.TranscodeConfig;
 import com.jmal.clouddisk.media.TranscodeStatus;
 import com.jmal.clouddisk.media.VideoInfoDO;
@@ -44,6 +45,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.jmal.clouddisk.service.IUserService.USER_ID;
+import static com.jmal.clouddisk.service.impl.CommonFileService.COLLECTION_NAME;
 
 @Service
 @RequiredArgsConstructor
@@ -799,6 +801,37 @@ public class FileDAOImpl implements IFileDAO {
             fileIdList.add(fileId);
         }
         return fileIdList;
+    }
+
+    @Override
+    public void updateLuceneIndexStatusByIdIn(List<String> fileIdList, int indexStatus) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIdList));
+        Update update = new Update();
+        update.set(LuceneService.MONGO_INDEX_FIELD, indexStatus);
+        mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
+    }
+
+    @Override
+    public long countByLuceneIndex(int status) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(LuceneService.MONGO_INDEX_FIELD).is(status));
+        return mongoTemplate.count(query, COLLECTION_NAME);
+    }
+
+    @Override
+    public List<FileBaseLuceneDTO> findFileBaseLuceneDTOByLuceneIndex(int status, int limit) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(LuceneService.MONGO_INDEX_FIELD).is(status));
+        query.limit(limit);
+        return mongoTemplate.find(query, FileBaseLuceneDTO.class, COLLECTION_NAME);
+    }
+
+    @Override
+    public List<FileBaseLuceneDTO> findFileBaseLuceneDTOByIdIn(List<String> fileIdList) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIdList));
+        return mongoTemplate.find(query, FileBaseLuceneDTO.class, COLLECTION_NAME);
     }
 
     @NotNull

@@ -182,8 +182,8 @@ public class CategoryService {
      * @param categoryIds 分类id集合
      * @return 分类列表
      */
-    public List<CategoryDO> getCategoryListByIds(String[] categoryIds) {
-        return categoryDAO.findCategoryListByIds(List.of(categoryIds));
+    public List<CategoryDO> getCategoryListByIds(List<String> categoryIds) {
+        return categoryDAO.findCategoryListByIds(categoryIds);
     }
 
     /***

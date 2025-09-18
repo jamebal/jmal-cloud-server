@@ -84,7 +84,7 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
     @Column(nullable = false)
     private Boolean hasHtml;
 
-    private Integer LuceneIndex;
+    private Integer luceneIndex;
 
     // =========================== ETag相关字段 ===========================
     @Column(length = 64)
@@ -132,7 +132,7 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
         this.hasContent = fileDocument.getContent() != null;
         this.hasContentText = CharSequenceUtil.isNotBlank(fileDocument.getContentText());
         this.hasHtml = CharSequenceUtil.isNotBlank(fileDocument.getHtml());
-        this.LuceneIndex = fileDocument.getIndex();
+        this.luceneIndex = fileDocument.getIndex();
     }
 
     public FileDocument toFileDocument() {
@@ -151,6 +151,7 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
         fileDocument.setIsFavorite(this.isFavorite);
         if (this.props != null) {
             fileDocument.setShareId(this.props.getShareId());
+            fileDocument.setRemark(this.props.getRemark());
             fileDocument.setShareBase(this.props.getShareBase());
             fileDocument.setSubShare(this.props.getSubShare());
             fileDocument.setTags(this.props.getTags());
@@ -186,7 +187,6 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
             fileDocument.setShareBase(this.props.getShareBase());
             fileDocument.setSubShare(this.props.getSubShare());
             fileDocument.setTags(this.props.getTags());
-
             this.props.toFileIntroVOFragment(fileDocument);
         }
         fileDocument.setEtag(this.etag);

@@ -30,7 +30,6 @@ public class OtherProperties {
     private String m3u8;
     private String vtt;
     private Boolean showCover;
-    private String remark;
     private String ossPlatform;
 
     public OtherProperties(FileDocument fileDocument) {
@@ -43,7 +42,6 @@ public class OtherProperties {
         this.m3u8 = fileDocument.getM3u8();
         this.vtt = fileDocument.getVtt();
         this.showCover = fileDocument.getShowCover();
-        this.remark = fileDocument.getRemark();
         this.ossPlatform = fileDocument.getOssPlatform();
     }
 }

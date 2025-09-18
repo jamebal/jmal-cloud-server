@@ -599,6 +599,30 @@ public class FileDAOJpaImpl implements IFileDAO {
         return filePropsDAO.findTranscodeConfigIds(config);
     }
 
+    @Override
+    public void updateLuceneIndexStatusByIdIn(List<String> fileIdList, int indexStatus) {
+        try {
+            writeService.submit(new FileOperation.UpdateLuceneIndexStatusByIdIn(fileIdList, indexStatus)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public long countByLuceneIndex(int status) {
+        return fileMetadataRepository.countByLuceneIndex(status);
+    }
+
+    @Override
+    public List<FileBaseLuceneDTO> findFileBaseLuceneDTOByLuceneIndex(int status, int limit) {
+        return fileMetadataRepository.findFileBaseLuceneDTOByLuceneIndex(status, PageRequest.of(0, limit));
+    }
+
+    @Override
+    public List<FileBaseLuceneDTO> findFileBaseLuceneDTOByIdIn(List<String> fileIdList) {
+        return fileMetadataRepository.findFileBaseLuceneDTOByIdIn(fileIdList);
+    }
+
     private List<FileDocument> getFileDocuments(List<FileMetadataDO> fileMetadataDOList, boolean readContent) {
         return fileMetadataDOList.stream().map(fileMetadataDO -> {
             FileDocument fileDocument = fileMetadataDO.toFileDocument();

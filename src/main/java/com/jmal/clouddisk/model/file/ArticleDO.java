@@ -77,8 +77,8 @@ public class ArticleDO extends AuditableEntity implements Reflective {
         this.hasDraft = CharSequenceUtil.isNotBlank(fileDocument.getDraft());
         this.cover = fileDocument.getCover();
         this.slug = fileDocument.getSlug();
-        this.categoryIds = fileDocument.getCategoryIds() != null ? List.of(fileDocument.getCategoryIds()) : null;
-        this.tagIds = fileDocument.getTagIds() != null ? List.of(fileDocument.getTagIds()) : null;
+        this.categoryIds = fileDocument.getCategoryIds();
+        this.tagIds = fileDocument.getTagIds();
     }
 
     public FileDocument toFileDocument() {
@@ -94,8 +94,8 @@ public class ArticleDO extends AuditableEntity implements Reflective {
         fileDocument.setPageSort(this.pageSort);
         fileDocument.setCover(this.cover);
         fileDocument.setSlug(this.slug);
-        fileDocument.setCategoryIds(this.categoryIds != null ? this.categoryIds.toArray(new String[0]) : null);
-        fileDocument.setTagIds(this.tagIds != null ? this.tagIds.toArray(new String[0]) : null);
+        fileDocument.setCategoryIds(this.categoryIds);
+        fileDocument.setTagIds(this.tagIds);
         return fileDocument;
     }
 
@@ -105,8 +105,8 @@ public class ArticleDO extends AuditableEntity implements Reflective {
         articleVO.setCover(this.cover);
         articleVO.setSlug(this.slug);
         articleVO.setUserId(this.fileMetadata.getUserId());
-        articleVO.setCategoryIds(this.categoryIds != null ? this.categoryIds.toArray(new String[0]) : null);
-        articleVO.setTagIds(this.tagIds != null ? this.tagIds.toArray(new String[0]) : null);
+        articleVO.setCategoryIds(this.categoryIds);
+        articleVO.setTagIds(this.tagIds);
         articleVO.setSuffix(this.fileMetadata.getSuffix());
         articleVO.setAlonePage(this.alonePage);
         articleVO.setName(this.fileMetadata.getName());

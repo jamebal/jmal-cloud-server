@@ -80,4 +80,6 @@ public final class FileOperation {
     public record UpdateTranscodeVideoByIdIn(List<String> fileIdList, int status) implements IFileOperation<Integer> {}
 
     public record setOtherPropsByUserIdAndPathAndName(OtherProperties otherProperties, String userId, String path, String name) implements IFileOperation<Void> {}
+
+    public record UpdateLuceneIndexStatusByIdIn(List<String> fileIdList, int indexStatus) implements IFileOperation<Void> {}
 }

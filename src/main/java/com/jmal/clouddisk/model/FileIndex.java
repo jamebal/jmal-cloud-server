@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.model;
 
 import com.jmal.clouddisk.config.Reflective;
-import com.jmal.clouddisk.model.file.FileIntroVO;
+import com.jmal.clouddisk.model.file.dto.FileBaseLuceneDTO;
 import com.jmal.clouddisk.util.HashUtil;
 import com.jmal.clouddisk.util.TimeUntils;
 import lombok.Data;
@@ -18,27 +18,27 @@ import java.util.Set;
 @Accessors(chain = true)
 public class FileIndex implements Reflective {
 
-    public FileIndex(File file, FileIntroVO fileIntroVO) {
+    public FileIndex(File file, FileBaseLuceneDTO fileBaseLuceneDTO) {
         this.file = file;
-        this.userId = fileIntroVO.getUserId();
-        this.fileId = fileIntroVO.getId();
-        this.path = fileIntroVO.getPath();
-        this.isFolder = fileIntroVO.getIsFolder();
-        this.isFavorite = fileIntroVO.getIsFavorite();
-        this.remark = fileIntroVO.getRemark();
-        this.tagName = getTagName(fileIntroVO);
-        if (fileIntroVO.getTags() != null && !fileIntroVO.getTags().isEmpty()) {
-            fileIntroVO.getTags().forEach(tag -> tagIds.add(tag.getTagId()));
+        this.userId = fileBaseLuceneDTO.getUserId();
+        this.fileId = fileBaseLuceneDTO.getId();
+        this.path = fileBaseLuceneDTO.getPath();
+        this.isFolder = fileBaseLuceneDTO.getIsFolder();
+        this.isFavorite = fileBaseLuceneDTO.getIsFavorite();
+        this.remark = fileBaseLuceneDTO.getRemark();
+        this.tagName = getTagName(fileBaseLuceneDTO);
+        if (fileBaseLuceneDTO.getTags() != null && !fileBaseLuceneDTO.getTags().isEmpty()) {
+            fileBaseLuceneDTO.getTags().forEach(tag -> tagIds.add(tag.getTagId()));
         }
-        if (fileIntroVO.getTagIds() != null && !fileIntroVO.getTagIds().isEmpty()) {
-            tagIds.addAll(fileIntroVO.getTagIds());
+        if (fileBaseLuceneDTO.getTagIds() != null && !fileBaseLuceneDTO.getTagIds().isEmpty()) {
+            tagIds.addAll(fileBaseLuceneDTO.getTagIds());
         }
-        this.created = TimeUntils.getMilli(fileIntroVO.getUploadDate());
+        this.created = TimeUntils.getMilli(fileBaseLuceneDTO.getUploadDate());
     }
 
-    private String getTagName(FileIntroVO fileIntroVO) {
-        if (fileIntroVO != null && fileIntroVO.getTags() != null && !fileIntroVO.getTags().isEmpty()) {
-            return fileIntroVO.getTags().stream().map(Tag::getName).reduce((a, b) -> a + " " + b).orElse("");
+    private String getTagName(FileBaseLuceneDTO fileBaseLuceneDTO) {
+        if (fileBaseLuceneDTO != null && fileBaseLuceneDTO.getTags() != null && !fileBaseLuceneDTO.getTags().isEmpty()) {
+            return fileBaseLuceneDTO.getTags().stream().map(Tag::getName).reduce((a, b) -> a + " " + b).orElse("");
         }
         return null;
     }
