@@ -1,52 +1,34 @@
 package com.jmal.clouddisk.lucene;
 
-import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.dao.IEtagDAO;
+import com.jmal.clouddisk.model.file.dto.FileBaseEtagDTO;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.util.HashUtil;
-import com.mongodb.client.AggregateIterable;
-import com.mongodb.client.result.UpdateResult;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.jmal.clouddisk.service.IUserService.USER_ID;
-import static com.mongodb.client.model.Accumulators.sum;
-import static com.mongodb.client.model.Aggregates.group;
-import static com.mongodb.client.model.Aggregates.match;
-import static com.mongodb.client.model.Filters.*;
 
 /**
  * EtagService
@@ -60,7 +42,7 @@ import static com.mongodb.client.model.Filters.*;
 @Slf4j
 public class EtagService {
 
-    private final MongoTemplate mongoTemplate;
+    private final IEtagDAO etagDAO;
 
     private final FileProperties fileProperties;
 
@@ -89,13 +71,10 @@ public class EtagService {
             executorMarkedFoldersService = ThreadUtil.newFixedExecutor(1, 1, "EtagWorker-", false);
         }
         Completable.fromAction(() -> {
-            Query queryNoEtagQuery = new Query();
-            queryNoEtagQuery.addCriteria(Criteria.where(Constants.ETAG).exists(false).and(Constants.IS_FOLDER).is(true));
-            long countOfFoldersWithoutEtag = mongoTemplate.count(queryNoEtagQuery, FileDocument.class);
+            long countOfFoldersWithoutEtag = etagDAO.countFoldersWithoutEtag();
             if (countOfFoldersWithoutEtag > 0) {
                 log.info("{} folders found without ETag. Marking them for ETag calculation.", countOfFoldersWithoutEtag);
-                Update update = new Update().set(Constants.NEEDS_ETAG_UPDATE_FIELD, true).currentDate(Constants.LAST_ETAG_UPDATE_REQUEST_AT_FIELD);
-                mongoTemplate.updateMulti(queryNoEtagQuery, update, FileDocument.class);
+                etagDAO.setFoldersWithoutEtag();
             }
             processRootFolderFiles();
             log.debug("Initial ETag setup finished. Ensuring ETag processing worker is active if needed.");
@@ -107,15 +86,8 @@ public class EtagService {
     /**
      * 统计文件夹的大小
      */
-    public long getFolderSize(String collectionName, String userId, String path) {
-        List<Bson> list = Arrays.asList(match(and(eq(USER_ID, userId), eq(Constants.IS_FOLDER, false), regex("path", "^" + ReUtil.escape(path)))), group(null, sum(Constants.TOTAL_SIZE, "$size")));
-        AggregateIterable<Document> result = mongoTemplate.getCollection(collectionName).aggregate(list);
-        long totalSize = 0;
-        Document doc = result.first();
-        if (doc != null) {
-            totalSize = Convert.toLong(doc.get(Constants.TOTAL_SIZE), 0L);
-        }
-        return totalSize;
+    public long getFolderSize(String userId, String path) {
+        return etagDAO.getFolderSize(userId, path);
     }
 
     /**
@@ -174,9 +146,7 @@ public class EtagService {
      * 检查数据库中是否还有需要更新ETag的文件夹。
      */
     private boolean hasMoreMarkedFoldersInDb() {
-        Query query = Query.query(Criteria.where(Constants.NEEDS_ETAG_UPDATE_FIELD).is(true).and(Constants.IS_FOLDER).is(true));
-        query.limit(1); // 只需要知道是否存在，不需要完整计数
-        return mongoTemplate.exists(query, FileDocument.class);
+        return etagDAO.existsByNeedsEtagUpdateFolder();
     }
 
     /**
@@ -198,15 +168,10 @@ public class EtagService {
                 return null;
             }
             String userId = userService.getUserIdByUserName(username);
-            Query query = getQueryByPath(userId, relativePath, fileName);
-            query.fields().include(Constants.ETAG);
-            FileDocument currentFileDoc = mongoTemplate.findOne(query, FileDocument.class);
-            String oldEtag = (currentFileDoc != null) ? currentFileDoc.getEtag() : null;
+            String oldEtag = etagDAO.findEtagByUserIdAndPathAndName(userId, relativePath, fileName);
 
             if (!ObjectUtil.equals(newEtag, oldEtag)) {
-                Update update = new Update().set(Constants.ETAG, newEtag);
-                // 如果有版本控制字段，这里也应该更新
-                mongoTemplate.updateFirst(query, update, FileDocument.class);
+                etagDAO.setEtagByUserIdAndPathAndName(userId, relativePath, fileName, newEtag);
                 log.debug("File ETag updated for {}: {} -> {}", relativePath + fileName, oldEtag, newEtag);
 
                 // 标记父文件夹需要更新ETag
@@ -268,15 +233,11 @@ public class EtagService {
 
             // 查询当前文件夹下是否有内容, 由于是异步处理，刚创建的文件夹可能还没来得及设置etag, 其下就有新文件了, 所有需要查询一次
             String currentFolderNormalizedPath = relativePath + fileName + "/";
-            Query childrenQuery = Query.query(Criteria.where(Constants.PATH_FIELD).is(currentFolderNormalizedPath));
-            childrenQuery.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-            boolean hasChildren = mongoTemplate.exists(childrenQuery, FileDocument.class);
+            boolean hasChildren = etagDAO.existsByUserIdAndPath(userId, currentFolderNormalizedPath);
             if (!hasChildren) {
                 // 如果没有内容，则设置初始ETag
                 String initialEtag = HashUtil.sha256(EMPTY_FOLDER_ETAG_BASE_STRING);
-                Query query = getQueryByPath(userId, relativePath, fileName);
-                Update update = new Update().set(Constants.ETAG, initialEtag).set(Constants.NEEDS_ETAG_UPDATE_FIELD, false);
-                mongoTemplate.updateFirst(query, update, FileDocument.class);
+                etagDAO.setEtagByUserIdAndPathAndName(userId, currentFolderNormalizedPath, fileName, initialEtag);
                 log.info("Initial ETag set for new folder {}: {}", relativePath, initialEtag);
             }
             // 标记父文件夹需要更新ETag
@@ -284,20 +245,6 @@ public class EtagService {
         } catch (DataAccessException e) {
             log.error("Database error setting initial ETag for folder {}: {}", relativePath, e.getMessage(), e);
         }
-    }
-
-    /**
-     * 通过 userId 和 dbPath 还有filename 可获取到唯一的文件/文件夹
-     *
-     * @param userId   用户id
-     * @param dbPath   dbPath
-     * @param filename 文件名
-     */
-    private static Query getQueryByPath(String userId, String dbPath, String filename) {
-        Query query = Query.query(Criteria.where(IUserService.USER_ID).is(userId));
-        query.addCriteria(Criteria.where(Constants.PATH_FIELD).is(dbPath));
-        query.addCriteria(Criteria.where(Constants.FILENAME_FIELD).is(filename));
-        return query;
     }
 
     /**
@@ -324,21 +271,19 @@ public class EtagService {
     private void processRootFolderFiles() {
         boolean run = true;
         while (run) {
-            Query findQuery = Query.query(Criteria.where(Constants.ETAG).exists(false).and(Constants.IS_FOLDER).is(false).and(Constants.PATH_FIELD).is("/")).limit(16);
-            findQuery.fields().include(Constants.PATH_FIELD, Constants.FILENAME_FIELD, IUserService.USER_ID, Constants.ETAG);
-            long count = mongoTemplate.count(findQuery, FileDocument.class);
+            long count = etagDAO.countRootDirFilesWithoutEtag();
             if (count == 0) {
                 run = false;
             }
 
-            // 获取根目录下所有的文件
-            List<FileDocument> tasks = mongoTemplate.find(findQuery, FileDocument.class);
+            // 获取根目录下未处理etag的文件
+            List<FileBaseEtagDTO> tasks = etagDAO.findFileBaseEtagDTOByRootDirFilesWithoutEtag();
 
             if (tasks.isEmpty()) {
                 continue;
             }
             log.debug("Found {} files marked for ETag update. Processing...", tasks.size());
-            for (FileDocument fileDoc : tasks) {
+            for (FileBaseEtagDTO fileDoc : tasks) {
                 String username = userService.getUserNameById(fileDoc.getUserId());
                 Path path = Paths.get(fileProperties.getRootDir(), username, fileDoc.getPath(), fileDoc.getName());
 
@@ -358,19 +303,15 @@ public class EtagService {
     private void processMarkedFoldersLoop(String workerId) {
         boolean run = true;
         while (run && !Thread.currentThread().isInterrupted()) {
-            Query findQuery = Query.query(Criteria.where(Constants.NEEDS_ETAG_UPDATE_FIELD).is(true).and(Constants.IS_FOLDER).is(true)).with(Sort.by(Sort.Direction.ASC, Constants.LAST_ETAG_UPDATE_REQUEST_AT_FIELD)).limit(16);
-            findQuery.fields().include(Constants.PATH_FIELD, Constants.FILENAME_FIELD, IUserService.USER_ID, Constants.ETAG, "_id");
-
-
-            List<FileDocument> tasks = mongoTemplate.find(findQuery, FileDocument.class);
-
+            Sort sort = Sort.by(Sort.Direction.DESC, Constants.LAST_ETAG_UPDATE_REQUEST_AT_FIELD);
+            List<FileBaseEtagDTO> tasks = etagDAO.findFileBaseEtagDTOByNeedUpdateFolder(sort);
             if (tasks.isEmpty()) {
                 run = false;
                 continue;
             }
             log.debug("[Worker {}] Found {} folders marked for ETag update. Processing...", workerId, tasks.size());
 
-            for (FileDocument folderDoc : tasks) {
+            for (FileBaseEtagDTO folderDoc : tasks) {
                 if (Thread.currentThread().isInterrupted()) {
                     log.warn("[Worker {}] ETag processing loop was interrupted.", workerId);
                     run = false; // 尊重中断信号
@@ -384,10 +325,7 @@ public class EtagService {
 
                 try {
                     boolean etagActuallyChanged = calculateAndUpdateSingleFolderEtagInternal(folderDoc, workerId);
-
-                    Query clearMarkQuery = Query.query(Criteria.where("_id").is(docId));
-                    Update clearMarkUpdate = new Update().set(Constants.NEEDS_ETAG_UPDATE_FIELD, false).unset(Constants.ETAG_UPDATE_FAILED_ATTEMPTS_FIELD).unset(Constants.LAST_ETAG_UPDATE_ERROR_FIELD);
-                    mongoTemplate.updateFirst(clearMarkQuery, clearMarkUpdate, FileDocument.class);
+                    etagDAO.clearMarkUpdateById(docId);
                     log.debug("[Worker {}] Cleared ETag update mark for folder: {}", workerId, folderPath + folderDoc.getName());
 
                     if (etagActuallyChanged) {
@@ -416,12 +354,10 @@ public class EtagService {
             return;
         }
         String folderName = Paths.get(currentFolderPath).getFileName().toString();
-        Query query = getQueryByPath(userId, parentFolderPath, folderName);
-        Update update = new Update().set(Constants.NEEDS_ETAG_UPDATE_FIELD, true).currentDate(Constants.LAST_ETAG_UPDATE_REQUEST_AT_FIELD);
 
         try {
-            UpdateResult result = mongoTemplate.updateFirst(query, update, FileDocument.class);
-            if (result.getModifiedCount() > 0 || result.getMatchedCount() > 0) { // 即使已经是true也更新时间戳
+            boolean modifiedOrMatch = etagDAO.setMarkUpdateByUserIdAndPathAndName(userId, parentFolderPath, folderName);
+            if (modifiedOrMatch) {
                 log.debug("Marked folder for ETag update: {}", currentFolderPath);
                 ensureProcessingMarkedFolders();
             } else {
@@ -438,22 +374,19 @@ public class EtagService {
      *
      * @return true 如果ETag实际发生了变化并被更新
      */
-    private boolean calculateAndUpdateSingleFolderEtagInternal(FileDocument folderDoc, String workerId) {
+    private boolean calculateAndUpdateSingleFolderEtagInternal(FileBaseEtagDTO folderDoc, String workerId) {
         String folderPath = folderDoc.getPath();
         String oldEtag = folderDoc.getEtag();
         String userId = folderDoc.getUserId();
         String newCalculatedEtag;
 
         String currentFolderNormalizedPath = folderDoc.getPath() + folderDoc.getName() + "/";
-        Query childrenQuery = Query.query(Criteria.where(Constants.PATH_FIELD).is(currentFolderNormalizedPath));
-        childrenQuery.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        childrenQuery.fields().include(Constants.FILENAME_FIELD).include(Constants.ETAG).include(Constants.IS_FOLDER).include(IUserService.USER_ID).include(Constants.PATH_FIELD);
-        List<FileDocument> children = mongoTemplate.find(childrenQuery, FileDocument.class);
+        List<FileBaseEtagDTO> children = etagDAO.findFileBaseEtagDTOByUserIdAndPath(userId, currentFolderNormalizedPath);
         long folderSize = 0;
         if (children.isEmpty()) {
             newCalculatedEtag = HashUtil.sha256(EMPTY_FOLDER_ETAG_BASE_STRING);
         } else {
-            List<String> childRepresentations = children.stream().sorted(Comparator.comparing(FileDocument::getName)) // 按名称排序
+            List<String> childRepresentations = children.stream().sorted(Comparator.comparing(FileBaseEtagDTO::getName)) // 按名称排序
                     .map(child -> formatChildRepresentation(workerId, child)).toList();
             StringBuilder combinedRepresentation = new StringBuilder();
             for (String rep : childRepresentations) {
@@ -467,20 +400,13 @@ public class EtagService {
             newCalculatedEtag = HashUtil.sha256(combinedRepresentation.toString());
 
             // 计算文件夹大小
-            folderSize = getFolderSize(CommonFileService.COLLECTION_NAME, userId, currentFolderNormalizedPath);
+            folderSize = getFolderSize(userId, currentFolderNormalizedPath);
         }
 
         if (!newCalculatedEtag.equals(oldEtag)) {
-            Query updateQuery = Query.query(Criteria.where("_id").is(folderDoc.getId()));
-            // 如果使用乐观锁，这里也需要检查版本号
-            // query.addCriteria(Criteria.where("_version").is(folderDoc.getVersion()));
-            Update update = new Update().set(Constants.ETAG, newCalculatedEtag);
-            // 更新文件夹大小
-            update.set(Constants.SIZE, folderSize);
-            // update.inc("_version", 1);
-            UpdateResult result = mongoTemplate.updateFirst(updateQuery, update, FileDocument.class);
-
-            if (result.getModifiedCount() > 0) {
+            // 更新文件夹大小(如果使用乐观锁，需要检查版本号)
+            long modifiedCount = etagDAO.updateEtagAndSizeById(folderDoc.getId(), newCalculatedEtag, folderSize);
+            if (modifiedCount > 0) {
                 log.debug("[Worker {}] Folder ETag updated for {}: {} -> {}", workerId, folderPath + folderDoc.getName(), oldEtag, newCalculatedEtag);
                 return true;
             } else {
@@ -494,21 +420,18 @@ public class EtagService {
     }
 
     private void handleProcessingError(String docId, String folderPath, Exception e, String workerId) {
-        Query query = Query.query(Criteria.where("_id").is(docId));
-        FileDocument failedDoc = mongoTemplate.findOne(query, FileDocument.class);
-        int attempts = (failedDoc != null && failedDoc.getEtagUpdateFailedAttempts() != null) ? failedDoc.getEtagUpdateFailedAttempts() + 1 : 1;
+        int attempts = etagDAO.findEtagUpdateFailedAttemptsById(docId);
 
-        Update update = new Update().set(Constants.LAST_ETAG_UPDATE_ERROR_FIELD, e.getMessage().substring(0, Math.min(e.getMessage().length(), 1000))) // 限制错误信息长度
-                .set(Constants.ETAG_UPDATE_FAILED_ATTEMPTS_FIELD, attempts);
-
+        String errorMsg = e.getMessage().substring(0, Math.min(e.getMessage().length(), 1000)); // 限制错误信息长度
+        Boolean needsEtagUpdate = null;
         if (attempts >= MAX_ETAG_UPDATE_ATTEMPTS) {
-            update.set(Constants.NEEDS_ETAG_UPDATE_FIELD, false); // 停止重试
+            needsEtagUpdate = false;
             log.error("[Worker {}] Folder {} ETag update failed after {} attempts. Giving up.", workerId, folderPath, attempts);
         } else {
             // 可以选择让它下次被重新拾取 (needsEtagUpdate 保持 true)
             log.warn("[Worker {}] Folder {} ETag update failed (attempt {}). Will retry.", workerId, folderPath, attempts);
         }
-        mongoTemplate.updateFirst(query, update, FileDocument.class);
+        etagDAO.setFailedEtagById(docId, attempts, errorMsg, needsEtagUpdate);
     }
 
     private static String getParentDbPath(String currentFolderPath) {
@@ -535,7 +458,7 @@ public class EtagService {
         return pathWithoutTrailingSlash.substring(0, lastSlashIndex + 1);
     }
 
-    private String formatChildRepresentation(String workerId, FileDocument child) {
+    private String formatChildRepresentation(String workerId, FileBaseEtagDTO child) {
         if (child.getEtag() == null) {
             String username = userService.getUserNameById(child.getUserId());
             Path path = Paths.get(fileProperties.getRootDir(), username, child.getPath(), child.getName());

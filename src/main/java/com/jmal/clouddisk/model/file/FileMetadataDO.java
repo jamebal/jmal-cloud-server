@@ -92,6 +92,7 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
     private Integer etagUpdateFailedAttempts;
     private Boolean needsEtagUpdate;
     private LocalDateTime lastEtagUpdateRequestAt;
+    @Column(columnDefinition = "TEXT")
     private String lastEtagUpdateError;
 
     public FileMetadataDO(FileDocument fileDocument) {

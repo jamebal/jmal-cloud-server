@@ -310,7 +310,7 @@ public class SettingService {
                 String currentFolderNormalizedPath = folderDoc.getPath() + folderDoc.getName() + "/";
                 try {
                     // 计算文件夹大小
-                    long size = etagService.getFolderSize(CommonFileService.COLLECTION_NAME, folderDoc.getUserId(), currentFolderNormalizedPath);
+                    long size = etagService.getFolderSize(folderDoc.getUserId(), currentFolderNormalizedPath);
                     // 更新数据库中的大小
                     folderSizeDAO.updateFileSize(folderDoc.getId(), size);
 
