@@ -82,4 +82,10 @@ public final class FileOperation {
     public record setOtherPropsByUserIdAndPathAndName(OtherProperties otherProperties, String userId, String path, String name) implements IFileOperation<Void> {}
 
     public record UpdateLuceneIndexStatusByIdIn(List<String> fileIdList, int indexStatus) implements IFileOperation<Void> {}
+
+    public record UnsetDelTagByIdIn(List<String> fileIdList) implements IFileOperation<Void> {}
+
+    public record SetDelTag(String userId, String path) implements IFileOperation<Void> {}
+
+    public record ResetIndexStatus() implements IFileOperation<Void> {}
 }

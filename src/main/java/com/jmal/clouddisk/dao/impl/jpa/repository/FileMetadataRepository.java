@@ -298,4 +298,46 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
             "FROM FileMetadataDO f LEFT JOIN ArticleDO a ON a.fileMetadata = f JOIN f.props p " +
             "WHERE f.publicId IN :fileIdList")
     List<FileBaseLuceneDTO> findFileBaseLuceneDTOByIdIn(List<String> fileIdList);
+
+    @Modifying
+    @Query("UPDATE FileMetadataDO f SET f.delTag = null WHERE f.publicId = :fileIdList AND f.delTag = 1")
+    void unsetDelTagByIdIn(List<String> fileIdList);
+
+    @Modifying
+    @Query("UPDATE FileMetadataDO f SET f.delTag = null WHERE f.delTag = 1")
+    void unsetDelTag();
+
+    // @Modifying
+    // @Query("UPDATE FileMetadataDO f SET f.delTag = 1 " +
+    //         "WHERE " +
+    //         "f.mountFileId IS NULL AND " +
+    //         "(:userId IS NULL OR f.userId = :userId) AND " +
+    //         "(:pathPrefix IS NULL OR f.path LIKE :pathPrefix ESCAPE '\\') AND " +
+    //         "f.mountFileId IS NULL AND " +
+    //         "NOT EXISTS (" +
+    //         "   SELECT 1 FROM ArticleDO a " +
+    //         "   WHERE a.fileMetadata = f AND " +
+    //         "   a.alonePage IS NULL AND " +
+    //         "   a.release IS NULL" +
+    //         ")")
+    // void markAsDeletedWithArticleConditions(
+    //         @Param("userId") String userId,
+    //         @Param("pathPrefix") String pathPrefix);
+
+    @Modifying
+    @Query("UPDATE FileMetadataDO f SET f.delTag = 1 " +
+            "WHERE " +
+            "f.mountFileId IS NULL AND " +
+            "(:userId IS NULL OR f.userId = :userId) AND " +
+            "(:pathPrefix IS NULL OR f.path LIKE :pathPrefix ESCAPE '\\')"
+            )
+    void setDelTagByUserIdAndPathPrefix(String userId, String pathPrefix);
+
+    boolean existsByLuceneIndexIsLessThanEqual(Integer luceneIndexIsLessThan);
+
+    @Modifying
+    @Query("UPDATE FileMetadataDO f SET f.luceneIndex = null WHERE f.luceneIndex <= 1")
+    void resetIndexStatus();
+
+    int countByOssFolderIsNotNull();
 }

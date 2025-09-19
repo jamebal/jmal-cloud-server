@@ -3,7 +3,9 @@ package com.jmal.clouddisk.dao.impl.mongodb;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.dao.IFileDAO;
+import com.jmal.clouddisk.lucene.IndexStatus;
 import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.media.TranscodeConfig;
 import com.jmal.clouddisk.media.TranscodeStatus;
@@ -59,7 +61,7 @@ public class FileDAOImpl implements IFileDAO {
     @Override
     public void deleteAllByIdInBatch(List<String> userIdList) {
         Query query = new Query();
-        query.addCriteria(org.springframework.data.mongodb.core.query.Criteria.where(IUserService.USER_ID).in(userIdList));
+        query.addCriteria(Criteria.where(IUserService.USER_ID).in(userIdList));
         mongoTemplate.remove(query, FileDocument.class);
     }
 
@@ -832,6 +834,60 @@ public class FileDAOImpl implements IFileDAO {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIdList));
         return mongoTemplate.find(query, FileBaseLuceneDTO.class, COLLECTION_NAME);
+    }
+
+    @Override
+    public void UnsetDelTagByIdIn(List<String> fileIdList) {
+        Query query = new Query();
+        if (fileIdList == null || fileIdList.isEmpty()) {
+            query.addCriteria(Criteria.where("delete").is(1));
+        } else {
+            query.addCriteria(Criteria.where("_id").in(fileIdList).and("delete").is(1));
+        }
+        Update update = new Update();
+        update.unset("delete");
+        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public void setDelTag(String userId, String path) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("alonePage").exists(false));
+        query.addCriteria(Criteria.where("release").exists(false));
+        query.addCriteria(Criteria.where("mountFileId").exists(false));
+        if (StrUtil.isNotBlank(userId)) {
+            query.addCriteria(Criteria.where("userId").is(userId));
+        }
+        if (StrUtil.isNotBlank(path)) {
+            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(path)));
+        }
+        Update update = new Update();
+        // 添加删除标记用于在之后删除
+        update.set("delete", 1);
+        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public boolean existsByUnIndexed() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(LuceneService.MONGO_INDEX_FIELD).lte(IndexStatus.INDEXING.getStatus()));
+        return mongoTemplate.exists(query, FileDocument.class);
+    }
+
+    @Override
+    public void resetIndexStatus() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(LuceneService.MONGO_INDEX_FIELD).lte(IndexStatus.INDEXING.getStatus()));
+        Update update = new Update();
+        update.unset(LuceneService.MONGO_INDEX_FIELD);
+        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+    }
+
+    @Override
+    public long countOssFolder() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("ossFolder").exists(true));
+        return mongoTemplate.count(query, FileDocument.class);
     }
 
     @NotNull

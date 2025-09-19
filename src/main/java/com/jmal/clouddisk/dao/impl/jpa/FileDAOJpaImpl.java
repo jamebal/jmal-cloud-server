@@ -10,6 +10,7 @@ import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
 import com.jmal.clouddisk.dao.impl.jpa.write.file.FileOperation;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.lucene.IndexStatus;
 import com.jmal.clouddisk.media.TranscodeConfig;
 import com.jmal.clouddisk.media.VideoInfoDO;
 import com.jmal.clouddisk.model.ShareBaseInfoDTO;
@@ -621,6 +622,43 @@ public class FileDAOJpaImpl implements IFileDAO {
     @Override
     public List<FileBaseLuceneDTO> findFileBaseLuceneDTOByIdIn(List<String> fileIdList) {
         return fileMetadataRepository.findFileBaseLuceneDTOByIdIn(fileIdList);
+    }
+
+    @Override
+    public void UnsetDelTagByIdIn(List<String> fileIdList) {
+        try {
+            writeService.submit(new FileOperation.UnsetDelTagByIdIn(fileIdList)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public void setDelTag(String userId, String path) {
+        try {
+            writeService.submit(new FileOperation.SetDelTag(userId, path)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public boolean existsByUnIndexed() {
+        return fileMetadataRepository.existsByLuceneIndexIsLessThanEqual(IndexStatus.INDEXING.getStatus());
+    }
+
+    @Override
+    public void resetIndexStatus() {
+        try {
+            writeService.submit(new FileOperation.ResetIndexStatus()).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public long countOssFolder() {
+        return fileMetadataRepository.countByOssFolderIsNotNull();
     }
 
     private List<FileDocument> getFileDocuments(List<FileMetadataDO> fileMetadataDOList, boolean readContent) {

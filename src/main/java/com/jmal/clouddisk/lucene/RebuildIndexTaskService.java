@@ -3,7 +3,6 @@ package com.jmal.clouddisk.lucene;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.NumberUtil;
-import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IFileDAO;
@@ -26,10 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -73,8 +69,6 @@ public class RebuildIndexTaskService {
     private final CommonUserFileService commonUserFileService;
 
     private final MessageService messageService;
-
-    private final MongoTemplate mongoTemplate;
 
     private final IFileDAO fileDAO;
 
@@ -581,9 +575,7 @@ public class RebuildIndexTaskService {
     }
 
     public boolean checkIndexExists() {
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where("ossFolder").exists(true));
-        long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
+        long count = fileDAO.countOssFolder();
         long indexCount = indexWriter.getDocStats().numDocs;
         return indexCount > count;
     }
@@ -592,21 +584,14 @@ public class RebuildIndexTaskService {
      * 重置索引状态, 将正在索引的文件状态重置为未索引
      */
     public void resetIndexStatus() {
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where(LuceneService.MONGO_INDEX_FIELD).lte(IndexStatus.INDEXING.getStatus()));
-        Update update = new Update();
-        update.unset(LuceneService.MONGO_INDEX_FIELD);
-        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+        fileDAO.resetIndexStatus();
     }
 
     /**
      * 检查是否有未索引或正在索引的任务
      */
     public boolean hasUnIndexedTasks() {
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where(LuceneService.MONGO_INDEX_FIELD).lte(IndexStatus.INDEXING.getStatus()));
-        long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
-        return count > 0;
+        return fileDAO.existsByUnIndexed();
     }
 
     /**
@@ -634,20 +619,7 @@ public class RebuildIndexTaskService {
                 path = "/";
             }
         }
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where("alonePage").exists(false));
-        query.addCriteria(Criteria.where("release").exists(false));
-        query.addCriteria(Criteria.where("mountFileId").exists(false));
-        if (StrUtil.isNotBlank(userId)) {
-            query.addCriteria(Criteria.where("userId").is(userId));
-        }
-        if (StrUtil.isNotBlank(path)) {
-            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(path)));
-        }
-        Update update = new Update();
-        // 添加删除标记用于在之后删除
-        update.set("delete", 1);
-        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+        fileDAO.setDelTag(userId, path);
         if (isDelIndex) {
             // 删除索引
             deleteAllIndex(path);
@@ -660,15 +632,7 @@ public class RebuildIndexTaskService {
      * @param fileIdList fileIdList
      */
     public void removeDeletedFlag(List<String> fileIdList) {
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        if (fileIdList == null || fileIdList.isEmpty()) {
-            query.addCriteria(Criteria.where("delete").is(1));
-        } else {
-            query.addCriteria(Criteria.where("_id").in(fileIdList).and("delete").is(1));
-        }
-        Update update = new Update();
-        update.unset("delete");
-        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+        fileDAO.UnsetDelTagByIdIn(fileIdList);
     }
 
     @PreDestroy

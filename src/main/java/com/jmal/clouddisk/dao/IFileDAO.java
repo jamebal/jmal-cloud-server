@@ -187,4 +187,14 @@ public interface IFileDAO {
     List<FileBaseLuceneDTO> findFileBaseLuceneDTOByLuceneIndex(int status, int limit);
 
     List<FileBaseLuceneDTO> findFileBaseLuceneDTOByIdIn(List<String> fileIdList);
+
+    void UnsetDelTagByIdIn(List<String> fileIdList);
+
+    void setDelTag(String userId, String path);
+
+    boolean existsByUnIndexed();
+
+    void resetIndexStatus();
+
+    long countOssFolder();
 }

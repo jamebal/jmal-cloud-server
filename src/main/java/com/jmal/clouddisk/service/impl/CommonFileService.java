@@ -410,12 +410,6 @@ public class CommonFileService {
                 if (count == 0) {
                     run = false;
                 }
-                // List<org.bson.Document> pipeline = Arrays.asList(
-                //         new org.bson.Document("$match", new org.bson.Document("delete", 1)),
-                //         new org.bson.Document("$project", new org.bson.Document("_id", 1).append("name", 1).append("path", 1).append("userId", 1)),
-                //         new org.bson.Document("$sort", new org.bson.Document("isFolder", 1L)),
-                //         new org.bson.Document("$limit", 1));
-                // AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
                 List<FileBaseDTO> fileBaseDTOList = fileDAO.findFileBaseDTOByDelTagOfLimit(1, 6);
                 for (FileBaseDTO fileBaseDTO : fileBaseDTOList) {
                     String fileId = fileBaseDTO.getId();
