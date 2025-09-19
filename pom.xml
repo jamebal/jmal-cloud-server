@@ -99,6 +99,11 @@
             <artifactId>dotenv-java</artifactId>
             <version>3.2.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.hankcs</groupId>
+            <artifactId>hanlp</artifactId>
+            <version>portable-1.8.6</version>
+        </dependency>
         <!-- crypto -->
         <dependency>
             <groupId>org.springframework.security</groupId>
