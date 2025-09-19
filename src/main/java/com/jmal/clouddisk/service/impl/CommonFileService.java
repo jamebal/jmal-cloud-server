@@ -309,11 +309,6 @@ public class CommonFileService {
             String fileContentType = getContentType(file, contentType);
             String md5 = file.length() + "/" + fileDocument.getName();
             long modifiedCount = fileDAO.updateModifyFile(fileDocument.getId(), file.length(), md5, suffix, fileContentType, updateTime);
-            // if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
-            //     // 写入markdown内容
-            //     String markDownContent = FileUtil.readString(file, MyFileUtils.getFileCharset(file));
-            //     update.set(Constants.CONTENT_TEXT, markDownContent);
-            // }
             fileDocument.setSize(file.length());
             fileDocument.setUpdateDate(updateTime);
             messageService.pushMessage(username, fileDocument, Constants.UPDATE_FILE);

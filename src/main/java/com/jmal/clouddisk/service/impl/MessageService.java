@@ -107,7 +107,7 @@ public class MessageService {
         }
         if (timelyPush(username, message, url)) return;
         if (Constants.CREATE_FILE.equals(url) || Constants.DELETE_FILE.equals(url)) {
-            Map<String, ThrottleExecutor> userExecutors = throttleExecutorCache.get(username, k -> new ConcurrentHashMap<>(8));
+            Map<String, ThrottleExecutor> userExecutors = throttleExecutorCache.get(username, _ -> new ConcurrentHashMap<>(8));
             ThrottleExecutor throttleExecutor = userExecutors.computeIfAbsent(url, key -> {
                 log.debug("Creating new ThrottleExecutor for user '{}' and url '{}'", username, key);
                 return new ThrottleExecutor(300); // 300ms 节流窗口
@@ -150,7 +150,6 @@ public class MessageService {
             message = new Document();
         }
         if (message instanceof FileDocument fileDocument) {
-            fileDocument.setId(null);
             fileDocument.setContent(null);
             fileDocument.setMusic(null);
             fileDocument.setContentText(null);

@@ -104,9 +104,7 @@ public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
         log.debug("清空数据库中所有文件夹的大小信息");
 
         try {
-            CompletableFuture<Integer> future = writeService.submit(new FileOperation.ClearAllFolderSizes());
-            int updatedCount = future.get(10, TimeUnit.SECONDS);
-            log.debug("已清空 {} 个文件夹的大小信息", updatedCount);
+            writeService.submit(new FileOperation.ClearAllFolderSizes()).get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             log.error("清空文件夹大小信息失败: {}", e.getMessage(), e);
             throw new CommonException(e.getMessage());

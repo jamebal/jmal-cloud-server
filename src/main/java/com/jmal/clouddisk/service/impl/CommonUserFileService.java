@@ -348,6 +348,7 @@ public class CommonUserFileService {
                 if (dataSourceProperties.getType() == DataSourceType.mongodb) {
                     fileDocument.setContentText(markDownContent);
                 } else {
+                    fileDocument.setContentText("1");
                     filePersistenceService.persistContent(fileDocument.getId(), file.toPath());
                 }
             }
@@ -371,6 +372,7 @@ public class CommonUserFileService {
             if (dataSourceProperties.getType() == DataSourceType.mongodb) {
                 fileDocument.setContent(PathUtil.readBytes(contentPath));
             } else {
+                fileDocument.setContent(new byte[0]);
                filePersistenceService.persistContent(fileDocument.getId(), contentPath);
             }
             fileDocument.setVideo(videoInfo.toVideoInfoDO());

@@ -73,6 +73,7 @@ public class ImageMagickProcessor {
             if (dataSourceProperties.getType() == DataSourceType.mongodb) {
                 fileDocument.setContent(byteArrayOutputStream.toByteArray());
             } else {
+                fileDocument.setContent(new byte[0]);
                 filePersistenceService.persistContent(fileDocument.getId(), byteArrayOutputStream);
             }
         } catch (InterruptedException e) {
