@@ -1,12 +1,16 @@
 package com.jmal.clouddisk.lucene;
 
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import com.jmal.clouddisk.dao.IFileDAO;
+import com.jmal.clouddisk.dao.IFileQueryDAO;
+import com.jmal.clouddisk.dao.ISearchHistoryDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.TagDO;
-import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileIntroVO;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.model.query.SearchOptionHistoryDO;
 import com.jmal.clouddisk.service.Constants;
@@ -16,8 +20,6 @@ import com.jmal.clouddisk.service.impl.TagService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import com.jmal.clouddisk.util.TimeUntils;
-import com.mongodb.client.AggregateIterable;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
@@ -27,17 +29,19 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
-import org.bson.types.ObjectId;
 import org.springframework.data.domain.Page;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.jmal.clouddisk.lucene.LuceneService.FIELD_TAG_NAME_FUZZY;
-import static com.jmal.clouddisk.service.impl.CommonFileService.COLLECTION_NAME;
 
 @Service
 @RequiredArgsConstructor
@@ -48,10 +52,15 @@ public class SearchFileService {
     private final SearcherManager searcherManager;
     private final UserLoginHolder userLoginHolder;
     private final TagService tagService;
-    private final MongoTemplate mongoTemplate;
+    private final ISearchHistoryDAO searchHistoryDAO;
+    private final IFileDAO fileDAO;
+    private final IFileQueryDAO fileQueryDAO;
     private final CommonUserService userService;
 
+    private static final long HALF_YEAR_TIME = 182L * 24 * 60 * 60 * 1000;
+
     public ResponseResult<List<FileIntroVO>> searchFile(SearchDTO searchDTO) {
+        TimeInterval timeInterval = new TimeInterval();
         String keyword = searchDTO.getKeyword();
         if (keyword == null || keyword.trim().isEmpty() || searchDTO.getUserId() == null) {
             return ResultUtil.success(Collections.emptyList());
@@ -69,20 +78,17 @@ public class SearchFileService {
             searcherManager.maybeRefresh();
 
             Page<String> page = luceneQueryService.find(query, searchDTO);
+            System.out.println("搜索耗时：" + timeInterval.intervalPretty());
 
-            List<FileIntroVO> fileIntroVOList = getFileIntroVOs(page.getContent());
-            long now = System.currentTimeMillis();
-            fileIntroVOList.forEach(fileIntroVO -> {
-                long updateMilli = TimeUntils.getMilli(fileIntroVO.getUpdateDate());
-                fileIntroVO.setAgoTime(now - updateMilli);
-            });
+            List<FileIntroVO> fileIntroVOList = fileQueryDAO.findAllFileIntroVOByIdIn(page.getContent());
+            System.out.println("查询数据库耗时：" + timeInterval.intervalPretty());
             result.setData(fileIntroVOList);
             result.setCount(page.getTotalElements());
 
             String userId = userLoginHolder.getUserId();
             // 添加搜索历史
             Completable.fromAction(() -> addSearchHistory(userId, searchDTO)).subscribeOn(Schedulers.io()).subscribe();
-
+            System.out.println("保存搜索历史耗时：" + timeInterval.intervalPretty());
             return result;
         } catch (IOException | ParseException | java.lang.IllegalArgumentException e) {
             log.error("搜索失败", e);
@@ -102,33 +108,23 @@ public class SearchFileService {
         }
         SearchOptionHistoryDO searchOptionHistoryDO = searchDTO.toSearchOptionDO();
         searchOptionHistoryDO.setSearchTime(System.currentTimeMillis());
-        searchOptionHistoryDO.setSearchUserId(searchUserId);
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where("keyword").is(searchDTO.getKeyword()));
-        query.addCriteria(Criteria.where("searchUserId").is(searchUserId));
+        searchOptionHistoryDO.setUserId(searchUserId);
         // 删除重复的搜索记录
-        mongoTemplate.remove(query, SearchOptionHistoryDO.class);
+        searchHistoryDAO.removeByUserIdAndKeyword(searchDTO.getKeyword(), searchUserId);
 
-        // 删除一个月之前的搜索记录
-        org.springframework.data.mongodb.core.query.Query query1 = new org.springframework.data.mongodb.core.query.Query();
-        query1.addCriteria(Criteria.where("searchUserId").is(searchUserId));
-        query1.addCriteria(Criteria.where("searchTime").lt(System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000L));
-        mongoTemplate.remove(query1, SearchOptionHistoryDO.class);
+        // 删除半年之前的搜索记录
+        long time = System.currentTimeMillis() - HALF_YEAR_TIME;
+        searchHistoryDAO.removeByUserIdAndSearchTimeLessThan(searchUserId, time);
 
         // 插入搜索记录
-        mongoTemplate.insert(searchOptionHistoryDO);
+        searchHistoryDAO.save(searchOptionHistoryDO);
     }
 
     public List<SearchDTO> recentlySearchHistory(String keyword) {
         // 最近6条搜索记录
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where("searchUserId").is(userLoginHolder.getUserId()));
-        if (CharSequenceUtil.isNotBlank(keyword)) {
-            query.addCriteria(Criteria.where("keyword").regex(keyword));
-        }
-        query.with(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "searchTime"));
-        query.limit(6);
-        List<SearchOptionHistoryDO> searchOptionHistoryDOList = mongoTemplate.find(query, SearchOptionHistoryDO.class);
+        Sort sort = Sort.by(Sort.Direction.DESC, "searchTime");
+        Pageable pageable = PageRequest.of(0, 6, sort);
+        List<SearchOptionHistoryDO> searchOptionHistoryDOList = searchHistoryDAO.findRecentByUserIdAndKeyword(userLoginHolder.getUserId(), keyword, pageable);
         return searchOptionHistoryDOList.stream().map(SearchOptionHistoryDO::toSearchDTO).toList();
     }
 
@@ -136,9 +132,7 @@ public class SearchFileService {
         if (CharSequenceUtil.isBlank(id)) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS);
         }
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where("_id").is(id));
-        mongoTemplate.remove(query, SearchOptionHistoryDO.class);
+        searchHistoryDAO.removeById(id);
     }
 
     public void deleteAllSearchHistory() {
@@ -146,9 +140,7 @@ public class SearchFileService {
         if (CharSequenceUtil.isBlank(userId)) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS);
         }
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        mongoTemplate.remove(query, SearchOptionHistoryDO.class);
+        searchHistoryDAO.removeAllByUserId(userId);
     }
 
     /**
@@ -236,27 +228,14 @@ public class SearchFileService {
         BooleanQuery.Builder mountQueryBuilder;
         if (BooleanUtil.isTrue(searchDTO.getSearchMount()) || searchDTO.onlySearchMount()) {
             mountQueryBuilder = new BooleanQuery.Builder();
-            org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-            query.addCriteria(Criteria.where("userId").is(searchDTO.getUserId()));
-            query.addCriteria(Criteria.where("mountFileId").exists(true));
-            query.fields().exclude(Constants.CONTENT);
-            query.fields().exclude("video");
-            query.fields().exclude("music");
-            query.fields().exclude(Constants.CONTENT_TEXT);
-            query.fields().exclude("exif");
-            List<FileDocument> fileDocumentList = mongoTemplate.find(query, FileDocument.class);
-            fileDocumentList.parallelStream().forEach(fileDocument -> {
+            List<FileBaseDTO> fileBaseDTOList = fileDAO.findMountFileBaseDTOByUserId(searchDTO.getUserId());
+            fileBaseDTOList.forEach(fileBaseDTO -> {
                 BooleanQuery.Builder mountQueryBuilderItem = new BooleanQuery.Builder();
-                org.springframework.data.mongodb.core.query.Query query1 = new org.springframework.data.mongodb.core.query.Query();
-                query1.fields().include("userId");
-                query1.fields().include("path");
-                query1.fields().include("name");
-                FileDocument fileBase = mongoTemplate.findById(fileDocument.getMountFileId(), FileDocument.class);
-                if (fileBase != null) {
+                if (fileBaseDTO != null) {
                     // userId
-                    mountQueryBuilderItem.add(new TermQuery(new Term(IUserService.USER_ID, fileBase.getUserId())), BooleanClause.Occur.MUST);
+                    mountQueryBuilderItem.add(new TermQuery(new Term(IUserService.USER_ID, fileBaseDTO.getUserId())), BooleanClause.Occur.MUST);
                     // path
-                    mountQueryBuilderItem.add(LuceneQueryService.getPathQueryBuilder(fileBase.getPath() + fileBase.getName()), BooleanClause.Occur.MUST);
+                    mountQueryBuilderItem.add(LuceneQueryService.getPathQueryBuilder(fileBaseDTO.getPath() + fileBaseDTO.getName()), BooleanClause.Occur.MUST);
                     // other
                     mountQueryBuilderItem.add(combinedQuery, BooleanClause.Occur.MUST);
                     if (!otherQuery.clauses().isEmpty()) {
@@ -280,12 +259,10 @@ public class SearchFileService {
         String folder = searchDTO.getFolder();
         if (CharSequenceUtil.isNotBlank(folder)) {
             // 挂载点查询
-            org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-            query.addCriteria(Criteria.where("_id").is(folder));
-            FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
-            if (fileDocument != null && BooleanUtil.isFalse(searchDTO.getSearchOverall())) {
-                searchDTO.setCurrentDirectory(fileDocument.getPath() + fileDocument.getName());
-                searchDTO.setMountUserId(fileDocument.getUserId());
+            FileBaseDTO fileBaseDTO = fileDAO.findFileBaseDTOById(folder);
+            if (fileBaseDTO != null && BooleanUtil.isFalse(searchDTO.getSearchOverall())) {
+                searchDTO.setCurrentDirectory(fileBaseDTO.getPath() + fileBaseDTO.getName());
+                searchDTO.setMountUserId(fileBaseDTO.getUserId());
             }
         }
     }
@@ -310,32 +287,6 @@ public class SearchFileService {
         if (searchDTO.getIsFavorite() != null && !queryPath) {
             builder.add(IntPoint.newExactQuery(Constants.IS_FAVORITE, searchDTO.getIsFavorite() ? 1 : 0), BooleanClause.Occur.MUST);
         }
-    }
-
-    public List<FileIntroVO> getFileIntroVOs(List<String> fileIdList) {
-        List<ObjectId> objectIds = fileIdList.stream()
-                .filter(ObjectId::isValid)
-                .map(ObjectId::new)
-                .toList();
-        List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match",
-                        new org.bson.Document("_id",
-                                new org.bson.Document("$in", objectIds))),
-                new org.bson.Document("$project", new org.bson.Document("order", 0L).append(Constants.CONTENT_TEXT, 0L).append(Constants.CONTENT, 0L)),
-                new org.bson.Document("$addFields",
-                        new org.bson.Document("order",
-                                new org.bson.Document("$indexOfArray", Arrays.asList(objectIds, "$_id")))),
-                new org.bson.Document("$sort",
-                        new org.bson.Document("order", 1L))
-        );
-
-        AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(pipeline);
-
-        List<FileIntroVO> results = new ArrayList<>();
-        for (org.bson.Document document : aggregateIterable) {
-            FileIntroVO fileIntroVO = mongoTemplate.getConverter().read(FileIntroVO.class, document);
-            results.add(fileIntroVO);
-        }
-        return results;
     }
 
 }

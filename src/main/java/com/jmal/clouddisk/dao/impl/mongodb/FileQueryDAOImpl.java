@@ -16,7 +16,6 @@ import com.jmal.clouddisk.service.impl.FileSortService;
 import com.jmal.clouddisk.service.impl.MessageService;
 import com.jmal.clouddisk.util.TimeUntils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.BeanUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -27,8 +26,10 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static com.jmal.clouddisk.service.IUserService.USER_ID;
 
@@ -68,7 +69,7 @@ public class FileQueryDAOImpl implements IFileQueryDAO {
                     criteria = Criteria.where(Constants.IS_FAVORITE).is(upload.getIsFavorite());
                 }
                 if (BooleanUtil.isTrue(upload.getIsMount())) {
-                    criteria = Criteria.where("mountFileId").exists(true);
+                    criteria = Criteria.where(Constants.MOUNT_FILE_ID_FIELD).exists(true);
                 }
                 String tagId = upload.getTagId();
                 if (CharSequenceUtil.isNotBlank(tagId)) {
@@ -108,6 +109,41 @@ public class FileQueryDAOImpl implements IFileQueryDAO {
         return fileDocument;
     }
 
+    @Override
+    public List<FileIntroVO> findAllFileIntroVOByIdIn(List<String> fileIdList) {
+        if (fileIdList == null || fileIdList.isEmpty()) {
+            return List.of();
+        }
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIdList));
+        List<FileIntroVO> list = mongoTemplate.find(query, FileIntroVO.class, CommonFileService.COLLECTION_NAME);
+        return sortFileIntroVOList(fileIdList, list);
+    }
+
+    private List<FileIntroVO> sortFileIntroVOList(List<String> sortIdList, List<FileIntroVO> list) {
+        long now = System.currentTimeMillis();
+        if (sortIdList == null || sortIdList.isEmpty()) {
+            return list.stream()
+                    .filter(Objects::nonNull)
+                    .peek(fv -> {
+                        long updateMilli = TimeUntils.getMilli(fv.getUpdateDate());
+                        fv.setAgoTime(now - updateMilli);
+                    })
+                    .toList();
+        } else {
+            Map<String, FileIntroVO> resultMap = list.stream()
+                    .collect(Collectors.toMap(FileIntroVO::getId, f -> f));
+            return sortIdList.stream()
+                    .map(resultMap::get)
+                    .filter(Objects::nonNull)
+                    .peek(fv -> {
+                        long updateMilli = TimeUntils.getMilli(fv.getUpdateDate());
+                        fv.setAgoTime(now - updateMilli);
+                    })
+                    .toList();
+        }
+    }
+
     /***
      * 通过查询条件获取文件数
      * @param upload UploadApiParamDTO
@@ -144,16 +180,8 @@ public class FileQueryDAOImpl implements IFileQueryDAO {
         if (CommonFileService.TRASH_COLLECTION_NAME.equals(collectionName)) {
             query.addCriteria(Criteria.where("hidden").is(false));
         }
-        List<FileDocument> list = mongoTemplate.find(query, FileDocument.class, collectionName);
-        long now = System.currentTimeMillis();
-        fileIntroVOList = list.parallelStream().map(fileDocument -> {
-            LocalDateTime updateDate = fileDocument.getUpdateDate();
-            long update = TimeUntils.getMilli(updateDate);
-            fileDocument.setAgoTime(now - update);
-            FileIntroVO fileIntroVO = new FileIntroVO();
-            BeanUtils.copyProperties(fileDocument, fileIntroVO);
-            return fileIntroVO;
-        }).toList();
+        List<FileIntroVO> list = mongoTemplate.find(query, FileIntroVO.class, collectionName);
+        fileIntroVOList = sortFileIntroVOList(null, list);
         pushConfigInfo(upload);
         return FileSortService.sortByFileName(upload, fileIntroVOList, order);
     }

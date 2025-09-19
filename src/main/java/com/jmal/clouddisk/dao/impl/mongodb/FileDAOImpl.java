@@ -138,7 +138,7 @@ public class FileDAOImpl implements IFileDAO {
 
     private static Query getMountQuery(String fileId, String userId) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("mountFileId").is(fileId));
+        query.addCriteria(Criteria.where(Constants.MOUNT_FILE_ID_FIELD).is(fileId));
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
         return query;
     }
@@ -182,7 +182,7 @@ public class FileDAOImpl implements IFileDAO {
     @Override
     public void removeByMountFileId(String fileId) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("mountFileId").is(fileId));
+        query.addCriteria(Criteria.where(Constants.MOUNT_FILE_ID_FIELD).is(fileId));
         mongoTemplate.remove(query, FileDocument.class);
     }
 
@@ -574,7 +574,7 @@ public class FileDAOImpl implements IFileDAO {
     @Override
     public void setNameByMountFileId(String fileId, String newFileName) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("mountFileId").is(fileId));
+        query.addCriteria(Criteria.where(Constants.MOUNT_FILE_ID_FIELD).is(fileId));
         Update update = new Update();
         update.set(Constants.FILENAME_FIELD, newFileName);
         mongoTemplate.updateMulti(query, update, FileDocument.class);
@@ -680,7 +680,7 @@ public class FileDAOImpl implements IFileDAO {
     @Override
     public List<FileDocument> findAllAndRemoveByMountFileIdPrefix(String pathName) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("mountFileId").regex("^" + pathName));
+        query.addCriteria(Criteria.where(Constants.MOUNT_FILE_ID_FIELD).regex("^" + pathName));
         return mongoTemplate.findAllAndRemove(query, FileDocument.class);
     }
 
@@ -854,7 +854,7 @@ public class FileDAOImpl implements IFileDAO {
         Query query = new Query();
         query.addCriteria(Criteria.where("alonePage").exists(false));
         query.addCriteria(Criteria.where("release").exists(false));
-        query.addCriteria(Criteria.where("mountFileId").exists(false));
+        query.addCriteria(Criteria.where(Constants.MOUNT_FILE_ID_FIELD).exists(false));
         if (StrUtil.isNotBlank(userId)) {
             query.addCriteria(Criteria.where("userId").is(userId));
         }
@@ -888,6 +888,21 @@ public class FileDAOImpl implements IFileDAO {
         Query query = new Query();
         query.addCriteria(Criteria.where("ossFolder").exists(true));
         return mongoTemplate.count(query, FileDocument.class);
+    }
+
+    @Override
+    public List<FileBaseDTO> findMountFileBaseDTOByUserId(String userId) {
+        List<String> mountFileIdList = findMountFileIdByUserId(userId);
+        return findAllFileBaseDTOByIdIn(mountFileIdList);
+    }
+
+    public List<String> findMountFileIdByUserId(String userId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(USER_ID).is(userId));
+        query.addCriteria(Criteria.where(Constants.MOUNT_FILE_ID_FIELD).exists(true));
+        query.fields().include(Constants.MOUNT_FILE_ID_FIELD);
+        List<FileDocument> list = mongoTemplate.find(query, FileDocument.class);
+        return list.stream().map(FileDocument::getMountFileId).distinct().toList();
     }
 
     @NotNull

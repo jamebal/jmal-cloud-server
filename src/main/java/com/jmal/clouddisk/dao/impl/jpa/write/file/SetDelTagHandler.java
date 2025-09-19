@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Component("fileRemoveDelTagByIdInHandler")
+@Component("fileSetDelTagHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
 public class SetDelTagHandler implements IDataOperationHandler<FileOperation.SetDelTag, Void> {

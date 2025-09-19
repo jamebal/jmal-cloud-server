@@ -25,7 +25,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -498,8 +497,6 @@ public class RebuildIndexTaskService {
                 commonUserFileService.createFile(username, file.toFile(), null, null);
             } catch (Exception e) {
                 log.error("createFile error {}{}", e.getMessage(), file, e);
-                Query query = new Query();
-                query.fields().include("_id");
                 FileBaseDTO fileBaseDTO = commonFileService.getFileBaseDTO(username, file.toFile().getAbsolutePath());
                 String fileId = fileDAO.findIdByUserIdAndPathAndName(fileBaseDTO.getUserId(), fileBaseDTO.getName(), fileBaseDTO.getPath());
                 if (fileId != null) {

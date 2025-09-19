@@ -20,7 +20,7 @@ import java.util.Optional;
 
 @Repository
 @Conditional(RelationalDataSourceCondition.class)
-public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Long> , JpaSpecificationExecutor<FileMetadataDO> {
+public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Long>, JpaSpecificationExecutor<FileMetadataDO> {
 
     @Query("SELECT f.publicId FROM FileMetadataDO f JOIN f.props p " +
             "WHERE f.userId = :userId " +
@@ -300,7 +300,7 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
     List<FileBaseLuceneDTO> findFileBaseLuceneDTOByIdIn(List<String> fileIdList);
 
     @Modifying
-    @Query("UPDATE FileMetadataDO f SET f.delTag = null WHERE f.publicId = :fileIdList AND f.delTag = 1")
+    @Query("UPDATE FileMetadataDO f SET f.delTag = null WHERE f.publicId IN :fileIdList AND f.delTag = 1")
     void unsetDelTagByIdIn(List<String> fileIdList);
 
     @Modifying
@@ -330,7 +330,7 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
             "f.mountFileId IS NULL AND " +
             "(:userId IS NULL OR f.userId = :userId) AND " +
             "(:pathPrefix IS NULL OR f.path LIKE :pathPrefix ESCAPE '\\')"
-            )
+    )
     void setDelTagByUserIdAndPathPrefix(String userId, String pathPrefix);
 
     boolean existsByLuceneIndexIsLessThanEqual(Integer luceneIndexIsLessThan);
@@ -340,4 +340,13 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
     void resetIndexStatus();
 
     int countByOssFolderIsNotNull();
+
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseDTO(f.name, f.path, f.userId) " +
+            "FROM FileMetadataDO f " +
+            "WHERE f.publicId IN (" +
+            "   SELECT fm.mountFileId FROM FileMetadataDO fm " +
+            "   WHERE fm.userId = :userId AND fm.mountFileId IS NOT NULL" +
+            ")"
+    )
+    List<FileBaseDTO> findMountFileBaseDTOByUserId(String userId);
 }

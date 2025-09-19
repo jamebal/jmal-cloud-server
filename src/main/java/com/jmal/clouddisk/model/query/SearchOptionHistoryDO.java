@@ -1,31 +1,30 @@
 package com.jmal.clouddisk.model.query;
 
 import com.jmal.clouddisk.config.Reflective;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
  * @author jmal
  * @Description Lucene search param
  */
-@EqualsAndHashCode(callSuper = true)
-@Data
-@Builder
+@Getter
+@Setter
+@NoArgsConstructor
 @Document(collection = "searchOptionHistory")
-public class SearchOptionHistoryDO extends QueryBaseDTO implements Reflective {
-
-    String id;
+@Entity
+@Table(name = "search_history")
+public class SearchOptionHistoryDO extends AuditableEntity implements Reflective {
 
     /**
      * 搜索时间
      */
     Long searchTime;
-    /**
-     * 执行搜索操作的用户id
-     */
-    String searchUserId;
 
     String userId;
     /**

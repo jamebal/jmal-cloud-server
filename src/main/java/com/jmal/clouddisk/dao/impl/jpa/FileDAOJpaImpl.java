@@ -661,6 +661,11 @@ public class FileDAOJpaImpl implements IFileDAO {
         return fileMetadataRepository.countByOssFolderIsNotNull();
     }
 
+    @Override
+    public List<FileBaseDTO> findMountFileBaseDTOByUserId(String userId) {
+        return fileMetadataRepository.findMountFileBaseDTOByUserId(userId);
+    }
+
     private List<FileDocument> getFileDocuments(List<FileMetadataDO> fileMetadataDOList, boolean readContent) {
         return fileMetadataDOList.stream().map(fileMetadataDO -> {
             FileDocument fileDocument = fileMetadataDO.toFileDocument();

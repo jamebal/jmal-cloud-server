@@ -15,4 +15,6 @@ public interface IFileQueryDAO {
     List<FileBaseMountDTO> getDirDocuments(UploadApiParamDTO upload);
 
     FileDocument findBaseFileDocumentById(String id, boolean excludeContent);
+
+    List<FileIntroVO> findAllFileIntroVOByIdIn(List<String> fileIdList);
 }

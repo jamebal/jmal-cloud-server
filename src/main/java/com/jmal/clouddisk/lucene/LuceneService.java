@@ -26,8 +26,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.context.ApplicationListener;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -635,8 +633,6 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
      * 是否存在待索引文件
      */
     private boolean hasUnIndexFile() {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(MONGO_INDEX_FIELD).is(IndexStatus.NOT_INDEX.getStatus()));
         long count = fileDAO.countByLuceneIndex(IndexStatus.NOT_INDEX.getStatus());
         return count > 0;
     }

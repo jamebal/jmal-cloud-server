@@ -197,4 +197,7 @@ public interface IFileDAO {
     void resetIndexStatus();
 
     long countOssFolder();
+
+    List<FileBaseDTO> findMountFileBaseDTOByUserId(String userId);
+
 }

@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
@@ -25,7 +26,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -104,29 +104,10 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
 
         List<String> ids = page.getContent();
 
-        List<FileIntroVO> fileIntroVOList = getFileIntroVOs(ids);
-
-        Map<String, FileIntroVO> resultMap = fileIntroVOList.stream()
-                .collect(Collectors.toMap(FileIntroVO::getId, f -> f));
-        List<FileIntroVO> sorted = ids.stream()
-                .map(resultMap::get)
-                .filter(Objects::nonNull) // 防止有的 id 查不到
-                .toList();
-
-        long now = System.currentTimeMillis();
-        sorted = sorted.parallelStream().peek(fileIntroVO -> {
-            LocalDateTime updateDate = fileIntroVO.getUpdateDate();
-            long update = TimeUntils.getMilli(updateDate);
-            fileIntroVO.setAgoTime(now - update);
-        }).toList();
+        List<FileIntroVO> fileIntroVOList = findAllFileIntroVOByIdIn(ids);
 
         // fileIntroVOList = FileSortService.sortByFileName(upload, fileIntroVOList, upload.getOrder());
-        return new PageImpl<>(sorted, pageable, total);
-    }
-
-    private List<FileIntroVO> getFileIntroVOs(List<String> ids) {
-        List<FileMetadataDO> list = fileMetadataRepository.findAllByIdIn(ids);
-        return list.stream().map(FileMetadataDO::toFileIntroVO).toList();
+        return new PageImpl<>(fileIntroVOList, pageable, total);
     }
 
     private Page<String> getIdsByMountFileIdIsTrue(String userId, Pageable pageable) {
@@ -158,5 +139,28 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
             }
         }
         return fileDocument;
+    }
+
+    @Override
+    public List<FileIntroVO> findAllFileIntroVOByIdIn(List<String> fileIdList) {
+        if (fileIdList == null || fileIdList.isEmpty()) {
+            return List.of();
+        }
+        TimeInterval timeInterval = new TimeInterval();
+        List<FileMetadataDO> list = fileMetadataRepository.findAllByIdIn(fileIdList);
+        log.info("JPA查询文件元数据，数量：{}，耗时：{} ms", list.size(), timeInterval.intervalMs());
+        Map<String, FileMetadataDO> resultMap = list.stream()
+                .collect(Collectors.toMap(FileMetadataDO::getId, f -> f));
+        long now = System.currentTimeMillis();
+        return fileIdList.stream()
+                .map(resultMap::get)
+                .filter(Objects::nonNull)
+                .map(fm -> {
+                    FileIntroVO vo = fm.toFileIntroVO();
+                    long updateMilli = TimeUntils.getMilli(vo.getUpdateDate());
+                    vo.setAgoTime(now - updateMilli);
+                    return vo;
+                })
+                .toList();
     }
 }

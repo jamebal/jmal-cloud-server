@@ -6,6 +6,7 @@ public class Constants {
     public static final String LAST_ETAG_UPDATE_REQUEST_AT_FIELD = "lastEtagUpdateRequestAt";
     public static final String ETAG_UPDATE_FAILED_ATTEMPTS_FIELD = "etagUpdateFailedAttempts";
     public static final String LAST_ETAG_UPDATE_ERROR_FIELD = "lastEtagUpdateError";
+    public static String MOUNT_FILE_ID_FIELD = "mountFileId";
 
     private Constants() { }
 
