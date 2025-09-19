@@ -10,13 +10,12 @@ import org.springframework.stereotype.Component;
 @Component("etagSetFoldersWithoutEtagHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class SetFoldersWithoutEtagHandler implements IDataOperationHandler<EtagOperation.SetFoldersWithoutEtag, Void> {
+public class SetFoldersWithoutEtagHandler implements IDataOperationHandler<EtagOperation.SetFoldersWithoutEtag, Integer> {
 
     private final FileEtagRepository repo;
 
     @Override
-    public Void handle(EtagOperation.SetFoldersWithoutEtag op) {
-        repo.setFoldersWithoutEtag();
-        return null;
+    public Integer handle(EtagOperation.SetFoldersWithoutEtag op) {
+        return repo.setFoldersWithoutEtag();
     }
 }

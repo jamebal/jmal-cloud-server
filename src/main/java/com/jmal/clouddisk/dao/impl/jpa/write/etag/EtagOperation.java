@@ -3,7 +3,7 @@ package com.jmal.clouddisk.dao.impl.jpa.write.etag;
 public final class EtagOperation {
     private EtagOperation() {}
 
-    public record SetFoldersWithoutEtag() implements IEtagOperation<Void>{}
+    public record SetFoldersWithoutEtag() implements IEtagOperation<Integer>{}
 
     public record SetEtagByUserIdAndPathAndName(String userId, String path, String name, String newEtag) implements IEtagOperation<Void>{}
 

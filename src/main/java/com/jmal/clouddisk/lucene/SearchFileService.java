@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.lucene;
 
-import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.dao.IFileDAO;
@@ -60,7 +59,6 @@ public class SearchFileService {
     private static final long HALF_YEAR_TIME = 182L * 24 * 60 * 60 * 1000;
 
     public ResponseResult<List<FileIntroVO>> searchFile(SearchDTO searchDTO) {
-        TimeInterval timeInterval = new TimeInterval();
         String keyword = searchDTO.getKeyword();
         if (keyword == null || keyword.trim().isEmpty() || searchDTO.getUserId() == null) {
             return ResultUtil.success(Collections.emptyList());
@@ -78,17 +76,14 @@ public class SearchFileService {
             searcherManager.maybeRefresh();
 
             Page<String> page = luceneQueryService.find(query, searchDTO);
-            System.out.println("搜索耗时：" + timeInterval.intervalPretty());
 
             List<FileIntroVO> fileIntroVOList = fileQueryDAO.findAllFileIntroVOByIdIn(page.getContent());
-            System.out.println("查询数据库耗时：" + timeInterval.intervalPretty());
             result.setData(fileIntroVOList);
             result.setCount(page.getTotalElements());
 
             String userId = userLoginHolder.getUserId();
             // 添加搜索历史
             Completable.fromAction(() -> addSearchHistory(userId, searchDTO)).subscribeOn(Schedulers.io()).subscribe();
-            System.out.println("保存搜索历史耗时：" + timeInterval.intervalPretty());
             return result;
         } catch (IOException | ParseException | java.lang.IllegalArgumentException e) {
             log.error("搜索失败", e);

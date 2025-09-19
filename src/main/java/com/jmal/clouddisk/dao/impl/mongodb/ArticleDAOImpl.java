@@ -83,7 +83,7 @@ public class ArticleDAOImpl implements IArticleDAO {
             query.addCriteria(Criteria.where(Constants.ALONE_PAGE).exists(true));
 
             if (CharSequenceUtil.isBlank(articleDTO.getSortableProp()) || CharSequenceUtil.isBlank(articleDTO.getOrder())) {
-                articleDTO.setOrder("ascending");
+                articleDTO.setOrder(Constants.ASCENDING);
                 articleDTO.setSortableProp("pageSort");
             }
         } else {

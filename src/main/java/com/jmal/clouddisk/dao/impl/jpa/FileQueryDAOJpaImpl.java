@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
-import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
@@ -56,8 +55,8 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
             searchDTO.setSortProp(upload.getSortableProp());
             searchDTO.setSortOrder(upload.getOrder());
         } else {
-            searchDTO.setSortProp(Constants.IS_FOLDER);
-            searchDTO.setSortOrder(Constants.DESCENDING);
+            searchDTO.setSortProp(Constants.FILENAME_FIELD);
+            searchDTO.setSortOrder(Constants.ASCENDING);
         }
         String currentDirectory = upload.getCurrentDirectory();
         String queryFileType = upload.getQueryFileType();
@@ -146,9 +145,7 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
         if (fileIdList == null || fileIdList.isEmpty()) {
             return List.of();
         }
-        TimeInterval timeInterval = new TimeInterval();
         List<FileMetadataDO> list = fileMetadataRepository.findAllByIdIn(fileIdList);
-        log.info("JPA查询文件元数据，数量：{}，耗时：{} ms", list.size(), timeInterval.intervalMs());
         Map<String, FileMetadataDO> resultMap = list.stream()
                 .collect(Collectors.toMap(FileMetadataDO::getId, f -> f));
         long now = System.currentTimeMillis();

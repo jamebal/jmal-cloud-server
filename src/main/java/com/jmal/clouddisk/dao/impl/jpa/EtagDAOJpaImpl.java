@@ -35,7 +35,14 @@ public class EtagDAOJpaImpl implements IEtagDAO {
 
     @Override
     public void setFoldersWithoutEtag() {
-        writeService.submit(new EtagOperation.SetFoldersWithoutEtag());
+        try {
+            int modified = writeService.submit(new EtagOperation.SetFoldersWithoutEtag()).get(15, TimeUnit.SECONDS);
+            if (modified < 1) {
+                log.warn("没有需要设置 ETag 的文件夹");
+            }
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
     }
 
     @Override

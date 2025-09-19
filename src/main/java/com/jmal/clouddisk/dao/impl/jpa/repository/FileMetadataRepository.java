@@ -96,7 +96,7 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
 
     @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseDTO(f.publicId, f.name, f.path, f.userId, f.isFolder) " +
             "FROM FileMetadataDO f " +
-            "WHERE f.userId = :user " +
+            "WHERE f.userId = :userId " +
             "AND f.path = :path " +
             "AND f.name = :name"
     )
@@ -104,7 +104,7 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
 
     @Query("SELECT f.publicId " +
             "FROM FileMetadataDO f " +
-            "WHERE f.userId = :user " +
+            "WHERE f.userId = :userId " +
             "AND f.path = :path " +
             "AND f.name = :name"
     )

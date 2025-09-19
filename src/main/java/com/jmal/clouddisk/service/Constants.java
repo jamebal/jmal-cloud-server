@@ -62,6 +62,7 @@ public class Constants {
     public static final String POINT_SUFFIX_WEBP = ".webp";
 
     public static final String DESCENDING = "descending";
+    public static final String ASCENDING = "ascending";
     public static final String CREATE_TIME = "createTime";
     public static final String UPLOAD_DATE = "uploadDate";
 

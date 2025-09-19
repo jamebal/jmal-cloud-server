@@ -5,6 +5,7 @@ import com.jmal.clouddisk.dao.IFolderSizeDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FolderSizeRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
 import com.jmal.clouddisk.dao.impl.jpa.write.file.FileOperation;
+import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +49,7 @@ public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
             return fileDocuments;
         } catch (Exception e) {
             log.error("查询需要更新大小的文件夹失败: {}", e.getMessage(), e);
-            throw new RuntimeException("查询文件夹失败", e);
+            throw new CommonException(e.getMessage());
         }
     }
 
@@ -66,7 +67,7 @@ public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
             }
         } catch (Exception e) {
             log.error("更新文件大小失败: fileId={}, size={}, error={}", fileId, size, e.getMessage(), e);
-            throw new RuntimeException("更新文件大小失败", e);
+            throw new CommonException(e.getMessage());
         }
     }
 
@@ -80,7 +81,7 @@ public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
             return exists;
         } catch (Exception e) {
             log.error("检查需要更新大小的文件夹失败: {}", e.getMessage(), e);
-            throw new RuntimeException("检查文件夹失败", e);
+            throw new CommonException(e.getMessage());
         }
     }
 
@@ -94,7 +95,7 @@ public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
             return count;
         } catch (Exception e) {
             log.error("统计需要更新大小的文件夹数量失败: {}", e.getMessage(), e);
-            throw new RuntimeException("统计文件夹数量失败", e);
+            throw new CommonException(e.getMessage());
         }
     }
 
@@ -108,7 +109,7 @@ public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
             log.debug("已清空 {} 个文件夹的大小信息", updatedCount);
         } catch (Exception e) {
             log.error("清空文件夹大小信息失败: {}", e.getMessage(), e);
-            throw new RuntimeException("清空文件夹大小信息失败", e);
+            throw new CommonException(e.getMessage());
         }
     }
 

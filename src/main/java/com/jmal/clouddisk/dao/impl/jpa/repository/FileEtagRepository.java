@@ -20,12 +20,11 @@ public interface FileEtagRepository extends JpaRepository<FileMetadataDO, Long> 
     long countByEtagIsNullAndIsFolderIsTrue();
 
     @Modifying
-    @Query("UPDATE FileMetadataDO f SET f.needsEtagUpdate = true " +
-            "WHERE f.lastEtagUpdateRequestAt = CURRENT_TIMESTAMP " +
-            "AND f.etag IS NULL " +
+    @Query("UPDATE FileMetadataDO f SET f.needsEtagUpdate = true, f.lastEtagUpdateRequestAt = CURRENT_TIMESTAMP " +
+            "WHERE f.etag IS NULL " +
             "AND f.isFolder = true"
     )
-    void setFoldersWithoutEtag();
+    int setFoldersWithoutEtag();
 
     @Query("SELECT COALESCE(SUM(f.size), 0) FROM FileMetadataDO f " +
             "WHERE f.userId = :userId " +

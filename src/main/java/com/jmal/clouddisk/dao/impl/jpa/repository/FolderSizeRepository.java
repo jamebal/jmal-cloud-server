@@ -38,7 +38,7 @@ public interface FolderSizeRepository extends JpaRepository<FileMetadataDO, Stri
      * 更新指定文件的大小
      */
     @Modifying
-    @Query("UPDATE FileMetadataDO f SET f.size = :size, f.updateDate = CURRENT_TIMESTAMP WHERE f.id = :fileId")
+    @Query("UPDATE FileMetadataDO f SET f.size = :size, f.updateDate = CURRENT_TIMESTAMP WHERE f.publicId = :fileId")
     int updateFileSize(@Param("fileId") String fileId, @Param("size") Long size);
 
     /**
