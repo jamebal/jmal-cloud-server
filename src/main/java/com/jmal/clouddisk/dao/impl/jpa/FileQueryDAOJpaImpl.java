@@ -14,7 +14,6 @@ import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.model.file.FileMetadataDO;
 import com.jmal.clouddisk.model.file.TrashEntityDO;
 import com.jmal.clouddisk.model.file.dto.FileBaseMountDTO;
-import com.jmal.clouddisk.model.query.SearchDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.TimeUntils;
@@ -53,16 +52,6 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
     public Page<FileIntroVO> getFileIntroVO(UploadApiParamDTO upload) {
         Page<String> page = null;
         Pageable pageable = upload.getPageable(Sort.by(Sort.Direction.DESC, Constants.IS_FOLDER));
-        SearchDTO searchDTO = SearchDTO.builder().build();
-        searchDTO.setPage(upload.getPageIndex());
-        searchDTO.setPageSize(upload.getPageSize());
-        if (upload.getOrder() != null && upload.getSortableProp() != null) {
-            searchDTO.setSortProp(upload.getSortableProp());
-            searchDTO.setSortOrder(upload.getOrder());
-        } else {
-            searchDTO.setSortProp(Constants.FILENAME_FIELD);
-            searchDTO.setSortOrder(Constants.ASCENDING);
-        }
         String currentDirectory = upload.getCurrentDirectory();
         String queryFileType = upload.getQueryFileType();
 
@@ -95,7 +84,7 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
                 }
                 String tagId = upload.getTagId();
                 if (CharSequenceUtil.isNotBlank(tagId)) {
-                    page = luceneQueryService.findByUserIdAndTagId(upload.getUserId(), upload.getTagId(), searchDTO);
+                    page = luceneQueryService.findByUserIdAndTagId(upload.getUserId(), upload.getTagId(), upload.toSearchDTO());
                 }
             }
         }

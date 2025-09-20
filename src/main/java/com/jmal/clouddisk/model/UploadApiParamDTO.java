@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.dao.util.PageableUtil;
 import com.jmal.clouddisk.model.query.QueryBaseDTO;
+import com.jmal.clouddisk.model.query.SearchDTO;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.FileNameUtils;
 import lombok.Data;
 import org.springframework.data.domain.Pageable;
@@ -307,21 +309,26 @@ public class UploadApiParamDTO implements Reflective {
         return FileNameUtils.safeDecode(folderPath);
     }
 
-    public QueryBaseDTO toQueryBaseDTO() {
-        QueryBaseDTO queryBaseDTO = new QueryBaseDTO();
-        queryBaseDTO.setPage(getPageIndex());
-        queryBaseDTO.setPageSize(getPageSize());
-        queryBaseDTO.setSortOrder(getOrder());
-        queryBaseDTO.setSortProp(getSortableProp());
-        return queryBaseDTO;
+    public SearchDTO toSearchDTO() {
+        SearchDTO searchDTO = SearchDTO.builder().build();
+        searchDTO.setPage(getPageIndex());
+        searchDTO.setPageSize(getPageSize());
+        if (getOrder() != null && getSortableProp() != null) {
+            searchDTO.setSortProp(getSortableProp());
+            searchDTO.setSortOrder(getOrder());
+        } else {
+            searchDTO.setSortProp(Constants.FILENAME_FIELD);
+            searchDTO.setSortOrder(Constants.ASCENDING);
+        }
+        return searchDTO;
     }
 
     public Pageable getPageable() {
-        return PageableUtil.buildPageable(toQueryBaseDTO());
+        return PageableUtil.buildPageable(toSearchDTO());
     }
 
     public Pageable getPageable(Sort firstSort) {
-        QueryBaseDTO queryBaseDTO = toQueryBaseDTO();
+        QueryBaseDTO queryBaseDTO = toSearchDTO();
         queryBaseDTO.setFirstSort(firstSort);
         return PageableUtil.buildPageable(queryBaseDTO);
     }
