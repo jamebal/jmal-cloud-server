@@ -151,7 +151,7 @@ public class MessageService {
         }
         if (message instanceof FileDocument fileDocument) {
             fileDocument.setContent(null);
-            fileDocument.setMusic(null);
+            fileDocument.setMusicNull();
             fileDocument.setContentText(null);
         }
         msg.setUrl(url);

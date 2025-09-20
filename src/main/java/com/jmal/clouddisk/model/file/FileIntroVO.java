@@ -3,6 +3,7 @@ package com.jmal.clouddisk.model.file;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.media.VideoInfoDO;
 import com.jmal.clouddisk.model.Music;
+import com.jmal.clouddisk.model.MusicInfo;
 import com.jmal.clouddisk.model.OperationPermission;
 import com.jmal.clouddisk.model.Tag;
 import lombok.Data;
@@ -121,4 +122,13 @@ public class FileIntroVO extends FileBase implements Reflective {
     private String etag;
 
     private Set<String> tagIds;
+
+
+    public void setMusic(MusicInfo music) {
+        this.music = new Music(music);
+    }
+
+    public void setMusic(Music music) {
+        this.music = music;
+    }
 }

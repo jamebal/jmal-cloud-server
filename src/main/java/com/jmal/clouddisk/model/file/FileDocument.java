@@ -2,13 +2,11 @@ package com.jmal.clouddisk.model.file;
 
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.media.VideoInfoDO;
-import com.jmal.clouddisk.model.Music;
-import com.jmal.clouddisk.model.OperationPermission;
-import com.jmal.clouddisk.model.Tag;
-import com.jmal.clouddisk.model.Trash;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import jakarta.persistence.Transient;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -24,6 +22,7 @@ import java.util.Objects;
  * @author jmal
  */
 @Data
+@NoArgsConstructor
 @Document(collection = CommonFileService.COLLECTION_NAME)
 @CompoundIndexes({
         @CompoundIndex(name = "name_1", def = "{'name': 1}"),
@@ -296,5 +295,17 @@ public class FileDocument extends FileBase implements Reflective {
         trash.setHidden(hidden);
         trash.setMove(move);
         return trash;
+    }
+
+    public void setMusicNull() {
+        this.music = null;
+    }
+
+    public void setMusic(MusicInfo music) {
+        this.music = new Music(music);
+    }
+
+    public void setMusic(Music music) {
+        this.music = music;
     }
 }

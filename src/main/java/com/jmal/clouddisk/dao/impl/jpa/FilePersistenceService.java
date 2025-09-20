@@ -38,6 +38,9 @@ public class FilePersistenceService {
         }
 
         writeContentToFile(fileDocument.getId(), Constants.CONTENT, fileDocument.getContent());
+        if (fileDocument.getMusic() != null && fileDocument.getMusic().getCoverBase64() != null) {
+            writeContentToFile(fileDocument.getId(), Constants.CONTENT, org.apache.commons.codec.binary.Base64.decodeBase64(fileDocument.getMusic().getCoverBase64()));
+        }
         writeContentToFile(fileDocument.getId(), Constants.CONTENT_TEXT, fileDocument.getContentText());
         writeContentToFile(fileDocument.getId(), Constants.CONTENT_HTML, fileDocument.getHtml());
         writeContentToFile(fileDocument.getId(), Constants.CONTENT_DRAFT, fileDocument.getDraft());
@@ -56,7 +59,7 @@ public class FilePersistenceService {
     }
 
     public void persistFileHistory(String fileId, InputStream inputStream, String fileHistoryId) {
-        writeContentToFile(fileId, inputStream, fileHistoryId);
+        writeContentToFile(fileId, Constants.HISTORY, inputStream, fileHistoryId);
     }
 
     public InputStream getFileHistoryInputStream(String fileId, String fileHistoryId) {
@@ -203,6 +206,10 @@ public class FilePersistenceService {
         }
     }
 
+    public void persistContent(String fileId, InputStream inputStream) {
+        writeContentToFile(fileId, Constants.CONTENT, inputStream, fileId);
+    }
+
     public void persistContent(String fileId, Path path) {
         if (path == null || !path.toFile().exists()) {
             return;
@@ -231,8 +238,8 @@ public class FilePersistenceService {
         FileUtil.writeFromStream(inputStream, targetFile);
     }
 
-    private void writeContentToFile(String fileId, InputStream inputStream, String filename) {
-        File targetFile = buildFilePathForWrite(fileId, Constants.HISTORY, filename);
+    private void writeContentToFile(String fileId, String subDir, InputStream inputStream, String filename) {
+        File targetFile = buildFilePathForWrite(fileId, subDir, filename);
         FileUtil.writeFromStream(inputStream, targetFile);
     }
 

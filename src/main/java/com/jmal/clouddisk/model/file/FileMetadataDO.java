@@ -129,7 +129,7 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
         this.lastEtagUpdateRequestAt = fileDocument.getLastEtagUpdateRequestAt();
 
         this.delTag = fileDocument.getDelete();
-        this.hasContent = fileDocument.getContent() != null;
+        this.hasContent = fileDocument.getContent() != null || (fileDocument.getMusic() != null && fileDocument.getMusic().getCoverBase64() != null);
         this.hasContentText = CharSequenceUtil.isNotBlank(fileDocument.getContentText());
         this.hasHtml = CharSequenceUtil.isNotBlank(fileDocument.getHtml());
         this.luceneIndex = fileDocument.getIndex();

@@ -13,7 +13,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class Music implements Reflective {
+public class MusicInfo implements Reflective {
     /***
      * 歌名
      */
@@ -26,12 +26,8 @@ public class Music implements Reflective {
      * 专辑
      */
     String album;
-    /***
-     * 封面
-     */
-    String coverBase64;
 
-    public Music(MusicInfo music) {
+    public MusicInfo(Music music) {
         if (music != null) {
             this.songName = music.getSongName();
             this.singer = music.getSinger();

@@ -48,7 +48,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
 import org.apache.commons.compress.utils.Lists;
-import org.apache.tools.ant.filters.StringInputStream;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mozilla.universalchardet.ReaderFactory;
@@ -596,7 +595,10 @@ public class FileServiceImpl implements IFileService {
             }
         } else {
             // 音频文件
-            Optional.of(fileDocument).map(FileDocument::getMusic).map(Music::getCoverBase64).ifPresent(base64 -> fileDocument.setInputStream(new StringInputStream(base64)));
+            Optional.of(fileDocument).map(FileDocument::getMusic).map(Music::getCoverBase64).ifPresent(base64 -> {
+                byte[] imageBytes = Base64.getDecoder().decode(base64);
+                fileDocument.setInputStream(new ByteArrayInputStream(imageBytes));
+            });
         }
         fileDocument.setContentType("image/png");
         fileDocument.setName("cover");

@@ -85,6 +85,8 @@ public class CommonUserFileService {
 
     private final FilePersistenceService filePersistenceService;
 
+    private final AudioFileUtils audioFileUtils;
+
     /**
      * 创建文件索引
      * @param username 用户名
@@ -357,8 +359,8 @@ public class CommonUserFileService {
         }
     }
 
-    private static void setMusic(File file, FileDocument fileDocument) {
-        Music music = AudioFileUtils.readAudio(file);
+    private void setMusic(File file, FileDocument fileDocument) {
+        Music music = audioFileUtils.readAudio(fileDocument, file);
         fileDocument.setMusic(music);
     }
 
@@ -373,7 +375,7 @@ public class CommonUserFileService {
                 fileDocument.setContent(PathUtil.readBytes(contentPath));
             } else {
                 fileDocument.setContent(new byte[0]);
-               filePersistenceService.persistContent(fileDocument.getId(), contentPath);
+                filePersistenceService.persistContent(fileDocument.getId(), contentPath);
             }
             fileDocument.setVideo(videoInfo.toVideoInfoDO());
             videoProcessService.convertToM3U8(fileId);

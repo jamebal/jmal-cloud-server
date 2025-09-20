@@ -2,7 +2,12 @@ package com.jmal.clouddisk.util;
 
 import cn.hutool.core.img.ImgUtil;
 import cn.hutool.core.util.StrUtil;
+import com.jmal.clouddisk.config.jpa.DataSourceProperties;
+import com.jmal.clouddisk.dao.DataSourceType;
+import com.jmal.clouddisk.dao.impl.jpa.FilePersistenceService;
 import com.jmal.clouddisk.model.Music;
+import com.jmal.clouddisk.model.file.FileDocument;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
@@ -20,7 +25,9 @@ import org.jaudiotagger.tag.id3.framebody.FrameBodyAPIC;
 import org.jaudiotagger.tag.id3.framebody.FrameBodyTALB;
 import org.jaudiotagger.tag.id3.framebody.FrameBodyTIT2;
 import org.jaudiotagger.tag.id3.framebody.FrameBodyTPE1;
+import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 
@@ -29,14 +36,19 @@ import java.io.IOException;
  * @author jmal
  */
 @Slf4j
+@Service
+@RequiredArgsConstructor
 public class AudioFileUtils {
+
+    private final FilePersistenceService filePersistenceService;
+    private final DataSourceProperties dataSourceProperties;
 
     private static final String SONGNAME_TAG = "TIT2";
     private static final String SINGER_TAG = "TPE1";
     private static final String ALBUM_TAG = "TALB";
     private static final String COVER_TAG = "APIC";
 
-    public static Music readAudio(File file) {
+    public Music readAudio(FileDocument fileDocument, File file) {
         Music music = new Music();
         try {
             AudioFile audioFile = AudioFileIO.read(file);
@@ -45,14 +57,19 @@ public class AudioFileUtils {
                 System.out.println(tag.getFirst(FieldKey.TITLE));
                 Artwork artwork = tag.getFirstArtwork();
                 if (artwork != null) {
-                    String Base64 = ImgUtil.toBase64(ImgUtil.toImage(artwork.getBinaryData()), artwork.getMimeType());
-                    music.setCoverBase64(Base64);
+                    if (dataSourceProperties.getType() == DataSourceType.mongodb) {
+                        String Base64 = ImgUtil.toBase64(ImgUtil.toImage(artwork.getBinaryData()), artwork.getMimeType());
+                        music.setCoverBase64(Base64);
+                    } else {
+                        filePersistenceService.persistContent(fileDocument.getId(), new ByteArrayInputStream(artwork.getBinaryData()));
+                        fileDocument.setContent(new byte[0]);
+                    }
                 }
             }
             if (audioFileTag instanceof ID3v23Tag tag) {
-                String songName = "";
-                String singer = "";
-                String album = "";
+                String songName;
+                String singer;
+                String album;
                 if (tag.frameMap != null) {
                     if (tag.frameMap.get(SONGNAME_TAG) != null) {
                         // 歌名
@@ -88,8 +105,13 @@ public class AudioFileUtils {
                         // 封面
                         AbstractID3v2Frame frame = (AbstractID3v2Frame) tag.frameMap.get(COVER_TAG);
                         FrameBodyAPIC body4 = (FrameBodyAPIC) frame.getBody();
-                        String Base64 = cn.hutool.core.codec.Base64.encode(body4.getImageData());
-                        music.setCoverBase64(Base64);
+                        if (dataSourceProperties.getType() == DataSourceType.mongodb) {
+                            String Base64 = cn.hutool.core.codec.Base64.encode(body4.getImageData());
+                            music.setCoverBase64(Base64);
+                        } else {
+                            filePersistenceService.persistContent(fileDocument.getId(), new ByteArrayInputStream(body4.getImageData()));
+                            fileDocument.setContent(new byte[0]);
+                        }
                     }
                 }
             }

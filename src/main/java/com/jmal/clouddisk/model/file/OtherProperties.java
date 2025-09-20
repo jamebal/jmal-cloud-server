@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.media.VideoInfoDO;
 import com.jmal.clouddisk.model.Music;
+import com.jmal.clouddisk.model.MusicInfo;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -23,7 +24,7 @@ public class OtherProperties {
      * 图片的高度
      */
     private String h;
-    private Music music;
+    private MusicInfo music;
     private ExifInfo exif;
     private VideoInfoDO video;
     private Boolean mediaCover;
@@ -35,7 +36,7 @@ public class OtherProperties {
     public OtherProperties(FileDocument fileDocument) {
         this.w = fileDocument.getW();
         this.h = fileDocument.getH();
-        this.music = fileDocument.getMusic();
+        setMusic(fileDocument.getMusic());
         this.exif = fileDocument.getExif();
         this.video = fileDocument.getVideo();
         this.mediaCover = fileDocument.getMediaCover();
@@ -43,5 +44,10 @@ public class OtherProperties {
         this.vtt = fileDocument.getVtt();
         this.showCover = fileDocument.getShowCover();
         this.ossPlatform = fileDocument.getOssPlatform();
+    }
+
+
+    public void setMusic(Music music) {
+        this.music = new MusicInfo(music);
     }
 }
