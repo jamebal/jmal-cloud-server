@@ -589,15 +589,14 @@ public class FileServiceImpl implements IFileService {
                     fileDAO.save(fileDocument);
                 }
             } else {
-                fileDAO.setMediaCoverIsTrue(id);
+                fileDAO.setMediaCover(id, false);
             }
             if (imagePath != null && FileUtil.exist(imagePath)) {
                 FileUtil.del(imagePath);
             }
         } else {
             // 音频文件
-            String base64 = Optional.of(fileDocument).map(FileDocument::getMusic).map(Music::getCoverBase64).orElse("");
-            fileDocument.setInputStream(new StringInputStream(base64));
+            Optional.of(fileDocument).map(FileDocument::getMusic).map(Music::getCoverBase64).ifPresent(base64 -> fileDocument.setInputStream(new StringInputStream(base64)));
         }
         fileDocument.setContentType("image/png");
         fileDocument.setName("cover");

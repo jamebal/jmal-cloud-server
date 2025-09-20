@@ -36,7 +36,7 @@ public class CoverFileService {
         if (dataSourceProperties.getType() == DataSourceType.mongodb) {
             fileDAO.setContent(fileId, fileDocument.getContent());
         }
-        fileDAO.setMediaCoverIsTrue(fileId);
+        fileDAO.setShowCover(fileId, true);
     }
 
 }

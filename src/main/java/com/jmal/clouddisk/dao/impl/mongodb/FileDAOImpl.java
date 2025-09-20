@@ -482,11 +482,20 @@ public class FileDAOImpl implements IFileDAO {
     }
 
     @Override
-    public void setMediaCoverIsTrue(String id) {
+    public void setMediaCover(String id, Boolean mediaCover) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(id));
         Update update = new Update();
-        update.set("mediaCover", true);
+        update.set("mediaCover", mediaCover);
+        mongoTemplate.updateFirst(query, update, FileDocument.class);
+    }
+
+    @Override
+    public void setShowCover(String id, Boolean showCover) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(id));
+        Update update = new Update();
+        update.set("showCover", showCover);
         mongoTemplate.updateFirst(query, update, FileDocument.class);
     }
 

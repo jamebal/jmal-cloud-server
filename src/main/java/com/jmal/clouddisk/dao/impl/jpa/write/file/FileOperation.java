@@ -61,7 +61,7 @@ public final class FileOperation {
 
     public record SetContent(String id, byte[] content) implements IFileOperation<Void> {}
 
-    public record SetMediaCoverIsTrue(String id, OtherProperties otherProperties) implements IFileOperation<Void> {}
+    public record SetOtherPropsById(String id, OtherProperties otherProperties) implements IFileOperation<Void> {}
 
     public record SetPathById(String id, String newFilePath) implements IFileOperation<Void> {}
 

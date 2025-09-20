@@ -124,7 +124,9 @@ public interface IFileDAO {
 
     void setContent(String id, byte[] content);
 
-    void setMediaCoverIsTrue(String id);
+    void setMediaCover(String id, Boolean mediaCover);
+
+    void setShowCover(String id, Boolean showCover);
 
     List<FileBaseDTO> findAllFileBaseDTOByIdIn(List<String> fileIdList);
 

@@ -393,12 +393,24 @@ public class FileDAOJpaImpl implements IFileDAO {
     }
 
     @Override
-    public void setMediaCoverIsTrue(String id) {
+    public void setMediaCover(String id, Boolean mediaCover) {
         try {
             FilePropsDO filePropsDO = filePropsDAO.findById(id);
             OtherProperties otherProperties = filePropsDO.getProps();
-            otherProperties.setMediaCover(true);
-            writeService.submit(new FileOperation.SetMediaCoverIsTrue(id, otherProperties)).get(10, TimeUnit.SECONDS);
+            otherProperties.setMediaCover(mediaCover);
+            writeService.submit(new FileOperation.SetOtherPropsById(id, otherProperties)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public void setShowCover(String id, Boolean showCover) {
+        try {
+            FilePropsDO filePropsDO = filePropsDAO.findById(id);
+            OtherProperties otherProperties = filePropsDO.getProps();
+            otherProperties.setShowCover(showCover);
+            writeService.submit(new FileOperation.SetOtherPropsById(id, otherProperties)).get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new CommonException(e.getMessage());
         }
