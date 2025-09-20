@@ -13,7 +13,6 @@ import com.jmal.clouddisk.model.file.dto.FileBaseMountDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.FileSortService;
-import com.jmal.clouddisk.service.impl.MessageService;
 import com.jmal.clouddisk.util.TimeUntils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -40,7 +39,6 @@ public class FileQueryDAOImpl implements IFileQueryDAO {
 
     private final MongoTemplate mongoTemplate;
     private final FileProperties fileProperties;
-    private final MessageService messageService;
 
 
     @Override
@@ -182,8 +180,7 @@ public class FileQueryDAOImpl implements IFileQueryDAO {
         }
         List<FileIntroVO> list = mongoTemplate.find(query, FileIntroVO.class, collectionName);
         fileIntroVOList = sortFileIntroVOList(null, list);
-        pushConfigInfo(upload);
-        return FileSortService.sortByFileName(upload, fileIntroVOList, order);
+        return FileSortService.sortByFileName(upload.getSortableProp(), fileIntroVOList, order);
     }
 
     private Query getQuery(UploadApiParamDTO upload, Criteria criteria) {
@@ -195,10 +192,6 @@ public class FileQueryDAOImpl implements IFileQueryDAO {
         query.addCriteria(Criteria.where(USER_ID).is(userId));
         query.addCriteria(criteria);
         return query;
-    }
-
-    private void pushConfigInfo(UploadApiParamDTO upload) {
-        messageService.pushMessage(upload.getUsername(), Constants.LOCAL_CHUNK_SIZE, Constants.UPLOADER_CHUNK_SIZE);
     }
 
     /***

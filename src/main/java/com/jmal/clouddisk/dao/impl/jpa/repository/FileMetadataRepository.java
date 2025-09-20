@@ -6,10 +6,7 @@ import com.jmal.clouddisk.model.file.dto.*;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -349,4 +346,21 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
             ")"
     )
     List<FileBaseDTO> findMountFileBaseDTOByUserId(String userId);
+
+    @EntityGraph(attributePaths = "props")
+    @Query("SELECT f FROM FileMetadataDO f " +
+            "WHERE f.userId = :userId AND f.contentType LIKE :contentTypePrefix")
+    Page<FileMetadataDO> findAllByUserIdAndContentTypeStartingWith(String userId, String contentTypePrefix, Pageable pageable);
+
+    @EntityGraph(attributePaths = "props")
+    Page<FileMetadataDO> findAllByUserIdAndSuffixIn(String userId, List<String> suffixList, Pageable pageable);
+
+    @EntityGraph(attributePaths = "props")
+    Page<FileMetadataDO> findAllByUserIdAndPath(String userId, String path, Pageable pageable);
+
+    @EntityGraph(attributePaths = "props")
+    Page<FileMetadataDO> findAllByUserIdAndIsFavoriteIsTrue(String userId, Pageable pageable);
+
+    @EntityGraph(attributePaths = "props")
+    Page<FileMetadataDO> findAllByUserIdAndIsFolder(String userId, Boolean isFolder, Pageable pageable);
 }

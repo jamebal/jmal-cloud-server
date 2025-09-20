@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.file.FileBase;
 import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.service.Constants;
@@ -12,12 +11,12 @@ import java.util.List;
 
 public class FileSortService {
 
-    public static List<FileIntroVO> sortByFileName(UploadApiParamDTO upload, List<FileIntroVO> fileIntroVOList, String order) {
+    public static List<FileIntroVO> sortByFileName(String sortableProp, List<FileIntroVO> fileIntroVOList, String order) {
         // 按文件名排序
         if (CharSequenceUtil.isBlank(order)) {
             fileIntroVOList = fileIntroVOList.stream().sorted(FileSortService::compareByFileName).toList();
         }
-        if (!CharSequenceUtil.isBlank(order) && Constants.FILENAME_FIELD.equals(upload.getSortableProp())) {
+        if (!CharSequenceUtil.isBlank(order) && Constants.FILENAME_FIELD.equals(sortableProp)) {
             fileIntroVOList = fileIntroVOList.stream().sorted(FileSortService::compareByFileName).toList();
             if (Constants.DESCENDING.equals(order)) {
                 fileIntroVOList = fileIntroVOList.stream().sorted(FileSortService::desc).toList();

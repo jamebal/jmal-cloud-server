@@ -7,6 +7,7 @@ import com.jmal.clouddisk.model.query.QueryBaseDTO;
 import com.jmal.clouddisk.util.FileNameUtils;
 import lombok.Data;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -317,5 +318,11 @@ public class UploadApiParamDTO implements Reflective {
 
     public Pageable getPageable() {
         return PageableUtil.buildPageable(toQueryBaseDTO());
+    }
+
+    public Pageable getPageable(Sort firstSort) {
+        QueryBaseDTO queryBaseDTO = toQueryBaseDTO();
+        queryBaseDTO.setFirstSort(firstSort);
+        return PageableUtil.buildPageable(queryBaseDTO);
     }
 }

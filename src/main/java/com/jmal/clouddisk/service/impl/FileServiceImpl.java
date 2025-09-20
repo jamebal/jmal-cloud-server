@@ -240,6 +240,7 @@ public class FileServiceImpl implements IFileService {
     private ResponseResult<Object> getFileIntroVOResult(UploadApiParamDTO upload, String currentDirectory, ResponseResult<Object> result) {
         upload.setCurrentDirectory(currentDirectory);
         Page<FileIntroVO> page = fileQueryDAO.getFileIntroVO(upload);
+        messageService.pushMessage(upload.getUsername(), Constants.LOCAL_CHUNK_SIZE, Constants.UPLOADER_CHUNK_SIZE);
         result.setData(page.getContent());
         result.setCount(page.getTotalElements());
         if (upload.getProps() != null) {

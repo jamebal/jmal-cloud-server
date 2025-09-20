@@ -266,7 +266,7 @@ public class WebOssService extends WebOssCommonService {
             }
         }
         // 默认按文件排序
-        fileIntroVOList = FileSortService.sortByFileName(upload, fileIntroVOList, order);
+        fileIntroVOList = FileSortService.sortByFileName(upload.getSortableProp(), fileIntroVOList, order);
         return fileIntroVOList;
     }
 

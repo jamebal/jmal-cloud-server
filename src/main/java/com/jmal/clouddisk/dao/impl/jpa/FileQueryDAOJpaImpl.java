@@ -2,6 +2,7 @@ package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IFileQueryDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
@@ -19,10 +20,12 @@ import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.TimeUntils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -44,10 +47,12 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
 
     private final TrashRepository trashRepository;
 
+    private final FileProperties fileProperties;
+
     @Override
     public Page<FileIntroVO> getFileIntroVO(UploadApiParamDTO upload) {
         Page<String> page = null;
-        Pageable pageable = upload.getPageable();
+        Pageable pageable = upload.getPageable(Sort.by(Sort.Direction.DESC, Constants.IS_FOLDER));
         SearchDTO searchDTO = SearchDTO.builder().build();
         searchDTO.setPage(upload.getPageIndex());
         searchDTO.setPageSize(upload.getPageSize());
@@ -60,26 +65,30 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
         }
         String currentDirectory = upload.getCurrentDirectory();
         String queryFileType = upload.getQueryFileType();
+
         if (CharSequenceUtil.isNotBlank(queryFileType)) {
             switch (queryFileType) {
                 case Constants.AUDIO,
                      Constants.DOCUMENT,
                      Constants.CONTENT_TYPE_IMAGE,
-                     Constants.VIDEO ->
-                        page = luceneQueryService.findByUserIdAndType(upload.getUserId(), queryFileType, searchDTO);
+                     Constants.VIDEO -> {
+                    return findAllByUserIdAndType(upload, queryFileType, pageable);
+                }
                 case CommonFileService.TRASH_COLLECTION_NAME -> {
                     return getTrashPage(upload);
                 }
-                default -> page = luceneQueryService.findByUserIdAndPath(upload.getUserId(), currentDirectory, searchDTO);
+                default -> {
+                    return findAllByUserIdAndPath(upload, currentDirectory, pageable);
+                }
             }
         } else {
             if (currentDirectory.length() < 2) {
                 Boolean isFolder = upload.getIsFolder();
                 if (isFolder != null) {
-                    page = luceneQueryService.findByUserIdAndIsFolder(upload.getUserId(), isFolder, searchDTO);
+                    return findAllByUserIdAndIsFolder(upload, isFolder, pageable);
                 }
                 if (BooleanUtil.isTrue(upload.getIsFavorite())) {
-                    page = luceneQueryService.findByUserIdAndIsFavorite(upload.getUserId(), true, searchDTO);
+                    return findAllByUserIdAndFavorite(upload, pageable);
                 }
                 if (BooleanUtil.isTrue(upload.getIsMount())) {
                     page = getIdsByMountFileIdIsTrue(upload.getUserId(), pageable);
@@ -91,7 +100,7 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
             }
         }
         if (page == null) {
-            page = luceneQueryService.findByUserIdAndPath(upload.getUserId(), currentDirectory, searchDTO);
+            return findAllByUserIdAndPath(upload, currentDirectory, pageable);
         }
         if (page.isEmpty()) {
             return Page.empty(pageable);
@@ -105,8 +114,52 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
 
         List<FileIntroVO> fileIntroVOList = findAllFileIntroVOByIdIn(ids);
 
-        // fileIntroVOList = FileSortService.sortByFileName(upload, fileIntroVOList, upload.getOrder());
         return new PageImpl<>(fileIntroVOList, pageable, total);
+    }
+
+    private Page<FileIntroVO> findAllByUserIdAndType(UploadApiParamDTO upload, String queryFileType, Pageable pageable) {
+        Page<FileMetadataDO> fileMetadataDOPage;
+        String userId = upload.getUserId();
+        switch (queryFileType) {
+            case Constants.AUDIO,
+                 Constants.VIDEO,
+                 Constants.CONTENT_TYPE_IMAGE ->
+                    fileMetadataDOPage = fileMetadataRepository.findAllByUserIdAndContentTypeStartingWith(userId, queryFileType + "%", pageable);
+            case Constants.DOCUMENT ->
+                    fileMetadataDOPage = fileMetadataRepository.findAllByUserIdAndSuffixIn(userId, fileProperties.getDocument(), pageable);
+            default -> {
+                return findAllByUserIdAndPath(upload, "/", pageable);
+            }
+        }
+        return getFileIntroVOPage(pageable, fileMetadataDOPage);
+    }
+
+    private Page<FileIntroVO> findAllByUserIdAndFavorite(UploadApiParamDTO upload, Pageable pageable) {
+        Page<FileMetadataDO> fileMetadataDOPage = fileMetadataRepository.findAllByUserIdAndIsFavoriteIsTrue(upload.getUserId(), pageable);
+        return getFileIntroVOPage(pageable, fileMetadataDOPage);
+    }
+
+    private Page<FileIntroVO> findAllByUserIdAndIsFolder(UploadApiParamDTO upload, Boolean isFolder, Pageable pageable) {
+        Page<FileMetadataDO> fileMetadataDOPage = fileMetadataRepository.findAllByUserIdAndIsFolder(upload.getUserId(), isFolder, pageable);
+        return getFileIntroVOPage(pageable, fileMetadataDOPage);
+    }
+
+    private Page<FileIntroVO> findAllByUserIdAndPath(UploadApiParamDTO upload, String currentDirectory, Pageable pageable) {
+        Page<FileMetadataDO> fileMetadataDOPage = fileMetadataRepository.findAllByUserIdAndPath(upload.getUserId(), currentDirectory, pageable);
+        return getFileIntroVOPage(pageable, fileMetadataDOPage);
+    }
+
+    @NotNull
+    private static PageImpl<FileIntroVO> getFileIntroVOPage(Pageable pageable, Page<FileMetadataDO> fileMetadataDOPage) {
+        List<FileIntroVO> fileIntroVOList = fileMetadataDOPage.map(FileMetadataDO::toFileIntroVO).getContent();
+        long now = System.currentTimeMillis();
+        fileIntroVOList = fileIntroVOList.stream()
+                .filter(Objects::nonNull)
+                .peek(fv -> {
+                    long updateMilli = TimeUntils.getMilli(fv.getUpdateDate());
+                    fv.setAgoTime(now - updateMilli);
+                }).toList();
+        return new PageImpl<>(fileIntroVOList, pageable, fileMetadataDOPage.getTotalElements());
     }
 
     private Page<String> getIdsByMountFileIdIsTrue(String userId, Pageable pageable) {
@@ -145,11 +198,15 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
         if (fileIdList == null || fileIdList.isEmpty()) {
             return List.of();
         }
-        List<FileMetadataDO> list = fileMetadataRepository.findAllByIdIn(fileIdList);
-        Map<String, FileMetadataDO> resultMap = list.stream()
-                .collect(Collectors.toMap(FileMetadataDO::getId, f -> f));
+        List<FileMetadataDO> fileMetadataDOList = fileMetadataRepository.findAllByIdIn(fileIdList);
+        return sortFileIntroVOList(fileIdList, fileMetadataDOList);
+    }
+
+    private List<FileIntroVO> sortFileIntroVOList(List<String> sortIdList, List<FileMetadataDO> fileMetadataDOList) {
         long now = System.currentTimeMillis();
-        return fileIdList.stream()
+        Map<String, FileMetadataDO> resultMap = fileMetadataDOList.stream()
+                .collect(Collectors.toMap(FileMetadataDO::getId, f -> f));
+        return sortIdList.stream()
                 .map(resultMap::get)
                 .filter(Objects::nonNull)
                 .map(fm -> {

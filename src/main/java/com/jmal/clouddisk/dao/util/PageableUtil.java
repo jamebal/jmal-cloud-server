@@ -36,7 +36,13 @@ public class PageableUtil {
             Sort.Direction direction = Constants.DESCENDING.equalsIgnoreCase(queryBaseDTO.getSortOrder())
                     ? Sort.Direction.DESC
                     : Sort.Direction.ASC;
-            Sort sort = Sort.by(direction, queryBaseDTO.getSortProp());
+            Sort sort;
+            if (queryBaseDTO.getFirstSort() != null) {
+                // 如果有优先排序条件，先应用它
+                sort = queryBaseDTO.getFirstSort().and(Sort.by(direction, queryBaseDTO.getSortProp()));
+            } else {
+                sort = Sort.by(direction, queryBaseDTO.getSortProp());
+            }
             return PageRequest.of(page, size, sort);
         } else {
             // 如果没有排序参数，则只进行分页
