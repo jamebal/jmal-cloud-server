@@ -20,6 +20,7 @@ import com.jmal.clouddisk.dao.ITrashDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.AuthInterceptor;
+import com.jmal.clouddisk.lucene.LuceneIndexQueueEvent;
 import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.lucene.SearchFileService;
 import com.jmal.clouddisk.media.VideoInfo;
@@ -51,6 +52,7 @@ import org.apache.commons.compress.utils.Lists;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mozilla.universalchardet.ReaderFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
@@ -121,6 +123,8 @@ public class FileServiceImpl implements IFileService {
     private static final AES aes = SecureUtil.aes();
 
     private final LogService logService;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public ResponseResult<Object> listFiles(UploadApiParamDTO upload) throws CommonException {
@@ -1928,7 +1932,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     private void deleteTrash(String username, List<String> fileIds, LogOperation logOperation) {
-        List<FileBaseDTO> fileDocumentList = fileDAO.findAllFileBaseDTOAndRemoveByIdIn(fileIds);
+        List<FileBaseDTO> fileDocumentList = trashDAO.findAllFileBaseDTOAndRemoveByIdIn(fileIds);
         // 删除文件
         fileDocumentList.forEach(trashFileDocument -> {
             Path path = Paths.get(fileProperties.getRootDir(), username, trashFileDocument.getPath(), trashFileDocument.getName());
@@ -1985,6 +1989,7 @@ public class FileServiceImpl implements IFileService {
                     }
                     fileDAO.save(trashFileDocument);
                     PathUtil.move(trashFilePath, sourceFilePath, false);
+                    eventPublisher.publishEvent(new LuceneIndexQueueEvent(this, trashFileDocument.getId()));
                 } else {
                     // 老版本还原
                     if (BooleanUtil.isTrue(trashFileDocument.getIsFolder())) {

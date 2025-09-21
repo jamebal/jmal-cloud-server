@@ -10,6 +10,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.bson.types.ObjectId;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -61,6 +62,9 @@ public class ArticleDO extends AuditableEntity implements Reflective {
     }
 
     public ArticleDO(FileDocument fileDocument) {
+        if (fileDocument.getId() == null) {
+            fileDocument.setId(new ObjectId().toHexString());
+        }
         this.id = fileDocument.getId();
         this.cover(fileDocument);
     }

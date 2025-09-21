@@ -28,10 +28,8 @@ public class MusicInfo implements Reflective {
     String album;
 
     public MusicInfo(Music music) {
-        if (music != null) {
-            this.songName = music.getSongName();
-            this.singer = music.getSinger();
-            this.album = music.getAlbum();
-        }
+        this.songName = music.getSongName();
+        this.singer = music.getSinger();
+        this.album = music.getAlbum();
     }
 }

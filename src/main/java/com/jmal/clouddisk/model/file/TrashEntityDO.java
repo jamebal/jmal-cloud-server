@@ -117,6 +117,7 @@ public class TrashEntityDO extends AuditablePerformanceEntity implements Reflect
             fileDocument.setM3u8(this.getProps().getM3u8());
             fileDocument.setVtt(this.getProps().getVtt());
         }
+        fileDocument.setMove(this.getMove());
         return fileDocument;
     }
 

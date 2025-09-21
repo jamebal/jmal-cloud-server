@@ -12,4 +12,6 @@ public final class TrashOperation {
     public record DeleteById(String trashFileId) implements ITrashOperation<Void> {}
 
     public record DeleteAll(List<String> ids) implements ITrashOperation<Void> {}
+
+    public record DeleteAllByIdInBatch(List<String> trashFileIds) implements ITrashOperation<Void> {}
 }

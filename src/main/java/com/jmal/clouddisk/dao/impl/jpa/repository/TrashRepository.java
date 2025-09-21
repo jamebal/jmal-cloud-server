@@ -2,6 +2,7 @@ package com.jmal.clouddisk.dao.impl.jpa.repository;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.model.file.TrashEntityDO;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,4 +36,9 @@ public interface TrashRepository extends JpaRepository<TrashEntityDO, Long> {
     void deleteByPublicId(String publicId);
 
     Optional<TrashEntityDO> findByPublicId(String publicId);
+
+    void deleteAllByPublicIdIn(Collection<String> publicIds);
+
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseDTO(t.publicId, t.name, t.path, t.userId, t.isFolder) FROM TrashEntityDO t WHERE t.publicId IN :ids")
+    List<FileBaseDTO> findAllTrashFileBaseDTOByIdIn(List<String> ids);
 }

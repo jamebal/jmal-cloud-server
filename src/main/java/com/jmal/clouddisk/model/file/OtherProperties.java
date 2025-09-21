@@ -48,6 +48,8 @@ public class OtherProperties {
 
 
     public void setMusic(Music music) {
-        this.music = new MusicInfo(music);
+        if (music != null) {
+            this.music = new MusicInfo(music);
+        }
     }
 }

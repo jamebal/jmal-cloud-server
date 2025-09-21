@@ -265,6 +265,9 @@ public class FileController {
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseEntity<InputStreamResource> thumbnail(@RequestParam String id, Boolean showCover) {
+        if (CharSequenceUtil.isBlank(id)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
         String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
         if (ossPath != null) {
             return webOssService.thumbnail(ossPath, id);

@@ -3,6 +3,7 @@ package com.jmal.clouddisk.dao.impl.jpa.write.file;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.FilePersistenceService;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
+import com.jmal.clouddisk.dao.impl.jpa.repository.FilePropsRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperationHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
@@ -17,11 +18,14 @@ public class RemoveAllByUserIdAndPathPrefixHandler implements IDataOperationHand
 
     private final FileMetadataRepository repo;
     private final FilePersistenceService filePersistenceService;
+    private final FilePropsRepository filePropsRepository;
 
     @Override
     public Integer handle(FileOperation.RemoveAllByUserIdAndPathPrefix op) {
         List<String> fileIdsToDelete = repo.findAllIdsByUserIdAndPathPrefix(op.userId(), op.pathPrefix());
         filePersistenceService.deleteContents(fileIdsToDelete);
-        return repo.removeAllByUserIdAndPathPrefix(op.userId(), op.pathPrefix());
+        int count = repo.removeAllByUserIdAndPathPrefix(op.userId(), op.pathPrefix());
+        filePropsRepository.deleteAllByPublicIdIn(fileIdsToDelete);
+        return count;
     }
 }

@@ -10,6 +10,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.bson.types.ObjectId;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
@@ -64,7 +65,7 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
     private String ossFolder;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = false, orphanRemoval = true)
-    @PrimaryKeyJoinColumn
+    @JoinColumn(name = "props_id", referencedColumnName = "id", unique = true)
     private FilePropsDO props;
 
     private Integer delTag;
@@ -96,6 +97,9 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
     private String lastEtagUpdateError;
 
     public FileMetadataDO(FileDocument fileDocument) {
+        if (fileDocument.getId() == null) {
+            fileDocument.setId(new ObjectId().toHexString());
+        }
         this.setId(fileDocument.getId());
         this.covert(fileDocument);
         this.props = new FilePropsDO(fileDocument);

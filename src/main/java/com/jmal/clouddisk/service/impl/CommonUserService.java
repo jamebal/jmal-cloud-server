@@ -51,7 +51,7 @@ public class CommonUserService {
 
     public String getAvatarByUsername(String username) {
         ConsumerDO consumer = getUserInfoByUsername(username);
-        if (consumer == null) {
+        if (consumer == null || CharSequenceUtil.isBlank(consumer.getAvatar())) {
             return "";
         }
         return consumer.getAvatar();

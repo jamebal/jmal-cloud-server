@@ -10,6 +10,7 @@ import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.Trash;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.TrashEntityDO;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -78,6 +80,26 @@ public class TrashDAOJpaImpl implements ITrashDAO {
             }
         }
         return ids;
+    }
+
+    @Override
+    public List<FileBaseDTO> findAllFileBaseDTOAndRemoveByIdIn(List<String> fileIds) {
+        List<FileBaseDTO> filesToDelete = trashRepository.findAllTrashFileBaseDTOByIdIn(fileIds);
+        if (filesToDelete.isEmpty()) {
+            return List.of();
+        }
+        List<String> foundIds = filesToDelete.stream().map(FileBaseDTO::getId).toList();
+        removeAllByIdIn(foundIds);
+        return filesToDelete;
+    }
+
+    private void removeAllByIdIn(List<String> foundIds) {
+        CompletableFuture<Void> future = writeService.submit(new TrashOperation.DeleteAllByIdInBatch(foundIds));
+        try {
+            future.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
     }
 
 }

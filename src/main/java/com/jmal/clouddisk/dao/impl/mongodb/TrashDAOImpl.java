@@ -4,6 +4,7 @@ import cn.hutool.core.convert.Convert;
 import com.jmal.clouddisk.dao.ITrashDAO;
 import com.jmal.clouddisk.model.Trash;
 import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
@@ -65,6 +66,13 @@ public class TrashDAOImpl implements ITrashDAO {
         query.fields().include("_id");
         List<Trash> trashList = mongoTemplate.findAllAndRemove(new Query(), Trash.class, CommonFileService.TRASH_COLLECTION_NAME);
         return trashList.stream().map(Trash::getId).toList();
+    }
+
+    @Override
+    public List<FileBaseDTO> findAllFileBaseDTOAndRemoveByIdIn(List<String> fileIds) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").in(fileIds));
+        return mongoTemplate.findAllAndRemove(query, FileBaseDTO.class, CommonFileService.TRASH_COLLECTION_NAME);
     }
 
 }

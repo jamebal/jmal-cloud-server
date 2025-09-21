@@ -50,8 +50,8 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
             "fp.shareId = :shareId, " +
             "fp.shareProps = :shareProps " +
             "WHERE fp.primaryId IN (" +
-            "    SELECT fm.primaryId FROM FileMetadataDO fm " +
-            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix%" +
+            "    SELECT fm.props.primaryId FROM FileMetadataDO fm " +
+            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix" +
             ")")
     int updateFolderShareProps(
             @Param("userId") String userId,
@@ -64,7 +64,7 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
             "fp.shareId = :shareId, " +
             "fp.shareProps = :shareProps " +
             "WHERE fp.primaryId IN (" +
-            "    SELECT fm.primaryId FROM FileMetadataDO fm " +
+            "    SELECT fm.props.primaryId FROM FileMetadataDO fm " +
             "    WHERE fm.publicId = :fileId" +
             ")")
     int updateFileShareProps(
@@ -82,8 +82,8 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
             "fp.subShare = null, " +
             "fp.shareProps = :shareProps " +
             "WHERE fp.primaryId IN (" +
-            "    SELECT fm.primaryId FROM FileMetadataDO fm " +
-            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix%" +
+            "    SELECT fm.props.primaryId FROM FileMetadataDO fm " +
+            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix" +
             ")")
     int unsetFolderShareProps(@Param("userId") String userId,
                               @Param("pathPrefix") String pathPrefix,
@@ -108,8 +108,8 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
             "fp.shareBase = null, " +
             "fp.subShare = true " +
             "WHERE fp.primaryId IN (" +
-            "    SELECT fm.primaryId FROM FileMetadataDO fm " +
-            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix% " +
+            "    SELECT fm.props.primaryId FROM FileMetadataDO fm " +
+            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix " +
             "    AND fp.shareBase = true" +
             ")")
     int setSubShareFormShareBase(@Param("userId") String userId,
@@ -145,7 +145,7 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
     @Query("UPDATE FilePropsDO fp SET " +
             "fp.props = :otherProperties " +
             "WHERE fp.primaryId IN (" +
-            "    SELECT fm.primaryId FROM FileMetadataDO fm " +
+            "    SELECT fm.props.primaryId FROM FileMetadataDO fm " +
             "    WHERE fm.userId = :userId " +
             "    AND fm.path = :path " +
             "    AND fm.name = :name" +
@@ -241,4 +241,21 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
             @Param("targetBitrate") int targetBitrate,
             @Param("targetFrameRate") double targetFrameRate
     );
+
+    @Modifying
+    @Query("DELETE FROM FilePropsDO p WHERE p.publicId IN :publicIds")
+    void deleteAllByPublicIdIn(Collection<String> publicIds);
+
+    @Modifying
+    @Query("DELETE FROM FilePropsDO p WHERE p.publicId = :publicId")
+    void deleteAllByPublicId(String publicId);
+
+    @Modifying
+    @Query("DELETE FROM FilePropsDO p WHERE p.primaryId IN :primaryIds")
+    void deleteAllByIdIn(List<Long> primaryIds);
+
+    @Modifying
+    @Query("DELETE FROM FilePropsDO p WHERE p.primaryId = :primaryId")
+    void deleteAllById(Long primaryId);
+
 }

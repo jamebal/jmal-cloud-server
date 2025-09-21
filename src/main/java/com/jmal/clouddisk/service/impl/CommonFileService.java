@@ -308,6 +308,17 @@ public class CommonFileService {
             }
             String fileContentType = getContentType(file, contentType);
             String md5 = file.length() + "/" + fileDocument.getName();
+            FileDocument fileDocument1 = new FileDocument();
+            fileDocument1.setContentType(fileContentType);
+            fileDocument1.setSuffix(suffix);
+            fileDocument1.setMd5(md5);
+            fileDocument1.setSize(file.length());
+            fileDocument1.setUpdateDate(updateTime);
+            fileDocument1.setUploadDate(updateTime);
+            fileDocument1.setUserId(userId);
+            fileDocument1.setPath(relativePath);
+            fileDocument1.setName("ok" + fileDocument.getName());
+            fileDAO.save(fileDocument1);
             long modifiedCount = fileDAO.updateModifyFile(fileDocument.getId(), file.length(), md5, suffix, fileContentType, updateTime);
             fileDocument.setSize(file.length());
             fileDocument.setUpdateDate(updateTime);
