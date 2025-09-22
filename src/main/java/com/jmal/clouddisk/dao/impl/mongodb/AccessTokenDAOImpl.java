@@ -47,6 +47,7 @@ public class AccessTokenDAOImpl implements IAccessTokenDAO {
         }
         Query query = new Query();
         query.addCriteria(Criteria.where("name").is(userAccessTokenDO.getName()));
+        query.addCriteria(Criteria.where(USERNAME).is(userAccessTokenDO.getUsername()));
         if(mongoTemplate.exists(query, ACCESS_TOKEN_COLLECTION_NAME)){
             throw new CommonException(ExceptionType.EXISTING_RESOURCES.getCode(), "该名称已存在");
         }

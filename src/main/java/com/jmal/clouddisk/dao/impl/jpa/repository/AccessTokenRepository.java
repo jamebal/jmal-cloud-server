@@ -31,10 +31,7 @@ public interface AccessTokenRepository extends JpaRepository<UserAccessTokenDO, 
      */
     List<UserAccessTokenDO> findByUsername(String username);
 
-    /**
-     * 检查名称是否存在
-     */
-    boolean existsByName(String name);
+    boolean existsByNameAndUsername(String name, String username);
 
     /**
      * 根据用户名列表删除令牌

@@ -52,7 +52,7 @@ public class AccessTokenDAOJpaImpl implements IAccessTokenDAO, IWriteCommon<User
 
         try {
             // 检查名称是否已存在
-            if (accessTokenRepository.existsByName(userAccessTokenDO.getName())) {
+            if (accessTokenRepository.existsByNameAndUsername(userAccessTokenDO.getName(), userAccessTokenDO.getUsername())) {
                 throw new CommonException(ExceptionType.EXISTING_RESOURCES.getCode(), "该名称已存在");
             }
             // 设置创建时间并保存
