@@ -29,6 +29,7 @@ public class CreateHandler implements IDataOperationHandler<ArticleOperation.Cre
 
         Optional<ArticleDO> existingArticleOpt = repo.findMarkdownByFileId(fileId);
 
+
         if (existingArticleOpt.isPresent()) {
             // --- 更新逻辑 ---
             ArticleDO articleToUpdate = existingArticleOpt.get();
@@ -37,9 +38,9 @@ public class CreateHandler implements IDataOperationHandler<ArticleOperation.Cre
 
         } else {
             // --- 创建逻辑 ---
+            ArticleDO newArticle = new ArticleDO(fileDocument);
             FileMetadataDO newMetadata = new FileMetadataDO(fileDocument);
             filePersistenceService.persistContents(fileDocument);
-            ArticleDO newArticle = new ArticleDO(fileDocument);
             newArticle.setFileMetadata(newMetadata);
             return repo.save(newArticle);
         }

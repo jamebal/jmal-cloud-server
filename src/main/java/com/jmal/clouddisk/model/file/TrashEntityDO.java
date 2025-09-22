@@ -111,7 +111,7 @@ public class TrashEntityDO extends AuditablePerformanceEntity implements Reflect
         if (this.getProps() != null) {
             fileDocument.setW(this.getProps().getW());
             fileDocument.setH(this.getProps().getH());
-            fileDocument.setMusic(this.getProps().getMusic());
+            fileDocument.setMusicInfo(this.getProps().getMusic());
             fileDocument.setExif(this.getProps().getExif());
             fileDocument.setVideo(this.getProps().getVideo());
             fileDocument.setM3u8(this.getProps().getM3u8());

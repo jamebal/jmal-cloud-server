@@ -4,7 +4,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
-import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import com.jmal.clouddisk.config.jpa.AuditablePerformanceEntity;
 import com.jmal.clouddisk.model.ArticleVO;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -24,7 +24,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Entity
 @Table(name = "articles")
-public class ArticleDO extends AuditableEntity implements Reflective {
+public class ArticleDO extends AuditablePerformanceEntity implements Reflective {
 
     @Column(name = "is_release")
     private Boolean release;
@@ -54,7 +54,7 @@ public class ArticleDO extends AuditableEntity implements Reflective {
     private FileMetadataDO fileMetadata;
 
     public ArticleDO(String id, Boolean alonePage, String slug, LocalDateTime updateDate) {
-        this.id = id;
+        setId(id);
         this.alonePage = alonePage;
         this.slug = slug;
         this.fileMetadata = new FileMetadataDO();
@@ -65,7 +65,7 @@ public class ArticleDO extends AuditableEntity implements Reflective {
         if (fileDocument.getId() == null) {
             fileDocument.setId(new ObjectId().toHexString());
         }
-        this.id = fileDocument.getId();
+        setId(fileDocument.getId());
         this.cover(fileDocument);
     }
 
@@ -91,7 +91,7 @@ public class ArticleDO extends AuditableEntity implements Reflective {
             fileDocument = this.fileMetadata.toFileDocument();
         } else {
             fileDocument = new FileDocument();
-            fileDocument.setId(this.id);
+            fileDocument.setId(this.getId());
         }
         fileDocument.setRelease(this.release);
         fileDocument.setAlonePage(this.alonePage);

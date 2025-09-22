@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,7 +27,7 @@ public interface ArticleRepository extends JpaRepository<ArticleDO, String> {
             "WHERE a.fileMetadata.publicId = :fileId")
     Optional<ArticleDO> findMarkdownByFileId(@Param("fileId") String fileId);
 
-    @Query("SELECT new ArticleDO(a.id, a.alonePage, a.slug, f.updateDate) FROM ArticleDO a " +
+    @Query("SELECT new ArticleDO(a.publicId, a.alonePage, a.slug, f.updateDate) FROM ArticleDO a " +
             "JOIN a.fileMetadata f " +
             "WHERE a.release = true")
     List<ArticleDO> findByReleaseIsTrue();
@@ -50,13 +51,22 @@ public interface ArticleRepository extends JpaRepository<ArticleDO, String> {
     Optional<ArticleDO> findBySlug(String slug);
 
     @Modifying
-    @Query("UPDATE ArticleDO a SET a.pageSort = :pageSort WHERE a.id = :id")
+    @Query("UPDATE ArticleDO a SET a.pageSort = :pageSort WHERE a.publicId = :id")
     void updatePageSortById(String id, Integer pageSort);
 
     boolean existsBySlug(String slug);
-    boolean existsBySlugAndIdNot(String slug, String id);
+
+    boolean existsBySlugAndPublicIdNot(String slug, String id);
 
     @Modifying
-    @Query("UPDATE ArticleDO a SET a.hasDraft = :hasDraft WHERE a.id = :id")
+    @Query("UPDATE ArticleDO a SET a.hasDraft = :hasDraft WHERE a.publicId = :id")
     void updateHasDraftById(String id, Boolean hasDraft);
+
+    @Modifying
+    @Query("DELETE FROM ArticleDO a WHERE a.publicId IN :publicIds")
+    void deleteAllByPublicIdIn(Collection<String> publicIds);
+
+    @Modifying
+    @Query("DELETE FROM ArticleDO a WHERE a.publicId = :publicId")
+    void deleteByPublicId(String publicId);
 }

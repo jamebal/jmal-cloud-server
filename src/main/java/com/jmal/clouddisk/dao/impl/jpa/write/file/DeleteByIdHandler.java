@@ -2,6 +2,7 @@ package com.jmal.clouddisk.dao.impl.jpa.write.file;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.FilePersistenceService;
+import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FilePropsRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperationHandler;
@@ -16,12 +17,14 @@ public class DeleteByIdHandler implements IDataOperationHandler<FileOperation.De
 
     private final FileMetadataRepository repo;
     private final FilePropsRepository filePropsRepository;
+    private final ArticleRepository articleRepository;
     private final FilePersistenceService filePersistenceService;
 
     @Override
     public Void handle(FileOperation.DeleteById op) {
         repo.deleteByPublicId(op.fileId());
-        filePropsRepository.deleteAllByPublicId(op.fileId());
+        filePropsRepository.deleteByPublicId(op.fileId());
+        articleRepository.deleteByPublicId(op.fileId());
         filePersistenceService.deleteContents(op.fileId());
         return null;
     }

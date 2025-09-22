@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.dao.impl.jpa.write.file;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FilePropsRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperationHandler;
@@ -17,12 +18,14 @@ public class RemoveByMountFileIdHandler implements IDataOperationHandler<FileOpe
 
     private final FileMetadataRepository repo;
     private final FilePropsRepository filePropsRepository;
+    private final ArticleRepository articleRepository;
 
     @Override
     public Void handle(FileOperation.RemoveByMountFileId op) {
-        List<Long> ids = repo.findAllIdsByMountFileId(op.fileId());
+        List<String> ids = repo.findAllPublicIdsByMountFileId(op.fileId());
         repo.removeByMountFileId(op.fileId());
-        filePropsRepository.deleteAllByIdIn(ids);
+        filePropsRepository.deleteAllByPublicIdIn(ids);
+        articleRepository.deleteAllByPublicIdIn(ids);
         return null;
     }
 }

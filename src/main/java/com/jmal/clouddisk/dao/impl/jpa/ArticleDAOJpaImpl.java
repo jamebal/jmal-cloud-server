@@ -106,7 +106,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         // 1. 构建动态SQL和参数
         Map<String, Object> params = new HashMap<>();
         StringBuilder sqlBuilder = new StringBuilder(
-                "SELECT DISTINCT a.file_id,a.category_ids,a.has_draft,a.slug,a.tag_ids,a.is_release,a.cover,a.page_sort" +
+                "SELECT DISTINCT a.public_id,a.file_id,a.category_ids,a.has_draft,a.slug,a.tag_ids,a.is_release,a.cover,a.page_sort" +
                         ",f.content_type,f.name,f.update_date,f.upload_date,f.user_id,f.suffix " +
                         "FROM articles a "
         );
@@ -153,7 +153,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
 
         if (luceneFileIds != null) {
             // 如果luceneFileIds不为null，说明进行了关键字搜索
-            whereBuild.append("AND a.file_id IN (:luceneFileIds) ");
+            whereBuild.append("AND a.public_id IN (:luceneFileIds) ");
             params.put("luceneFileIds", luceneFileIds);
         }
 
@@ -187,7 +187,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         // 4. 执行主查询
         List<FileDocument> articles = jdbcTemplate.query(sqlBuilder.toString(), params, (rs, _) -> {
             FileDocument fileDocument = new FileDocument();
-            fileDocument.setId(rs.getString("file_id"));
+            fileDocument.setId(rs.getString("public_id"));
             fileDocument.setCover(rs.getString("cover"));
             fileDocument.setUserId(rs.getString("user_id"));
             fileDocument.setName(rs.getString("name"));
@@ -319,9 +319,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
         fileDocument.setDraft(null);
         if (isDraft) {
             // 保存草稿
-            fileDocument.setDraft(null);
-            filePersistenceService.persistDraft(fileDocument.getId(), JacksonUtil.toJSONStringWithDateFormat(fileDocument, "yyyy-MM-dd HH:mm:ss"));
-            fileDocument.setDraft("draft");
+            fileDocument.setDraft(JacksonUtil.toJSONStringWithDateFormat(fileDocument, "yyyy-MM-dd HH:mm:ss"));
         } else {
             fileDocument.setRelease(true);
             fileDocument.setHtml(upload.getHtml());
@@ -342,6 +340,8 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
                 // 持久化内容到文件系统
                 filePersistenceService.persistContents(fileDocument);
             } else {
+                fileDocument.setDraft(null);
+                filePersistenceService.persistDraft(fileDocument.getId(), JacksonUtil.toJSONStringWithDateFormat(fileDocument, "yyyy-MM-dd HH:mm:ss"));
                 writeService.submit(new ArticleOperation.updateHasDraftById(fileDocument.getId(), true));
             }
         }

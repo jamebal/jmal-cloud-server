@@ -1784,7 +1784,8 @@ public class FileServiceImpl implements IFileService {
         OperationTips operationTips = OperationTips.builder().operation(sweep ? "删除" : "移动到回收站").build();
         if (isDel) {
             if (sweep) {
-                fileDAO.removeByIdIn(fileIds);
+                // fileDAO.removeByIdIn(fileIds);
+                fileIds.forEach(fileDAO::removeById);
             } else {
                 List<FileDocument> delFileDocumentList = fileDAO.findAllAndRemoveByIdIn(fileIds);
                 // 移动到回收站

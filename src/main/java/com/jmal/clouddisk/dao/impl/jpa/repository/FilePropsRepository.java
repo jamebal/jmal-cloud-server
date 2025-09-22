@@ -248,14 +248,6 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
 
     @Modifying
     @Query("DELETE FROM FilePropsDO p WHERE p.publicId = :publicId")
-    void deleteAllByPublicId(String publicId);
-
-    @Modifying
-    @Query("DELETE FROM FilePropsDO p WHERE p.primaryId IN :primaryIds")
-    void deleteAllByIdIn(List<Long> primaryIds);
-
-    @Modifying
-    @Query("DELETE FROM FilePropsDO p WHERE p.primaryId = :primaryId")
-    void deleteAllById(Long primaryId);
+    void deleteByPublicId(String publicId);
 
 }

@@ -25,7 +25,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -152,7 +151,7 @@ public class FileDAOJpaImpl implements IFileDAO {
 
     @Override
     public boolean existsByNameAndIdNotIn(String filename, String fileId) {
-        return fileMetadataRepository.existsByNameAndIdNotIn(filename, Collections.singleton(fileId));
+        return fileMetadataRepository.existsByNameAndPublicIdNot(filename, fileId);
     }
 
     @Override
@@ -160,7 +159,7 @@ public class FileDAOJpaImpl implements IFileDAO {
         if (CharSequenceUtil.isBlank(slug)) {
             return articleRepository.existsBySlug(slug);
         }
-        return articleRepository.existsBySlugAndIdNot(slug, fileId);
+        return articleRepository.existsBySlugAndPublicIdNot(slug, fileId);
     }
 
     @Override

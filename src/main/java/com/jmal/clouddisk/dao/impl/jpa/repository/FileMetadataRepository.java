@@ -68,8 +68,8 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
 
     void removeByMountFileId(String mountFileId);
 
-    @Query("SELECT f.primaryId FROM FileMetadataDO f WHERE f.mountFileId = :mountFileId")
-    List<Long> findAllIdsByMountFileId(String mountFileId);
+    @Query("SELECT f.publicId FROM FileMetadataDO f WHERE f.mountFileId = :mountFileId")
+    List<String> findAllPublicIdsByMountFileId(String mountFileId);
 
     /**
      * 计算用户的文件总大小
@@ -80,7 +80,11 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
     @Query("SELECT COALESCE(SUM(f.size), 0) FROM FileMetadataDO f WHERE f.userId = :userId AND f.isFolder = false")
     Long calculateTotalSizeByUserId(@Param("userId") String userId);
 
-    boolean existsByNameAndIdNotIn(String name, Collection<String> ids);
+    @Query("SELECT (count(f) > 0) FROM FileMetadataDO f " +
+            "WHERE f.name = :name AND" +
+            "(:publicId IS NULL OR f.publicId <> :publicId)"
+    )
+    boolean existsByNameAndPublicIdNot(String name, String publicId);
 
     @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseDTO(f.name, f.path, f.userId) FROM FileMetadataDO f WHERE f.publicId = :id")
     Optional<FileBaseDTO> findFileBaseDTO(String id);

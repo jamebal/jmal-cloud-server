@@ -301,13 +301,10 @@ public class FileDocument extends FileBase implements Reflective {
         this.music = null;
     }
 
-    public void setMusic(MusicInfo music) {
+    public void setMusicInfo(MusicInfo music) {
         if (music != null) {
             this.music = new Music(music);
         }
     }
 
-    public void setMusic(Music music) {
-        this.music = music;
-    }
 }

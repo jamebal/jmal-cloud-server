@@ -382,7 +382,8 @@ public class MarkdownServiceImpl implements IMarkdownService {
         fileDocument.setUploadDate(uploadDate);
         fileDocument.setName(filename);
         fileDocument.setCover(upload.getCover());
-        fileDocument.setSlug(getSlug(upload));
+        String slug = getSlug(upload.getSlug(), filename, fileDocument.getId());
+        fileDocument.setSlug(slug);
         fileDocument.setCategoryIds(List.of(upload.getCategoryIds()));
         fileDocument.setTagIds(List.of(tagService.getTagIdsByNames(upload.getTagNames())));
         fileDocument.setIsFolder(false);
@@ -441,16 +442,14 @@ public class MarkdownServiceImpl implements IMarkdownService {
         return ResultUtil.success();
     }
 
-    private String getSlug(ArticleParamDTO upload) {
-        String slug = upload.getSlug();
-        if (CharSequenceUtil.isBlank(slug)) {
-            return upload.getFilename();
+    private String getSlug(String newSlug, String name, String fileId) {
+        if (CharSequenceUtil.isBlank(newSlug)) {
+            return name;
         }
-        String fileId = upload.getFileId();
-        if (fileDAO.existsBySlugAndIdNot(slug, fileId)) {
-            return slug + "-1";
+        if (fileDAO.existsBySlugAndIdNot(newSlug, fileId)) {
+            return newSlug + "-1";
         }
-        return slug;
+        return newSlug;
     }
 
     @Override
