@@ -174,11 +174,13 @@ public class OssConfigService {
         }
         ossConfigDTO.setUsername(consumerDO.getUsername());
         // 销毁旧配置
-        destroyOldConfig(ossConfigDTO, userId, consumerDO);
+        String oldId = destroyOldConfig(ossConfigDTO, userId, consumerDO);
 
         // 配置转换 DTO -> DO
         OssConfigDO ossConfigDO = ossConfigDTO.toOssConfigDO(textEncryptor);
-
+        if (oldId != null) {
+            ossConfigDO.setId(oldId);
+        }
         String configErr = "配置有误 或者 Access Key 没有权限";
         try {
             // 检查配置可用性
@@ -206,7 +208,7 @@ public class OssConfigService {
     /**
      * 销毁旧配置
      */
-    private void destroyOldConfig(OssConfigDTO ossConfigDTO, String userId, ConsumerDO consumerDO) {
+    private String destroyOldConfig(OssConfigDTO ossConfigDTO, String userId, ConsumerDO consumerDO) {
         // 检查目录是否存在
         boolean existFolder = existFolderName(consumerDO.getUsername(), ossConfigDTO.getFolderName());
         // 旧配置
@@ -235,7 +237,7 @@ public class OssConfigService {
         if (existFolder && oldOssConfigDO == null) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "目录已存在: " + ossConfigDTO.getFolderName());
         }
-
+        return oldOssConfigDO == null ? null : oldOssConfigDO.getId();
     }
 
     /**
