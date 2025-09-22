@@ -26,6 +26,13 @@ public class OssConfigDAOImpl implements IOssConfigDAO {
     }
 
     @Override
+    public List<OssConfigDO> findAllByUserId(String userId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("userId").is(userId));
+        return mongoTemplate.find(query, OssConfigDO.class);
+    }
+
+    @Override
     public OssConfigDO findByUserIdAndEndpointAndBucketAndPlatform(String userId, String endpoint, String bucket, PlatformOSS platform) {
         Query query = new Query();
         query.addCriteria(Criteria.where("userId").is(userId));

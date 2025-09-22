@@ -37,6 +37,11 @@ public class OssConfigDAOJpaImpl implements IOssConfigDAO, IWriteCommon<OssConfi
     }
 
     @Override
+    public List<OssConfigDO> findAllByUserId(String userId) {
+        return ossConfigRepository.findAllByUserId(userId);
+    }
+
+    @Override
     public OssConfigDO findByUserIdAndEndpointAndBucketAndPlatform(String userId, String endpoint, String bucket, PlatformOSS platform) {
         return ossConfigRepository.findByUserIdAndEndpointAndBucketAndPlatform(userId, endpoint, bucket, platform);
     }

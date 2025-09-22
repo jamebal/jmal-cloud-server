@@ -15,6 +15,7 @@ import com.jmal.clouddisk.oss.minio.MinIOService;
 import com.jmal.clouddisk.oss.tencent.TencentOssService;
 import com.jmal.clouddisk.oss.web.model.OssConfigDO;
 import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
+import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -53,6 +54,9 @@ public class OssConfigService {
     private final FileMonitor fileMonitor;
 
     private final IOssConfigDAO ossConfigDAO;
+
+    private final UserLoginHolder userLoginHolder;
+
     private final IFileDAO fileDAO;
 
     private final TextEncryptor textEncryptor;
@@ -266,7 +270,7 @@ public class OssConfigService {
      * OSS配置列表
      */
     public ResponseResult<Object> ossConfigList() {
-        List<OssConfigDO> ossConfigDOList = ossConfigDAO.findAll();
+        List<OssConfigDO> ossConfigDOList = ossConfigDAO.findAllByUserId(userLoginHolder.getUserId());
         List<OssConfigDTO> ossConfigDTOList = ossConfigDOList.stream().map(OssConfigDO::toOssConfigDTO).toList();
         return ResultUtil.success(ossConfigDTOList);
     }
