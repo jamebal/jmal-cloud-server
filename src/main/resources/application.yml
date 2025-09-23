@@ -86,3 +86,4 @@ logging:
           util:
             HotspotVMOptions: error
         poi: error
+      jaudiotagger: warn
