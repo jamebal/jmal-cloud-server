@@ -178,8 +178,8 @@ public class FileDAOJpaImpl implements IFileDAO {
     }
 
     @Override
-    public void updateShareFirst(String fileId, boolean shareBase) {
-        filePropsDAO.updateShareFirst(fileId, shareBase);
+    public void updateShareFirst(String fileId, String shareId, ShareProperties shareProperties, boolean shareBase) {
+        filePropsDAO.updateShareFirst(fileId, shareId, shareProperties, shareBase);
     }
 
     @Override

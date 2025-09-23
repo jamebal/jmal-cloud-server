@@ -210,7 +210,7 @@ public class CommonFileService {
         ShareProperties shareProperties = new ShareProperties(share.getIsPrivacy(), share.getExtractionCode(), expiresAt, share.getOperationPermissionList(), true);
         fileDAO.updateShareProps(fileDocument, share.getId(), shareProperties, isFolder);
         // 修改第一个文件/文件夹
-        fileDAO.updateShareFirst(fileDocument.getId(), true);
+        fileDAO.updateShareFirst(fileDocument.getId(), share.getId(), shareProperties, true);
     }
 
     /***
@@ -221,7 +221,7 @@ public class CommonFileService {
     void unsetShareAttribute(FileDocument fileDocument, boolean isFolder) {
         fileDAO.unsetShareProps(fileDocument, isFolder);
         // 修改第一个文件/文件夹
-        fileDAO.updateShareFirst(fileDocument.getId(), false);
+        fileDAO.updateShareFirst(fileDocument.getId(), null, null, false);
     }
 
     public void checkPermissionUsername(String username, String currentUsername, List<OperationPermission> operationPermissionList, OperationPermission operationPermission) {

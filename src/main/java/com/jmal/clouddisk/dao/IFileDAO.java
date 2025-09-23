@@ -76,7 +76,7 @@ public interface IFileDAO {
 
     void updateShareProps(FileDocument fileDocument, String shareId, ShareProperties shareProperties, boolean isFolder);
 
-    void updateShareFirst(String fileId, boolean shareBase);
+    void updateShareFirst(String fileId, String shareId, ShareProperties shareProperties, boolean shareBase);
 
     void unsetShareProps(FileDocument file, boolean isFolder);
 

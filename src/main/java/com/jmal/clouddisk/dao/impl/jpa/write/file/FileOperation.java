@@ -43,7 +43,7 @@ public final class FileOperation {
             @Param("shareId") String shareId,
             @Param("shareProps") ShareProperties shareProps,
             @Param("isFolder") Boolean isFolder) implements IFileOperation<Integer> {}
-    public record UpdateShareBaseById(String fileId, Boolean shareBase) implements IFileOperation<Integer> {}
+    public record UpdateShareBaseById(String fileId, String shareId, ShareProperties shareProps, Boolean shareBase) implements IFileOperation<Integer> {}
 
     public record UnsetShareProps(String fileId, String userId, String pathPrefixForLike, ShareProperties shareProperties,
                                   boolean isFolder) implements IFileOperation<Integer> {}

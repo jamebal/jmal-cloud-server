@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
+import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.DataSourceType;
@@ -111,7 +112,7 @@ public class FilePropsDAO {
         } else {
             shareProperties = newShareProperties;
         }
-        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(file.getPath()) + "%";
+        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(ReUtil.escape(file.getPath() + file.getName() + "/")) + "%";
         writeService.submit(new FileOperation.UpdateShareProps(
                 file.getId(),
                 file.getUserId(),
@@ -122,12 +123,12 @@ public class FilePropsDAO {
         ));
     }
 
-    public void updateShareFirst(String fileId, boolean shareBase) {
-        writeService.submit(new FileOperation.UpdateShareBaseById(fileId, shareBase));
+    public void updateShareFirst(String fileId, String shareId, ShareProperties shareProperties, boolean shareBase) {
+        writeService.submit(new FileOperation.UpdateShareBaseById(fileId, shareId, shareProperties, shareBase));
     }
 
     public void unsetShareProps(FileDocument file, boolean isFolder) {
-        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(file.getPath()) + "%";
+        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(ReUtil.escape(file.getPath() + file.getName() + "/")) + "%";
         writeService.submit(new FileOperation.UnsetShareProps(
                 file.getId(),
                 file.getUserId(),
@@ -138,7 +139,7 @@ public class FilePropsDAO {
     }
 
     public void setSubShareFormShareBase(FileDocument file) {
-        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(file.getPath()) + "%";
+        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(ReUtil.escape(file.getPath() + file.getName() + "/")) + "%";
         writeService.submit(new FileOperation.SetSubShareFormShareBase(
                 file.getUserId(),
                 pathPrefixForLike

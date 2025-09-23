@@ -16,6 +16,6 @@ public class UpdateShareBaseByIdHandler implements IDataOperationHandler<FileOpe
 
     @Override
     public Integer handle(FileOperation.UpdateShareBaseById op) {
-        return repo.updateShareBaseById(op.shareBase(), op.fileId());
+        return repo.updateShareBaseById(op.shareBase(), op.shareId(), op.shareProps(), op.fileId());
     }
 }

@@ -72,9 +72,14 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
             @Param("shareId") String shareId,
             @Param("shareProps") ShareProperties shareProps);
 
-    @Query("update FilePropsDO f set f.shareBase = :shareBase where f.publicId = :id")
+    @Query("UPDATE FilePropsDO f SET " +
+            "f.shareBase = :shareBase, " +
+            "f.shareId = :shareId, " +
+            "f.shareProps = :shareProps " +
+            "WHERE f.publicId = :id"
+    )
     @Modifying
-    int updateShareBaseById(Boolean shareBase, String id);
+    int updateShareBaseById(Boolean shareBase, String shareId, ShareProperties shareProps, String id);
 
     @Modifying
     @Query("UPDATE FilePropsDO fp SET " +

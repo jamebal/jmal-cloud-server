@@ -244,6 +244,11 @@ public class FileDAOImpl implements IFileDAO {
     public void updateShareProps(FileDocument file, String shareId, ShareProperties shareProperties, boolean isFolder) {
         Query query = getUpdateSharePropsQuery(file, isFolder);
         Update update = new Update();
+        setShareProps(shareId, shareProperties, update);
+        mongoTemplate.updateMulti(query, update, FileDocument.class);
+    }
+
+    private static void setShareProps(String shareId, ShareProperties shareProperties, Update update) {
         update.set(Constants.IS_SHARE, true);
         update.set(Constants.SHARE_ID, shareId);
         update.set(Constants.EXPIRES_AT, shareProperties.getExpiresAt());
@@ -256,26 +261,23 @@ public class FileDAOImpl implements IFileDAO {
         } else {
             update.unset(Constants.EXTRACTION_CODE);
         }
-        mongoTemplate.updateMulti(query, update, FileDocument.class);
     }
 
     @Override
-    public void updateShareFirst(String fileId, boolean shareBase) {
+    public void updateShareFirst(String fileId, String shareId, ShareProperties shareProperties, boolean shareBase) {
         Update update = new Update();
         if (shareBase) {
             update.set(Constants.SHARE_BASE, true);
+            setShareProps(shareId, shareProperties, update);
         } else {
-            update.unset(Constants.SHARE_BASE);
+            unsetShareProps(update);
         }
         Query query1 = new Query();
         query1.addCriteria(Criteria.where("_id").is(fileId));
         mongoTemplate.updateFirst(query1, update, FileDocument.class);
     }
 
-    @Override
-    public void unsetShareProps(FileDocument file, boolean isFolder) {
-        Query query = getUpdateSharePropsQuery(file, isFolder);
-        Update update = new Update();
+    private static void unsetShareProps(Update update) {
         update.unset(Constants.SHARE_ID);
         update.unset(Constants.IS_SHARE);
         update.unset(Constants.SUB_SHARE);
@@ -283,6 +285,13 @@ public class FileDAOImpl implements IFileDAO {
         update.unset(Constants.IS_PRIVACY);
         update.unset(Constants.OPERATION_PERMISSION_LIST);
         update.unset(Constants.EXTRACTION_CODE);
+    }
+
+    @Override
+    public void unsetShareProps(FileDocument file, boolean isFolder) {
+        Query query = getUpdateSharePropsQuery(file, isFolder);
+        Update update = new Update();
+        unsetShareProps(update);
         mongoTemplate.updateMulti(query, update, FileDocument.class);
     }
 
