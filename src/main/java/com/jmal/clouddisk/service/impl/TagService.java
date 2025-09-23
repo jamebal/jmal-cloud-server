@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.dao.ITagDAO;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
@@ -87,14 +88,13 @@ public class TagService {
 
     /***
      * 获取标签信息
-     * @param userId 用户id
      * @param tagSlugName 标签缩略名
      * @return 一个分类信息
      */
-    public TagDO getTagInfoBySlug(String userId, String tagSlugName) {
-        TagDO tag = tagDAO.findOneTagByUserIdAndSlugName(userId, tagSlugName);
+    public TagDO getTagInfoBySlug(String tagSlugName) {
+        TagDO tag = tagDAO.findOneTagByUserIdIsNullAndSlugName(tagSlugName);
         if (tag == null) {
-            tag = getTagInfo(userId, tagSlugName);
+            tag = getTagInfo(null, tagSlugName);
         }
         return tag;
     }
@@ -126,7 +126,7 @@ public class TagService {
     }
 
     private boolean tagExists(TagDTO tagDTO) {
-        TagDO tag = getTagInfo(tagDTO.getUserId(), tagDTO.getName());
+        TagDO tag = getTagInfo(null, tagDTO.getName());
         return tag != null;
     }
 
@@ -151,15 +151,20 @@ public class TagService {
     }
 
     private String getSlug(TagDTO tagDTO) {
-        String slug = tagDTO.getSlug();
+        String baseSlug = CharSequenceUtil.isBlank(tagDTO.getSlug()) ? tagDTO.getName() : tagDTO.getSlug();
         String id = tagDTO.getId();
-        if (CharSequenceUtil.isBlank(slug)) {
-            return tagDTO.getName();
+
+        if (!tagDAO.existsBySlugAndIdNot(baseSlug, id)) {
+            return baseSlug;
         }
-        if (tagDAO.existsBySlugAndIdNot(slug, id)) {
-            return slug + "-1";
+
+        for (int i = 0; i < 20; i++) {
+            String trySlug = baseSlug + RandomUtil.randomInt(1, 10000);
+            if (!tagDAO.existsBySlugAndIdNot(trySlug, id)) {
+                return trySlug;
+            }
         }
-        return slug;
+        return new ObjectId().toHexString();
     }
 
     /***
@@ -200,7 +205,7 @@ public class TagService {
     }
 
     private Tag getTagIdByName(String tagName, String color, String userId) {
-        TagDO tag = getTagInfo(null, tagName);
+        TagDO tag = getTagInfo(userId, tagName);
         if (tag == null) {
             // 添加新标签
             tag = new TagDO();

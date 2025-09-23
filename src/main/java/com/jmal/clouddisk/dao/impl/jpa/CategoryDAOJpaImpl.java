@@ -94,7 +94,7 @@ public class CategoryDAOJpaImpl implements ICategoryDAO, IWriteCommon<CategoryDO
     }
 
     @Override
-    public boolean existsBySlugAndIdIsNot(String slug, String id) {
+    public boolean existsBySlugAndIdNot(String slug, String id) {
         if (id == null) {
             return categoryRepository.existsBySlug(slug);
         } else {

@@ -65,8 +65,8 @@ public class TagDAOImpl implements ITagDAO {
     }
 
     @Override
-    public TagDO findOneTagByUserIdAndSlugName(String userId, String tagSlugName) {
-        Query query = getQueryUserId(userId);
+    public TagDO findOneTagByUserIdIsNullAndSlugName(String tagSlugName) {
+        Query query = getQueryUserId(null);
         query.addCriteria(Criteria.where("slug").is(tagSlugName));
         return mongoTemplate.findOne(query, TagDO.class);
     }
@@ -78,17 +78,17 @@ public class TagDAOImpl implements ITagDAO {
 
     @Override
     public boolean existsByNameAndIdNot(String name, String id) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").nin(id));
+        Query query = getQueryUserId(null);
+        query.addCriteria(Criteria.where("_id").ne(id));
         query.addCriteria(Criteria.where("name").is(name));
         return mongoTemplate.exists(query, TagDO.class);
     }
 
     @Override
     public boolean existsBySlugAndIdNot(String slug, String id) {
-        Query query = new Query();
+        Query query = getQueryUserId(null);
         if (id != null) {
-            query.addCriteria(Criteria.where("_id").nin(id));
+            query.addCriteria(Criteria.where("_id").ne(id));
         }
         query.addCriteria(Criteria.where("slug").is(slug));
         return mongoTemplate.exists(query, TagDO.class);

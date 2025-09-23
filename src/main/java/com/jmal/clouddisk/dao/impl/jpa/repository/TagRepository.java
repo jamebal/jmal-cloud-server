@@ -16,19 +16,33 @@ import java.util.Optional;
 @Conditional(RelationalDataSourceCondition.class)
 public interface TagRepository extends JpaRepository<TagDO, String> {
 
-    @Query("SELECT t FROM TagDO t WHERE (:userId IS NULL AND t.userId IS NULL) OR (t.userId = :userId)")
+    @Query("SELECT t FROM TagDO t " +
+            "WHERE (:userId IS NULL AND t.userId IS NULL) OR (t.userId = :userId)"
+    )
     List<TagDO> findTagsByUserIdOrNull(@Param("userId") String userId);
 
-    @Query("SELECT t FROM TagDO t WHERE ((:userId IS NULL AND t.userId IS NULL) OR (t.userId = :userId)) AND t.name = :name")
+    @Query("SELECT t FROM TagDO t " +
+            "WHERE (" +
+            "(:userId IS NULL AND t.userId IS NULL) OR (t.userId = :userId)) AND " +
+            "t.name = :name"
+    )
     Optional<TagDO> findOneTagByUserIdAndName(@Param("userId") String userId, @Param("name") String name);
 
-    @Query("SELECT t FROM TagDO t WHERE ((:userId IS NULL AND t.userId IS NULL) OR (t.userId = :userId)) AND t.slug = :slug")
-    Optional<TagDO> findOneTagByUserIdAndSlug(@Param("userId") String userId, @Param("slug") String slug);
+    @Query("SELECT t FROM TagDO t " +
+            "WHERE t.userId IS NULL AND " +
+            "t.slug = :slug"
+    )
+    Optional<TagDO> findOneTagByUserIdIsNullAndSlug(@Param("slug") String slug);
 
-    boolean existsByNameAndIdNot(String name, String id);
+    boolean existsByNameAndIdNotAndUserIdIsNull(String name, String id);
 
-    boolean existsBySlug(String slug);
-    boolean existsBySlugAndIdNot(String slug, String id);
+    @Query("SELECT COUNT(t) > 0 FROM TagDO t " +
+            "WHERE " +
+            "(:id IS NULL OR t.id <> :id) AND " +
+            "t.slug = :slug AND " +
+            "t.userId IS NULL"
+    )
+    boolean existsBySlugAndIdNotAndUserIdIsNull(String slug, String id);
 
     void removeByIdIn(List<String> idList);
 

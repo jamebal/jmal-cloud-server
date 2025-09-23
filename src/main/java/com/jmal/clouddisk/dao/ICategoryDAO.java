@@ -24,7 +24,7 @@ public interface ICategoryDAO {
 
     void upsert(CategoryDO categoryDO);
 
-    boolean existsBySlugAndIdIsNot(String slug, String id);
+    boolean existsBySlugAndIdNot(String slug, String id);
 
     void updateSetDefaultFalseByDefaultIsTrue();
 

@@ -14,7 +14,7 @@ public interface ITagDAO {
 
     TagDO findOneTagByUserIdAndName(String userId, String tagName);
 
-    TagDO findOneTagByUserIdAndSlugName(String userId, String tagSlugName);
+    TagDO findOneTagByUserIdIsNullAndSlugName(String tagSlugName);
 
     void save(TagDO tag);
 

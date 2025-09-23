@@ -1318,6 +1318,11 @@ public class FileServiceImpl implements IFileService {
     @Override
     public ResponseResult<Object> setTag(EditTagDTO editTagDTO) {
         String userId = userLoginHolder.getUserId();
+
+        List<Tag> tagList = tagService.getTagIdsByTagDTOList(editTagDTO.getTagList(), userId);
+
+        fileDAO.setTagsByIdIn(editTagDTO.getFileIds(), tagList);
+
         if (editTagDTO.getRemoveTagIds() == null || editTagDTO.getRemoveTagIds().isEmpty()) {
             log.debug("修改标签, fileIds: {}, tagList: {}", editTagDTO.getFileIds(), editTagDTO.getTagList());
             editTagDTO.getFileIds().forEach(luceneService::pushCreateIndexQueue);
@@ -1325,10 +1330,6 @@ public class FileServiceImpl implements IFileService {
             // 删除标签并修改相关文件
             deleteTgs(editTagDTO.getRemoveTagIds());
         }
-
-        List<Tag> tagList = tagService.getTagIdsByTagDTOList(editTagDTO.getTagList(), userId);
-
-        fileDAO.setTagsByIdIn(editTagDTO.getFileIds(), tagList);
 
         // 推送消息
         messageService.pushMessage(userLoginHolder.getUsername(), tagService.list(userId), "updateTags");

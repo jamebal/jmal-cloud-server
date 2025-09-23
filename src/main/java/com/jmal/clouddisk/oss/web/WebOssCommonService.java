@@ -13,7 +13,7 @@ import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.service.impl.MessageService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
-import com.oracle.svm.core.annotate.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -28,19 +28,19 @@ import java.time.LocalDateTime;
 @Service
 public class WebOssCommonService {
 
-    @Inject
+    @Autowired
     CommonUserService userService;
 
-    @Inject
+    @Autowired
     CommonUserFileService commonUserFileService;
 
-    @Inject
+    @Autowired
     MessageService messageService;
 
-    @Inject
+    @Autowired
     CommonFileService commonFileService;
 
-    @Inject
+    @Autowired
     IFileDAO fileDAO;
 
     public void notifyCreateFile(String username, String objectName, String ossRootFolderName) {

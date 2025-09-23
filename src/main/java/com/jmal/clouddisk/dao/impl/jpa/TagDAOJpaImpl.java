@@ -46,9 +46,8 @@ public class TagDAOJpaImpl implements ITagDAO, IWriteCommon<TagDO> {
     }
 
     @Override
-    public TagDO findOneTagByUserIdAndSlugName(String userId, String tagSlugName) {
-        String queryUserId = CharSequenceUtil.isBlank(userId) ? null : userId;
-        return tagRepository.findOneTagByUserIdAndSlug(queryUserId, tagSlugName).orElse(null);
+    public TagDO findOneTagByUserIdIsNullAndSlugName(String tagSlugName) {
+        return tagRepository.findOneTagByUserIdIsNullAndSlug(tagSlugName).orElse(null);
     }
 
     @Override
@@ -58,15 +57,12 @@ public class TagDAOJpaImpl implements ITagDAO, IWriteCommon<TagDO> {
 
     @Override
     public boolean existsByNameAndIdNot(String name, String id) {
-        return tagRepository.existsByNameAndIdNot(name, id);
+        return tagRepository.existsByNameAndIdNotAndUserIdIsNull(name, id);
     }
 
     @Override
     public boolean existsBySlugAndIdNot(String slug, String id) {
-        if (CharSequenceUtil.isBlank(slug)) {
-            return tagRepository.existsBySlug(slug);
-        }
-        return tagRepository.existsBySlugAndIdNot(slug, id);
+        return tagRepository.existsBySlugAndIdNotAndUserIdIsNull(slug, id);
     }
 
     @Override

@@ -6,6 +6,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.HttpException;
@@ -443,13 +444,17 @@ public class MarkdownServiceImpl implements IMarkdownService {
     }
 
     private String getSlug(String newSlug, String name, String fileId) {
-        if (CharSequenceUtil.isBlank(newSlug)) {
-            return name;
+        String baseSlug = CharSequenceUtil.isBlank(newSlug) ? name : newSlug;
+        if (!fileDAO.existsBySlugAndIdNot(baseSlug, fileId)) {
+            return newSlug;
         }
-        if (fileDAO.existsBySlugAndIdNot(newSlug, fileId)) {
-            return newSlug + "-1";
+        for (int i = 0; i < 3; i++) {
+            String trySlug = baseSlug + RandomUtil.randomInt(1, 10000);
+            if (!fileDAO.existsBySlugAndIdNot(trySlug, fileId)) {
+                return trySlug;
+            }
         }
-        return newSlug;
+        return new ObjectId().toHexString();
     }
 
     @Override

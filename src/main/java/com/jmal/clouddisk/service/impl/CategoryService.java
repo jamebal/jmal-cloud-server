@@ -9,6 +9,7 @@ import com.jmal.clouddisk.model.CategoryDTO;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import lombok.RequiredArgsConstructor;
+import org.bson.types.ObjectId;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
@@ -225,6 +226,7 @@ public class CategoryService {
      * @return ResponseResult
      */
     public ResponseResult<Object> add(CategoryDTO categoryDTO) {
+        categoryDTO.setId(null);
         if (getCategoryInfo(categoryDTO.getUserId(), categoryDTO.getName()) != null) {
             return ResultUtil.warning("该分类名称已存在");
         }
@@ -237,7 +239,6 @@ public class CategoryService {
         categoryDTO.setSlug(getSlug(categoryDTO));
         CategoryDO categoryDO = new CategoryDO();
         BeanUtils.copyProperties(categoryDTO, categoryDO);
-        categoryDO.setId(null);
         categoryDAO.save(categoryDO);
         return ResultUtil.success();
     }
@@ -263,14 +264,16 @@ public class CategoryService {
     }
 
     private String getSlug(CategoryDTO categoryDTO) {
-        String slug = categoryDTO.getSlug();
-        if (CharSequenceUtil.isBlank(slug)) {
-            return categoryDTO.getName();
+        String baseSlug = CharSequenceUtil.isBlank(categoryDTO.getSlug()) ? categoryDTO.getName() : categoryDTO.getSlug();
+        String id = categoryDTO.getId();
+        if (!categoryDAO.existsBySlugAndIdNot(baseSlug, id)) {
+            return baseSlug;
         }
-        if (categoryDAO.existsBySlugAndIdIsNot(slug, categoryDTO.getId())) {
-            return slug + "-1";
+        String trySlug = categoryDTO.getName();
+        if (!categoryDAO.existsBySlugAndIdNot(trySlug, id)) {
+            return trySlug;
         }
-        return slug;
+        return new ObjectId().toHexString();
     }
 
     /***

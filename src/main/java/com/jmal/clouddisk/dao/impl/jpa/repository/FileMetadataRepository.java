@@ -252,7 +252,7 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
 
     Optional<FileMetadataDO> findByPublicId(String publicId);
 
-    @Query("SELECT f FROM FileMetadataDO f JOIN f.props p WHERE f.path = :path")
+    @Query("SELECT f FROM FileMetadataDO f JOIN FETCH f.props p WHERE f.path = :path")
     List<FileMetadataDO> findAllByPath(String path);
 
     @Query("SELECT f " +

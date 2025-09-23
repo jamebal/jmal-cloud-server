@@ -83,10 +83,10 @@ public class CategoryDAOImpl implements ICategoryDAO {
     }
 
     @Override
-    public boolean existsBySlugAndIdIsNot(String slug, String id) {
+    public boolean existsBySlugAndIdNot(String slug, String id) {
         Query query = new Query();
         if (id != null) {
-            query.addCriteria(Criteria.where("_id").nin(id));
+            query.addCriteria(Criteria.where("_id").ne(id));
         }
         query.addCriteria(Criteria.where("slug").is(slug));
         return mongoTemplate.exists(query, CategoryDO.class);
