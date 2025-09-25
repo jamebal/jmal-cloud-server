@@ -51,7 +51,7 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
             "fp.shareProps = :shareProps " +
             "WHERE fp.primaryId IN (" +
             "    SELECT fm.props.primaryId FROM FileMetadataDO fm " +
-            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix" +
+            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix ESCAPE '\\'" +
             ")")
     int updateFolderShareProps(
             @Param("userId") String userId,
@@ -88,7 +88,7 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
             "fp.shareProps = :shareProps " +
             "WHERE fp.primaryId IN (" +
             "    SELECT fm.props.primaryId FROM FileMetadataDO fm " +
-            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix" +
+            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix ESCAPE '\\'" +
             ")")
     int unsetFolderShareProps(@Param("userId") String userId,
                               @Param("pathPrefix") String pathPrefix,
@@ -114,7 +114,7 @@ public interface FilePropsRepository extends JpaRepository<FilePropsDO, Long> , 
             "fp.subShare = true " +
             "WHERE fp.primaryId IN (" +
             "    SELECT fm.props.primaryId FROM FileMetadataDO fm " +
-            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix " +
+            "    WHERE fm.userId = :userId AND fm.path LIKE :pathPrefix ESCAPE '\\'" +
             "    AND fp.shareBase = true" +
             ")")
     int setSubShareFormShareBase(@Param("userId") String userId,

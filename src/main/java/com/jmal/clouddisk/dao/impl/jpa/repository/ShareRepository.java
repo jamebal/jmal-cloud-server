@@ -21,10 +21,11 @@ public interface ShareRepository extends JpaRepository<ShareDO, String> {
 
     // 更新需要设置提取码的分享
     @Modifying
-    @Query("UPDATE ShareDO p SET p.fatherShareId = :fatherShareId, p.isPrivacy = true, p.extractionCode = :extractionCode " +
-            "WHERE p.id IN :fileIds")
-    void updateToPrivacyShare(
+    @Query("UPDATE ShareDO p SET p.fatherShareId = :fatherShareId, p.isPrivacy = :isPrivacy, p.extractionCode = :extractionCode " +
+            "WHERE p.fileId IN :fileIds")
+    void updateSubShare(
             @Param("fileIds") List<String> fileIds,
+            @Param("isPrivacy") Boolean isPrivacy,
             @Param("fatherShareId") String fatherShareId,
             @Param("extractionCode") String extractionCode
     );
@@ -32,15 +33,6 @@ public interface ShareRepository extends JpaRepository<ShareDO, String> {
     @Modifying
     @Query("UPDATE ShareDO p SET p.fileName = :newFileName WHERE p.fileId = :fileId")
     void SetFileNameByFileId(String fileId, String newFileName);
-
-    // 更新不需要设置提取码的分享
-    @Modifying
-    @Query("UPDATE ShareDO p SET p.fatherShareId = :fatherShareId, p.isPrivacy = false, p.extractionCode = null " +
-            "WHERE p.id IN :fileIds")
-    void updateToPublicShare(
-            @Param("fileIds") List<String> fileIds,
-            @Param("fatherShareId") String fatherShareId
-    );
 
     boolean existsByShortId(String shortId);
 

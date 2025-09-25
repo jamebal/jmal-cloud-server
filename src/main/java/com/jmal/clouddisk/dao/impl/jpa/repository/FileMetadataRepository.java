@@ -23,7 +23,6 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
             "WHERE f.userId = :userId " +
             "AND p.shareBase = true " +
             "AND f.path LIKE :pathPrefix ESCAPE '\\'")
-        // 使用 LIKE 进行前缀匹配
     List<String> findIdSubShares(
             @Param("userId") String userId,
             @Param("pathPrefix") String pathPrefix
@@ -61,7 +60,7 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
     @Query("SELECT f.path FROM FileMetadataDO f " +
             "WHERE f.userId = :userId " +
             "AND f.mountFileId = :mountFileId ")
-    Optional<String> findMountFilePath(String userId, String mountFileId);
+    Optional<String> findMountFilePath(String mountFileId, String userId);
 
     @Query("SELECT f.publicId FROM FileMetadataDO f WHERE f.publicId IN :publicIds")
     List<String> findByPublicIdIn(Collection<String> publicIds);
@@ -351,7 +350,7 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
 
     @EntityGraph(attributePaths = "props")
     @Query("SELECT f FROM FileMetadataDO f " +
-            "WHERE f.userId = :userId AND f.contentType LIKE :contentTypePrefix")
+            "WHERE f.userId = :userId AND f.contentType LIKE :contentTypePrefix ESCAPE '\\'")
     Page<FileMetadataDO> findAllByUserIdAndContentTypeStartingWith(String userId, String contentTypePrefix, Pageable pageable);
 
     @EntityGraph(attributePaths = "props")

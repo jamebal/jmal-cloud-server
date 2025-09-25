@@ -15,6 +15,7 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
@@ -64,6 +65,9 @@ public class ShareServiceImpl implements IShareService {
         ShareDO shareDO = findByFileId(share.getFileId());
         share.setCreateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
         FileDocument file = commonFileService.getById(share.getFileId());
+        if (file == null) {
+            return ResultUtil.warning("文件不存在");
+        }
         if (BooleanUtil.isTrue(file.getIsShare()) && !BooleanUtil.isTrue(file.getShareBase())) {
             // 设置子分享,继承上级分享
             return subShare(share.getShortId(), file);
@@ -72,7 +76,7 @@ public class ShareServiceImpl implements IShareService {
         if (share.getExpireDate() != null) {
             expireAt = TimeUntils.getMilli(share.getExpireDate());
         }
-        share.setIsFolder(share.getIsFolder());
+        share.setIsFolder(file.getIsFolder());
         if (expireAt < Long.MAX_VALUE) {
             share.setExpireDate(LocalDateTimeUtil.of(expireAt));
         }
@@ -90,7 +94,6 @@ public class ShareServiceImpl implements IShareService {
             setShortId(share, shareDO);
             updateShare(share, shareDO, file);
         }
-        file.setShareBase(shareDO.getShareBase());
 
         ShareVO shareVO = getShareVO(share, shareDO);
         shareVO.setShareBase(true);
@@ -292,11 +295,11 @@ public class ShareServiceImpl implements IShareService {
 
     @Override
     public boolean folderSubShare(String fileId) {
-        FileDocument fileDocument = commonFileService.getById(fileId);
-        if (fileDocument == null || BooleanUtil.isFalse(fileDocument.getIsFolder())) {
+        FileBaseDTO fileBaseDTO = fileDAO.findFileBaseDTOById(fileId);
+        if (fileBaseDTO == null || !BooleanUtil.isTrue(fileBaseDTO.getIsFolder())) {
             return false;
         }
-        return fileDAO.existsFolderSubShare(fileDocument.getUserId(), ReUtil.escape(fileDocument.getPath() + fileDocument.getName() + "/"));
+        return fileDAO.existsFolderSubShare(fileBaseDTO.getUserId(), ReUtil.escape(fileBaseDTO.getPath() + fileBaseDTO.getName() + "/"));
     }
 
     public void validShare(String shareToken, String shareId) {
@@ -327,7 +330,7 @@ public class ShareServiceImpl implements IShareService {
         if (fromFileDocument == null) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "分享文件不存在");
         }
-        if (BooleanUtil.isFalse(fromFileDocument.getIsFolder())) {
+        if (!BooleanUtil.isTrue(fromFileDocument.getIsFolder())) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "该分享不是文件夹");
         }
         FileDocument toFileDocument;
@@ -344,7 +347,7 @@ public class ShareServiceImpl implements IShareService {
         if (toFileDocument == null) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "文件不存在");
         }
-        if (BooleanUtil.isFalse(toFileDocument.getIsFolder())) {
+        if (!BooleanUtil.isTrue(toFileDocument.getIsFolder())) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "只能挂载到文件夹下");
         }
         // 判断是否有挂载
@@ -379,7 +382,7 @@ public class ShareServiceImpl implements IShareService {
             return ResultUtil.warning("文件不存在");
         }
         ShareDO shareDO = getShare(fileDocument.getShareId());
-        if (shareDO == null || BooleanUtil.isFalse(shareDO.getIsPrivacy())) {
+        if (shareDO == null || !BooleanUtil.isTrue(shareDO.getIsPrivacy())) {
             return ResultUtil.warning("分享不存在或不是私密分享");
         }
         if (!fileDocument.getUserId().equals(userLoginHolder.getUserId()) && !existsMountFile(shareDO.getFileId(), userLoginHolder.getUserId())) {
@@ -462,7 +465,7 @@ public class ShareServiceImpl implements IShareService {
         uploadApiParamDTO.setPageIndex(pageIndex);
         uploadApiParamDTO.setPageSize(pageSize);
         uploadApiParamDTO.setUserId(shareDO.getUserId());
-        if (Boolean.FALSE.equals(shareDO.getIsFolder())) {
+        if (!BooleanUtil.isTrue(shareDO.getIsFolder())) {
             List<FileDocument> list = new ArrayList<>();
             FileDocument fileDocument = commonFileService.getById(shareDO.getFileId());
             if (fileDocument != null) {

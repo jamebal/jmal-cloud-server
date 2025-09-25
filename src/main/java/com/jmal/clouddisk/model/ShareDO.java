@@ -34,7 +34,6 @@ public class ShareDO extends AuditableEntity implements Reflective {
     private String fatherShareId;
     @Column(length = 24)
     private String shortId;
-    private Boolean shareBase;
     /**
      * 链接拥有者
      */

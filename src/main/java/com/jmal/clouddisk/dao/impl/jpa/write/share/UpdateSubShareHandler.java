@@ -16,11 +16,7 @@ public class UpdateSubShareHandler implements IDataOperationHandler<ShareOperati
 
     @Override
     public Void handle(ShareOperation.UpdateSubShare op) {
-        if (Boolean.TRUE.equals(op.isPrivacy())) {
-            repo.updateToPrivacyShare(op.subShareFileIdList(), op.id(), op.extractionCode());
-        } else {
-            repo.updateToPublicShare(op.subShareFileIdList(), op.id());
-        }
+        repo.updateSubShare(op.subShareFileIdList(), op.isPrivacy(), op.id(), op.extractionCode());
         return null;
     }
 }

@@ -28,7 +28,7 @@ public interface FileEtagRepository extends JpaRepository<FileMetadataDO, Long> 
 
     @Query("SELECT COALESCE(SUM(f.size), 0) FROM FileMetadataDO f " +
             "WHERE f.userId = :userId " +
-            "AND f.path LIKE :pathPrefixForLike"
+            "AND f.path LIKE :pathPrefixForLike ESCAPE '\\'"
     )
     long sumSizeByUserIdAndPathPrefix(String userId, String pathPrefixForLike);
 

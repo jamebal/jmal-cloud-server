@@ -13,9 +13,22 @@ public class MyQuery {
     }
 
     public static String escapeLikeSpecialChars(String input) {
-        return input.replace("\\", "\\\\")
-                .replace("%", "\\%")
-                .replace("_", "\\_");
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+        StringBuilder sb = new StringBuilder(input.length());
+        for (char c : input.toCharArray()) {
+            switch (c) {
+                case '\\':
+                case '%':
+                case '_':
+                    sb.append('\\');
+                default:
+                    sb.append(c);
+                    break;
+            }
+        }
+        return sb.toString();
     }
 
 }
