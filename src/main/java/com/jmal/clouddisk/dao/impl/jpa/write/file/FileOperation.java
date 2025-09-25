@@ -31,7 +31,7 @@ public final class FileOperation {
 
     public record DeleteAllByUserIdInBatch(List<String> userIdList) implements IFileOperation<Void> {}
 
-    public record RemoveByMountFileId(String fileId) implements IFileOperation<Void> {}
+    public record RemoveByMountFileIdIn(List<String> fileIds) implements IFileOperation<Void> {}
 
     public record UpdateFileSize(String fileId, Long size) implements IFileOperation<Integer> {}
     public record ClearAllFolderSizes() implements IFileOperation<Integer> {}

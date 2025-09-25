@@ -77,7 +77,7 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
                     return findAllByUserIdAndIsFolder(upload, isFolder, pageable);
                 }
                 if (BooleanUtil.isTrue(upload.getIsFavorite())) {
-                    return findAllByUserIdAndFavorite(upload, pageable);
+                    return findAllByUserIdAndFavorite(upload.getUserId(), pageable);
                 }
                 if (BooleanUtil.isTrue(upload.getIsMount())) {
                     page = getIdsByMountFileIdIsTrue(upload.getUserId(), pageable);
@@ -123,8 +123,8 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
         return getFileIntroVOPage(pageable, fileMetadataDOPage);
     }
 
-    private Page<FileIntroVO> findAllByUserIdAndFavorite(UploadApiParamDTO upload, Pageable pageable) {
-        Page<FileMetadataDO> fileMetadataDOPage = fileMetadataRepository.findAllByUserIdAndIsFavoriteIsTrue(upload.getUserId(), pageable);
+    private Page<FileIntroVO> findAllByUserIdAndFavorite(String userId, Pageable pageable) {
+        Page<FileMetadataDO> fileMetadataDOPage = fileMetadataRepository.findAllByUserIdAndIsFavoriteIsTrue(userId, pageable);
         return getFileIntroVOPage(pageable, fileMetadataDOPage);
     }
 
@@ -157,7 +157,7 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
 
     private Page<FileIntroVO> getTrashPage(UploadApiParamDTO upload) {
         Pageable pageable = upload.getPageable();
-        Page<TrashEntityDO> trashEntityDOPage = trashRepository.findAllByHiddenIsFalse(pageable);
+        Page<TrashEntityDO> trashEntityDOPage = trashRepository.findAllByHiddenIsFalseAndUserId(upload.getUserId(), pageable);
         List<FileIntroVO> fileIntroVOList = trashEntityDOPage.map(TrashEntityDO::toFileIntroVO).getContent();
         return new PageImpl<>(fileIntroVOList, pageable, trashEntityDOPage.getTotalElements());
     }

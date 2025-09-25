@@ -135,8 +135,8 @@ public class FileDAOJpaImpl implements IFileDAO {
     }
 
     @Override
-    public void removeByMountFileId(String fileId) {
-        writeService.submit(new FileOperation.RemoveByMountFileId(fileId));
+    public void removeByMountFileIdIn(List<String> fileIds) {
+        writeService.submit(new FileOperation.RemoveByMountFileIdIn(fileIds));
     }
 
     @Override

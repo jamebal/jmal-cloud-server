@@ -248,17 +248,17 @@ public class CommonFileService {
         return operationPermissionList == null || !operationPermissionList.contains(operationPermission);
     }
 
-    public void deleteDependencies(String username, List<String> fileIds, boolean sweep) {
-        Completable.fromAction(() -> syncDeleteDependencies(username, fileIds, sweep)).subscribeOn(Schedulers.io()).subscribe();
+    public void deleteDependencies(String username, List<String> fileIds) {
+        Completable.fromAction(() -> syncDeleteDependencies(username, fileIds)).subscribeOn(Schedulers.io()).subscribe();
     }
 
-    public void syncDeleteDependencies(String username, List<String> fileIds, boolean sweep) {
-        if (sweep) {
-            // delete history version
-            fileVersionService.deleteAll(fileIds);
-            // delete video cache
-            videoProcessService.deleteVideoCacheByIds(username, fileIds);
-        }
+    public void syncDeleteDependencies(String username, List<String> fileIds) {
+        // delete mount file
+        fileDAO.removeByMountFileIdIn(fileIds);
+        // delete history version
+        fileVersionService.deleteAll(fileIds);
+        // delete video cache
+        videoProcessService.deleteVideoCacheByIds(username, fileIds);
         // delete share
         shareDAO.removeByFileIdIn(fileIds);
         // delete index
@@ -276,7 +276,7 @@ public class CommonFileService {
         // 文件是否存在
         FileBaseDTO fileBaseDTO = fileDAO.findFileBaseDTOByUserIdAndPathAndName(userId, relativePath, fileName);
         if (fileBaseDTO != null) {
-            deleteDependencies(username, Collections.singletonList(fileBaseDTO.getId()), false);
+            deleteDependencies(username, Collections.singletonList(fileBaseDTO.getId()));
             fileDAO.removeByUserIdAndPathAndName(userId, relativePath, fileName);
             if (BooleanUtil.isTrue(fileBaseDTO.getIsFolder())) {
                 // 删除文件夹及其下的所有文件

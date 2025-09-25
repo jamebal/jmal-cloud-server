@@ -180,9 +180,9 @@ public class FileDAOImpl implements IFileDAO {
     }
 
     @Override
-    public void removeByMountFileId(String fileId) {
+    public void removeByMountFileIdIn(List<String> fileIds) {
         Query query = new Query();
-        query.addCriteria(Criteria.where(Constants.MOUNT_FILE_ID_FIELD).is(fileId));
+        query.addCriteria(Criteria.where(Constants.MOUNT_FILE_ID_FIELD).in(fileIds));
         mongoTemplate.remove(query, FileDocument.class);
     }
 

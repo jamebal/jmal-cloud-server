@@ -14,16 +14,16 @@ import java.util.List;
 @Component("fileRemoveByMountFileIdHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class RemoveByMountFileIdHandler implements IDataOperationHandler<FileOperation.RemoveByMountFileId, Void> {
+public class RemoveByMountFileIdHandler implements IDataOperationHandler<FileOperation.RemoveByMountFileIdIn, Void> {
 
     private final FileMetadataRepository repo;
     private final FilePropsRepository filePropsRepository;
     private final ArticleRepository articleRepository;
 
     @Override
-    public Void handle(FileOperation.RemoveByMountFileId op) {
-        List<String> ids = repo.findAllPublicIdsByMountFileId(op.fileId());
-        repo.removeByMountFileId(op.fileId());
+    public Void handle(FileOperation.RemoveByMountFileIdIn op) {
+        List<String> ids = repo.findAllPublicIdsByMountFileId(op.fileIds());
+        repo.removeByMountFileIdIn(op.fileIds());
         filePropsRepository.deleteAllByPublicIdIn(ids);
         articleRepository.deleteAllByPublicIdIn(ids);
         return null;

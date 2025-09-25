@@ -227,14 +227,14 @@ class FileDAOJpaImplTest {
         void existsById_shouldDelegateToRepository() {
             // Arrange
             String fileId = "file1";
-            when(fileMetadataRepository.existsById(fileId)).thenReturn(true);
+            when(fileMetadataRepository.existsByPublicId(fileId)).thenReturn(true);
 
             // Act
             boolean exists = fileDAO.existsById(fileId);
 
             // Assert
             assertThat(exists).isTrue();
-            verify(fileMetadataRepository).existsById(fileId); // 验证方法被调用
+            verify(fileMetadataRepository).existsByPublicId(fileId); // 验证方法被调用
         }
     }
 }

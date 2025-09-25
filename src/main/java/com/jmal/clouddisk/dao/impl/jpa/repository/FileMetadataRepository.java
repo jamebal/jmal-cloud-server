@@ -65,10 +65,10 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
     @Query("SELECT f.publicId FROM FileMetadataDO f WHERE f.publicId IN :publicIds")
     List<String> findByPublicIdIn(Collection<String> publicIds);
 
-    void removeByMountFileId(String mountFileId);
+    void removeByMountFileIdIn(Collection<String> mountFileIds);
 
-    @Query("SELECT f.publicId FROM FileMetadataDO f WHERE f.mountFileId = :mountFileId")
-    List<String> findAllPublicIdsByMountFileId(String mountFileId);
+    @Query("SELECT f.publicId FROM FileMetadataDO f WHERE f.mountFileId IN :mountFileIds")
+    List<String> findAllPublicIdsByMountFileId(List<String> mountFileIds);
 
     /**
      * 计算用户的文件总大小

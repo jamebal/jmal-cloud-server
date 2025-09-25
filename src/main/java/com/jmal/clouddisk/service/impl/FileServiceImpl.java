@@ -1743,7 +1743,7 @@ public class FileServiceImpl implements IFileService {
             // 删除文件夹及其下的所有文件
             List<String> delFileIds = fileDAO.findAllIdsAndRemoveByFolder(fileBaseDTO);
             // 提取出delFileDocumentList中文件id
-            commonFileService.deleteDependencies(username, delFileIds, false);
+            commonFileService.deleteDependencies(username, delFileIds);
             messageService.pushMessage(username, fileBaseDTO, Constants.DELETE_FILE);
         }
     }
@@ -1792,7 +1792,7 @@ public class FileServiceImpl implements IFileService {
                 // 移动到回收站
                 moveToTrash(username, delFileDocumentList, false);
             }
-            commonFileService.deleteDependencies(username, fileIds, sweep);
+            commonFileService.deleteDependencies(username, fileIds);
             operationTips.setSuccess(true);
         } else {
             operationTips.setSuccess(false);
@@ -1814,7 +1814,7 @@ public class FileServiceImpl implements IFileService {
             } else {
                 delFileIds = fileDAO.findAllIdsAndRemoveByFolder(fileBaseDTO);
             }
-            commonFileService.deleteDependencies(username, delFileIds, sweep);
+            commonFileService.deleteDependencies(username, delFileIds);
             isDel = true;
         }
         return isDel;
@@ -1862,7 +1862,7 @@ public class FileServiceImpl implements IFileService {
         Path prePth = Paths.get(username, currentDirectory);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
-            commonFileService.deleteDependencies(username, fileIds, true);
+            commonFileService.deleteDependencies(username, fileIds);
             webOssService.delete(ossPath, fileIds);
             return null;
         }
@@ -1885,7 +1885,7 @@ public class FileServiceImpl implements IFileService {
     public ResponseResult<Object> sweep(List<String> fileIds, String username) {
         LogOperation logOperation = logService.getLogOperation();
         Completable.fromAction(() -> {
-            commonFileService.deleteDependencies(username, fileIds, true);
+            commonFileService.deleteDependencies(username, fileIds);
             deleteTrash(username, fileIds, logOperation);
             OperationTips operationTips = OperationTips.builder().success(true).operation("删除").build();
             messageService.pushMessage(username, operationTips, Constants.OPERATION_TIPS);
@@ -1923,7 +1923,7 @@ public class FileServiceImpl implements IFileService {
         logOperation.setOperationFun("清空回收站");
         Completable.fromAction(() -> {
             List<String> fileIds = trashDAO.findAllIdsAndRemove();
-            commonFileService.deleteDependencies(username, fileIds, true);
+            commonFileService.deleteDependencies(username, fileIds);
             Path trashPath = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, fileProperties.getJmalcloudTrashDir());
             PathUtil.del(trashPath);
             deleteFileLog(logOperation, true, username, true, null);
@@ -1989,17 +1989,8 @@ public class FileServiceImpl implements IFileService {
                         String timePrefix = LocalDateTimeUtil.now().format(DateTimeFormatter.ofPattern(DatePattern.PURE_DATETIME_PATTERN));
                         sourceFilePath = Paths.get(fileProperties.getRootDir(), username, trashFileDocument.getPath(), timePrefix + "_" + trashFileDocument.getName());
                     }
-                    fileDAO.save(trashFileDocument);
                     PathUtil.move(trashFilePath, sourceFilePath, false);
                     eventPublisher.publishEvent(new LuceneIndexQueueEvent(this, trashFileDocument.getId()));
-                } else {
-                    // 老版本还原
-                    if (BooleanUtil.isTrue(trashFileDocument.getIsFolder())) {
-                        List<FileDocument> trashList1 = fileDAO.findAllAndRemoveByFolder(new FileBaseDTO(trashFileDocument));
-                        fileDAO.saveAll(trashList1);
-                    } else {
-                        fileDAO.save(trashFileDocument);
-                    }
                 }
                 deleteFileLog(logOperation, true, username, true, new FileBaseDTO(trashFileDocument));
             }

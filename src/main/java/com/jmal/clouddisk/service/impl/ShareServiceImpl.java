@@ -667,7 +667,7 @@ public class ShareServiceImpl implements IShareService {
             }
         }
         // 移除挂载文件
-        fileDAO.removeByMountFileId(fileId);
+        fileDAO.removeByMountFileIdIn(Collections.singletonList(fileId));
     }
 
     @Override

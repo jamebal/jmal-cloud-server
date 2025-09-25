@@ -31,7 +31,7 @@ public interface TrashRepository extends JpaRepository<TrashEntityDO, Long> {
     @Query("SELECT t.publicId FROM TrashEntityDO t")
     List<String> findAllIds();
 
-    Page<TrashEntityDO> findAllByHiddenIsFalse(Pageable pageable);
+    Page<TrashEntityDO> findAllByHiddenIsFalseAndUserId(String userId, Pageable pageable);
 
     void deleteByPublicId(String publicId);
 

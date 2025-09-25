@@ -60,7 +60,7 @@ public interface IFileDAO {
 
     void saveAll(List<FileDocument> fileDocumentList);
 
-    void removeByMountFileId(String fileId);
+    void removeByMountFileIdIn(List<String> fileId);
 
     void setSubShareByFileId(String fileId);
 
