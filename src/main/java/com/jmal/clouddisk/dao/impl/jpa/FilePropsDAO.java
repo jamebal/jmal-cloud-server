@@ -14,10 +14,7 @@ import com.jmal.clouddisk.media.TranscodeConfig;
 import com.jmal.clouddisk.media.VideoInfoDO;
 import com.jmal.clouddisk.model.ShareBaseInfoDTO;
 import com.jmal.clouddisk.model.Tag;
-import com.jmal.clouddisk.model.file.FileDocument;
-import com.jmal.clouddisk.model.file.FilePropsDO;
-import com.jmal.clouddisk.model.file.OtherProperties;
-import com.jmal.clouddisk.model.file.ShareProperties;
+import com.jmal.clouddisk.model.file.*;
 import com.jmal.clouddisk.model.file.dto.FileBaseTagsDTO;
 import com.jmal.clouddisk.service.Constants;
 import jakarta.persistence.EntityManager;
@@ -187,22 +184,24 @@ public class FilePropsDAO {
         StringBuilder pathStr = new StringBuilder("/");
 
         for (int i = 0; i < path.getNameCount(); i++) {
-            if (i > 0) {
-                whereClause.append(" OR ");
-            }
-            String filename = path.getName(i).toString();
+
             String pathParamName = Constants.PATH_FIELD + i;
             String nameParamName = Constants.FILENAME_FIELD + i;
+
+            String filename = path.getName(i).toString();
+
+            if (i > 0) {
+                whereClause.append(" OR ");
+                pathStr.append("/");
+            }
 
             whereClause.append("(f.path = :").append(pathParamName).append(" AND f.name = :").append(nameParamName).append(")");
 
             params.put(pathParamName, pathStr.toString());
             params.put(nameParamName, filename);
 
-            if (i > 0) {
-                pathStr.append("/");
-            }
             pathStr.append(filename);
+
         }
 
         String jpql = "SELECT new com.jmal.clouddisk.model.ShareBaseInfoDTO(" +
@@ -215,7 +214,6 @@ public class FilePropsDAO {
         params.forEach(query::setParameter);
 
         List<ShareBaseInfoDTO> results = query.getResultList();
-
 
         if (results.isEmpty()) {
             return null;

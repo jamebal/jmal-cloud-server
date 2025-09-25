@@ -608,7 +608,7 @@ public class FileDAOImpl implements IFileDAO {
             if (i > 0) {
                 pathStr.append("/");
             }
-            Document document = new Document("path", pathStr.toString()).append("name", filename);
+            Document document = new Document(Constants.PATH_FIELD, pathStr.toString()).append(Constants.FILENAME_FIELD, filename);
             documentList.add(document);
             pathStr.append(filename);
         }
