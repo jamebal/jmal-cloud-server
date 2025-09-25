@@ -6,6 +6,7 @@ import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditablePerformanceEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -41,7 +42,14 @@ import java.time.LocalDateTime;
 @CompoundIndex(name = "type_username_createTime_1", def = "{'type': 1, 'username': 1, 'createTime': 1}")
 @CompoundIndex(name = "fileUserId_type_1", def = "{'fileUserId': 1, 'type': 1}")
 @Entity
-@Table(name = "log")
+@Table(name = "log",
+        indexes = {
+                @Index(name = "log_create_time", columnList = "createTime"),
+                @Index(name = "log_username", columnList = "username"),
+                @Index(name = "log_ip", columnList = "ip"),
+                @Index(name = "log_type", columnList = "type"),
+        }
+)
 public class LogOperation extends AuditablePerformanceEntity implements Reflective {
     /***
      * 账号

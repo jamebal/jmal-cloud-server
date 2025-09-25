@@ -28,13 +28,15 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "files",
         indexes = {
-                @Index(name = "idx_name", columnList = "name"),
-                @Index(name = "idx_size", columnList = "size"),
-                @Index(name = "idx_update_date", columnList = "updateDate"),
-                @Index(name = "idx_upload_date", columnList = "uploadDate"),
-                @Index(name = "idx_user_id", columnList = "userId"),
-                @Index(name = "idx_path", columnList = "path"),
-
+                @Index(name = "files_name", columnList = "name"),
+                @Index(name = "files_size", columnList = "size"),
+                @Index(name = "files_is_folder", columnList = "isFolder"),
+                @Index(name = "files_update_date", columnList = "updateDate"),
+                @Index(name = "files_upload_date", columnList = "uploadDate"),
+                @Index(name = "files_user_id", columnList = "userId"),
+                @Index(name = "files_path", columnList = "path"),
+                @Index(name = "files_mount_file_id", columnList = "mountFileId"),
+                @Index(name = "files_del_tag", columnList = "delTag"),
         }
 )
 public class FileMetadataDO extends AuditablePerformanceEntity implements Reflective {

@@ -5,6 +5,7 @@ import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,7 +26,11 @@ import java.util.List;
 @Setter
 @Document(collection = "share")
 @Entity
-@Table(name = "share")
+@Table(name = "share",
+        indexes = {
+                @Index(name = "share_short_id", columnList = "shortId"),
+        }
+)
 public class ShareDO extends AuditableEntity implements Reflective {
     /**
      * 父级分享Id

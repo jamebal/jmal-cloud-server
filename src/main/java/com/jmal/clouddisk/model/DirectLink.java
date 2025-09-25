@@ -6,6 +6,7 @@ import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import com.jmal.clouddisk.service.impl.DirectLinkService;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,7 +26,12 @@ import java.time.LocalDateTime;
 
 })
 @Entity
-@Table(name = DirectLinkService.COLLECTION_NAME)
+@Table(name = DirectLinkService.COLLECTION_NAME,
+        indexes = {
+                @Index(name = "direct_links_file_id", columnList = "fileId"),
+                @Index(name = "direct_links_mark", columnList = "mark"),
+        }
+)
 public class DirectLink extends AuditableEntity implements Reflective {
 
     @Column(length = 24)

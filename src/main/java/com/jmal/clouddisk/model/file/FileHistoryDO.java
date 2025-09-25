@@ -7,6 +7,7 @@ import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import com.jmal.clouddisk.model.GridFSBO;
 import com.jmal.clouddisk.model.Metadata;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,7 +26,11 @@ import java.time.LocalDateTime;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Entity
-@Table(name = "file_history")
+@Table(name = "file_history",
+        indexes = {
+                @Index(name = "file_history_links_file_id", columnList = "fileId"),
+        }
+)
 public class FileHistoryDO extends AuditableEntity implements Reflective {
 
     String fileId;

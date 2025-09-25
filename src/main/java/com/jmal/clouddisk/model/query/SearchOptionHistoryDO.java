@@ -3,6 +3,7 @@ package com.jmal.clouddisk.model.query;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,7 +19,13 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @NoArgsConstructor
 @Document(collection = "searchOptionHistory")
 @Entity
-@Table(name = "search_history")
+@Table(name = "search_history",
+        indexes = {
+                @Index(name = "search_history_user_id", columnList = "userId"),
+                @Index(name = "search_history_search_time", columnList = "searchTime"),
+                @Index(name = "search_history_keyword", columnList = "keyword"),
+        }
+)
 public class SearchOptionHistoryDO extends AuditableEntity implements Reflective {
 
     /**

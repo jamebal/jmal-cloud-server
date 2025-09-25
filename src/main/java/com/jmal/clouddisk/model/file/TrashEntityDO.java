@@ -7,6 +7,7 @@ import com.jmal.clouddisk.model.Trash;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,7 +27,16 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @NoArgsConstructor
-@Table(name = CommonFileService.TRASH_COLLECTION_NAME)
+@Table(name = CommonFileService.TRASH_COLLECTION_NAME,
+        indexes = {
+                @Index(name = "trash_name", columnList = "name"),
+                @Index(name = "trash_update_date", columnList = "updateDate"),
+                @Index(name = "trash_upload_date", columnList = "uploadDate"),
+                @Index(name = "trash_trash_user_id", columnList = "userId"),
+                @Index(name = "trash_path", columnList = "path"),
+
+        }
+)
 public class TrashEntityDO extends AuditablePerformanceEntity implements Reflective {
 
     @Column(length = 24)

@@ -23,7 +23,11 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Entity
-@Table(name = "articles")
+@Table(name = "articles",
+        indexes = {
+                @Index(name = "articles_slug", columnList = "slug"),
+        }
+)
 public class ArticleDO extends AuditablePerformanceEntity implements Reflective {
 
     @Column(name = "is_release")
