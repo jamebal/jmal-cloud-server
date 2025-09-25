@@ -61,7 +61,6 @@ public class FilePropsDO extends AuditablePerformanceEntity implements Reflectiv
     }
 
     private void cover(FileDocument fileDocument) {
-        this.transcodeVideo = fileDocument.getTranscodeVideo();
         this.shareBase = fileDocument.getShareBase();
         this.subShare = fileDocument.getSubShare();
         this.shareId = fileDocument.getShareId();
@@ -69,6 +68,7 @@ public class FilePropsDO extends AuditablePerformanceEntity implements Reflectiv
         this.shareProps = new ShareProperties(fileDocument);
         this.props = new OtherProperties(fileDocument);
         this.tags = fileDocument.getTags();
+        this.transcodeVideo = fileDocument.getTranscodeVideo();
     }
 
     public void toFileDocumentFragment(FileDocument fileDocument) {

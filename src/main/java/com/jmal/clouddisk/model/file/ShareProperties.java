@@ -24,6 +24,7 @@ public class ShareProperties {
         this.isPrivacy = fileDocument.getIsPrivacy();
         this.extractionCode = fileDocument.getExtractionCode();
         this.expiresAt = fileDocument.getExpiresAt();
+        this.operationPermissionList = fileDocument.getOperationPermissionList();
         this.isShare = fileDocument.getIsShare();
     }
 
