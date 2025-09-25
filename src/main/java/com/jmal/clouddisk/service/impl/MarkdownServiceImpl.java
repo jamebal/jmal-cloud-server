@@ -26,15 +26,17 @@ import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -72,7 +74,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     private final CommonUserFileService commonUserFileService;
 
-    private final IFileVersionService fileVersionService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final LuceneService luceneService;
 
@@ -472,7 +474,12 @@ public class MarkdownServiceImpl implements IMarkdownService {
         // 文件操作日志
         logService.asyncAddLogFileOperation(upload.getUsername(), upload.getRelativePath(), "修改文件");
         // 修改文件之后保存历史版本
-        fileVersionService.asyncSaveFileVersion(upload.getUsername(), file, userLoginHolder.getUsername());
+        Completable.fromAction(() -> {
+            Path userRootPath = Paths.get(fileProperties.getRootDir(), upload.getUsername());
+            Path relativeNioPath = userRootPath.relativize(file.toPath());
+            eventPublisher.publishEvent(new FileVersionEvent(this, upload.getUsername(), relativeNioPath.toString(), userId, userLoginHolder.getUsername()));
+        }).subscribeOn(Schedulers.io()).subscribe();
+
         return ResultUtil.success();
     }
 

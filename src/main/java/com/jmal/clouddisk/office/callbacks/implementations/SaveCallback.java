@@ -12,13 +12,11 @@ import com.jmal.clouddisk.office.model.Track;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.service.impl.CommonFileService;
-import com.jmal.clouddisk.service.impl.LogService;
-import com.jmal.clouddisk.service.impl.MessageService;
-import com.jmal.clouddisk.service.impl.UserLoginHolder;
+import com.jmal.clouddisk.service.impl.*;
 import com.jmal.clouddisk.util.TimeUntils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -52,6 +50,8 @@ public class SaveCallback implements Callback {
 
     private final IFileVersionService fileVersionService;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     @Override
     public int handle(Track body) {
         int result = 0;
@@ -84,7 +84,7 @@ public class SaveCallback implements Callback {
 
             // 修改文件之后保存历史版本
             String relativePath = Paths.get(fileBaseOperationPermissionDTO.getPath(), fileBaseOperationPermissionDTO.getName()).toString();
-            fileVersionService.saveFileVersion(fileUsername, relativePath, userId);
+            eventPublisher.publishEvent(new FileVersionEvent(this, fileUsername, relativePath, userId, userLoginHolder.getUsername()));
 
         } catch (Exception e) {
             log.error(e.getMessage(), e);

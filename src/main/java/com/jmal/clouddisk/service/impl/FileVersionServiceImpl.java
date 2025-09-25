@@ -24,14 +24,13 @@ import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.util.*;
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationListener;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -63,7 +62,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class FileVersionServiceImpl implements IFileVersionService {
+public class FileVersionServiceImpl implements IFileVersionService, ApplicationListener<FileVersionEvent> {
 
     private final CommonUserFileService commonUserFileService;
 
@@ -77,18 +76,16 @@ public class FileVersionServiceImpl implements IFileVersionService {
 
     private final UserLoginHolder userLoginHolder;
 
-    private final CommonUserService userService;
-
     private final ApplicationEventPublisher eventPublisher;
 
     private final Cache<String, Object> fileLocks = Caffeine.newBuilder()
             .expireAfterAccess(10, TimeUnit.MINUTES)
-            .maximumSize(10_000)
+            .maximumSize(10_0000)
             .build();
 
     @Override
-    public void saveFileVersion(String fileUsername, String relativePath, String userId) {
-        saveFileVersion(fileUsername, relativePath, userId, userLoginHolder.getUsername());
+    public void onApplicationEvent(FileVersionEvent event) {
+        saveFileVersion(event.getFileUsername(), event.getPath(), event.getUserId(), event.getOperator());
     }
 
     private void saveFileVersion(String fileUsername, String relativePath, String userId, String operator) {
@@ -102,7 +99,7 @@ public class FileVersionServiceImpl implements IFileVersionService {
                 }
                 FileDocument fileDocument = commonUserFileService.getFileDocumentByPath(filepath, userId);
                 long size = file.length();
-                String updateDate = fileDocument.getUpdateDate().format(DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
+                String updateDate = CommonUserFileService.getFileLastModifiedTime(file).format(DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
                 Metadata metadata = setMetadata(size, filepath, file.getName(), updateDate, operator, getCharset(file));
                 if (metadata == null) return;
                 try (InputStream inputStream = new FileInputStream(file);
@@ -135,15 +132,6 @@ public class FileVersionServiceImpl implements IFileVersionService {
         }
         return charset;
     }
-
-    @Override
-    public void asyncSaveFileVersion(String fileUsername, File file, String operator) {
-        Path physicalPath = file.toPath();
-        Path userRootPath = Paths.get(fileProperties.getRootDir(), fileUsername);
-        Path relativeNioPath = userRootPath.relativize(physicalPath);
-        Completable.fromAction(() -> saveFileVersion(fileUsername, relativeNioPath.toString(), userService.getUserIdByUserName(fileUsername), operator)).subscribeOn(Schedulers.io()).subscribe();
-    }
-
 
     @Override
     public void saveFileVersion(AbstractOssObject abstractOssObject, String fileId) {

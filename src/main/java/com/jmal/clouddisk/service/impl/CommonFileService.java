@@ -25,6 +25,8 @@ import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.MyFileUtils;
 import com.jmal.clouddisk.util.TimeUntils;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mozilla.universalchardet.UniversalDetector;
@@ -247,6 +249,10 @@ public class CommonFileService {
     }
 
     public void deleteDependencies(String username, List<String> fileIds, boolean sweep) {
+        Completable.fromAction(() -> syncDeleteDependencies(username, fileIds, sweep)).subscribeOn(Schedulers.io()).subscribe();
+    }
+
+    public void syncDeleteDependencies(String username, List<String> fileIds, boolean sweep) {
         if (sweep) {
             // delete history version
             fileVersionService.deleteAll(fileIds);
@@ -318,7 +324,7 @@ public class CommonFileService {
             // 判断文件类型中是否包含utf-8
             if (fileContentType.contains("utf-8") || fileContentType.contains("office")) {
                 // 修改文件之后保存历史版本
-                fileVersionService.saveFileVersion(username, Paths.get(relativePath, file.getName()).toString(), userId);
+                eventPublisher.publishEvent(new FileVersionEvent(this, username, Paths.get(relativePath, file.getName()).toString(), userId, userLoginHolder.getUsername()));
             }
         } else {
             commonUserFileService.createFile(username, file, userId, null);
