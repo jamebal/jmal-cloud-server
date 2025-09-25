@@ -2,7 +2,6 @@ package com.jmal.clouddisk.oss;
 
 import java.io.File;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -204,7 +203,7 @@ public interface IOssService {
      * @param expiryTime 过期时间(秒)
      * @return 预签名URL
      */
-    URL getPresignedObjectUrl(String objectName, int expiryTime);
+    String getPresignedObjectUrl(String objectName, int expiryTime);
 
     /**
      * 拷贝对象(相同Bucket之间拷贝)

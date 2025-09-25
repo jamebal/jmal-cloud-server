@@ -26,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
@@ -524,14 +523,14 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
-    public URL getPresignedObjectUrl(String objectName, int expiryTime) {
+    public String getPresignedObjectUrl(String objectName, int expiryTime) {
         try {
             // 设置签名过期时间(可选), 若未进行设置则默认使用 ClientConfig 中的签名过期时间(1小时)
             // 这里设置签名在半个小时后过期
             Date expirationDate = new Date(System.currentTimeMillis() + expiryTime * 1000L);
             // 请求的 HTTP 方法，上传请求用 PUT，下载请求用 GET，删除请求用 DELETE
             HttpMethodName method = HttpMethodName.GET;
-            return cosClient.generatePresignedUrl(bucketName, objectName, expirationDate, method);
+            return cosClient.generatePresignedUrl(bucketName, objectName, expirationDate, method).toString();
         } catch (CosClientException e) {
             log.error(e.getMessage(), e);
         }

@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
@@ -519,11 +518,11 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
-    public URL getPresignedObjectUrl(String objectName, int expiryTime) {
+    public String getPresignedObjectUrl(String objectName, int expiryTime) {
         try {
             Date expirationDate = new Date(System.currentTimeMillis() + expiryTime * 1000L);
             // 生成以GET方法访问的签名URL，访客可以直接通过浏览器访问相关内容。
-            return ossClient.generatePresignedUrl(bucketName, objectName, expirationDate);
+            return ossClient.generatePresignedUrl(bucketName, objectName, expirationDate).toString();
         } catch (OSSException oe) {
             log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {

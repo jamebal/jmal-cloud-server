@@ -21,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.net.URL;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -177,7 +176,7 @@ public class MinIOService implements IOssService {
                     continue;
                 }
                 Date lastModified = null;
-                if (BooleanUtil.isFalse(item.isDir())) {
+                if (!BooleanUtil.isTrue(item.isDir())) {
                     lastModified = Date.from(item.lastModified().toInstant());
                 }
                 S3ObjectSummary s3ObjectSummary = new S3ObjectSummary(item.size(), item.objectName(), item.etag(), lastModified, bucketName);
@@ -498,16 +497,15 @@ public class MinIOService implements IOssService {
     }
 
     @Override
-    public URL getPresignedObjectUrl(String objectName, int expiryTime) {
+    public String getPresignedObjectUrl(String objectName, int expiryTime) {
         try {
-            String url = this.minIoClient.getPresignedObjectUrl(
+            return this.minIoClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
                             .object(objectName)
                             .expiry(expiryTime)
                             .build());
-            return new URL(url);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
