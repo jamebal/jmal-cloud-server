@@ -71,7 +71,7 @@ public class FFMPEGUtils {
      * @return 是否需要转码
      */
     static boolean needTranscode(VideoInfo videoInfo, TranscodeConfig transcodeConfig) {
-        if (BooleanUtil.isFalse(transcodeConfig.getEnable())) {
+        if (!BooleanUtil.isTrue(transcodeConfig.getEnable())) {
             return false;
         }
         // 判断视频码率、高度、帧率是否满足转码条件

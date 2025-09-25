@@ -260,7 +260,7 @@ public class AuthServiceImpl implements IAuthService {
         // 判断操作用户是否为网盘创建者
         String userId = userLoginHolder.getUserId();
         ConsumerDO consumerDO = userService.userInfoById(userId);
-        if (BooleanUtil.isFalse(consumerDO.getCreator())) {
+        if (!BooleanUtil.isTrue(consumerDO.getCreator())) {
             throw new CommonException(ExceptionType.PERMISSION_DENIED);
         }
         LdapConfigDO ldapConfigDO = ldapConfigDTO.toLdapConfigDO(consumerDO.getId(), textEncryptor);

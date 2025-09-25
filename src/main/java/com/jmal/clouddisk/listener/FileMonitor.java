@@ -5,6 +5,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.IFileService;
@@ -80,7 +81,7 @@ public class FileMonitor {
      */
     public void startFileMonitoringAsync() {
         // 判断是否开启文件监控
-        if (Boolean.FALSE.equals(fileProperties.getMonitor())) {
+        if (!BooleanUtil.isTrue(fileProperties.getMonitor())) {
             return;
         }
         Completable.fromAction(() -> {

@@ -89,7 +89,7 @@ public class ShareFileInterceptor implements HandlerInterceptor {
             // 分享不存在
             return true;
         }
-        if (BooleanUtil.isFalse(shareDO.getIsPrivacy())) {
+        if (!BooleanUtil.isTrue(shareDO.getIsPrivacy())) {
             return false;
         }
         if (request == null) {

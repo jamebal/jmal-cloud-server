@@ -28,7 +28,7 @@ public class FileViewController {
     IShareService shareService;
 
     @Operation(summary = "预览文档里的图片")
-    @GetMapping("/public/view")
+    @GetMapping("/api/public/view")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public String imageRelativePath(@RequestParam String relativePath,@RequestParam String userId) {
         ResultUtil.checkParamIsNull(relativePath,userId);
@@ -36,7 +36,7 @@ public class FileViewController {
     }
 
     @Operation(summary = "分享：预览文件")
-    @GetMapping("/public/s/preview/{filename}")
+    @GetMapping("/api/public/s/preview/{filename}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public String publicPreview(@RequestParam String fileId, @RequestParam String shareId, @RequestParam String shareToken) {
         shareService.validShare(shareToken, shareId);
@@ -44,7 +44,7 @@ public class FileViewController {
     }
 
     @Operation(summary = "分享：下载单个文件")
-    @GetMapping("/public/s/download/{filename}")
+    @GetMapping("/api/public/s/download/{filename}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public String publicDownload(@RequestParam String fileId, @RequestParam String shareId, @RequestParam String shareToken) {
         shareService.validShare(shareToken, shareId);

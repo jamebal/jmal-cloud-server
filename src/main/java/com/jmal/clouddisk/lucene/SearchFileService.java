@@ -255,7 +255,7 @@ public class SearchFileService {
         if (CharSequenceUtil.isNotBlank(folder)) {
             // 挂载点查询
             FileBaseDTO fileBaseDTO = fileDAO.findFileBaseDTOById(folder);
-            if (fileBaseDTO != null && BooleanUtil.isFalse(searchDTO.getSearchOverall())) {
+            if (fileBaseDTO != null && !BooleanUtil.isTrue(searchDTO.getSearchOverall())) {
                 searchDTO.setCurrentDirectory(fileBaseDTO.getPath() + fileBaseDTO.getName());
                 searchDTO.setMountUserId(fileBaseDTO.getUserId());
             }

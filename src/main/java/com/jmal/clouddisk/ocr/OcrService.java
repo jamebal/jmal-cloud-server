@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.ocr;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.BooleanUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.dao.IOcrConfigDAO;
@@ -74,7 +75,7 @@ public class OcrService {
 
     public void doOCR(Writer writer, String imagePath, String tempImagePath, String ocrEngine) {
         OcrConfig config = getOcrConfig();
-        if (Boolean.FALSE.equals(config.getEnable())) {
+        if (!BooleanUtil.isTrue(config.getEnable())) {
             return;
         }
         if (CharSequenceUtil.isBlank(ocrEngine)) {

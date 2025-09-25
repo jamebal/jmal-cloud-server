@@ -305,7 +305,7 @@ public class FileServiceImpl implements IFileService {
     public ResponseResult<Object> queryFileTree(UploadApiParamDTO upload, String fileId) {
         // 设置是否只显示文件夹
         upload.setJustShowFolder(true);
-        if (!CharSequenceUtil.isBlank(fileId) && BooleanUtil.isFalse(upload.getHideMountFile())) {
+        if (!CharSequenceUtil.isBlank(fileId) && !BooleanUtil.isTrue(upload.getHideMountFile())) {
             Path path = Paths.get(fileId);
             String ossPath = CaffeineUtil.getOssPath(path);
             if (ossPath != null) {
@@ -317,7 +317,7 @@ public class FileServiceImpl implements IFileService {
         if (!CharSequenceUtil.isBlank(fileId)) {
             FileDocument fileDocument = commonFileService.getById(fileId);
             if (fileDocument != null) {
-                if (fileDocument.getOssFolder() != null && BooleanUtil.isFalse(upload.getHideMountFile())) {
+                if (fileDocument.getOssFolder() != null && !BooleanUtil.isTrue(upload.getHideMountFile())) {
                     Path path = Paths.get(upload.getUsername(), fileDocument.getOssFolder());
                     String ossPath = CaffeineUtil.getOssPath(path);
                     if (ossPath != null) {
@@ -1158,7 +1158,7 @@ public class FileServiceImpl implements IFileService {
         }
         String username = userService.getUserNameById(fileDocument.getUserId());
         String relativepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(fileDocument.getPath() + fileDocument.getName(), StandardCharsets.UTF_8);
-        StringBuilder sb = StrUtil.builder().append("forward:/file/").append(username).append(relativepath).append("?shareKey=").append(org.apache.catalina.util.URLEncoder.DEFAULT.encode(shareKey, StandardCharsets.UTF_8)).append("&o=").append(operation);
+        StringBuilder sb = StrUtil.builder().append("forward:/api/file/").append(username).append(relativepath).append("?shareKey=").append(org.apache.catalina.util.URLEncoder.DEFAULT.encode(shareKey, StandardCharsets.UTF_8)).append("&o=").append(operation);
         if (!CharSequenceUtil.isBlank(shareToken)) {
             sb.append("&share-token=").append(shareToken);
         }
@@ -1169,7 +1169,7 @@ public class FileServiceImpl implements IFileService {
     public String publicViewFile(String relativePath, String userId) {
         String username = userService.getUserNameById(userId);
         String userDirectory = aes.decryptStr(relativePath);
-        return "forward:/file/" + username + userDirectory;
+        return "forward:/api/file/" + username + userDirectory;
     }
 
     @Override
@@ -1769,7 +1769,7 @@ public class FileServiceImpl implements IFileService {
                 File file = new File(filePath);
                 isDel = FileUtil.del(file);
             } else {
-                if (BooleanUtil.isFalse(fileDocument.getIsFolder())) {
+                if (!BooleanUtil.isTrue(fileDocument.getIsFolder())) {
                     isDel = true;
                 }
             }

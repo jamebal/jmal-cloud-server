@@ -31,7 +31,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -390,9 +389,9 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
             if (ossPath != null) {
                 IOssService ossService = OssConfigService.getOssStorageService(ossPath);
                 String objectName = WebOssService.getObjectName(prePath, ossPath, false);
-                URL url = ossService.getPresignedObjectUrl(objectName, 60);
+                String url = ossService.getPresignedObjectUrl(objectName, 60);
                 if (url != null) {
-                    videoPath = url.toString();
+                    videoPath = url;
                 }
             }
             if (FileUtil.exist(outputPath)) {
@@ -420,7 +419,7 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
 
     private void videoToM3U8(String fileId, String username, String relativePath, String fileName, boolean onlyCPU) throws IOException, InterruptedException {
         TranscodeConfig transcodeConfig = getTranscodeConfig();
-        if (BooleanUtil.isFalse(transcodeConfig.getEnable())) {
+        if (!BooleanUtil.isTrue(transcodeConfig.getEnable())) {
             return;
         }
         Path fileAbsolutePath = Paths.get(fileProperties.getRootDir(), username, relativePath, fileName);
@@ -505,7 +504,7 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
             if (exitCode == 0) {
                 printSuccessInfo(processBuilder);
                 log.info("转码成功: {}, onlyCPU: {}", fileName, onlyCPU);
-                if (BooleanUtil.isFalse(pushMessage)) {
+                if (!BooleanUtil.isTrue(pushMessage)) {
                     startConvert(username, relativePath, fileName, fileId, transcodeConfig);
                 }
             } else {

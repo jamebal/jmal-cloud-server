@@ -800,7 +800,7 @@ public class WebOssService extends WebOssCommonService {
                 fileDocument.setShareBase(null);
             }
             // 如果 favorite 和 share 属性都没有了就过滤掉
-            if (BooleanUtil.isFalse(fileDocument.getIsFavorite()) && fileDocument.getIsShare() == null) {
+            if (!BooleanUtil.isTrue(fileDocument.getIsFavorite()) && fileDocument.getIsShare() == null) {
                 continue;
             }
             list.add(fileDocument);

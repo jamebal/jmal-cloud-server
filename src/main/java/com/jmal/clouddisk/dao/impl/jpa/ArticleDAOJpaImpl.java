@@ -350,7 +350,7 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
     @Override
     public void deleteDraft(String fileId, String username) {
         ArticleDO articleDO = articleRepository.findMarkdownByFileId(fileId).orElse(null);
-        if (articleDO == null || BooleanUtil.isFalse(articleDO.getHasDraft())) {
+        if (articleDO == null || !BooleanUtil.isTrue(articleDO.getHasDraft())) {
             return;
         }
         FileMetadataDO fileMetadataDO = fileMetadataRepository.findByPublicId(fileId).orElse(null);
