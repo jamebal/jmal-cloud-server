@@ -6,6 +6,7 @@ import com.jmal.clouddisk.dao.ILogDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.LogRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
+import com.jmal.clouddisk.dao.impl.jpa.write.Priority;
 import com.jmal.clouddisk.dao.impl.jpa.write.log.LogDataOperation;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.LogOperationDTO;
@@ -43,7 +44,7 @@ public class LogDAOJpaImpl implements ILogDAO, IWriteCommon<LogOperation> {
 
     @Override
     public void save(LogOperation logOperation) {
-        writeService.submit(new LogDataOperation.Create(logOperation));
+        writeService.submit(new LogDataOperation.Create(logOperation), Priority.NORMAL);
     }
 
     @Override
