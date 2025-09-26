@@ -35,6 +35,8 @@ public class PreFileInterceptor implements HandlerInterceptor {
 
     private static final Cache<String, String> INTERNAL_TOKEN_CACHE = Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.SECONDS).build();
 
+    private static final int PATH_SEGMENTS_COUNT = 5;
+
     private static void setInternalTokenCache(String requestId, String token) {
         INTERNAL_TOKEN_CACHE.put(requestId, token);
     }
@@ -56,11 +58,11 @@ public class PreFileInterceptor implements HandlerInterceptor {
         String[] pathSegments = uri.split("/");
 
         // 验证路径格式
-        if (pathSegments.length != 4 || !"pre-file".equals(pathSegments[1])) {
+        if (pathSegments.length != PATH_SEGMENTS_COUNT || !"pre-file".equals(pathSegments[PATH_SEGMENTS_COUNT - 3])) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return false;
         }
-        String fileId = pathSegments[2];
+        String fileId = pathSegments[PATH_SEGMENTS_COUNT - 2];
         FileDocument fileDocument = getFileDocument(response, fileId);
         if (fileDocument == null) {
             return false;
