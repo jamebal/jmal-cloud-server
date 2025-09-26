@@ -238,7 +238,7 @@ public class EtagService {
                 // 如果没有内容，则设置初始ETag
                 String initialEtag = HashUtil.sha256(EMPTY_FOLDER_ETAG_BASE_STRING);
                 etagDAO.setEtagByUserIdAndPathAndName(userId, currentFolderNormalizedPath, fileName, initialEtag);
-                log.info("Initial ETag set for new folder {}: {}", relativePath, initialEtag);
+                log.info("Initial ETag set for new folder {}: {}", currentFolderNormalizedPath, initialEtag);
             }
             // 标记父文件夹需要更新ETag
             markFolderForEtagUpdate(userService.getUserIdByUserName(username), relativePath);
