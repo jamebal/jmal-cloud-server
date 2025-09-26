@@ -564,6 +564,6 @@ public class BaseOssService {
     }
 
     public void closePrint() {
-        log.info("platform: {}, bucketName: {} shutdown... {}", this.ossService.getPlatform().getValue(), bucketName, this.ossService.hashCode());
+        log.debug("platform: {}, bucketName: {} shutdown... {}", this.ossService.getPlatform().getValue(), bucketName, this.ossService.hashCode());
     }
 }

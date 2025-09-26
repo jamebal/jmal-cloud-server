@@ -59,6 +59,8 @@ public class FileListener implements DirectoryChangeListener {
 
     private final ScheduledExecutorService scheduler = ThreadUtil.createScheduledExecutor(2);
 
+    private final AtomicBoolean running = new AtomicBoolean(true);
+    private final List<Future<?>> consumerFutures = new CopyOnWriteArrayList<>();
     private final ExecutorService processExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     @PostConstruct
@@ -139,12 +141,13 @@ public class FileListener implements DirectoryChangeListener {
     private void startConsumerThreads() {
         int processors = Runtime.getRuntime().availableProcessors();
         for (int i = 0; i < processors; i++) {
-            processExecutor.submit(this::processQueueItems);
+            Future<?> f = processExecutor.submit(this::processQueueItems);
+            consumerFutures.add(f);
         }
     }
 
     private void processQueueItems() {
-        while (!Thread.currentThread().isInterrupted()) {
+        while (running.get() && !Thread.currentThread().isInterrupted()) {
             try {
                 DirectoryChangeEvent event = processingQueue.take();
                 try {
@@ -173,6 +176,9 @@ public class FileListener implements DirectoryChangeListener {
 
     @Override
     public void onEvent(DirectoryChangeEvent directoryChangeEvent) {
+        if (!running.get()) {
+            return;
+        }
         Path eventPath = directoryChangeEvent.path();
         DirectoryChangeEvent.EventType eventType = directoryChangeEvent.eventType();
 
@@ -310,26 +316,31 @@ public class FileListener implements DirectoryChangeListener {
 
     @PreDestroy
     public void shutdown() {
+        log.info("Shutting down FileListener...");
+        running.set(false);
         scheduler.shutdown();
-        processExecutor.shutdownNow();
         try {
-            // 等待处理线程池在指定时间内完成任务
-            if (!processExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
-                processExecutor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            processExecutor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-
-        try {
-            // 等待调度器在指定时间内完成任务
-            if (!scheduler.awaitTermination(1, TimeUnit.SECONDS)) {
+            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
                 scheduler.shutdownNow();
             }
         } catch (InterruptedException e) {
             scheduler.shutdownNow();
             Thread.currentThread().interrupt();
         }
+        for (Future<?> f : consumerFutures) {
+            f.cancel(true);
+        }
+        processExecutor.shutdown();
+        try {
+            if (!processExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                processExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            processExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+        processingQueue.clear();
+        eventMap.clear();
+        log.info("FileListener shut down complete.");
     }
 }

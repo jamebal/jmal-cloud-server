@@ -154,14 +154,14 @@ public class LuceneConfig {
 
     @PreDestroy
     public void destroy() {
-        log.info("Shutting down Lucene components...");
+        log.debug("Shutting down Lucene components...");
 
         // 1. 关闭 NRT Reopen 线程 (它会尝试关闭 SearcherManager)
         if (this.controlledRealTimeReopenThread != null) {
             try {
                 log.debug("Closing ControlledRealTimeReopenThread...");
                 this.controlledRealTimeReopenThread.close(); // 这个close()会等待线程结束
-                log.info("ControlledRealTimeReopenThread closed.");
+                log.debug("ControlledRealTimeReopenThread closed.");
             } catch (Exception e) { // InterruptedException or IOException
                 log.error("Error closing ControlledRealTimeReopenThread: {}", e.getMessage(), e);
             }
@@ -189,7 +189,7 @@ public class LuceneConfig {
                 log.error("Error closing IndexWriter: {}", e.getMessage(), e);
             }
         }
-        log.info("Lucene components shutdown complete.");
+        log.debug("Lucene components shutdown complete.");
     }
 }
 
