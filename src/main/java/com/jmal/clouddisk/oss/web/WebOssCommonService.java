@@ -13,7 +13,7 @@ import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.service.impl.MessageService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -26,22 +26,18 @@ import java.time.LocalDateTime;
  * @date 2023/4/14 10:22
  */
 @Service
+@RequiredArgsConstructor
 public class WebOssCommonService {
 
-    @Autowired
-    CommonUserService userService;
+    private final CommonUserService userService;
 
-    @Autowired
-    CommonUserFileService commonUserFileService;
+    private final CommonUserFileService commonUserFileService;
 
-    @Autowired
-    MessageService messageService;
+    private final MessageService messageService;
 
-    @Autowired
-    CommonFileService commonFileService;
+    private final CommonFileService commonFileService;
 
-    @Autowired
-    IFileDAO fileDAO;
+    private final IFileDAO fileDAO;
 
     public void notifyCreateFile(String username, String objectName, String ossRootFolderName) {
         FileIntroVO fileIntroVO = new FileIntroVO();
