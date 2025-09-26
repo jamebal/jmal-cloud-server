@@ -61,10 +61,11 @@ public class TrashDAOImpl implements ITrashDAO {
     }
 
     @Override
-    public List<String> findAllIdsAndRemove() {
+    public List<String> findAllIdsAndRemove(String userId) {
         Query query = new Query();
         query.fields().include("_id");
-        List<Trash> trashList = mongoTemplate.findAllAndRemove(new Query(), Trash.class, CommonFileService.TRASH_COLLECTION_NAME);
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        List<Trash> trashList = mongoTemplate.findAllAndRemove(query, Trash.class, CommonFileService.TRASH_COLLECTION_NAME);
         return trashList.stream().map(Trash::getId).toList();
     }
 

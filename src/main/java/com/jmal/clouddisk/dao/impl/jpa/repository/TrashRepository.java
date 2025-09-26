@@ -28,8 +28,8 @@ public interface TrashRepository extends JpaRepository<TrashEntityDO, Long> {
     @Query("SELECT COALESCE(SUM(t.size), 0) FROM TrashEntityDO t WHERE t.userId = :userId AND t.isFolder = false")
     Long calculateTotalSizeByUserId(@Param("userId") String userId);
 
-    @Query("SELECT t.publicId FROM TrashEntityDO t")
-    List<String> findAllIds();
+    @Query("SELECT t.publicId FROM TrashEntityDO t WHERE t.userId = :userId")
+    List<String> findAllIdsByUserId(@Param("userId") String userId);
 
     Page<TrashEntityDO> findAllByHiddenIsFalseAndUserId(String userId, Pageable pageable);
 

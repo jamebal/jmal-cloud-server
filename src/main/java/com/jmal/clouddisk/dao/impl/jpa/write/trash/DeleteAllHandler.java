@@ -19,7 +19,7 @@ public class DeleteAllHandler implements IDataOperationHandler<TrashOperation.De
 
     @Override
     public Void handle(TrashOperation.DeleteAll op) {
-        repo.deleteAll();
+        repo.deleteAllByPublicIdIn(op.ids());
         filePersistenceService.deleteContents(op.ids());
         return null;
     }

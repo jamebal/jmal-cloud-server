@@ -1922,7 +1922,8 @@ public class FileServiceImpl implements IFileService {
         LogOperation logOperation = logService.getLogOperation();
         logOperation.setOperationFun("清空回收站");
         Completable.fromAction(() -> {
-            List<String> fileIds = trashDAO.findAllIdsAndRemove();
+            String userId = userService.getUserIdByUserName(username);
+            List<String> fileIds = trashDAO.findAllIdsAndRemove(userId);
             commonFileService.deleteDependencies(username, fileIds);
             Path trashPath = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), username, fileProperties.getJmalcloudTrashDir());
             PathUtil.del(trashPath);

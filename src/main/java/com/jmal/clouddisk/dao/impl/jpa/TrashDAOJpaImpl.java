@@ -70,8 +70,8 @@ public class TrashDAOJpaImpl implements ITrashDAO {
     }
 
     @Override
-    public List<String> findAllIdsAndRemove() {
-        List<String> ids = trashRepository.findAllIds();
+    public List<String> findAllIdsAndRemove(String userId) {
+        List<String> ids = trashRepository.findAllIdsByUserId(userId);
         if (!ids.isEmpty()) {
             try {
                 writeService.submit(new TrashOperation.DeleteAll(ids)).get(10, TimeUnit.SECONDS);

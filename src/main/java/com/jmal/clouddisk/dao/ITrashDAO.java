@@ -13,7 +13,7 @@ public interface ITrashDAO {
 
     FileDocument findAndRemoveById(String trashFileId);
 
-    List<String> findAllIdsAndRemove();
+    List<String> findAllIdsAndRemove(String userId);
 
     List<FileBaseDTO> findAllFileBaseDTOAndRemoveByIdIn(List<String> fileIds);
 }
