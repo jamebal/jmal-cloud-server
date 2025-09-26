@@ -1,53 +1,45 @@
 package com.jmal.clouddisk.dao.migrate;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Conditional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 @ConditionalOnProperty(name = "jmalcloud.datasource.migration")
 @Conditional(RelationalDataSourceCondition.class)
 public class MigrationResult {
     private String name;
-    private int totalProcessed = 0;
-    private int successCount = 0;
-    private int errorCount = 0;
-    private List<String> errors = new ArrayList<>();
+    private Integer totalProcessed;
+    private Integer successCount;
+    private Integer errorCount;
+    private List<String> errors;
     private String fatalError;
-    private LocalDateTime startTime = LocalDateTime.now();
+    private LocalDateTime startTime;
     private LocalDateTime endTime;
 
     public MigrationResult(String name) {
         this.name = name;
+        this.totalProcessed = 0;
+        this.successCount = 0;
+        this.errorCount = 0;
+        this.startTime = LocalDateTime.now();
+        this.errors = new java.util.ArrayList<>();
     }
 
-    public void incrementProcessed() {
-        totalProcessed++;
-    }
-
-    public void addProcessed(int count) {
+    public void addProcessed(Integer count) {
         totalProcessed += count;
     }
 
-    public void addSuccess(int count) {
+    public void addSuccess(Integer count) {
+        if (successCount == null) {
+            successCount = 0;
+        }
         successCount += count;
-    }
-
-    public void addError(String id, String error) {
-        errorCount++;
-        errors.add(String.format("ID: %s, Error: %s", id, error));
     }
 
     public void setFatalError(String error) {

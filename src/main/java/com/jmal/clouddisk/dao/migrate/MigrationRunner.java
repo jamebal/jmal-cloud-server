@@ -27,10 +27,10 @@ public class MigrationRunner {
         // 将各个具体的迁移服务按类型注入
         migrationServices.parallelStream().forEach(service -> {
             MigrationResult result = service.migrateData();
-            if (result.getTotalProcessed() == 0) {
+            if (result.getTotalProcessed() == null || result.getTotalProcessed() == 0) {
                 return;
             }
-            if (result.getTotalProcessed() != result.getSuccessCount()) {
+            if (!result.getTotalProcessed().equals(result.getSuccessCount())) {
                 log.error("迁移 [{}] 数据时发生错误: 成功 {} 条, 失败 {} 条", result.getName(), result.getSuccessCount(), result.getErrorCount());
                 if (result.getFatalError() != null) {
                     log.error("致命错误: {}", result.getFatalError());
