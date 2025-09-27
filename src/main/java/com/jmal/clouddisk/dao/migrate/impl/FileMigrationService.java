@@ -125,7 +125,9 @@ public class FileMigrationService implements IMigrationService {
             result.setFatalError(e.getMessage());
         }
 
-        log.info("成功迁移 {} 条 [文章] 数据",  articlesCount);
+        if (articlesCount > 0) {
+            log.info("成功迁移 {} 条 [文章] 数据", articlesCount);
+        }
 
         return result;
     }
