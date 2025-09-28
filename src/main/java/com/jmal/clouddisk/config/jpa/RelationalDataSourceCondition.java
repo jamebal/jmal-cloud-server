@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.config.jpa;
 
-import com.jmal.clouddisk.dao.DataSourceType;
+import cn.hutool.core.util.BooleanUtil;
 import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
 import org.springframework.boot.autoconfigure.condition.SpringBootCondition;
 import org.springframework.context.annotation.ConditionContext;
@@ -14,22 +14,16 @@ public class RelationalDataSourceCondition extends SpringBootCondition {
 
     @Override
     public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
-        String dataSourceTypeStr = context.getEnvironment().getProperty("jmalcloud.datasource.type");
-
-        if (dataSourceTypeStr == null) {
-            return ConditionOutcome.noMatch("jmalcloud.datasource.type 属性未配置");
-        }
+        Boolean jpaEnable = context.getEnvironment().getProperty("jmalcloud.datasource.jpa-enabled", Boolean.class, false);
 
         try {
-            DataSourceType dataSourceType = DataSourceType.fromCode(dataSourceTypeStr);
-
-            if (dataSourceType.isRelational()) {
-                return ConditionOutcome.match("关系型数据源匹配: " + dataSourceType.getCode());
+            if (BooleanUtil.isTrue(jpaEnable)) {
+                return ConditionOutcome.match("关系型数据源匹配");
             } else {
-                return ConditionOutcome.noMatch("非关系型数据源: " + dataSourceType.getCode());
+                return ConditionOutcome.noMatch("非关系型数据源");
             }
         } catch (IllegalArgumentException e) {
-            return ConditionOutcome.noMatch("不支持的数据源类型: " + dataSourceTypeStr);
+            return ConditionOutcome.noMatch("不支持的数据源类型");
         }
     }
 }

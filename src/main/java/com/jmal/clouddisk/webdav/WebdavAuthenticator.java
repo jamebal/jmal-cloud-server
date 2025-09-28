@@ -7,6 +7,7 @@ import com.jmal.clouddisk.service.impl.LogService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.catalina.connector.Request;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -32,7 +33,7 @@ public class WebdavAuthenticator extends BasicAuthenticator {
 
     private final LogService logService;
 
-    public WebdavAuthenticator(FileProperties fileProperties, LogService logService) {
+    public WebdavAuthenticator(FileProperties fileProperties, @Lazy LogService logService) {
         super(fileProperties);
         this.fileProperties = fileProperties;
         this.logService = logService;

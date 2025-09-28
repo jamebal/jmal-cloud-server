@@ -2,6 +2,7 @@ package com.jmal.clouddisk.dao.migrate.impl;
 
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.IShareDAO;
 import com.jmal.clouddisk.dao.impl.jpa.IWriteCommon;
 import com.jmal.clouddisk.dao.repository.jpa.ShareRepository;
 import com.jmal.clouddisk.dao.migrate.IMigrationService;
@@ -28,7 +29,7 @@ public class ShareMigrationService implements IMigrationService {
 
     private final DataSourceProperties dataSourceProperties;
 
-    private final IWriteCommon<ShareDO> writeCommon;
+    private final IShareDAO shareDAO;
 
     @Override
     public String getName() {
@@ -37,6 +38,7 @@ public class ShareMigrationService implements IMigrationService {
 
     @Override
     public MigrationResult migrateData() {
+        IWriteCommon<ShareDO> writeCommon = (IWriteCommon<ShareDO>) shareDAO;
         return MigrationUtils.migrateMongoToJpa(
                 dataSourceProperties.getType(),
                 getName(),

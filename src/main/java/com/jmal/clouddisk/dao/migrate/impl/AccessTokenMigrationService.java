@@ -2,6 +2,7 @@ package com.jmal.clouddisk.dao.migrate.impl;
 
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.IAccessTokenDAO;
 import com.jmal.clouddisk.dao.impl.jpa.IWriteCommon;
 import com.jmal.clouddisk.dao.repository.jpa.AccessTokenRepository;
 import com.jmal.clouddisk.dao.migrate.IMigrationService;
@@ -28,7 +29,7 @@ public class AccessTokenMigrationService implements IMigrationService {
 
     private final DataSourceProperties dataSourceProperties;
 
-    private final IWriteCommon<UserAccessTokenDO> writeCommon;
+    private final IAccessTokenDAO accessTokenDAO;
 
     @Override
     public String getName() {
@@ -37,6 +38,7 @@ public class AccessTokenMigrationService implements IMigrationService {
 
     @Override
     public MigrationResult migrateData() {
+        IWriteCommon<UserAccessTokenDO> writeCommon = (IWriteCommon<UserAccessTokenDO>) accessTokenDAO;
         return MigrationUtils.migrateMongoToJpa(
                 dataSourceProperties.getType(),
                 getName(),

@@ -2,6 +2,7 @@ package com.jmal.clouddisk.dao.migrate.impl;
 
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.ISearchHistoryDAO;
 import com.jmal.clouddisk.dao.impl.jpa.IWriteCommon;
 import com.jmal.clouddisk.dao.repository.jpa.SearchHistoryRepository;
 import com.jmal.clouddisk.dao.migrate.IMigrationService;
@@ -28,7 +29,7 @@ public class SearchHistoryMigrationService implements IMigrationService {
 
     private final DataSourceProperties dataSourceProperties;
 
-    private final IWriteCommon<SearchOptionHistoryDO> writeCommon;
+    private final ISearchHistoryDAO searchHistoryDAO;
 
     @Override
     public String getName() {
@@ -37,6 +38,7 @@ public class SearchHistoryMigrationService implements IMigrationService {
 
     @Override
     public MigrationResult migrateData() {
+        IWriteCommon<SearchOptionHistoryDO> writeCommon = (IWriteCommon<SearchOptionHistoryDO>) searchHistoryDAO;
         return MigrationUtils.migrateMongoToJpa(
                 dataSourceProperties.getType(),
                 getName(),

@@ -1,17 +1,12 @@
 package com.jmal.clouddisk.dao.migrate;
 
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import lombok.Data;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Conditional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-@ConditionalOnProperty(name = "jmalcloud.datasource.migration")
-@Conditional(RelationalDataSourceCondition.class)
 public class MigrationResult {
     private String name;
     private Integer totalProcessed;

@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.dao.write;
 
 import com.jmal.clouddisk.config.jpa.RelationalNotSqliteDataSourceCondition;
+import com.jmal.clouddisk.config.jpa.SqliteDataSourceCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -18,7 +19,7 @@ public class WriteServiceConfiguration {
     }
 
     @Bean("queuedWriteService")
-    @ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "sqlite")
+    @Conditional(SqliteDataSourceCondition.class)
     public IWriteService queuedWriteService(DataManipulationService dataManipulationService) {
         return new QueuedWriteServiceImpl(dataManipulationService);
     }

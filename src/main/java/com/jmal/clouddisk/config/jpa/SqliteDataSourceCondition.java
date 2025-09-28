@@ -11,7 +11,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
  * 关系型数据源条件判断 - 排除 SQLite
  * @author jamebal
  */
-public class RelationalNotSqliteDataSourceCondition extends SpringBootCondition {
+public class SqliteDataSourceCondition extends SpringBootCondition {
 
     @Override
     public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
@@ -21,13 +21,13 @@ public class RelationalNotSqliteDataSourceCondition extends SpringBootCondition 
         try {
             DataSourceType dataSourceType = DataSourceType.fromCode(dataSourceTypeStr);
 
-            if (BooleanUtil.isTrue(jpaEnable) && dataSourceType != DataSourceType.sqlite) {
-                return ConditionOutcome.match("关系型数据源匹配: " + dataSourceType.getCode());
+            if (BooleanUtil.isTrue(jpaEnable) && dataSourceType == DataSourceType.sqlite) {
+                return ConditionOutcome.match("SQLite关系型数据源匹配: " + dataSourceType.getCode());
             } else {
-                return ConditionOutcome.noMatch("非关系型数据源: " + dataSourceType.getCode());
+                return ConditionOutcome.noMatch("非SQLite关系型数据源: " + dataSourceType.getCode());
             }
         } catch (IllegalArgumentException e) {
-            return ConditionOutcome.noMatch("不支持的数据源类型: " + dataSourceTypeStr);
+            return ConditionOutcome.noMatch("不支持的数据源类型");
         }
     }
 }

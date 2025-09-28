@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @MappedSuperclass
-@Conditional(RelationalDataSourceCondition.class)
 @EntityListeners(AuditingEntityListener.class)
 public abstract class AuditableTimeEntity implements Identifiable {
 

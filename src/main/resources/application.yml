@@ -30,15 +30,15 @@ spring:
       dev_sqlite: dev, sqlite
       dev_mysql: dev, mysql
       dev_pgsql: dev, pgsql
-      migration_sqlite: migration, sqlite
-      migration_mysql: migration, mysql
-      migration_pgsql: migration, pgsql
+      migration_sqlite: sqlite, migration
+      migration_mysql: mysql, migration
+      migration_pgsql: pgsql, migration
       prod_mongodb: prod, mongodb
       prod_sqlite: prod, sqlite
       prod_mysql: prod, mysql
       prod_pgsql: prod, pgsql
       native: native
-    active: default
+    active: native
   servlet:
     multipart:
       max-file-size: 50MB

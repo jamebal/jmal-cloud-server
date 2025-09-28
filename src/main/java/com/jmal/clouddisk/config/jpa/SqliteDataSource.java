@@ -2,8 +2,8 @@ package com.jmal.clouddisk.config.jpa;
 
 import com.jmal.clouddisk.config.FileProperties;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteDataSource;
@@ -15,7 +15,7 @@ import java.nio.file.Paths;
 
 @Configuration
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "sqlite")
+@Conditional(SqliteDataSourceCondition.class)
 public class SqliteDataSource {
 
     private final FileProperties fileProperties;

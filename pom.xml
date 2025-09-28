@@ -464,9 +464,16 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <profiles>
-                        <profile>native</profile>
-                    </profiles>
+                    <aot>
+                        <properties>
+                            <jmalcloud.datasource.mongoEnabled>true</jmalcloud.datasource.mongoEnabled>
+                            <jmalcloud.datasource.jpaEnabled>true</jmalcloud.datasource.jpaEnabled>
+                            <jmalcloud.datasource.migration>true</jmalcloud.datasource.migration>
+                            <jmalcloud.datasource.type>mongodb</jmalcloud.datasource.type>
+                            <spring.datasource.url>dummy</spring.datasource.url>
+                            <spring.data.mongodb.uri>dummy</spring.data.mongodb.uri>
+                        </properties>
+                    </aot>
                 </configuration>
             </plugin>
 

@@ -2,7 +2,7 @@ package com.jmal.clouddisk.dao.migrate.impl;
 
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
-import com.jmal.clouddisk.dao.impl.jpa.IWriteCommon;
+import com.jmal.clouddisk.dao.IOfficeConfigDAO;
 import com.jmal.clouddisk.dao.migrate.IMigrationService;
 import com.jmal.clouddisk.dao.migrate.MigrationResult;
 import com.jmal.clouddisk.dao.migrate.MigrationUtils;
@@ -28,7 +28,7 @@ public class OfficeConfigMigrationService implements IMigrationService {
 
     private final DataSourceProperties dataSourceProperties;
 
-    private final IWriteCommon<OfficeConfigDO> writeCommon;
+    private final IOfficeConfigDAO officeConfigDAO;
 
     @Override
     public String getName() {
@@ -42,7 +42,7 @@ public class OfficeConfigMigrationService implements IMigrationService {
                 getName(),
                 mongoTemplate,
                 officeConfigRepository,
-                writeCommon,
+                officeConfigDAO,
                 OfficeConfigDO.class,
                 1
         );

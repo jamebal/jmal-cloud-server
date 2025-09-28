@@ -2,11 +2,12 @@ package com.jmal.clouddisk.dao.migrate.impl;
 
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.IRoleDAO;
 import com.jmal.clouddisk.dao.impl.jpa.IWriteCommon;
-import com.jmal.clouddisk.dao.repository.jpa.RoleRepository;
 import com.jmal.clouddisk.dao.migrate.IMigrationService;
 import com.jmal.clouddisk.dao.migrate.MigrationResult;
 import com.jmal.clouddisk.dao.migrate.MigrationUtils;
+import com.jmal.clouddisk.dao.repository.jpa.RoleRepository;
 import com.jmal.clouddisk.model.rbac.RoleDO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +29,7 @@ public class RoleMigrationService implements IMigrationService {
 
     private final DataSourceProperties dataSourceProperties;
 
-    private final IWriteCommon<RoleDO> writeCommon;
+    private final IRoleDAO roleDAO;
 
     @Override
     public String getName() {
@@ -37,6 +38,7 @@ public class RoleMigrationService implements IMigrationService {
 
     @Override
     public MigrationResult migrateData() {
+        IWriteCommon<RoleDO> writeCommon = (IWriteCommon<RoleDO>) roleDAO;
         return MigrationUtils.migrateMongoToJpa(
                 dataSourceProperties.getType(),
                 getName(),

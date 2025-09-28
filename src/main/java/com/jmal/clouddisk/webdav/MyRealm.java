@@ -14,6 +14,7 @@ import org.apache.catalina.connector.Response;
 import org.apache.catalina.realm.GenericPrincipal;
 import org.apache.catalina.realm.RealmBase;
 import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -25,9 +26,9 @@ import java.util.*;
 @RequiredArgsConstructor
 public class MyRealm extends RealmBase {
 
-    private final UserServiceImpl userService;
+    private final @Lazy UserServiceImpl userService;
 
-    private final RoleService roleService;
+    private final @Lazy RoleService roleService;
 
     private final FileProperties fileProperties;
 

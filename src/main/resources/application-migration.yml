@@ -1,3 +1,8 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.ldap.LdapAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.ldap.LdapRepositoriesAutoConfiguration
 logging:
   level:
     root: info
@@ -5,3 +10,4 @@ jmalcloud:
   datasource:
     migration: true
     mongo-enabled: true
+    jpa-enabled: true
