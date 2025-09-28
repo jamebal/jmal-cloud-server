@@ -1,16 +1,14 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IHeartwingsDAO;
-import com.jmal.clouddisk.dao.impl.jpa.repository.HeartwingsRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.setting.WebSiteSettingOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.setting.WebSiteSettingOperation;
+import com.jmal.clouddisk.dao.repository.jpa.HeartwingsRepository;
 import com.jmal.clouddisk.model.HeartwingsDO;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +21,6 @@ import java.util.List;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
 public class HeartwingsDAOJpaImpl implements IHeartwingsDAO {
 
     private final HeartwingsRepository heartwingsRepository;

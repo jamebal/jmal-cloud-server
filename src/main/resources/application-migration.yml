@@ -1,0 +1,7 @@
+logging:
+  level:
+    root: info
+jmalcloud:
+  datasource:
+    migration: true
+    mongo-enabled: true

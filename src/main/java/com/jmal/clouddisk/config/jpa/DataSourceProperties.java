@@ -19,15 +19,28 @@ public class DataSourceProperties {
     /**
      * 是否在启动时进行数据迁移，仅在type为jpa时有效(从mongodb迁移到jpa)
      */
-    private Boolean migration = false;
+    private Boolean migration;
+
+    /**
+     * type == mongodb || migration == true 时有效，是否启用 MongoDB 数据源
+     */
+    private Boolean mongoEnabled;
+
+    private Boolean jpaEnabled;
 
     /**
      * 是否在启动时验证数据源连接
      */
-    private boolean validateOnStartup = true;
+    private Boolean validateOnStartup;
 
-    /**
-     * 数据源描述信息
-     */
-    private String description;
+    @Override
+    public String toString() {
+        return "DataSourceProperties{" +
+                "type=" + type +
+                ", migration=" + migration +
+                ", mongoEnabled=" + mongoEnabled +
+                ", jpaEnabled=" + jpaEnabled +
+                ", validateOnStartup=" + validateOnStartup +
+                '}';
+    }
 }

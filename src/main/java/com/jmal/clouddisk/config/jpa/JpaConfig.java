@@ -1,10 +1,10 @@
 package com.jmal.clouddisk.config.jpa;
 
-import org.springframework.context.annotation.Conditional;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
-@Conditional(RelationalDataSourceCondition.class)
+@ConditionalOnProperty(name = "jmalcloud.datasource.jpa-enabled")
 @Configuration
 @EnableJpaAuditing
 public class JpaConfig {

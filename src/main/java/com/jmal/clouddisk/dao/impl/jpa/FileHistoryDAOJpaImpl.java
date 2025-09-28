@@ -1,10 +1,9 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IFileHistoryDAO;
-import com.jmal.clouddisk.dao.impl.jpa.repository.FileHistoryRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.filehistory.FileHistoryOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.filehistory.FileHistoryOperation;
+import com.jmal.clouddisk.dao.repository.jpa.FileHistoryRepository;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.GridFSBO;
 import com.jmal.clouddisk.model.Metadata;
@@ -12,7 +11,6 @@ import com.jmal.clouddisk.model.file.FileHistoryDO;
 import com.jmal.clouddisk.model.file.FileHistoryDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
@@ -25,14 +23,13 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
 public class FileHistoryDAOJpaImpl implements IFileHistoryDAO {
 
     private final FileHistoryRepository fileHistoryRepository;
 
-    private final IWriteService writeService;
-
     private final FilePersistenceService persistenceService;
+
+    private final IWriteService writeService;
 
     @Override
     public void store(InputStream inputStream, String fileId, Metadata metadata) {

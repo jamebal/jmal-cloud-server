@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.jpa;
 
 import com.jmal.clouddisk.dao.impl.jpa.UserDAOJpaImpl;
-import com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository;
+import com.jmal.clouddisk.dao.repository.jpa.UserRepository;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.dao.util.MyUpdate;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;

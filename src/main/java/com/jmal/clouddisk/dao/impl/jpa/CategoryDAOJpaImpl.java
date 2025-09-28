@@ -1,16 +1,14 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.ICategoryDAO;
-import com.jmal.clouddisk.dao.impl.jpa.repository.CategoryRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.category.CategoryOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.category.CategoryOperation;
+import com.jmal.clouddisk.dao.repository.jpa.CategoryRepository;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.CategoryDO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
@@ -21,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
 public class CategoryDAOJpaImpl implements ICategoryDAO, IWriteCommon<CategoryDO> {
 
     private final CategoryRepository categoryRepository;

@@ -4,7 +4,6 @@ import com.jmal.clouddisk.dao.IOssConfigDAO;
 import com.jmal.clouddisk.oss.PlatformOSS;
 import com.jmal.clouddisk.oss.web.model.OssConfigDO;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -15,7 +14,6 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
 public class OssConfigDAOImpl implements IOssConfigDAO {
 
     private final MongoTemplate mongoTemplate;

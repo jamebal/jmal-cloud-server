@@ -12,7 +12,6 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.RoleService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +26,6 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
 public class UserDAOImpl implements IUserDAO {
 
     private final MongoTemplate mongoTemplate;

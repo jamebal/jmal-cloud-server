@@ -2,9 +2,9 @@ package com.jmal.clouddisk.dao.migrate.impl;
 
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
-import com.jmal.clouddisk.dao.impl.jpa.repository.TrashRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.trash.TrashOperation;
+import com.jmal.clouddisk.dao.repository.jpa.TrashRepository;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.trash.TrashOperation;
 import com.jmal.clouddisk.dao.migrate.IMigrationService;
 import com.jmal.clouddisk.dao.migrate.MigrationResult;
 import com.jmal.clouddisk.model.Trash;

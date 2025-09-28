@@ -4,7 +4,6 @@ import com.jmal.clouddisk.dao.IFolderSizeDAO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.Constants;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -15,7 +14,6 @@ import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
 public class FolderSizeDAOImpl implements IFolderSizeDAO {
 
     private final MongoTemplate mongoTemplate;

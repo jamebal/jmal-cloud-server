@@ -1,16 +1,14 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IEtagDAO;
-import com.jmal.clouddisk.dao.impl.jpa.repository.FileEtagRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.etag.EtagOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.etag.EtagOperation;
+import com.jmal.clouddisk.dao.repository.jpa.FileEtagRepository;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.file.dto.FileBaseEtagDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -22,11 +20,10 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
 public class EtagDAOJpaImpl implements IEtagDAO {
 
-    private final IWriteService writeService;
     private final FileEtagRepository fileEtagRepository;
+    private final IWriteService writeService;
 
     @Override
     public long countFoldersWithoutEtag() {

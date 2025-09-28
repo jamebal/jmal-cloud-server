@@ -1,13 +1,12 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.ILogDAO;
-import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
-import com.jmal.clouddisk.dao.impl.jpa.repository.LogRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.Priority;
-import com.jmal.clouddisk.dao.impl.jpa.write.log.LogDataOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.Priority;
+import com.jmal.clouddisk.dao.write.log.LogDataOperation;
+import com.jmal.clouddisk.dao.repository.jpa.FileMetadataRepository;
+import com.jmal.clouddisk.dao.repository.jpa.LogRepository;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.LogOperationDTO;
 import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
@@ -15,7 +14,6 @@ import com.jmal.clouddisk.util.TimeUntils;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
@@ -28,7 +26,6 @@ import java.util.Optional;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
 public class LogDAOJpaImpl implements ILogDAO, IWriteCommon<LogOperation> {
 
     private final LogRepository logRepository;

@@ -1,11 +1,11 @@
 package com.jmal.clouddisk.jpa;
 
 import com.jmal.clouddisk.dao.impl.jpa.FileDAOJpaImpl;
-import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
-import com.jmal.clouddisk.dao.impl.jpa.repository.FilePropsRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperation;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.file.FileOperation;
+import com.jmal.clouddisk.dao.repository.jpa.FileMetadataRepository;
+import com.jmal.clouddisk.dao.repository.jpa.FilePropsRepository;
+import com.jmal.clouddisk.dao.write.IDataOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.file.FileOperation;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
 import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.FileDocument;

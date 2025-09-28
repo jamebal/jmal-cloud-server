@@ -2,8 +2,9 @@ package com.jmal.clouddisk.dao.migrate.impl;
 
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.IOssConfigDAO;
 import com.jmal.clouddisk.dao.impl.jpa.IWriteCommon;
-import com.jmal.clouddisk.dao.impl.jpa.repository.OssConfigRepository;
+import com.jmal.clouddisk.dao.repository.jpa.OssConfigRepository;
 import com.jmal.clouddisk.dao.migrate.IMigrationService;
 import com.jmal.clouddisk.dao.migrate.MigrationResult;
 import com.jmal.clouddisk.dao.migrate.MigrationUtils;
@@ -28,7 +29,7 @@ public class OssConfigMigrationService implements IMigrationService {
 
     private final DataSourceProperties dataSourceProperties;
 
-    private final IWriteCommon<OssConfigDO> writeCommon;
+    private final IOssConfigDAO ossConfigDAO;
 
     @Override
     public String getName() {
@@ -37,6 +38,7 @@ public class OssConfigMigrationService implements IMigrationService {
 
     @Override
     public MigrationResult migrateData() {
+        IWriteCommon<OssConfigDO> writeCommon = (IWriteCommon<OssConfigDO>) ossConfigDAO;
         return MigrationUtils.migrateMongoToJpa(
                 dataSourceProperties.getType(),
                 getName(),

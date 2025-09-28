@@ -1,16 +1,14 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IShareDAO;
-import com.jmal.clouddisk.dao.impl.jpa.repository.ShareRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.share.ShareOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.share.ShareOperation;
+import com.jmal.clouddisk.dao.repository.jpa.ShareRepository;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.ShareDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Repository;
 
@@ -21,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
 public class ShareDAOJpaImpl implements IShareDAO, IWriteCommon<ShareDO> {
 
     private final ShareRepository shareRepository;

@@ -10,7 +10,6 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.TimeUntils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -28,7 +27,6 @@ import java.util.stream.Collectors;
  */
 @Repository
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
 public class AccessTokenDAOImpl implements IAccessTokenDAO {
 
     private final MongoTemplate mongoTemplate;

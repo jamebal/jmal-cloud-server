@@ -5,13 +5,12 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.DataSourceType;
 import com.jmal.clouddisk.dao.IArticleDAO;
-import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
-import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.article.ArticleOperation;
+import com.jmal.clouddisk.dao.repository.jpa.ArticleRepository;
+import com.jmal.clouddisk.dao.repository.jpa.FileMetadataRepository;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.article.ArticleOperation;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
 import com.jmal.clouddisk.model.ArchivesVO;
@@ -26,7 +25,6 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.JacksonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -45,7 +43,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
 public class ArticleDAOJpaImpl implements IArticleDAO {
 
     private final DataSourceProperties dataSourceProperties;

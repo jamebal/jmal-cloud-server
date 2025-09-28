@@ -2,13 +2,12 @@ package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.convert.Convert;
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.DataSourceType;
 import com.jmal.clouddisk.dao.IUserDAO;
-import com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.consumer.UserOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.consumer.UserOperation;
 import com.jmal.clouddisk.dao.mapping.UserField;
+import com.jmal.clouddisk.dao.repository.jpa.UserRepository;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.dao.util.MyUpdate;
 import com.jmal.clouddisk.dao.util.PageableUtil;
@@ -19,7 +18,6 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.JacksonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
@@ -33,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
 public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
 
     private final UserRepository userRepository;

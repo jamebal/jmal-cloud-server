@@ -1,7 +1,7 @@
 package com.jmal.clouddisk.config.hints;
 
-import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperation;
-import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperationHandler;
+import com.jmal.clouddisk.dao.write.IDataOperation;
+import com.jmal.clouddisk.dao.write.IDataOperationHandler;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;

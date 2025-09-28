@@ -1,11 +1,14 @@
 spring:
   data:
     mongodb:
-      uri: mongodb://127.0.0.1:27017/jmalcloud
-
+      uri: mongodb://${DATABASE_HOST:localhost}:${DATABASE_PORT:27017}/jmalcloud
+      database: ${DATABASE_NAME:jmalcloud}
+  flyway:
+    enabled: false
 jmalcloud:
   datasource:
     type: mongodb
+    mongo-enabled: true
 logging:
   level:
     org:

@@ -1,20 +1,18 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IMenuDAO;
-import com.jmal.clouddisk.dao.impl.jpa.repository.MenuRepository;
-import com.jmal.clouddisk.dao.impl.jpa.repository.RoleRepository;
-import com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.menu.MenuOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.menu.MenuOperation;
+import com.jmal.clouddisk.dao.repository.jpa.MenuRepository;
+import com.jmal.clouddisk.dao.repository.jpa.RoleRepository;
+import com.jmal.clouddisk.dao.repository.jpa.UserRepository;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -28,13 +26,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
 public class MenuDAOJpaImpl implements IMenuDAO, IWriteCommon<MenuDO> {
 
-    private final IWriteService writeService;
     private final MenuRepository menuRepository;
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final IWriteService writeService;
 
     @Override
     public List<MenuDO> treeMenu(QueryMenuDTO queryDTO) {

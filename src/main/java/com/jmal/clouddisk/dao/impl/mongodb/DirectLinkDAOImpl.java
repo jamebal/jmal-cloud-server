@@ -5,7 +5,6 @@ import com.jmal.clouddisk.model.DirectLink;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -18,7 +17,6 @@ import static com.jmal.clouddisk.service.impl.DirectLinkService.MARK;
 
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
 public class DirectLinkDAOImpl implements IDirectLinkDAO {
 
     private final MongoTemplate mongoTemplate;

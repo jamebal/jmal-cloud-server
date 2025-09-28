@@ -2,12 +2,11 @@ package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ReUtil;
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IFileDAO;
-import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
-import com.jmal.clouddisk.dao.impl.jpa.repository.FileMetadataRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.file.FileOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.file.FileOperation;
+import com.jmal.clouddisk.dao.repository.jpa.ArticleRepository;
+import com.jmal.clouddisk.dao.repository.jpa.FileMetadataRepository;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.lucene.IndexStatus;
@@ -20,7 +19,6 @@ import com.jmal.clouddisk.model.file.dto.*;
 import com.jmal.clouddisk.service.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -32,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
 public class FileDAOJpaImpl implements IFileDAO {
 
     private final FileMetadataRepository fileMetadataRepository;

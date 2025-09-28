@@ -1,15 +1,13 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IOfficeConfigDAO;
-import com.jmal.clouddisk.dao.impl.jpa.repository.OfficeConfigRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.officeconfig.OfficeConfigOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.officeconfig.OfficeConfigOperation;
+import com.jmal.clouddisk.dao.repository.jpa.OfficeConfigRepository;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.office.model.OfficeConfigDO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Repository;
 
 import java.util.concurrent.TimeUnit;
@@ -17,12 +15,10 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
-public class OfficeConfigDAOJpaImpl implements IOfficeConfigDAO, IWriteCommon<OfficeConfigDO> {
-
-    private final IWriteService writeService;
+public class OfficeConfigDAOJpaImpl implements IOfficeConfigDAO {
 
     private final OfficeConfigRepository officeConfigRepository;
+    private final IWriteService writeService;
 
     @Override
     public void AsyncSaveAll(Iterable<OfficeConfigDO> entities) {

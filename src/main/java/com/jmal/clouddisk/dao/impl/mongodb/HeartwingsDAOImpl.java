@@ -6,7 +6,6 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
@@ -16,7 +15,6 @@ import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
 public class HeartwingsDAOImpl implements IHeartwingsDAO {
 
     private final MongoTemplate mongoTemplate;

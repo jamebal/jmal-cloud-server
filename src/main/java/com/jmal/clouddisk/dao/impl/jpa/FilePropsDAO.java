@@ -2,11 +2,10 @@ package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.DataSourceType;
-import com.jmal.clouddisk.dao.impl.jpa.repository.FilePropsRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.file.FileOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.file.FileOperation;
+import com.jmal.clouddisk.dao.repository.jpa.FilePropsRepository;
 import com.jmal.clouddisk.dao.util.MyQuery;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
@@ -14,7 +13,10 @@ import com.jmal.clouddisk.media.TranscodeConfig;
 import com.jmal.clouddisk.media.VideoInfoDO;
 import com.jmal.clouddisk.model.ShareBaseInfoDTO;
 import com.jmal.clouddisk.model.Tag;
-import com.jmal.clouddisk.model.file.*;
+import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.FilePropsDO;
+import com.jmal.clouddisk.model.file.OtherProperties;
+import com.jmal.clouddisk.model.file.ShareProperties;
 import com.jmal.clouddisk.model.file.dto.FileBaseTagsDTO;
 import com.jmal.clouddisk.service.Constants;
 import jakarta.persistence.EntityManager;
@@ -23,7 +25,6 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -36,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
 public class FilePropsDAO {
 
     private final FilePropsRepository filePropsRepository;

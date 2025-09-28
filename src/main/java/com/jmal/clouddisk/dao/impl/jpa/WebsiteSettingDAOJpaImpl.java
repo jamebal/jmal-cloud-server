@@ -1,14 +1,12 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
-import com.jmal.clouddisk.dao.impl.jpa.repository.WebsiteSettingRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.setting.WebSiteSettingOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.setting.WebSiteSettingOperation;
+import com.jmal.clouddisk.dao.repository.jpa.WebsiteSettingRepository;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -18,7 +16,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
 public class WebsiteSettingDAOJpaImpl implements IWebsiteSettingDAO, IWriteCommon<WebsiteSettingDO> {
 
     private final WebsiteSettingRepository websiteSettingRepository;

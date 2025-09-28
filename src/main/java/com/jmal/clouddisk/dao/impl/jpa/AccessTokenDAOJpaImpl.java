@@ -1,11 +1,10 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IAccessTokenDAO;
-import com.jmal.clouddisk.dao.impl.jpa.repository.AccessTokenRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.accesstoken.AccessTokenOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.accesstoken.AccessTokenOperation;
+import com.jmal.clouddisk.dao.repository.jpa.AccessTokenRepository;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
@@ -15,7 +14,6 @@ import com.jmal.clouddisk.util.TimeUntils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -27,7 +25,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
 public class AccessTokenDAOJpaImpl implements IAccessTokenDAO, IWriteCommon<UserAccessTokenDO> {
 
     private final AccessTokenRepository accessTokenRepository;

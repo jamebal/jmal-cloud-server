@@ -30,10 +30,14 @@ spring:
       dev_sqlite: dev, sqlite
       dev_mysql: dev, mysql
       dev_pgsql: dev, pgsql
+      migration_sqlite: migration, sqlite
+      migration_mysql: migration, mysql
+      migration_pgsql: migration, pgsql
       prod_mongodb: prod, mongodb
       prod_sqlite: prod, sqlite
       prod_mysql: prod, mysql
       prod_pgsql: prod, pgsql
+      native: native
     active: default
   servlet:
     multipart:
@@ -87,3 +91,8 @@ logging:
             HotspotVMOptions: error
         poi: error
       jaudiotagger: warn
+jmalcloud:
+  datasource:
+    type: sqlite
+    migration: false
+    mongo-enabled: false

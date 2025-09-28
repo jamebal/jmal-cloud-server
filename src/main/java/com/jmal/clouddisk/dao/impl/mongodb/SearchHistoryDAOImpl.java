@@ -5,7 +5,6 @@ import com.jmal.clouddisk.dao.ISearchHistoryDAO;
 import com.jmal.clouddisk.model.query.SearchOptionHistoryDO;
 import com.jmal.clouddisk.service.IUserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -16,7 +15,6 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
 public class SearchHistoryDAOImpl implements ISearchHistoryDAO {
 
     private final MongoTemplate mongoTemplate;

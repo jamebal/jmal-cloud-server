@@ -3,7 +3,7 @@ package com.jmal.clouddisk.dao.migrate.impl;
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.impl.jpa.IWriteCommon;
-import com.jmal.clouddisk.dao.impl.jpa.repository.DirectLinkRepository;
+import com.jmal.clouddisk.dao.repository.jpa.DirectLinkRepository;
 import com.jmal.clouddisk.dao.migrate.IMigrationService;
 import com.jmal.clouddisk.dao.migrate.MigrationResult;
 import com.jmal.clouddisk.dao.migrate.MigrationUtils;

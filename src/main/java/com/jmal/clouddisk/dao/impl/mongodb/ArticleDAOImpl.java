@@ -6,7 +6,7 @@ import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IArticleDAO;
-import com.jmal.clouddisk.dao.impl.mongodb.repository.FileDocumentRepository;
+import com.jmal.clouddisk.dao.repository.mongo.FileDocumentRepository;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
 import com.jmal.clouddisk.model.ArchivesVO;
 import com.jmal.clouddisk.model.ArticleDTO;
@@ -20,7 +20,6 @@ import com.jmal.clouddisk.util.JacksonUtil;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.MyFileUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -38,7 +37,6 @@ import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
 public class ArticleDAOImpl implements IArticleDAO {
 
     private final MongoTemplate mongoTemplate;

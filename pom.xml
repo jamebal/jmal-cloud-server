@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.5</version>
+        <version>3.5.6</version>
         <relativePath/>
     </parent>
     <groupId>com.jmal</groupId>
@@ -249,13 +249,22 @@
 
         <!-- api文档-->
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.19.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.8.11</version>
+            <version>2.8.13</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.module</groupId>
                     <artifactId>jackson-module-kotlin</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -378,6 +387,12 @@
             <groupId>io.minio</groupId>
             <artifactId>minio</artifactId>
             <version>8.5.13</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcprov-jdk18on</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- 阿里云 OSS -->
         <dependency>
@@ -448,6 +463,11 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <profiles>
+                        <profile>native</profile>
+                    </profiles>
+                </configuration>
             </plugin>
 
             <plugin>

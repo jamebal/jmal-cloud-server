@@ -3,10 +3,11 @@ package com.jmal.clouddisk.config.mongodb;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.env.Environment;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.IndexOperations;
@@ -27,9 +28,7 @@ import java.util.Set;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnExpression(
-        "'${jmalcloud.datasource.type}'=='mongodb' || '${jmalcloud.datasource.migration}'=='true'"
-)
+@ConditionalOnProperty(name = "jmalcloud.datasource.mongo-enabled")
 public class MongoIndexInitializer {
 
     // 文件路径必须与 AppRuntimeHints 中定义的一致
@@ -37,8 +36,15 @@ public class MongoIndexInitializer {
 
     private final MongoTemplate mongoTemplate;
 
+    private final Environment env;
+
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
+        boolean mongoEnabled = env.getProperty("jmalcloud.datasource.mongo-enabled", Boolean.class, false);
+        if (!mongoEnabled) {
+            log.info("MongoDB is not enabled. Skipping index initialization.");
+            return;
+        }
         // 1. 从 Classpath 读取在构建时生成的文件
         List<Class<?>> entityClasses = loadClassesFromResource();
 

@@ -17,4 +17,4 @@ spring:
 jmalcloud:
   datasource:
     type: pgsql
-    migration: false
+    jpa-enabled: true

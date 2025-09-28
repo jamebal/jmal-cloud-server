@@ -3,6 +3,7 @@ package com.jmal.clouddisk.listener;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.lucene.RebuildIndexTaskService;
 import com.jmal.clouddisk.service.IFileService;
 import io.methvin.watcher.DirectoryChangeEvent;
@@ -63,8 +64,11 @@ public class FileListener implements DirectoryChangeListener {
     private final List<Future<?>> consumerFutures = new CopyOnWriteArrayList<>();
     private final ExecutorService processExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
+    private final DataSourceProperties dataSourceProperties;
+
     @PostConstruct
     public void init() {
+        log.info(dataSourceProperties.toString());
         // 定期将事件从Map转移到处理队列
         scheduler.scheduleAtFixedRate(this::transferEventsToQueue, 200, 200, TimeUnit.MILLISECONDS);
 

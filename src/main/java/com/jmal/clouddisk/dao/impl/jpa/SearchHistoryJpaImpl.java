@@ -1,15 +1,13 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
-import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.ISearchHistoryDAO;
-import com.jmal.clouddisk.dao.impl.jpa.repository.SearchHistoryRepository;
-import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
-import com.jmal.clouddisk.dao.impl.jpa.write.searchhistory.SearchHistoryOperation;
+import com.jmal.clouddisk.dao.write.IWriteService;
+import com.jmal.clouddisk.dao.write.searchhistory.SearchHistoryOperation;
+import com.jmal.clouddisk.dao.repository.jpa.SearchHistoryRepository;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.query.SearchOptionHistoryDO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
@@ -20,12 +18,10 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-@Conditional(RelationalDataSourceCondition.class)
 public class SearchHistoryJpaImpl implements ISearchHistoryDAO, IWriteCommon<SearchOptionHistoryDO> {
 
-    private final IWriteService writeService;
-
     private final SearchHistoryRepository searchHistoryRepository;
+    private final IWriteService writeService;
 
     @Override
     public void AsyncSaveAll(Iterable<SearchOptionHistoryDO> entities) {

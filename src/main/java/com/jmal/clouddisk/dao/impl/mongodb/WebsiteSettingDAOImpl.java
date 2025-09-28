@@ -5,7 +5,6 @@ import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 import com.jmal.clouddisk.util.MongoUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
 public class WebsiteSettingDAOImpl implements IWebsiteSettingDAO {
 
     private final MongoTemplate mongoTemplate;

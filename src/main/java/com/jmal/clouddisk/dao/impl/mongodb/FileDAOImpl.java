@@ -51,7 +51,6 @@ import static com.jmal.clouddisk.service.impl.CommonFileService.COLLECTION_NAME;
 
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
 public class FileDAOImpl implements IFileDAO {
 
     private final MongoTemplate mongoTemplate;

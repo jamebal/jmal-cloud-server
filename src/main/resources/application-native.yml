@@ -1,0 +1,14 @@
+# 这个文件只在构建时生效，它的作用是提供“触发属性”
+# 让AOT引擎把JPA和Mongo的自动配置代码都包含进来
+spring:
+  datasource:
+    # 提供一个虚拟值，唤醒JPA自动配置的分析
+    url: "dummy"
+  data:
+    mongodb:
+      # 提供一个虚拟值，唤醒Mongo自动配置的分析
+      uri: "dummy"
+jmalcloud:
+  datasource:
+    jpa-enabled: true
+    mongo-enabled: true

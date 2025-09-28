@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.bson.BsonNull;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -30,7 +29,6 @@ import static com.mongodb.client.model.Filters.eq;
 
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
 public class TrashDAOImpl implements ITrashDAO {
 
     private final MongoTemplate mongoTemplate;

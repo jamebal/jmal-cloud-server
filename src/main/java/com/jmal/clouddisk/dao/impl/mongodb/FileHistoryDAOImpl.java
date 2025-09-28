@@ -7,7 +7,6 @@ import com.jmal.clouddisk.model.file.FileHistoryDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +23,6 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
 public class FileHistoryDAOImpl implements IFileHistoryDAO {
 
     private static final String COLLECTION_NAME = "fs.files";
