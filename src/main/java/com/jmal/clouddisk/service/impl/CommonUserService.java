@@ -5,20 +5,20 @@ import com.jmal.clouddisk.dao.IUserDAO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class CommonUserService {
 
-    private final @Lazy IUserDAO userDAO;
+    private final ObjectProvider<IUserDAO> userDAOObjectProvider;
 
     public String getUserNameById(String userId) {
         if (!CharSequenceUtil.isBlank(userId)) {
             String username = CaffeineUtil.getUsernameCache(userId);
             if (CharSequenceUtil.isBlank(username)) {
-                ConsumerDO consumer = userDAO.findById(userId);
+                ConsumerDO consumer = userDAOObjectProvider.getObject().findById(userId);
                 if (consumer != null) {
                     username = consumer.getUsername();
                     CaffeineUtil.setUsernameCache(userId, username);
@@ -59,11 +59,11 @@ public class CommonUserService {
     }
 
     public ConsumerDO getUserInfo(String username) {
-        return userDAO.findByUsername(username);
+        return userDAOObjectProvider.getObject().findByUsername(username);
     }
 
     public ConsumerDO getUserInfoByIdNoCache(String userId) {
-        return userDAO.findById(userId);
+        return userDAOObjectProvider.getObject().findById(userId);
     }
 
     public ConsumerDO getUserInfoById(String userId) {
@@ -84,7 +84,7 @@ public class CommonUserService {
      * @return 用户名
      */
     public String getCreatorUsername() {
-        ConsumerDO consumerDO = userDAO.findOneByCreatorTrue();
+        ConsumerDO consumerDO = userDAOObjectProvider.getObject().findOneByCreatorTrue();
         if (consumerDO == null) {
             return null;
         }

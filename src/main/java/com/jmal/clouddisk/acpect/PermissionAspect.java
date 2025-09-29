@@ -13,6 +13,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
@@ -30,7 +31,7 @@ public class PermissionAspect {
 
     private final UserLoginHolder userLoginHolder;
 
-    private final CommonUserService commonUserService;
+    private final ObjectProvider<CommonUserService> commonUserServiceObjectProvider;
 
     @Pointcut("@annotation(com.jmal.clouddisk.annotation.Permission)")
     public void privilege() {
@@ -48,7 +49,7 @@ public class PermissionAspect {
         boolean onlyCreator = permission.onlyCreator();
         if (onlyCreator) {
             // 只有创建者才有权限
-            if (commonUserService.getIsCreator(userLoginHolder.getUserId())) {
+            if (commonUserServiceObjectProvider.getObject().getIsCreator(userLoginHolder.getUserId())) {
                 return joinPoint.proceed();
             } else {
                 return ResultUtil.error(ExceptionType.PERMISSION_DENIED);

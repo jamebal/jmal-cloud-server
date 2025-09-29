@@ -18,6 +18,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -53,11 +54,11 @@ public class AuthInterceptor implements HandlerInterceptor {
     private static final int SECONDS_IN_DAY = 24 * 60 * 60; // 86400
     private static final int NINETY_DAYS_IN_SECONDS = 90 * SECONDS_IN_DAY; // 7776000
 
-    private final IAccessTokenDAO accessTokenDAO;
+    private final ObjectProvider<IAccessTokenDAO> accessTokenDAOObjectProvider;
 
-    private final UserServiceImpl userService;
+    private final ObjectProvider<UserServiceImpl> userServiceObjectProvider;
 
-    private final RoleService roleService;
+    private final ObjectProvider<RoleService> roleServiceObjectProvider;
 
 
     @Override
@@ -114,7 +115,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     public void setAuthorities(String username) {
         List<String> authorities = CaffeineUtil.getAuthoritiesCache(username);
         if (authorities == null || authorities.isEmpty()) {
-            authorities = roleService.getAuthorities(username);
+            authorities = roleServiceObjectProvider.getObject().getAuthorities(username);
             CaffeineUtil.setAuthoritiesCache(username, authorities);
         }
         setAuthorities(username, authorities);
@@ -131,7 +132,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (requestAttributes != null) {
             String userId = CaffeineUtil.getUserIdCache(username);
             if (CharSequenceUtil.isBlank(userId)) {
-                userId = userService.getUserIdByUserName(username);
+                userId = userServiceObjectProvider.getObject().getUserIdByUserName(username);
                 CaffeineUtil.setUserIdCache(username, userId);
             }
             UserLoginContext userLoginContext = new UserLoginContext();
@@ -155,7 +156,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (CharSequenceUtil.isBlank(token)) {
             return null;
         }
-        UserAccessTokenDO userAccessTokenDO = accessTokenDAO.getUserNameByAccessToken(token);
+        UserAccessTokenDO userAccessTokenDO = accessTokenDAOObjectProvider.getObject().getUserNameByAccessToken(token);
         if (userAccessTokenDO == null) {
             return null;
         }
@@ -164,7 +165,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             return null;
         }
         // access-token 认证通过 设置该身份的权限
-        Completable.fromAction(() -> accessTokenDAO.updateAccessToken(username, userAccessTokenDO.getAccessToken()))
+        Completable.fromAction(() -> accessTokenDAOObjectProvider.getObject().updateAccessToken(username, userAccessTokenDO.getAccessToken()))
                 .subscribeOn(Schedulers.io())
                 .subscribe();
         setAuthorities(username);
@@ -182,7 +183,7 @@ public class AuthInterceptor implements HandlerInterceptor {
      */
     public String getUserNameByJmalToken(HttpServletRequest request, HttpServletResponse response, String jmalToken, String name) {
         if (!CharSequenceUtil.isBlank(jmalToken) && !CharSequenceUtil.isBlank(name)) {
-            String hashPassword = userService.getHashPasswordUserName(name);
+            String hashPassword = userServiceObjectProvider.getObject().getHashPasswordUserName(name);
             if (hashPassword == null) {
                 return null;
             }
@@ -222,7 +223,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (CharSequenceUtil.isBlank(username)) {
             return null;
         }
-        String hashPassword = userService.getHashPasswordUserName(username);
+        String hashPassword = userServiceObjectProvider.getObject().getHashPasswordUserName(username);
         if (CharSequenceUtil.isBlank(hashPassword)) {
             return null;
         }

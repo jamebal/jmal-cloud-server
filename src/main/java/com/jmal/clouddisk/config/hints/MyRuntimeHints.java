@@ -1,6 +1,6 @@
 package com.jmal.clouddisk.config.hints;
 
-import org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl;
+import org.hibernate.bytecode.internal.none.BytecodeProviderImpl;
 import org.springframework.aot.hint.*;
 
 import java.io.IOException;
@@ -26,6 +26,6 @@ public class MyRuntimeHints implements RuntimeHintsRegistrar {
                 hint -> hint.withMembers(MemberCategory.INVOKE_DECLARED_CONSTRUCTORS)
         );
 
-        hints.reflection().registerType(BytecodeProviderImpl.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+        hints.reflection().registerType(BytecodeProviderImpl.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
     }
 }

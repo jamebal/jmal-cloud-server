@@ -441,6 +441,12 @@
             <version>5.19.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>0.10.2</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.maven</groupId>
@@ -540,6 +546,7 @@
                                 <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
                                 <buildArg>-H:+AddAllCharsets</buildArg>
                                 <buildArg>-H:+AllowIncompleteClasspath</buildArg>
+                                <buildArg>-H:ExcludeResources=META-INF/services/org.hibernate.bytecode.spi.BytecodeProvider</buildArg>
                                 <buildArg>--enable-http</buildArg>
                                 <buildArg>--enable-https</buildArg>
                                 <buildArg>${native-image.addArgs}</buildArg>
