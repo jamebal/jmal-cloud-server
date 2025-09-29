@@ -200,9 +200,6 @@ public class MenuService {
      * 初始化菜单数据
      */
     public void initMenus() {
-        if (dataSourceProperties.getMigration()) {
-            return;
-        }
         TimeInterval timeInterval = new TimeInterval();
         List<MenuDO> menuDOList = getMenuDOListByConfigJSON();
         if (menuDOList.isEmpty()) return;

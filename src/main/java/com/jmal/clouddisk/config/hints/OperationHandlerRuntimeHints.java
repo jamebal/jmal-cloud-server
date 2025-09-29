@@ -1,84 +1,50 @@
 package com.jmal.clouddisk.config.hints;
 
-import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperation;
-import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperationHandler;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.type.filter.AssignableTypeFilter;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 
-import java.util.HashSet;
-import java.util.Objects;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-/**
- * 注册IDataOperationHandler及其泛型参数的反射信息
- */
 public class OperationHandlerRuntimeHints implements RuntimeHintsRegistrar {
 
-    private static final String BASE_PACKAGE = "com.jmal.clouddisk.dao.impl.jpa.write";
+    // 指向由Maven插件生成的文件
+    private static final String HINTS_FILE_PATH = "META-INF/aot/handler-classes.list";
 
     @Override
     public void registerHints(@NotNull RuntimeHints hints, ClassLoader classLoader) {
-        // findOperationHandlers().forEach(handlerClass -> {
-        //     hints.reflection().registerType(handlerClass, hint ->
-        //         hint.onReachableType(TypeReference.of(IDataOperationHandler.class))
-        //     );
-        //
-        //     Arrays.stream(handlerClass.getGenericInterfaces())
-        //             .filter(type -> type instanceof ParameterizedType)
-        //             .map(type -> (ParameterizedType) type)
-        //             .filter(pt -> {
-        //                 Type rawType = pt.getRawType();
-        //                 return rawType instanceof Class && IDataOperationHandler.class.isAssignableFrom((Class<?>) rawType);
-        //             })
-        //             .findFirst()
-        //             .ifPresent(pt -> {
-        //                 Type operationType = pt.getActualTypeArguments()[0];
-        //                 hints.reflection().registerType(TypeReference.of((Class<?>) operationType));
-        //             });
-        // });
-        findOperationHandlers().forEach(handlerClass -> {
-            // 注册Handler本身
-            hints.reflection().registerType(handlerClass);
-
-            // 为了简单和健壮，我们直接扫描所有的IDataOperation实现
-            findAllOperationClasses().forEach(opClass -> hints.reflection().registerType(opClass));
-        });
-    }
-
-    private Set<Class<?>> findAllOperationClasses() {
-        Set<Class<?>> optionClasses = new HashSet<>();
-        ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
-        scanner.addIncludeFilter(new AssignableTypeFilter(IDataOperation.class));
-
-        for (BeanDefinition bd : scanner.findCandidateComponents(BASE_PACKAGE)) {
-            try {
-                optionClasses.add(ClassUtils.forName(Objects.requireNonNull(bd.getBeanClassName()), null));
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
+        Resource resource = new ClassPathResource(HINTS_FILE_PATH, classLoader);
+        if (!resource.exists()) {
+            System.err.println("AOT HINTS WARNING: Hints file not found at '" + HINTS_FILE_PATH + "'. Skipping handler registration.");
+            return;
         }
-        System.out.println("Found IDataOperation classes: " + optionClasses);
-        return optionClasses;
-    }
 
-    private Set<Class<?>> findOperationHandlers() {
-        Set<Class<?>> handlerClasses = new HashSet<>();
-        ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
-        scanner.addIncludeFilter(new AssignableTypeFilter(IDataOperationHandler.class));
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
+            Set<String> classNames = reader.lines().collect(Collectors.toSet());
+            System.out.println("Registering hints for IDataOperationHandler classes found in file: " + classNames);
 
-        for (BeanDefinition bd : scanner.findCandidateComponents(BASE_PACKAGE)) {
-            try {
-                handlerClasses.add(ClassUtils.forName(Objects.requireNonNull(bd.getBeanClassName()), null));
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
+            for (String className : classNames) {
+                try {
+                    Class<?> handlerClass = ClassUtils.forName(className, classLoader);
+
+                    // 为每个从文件中读取到的类，注册我们需要的反射提示
+                    hints.reflection().registerType(handlerClass,
+                            hint -> hint.onReachableType(com.jmal.clouddisk.dao.impl.jpa.write.IDataOperationHandler.class)
+                    );
+
+                } catch (ClassNotFoundException e) {
+                    System.err.println("AOT HINTS WARNING: Class not found while registering hints: " + className);
+                }
             }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to read or process AOT hints file: " + HINTS_FILE_PATH, e);
         }
-        System.out.println("Found IDataOperationHandler classes: " + handlerClasses);
-        return handlerClasses;
     }
 }

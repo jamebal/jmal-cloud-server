@@ -233,9 +233,6 @@ public class RoleService {
      * 初始化角色数据
      */
     public void initRoles() {
-        if (dataSourceProperties.getMigration()) {
-            return;
-        }
         TimeInterval timeInterval = new TimeInterval();
         List<RoleDO> roleDOList = getRoleDOListByConfigJSON();
         if (roleDOList.isEmpty()) return;

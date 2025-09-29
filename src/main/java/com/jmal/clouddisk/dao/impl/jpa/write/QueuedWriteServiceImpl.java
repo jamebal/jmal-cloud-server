@@ -1,8 +1,8 @@
 package com.jmal.clouddisk.dao.impl.jpa.write;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -56,16 +56,35 @@ public class QueuedWriteServiceImpl implements IWriteService {
     private static final WriteTask<?> POISON_PILL = new PoisonPill();
 
     private final BlockingQueue<WriteTask<?>> writeQueue = new PriorityBlockingQueue<>(10000);
-    private final ExecutorService writerExecutor = Executors.newSingleThreadExecutor();
+
+    private static class MonitoredThreadFactory implements ThreadFactory {
+        private final ThreadFactory delegate = Executors.defaultThreadFactory();
+
+        @Override
+        public Thread newThread(@NotNull Runnable r) {
+            Thread thread = delegate.newThread(r);
+            // 为每个新线程安装一个异常处理器
+            thread.setUncaughtExceptionHandler((t, e) -> {
+                // 这是关键！任何未 被捕获的异常（包括导致线程死亡的Error）都会在这里被记录
+                log.error("!!! UNCAUGHT EXCEPTION IN WRITER THREAD !!! Thread: {}", t.getName(), e);
+            });
+            return thread;
+        }
+    }
+
+    private final ExecutorService writerExecutor = Executors.newSingleThreadExecutor(new MonitoredThreadFactory());
+
     private final DataManipulationService dataManipulationService;
 
     public QueuedWriteServiceImpl(DataManipulationService dataManipulationService) {
         this.dataManipulationService = dataManipulationService;
-        log.debug("写入策略初始化：带优先级的异步队列写入（适用于SQLite）。");
+        log.info("写入策略初始化：带优先级的异步队列写入（适用于SQLite）。");
+        init();
     }
 
     @Override
     public <R> CompletableFuture<R> submit(IDataOperation<R> operation, Priority priority) {
+        log.info( "提交操作任务 {}, 优先级: {}", operation.getClass().getName(), priority);
         WriteTask<R> task = new WriteTask<>(operation, new CompletableFuture<>(), priority);
 
         boolean offered = writeQueue.offer(task);
@@ -75,42 +94,48 @@ public class QueuedWriteServiceImpl implements IWriteService {
             log.error(errorMessage);
             task.future.completeExceptionally(new RejectedExecutionException(errorMessage));
         } else {
-            log.debug("任务 {} 已提交，优先级: {}", operation.getClass().getSimpleName(), priority);
+            log.info("任务 {} 已提交，优先级: {}", operation.getClass().getSimpleName(), priority);
         }
 
         return task.future;
     }
 
-    @PostConstruct
-    private void startConsumer() {
+    public void init() {
+        log.info("启动队列写入服务消费者线程...");
         writerExecutor.submit(() -> {
-            log.debug("队列写入服务消费者线程已启动。");
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    WriteTask<?> task = writeQueue.take();
+            try {
+                log.info("队列写入服务消费者线程已启动。");
+                while (!Thread.currentThread().isInterrupted()) {
+                    try {
+                        WriteTask<?> task = writeQueue.take();
 
-                    if (task == POISON_PILL) {
-                        log.debug("毒丸接收。消费者线程正在优雅地停止。");
-                        drainQueueOnShutdown();
+                        if (task == POISON_PILL) {
+                            log.debug("毒丸接收。消费者线程正在优雅地停止。");
+                            drainQueueOnShutdown();
+                            break;
+                        }
+
+                        processTask(task);
+
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                         break;
                     }
-
-                    processTask(task);
-
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
                 }
+            } catch (Throwable t) {
+                log.error("队列写入服务消费者线程遇到致命错误并终止。", t);
+            } finally {
+                log.info("队列写入服务消费者线程已终止。");
             }
         });
     }
 
     private void processTask(WriteTask<?> task) {
         try {
-            log.debug("处理操作任务 {}, 优先级: {}", task.operation.getClass().getName(), task.priority);
+            log.info("处理操作任务 {}, 优先级: {}", task.operation.getClass().getName(), task.priority);
             Object result = dataManipulationService.execute(task.operation);
             completeFuture(task.future, result);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.error("处理操作写入任务时出错 {}", task.operation.getClass().getName(), e);
             if (task.future != null) {
                 task.future.completeExceptionally(e);

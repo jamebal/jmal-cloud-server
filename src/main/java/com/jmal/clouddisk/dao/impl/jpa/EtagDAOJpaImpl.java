@@ -41,6 +41,7 @@ public class EtagDAOJpaImpl implements IEtagDAO {
                 log.warn("没有需要设置 ETag 的文件夹");
             }
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             throw new CommonException(e.getMessage());
         }
     }

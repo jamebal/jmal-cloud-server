@@ -34,7 +34,7 @@ spring:
       prod_sqlite: prod, sqlite
       prod_mysql: prod, mysql
       prod_pgsql: prod, pgsql
-    active: default
+    active: dev_sqlite
   servlet:
     multipart:
       max-file-size: 50MB
@@ -54,6 +54,10 @@ spring:
       ddl-auto: none
     show-sql: false
     open-in-view: false
+    properties:
+      hibernate:
+        bytecode:
+          provider: none
   flyway:
     enabled: true
     locations:
