@@ -5,13 +5,14 @@ import com.jmal.clouddisk.dao.IUserDAO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class CommonUserService {
 
-    private final IUserDAO userDAO;
+    private final @Lazy IUserDAO userDAO;
 
     public String getUserNameById(String userId) {
         if (!CharSequenceUtil.isBlank(userId)) {

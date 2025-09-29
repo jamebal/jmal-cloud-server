@@ -1,12 +1,12 @@
-spring:
-  datasource:
-    url: "dummy"
-  data:
-    mongodb:
-      uri: "dummy"
-jmalcloud:
-  datasource:
-    jpa-enabled: true
-    mongo-enabled: true
-    migration: true
-    type: mongodb
+#spring:
+#  datasource:
+#    url: "dummy"
+#  data:
+#    mongodb:
+#      uri: "dummy"
+#jmalcloud:
+#  datasource:
+#    jpa-enabled: true
+#    mongo-enabled: true
+#    migration: true
+#    type: mongodb

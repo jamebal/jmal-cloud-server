@@ -16,6 +16,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -41,13 +42,13 @@ public class RoleService {
 
     public static final String ROLES = "roles";
 
-    private final IRoleDAO roleDAO;
+    private final @Lazy IRoleDAO roleDAO;
 
-    private final IUserDAO userDAO;
+    private final @Lazy IUserDAO userDAO;
 
     private final DataSourceProperties dataSourceProperties;
 
-    private final CommonUserService commonUserService;
+    private final @Lazy CommonUserService commonUserService;
 
     private final MenuService menuService;
 
@@ -233,9 +234,6 @@ public class RoleService {
      * 初始化角色数据
      */
     public void initRoles() {
-        if (dataSourceProperties.getMigration()) {
-            return;
-        }
         TimeInterval timeInterval = new TimeInterval();
         List<RoleDO> roleDOList = getRoleDOListByConfigJSON();
         if (roleDOList.isEmpty()) return;

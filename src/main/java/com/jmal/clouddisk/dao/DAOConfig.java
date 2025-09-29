@@ -5,12 +5,14 @@ import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.dao.impl.jpa.*;
 import com.jmal.clouddisk.dao.impl.mongodb.*;
 import com.jmal.clouddisk.dao.repository.jpa.*;
-import com.jmal.clouddisk.dao.repository.mongo.FileDocumentRepository;
 import com.jmal.clouddisk.dao.write.IWriteService;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +22,10 @@ import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 @Configuration
+@AutoConfigureAfter({
+        HibernateJpaAutoConfiguration.class,
+        JpaRepositoriesAutoConfiguration.class
+})
 public class DAOConfig {
 
     private final Environment environment;
@@ -71,12 +77,10 @@ public class DAOConfig {
                     writeService);
         } else {
             MongoTemplate mongoTemplate = applicationContext.getBean(MongoTemplate.class);
-            FileDocumentRepository fileDocumentRepository = applicationContext.getBean(FileDocumentRepository.class);
             IUserService userService = applicationContext.getBean(IUserService.class);
             CommonFileService commonFileService = applicationContext.getBean(CommonFileService.class);
 
             return new ArticleDAOImpl(mongoTemplate,
-                    fileDocumentRepository,
                     userService,
                     commonFileService,
                     fileProperties,

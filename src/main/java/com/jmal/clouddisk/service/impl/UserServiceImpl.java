@@ -29,6 +29,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
@@ -49,11 +50,11 @@ public class UserServiceImpl implements IUserService {
 
     public static final String COLLECTION_NAME = "user";
 
-    private final IUserDAO userDAO;
+    private final @Lazy IUserDAO userDAO;
 
     private final IWebsiteSettingDAO websiteSettingDAO;
 
-    private final CommonUserService commonUserService;
+    private final @Lazy CommonUserService commonUserService;
 
     private final UserFileService userFileService;
 

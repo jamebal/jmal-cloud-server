@@ -451,37 +451,17 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <!-- AOT 处理需要 spring-boot-maven-plugin 的执行 -->
-                <executions>
-                    <execution>
-                        <id>process-aot</id>
-                        <goals>
-                            <goal>process-aot</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <aot>
-                        <properties>
-                            <jmalcloud.datasource.mongoEnabled>true</jmalcloud.datasource.mongoEnabled>
-                            <jmalcloud.datasource.jpaEnabled>true</jmalcloud.datasource.jpaEnabled>
-                            <jmalcloud.datasource.migration>true</jmalcloud.datasource.migration>
-                            <jmalcloud.datasource.type>mongodb</jmalcloud.datasource.type>
-                            <spring.datasource.url>dummy</spring.datasource.url>
-                            <spring.data.mongodb.uri>dummy</spring.data.mongodb.uri>
-                        </properties>
-                    </aot>
-                </configuration>
-            </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.hibernate</groupId>
+                            <artifactId>hibernate-jpamodelgen</artifactId>
+                            <version>6.6.29.Final</version>
+                        </path>
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
@@ -501,6 +481,20 @@
                 </configuration>
             </plugin>
 
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <!-- AOT 处理需要 spring-boot-maven-plugin 的执行 -->
+                <executions>
+                    <execution>
+                        <id>process-aot</id>
+                        <goals>
+                            <goal>process-aot</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 
@@ -509,6 +503,20 @@
             <id>native</id>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <!-- AOT 处理需要 spring-boot-maven-plugin 的执行 -->
+                        <executions>
+                            <execution>
+                                <id>process-aot</id>
+                                <goals>
+                                    <goal>process-aot</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>

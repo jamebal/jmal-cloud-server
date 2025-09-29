@@ -31,9 +31,6 @@
       "type": "[Lcom.fasterxml.jackson.databind.ser.Serializers;"
     },
     {
-      "type": "[Lcom.jmal.clouddisk.model.rbac.RoleDTO;"
-    },
-    {
       "type": "[Ljava.lang.Class;"
     },
     {
@@ -1544,6 +1541,15 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.config.LocalDateTimeFromTimestampDeserializer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.config.MyTomcatServletWebServerFactoryCustomizer",
       "allDeclaredFields": true,
       "methods": [
@@ -1715,6 +1721,15 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.config.aot.AotBuildTimePropertiesInitializer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.config.hints.JpaRuntimeHints",
       "allDeclaredFields": true
     },
@@ -1760,7 +1775,15 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.config.jpa.AuditableEntity_"
+      "type": "com.jmal.clouddisk.config.jpa.AuditableEntity_",
+      "fields": [
+        {
+          "name": "class_"
+        },
+        {
+          "name": "id"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.config.jpa.AuditablePerformanceEntity",
@@ -1773,7 +1796,18 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.config.jpa.AuditablePerformanceEntity_"
+      "type": "com.jmal.clouddisk.config.jpa.AuditablePerformanceEntity_",
+      "fields": [
+        {
+          "name": "class_"
+        },
+        {
+          "name": "primaryId"
+        },
+        {
+          "name": "publicId"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.config.jpa.AuditableTimeEntity",
@@ -1816,16 +1850,26 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.config.jpa.AuditableTimeEntity_"
+      "type": "com.jmal.clouddisk.config.jpa.AuditableTimeEntity_",
+      "fields": [
+        {
+          "name": "class_"
+        },
+        {
+          "name": "createdTime"
+        },
+        {
+          "name": "id"
+        },
+        {
+          "name": "updatedTime"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.config.jpa.DataSourceProperties",
       "allDeclaredFields": true,
       "methods": [
-        {
-          "name": "getMigration",
-          "parameterTypes": []
-        },
         {
           "name": "getType",
           "parameterTypes": []
@@ -1929,7 +1973,13 @@
     },
     {
       "type": "com.jmal.clouddisk.config.jpa.JpaDataConfig",
-      "allDeclaredFields": true
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "jpaIsActiveSentinel",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.config.jpa.JpaDataConfig$$SpringCGLIB$$0",
@@ -1948,6 +1998,28 @@
           "name": "CGLIB$SET_STATIC_CALLBACKS",
           "parameterTypes": [
             "org.springframework.cglib.proxy.Callback[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.config.jpa.JpaDataConfig$$SpringCGLIB$$FastClass$$0",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.config.jpa.JpaDataConfig$$SpringCGLIB$$FastClass$$1",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class"
           ]
         }
       ]
@@ -2036,7 +2108,13 @@
     },
     {
       "type": "com.jmal.clouddisk.config.mongodb.MongoDataConfig",
-      "allDeclaredFields": true
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "mongoIsActiveSentinel",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.config.mongodb.MongoDataConfig$$SpringCGLIB$$0",
@@ -2055,6 +2133,28 @@
           "name": "CGLIB$SET_STATIC_CALLBACKS",
           "parameterTypes": [
             "org.springframework.cglib.proxy.Callback[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.config.mongodb.MongoDataConfig$$SpringCGLIB$$FastClass$$0",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.config.mongodb.MongoDataConfig$$SpringCGLIB$$FastClass$$1",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class"
           ]
         }
       ]
@@ -3639,6 +3739,18 @@
           "parameterTypes": []
         },
         {
+          "name": "existsById",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "saveAll",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        },
+        {
           "name": "treeMenu",
           "parameterTypes": [
             "com.jmal.clouddisk.model.query.QueryMenuDTO"
@@ -3740,6 +3852,12 @@
       "allDeclaredFields": true,
       "methods": [
         {
+          "name": "existsById",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
           "name": "findAllByIdIn",
           "parameterTypes": [
             "java.util.List"
@@ -3749,6 +3867,12 @@
           "name": "findByCode",
           "parameterTypes": [
             "java.lang.String"
+          ]
+        },
+        {
+          "name": "saveAll",
+          "parameterTypes": [
+            "java.util.List"
           ]
         }
       ]
@@ -6787,7 +6911,42 @@
       "type": "com.jmal.clouddisk.media.TranscodeConfig$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.media.TranscodeConfig_"
+      "type": "com.jmal.clouddisk.media.TranscodeConfig_",
+      "fields": [
+        {
+          "name": "bitrate"
+        },
+        {
+          "name": "bitrateCond"
+        },
+        {
+          "name": "class_"
+        },
+        {
+          "name": "enable"
+        },
+        {
+          "name": "frameRate"
+        },
+        {
+          "name": "frameRateCond"
+        },
+        {
+          "name": "height"
+        },
+        {
+          "name": "heightCond"
+        },
+        {
+          "name": "isReTranscode"
+        },
+        {
+          "name": "maxThreads"
+        },
+        {
+          "name": "vttThumbnailCount"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.media.TranscodeStatus"
@@ -6942,7 +7101,33 @@
       "type": "com.jmal.clouddisk.model.CategoryDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.CategoryDO_"
+      "type": "com.jmal.clouddisk.model.CategoryDO_",
+      "fields": [
+        {
+          "name": "categoryBackground"
+        },
+        {
+          "name": "class_"
+        },
+        {
+          "name": "desc"
+        },
+        {
+          "name": "isDefault"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "parentCategoryId"
+        },
+        {
+          "name": "slug"
+        },
+        {
+          "name": "userId"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.CategoryDTO"
@@ -6973,7 +7158,27 @@
       "type": "com.jmal.clouddisk.model.DirectLink$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.DirectLink_"
+      "type": "com.jmal.clouddisk.model.DirectLink_",
+      "fields": [
+        {
+          "name": "class_"
+        },
+        {
+          "name": "downloads"
+        },
+        {
+          "name": "fileId"
+        },
+        {
+          "name": "mark"
+        },
+        {
+          "name": "updateDate"
+        },
+        {
+          "name": "userId"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.EditTagDTO"
@@ -6996,7 +7201,24 @@
       "type": "com.jmal.clouddisk.model.HeartwingsDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.HeartwingsDO_"
+      "type": "com.jmal.clouddisk.model.HeartwingsDO_",
+      "fields": [
+        {
+          "name": "class_"
+        },
+        {
+          "name": "createTime"
+        },
+        {
+          "name": "creator"
+        },
+        {
+          "name": "heartwings"
+        },
+        {
+          "name": "username"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.LdapConfigDO",
@@ -7024,7 +7246,36 @@
       "type": "com.jmal.clouddisk.model.LdapConfigDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.LdapConfigDO_"
+      "type": "com.jmal.clouddisk.model.LdapConfigDO_",
+      "fields": [
+        {
+          "name": "baseDN"
+        },
+        {
+          "name": "class_"
+        },
+        {
+          "name": "defaultRoleList"
+        },
+        {
+          "name": "enable"
+        },
+        {
+          "name": "ldapServer"
+        },
+        {
+          "name": "loginName"
+        },
+        {
+          "name": "password"
+        },
+        {
+          "name": "userDN"
+        },
+        {
+          "name": "userId"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.LdapConfigDTO"
@@ -7094,7 +7345,66 @@
       "type": "com.jmal.clouddisk.model.LogOperationDTO"
     },
     {
-      "type": "com.jmal.clouddisk.model.LogOperation_"
+      "type": "com.jmal.clouddisk.model.LogOperation_",
+      "fields": [
+        {
+          "name": "browser"
+        },
+        {
+          "name": "class_"
+        },
+        {
+          "name": "createTime"
+        },
+        {
+          "name": "deviceModel"
+        },
+        {
+          "name": "fileUserId"
+        },
+        {
+          "name": "filepath"
+        },
+        {
+          "name": "ip"
+        },
+        {
+          "name": "ipInfo"
+        },
+        {
+          "name": "method"
+        },
+        {
+          "name": "operatingSystem"
+        },
+        {
+          "name": "operationFun"
+        },
+        {
+          "name": "operationModule"
+        },
+        {
+          "name": "remarks"
+        },
+        {
+          "name": "showName"
+        },
+        {
+          "name": "status"
+        },
+        {
+          "name": "time"
+        },
+        {
+          "name": "type"
+        },
+        {
+          "name": "url"
+        },
+        {
+          "name": "username"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.MarkdownBaseFile",
@@ -7316,7 +7626,48 @@
       "type": "com.jmal.clouddisk.model.ShareDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.ShareDO_"
+      "type": "com.jmal.clouddisk.model.ShareDO_",
+      "fields": [
+        {
+          "name": "class_"
+        },
+        {
+          "name": "contentType"
+        },
+        {
+          "name": "createDate"
+        },
+        {
+          "name": "expireDate"
+        },
+        {
+          "name": "extractionCode"
+        },
+        {
+          "name": "fatherShareId"
+        },
+        {
+          "name": "fileId"
+        },
+        {
+          "name": "fileName"
+        },
+        {
+          "name": "isFolder"
+        },
+        {
+          "name": "isPrivacy"
+        },
+        {
+          "name": "operationPermissionList"
+        },
+        {
+          "name": "shortId"
+        },
+        {
+          "name": "userId"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.ShareVO",
@@ -7401,7 +7752,30 @@
       "type": "com.jmal.clouddisk.model.TagDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.TagDO_"
+      "type": "com.jmal.clouddisk.model.TagDO_",
+      "fields": [
+        {
+          "name": "class_"
+        },
+        {
+          "name": "color"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "slug"
+        },
+        {
+          "name": "sort"
+        },
+        {
+          "name": "tagBackground"
+        },
+        {
+          "name": "userId"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.TagDTO"
@@ -7544,7 +7918,27 @@
       "type": "com.jmal.clouddisk.model.UserAccessTokenDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_"
+      "type": "com.jmal.clouddisk.model.UserAccessTokenDO_",
+      "fields": [
+        {
+          "name": "accessToken"
+        },
+        {
+          "name": "class_"
+        },
+        {
+          "name": "createTime"
+        },
+        {
+          "name": "lastActiveTime"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "username"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.UserAccessTokenDTO",
@@ -7784,7 +8178,75 @@
       "type": "com.jmal.clouddisk.model.WebsiteSettingDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.WebsiteSettingDO_"
+      "type": "com.jmal.clouddisk.model.WebsiteSettingDO_",
+      "fields": [
+        {
+          "name": "alonePages"
+        },
+        {
+          "name": "archiveBackground"
+        },
+        {
+          "name": "backgroundDescSite"
+        },
+        {
+          "name": "backgroundSite"
+        },
+        {
+          "name": "backgroundTextSite"
+        },
+        {
+          "name": "categoryBackground"
+        },
+        {
+          "name": "class_"
+        },
+        {
+          "name": "copyright"
+        },
+        {
+          "name": "footerHtml"
+        },
+        {
+          "name": "iframe"
+        },
+        {
+          "name": "mfaForceEnable"
+        },
+        {
+          "name": "netdiskLogo"
+        },
+        {
+          "name": "netdiskName"
+        },
+        {
+          "name": "networkRecordNumber"
+        },
+        {
+          "name": "networkRecordNumberStr"
+        },
+        {
+          "name": "operatingButtons"
+        },
+        {
+          "name": "recordPermissionNum"
+        },
+        {
+          "name": "siteIco"
+        },
+        {
+          "name": "siteLogo"
+        },
+        {
+          "name": "siteName"
+        },
+        {
+          "name": "siteUrl"
+        },
+        {
+          "name": "tagBackground"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.WebsiteSettingDTO",
@@ -8063,7 +8525,39 @@
       "type": "com.jmal.clouddisk.model.file.ArticleDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.file.ArticleDO_"
+      "type": "com.jmal.clouddisk.model.file.ArticleDO_",
+      "fields": [
+        {
+          "name": "alonePage"
+        },
+        {
+          "name": "categoryIds"
+        },
+        {
+          "name": "class_"
+        },
+        {
+          "name": "cover"
+        },
+        {
+          "name": "fileMetadata"
+        },
+        {
+          "name": "hasDraft"
+        },
+        {
+          "name": "pageSort"
+        },
+        {
+          "name": "release"
+        },
+        {
+          "name": "slug"
+        },
+        {
+          "name": "tagIds"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.file.ExifInfo",
@@ -8295,7 +8789,39 @@
       "type": "com.jmal.clouddisk.model.file.FileHistoryDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.file.FileHistoryDO_"
+      "type": "com.jmal.clouddisk.model.file.FileHistoryDO_",
+      "fields": [
+        {
+          "name": "charset"
+        },
+        {
+          "name": "class_"
+        },
+        {
+          "name": "compression"
+        },
+        {
+          "name": "fileId"
+        },
+        {
+          "name": "filename"
+        },
+        {
+          "name": "filepath"
+        },
+        {
+          "name": "operator"
+        },
+        {
+          "name": "size"
+        },
+        {
+          "name": "time"
+        },
+        {
+          "name": "uploadDate"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.file.FileHistoryDTO"
@@ -8443,7 +8969,84 @@
       "type": "com.jmal.clouddisk.model.file.FileMetadataDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.file.FileMetadataDO_"
+      "type": "com.jmal.clouddisk.model.file.FileMetadataDO_",
+      "fields": [
+        {
+          "name": "class_"
+        },
+        {
+          "name": "contentType"
+        },
+        {
+          "name": "delTag"
+        },
+        {
+          "name": "etag"
+        },
+        {
+          "name": "etagUpdateFailedAttempts"
+        },
+        {
+          "name": "hasContent"
+        },
+        {
+          "name": "hasContentText"
+        },
+        {
+          "name": "hasHtml"
+        },
+        {
+          "name": "isFavorite"
+        },
+        {
+          "name": "isFolder"
+        },
+        {
+          "name": "lastEtagUpdateError"
+        },
+        {
+          "name": "lastEtagUpdateRequestAt"
+        },
+        {
+          "name": "luceneIndex"
+        },
+        {
+          "name": "md5"
+        },
+        {
+          "name": "mountFileId"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "needsEtagUpdate"
+        },
+        {
+          "name": "ossFolder"
+        },
+        {
+          "name": "path"
+        },
+        {
+          "name": "props"
+        },
+        {
+          "name": "size"
+        },
+        {
+          "name": "suffix"
+        },
+        {
+          "name": "updateDate"
+        },
+        {
+          "name": "uploadDate"
+        },
+        {
+          "name": "userId"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.file.FilePropsDO",
@@ -8468,7 +9071,36 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.file.FilePropsDO_"
+      "type": "com.jmal.clouddisk.model.file.FilePropsDO_",
+      "fields": [
+        {
+          "name": "class_"
+        },
+        {
+          "name": "props"
+        },
+        {
+          "name": "remark"
+        },
+        {
+          "name": "shareBase"
+        },
+        {
+          "name": "shareId"
+        },
+        {
+          "name": "shareProps"
+        },
+        {
+          "name": "subShare"
+        },
+        {
+          "name": "tags"
+        },
+        {
+          "name": "transcodeVideo"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.file.OtherProperties",
@@ -8619,7 +9251,54 @@
       "type": "com.jmal.clouddisk.model.file.TrashEntityDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.file.TrashEntityDO_"
+      "type": "com.jmal.clouddisk.model.file.TrashEntityDO_",
+      "fields": [
+        {
+          "name": "class_"
+        },
+        {
+          "name": "contentType"
+        },
+        {
+          "name": "hasContent"
+        },
+        {
+          "name": "hidden"
+        },
+        {
+          "name": "isFolder"
+        },
+        {
+          "name": "md5"
+        },
+        {
+          "name": "move"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "path"
+        },
+        {
+          "name": "props"
+        },
+        {
+          "name": "size"
+        },
+        {
+          "name": "suffix"
+        },
+        {
+          "name": "updateDate"
+        },
+        {
+          "name": "uploadDate"
+        },
+        {
+          "name": "userId"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.file.dto.FileBaseAllDTO"
@@ -8790,7 +9469,69 @@
       "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO_"
+      "type": "com.jmal.clouddisk.model.query.SearchOptionHistoryDO_",
+      "fields": [
+        {
+          "name": "class_"
+        },
+        {
+          "name": "currentDirectory"
+        },
+        {
+          "name": "exactSearch"
+        },
+        {
+          "name": "folder"
+        },
+        {
+          "name": "includeFileContent"
+        },
+        {
+          "name": "includeFileName"
+        },
+        {
+          "name": "includeTagName"
+        },
+        {
+          "name": "isFavorite"
+        },
+        {
+          "name": "isFolder"
+        },
+        {
+          "name": "keyword"
+        },
+        {
+          "name": "modifyEnd"
+        },
+        {
+          "name": "modifyStart"
+        },
+        {
+          "name": "searchMount"
+        },
+        {
+          "name": "searchOverall"
+        },
+        {
+          "name": "searchTime"
+        },
+        {
+          "name": "sizeMax"
+        },
+        {
+          "name": "sizeMin"
+        },
+        {
+          "name": "tagId"
+        },
+        {
+          "name": "type"
+        },
+        {
+          "name": "userId"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.query.package-info"
@@ -8812,7 +9553,15 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.ConsumerBase_"
+      "type": "com.jmal.clouddisk.model.rbac.ConsumerBase_",
+      "fields": [
+        {
+          "name": "class_"
+        },
+        {
+          "name": "password"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.rbac.ConsumerDO",
@@ -8931,10 +9680,51 @@
       "type": "com.jmal.clouddisk.model.rbac.ConsumerDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_"
+      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_",
+      "fields": [
+        {
+          "name": "avatar"
+        },
+        {
+          "name": "class_"
+        },
+        {
+          "name": "creator"
+        },
+        {
+          "name": "introduction"
+        },
+        {
+          "name": "mfaEnabled"
+        },
+        {
+          "name": "mfaSecret"
+        },
+        {
+          "name": "quota"
+        },
+        {
+          "name": "roles"
+        },
+        {
+          "name": "showName"
+        },
+        {
+          "name": "slogan"
+        },
+        {
+          "name": "takeUpSpace"
+        },
+        {
+          "name": "username"
+        },
+        {
+          "name": "webpDisabled"
+        }
+      ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_q4k2j6",
+      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_sb63q7",
       "methods": [
         {
           "name": "<init>",
@@ -9106,7 +9896,79 @@
     },
     {
       "type": "com.jmal.clouddisk.model.rbac.MenuDO",
-      "allDeclaredFields": true
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setAuthority",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setComponent",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setCreateTime",
+          "parameterTypes": [
+            "java.time.LocalDateTime"
+          ]
+        },
+        {
+          "name": "setHide",
+          "parameterTypes": [
+            "java.lang.Boolean"
+          ]
+        },
+        {
+          "name": "setIcon",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setMenuType",
+          "parameterTypes": [
+            "java.lang.Integer"
+          ]
+        },
+        {
+          "name": "setName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setParentId",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setPath",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setSortNumber",
+          "parameterTypes": [
+            "java.lang.Integer"
+          ]
+        },
+        {
+          "name": "setUpdateTime",
+          "parameterTypes": [
+            "java.time.LocalDateTime"
+          ]
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.rbac.MenuDO$HibernateAccessOptimizer5authority5component5createTime5hide5icon5menuType5name5parentId5path5sortNumber5updateTime",
@@ -9130,14 +9992,173 @@
       "type": "com.jmal.clouddisk.model.rbac.MenuDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.MenuDO_"
+      "type": "com.jmal.clouddisk.model.rbac.MenuDO_",
+      "fields": [
+        {
+          "name": "authority"
+        },
+        {
+          "name": "class_"
+        },
+        {
+          "name": "component"
+        },
+        {
+          "name": "createTime"
+        },
+        {
+          "name": "hide"
+        },
+        {
+          "name": "icon"
+        },
+        {
+          "name": "menuType"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "parentId"
+        },
+        {
+          "name": "path"
+        },
+        {
+          "name": "sortNumber"
+        },
+        {
+          "name": "updateTime"
+        }
+      ]
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.MenuDTO"
+      "type": "com.jmal.clouddisk.model.rbac.MenuDTO",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "getAuthority",
+          "parameterTypes": []
+        },
+        {
+          "name": "getChecked",
+          "parameterTypes": []
+        },
+        {
+          "name": "getChildren",
+          "parameterTypes": []
+        },
+        {
+          "name": "getComponent",
+          "parameterTypes": []
+        },
+        {
+          "name": "getCreateTime",
+          "parameterTypes": []
+        },
+        {
+          "name": "getHide",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIcon",
+          "parameterTypes": []
+        },
+        {
+          "name": "getId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getMenuType",
+          "parameterTypes": []
+        },
+        {
+          "name": "getName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getParentId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getPath",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSortNumber",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUpdateTime",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.rbac.RoleDO",
-      "allDeclaredFields": true
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "getCode",
+          "parameterTypes": []
+        },
+        {
+          "name": "getCreateTime",
+          "parameterTypes": []
+        },
+        {
+          "name": "getMenuIds",
+          "parameterTypes": []
+        },
+        {
+          "name": "getName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getRemarks",
+          "parameterTypes": []
+        },
+        {
+          "name": "setCode",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setCreateTime",
+          "parameterTypes": [
+            "java.time.LocalDateTime"
+          ]
+        },
+        {
+          "name": "setMenuIds",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        },
+        {
+          "name": "setName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setRemarks",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setUpdateTime",
+          "parameterTypes": [
+            "java.time.LocalDateTime"
+          ]
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.rbac.RoleDO$HibernateAccessOptimizer5code5createTime5menuIds5name5remarks5updateTime",
@@ -9161,11 +10182,96 @@
       "type": "com.jmal.clouddisk.model.rbac.RoleDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.RoleDO_"
+      "type": "com.jmal.clouddisk.model.rbac.RoleDO_",
+      "fields": [
+        {
+          "name": "class_"
+        },
+        {
+          "name": "code"
+        },
+        {
+          "name": "createTime"
+        },
+        {
+          "name": "menuIds"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "remarks"
+        },
+        {
+          "name": "updateTime"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.rbac.RoleDTO",
-      "allDeclaredFields": true
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "getCode",
+          "parameterTypes": []
+        },
+        {
+          "name": "getCreateTime",
+          "parameterTypes": []
+        },
+        {
+          "name": "getId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getMenuIds",
+          "parameterTypes": []
+        },
+        {
+          "name": "getName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getRemarks",
+          "parameterTypes": []
+        },
+        {
+          "name": "setCode",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setCreateTime",
+          "parameterTypes": [
+            "java.time.LocalDateTime"
+          ]
+        },
+        {
+          "name": "setId",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setMenuIds",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        },
+        {
+          "name": "setName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setRemarks",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.model.rbac.UserLoginContext"
@@ -9211,7 +10317,21 @@
       "type": "com.jmal.clouddisk.ocr.OcrConfig$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.ocr.OcrConfig_"
+      "type": "com.jmal.clouddisk.ocr.OcrConfig_",
+      "fields": [
+        {
+          "name": "class_"
+        },
+        {
+          "name": "enable"
+        },
+        {
+          "name": "maxTasks"
+        },
+        {
+          "name": "ocrEngine"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.ocr.OcrLiteOnnxService",
@@ -9416,7 +10536,27 @@
       "type": "com.jmal.clouddisk.office.model.OfficeConfigDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.office.model.OfficeConfigDO_"
+      "type": "com.jmal.clouddisk.office.model.OfficeConfigDO_",
+      "fields": [
+        {
+          "name": "callbackServer"
+        },
+        {
+          "name": "class_"
+        },
+        {
+          "name": "documentServer"
+        },
+        {
+          "name": "format"
+        },
+        {
+          "name": "secret"
+        },
+        {
+          "name": "tokenEnabled"
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.office.model.OfficeConfigDTO",
@@ -9587,10 +10727,39 @@
       "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO$HibernateProxy"
     },
     {
-      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_"
+      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_",
+      "fields": [
+        {
+          "name": "accessKey"
+        },
+        {
+          "name": "bucket"
+        },
+        {
+          "name": "class_"
+        },
+        {
+          "name": "endpoint"
+        },
+        {
+          "name": "folderName"
+        },
+        {
+          "name": "platform"
+        },
+        {
+          "name": "region"
+        },
+        {
+          "name": "secretKey"
+        },
+        {
+          "name": "userId"
+        }
+      ]
     },
     {
-      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Accessor_ke8e4i",
+      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Accessor_mepxx1",
       "methods": [
         {
           "name": "<init>",
@@ -10243,8 +11412,8 @@
         {
           "name": "<init>",
           "parameterTypes": [
-            "com.jmal.clouddisk.service.impl.UserServiceImpl",
-            "com.jmal.clouddisk.service.impl.RoleService",
+            "org.springframework.beans.factory.ObjectProvider",
+            "org.springframework.beans.factory.ObjectProvider",
             "com.jmal.clouddisk.config.FileProperties"
           ]
         }
@@ -10272,7 +11441,7 @@
           "name": "<init>",
           "parameterTypes": [
             "com.jmal.clouddisk.config.FileProperties",
-            "com.jmal.clouddisk.service.IFileService"
+            "org.springframework.beans.factory.ObjectProvider"
           ]
         }
       ]
@@ -11143,9 +12312,6 @@
       "type": "jakarta.mail.internet.MimeMessage"
     },
     {
-      "type": "jakarta.persistence.Cache"
-    },
-    {
       "type": "jakarta.persistence.CacheRetrieveMode"
     },
     {
@@ -11311,6 +12477,9 @@
     },
     {
       "type": "jakarta.persistence.metamodel.Metamodel"
+    },
+    {
+      "type": "jakarta.persistence.metamodel.StaticMetamodel"
     },
     {
       "type": "jakarta.persistence.spi.PersistenceProvider"
@@ -11558,15 +12727,7 @@
       "type": "java.io.FileNotFoundException"
     },
     {
-      "type": "java.io.IOException",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
+      "type": "java.io.IOException"
     },
     {
       "type": "java.io.InputStream",
@@ -11598,6 +12759,9 @@
     },
     {
       "type": "java.io.Writer"
+    },
+    {
+      "type": "java.lang.AbstractStringBuilder"
     },
     {
       "type": "java.lang.Appendable"
@@ -11785,6 +12949,9 @@
       ]
     },
     {
+      "type": "java.lang.StringBuffer"
+    },
+    {
       "type": "java.lang.StringBuilder"
     },
     {
@@ -11875,6 +13042,9 @@
     },
     {
       "type": "java.lang.constant.ConstantDesc"
+    },
+    {
+      "type": "java.lang.foreign.MemorySegment"
     },
     {
       "type": "java.lang.invoke.MethodHandle"
@@ -12103,7 +13273,13 @@
       "type": "java.nio.channels.SocketChannel"
     },
     {
+      "type": "java.nio.charset.CharacterCodingException"
+    },
+    {
       "type": "java.nio.charset.Charset"
+    },
+    {
+      "type": "java.nio.charset.CharsetDecoder"
     },
     {
       "type": "java.nio.file.FileVisitResult"
@@ -12350,6 +13526,9 @@
       "type": "java.util.Spliterator"
     },
     {
+      "type": "java.util.Spliterator$OfInt"
+    },
+    {
       "type": "java.util.TimeZone"
     },
     {
@@ -12438,6 +13617,9 @@
     },
     {
       "type": "java.util.stream.Collector"
+    },
+    {
+      "type": "java.util.stream.IntStream"
     },
     {
       "type": "java.util.stream.Stream"
@@ -12542,6 +13724,9 @@
       "type": "jdk.internal.misc.Unsafe"
     },
     {
+      "type": "jdk.internal.vm.annotation.ForceInline"
+    },
+    {
       "type": "jdk.internal.vm.annotation.IntrinsicCandidate"
     },
     {
@@ -12563,6 +13748,9 @@
     },
     {
       "type": "kotlin.Boolean"
+    },
+    {
+      "type": "kotlin.Comparable"
     },
     {
       "type": "kotlin.Double"
@@ -12687,6 +13875,9 @@
     {
       "type": "kotlin.reflect.jvm.internal.impl.resolve.scopes.DescriptorKindFilter",
       "allPublicFields": true
+    },
+    {
+      "type": "kotlin.reflect.jvm.internal.impl.serialization.deserialization.builtins.BuiltInsLoaderImpl"
     },
     {
       "type": "kotlinx.coroutines.flow.Flow"
@@ -17421,6 +18612,9 @@
       "type": "org.springframework.boot.autoconfigure.data.couchbase.CouchbaseDataAutoConfiguration"
     },
     {
+      "type": "org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration"
+    },
+    {
       "type": "org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration$JpaRepositoriesImportSelector",
       "methods": [
         {
@@ -21916,6 +23110,12 @@
           "parameterTypes": []
         },
         {
+          "name": "existsById",
+          "parameterTypes": [
+            "java.lang.Object"
+          ]
+        },
+        {
           "name": "findAll",
           "parameterTypes": []
         },
@@ -25522,6 +26722,9 @@
       "glob": "META-INF/services/javax.xml.stream.XMLOutputFactory"
     },
     {
+      "glob": "META-INF/services/kotlin.reflect.jvm.internal.impl.builtins.BuiltInsLoader"
+    },
+    {
       "glob": "META-INF/services/kotlin.reflect.jvm.internal.impl.resolve.ExternalOverridabilityCondition"
     },
     {
@@ -25759,10 +26962,19 @@
       "glob": "com/jmal/clouddisk/config/jpa/AuditableEntity.class"
     },
     {
+      "glob": "com/jmal/clouddisk/config/jpa/AuditableEntity_.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/config/jpa/AuditablePerformanceEntity.class"
     },
     {
+      "glob": "com/jmal/clouddisk/config/jpa/AuditablePerformanceEntity_.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/config/jpa/AuditableTimeEntity.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/config/jpa/AuditableTimeEntity_.class"
     },
     {
       "glob": "com/jmal/clouddisk/config/jpa/DataSourceProperties.class"
@@ -26488,6 +27700,9 @@
       "glob": "com/jmal/clouddisk/model/rbac/ConsumerBase.class"
     },
     {
+      "glob": "com/jmal/clouddisk/model/rbac/ConsumerBase_.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/model/rbac/ConsumerDO.class"
     },
     {
@@ -26755,10 +27970,16 @@
       "glob": "db/callback"
     },
     {
+      "glob": "db/menu.json"
+    },
+    {
       "glob": "db/migration/sqlite"
     },
     {
       "glob": "db/migration/sqlite/V1__Initial_Schema.sql"
+    },
+    {
+      "glob": "db/role.json"
     },
     {
       "glob": "file.yml"
@@ -26771,6 +27992,12 @@
     },
     {
       "glob": "i18n/messages.properties"
+    },
+    {
+      "glob": "i18n/messages_en.properties"
+    },
+    {
+      "glob": "i18n/messages_en_US.properties"
     },
     {
       "glob": "io/methvin/watcher/DirectoryChangeListener.class"
@@ -28892,6 +30119,12 @@
     }
   ],
   "bundles": [
+    {
+      "name": "i18n/messages",
+      "locales": [
+        "en-US"
+      ]
+    },
     {
       "name": "jakarta.servlet.LocalStrings",
       "locales": [

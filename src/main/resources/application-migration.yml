@@ -1,8 +1,3 @@
-spring:
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.ldap.LdapAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.ldap.LdapRepositoriesAutoConfiguration
 logging:
   level:
     root: info

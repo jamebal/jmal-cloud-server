@@ -24,8 +24,13 @@ tess4j:
 spring:
   application:
     name: jmalcloud
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.ldap.LdapAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.ldap.LdapRepositoriesAutoConfiguration
   profiles:
     group:
+      native: native
       default: dev, mongodb
       dev_sqlite: dev, sqlite
       dev_mysql: dev, mysql
@@ -37,7 +42,6 @@ spring:
       prod_sqlite: prod, sqlite
       prod_mysql: prod, mysql
       prod_pgsql: prod, pgsql
-      native: native
     active: native
   servlet:
     multipart:
@@ -58,6 +62,13 @@ spring:
       ddl-auto: none
     show-sql: false
     open-in-view: false
+    properties:
+      hibernate:
+        enhancer:
+          enableAssociationManagement: true
+          enableDirtyTracking: true
+          enableLazyInitialization: true
+
   flyway:
     enabled: true
     locations:

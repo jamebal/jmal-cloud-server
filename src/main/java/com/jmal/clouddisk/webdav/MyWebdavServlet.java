@@ -20,6 +20,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.apache.catalina.WebResource;
 import org.apache.tomcat.util.http.parser.Ranges;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 
@@ -43,7 +44,7 @@ public class MyWebdavServlet extends WebdavServlet {
 
     private final transient FileProperties fileProperties;
 
-    private final transient IFileService fileService;
+    private final transient ObjectProvider<IFileService> fileServiceObjectProvider;
 
     public static final String PATH_DELIMITER = "/";
 
@@ -197,7 +198,7 @@ public class MyWebdavServlet extends WebdavServlet {
                 String username = uriPath.getName(1).toString();
                 String path = uriPath.subpath(1, uriPath.getNameCount()).toString();
                 File file = Paths.get(fileProperties.getRootDir(), path).toFile();
-                fileService.deleteFile(username, file);
+                fileServiceObjectProvider.getObject().deleteFile(username, file);
             }
         }
     }
@@ -212,7 +213,7 @@ public class MyWebdavServlet extends WebdavServlet {
                 String username = uriPath.getName(1).toString();
                 String path = uriPath.subpath(1, uriPath.getNameCount()).toString();
                 File file = Paths.get(fileProperties.getRootDir(), path).toFile();
-                fileService.createFile(username, file);
+                fileServiceObjectProvider.getObject().createFile(username, file);
             }
         }
     }

@@ -6,7 +6,6 @@ import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IArticleDAO;
-import com.jmal.clouddisk.dao.repository.mongo.FileDocumentRepository;
 import com.jmal.clouddisk.lucene.LuceneQueryService;
 import com.jmal.clouddisk.model.ArchivesVO;
 import com.jmal.clouddisk.model.ArticleDTO;
@@ -20,11 +19,11 @@ import com.jmal.clouddisk.util.JacksonUtil;
 import com.jmal.clouddisk.util.MongoUtil;
 import com.jmal.clouddisk.util.MyFileUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.DateOperators;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -40,8 +39,6 @@ import java.util.List;
 public class ArticleDAOImpl implements IArticleDAO {
 
     private final MongoTemplate mongoTemplate;
-
-    private final FileDocumentRepository fileDocumentRepository;
 
     private final IUserService userService;
 
@@ -147,7 +144,7 @@ public class ArticleDAOImpl implements IArticleDAO {
     @Override
     public Page<ArchivesVO> getArchives(Integer page, Integer pageSize) {
         // 1. 获取总数
-        long totalCount = fileDocumentRepository.countByReleaseIsTrueAndAlonePageExists(true, false);
+        long totalCount = countByReleaseIsTrueAndAlonePageExists(true, false);
 
         // 2. 准备分页参数
         boolean pagination = (page != null && pageSize != null);
@@ -157,9 +154,43 @@ public class ArticleDAOImpl implements IArticleDAO {
         }
 
         // 3. 执行聚合查询
-        List<ArchivesVO> projections = fileDocumentRepository.findArchives(pageable);
+        List<ArchivesVO> projections = findArchives(pageable);
 
         return new PageImpl<>(projections, pageable, totalCount);
+    }
+
+    public List<ArchivesVO> findArchives(Pageable pageable) {
+        Aggregation aggregation = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("release").is(true)
+                        .and("alonePage").exists(false)),
+
+                Aggregation.sort(Sort.Direction.DESC, "uploadDate"),
+
+                Aggregation.project()
+                        .and("name").as("name")
+                        .and("slug").as("slug")
+                        .and("uploadDate").as("date")
+                        .and(DateOperators.DateToString.dateOf("uploadDate")
+                                .toString("%Y-%m")).as("day"),
+
+                Aggregation.skip(pageable.getOffset()),
+                Aggregation.limit(pageable.getPageSize())
+        );
+
+        AggregationResults<ArchivesVO> results = mongoTemplate.aggregate(
+                aggregation,
+                CommonFileService.COLLECTION_NAME,
+                ArchivesVO.class
+        );
+
+        return results.getMappedResults();
+    }
+
+    public long countByReleaseIsTrueAndAlonePageExists(boolean release, boolean alonePageExists) {
+        Criteria criteria = Criteria.where("release").is(release)
+                .and("alonePage").exists(alonePageExists);
+        Query query = new Query(criteria);
+        return mongoTemplate.count(query, "article");
     }
 
     @Override
