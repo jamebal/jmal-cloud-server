@@ -74,8 +74,14 @@ public class LogOperatingAspect {
         //获取method对象
         Method method = methodSignature.getMethod();
         LogOperatingFun logOperatingFun = method.getAnnotation(LogOperatingFun.class);
+        if (logOperatingFun == null) {
+            return;
+        }
         // swagger的ApiOperation注解, 用来获取操作说明
         Operation apiOperation = method.getAnnotation(Operation.class);
+        if (apiOperation == null) {
+            return;
+        }
         // swagger的Api注解, 用来获取操作模块
         @SuppressWarnings("unchecked")
         Tag api = (Tag) joinPoint.getSourceLocation().getWithinType().getAnnotation(Tag.class);
