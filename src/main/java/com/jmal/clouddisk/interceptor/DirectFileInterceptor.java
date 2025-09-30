@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -26,15 +27,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DirectFileInterceptor implements HandlerInterceptor {
 
-    private final DirectLinkService directLinkService;
+    private final ObjectProvider<DirectLinkService> directLinkService;
 
     private final PreFileInterceptor preFileInterceptor;
 
-    private final FileServiceImpl fileService;
+    private final ObjectProvider<FileServiceImpl> fileService;
 
-    private final IUserService userService;
+    private final ObjectProvider<IUserService> userService;
 
-    private final RoleService roleService;
+    private final ObjectProvider<RoleService> roleService;
 
     private static final int PATH_SEGMENTS_COUNT = 5;
 
@@ -49,7 +50,7 @@ public class DirectFileInterceptor implements HandlerInterceptor {
             return false;
         }
         String mark = pathSegments[PATH_SEGMENTS_COUNT - 2];
-        String fileId = directLinkService.getFileIdByMark(mark);
+        String fileId = directLinkService.getObject().getFileIdByMark(mark);
         if (CharSequenceUtil.isBlank(fileId)) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return false;
@@ -61,13 +62,13 @@ public class DirectFileInterceptor implements HandlerInterceptor {
         }
         if (BooleanUtil.isTrue(fileDocument.getIsFolder())) {
             // 打包下载
-            String username = userService.getUserNameById(fileDocument.getUserId());
-            List<String> authorities = roleService.getAuthorities(username);
+            String username = userService.getObject().getUserNameById(fileDocument.getUserId());
+            List<String> authorities = roleService.getObject().getAuthorities(username);
             if (!authorities.contains("cloud:file:packageDownload")) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 return false;
             }
-            fileService.packageDownload(request, response, List.of(fileId), username);
+            fileService.getObject().packageDownload(request, response, List.of(fileId), username);
             return false;
         }
         // 构造内部路径

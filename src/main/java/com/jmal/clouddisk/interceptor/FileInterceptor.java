@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -76,15 +77,15 @@ public class FileInterceptor implements HandlerInterceptor {
 
     private final FileProperties fileProperties;
 
-    private final IFileService fileService;
+    private final ObjectProvider<IFileService> fileService;
 
-    private final CommonFileService commonFileService;
+    private final ObjectProvider<CommonFileService> commonFileService;
 
     private final AuthInterceptor authInterceptor;
 
     private final ShareFileInterceptor shareFileInterceptor;
 
-    private final WebOssService webOssService;
+    private final ObjectProvider<WebOssService> webOssService;
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) throws IOException, InterruptedException {
@@ -197,7 +198,7 @@ public class FileInterceptor implements HandlerInterceptor {
         Path prePth = path.subpath(MIN_COUNT - 1, path.getNameCount());
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
-            webOssService.download(ossPath, prePth, request, response, filename);
+            webOssService.getObject().download(ossPath, prePth, request, response, filename);
             return true;
         }
         return false;
@@ -219,7 +220,7 @@ public class FileInterceptor implements HandlerInterceptor {
         Path prePth = path.subpath(MIN_COUNT - 1, path.getNameCount());
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (CharSequenceUtil.isNotBlank(ossPath)) {
-            webOssService.download(ossPath, prePth, request, response, null);
+            webOssService.getObject().download(ossPath, prePth, request, response, null);
             return true;
         }
         String extName = MyFileUtils.extName(prePth.getFileName().toString());
@@ -264,7 +265,7 @@ public class FileInterceptor implements HandlerInterceptor {
     }
 
     private boolean validShareFile(HttpServletRequest request, Path uriPath, String shareKey) {
-        FileDocument fileDocument = commonFileService.getById(shareKey);
+        FileDocument fileDocument = commonFileService.getObject().getById(shareKey);
         if (!isNotAllowAccess(fileDocument, request)) {
             // 判断当前uri所属的文件是否为已分享的文件或其子文件
             FileDocument thisFile = getFileDocument(uriPath);
@@ -352,7 +353,7 @@ public class FileInterceptor implements HandlerInterceptor {
             path = File.separator + uriPath.subpath(MIN_COUNT, uriPath.getNameCount()).getParent().toString() + File.separator;
         }
         String name = uriPath.getFileName().toString();
-        return fileService.getFileDocumentByPathAndName(path, name, username, excludeContent);
+        return fileService.getObject().getFileDocumentByPathAndName(path, name, username, excludeContent);
     }
 
     private FileDocument getFileDocument(Path uriPath) {

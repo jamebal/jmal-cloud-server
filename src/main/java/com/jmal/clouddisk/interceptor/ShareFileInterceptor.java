@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -24,7 +25,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @RequiredArgsConstructor
 public class ShareFileInterceptor implements HandlerInterceptor {
 
-    private final IShareService shareService;
+    private final ObjectProvider<IShareService> shareService;
 
     private final PreFileInterceptor preFileInterceptor;
 
@@ -84,7 +85,7 @@ public class ShareFileInterceptor implements HandlerInterceptor {
             // 未分享
             return true;
         }
-        ShareDO shareDO = shareService.getShare(fileDocument.getShareId());
+        ShareDO shareDO = shareService.getObject().getShare(fileDocument.getShareId());
         if (shareDO == null) {
             // 分享不存在
             return true;
@@ -100,7 +101,7 @@ public class ShareFileInterceptor implements HandlerInterceptor {
             // 判断是否为挂载文件
             String userId = userLoginHolder.getUserId();
             if (CharSequenceUtil.isNotBlank(userId)) {
-                return !shareService.existsMountFile(shareDO.getFileId(), userId);
+                return !shareService.getObject().existsMountFile(shareDO.getFileId(), userId);
             }
             shareToken = request.getHeader(Constants.SHARE_TOKEN);
             if (CharSequenceUtil.isBlank(shareToken)) {
@@ -111,7 +112,7 @@ public class ShareFileInterceptor implements HandlerInterceptor {
             // 未携带share-token
             return true;
         }
-        shareService.validShare(shareToken, shareDO.getId());
+        shareService.getObject().validShare(shareToken, shareDO.getId());
         return false;
     }
 

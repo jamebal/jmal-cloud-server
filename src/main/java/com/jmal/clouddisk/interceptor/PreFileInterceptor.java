@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -29,9 +30,9 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class PreFileInterceptor implements HandlerInterceptor {
 
-    private final CommonFileService commonFileService;
+    private final ObjectProvider<CommonFileService> commonFileService;
 
-    private final IUserService userService;
+    private final ObjectProvider<IUserService> userService;
 
     private static final Cache<String, String> INTERNAL_TOKEN_CACHE = Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.SECONDS).build();
 
@@ -100,7 +101,7 @@ public class PreFileInterceptor implements HandlerInterceptor {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return null;
         }
-        FileDocument fileDocument = commonFileService.getById(fileId);
+        FileDocument fileDocument = commonFileService.getObject().getById(fileId);
         if (fileDocument == null) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             return null;
@@ -109,7 +110,7 @@ public class PreFileInterceptor implements HandlerInterceptor {
     }
 
     private String constructInternalFilePath(FileDocument fileDocument) {
-        return WebConfig.API_FILE_PREFIX + userService.getUserNameById(fileDocument.getUserId()) + fileDocument.getPath() + fileDocument.getName();
+        return WebConfig.API_FILE_PREFIX + userService.getObject().getUserNameById(fileDocument.getUserId()) + fileDocument.getPath() + fileDocument.getName();
     }
 
     private static void handleForwardException(HttpServletResponse response, String internalFilePath, Exception e) {
