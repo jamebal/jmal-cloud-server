@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
 
 @Configuration
@@ -16,12 +17,17 @@ public class WriteServiceConfiguration {
 
     @Bean
     public IWriteService directWriteService(DataManipulationService dataManipulationService) {
-        IWriteService actualWriteService;
         if (isSqlite()) {
-            actualWriteService = new QueuedWriteServiceImpl(dataManipulationService);
+            return new QueuedWriteServiceImpl(dataManipulationService);
         } else {
-            actualWriteService = new DirectWriteServiceImpl(dataManipulationService);
+            return new DirectWriteServiceImpl(dataManipulationService);
         }
+    }
+
+    @Primary
+    @Bean
+    public IWriteService queuedWriteService(DataManipulationService dataManipulationService) {
+        IWriteService actualWriteService = new QueuedWriteServiceImpl(dataManipulationService);
         return new SafeWriteServiceDecorator(actualWriteService);
     }
 

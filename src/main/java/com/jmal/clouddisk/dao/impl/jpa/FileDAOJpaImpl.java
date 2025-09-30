@@ -660,6 +660,7 @@ public class FileDAOJpaImpl implements IFileDAO {
         try {
             writeService.submit(new FileOperation.ResetIndexStatus()).get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             throw new CommonException(e.getMessage());
         }
     }

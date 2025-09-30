@@ -10,18 +10,8 @@ spring:
         jdbc:
           lob:
             non_contextual_creation: true
-#  autoconfigure:
-#    exclude:
-#      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
-#      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
-#      - org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration
-#      - org.springframework.boot.autoconfigure.mongo.MongoReactiveAutoConfiguration
-#      - org.springframework.boot.autoconfigure.data.mongo.MongoReactiveDataAutoConfiguration
-#      - org.springframework.boot.autoconfigure.data.mongo.MongoReactiveRepositoriesAutoConfiguration
-#      - org.springframework.boot.autoconfigure.ldap.LdapAutoConfiguration
-#      - org.springframework.boot.autoconfigure.data.ldap.LdapRepositoriesAutoConfiguration
   datasource:
-    url: jdbc:sqlite:${file.rootDir}/${file.dbDir}/db/jmalcloud.db?_journal_mode=WAL&_busy_timeout=5000
+    url: jdbc:sqlite:${file.rootDir}/${file.dbDir}/db/jmalcloud.db?_journal_mode=WAL&_busy_timeout=3000
     driver-class-name: org.sqlite.JDBC
     name: jmalcloud
     username:

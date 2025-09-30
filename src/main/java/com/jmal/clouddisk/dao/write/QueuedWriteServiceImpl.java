@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.dao.write;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,6 +60,7 @@ public class QueuedWriteServiceImpl implements IWriteService {
 
     public QueuedWriteServiceImpl(DataManipulationService dataManipulationService) {
         this.dataManipulationService = dataManipulationService;
+        init();
         log.debug("写入策略初始化：带优先级的异步队列写入（适用于SQLite）。");
     }
 
@@ -81,8 +81,7 @@ public class QueuedWriteServiceImpl implements IWriteService {
         return task.future;
     }
 
-    @PostConstruct
-    private void startConsumer() {
+    public void init() {
         writerExecutor.submit(() -> {
             log.debug("队列写入服务消费者线程已启动。");
             while (!Thread.currentThread().isInterrupted()) {

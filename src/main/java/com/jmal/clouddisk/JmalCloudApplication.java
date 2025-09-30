@@ -7,8 +7,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -20,8 +18,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableCaching
 @EnableScheduling
 @Slf4j
-@EnableJpaRepositories(basePackages = "com.jmal.clouddisk.dao.repository.jpa")
-@EnableMongoRepositories(basePackages = "com.jmal.clouddisk.dao.repository.mongo")
+// @EnableJpaRepositories(basePackages = "com.jmal.clouddisk.dao.repository.jpa")
+// @EnableMongoRepositories(basePackages = "com.jmal.clouddisk.dao.repository.mongo")
 @ComponentScan(
         excludeFilters = @ComponentScan.Filter(
                 type = FilterType.REGEX,

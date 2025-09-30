@@ -7,11 +7,8 @@
 //
 // import javax.sql.DataSource;
 //
-// /**
-//  * 当使用 MongoDB 作为数据源时，提供一个占位的 EntityManagerFactory Bean。
-//  */
 // @Configuration
-// @ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
+// @ConditionalOnProperty(name = "jmalcloud.datasource.jpa-enabled", havingValue = "false", matchIfMissing = true)
 // public class JpaDisablerConfiguration {
 //
 //     @Bean
@@ -21,7 +18,6 @@
 //
 //     @Bean
 //     public EntityManagerFactory entityManagerFactory() {
-//         // 返回一个假的、空的实现
 //         return new NoOpEntityManagerFactory();
 //     }
 // }

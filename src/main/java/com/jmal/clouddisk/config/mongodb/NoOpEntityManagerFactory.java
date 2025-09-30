@@ -8,6 +8,7 @@
 //
 // public class NoOpEntityManagerFactory implements EntityManagerFactory {
 //
+//     private static final Metamodel NO_OP_METAMODAL = new NoOpMetamodel();
 //     private static final String UNSUPPORTED_MESSAGE = "This is a No-Op EntityManagerFactory and does not support actual JPA operations.";
 //
 //     @Override
@@ -37,7 +38,7 @@
 //
 //     @Override
 //     public Metamodel getMetamodel() {
-//         throw new UnsupportedOperationException(UNSUPPORTED_MESSAGE);
+//         return NO_OP_METAMODAL;
 //     }
 //
 //     @Override
