@@ -1,0 +1,34 @@
+name: Build test native (Multi-Arch) - Orchestrator
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: build-twice-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  pass1:
+    name: First pass jpa
+    uses: ./.github/workflows/test-native-build.yml
+    with:
+      image_name: 'jmalcloud_native_jpa'
+      image_tag: "test"
+      aot_build_mode: 'jpa'
+      node_version: "16.20.2"
+      graal_version: "25"
+      dockerfile: "./Dockerfile"
+    secrets: inherit
+
+  pass2:
+    name: Second pass mongo
+    needs: pass1
+    uses: ./.github/workflows/test-native-build.yml
+    with:
+      image_name: 'jmalcloud_native_mongo'
+      image_tag: "test"
+      aot_build_mode: 'mongo'
+      node_version: "16.20.2"
+      graal_version: "25"
+      dockerfile: "./Dockerfile"
+    secrets: inherit
