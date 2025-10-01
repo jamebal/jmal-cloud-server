@@ -8,11 +8,11 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfigurat
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(name = "jmalcloud.datasource.type", havingValue = "mongodb")
+@ConditionalOnProperty(name = "jmalcloud.datasource.jpa-enabled", havingValue = "false")
 @EnableAutoConfiguration(exclude = {
-    DataSourceAutoConfiguration.class,
-    HibernateJpaAutoConfiguration.class,
-    JpaRepositoriesAutoConfiguration.class,
+        DataSourceAutoConfiguration.class,
+        HibernateJpaAutoConfiguration.class,
+        JpaRepositoriesAutoConfiguration.class,
 })
 public class JpaAutoConfigurationDisabler {
     // 这个类专门用于在选择 MongoDB 时禁用 JPA 的自动配置

@@ -6,6 +6,9 @@ spring:
 jmalcloud:
   datasource:
     type: mongodb
+    jpa-enabled: false
+    mongo-enabled: true
+    migration: false
 logging:
   level:
     org:

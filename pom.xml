@@ -24,6 +24,7 @@
         <native-image.jvmArgs>-Xmx15g</native-image.jvmArgs>
         <native-image.march>-march=compatibility</native-image.march>
         <native-image.addArgs>--gc=serial</native-image.addArgs>
+        <aot.build.mode>full</aot.build.mode>
     </properties>
 
     <repositories>
@@ -453,6 +454,11 @@
                         <goals>
                             <goal>process-aot</goal>
                         </goals>
+                        <configuration>
+                            <jvmArguments>
+                                -Daot.build.mode=${aot.build.mode}
+                            </jvmArguments>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

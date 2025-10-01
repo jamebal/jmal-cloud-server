@@ -7,7 +7,6 @@ import com.mongodb.client.MongoClients;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -20,9 +19,6 @@ import java.util.Objects;
 @Configuration
 @Slf4j
 @RequiredArgsConstructor
-@ConditionalOnExpression(
-        "'${jmalcloud.datasource.type}'=='mongodb' || '${jmalcloud.datasource.migration}'=='true'"
-)
 public class MongoClientConfig extends AbstractMongoClientConfiguration {
 
   private final Environment env;
@@ -62,7 +58,7 @@ public class MongoClientConfig extends AbstractMongoClientConfiguration {
         log.error("Failed to create MongoClient", e);
       }
     }
-    return MongoClients.create();
+    return new NoOpMongoClient();
   }
 
   @Bean

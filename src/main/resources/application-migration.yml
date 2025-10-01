@@ -1,0 +1,13 @@
+jmalcloud:
+  datasource:
+    jpa-enabled: true
+    mongo-enabled: true
+    migration: true
+logging:
+  level:
+    root: info
+springdoc:
+  swagger-ui:
+    enabled: true
+  api-docs:
+    enabled: true

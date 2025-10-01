@@ -21,13 +21,17 @@ public class DataSourceProperties {
      */
     private Boolean migration = false;
 
-    /**
-     * 是否在启动时验证数据源连接
-     */
-    private boolean validateOnStartup = true;
+    private Boolean jpaEnabled = true;
 
-    /**
-     * 数据源描述信息
-     */
-    private String description;
+    private Boolean mongoEnabled = false;
+
+    public String toString() {
+        return "DataSourceProperties{" +
+                "type=" + type +
+                ", migration=" + migration +
+                ", jpaEnabled=" + jpaEnabled +
+                ", mongoEnabled=" + mongoEnabled +
+                '}';
+    }
+
 }

@@ -24,17 +24,25 @@ tess4j:
 spring:
   application:
     name: jmalcloud
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.ldap.LdapAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.ldap.LdapRepositoriesAutoConfiguration
   profiles:
     group:
       default: dev, mongodb
-      dev_sqlite: dev, sqlite
-      dev_mysql: dev, mysql
-      dev_pgsql: dev, pgsql
-      prod_mongodb: prod, mongodb
-      prod_sqlite: prod, sqlite
-      prod_mysql: prod, mysql
-      prod_pgsql: prod, pgsql
-    active: dev_sqlite
+      dev-sqlite: dev, sqlite
+      dev-mysql: dev, mysql
+      dev-pgsql: dev, pgsql
+      sqlite-migration: sqlite, migration
+      mysql-migration: mysql, migration
+      pgsql-migration: pgsql, migration
+      prod-mongodb: prod, mongodb
+      prod-sqlite: prod, sqlite
+      prod-mysql: prod, mysql
+      prod-pgsql: prod, pgsql
+      native: native
+    active: native
   servlet:
     multipart:
       max-file-size: 50MB

@@ -24,6 +24,8 @@ public class MigrationRunner {
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
 
+        log.info("检测到关系型数据源配置，开始执行数据迁移任务...");
+
         // 将各个具体的迁移服务按类型注入
         migrationServices.parallelStream().forEach(service -> {
             MigrationResult result = service.migrateData();

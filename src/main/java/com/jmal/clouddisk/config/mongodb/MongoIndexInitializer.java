@@ -1,12 +1,13 @@
 package com.jmal.clouddisk.config.mongodb;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.env.Environment;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.IndexOperations;
@@ -27,10 +28,9 @@ import java.util.Set;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnExpression(
-        "'${jmalcloud.datasource.type}'=='mongodb' || '${jmalcloud.datasource.migration}'=='true'"
-)
 public class MongoIndexInitializer {
+
+    private final Environment env;
 
     // 文件路径必须与 AppRuntimeHints 中定义的一致
     private static final String DOCUMENT_CLASSES_RESOURCE_PATH = "META-INF/native/document-classes.txt";
@@ -39,6 +39,10 @@ public class MongoIndexInitializer {
 
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
+        String mongoURI = env.getProperty("spring.data.mongodb.uri");
+        if (CharSequenceUtil.isBlank(mongoURI)) {
+            return;
+        }
         // 1. 从 Classpath 读取在构建时生成的文件
         List<Class<?>> entityClasses = loadClassesFromResource();
 

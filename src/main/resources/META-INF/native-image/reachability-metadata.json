@@ -1559,6 +1559,15 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.config.aot.AotBuildTimePropertiesInitializer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.config.hints.JpaRuntimeHints"
     },
     {
@@ -1700,7 +1709,19 @@
           "parameterTypes": []
         },
         {
+          "name": "setJpaEnabled",
+          "parameterTypes": [
+            "java.lang.Boolean"
+          ]
+        },
+        {
           "name": "setMigration",
+          "parameterTypes": [
+            "java.lang.Boolean"
+          ]
+        },
+        {
+          "name": "setMongoEnabled",
           "parameterTypes": [
             "java.lang.Boolean"
           ]
@@ -1798,15 +1819,6 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.config.jpa.RelationalNotSqliteDataSourceCondition",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
       "type": "com.jmal.clouddisk.config.jpa.SqliteDataSource",
       "methods": [
         {
@@ -1866,10 +1878,16 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.config.mongodb.MongoAutoConfigurationDisabler"
+      "type": "com.jmal.clouddisk.config.mongodb.MongoClientConfig",
+      "methods": [
+        {
+          "name": "mongoClient",
+          "parameterTypes": []
+        }
+      ]
     },
     {
-      "type": "com.jmal.clouddisk.config.mongodb.MongoAutoConfigurationDisabler$$SpringCGLIB$$0",
+      "type": "com.jmal.clouddisk.config.mongodb.MongoClientConfig$$SpringCGLIB$$0",
       "fields": [
         {
           "name": "$$beanFactory"
@@ -1884,12 +1902,36 @@
       "methods": [
         {
           "name": "<init>",
-          "parameterTypes": []
+          "parameterTypes": [
+            "org.springframework.core.env.Environment"
+          ]
         },
         {
           "name": "CGLIB$SET_STATIC_CALLBACKS",
           "parameterTypes": [
             "org.springframework.cglib.proxy.Callback[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.config.mongodb.MongoClientConfig$$SpringCGLIB$$FastClass$$0",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.config.mongodb.MongoClientConfig$$SpringCGLIB$$FastClass$$1",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class"
           ]
         }
       ]
@@ -4062,10 +4104,6 @@
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.QueuedWriteServiceImpl",
       "methods": [
         {
-          "name": "startConsumer",
-          "parameterTypes": []
-        },
-        {
           "name": "stopConsumer",
           "parameterTypes": []
         }
@@ -4076,71 +4114,6 @@
     },
     {
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.SafeWriteServiceDecorator"
-    },
-    {
-      "type": "com.jmal.clouddisk.dao.impl.jpa.write.WriteServiceConfiguration",
-      "methods": [
-        {
-          "name": "queuedWriteService",
-          "parameterTypes": [
-            "com.jmal.clouddisk.dao.impl.jpa.write.DataManipulationService"
-          ]
-        },
-        {
-          "name": "safeWriteService",
-          "parameterTypes": [
-            "com.jmal.clouddisk.dao.impl.jpa.write.IWriteService"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.dao.impl.jpa.write.WriteServiceConfiguration$$SpringCGLIB$$0",
-      "fields": [
-        {
-          "name": "$$beanFactory"
-        },
-        {
-          "name": "CGLIB$CALLBACK_FILTER"
-        },
-        {
-          "name": "CGLIB$FACTORY_DATA"
-        }
-      ],
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "CGLIB$SET_STATIC_CALLBACKS",
-          "parameterTypes": [
-            "org.springframework.cglib.proxy.Callback[]"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.dao.impl.jpa.write.WriteServiceConfiguration$$SpringCGLIB$$FastClass$$0",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "java.lang.Class"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.dao.impl.jpa.write.WriteServiceConfiguration$$SpringCGLIB$$FastClass$$1",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "java.lang.Class"
-          ]
-        }
-      ]
     },
     {
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.accesstoken.AccessTokenOperation$Create"
@@ -5755,6 +5728,73 @@
     },
     {
       "type": "com.jmal.clouddisk.dao.util.MyUpdate"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.write.WriteServiceConfiguration",
+      "methods": [
+        {
+          "name": "actualWriteService",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.write.DataManipulationService"
+          ]
+        },
+        {
+          "name": "safeWriteService",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.write.IWriteService"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.write.WriteServiceConfiguration$$SpringCGLIB$$0",
+      "fields": [
+        {
+          "name": "$$beanFactory"
+        },
+        {
+          "name": "CGLIB$CALLBACK_FILTER"
+        },
+        {
+          "name": "CGLIB$FACTORY_DATA"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.core.env.Environment"
+          ]
+        },
+        {
+          "name": "CGLIB$SET_STATIC_CALLBACKS",
+          "parameterTypes": [
+            "org.springframework.cglib.proxy.Callback[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.write.WriteServiceConfiguration$$SpringCGLIB$$FastClass$$0",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.write.WriteServiceConfiguration$$SpringCGLIB$$FastClass$$1",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class"
+          ]
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.exception.CommonException"
@@ -8804,7 +8844,7 @@
       "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_"
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_qjncjp",
+      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_mewjln",
       "methods": [
         {
           "name": "<init>",
@@ -9786,7 +9826,7 @@
       "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_"
     },
     {
-      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Accessor_8n4e0a",
+      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Accessor_buet8u",
       "methods": [
         {
           "name": "<init>",
@@ -10583,7 +10623,174 @@
       ]
     },
     {
+      "type": "com.mongodb.ClientBulkWriteException"
+    },
+    {
+      "type": "com.mongodb.ClientSessionOptions"
+    },
+    {
+      "type": "com.mongodb.ConnectionString"
+    },
+    {
+      "type": "com.mongodb.DBRef"
+    },
+    {
+      "type": "com.mongodb.MongoClientSettings"
+    },
+    {
+      "type": "com.mongodb.MongoClientSettings$Builder"
+    },
+    {
+      "type": "com.mongodb.MongoDriverInformation"
+    },
+    {
+      "type": "com.mongodb.MongoException"
+    },
+    {
+      "type": "com.mongodb.ReadConcern"
+    },
+    {
+      "type": "com.mongodb.ReadPreference"
+    },
+    {
+      "type": "com.mongodb.WriteConcern",
+      "fields": [
+        {
+          "name": "ACKNOWLEDGED"
+        },
+        {
+          "name": "JOURNALED"
+        },
+        {
+          "name": "MAJORITY"
+        },
+        {
+          "name": "UNACKNOWLEDGED"
+        },
+        {
+          "name": "W1"
+        },
+        {
+          "name": "W2"
+        },
+        {
+          "name": "W3"
+        }
+      ]
+    },
+    {
+      "type": "com.mongodb.annotations.Immutable"
+    },
+    {
+      "type": "com.mongodb.client.ChangeStreamIterable"
+    },
+    {
+      "type": "com.mongodb.client.ClientSession"
+    },
+    {
+      "type": "com.mongodb.client.DistinctIterable"
+    },
+    {
+      "type": "com.mongodb.client.FindIterable"
+    },
+    {
+      "type": "com.mongodb.client.ListDatabasesIterable"
+    },
+    {
       "type": "com.mongodb.client.MongoClient"
+    },
+    {
+      "type": "com.mongodb.client.MongoCluster"
+    },
+    {
+      "type": "com.mongodb.client.MongoCollection"
+    },
+    {
+      "type": "com.mongodb.client.MongoDatabase"
+    },
+    {
+      "type": "com.mongodb.client.MongoIterable"
+    },
+    {
+      "type": "com.mongodb.client.gridfs.GridFSBucket"
+    },
+    {
+      "type": "com.mongodb.client.gridfs.GridFSFindIterable"
+    },
+    {
+      "type": "com.mongodb.client.gridfs.model.GridFSFile"
+    },
+    {
+      "type": "com.mongodb.client.gridfs.model.GridFSUploadOptions"
+    },
+    {
+      "type": "com.mongodb.client.internal.MongoClientImpl"
+    },
+    {
+      "type": "com.mongodb.client.internal.OperationExecutor"
+    },
+    {
+      "type": "com.mongodb.client.model.Collation"
+    },
+    {
+      "type": "com.mongodb.client.model.CountOptions"
+    },
+    {
+      "type": "com.mongodb.client.model.CreateCollectionOptions"
+    },
+    {
+      "type": "com.mongodb.client.model.CreateViewOptions"
+    },
+    {
+      "type": "com.mongodb.client.model.DeleteOptions"
+    },
+    {
+      "type": "com.mongodb.client.model.EstimatedDocumentCountOptions"
+    },
+    {
+      "type": "com.mongodb.client.model.ReplaceOptions"
+    },
+    {
+      "type": "com.mongodb.client.model.UpdateOptions"
+    },
+    {
+      "type": "com.mongodb.client.model.ValidationAction"
+    },
+    {
+      "type": "com.mongodb.client.model.ValidationLevel"
+    },
+    {
+      "type": "com.mongodb.client.model.bulk.ClientBulkWriteOptions"
+    },
+    {
+      "type": "com.mongodb.client.model.bulk.ClientBulkWriteResult"
+    },
+    {
+      "type": "com.mongodb.client.result.DeleteResult"
+    },
+    {
+      "type": "com.mongodb.client.result.UpdateResult"
+    },
+    {
+      "type": "com.mongodb.connection.ClusterDescription"
+    },
+    {
+      "type": "com.mongodb.internal.TimeoutSettings"
+    },
+    {
+      "type": "com.mongodb.internal.connection.Cluster"
+    },
+    {
+      "type": "com.mongodb.internal.connection.StreamFactory"
+    },
+    {
+      "type": "com.mongodb.internal.connection.StreamFactoryFactory"
+    },
+    {
+      "type": "com.mongodb.internal.session.ServerSessionPool"
+    },
+    {
+      "type": "com.mongodb.lang.Nullable"
     },
     {
       "type": "com.mongodb.reactivestreams.client.MongoClient"
@@ -11965,7 +12172,15 @@
       "type": "java.io.FileNotFoundException"
     },
     {
-      "type": "java.io.IOException"
+      "type": "java.io.IOException",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
     },
     {
       "type": "java.io.InputStream"
@@ -12083,6 +12298,9 @@
           ]
         }
       ]
+    },
+    {
+      "type": "java.lang.Character[]"
     },
     {
       "type": "java.lang.Class",
@@ -12708,10 +12926,25 @@
       ]
     },
     {
+      "type": "java.math.BigInteger"
+    },
+    {
       "type": "java.net.InetAddress"
     },
     {
       "type": "java.net.MalformedURLException"
+    },
+    {
+      "type": "java.net.Socket",
+      "methods": [
+        {
+          "name": "setOption",
+          "parameterTypes": [
+            "java.net.SocketOption",
+            "java.lang.Object"
+          ]
+        }
+      ]
     },
     {
       "type": "java.net.URI"
@@ -13244,6 +13477,9 @@
       "type": "java.util.concurrent.ThreadFactory"
     },
     {
+      "type": "java.util.concurrent.TimeUnit"
+    },
+    {
       "type": "java.util.concurrent.atomic.AtomicBoolean"
     },
     {
@@ -13257,6 +13493,9 @@
     },
     {
       "type": "java.util.function.BiFunction"
+    },
+    {
+      "type": "java.util.function.BiPredicate"
     },
     {
       "type": "java.util.function.BooleanSupplier"
@@ -13322,6 +13561,9 @@
       "type": "javax.annotation.Resource"
     },
     {
+      "type": "javax.annotation.meta.TypeQualifier"
+    },
+    {
       "type": "javax.cache.Cache"
     },
     {
@@ -13364,9 +13606,6 @@
       "type": "javax.naming.directory.Attributes"
     },
     {
-      "type": "javax.naming.ldap.LdapContext"
-    },
-    {
       "type": "javax.security.auth.Subject"
     },
     {
@@ -13404,6 +13643,20 @@
     },
     {
       "type": "jdk.internal.vm.annotation.IntrinsicCandidate"
+    },
+    {
+      "type": "jdk.net.ExtendedSocketOptions",
+      "fields": [
+        {
+          "name": "TCP_KEEPCOUNT"
+        },
+        {
+          "name": "TCP_KEEPIDLE"
+        },
+        {
+          "name": "TCP_KEEPINTERVAL"
+        }
+      ]
     },
     {
       "type": "kotlin.Any"
@@ -13477,9 +13730,6 @@
     },
     {
       "type": "kotlin.annotation.AnnotationTarget"
-    },
-    {
-      "type": "kotlin.annotation.AnnotationTarget[]"
     },
     {
       "type": "kotlin.annotation.MustBeDocumented"
@@ -15706,6 +15956,30 @@
       ]
     },
     {
+      "type": "org.bson.Document"
+    },
+    {
+      "type": "org.bson.UuidRepresentation"
+    },
+    {
+      "type": "org.bson.codecs.configuration.CodecRegistry"
+    },
+    {
+      "type": "org.bson.codecs.kotlin.DataClassCodecProvider"
+    },
+    {
+      "type": "org.bson.codecs.kotlinx.KotlinSerializerCodecProvider"
+    },
+    {
+      "type": "org.bson.codecs.record.RecordCodecProvider"
+    },
+    {
+      "type": "org.bson.conversions.Bson"
+    },
+    {
+      "type": "org.bson.types.ObjectId"
+    },
+    {
       "type": "org.cache2k.Cache2kBuilder"
     },
     {
@@ -17670,6 +17944,9 @@
     },
     {
       "type": "org.jmolecules.ddd.types.Association"
+    },
+    {
+      "type": "org.jmolecules.spring.IdentifierToPrimitivesConverter"
     },
     {
       "type": "org.joda.time.ReadableInstant"
@@ -20210,6 +20487,21 @@
       ]
     },
     {
+      "type": "org.springframework.boot.autoconfigure.data.ConditionalOnRepositoryType"
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.data.OnRepositoryTypeCondition",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.data.RepositoryType"
+    },
+    {
       "type": "org.springframework.boot.autoconfigure.data.couchbase.CouchbaseDataAutoConfiguration"
     },
     {
@@ -20234,16 +20526,59 @@
       "type": "org.springframework.boot.autoconfigure.data.ldap.LdapRepositoriesAutoConfiguration"
     },
     {
-      "type": "org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration"
+      "type": "org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "mongoConnectionDetails",
+          "parameterTypes": [
+            "org.springframework.boot.autoconfigure.mongo.MongoProperties",
+            "org.springframework.beans.factory.ObjectProvider"
+          ]
+        }
+      ]
     },
     {
-      "type": "org.springframework.boot.autoconfigure.data.mongo.MongoReactiveDataAutoConfiguration"
+      "type": "org.springframework.boot.autoconfigure.data.mongo.MongoDataConfiguration",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     },
     {
-      "type": "org.springframework.boot.autoconfigure.data.mongo.MongoReactiveRepositoriesAutoConfiguration"
+      "type": "org.springframework.boot.autoconfigure.data.mongo.MongoDatabaseFactoryConfiguration"
     },
     {
-      "type": "org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration"
+      "type": "org.springframework.boot.autoconfigure.data.mongo.MongoDatabaseFactoryDependentConfiguration",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "gridFsTemplate",
+          "parameterTypes": [
+            "org.springframework.boot.autoconfigure.mongo.MongoProperties",
+            "org.springframework.data.mongodb.MongoDatabaseFactory",
+            "org.springframework.data.mongodb.core.MongoTemplate",
+            "org.springframework.boot.autoconfigure.mongo.MongoConnectionDetails"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesRegistrar",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration"
@@ -21145,7 +21480,34 @@
       "type": "org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration"
     },
     {
-      "type": "org.springframework.boot.autoconfigure.mongo.MongoReactiveAutoConfiguration"
+      "type": "org.springframework.boot.autoconfigure.mongo.MongoConnectionDetails"
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.mongo.MongoConnectionDetails$GridFs"
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.mongo.MongoProperties",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setUri",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.mongo.MongoProperties$Gridfs"
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.mongo.MongoProperties$Ssl"
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.mongo.PropertiesMongoConnectionDetails"
     },
     {
       "type": "org.springframework.boot.autoconfigure.mustache.MustacheTemplateAvailabilityProvider",
@@ -24020,6 +24382,9 @@
       ]
     },
     {
+      "type": "org.springframework.core.io.support.ResourcePatternResolver"
+    },
+    {
       "type": "org.springframework.core.task.AsyncListenableTaskExecutor"
     },
     {
@@ -24117,6 +24482,36 @@
       "type": "org.springframework.data.cassandra.ReactiveSession"
     },
     {
+      "type": "org.springframework.data.convert.CustomConversions"
+    },
+    {
+      "type": "org.springframework.data.convert.CustomConversions$ConverterRegistration"
+    },
+    {
+      "type": "org.springframework.data.convert.CustomConversions$ConverterRegistrationIntent"
+    },
+    {
+      "type": "org.springframework.data.convert.CustomConversions$StoreConversions"
+    },
+    {
+      "type": "org.springframework.data.convert.EntityConverter"
+    },
+    {
+      "type": "org.springframework.data.convert.EntityReader"
+    },
+    {
+      "type": "org.springframework.data.convert.EntityWriter"
+    },
+    {
+      "type": "org.springframework.data.convert.PropertyValueConversions"
+    },
+    {
+      "type": "org.springframework.data.convert.ReadingConverter"
+    },
+    {
+      "type": "org.springframework.data.convert.WritingConverter"
+    },
+    {
       "type": "org.springframework.data.domain.AuditorAware"
     },
     {
@@ -24144,6 +24539,9 @@
       "type": "org.springframework.data.domain.Unpaged"
     },
     {
+      "type": "org.springframework.data.domain.Window"
+    },
+    {
       "type": "org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate"
     },
     {
@@ -24157,6 +24555,9 @@
     },
     {
       "type": "org.springframework.data.geo.GeoModule"
+    },
+    {
+      "type": "org.springframework.data.geo.GeoResults"
     },
     {
       "type": "org.springframework.data.jdbc.repository.config.AbstractJdbcConfiguration"
@@ -24446,7 +24847,7 @@
       ]
     },
     {
-      "type": "org.springframework.data.ldap.repository.LdapRepository"
+      "type": "org.springframework.data.mapping.Association"
     },
     {
       "type": "org.springframework.data.mapping.MappingException"
@@ -24470,19 +24871,84 @@
       "type": "org.springframework.data.mapping.PropertyPath"
     },
     {
+      "type": "org.springframework.data.mapping.callback.EntityCallbacks"
+    },
+    {
       "type": "org.springframework.data.mapping.context.AbstractMappingContext"
     },
     {
       "type": "org.springframework.data.mapping.context.MappingContext"
     },
     {
+      "type": "org.springframework.data.mapping.model.EntityInstantiators"
+    },
+    {
+      "type": "org.springframework.data.mapping.model.FieldNamingStrategy"
+    },
+    {
       "type": "org.springframework.data.mapping.model.MutablePersistentEntity"
+    },
+    {
+      "type": "org.springframework.data.mapping.model.ParameterValueProvider"
     },
     {
       "type": "org.springframework.data.mapping.model.Property"
     },
     {
       "type": "org.springframework.data.mapping.model.SimpleTypeHolder"
+    },
+    {
+      "type": "org.springframework.data.mapping.model.ValueExpressionEvaluator"
+    },
+    {
+      "type": "org.springframework.data.mongodb.CodecRegistryProvider"
+    },
+    {
+      "type": "org.springframework.data.mongodb.MongoDatabaseFactory"
+    },
+    {
+      "type": "org.springframework.data.mongodb.MongoManagedTypes"
+    },
+    {
+      "type": "org.springframework.data.mongodb.MongoSessionProvider"
+    },
+    {
+      "type": "org.springframework.data.mongodb.SessionSynchronization"
+    },
+    {
+      "type": "org.springframework.data.mongodb.config.AbstractMongoClientConfiguration",
+      "methods": [
+        {
+          "name": "mappingMongoConverter",
+          "parameterTypes": [
+            "org.springframework.data.mongodb.MongoDatabaseFactory",
+            "org.springframework.data.mongodb.core.convert.MongoCustomConversions",
+            "org.springframework.data.mongodb.core.mapping.MongoMappingContext"
+          ]
+        },
+        {
+          "name": "mongoDbFactory",
+          "parameterTypes": []
+        },
+        {
+          "name": "mongoTemplate",
+          "parameterTypes": [
+            "org.springframework.data.mongodb.MongoDatabaseFactory",
+            "org.springframework.data.mongodb.core.convert.MappingMongoConverter"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.data.mongodb.config.AbstractMongoClientConfiguration$$SpringCGLIB$$FastClass$$0",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class"
+          ]
+        }
+      ]
     },
     {
       "type": "org.springframework.data.mongodb.config.GeoJsonConfiguration",
@@ -24498,10 +24964,242 @@
       ]
     },
     {
+      "type": "org.springframework.data.mongodb.config.MongoConfigurationSupport",
+      "methods": [
+        {
+          "name": "customConversions",
+          "parameterTypes": []
+        },
+        {
+          "name": "mongoManagedTypes",
+          "parameterTypes": []
+        },
+        {
+          "name": "mongoMappingContext",
+          "parameterTypes": [
+            "org.springframework.data.mongodb.core.convert.MongoCustomConversions",
+            "org.springframework.data.mongodb.MongoManagedTypes"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.data.mongodb.config.MongoConfigurationSupport$$SpringCGLIB$$FastClass$$0",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.BulkOperations"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.BulkOperations$BulkMode"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.CollectionCallback"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.CollectionOptions"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.CollectionOptions$CollectionChangeStreamOptions"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.CollectionOptions$TimeSeriesOptions"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.CollectionOptions$ValidationOptions"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.CollectionPreparer"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.CollectionPreparerSupport$CollectionPreparerDelegate"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.CursorPreparer"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.DbCallback"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.DocumentCallbackHandler"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.EntityOperations$AdaptibleEntity"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ExecutableAggregationOperation"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ExecutableAggregationOperation$ExecutableAggregation"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ExecutableFindOperation"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ExecutableFindOperation$ExecutableFind"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ExecutableInsertOperation"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ExecutableInsertOperation$ExecutableInsert"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ExecutableMapReduceOperation"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ExecutableMapReduceOperation$ExecutableMapReduce"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ExecutableRemoveOperation"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ExecutableRemoveOperation$ExecutableRemove"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ExecutableUpdateOperation"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ExecutableUpdateOperation$ExecutableUpdate"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.FindAndModifyOptions"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.FindAndReplaceOptions"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.FluentMongoOperations"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.MappedDocument"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.MongoAction"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.MongoDatabaseFactorySupport"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.MongoOperations"
+    },
+    {
       "type": "org.springframework.data.mongodb.core.MongoTemplate"
     },
     {
+      "type": "org.springframework.data.mongodb.core.MongoTemplate$DocumentCallback"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.MongoTemplate$ReadDocumentCallback"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.QueryOperations$AggregationDefinition"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.QueryOperations$DistinctQueryContext"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.QueryOperations$UpdateContext"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ReadPreferenceAware"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ReplaceOptions"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ScriptOperations"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.SessionScoped"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.ViewOptions"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.WriteConcernResolver"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.WriteResultChecking"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.aggregation.Aggregation"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.aggregation.AggregationOperation"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.aggregation.AggregationOperationContext"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.aggregation.AggregationOptions"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.aggregation.AggregationPipeline"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.aggregation.AggregationResults"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.aggregation.TypedAggregation"
+    },
+    {
       "type": "org.springframework.data.mongodb.core.annotation.Collation"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.AbstractMongoConverter"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.DbRefProxyHandler"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.DbRefResolver"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.DbRefResolverCallback"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.DefaultDbRefResolver"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.DocumentAccessor"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.MappingMongoConverter"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.MappingMongoConverter$ConversionContext"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.MappingMongoConverter$MongoDbPropertyValueProvider"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.MongoConverter"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.MongoCustomConversions"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.MongoCustomConversions$MongoConverterConfigurationAdapter"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.MongoTypeMapper"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.MongoWriter"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.convert.ObjectPath"
     },
     {
       "type": "org.springframework.data.mongodb.core.geo.GeoJsonModule"
@@ -24513,10 +25211,76 @@
       "type": "org.springframework.data.mongodb.core.index.CompoundIndexes"
     },
     {
+      "type": "org.springframework.data.mongodb.core.index.IndexOperations"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.index.IndexOperationsProvider"
+    },
+    {
       "type": "org.springframework.data.mongodb.core.index.Indexed"
     },
     {
+      "type": "org.springframework.data.mongodb.core.index.SearchIndexOperations"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.index.SearchIndexOperationsProvider"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.mapping.BasicMongoPersistentEntity"
+    },
+    {
       "type": "org.springframework.data.mongodb.core.mapping.Document"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.mapping.DocumentPointer"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.mapping.MongoMappingContext"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.mapping.MongoPersistentEntity"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.mapping.MongoPersistentProperty"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.mapping.event.MongoMappingEvent"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.mapreduce.MapReduceOptions"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.mapreduce.MapReduceResults"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.query.Collation"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.query.NearQuery"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.query.Query"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.query.UpdateDefinition"
+    },
+    {
+      "type": "org.springframework.data.mongodb.core.validation.Validator"
+    },
+    {
+      "type": "org.springframework.data.mongodb.gridfs.GridFsObject"
+    },
+    {
+      "type": "org.springframework.data.mongodb.gridfs.GridFsOperations"
+    },
+    {
+      "type": "org.springframework.data.mongodb.gridfs.GridFsOperationsSupport"
+    },
+    {
+      "type": "org.springframework.data.mongodb.gridfs.GridFsResource"
+    },
+    {
+      "type": "org.springframework.data.mongodb.gridfs.GridFsTemplate"
     },
     {
       "type": "org.springframework.data.mongodb.repository.Aggregation"
@@ -24550,6 +25314,15 @@
     },
     {
       "type": "org.springframework.data.mongodb.repository.config.MongoRepositoryConfigurationExtension"
+    },
+    {
+      "type": "org.springframework.data.mongodb.repository.support.MongoRepositoryFactoryBean"
+    },
+    {
+      "type": "org.springframework.data.projection.EntityProjection"
+    },
+    {
+      "type": "org.springframework.data.projection.ProjectionFactory"
     },
     {
       "type": "org.springframework.data.querydsl.EntityPathResolver"
@@ -24948,6 +25721,9 @@
       "type": "org.springframework.data.web.config.SpringDataWebSettings"
     },
     {
+      "type": "org.springframework.expression.EvaluationContext"
+    },
+    {
       "type": "org.springframework.format.AnnotationFormatterFactory"
     },
     {
@@ -25216,9 +25992,6 @@
     },
     {
       "type": "org.springframework.lang.Nullable"
-    },
-    {
-      "type": "org.springframework.ldap.core.ContextSource"
     },
     {
       "type": "org.springframework.ldap.core.LdapTemplate"
@@ -27120,6 +27893,9 @@
       "type": "sun.text.resources.BreakIteratorResources_en_US"
     },
     {
+      "type": "sun.text.resources.CollationData"
+    },
+    {
       "type": "sun.text.resources.cldr.FormatData"
     },
     {
@@ -27801,6 +28577,9 @@
       "glob": "META-INF/services/com.fasterxml.jackson.databind.Module"
     },
     {
+      "glob": "META-INF/services/com.mongodb.spi.dns.InetAddressResolverProvider"
+    },
+    {
       "glob": "META-INF/services/io.swagger.v3.core.converter.ModelConverter"
     },
     {
@@ -27978,6 +28757,18 @@
       "glob": "META-INF/validation.xml"
     },
     {
+      "glob": "application-dev-sqlite.properties"
+    },
+    {
+      "glob": "application-dev-sqlite.xml"
+    },
+    {
+      "glob": "application-dev-sqlite.yaml"
+    },
+    {
+      "glob": "application-dev-sqlite.yml"
+    },
+    {
       "glob": "application-dev.properties"
     },
     {
@@ -27988,18 +28779,6 @@
     },
     {
       "glob": "application-dev.yml"
-    },
-    {
-      "glob": "application-dev_sqlite.properties"
-    },
-    {
-      "glob": "application-dev_sqlite.xml"
-    },
-    {
-      "glob": "application-dev_sqlite.yaml"
-    },
-    {
-      "glob": "application-dev_sqlite.yml"
     },
     {
       "glob": "application-sqlite.properties"
@@ -28101,7 +28880,10 @@
       "glob": "com/jmal/clouddisk/config/jpa/SqliteDataSource.class"
     },
     {
-      "glob": "com/jmal/clouddisk/config/mongodb/MongoAutoConfigurationDisabler.class"
+      "glob": "com/jmal/clouddisk/config/mongodb"
+    },
+    {
+      "glob": "com/jmal/clouddisk/config/mongodb/MongoClientConfig.class"
     },
     {
       "glob": "com/jmal/clouddisk/controller/ArticlesController.class"
@@ -28426,9 +29208,6 @@
     },
     {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/QueuedWriteServiceImpl.class"
-    },
-    {
-      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/WriteServiceConfiguration.class"
     },
     {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/accesstoken/CreateAccessTokenOperationHandler.class"
@@ -28833,6 +29612,9 @@
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/trash/ITrashOperation.class"
     },
     {
+      "glob": "com/jmal/clouddisk/dao/write/WriteServiceConfiguration.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/exception/CommonExceptionHandler.class"
     },
     {
@@ -29169,6 +29951,18 @@
       "glob": "com/sun/jna/darwin-aarch64/libjnidispatch.jnilib"
     },
     {
+      "glob": "config/application-dev-sqlite.properties"
+    },
+    {
+      "glob": "config/application-dev-sqlite.xml"
+    },
+    {
+      "glob": "config/application-dev-sqlite.yaml"
+    },
+    {
+      "glob": "config/application-dev-sqlite.yml"
+    },
+    {
       "glob": "config/application-dev.properties"
     },
     {
@@ -29179,18 +29973,6 @@
     },
     {
       "glob": "config/application-dev.yml"
-    },
-    {
-      "glob": "config/application-dev_sqlite.properties"
-    },
-    {
-      "glob": "config/application-dev_sqlite.xml"
-    },
-    {
-      "glob": "config/application-dev_sqlite.yaml"
-    },
-    {
-      "glob": "config/application-dev_sqlite.yml"
     },
     {
       "glob": "config/application-sqlite.properties"
@@ -30453,15 +31235,6 @@
       "glob": "org/springframework/boot/autoconfigure/AutoConfiguration.class"
     },
     {
-      "glob": "org/springframework/boot/autoconfigure/AutoConfigurationImportSelector.class"
-    },
-    {
-      "glob": "org/springframework/boot/autoconfigure/AutoConfigurationPackage.class"
-    },
-    {
-      "glob": "org/springframework/boot/autoconfigure/AutoConfigurationPackages$Registrar.class"
-    },
-    {
       "glob": "org/springframework/boot/autoconfigure/AutoConfigureAfter.class"
     },
     {
@@ -30469,9 +31242,6 @@
     },
     {
       "glob": "org/springframework/boot/autoconfigure/AutoConfigureOrder.class"
-    },
-    {
-      "glob": "org/springframework/boot/autoconfigure/EnableAutoConfiguration.class"
     },
     {
       "glob": "org/springframework/boot/autoconfigure/admin/SpringApplicationAdminJmxAutoConfiguration.class"
@@ -30573,6 +31343,9 @@
       "glob": "org/springframework/boot/autoconfigure/data/AbstractRepositoryConfigurationSourceSupport.class"
     },
     {
+      "glob": "org/springframework/boot/autoconfigure/data/ConditionalOnRepositoryType.class"
+    },
+    {
       "glob": "org/springframework/boot/autoconfigure/data/jpa/JpaRepositoriesAutoConfiguration$BootstrapExecutorCondition.class"
     },
     {
@@ -30583,6 +31356,27 @@
     },
     {
       "glob": "org/springframework/boot/autoconfigure/data/jpa/JpaRepositoriesRegistrar.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/data/mongo/MongoDataAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/data/mongo/MongoDataConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/data/mongo/MongoDatabaseFactoryConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/data/mongo/MongoDatabaseFactoryDependentConfiguration$GridFsMongoDatabaseFactory.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/data/mongo/MongoDatabaseFactoryDependentConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/data/mongo/MongoRepositoriesAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/data/mongo/MongoRepositoriesRegistrar.class"
     },
     {
       "glob": "org/springframework/boot/autoconfigure/data/web/SpringDataWebAutoConfiguration.class"
@@ -30826,6 +31620,12 @@
     },
     {
       "glob": "org/springframework/boot/autoconfigure/mail/MailSenderValidatorAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/mongo/MongoAutoConfiguration$MongoClientSettingsConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/mongo/MongoAutoConfiguration.class"
     },
     {
       "glob": "org/springframework/boot/autoconfigure/orm/jpa/EntityManagerFactoryDependsOnPostProcessor.class"
@@ -31110,9 +31910,6 @@
       "glob": "org/springframework/boot/autoconfigure/web/servlet/error/ErrorMvcAutoConfiguration.class"
     },
     {
-      "glob": "org/springframework/boot/context/annotation/DeterminableImports.class"
-    },
-    {
       "glob": "org/springframework/boot/context/properties/ConfigurationProperties.class"
     },
     {
@@ -31170,9 +31967,6 @@
       "glob": "org/springframework/context/annotation/Configuration.class"
     },
     {
-      "glob": "org/springframework/context/annotation/DeferredImportSelector.class"
-    },
-    {
       "glob": "org/springframework/context/annotation/EnableAspectJAutoProxy.class"
     },
     {
@@ -31227,7 +32021,13 @@
       "glob": "org/springframework/data/jpa/util/JpaMetamodelCacheCleanup.class"
     },
     {
+      "glob": "org/springframework/data/mongodb/config/AbstractMongoClientConfiguration.class"
+    },
+    {
       "glob": "org/springframework/data/mongodb/config/GeoJsonConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/data/mongodb/config/MongoConfigurationSupport.class"
     },
     {
       "glob": "org/springframework/data/mongodb/repository/MongoRepository.class"

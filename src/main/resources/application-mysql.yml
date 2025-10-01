@@ -18,3 +18,5 @@ jmalcloud:
   datasource:
     type: mysql
     migration: false
+    jpa-enabled: true
+    mongo-enabled: false

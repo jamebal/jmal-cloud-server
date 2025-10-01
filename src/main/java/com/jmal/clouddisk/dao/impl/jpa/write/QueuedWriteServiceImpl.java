@@ -78,13 +78,13 @@ public class QueuedWriteServiceImpl implements IWriteService {
 
     public QueuedWriteServiceImpl(DataManipulationService dataManipulationService) {
         this.dataManipulationService = dataManipulationService;
-        log.info("写入策略初始化：带优先级的异步队列写入（适用于SQLite）。");
+        log.debug("写入策略初始化：带优先级的异步队列写入（适用于SQLite）。");
         init();
     }
 
     @Override
     public <R> CompletableFuture<R> submit(IDataOperation<R> operation, Priority priority) {
-        log.info( "提交操作任务 {}, 优先级: {}", operation.getClass().getName(), priority);
+        log.debug( "提交操作任务 {}, 优先级: {}", operation.getClass().getName(), priority);
         WriteTask<R> task = new WriteTask<>(operation, new CompletableFuture<>(), priority);
 
         boolean offered = writeQueue.offer(task);
@@ -94,17 +94,17 @@ public class QueuedWriteServiceImpl implements IWriteService {
             log.error(errorMessage);
             task.future.completeExceptionally(new RejectedExecutionException(errorMessage));
         } else {
-            log.info("任务 {} 已提交，优先级: {}", operation.getClass().getSimpleName(), priority);
+            log.debug("任务 {} 已提交，优先级: {}", operation.getClass().getSimpleName(), priority);
         }
 
         return task.future;
     }
 
     public void init() {
-        log.info("启动队列写入服务消费者线程...");
+        log.debug("启动队列写入服务消费者线程...");
         writerExecutor.submit(() -> {
             try {
-                log.info("队列写入服务消费者线程已启动。");
+                log.debug("队列写入服务消费者线程已启动。");
                 while (!Thread.currentThread().isInterrupted()) {
                     try {
                         WriteTask<?> task = writeQueue.take();
@@ -125,14 +125,14 @@ public class QueuedWriteServiceImpl implements IWriteService {
             } catch (Throwable t) {
                 log.error("队列写入服务消费者线程遇到致命错误并终止。", t);
             } finally {
-                log.info("队列写入服务消费者线程已终止。");
+                log.debug("队列写入服务消费者线程已终止。");
             }
         });
     }
 
     private void processTask(WriteTask<?> task) {
         try {
-            log.info("处理操作任务 {}, 优先级: {}", task.operation.getClass().getName(), task.priority);
+            log.debug("处理操作任务 {}, 优先级: {}", task.operation.getClass().getName(), task.priority);
             Object result = dataManipulationService.execute(task.operation);
             completeFuture(task.future, result);
         } catch (Throwable e) {
