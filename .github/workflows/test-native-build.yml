@@ -92,6 +92,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: 'maven'
 
+      - name: Wait if arch is arm64
+        if: ${{ matrix.arch == 'arm64' }}
+        run: |
+          echo "Waiting 12 minutes for amd64 finish..."
+          sleep 1800
+
       - name: Check Maven version
         run: mvn -v
 
