@@ -92,13 +92,19 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: 'maven'
 
+      - name: Wait if arch is arm64
+        if: ${{ matrix.arch == 'arm64' }}
+        run: |
+          echo "Waiting 12 minutes for amd64 finish..."
+          sleep 1800
+
       - name: Check Maven version
         run: mvn -v
 
       # 构建带插桩的 Native Image
       - name: Build Instrumented Native Image
         run: |
-          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }}"  -DskipTests -Dnative-image.jvmArgs="-Xmx20g" -Dnative-image.addArgs="--pgo-instrument -o target/jmalcloud-instrumented"
+          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }}  -DskipTests -Dnative-image.jvmArgs="-Xmx20g" -Dnative-image.addArgs="--pgo-instrument -o target/jmalcloud-instrumented"
 
       # 运行插桩程序以生成 Profile 文件
       - name: Run Instrumented App to Generate Profile
@@ -166,8 +172,7 @@ jobs:
       # 使用传入参数构建最终优化的 Native Image
       - name: Build final PGO-Optimized Native Image
         run: |
-          echo "Using final native-image aot_build_mode addArgs: ${{ inputs.aot_build_mode }}"
-          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }}" -DskipTests -Dnative-image.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--enable-monitoring=heapdump --pgo=jmalcloud.iprof"
+          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }} -DskipTests -Dnative-image.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--enable-monitoring=heapdump --pgo=jmalcloud.iprof"
 
   build-docker-and-push:
     needs: build-per-arch
