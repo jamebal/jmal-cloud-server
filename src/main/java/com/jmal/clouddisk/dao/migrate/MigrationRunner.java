@@ -1,5 +1,7 @@
 package com.jmal.clouddisk.dao.migrate;
 
+import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -20,9 +23,21 @@ public class MigrationRunner {
 
     private final List<IMigrationService> migrationServices;
 
+    private final Environment environment;
+
     // 可以在应用启动时自动执行
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
+        String mongodbUri = environment.getProperty("spring.data.mongodb.uri");
+        if (CharSequenceUtil.isBlank(mongodbUri)) {
+            return;
+        } else {
+            log.info("mongodb.uri : {}", mongodbUri);
+        }
+        Boolean isMigration = environment.getProperty("jmalcloud.datasource.migration", Boolean.class, false);
+        if (!BooleanUtil.isTrue(isMigration)) {
+            return;
+        }
 
         log.info("检测到关系型数据源配置，开始执行数据迁移任务...");
 
