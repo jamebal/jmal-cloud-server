@@ -2,8 +2,9 @@ FROM ghcr.io/jamebal/jmalcloud_mid:latest
 
 ARG VERSION
 
-ENV MONGODB_URI "mongodb://mongo:27017/jmalcloud"
-ENV RUN_ENVIRONMENT prod
+ENV MONGODB_URI ""
+ENV RUN_ENVIRONMENT ""
+ENV DATA_BASE_TYPE "sqlite"
 ENV JVM_OPTS ""
 ENV LOG_LEVEL warn
 

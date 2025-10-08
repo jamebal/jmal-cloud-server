@@ -10,6 +10,10 @@ on:
         description: "本次构建的镜像名称（会生成 tag-arch 以及 tag 的多架构 manifest）"
         required: true
         type: string
+      profiles_active:
+        description: "--spring.profiles.active"
+        required: true
+        type: string
       aot_build_mode:
         description: "最终 Native Image 构建时的 -Daot.build.mode 参数"
         required: true
@@ -122,7 +126,7 @@ jobs:
           echo "Starting instrumented application in the background..."
           # 在后台运行程序，并将 profile 文件名指定为 jmalcloud.iprof
           # 使用 & 将其放入后台
-          ./target/jmalcloud-instrumented -XX:ProfilesDumpFile='jmalcloud.iprof' --spring.data.mongodb.uri=${{secrets.MONGODB_URI}} --file.rootDir=${HOME}/jmalcloud > "${HOME}/app.log" 2>&1 &
+          ./target/jmalcloud-instrumented --spring.profiles.active=${{ inputs.profiles_active }} -XX:ProfilesDumpFile='jmalcloud.iprof' --spring.data.mongodb.uri=${{secrets.MONGODB_URI}} --file.rootDir=${HOME}/jmalcloud > "${HOME}/app.log" 2>&1 &
           
           # 获取后台进程的 PID (Process ID)
           APP_PID=$!

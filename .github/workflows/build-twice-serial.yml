@@ -14,6 +14,7 @@ jobs:
     with:
       image_name: 'jmalcloud_native_jpa'
       image_tag: "test"
+      profiles_active: "dev-sqlite"
       aot_build_mode: "jpa"
       node_version: "16.20.2"
       graal_version: "25"
@@ -27,6 +28,7 @@ jobs:
     with:
       image_name: 'jmalcloud_native_mongo'
       image_tag: "test"
+      profiles_active: "default"
       aot_build_mode: "mongo"
       node_version: "16.20.2"
       graal_version: "25"

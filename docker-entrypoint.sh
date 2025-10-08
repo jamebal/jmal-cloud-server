@@ -14,11 +14,34 @@ chown ${USER_UID}:${USER_GID} /jmalcloud/ip2region.xdb
 chown -R ${USER_UID}:${USER_GID} /usr/local/mxcad
 chown -R ${USER_UID}:${USER_GID} /app
 
+DATA_BASE_TYPE=${DATA_BASE_TYPE:-"mongodb"}
+
+if [ -z "${MONGODB_URI}" ] && [ "${DATA_BASE_TYPE}" = "mongodb" ]; then
+  RUN_ENVIRONMENT="prod-sqlite"
+fi
+
+if [ "${DATA_BASE_TYPE}" = "sqlite" ]; then
+  RUN_ENVIRONMENT="prod-sqlite"
+fi
+if [ "${DATA_BASE_TYPE}" = "mysql" ]; then
+  RUN_ENVIRONMENT="prod-mysql"
+fi
+if [ "${DATA_BASE_TYPE}" = "pgsql" ]; then
+  RUN_ENVIRONMENT="prod-pgsql"
+fi
+if [ "${DATA_BASE_TYPE}" = "postgresql" ]; then
+  RUN_ENVIRONMENT="prod-pgsql"
+fi
+if [ "${DATA_BASE_TYPE}" = "mongodb" ]; then
+  MONGODB_URI=${MONGODB_URI:-"mongodb://mongo:27017/jmalcloud"}
+  RUN_ENVIRONMENT="prod-mongodb"
+fi
+
 exec gosu ${USER_UID}:${USER_GID} /app/jmalcloud ${JVM_OPTS} \
  -Duser.timezone=${TZ} \
  -Dfile.encoding=UTF-8 \
- --spring.profiles.active=${RUN_ENVIRONMENT} \
- --spring.data.mongodb.uri=${MONGODB_URI} \
+ --spring.profiles.active=${RUN_ENVIRONMENT:-"prod-mongodb"} \
+ --spring.data.mongodb.uri=${MONGODB_URI:-""} \
  --tess4j.data-path=${TESS4J_DATA_PATH} \
  --file.frontendResourcePath=/app/frontend/ \
  --file.exactSearch=${EXACT_SEARCH} \
