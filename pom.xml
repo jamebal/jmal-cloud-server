@@ -519,6 +519,7 @@
                                 <buildArg>-H:+AddAllCharsets</buildArg>
                                 <buildArg>-H:+AllowIncompleteClasspath</buildArg>
                                 <buildArg>-H:ExcludeResources=META-INF/services/org.hibernate.bytecode.spi.BytecodeProvider</buildArg>
+                                <buildArg>--enable-native-access=ALL-UNNAMED</buildArg>
                                 <buildArg>--enable-http</buildArg>
                                 <buildArg>--enable-https</buildArg>
                                 <buildArg>${native-image.addArgs}</buildArg>

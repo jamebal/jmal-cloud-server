@@ -99,3 +99,9 @@ logging:
             HotspotVMOptions: error
         poi: error
       jaudiotagger: warn
+      flywaydb:
+        core:
+          internal:
+            scanner:
+              classpath:
+                ClassPathScanner: error
