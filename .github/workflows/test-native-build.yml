@@ -1,4 +1,4 @@
-# 可复用工作流：单次（某一组编译参数+镜像标签）的多架构构建、推送与合并 manifest
+# 可复用工作流：单次（某一组编译参数+镜像标签）的单架构构建、推送
 on:
   workflow_call:
     inputs:
@@ -16,6 +16,10 @@ on:
         type: string
       aot_build_mode:
         description: "最终 Native Image 构建时的 -Daot.build.mode 参数"
+        required: true
+        type: string
+      arch:
+        description: "架构类型 (amd64 或 arm64)"
         required: true
         type: string
       node_version:
@@ -46,15 +50,8 @@ on:
         required: true
 
 jobs:
-  build-per-arch:
-    strategy:
-      matrix:
-        include:
-          - arch: amd64
-            self_hosted_label: [self-hosted, Linux, X64]
-          - arch: arm64
-            self_hosted_label: [self-hosted, Linux, ARM64]
-    runs-on: ${{ matrix.self_hosted_label }}
+  build-single-arch:
+    runs-on: ${{ inputs.arch == 'amd64' && fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["self-hosted", "Linux", "ARM64"]') }}
 
     steps:
       - name: Checkout repository
@@ -95,12 +92,6 @@ jobs:
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: 'maven'
-
-      - name: Wait if arch is arm64
-        if: ${{ matrix.arch == 'arm64' }}
-        run: |
-          echo "Waiting 12 minutes for amd64 finish..."
-          sleep 1800
 
       - name: Check Maven version
         run: mvn -v
@@ -178,21 +169,6 @@ jobs:
         run: |
           mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }} -DskipTests -Dnative-image.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--enable-monitoring=heapdump --pgo=jmalcloud.iprof"
 
-  build-docker-and-push:
-    needs: build-per-arch
-    strategy:
-      matrix:
-        include:
-          - arch: amd64
-            self_hosted_label: [self-hosted, Linux, X64]
-          - arch: arm64
-            self_hosted_label: [self-hosted, Linux, ARM64]
-    runs-on: ${{ matrix.self_hosted_label }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -208,16 +184,6 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
-
-      - name: Set up GraalVM for JAVA HOME
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: ${{ inputs.graal_version }}
-          distribution: 'graalvm'
-
-      - name: Set Maven Environmental
-        run: |
-          echo "/opt/maven/bin" >> $GITHUB_PATH
 
       - name: Extract project version from pom.xml
         id: project_version
@@ -236,9 +202,9 @@ jobs:
           file: ${{ inputs.dockerfile }}
           push: true
           tags: |
-            jmal/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ matrix.arch }}
-            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ matrix.arch }}
-          platforms: linux/${{ matrix.arch }}
+            jmal/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ inputs.arch }}
+            ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ inputs.arch }}
+          platforms: linux/${{ inputs.arch }}
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
 
@@ -246,44 +212,7 @@ jobs:
         if: ${{ success() }}
         run: |
           echo "--- Inspecting Docker Hub image ---"
-          docker manifest inspect jmal/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ matrix.arch }}
+          docker manifest inspect jmal/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ inputs.arch }}
 
           echo "--- Inspecting GHCR image ---"
-          docker manifest inspect ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ matrix.arch }}
-
-  merge-manifests:
-    needs: build-docker-and-push
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Wait for registry to become consistent
-        run: |
-          echo "Waiting for 30 seconds to allow registry caches to update..."
-          sleep 30
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.GHCR_IO_USERNAME }}
-          password: ${{ secrets.GHCR_IO_TOKEN }}
-
-      - name: Create and push Docker Hub manifest
-        run: |
-          docker manifest create jmal/${{ inputs.image_name }}:${{ inputs.image_tag }} \
-            --amend jmal/${{ inputs.image_name }}:${{ inputs.image_tag }}-amd64 \
-            --amend jmal/${{ inputs.image_name }}:${{ inputs.image_tag }}-arm64
-          docker manifest push jmal/${{ inputs.image_name }}:${{ inputs.image_tag }}
-
-      - name: Create and push GHCR manifest
-        run: |
-          docker manifest create ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/${{ inputs.image_name }}:${{ inputs.image_tag }} \
-            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/${{ inputs.image_name }}:${{ inputs.image_tag }}-amd64 \
-            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/${{ inputs.image_name }}:${{ inputs.image_tag }}-arm64
-          docker manifest push ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/${{ inputs.image_name }}:${{ inputs.image_tag }}
+          docker manifest inspect ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ inputs.arch }}
