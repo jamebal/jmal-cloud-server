@@ -66,7 +66,7 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
     private String mountFileId;
     private String ossFolder;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = false, orphanRemoval = true)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER, optional = false, orphanRemoval = true)
     @JoinColumn(name = "props_id", referencedColumnName = "id", unique = true)
     private FilePropsDO props;
 

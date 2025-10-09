@@ -49,7 +49,7 @@ public class ArticleDO extends AuditablePerformanceEntity implements Reflective 
     @JdbcTypeCode(SqlTypes.JSON)
     private List<String> tagIds;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false, cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
+    @OneToOne(fetch = FetchType.EAGER, optional = false, cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
     @JoinColumn(name = "file_id", // 在 articles 表中创建的外键列名
             referencedColumnName = "id", // file_id 列引用的是 files 表的 id 列
             unique = true, // 确保一个文件只能被一篇文章引用，强制一对一
