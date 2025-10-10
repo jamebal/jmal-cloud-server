@@ -1,27 +1,21 @@
 package com.jmal.clouddisk.util;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IoUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.jar.JarArchiveEntry;
-import org.apache.commons.compress.archivers.jar.JarArchiveInputStream;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.tools.zip.ZipEntry;
-import org.apache.tools.zip.ZipFile;
 import org.apache.tools.zip.ZipOutputStream;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.nio.file.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * 压缩文件夹工具类
@@ -52,14 +46,16 @@ public class CompressUtils {
     private static void addDirectoryToZip(Path rootDir, Path sourceDir, ZipOutputStream zipOut) throws IOException {
         // 遍历文件夹及其子文件夹内容
         Files.walkFileTree(sourceDir, new SimpleFileVisitor<>() {
+            @NotNull
             @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            public FileVisitResult visitFile(@NotNull Path file, @NotNull BasicFileAttributes attrs) throws IOException {
                 addToZip(rootDir, file, zipOut);
                 return FileVisitResult.CONTINUE;
             }
 
+            @NotNull
             @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            public FileVisitResult preVisitDirectory(@NotNull Path dir, @NotNull BasicFileAttributes attrs) throws IOException {
                 if (!dir.equals(sourceDir)) {
                     addToZip(rootDir, dir, zipOut);
                 }
@@ -81,93 +77,66 @@ public class CompressUtils {
         zipOut.closeEntry();
     }
 
-    public static void decompress(String filePath, String outputDir, boolean isWrite) {
+    public static void decompress(String filePath, String outputDir, boolean isWrite) throws IOException, InterruptedException {
         File file = new File(filePath);
         if (!file.exists()) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
-        try {
-            if (filePath.endsWith(".zip")) {
-                unZip(file, outputDir, isWrite);
-            } else if (filePath.endsWith(".tar")) {
-                decompressTar(file, outputDir, isWrite);
-            } else if (filePath.endsWith(".7z")) {
-                decompressSevenZ(file, outputDir, isWrite);
-            } else if (filePath.endsWith(".rar")) {
-                decompressRar(file, outputDir, isWrite);
-            } else if (filePath.endsWith(".jar")) {
-                decompressJar(file, outputDir, isWrite);
-            } else if (filePath.endsWith(".tar.gz") || filePath.endsWith(".tgz") || filePath.endsWith(".gz")) {
-                decompressTarGz(file, outputDir, isWrite);
-            } else if (filePath.endsWith(".tar.bz2")) {
-                decompressTarBz2(file, outputDir, isWrite);
-            } else {
+        String compressionType = DetectArchiveType.detectType(filePath);
+        if (!isWrite) {
+            // 创建输出目录
+            extractEmptyFiles(file, new File(outputDir));
+            return;
+        }
+        switch (compressionType) {
+            case "jar", "7z", "zip", "rar5", "rar", "tar":
+                decompressSevenZ(file, outputDir);
+                break;
+            case "gzip":
+                decompressGzip(file, outputDir);
+                break;
+            case "bzip2":
+                decompressBzip2(file, outputDir);
+                break;
+            default:
                 throw new CommonException(ExceptionType.UNRECOGNIZED_FILE);
-            }
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new CommonException(ExceptionType.FAIL_DECOMPRESS + e.getMessage());
         }
     }
 
-    /**
-     * 解压 .zip 文件
-     *
-     * @param file      要解压的zip文件对象
-     * @param outputDir 要解压到某个指定的目录下
-     * @param isWrite   是否输出文件
-     */
-    public static void unZip(File file, String outputDir, boolean isWrite) throws IOException {
-        ZipFile zipFile = new ZipFile(file, "utf-8");
-        //创建输出目录
-        createDirectory(outputDir, null);
-        Enumeration<?> enums = zipFile.getEntries();
-        while (enums.hasMoreElements()) {
-            org.apache.tools.zip.ZipEntry entry = (ZipEntry) enums.nextElement();
-            InputStream in = zipFile.getInputStream(entry);
-            decompress(outputDir, isWrite, in, entry.isDirectory(), entry.getName());
-        }
-        zipFile.close();
-    }
-
-    private static void decompress(String outputDir, boolean isWrite, InputStream in, boolean directory, String name) throws FileNotFoundException {
-        if (directory) {
-            //创建空目录
-            createDirectory(outputDir, name);
-        } else {
-            Path parentPath = Paths.get(outputDir, name).getParent();
-            if (!Files.exists(parentPath)) {
-                FileUtil.mkdir(parentPath.toFile());
+    public static void extractEmptyFiles(File archiveFile, File outputDir) throws IOException, InterruptedException {
+        Process proc = Runtime.getRuntime().exec(new String[]{"7z", "l", archiveFile.getAbsolutePath()});
+        BufferedReader reader = new BufferedReader(new InputStreamReader(proc.getInputStream(), StandardCharsets.UTF_8));
+        boolean inFileSection = false;
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (line.startsWith("----------")) {
+                inFileSection = !inFileSection;
+                continue;
             }
-            OutputStream out = new FileOutputStream(outputDir + File.separator + name);
-            if (isWrite) {
-                IoUtil.copy(in, out);
+            if (inFileSection && !line.trim().isEmpty()) {
+                // 7z l 输出格式，第6列是文件名
+                String[] parts = line.trim().split("\\s+");
+                if (parts.length >= 6) {
+                    String filePath = parts[5];
+                    // 目录或文件
+                    File target = new File(outputDir, filePath);
+                    if (filePath.endsWith("/") || filePath.endsWith("\\")) {
+                        FileUtil.mkdir(target);
+                    } else {
+                        File parent = target.getParentFile();
+                        if (parent != null) {
+                            FileUtil.mkdir(parent);
+                        }
+                        FileUtil.newFile(filePath);
+                    }
+                }
             }
         }
+        reader.close();
+        proc.waitFor();
     }
 
-    public static void decompressTarGz(File file, String outputDir, boolean isWrite) throws IOException {
-        TarArchiveInputStream tarIn = new TarArchiveInputStream(new GzipCompressorInputStream(new BufferedInputStream(new FileInputStream(file))));
-        //创建输出目录
-        createDirectory(outputDir, null);
-        TarArchiveEntry entry;
-        while ((entry = tarIn.getNextEntry()) != null) {
-            decompress(outputDir, isWrite, tarIn, entry);
-        }
-    }
-
-    public static void decompressJar(File file, String outputDir, boolean isWrite) throws IOException {
-        JarArchiveInputStream inputStream = new JarArchiveInputStream(new FileInputStream(file));
-        // 创建输出目录
-        createDirectory(outputDir, null);
-        JarArchiveEntry entry;
-        while (Objects.nonNull(entry = inputStream.getNextEntry())) {
-            decompress(outputDir, isWrite, inputStream, entry);
-        }
-    }
-
-    private static void decompressSevenZ(File sevenZFile, String outputDir, boolean isWrite) throws IOException {
-        previewNotSupported(sevenZFile, isWrite);
+    private static void decompressSevenZ(File sevenZFile, String outputDir) throws IOException {
         // 创建输出目录
         createDirectory(outputDir, null);
         ProcessBuilder processBuilder = new ProcessBuilder();
@@ -176,22 +145,22 @@ public class CompressUtils {
         executingCommand(processBuilder, "7z");
     }
 
-    private static void previewNotSupported(File sevenZFile, boolean isWrite) {
-        if (!isWrite) {
-            // 如果文件超过200M, 提示直接下载
-            if (sevenZFile.length() > 200 * 1024 * 1024) {
-                throw new CommonException(ExceptionType.CUSTOM_EXCEPTION.getCode(), "文件过大, 不支持预览, 请解压或下载后查看");
-            }
-        }
-    }
-
-    private static void decompressRar(File sevenZFile, String outputDir, boolean isWrite) throws IOException {
-        previewNotSupported(sevenZFile, isWrite);
+    private static void decompressGzip(File gzipFile, String outputDir) throws IOException {
         // 创建输出目录
         createDirectory(outputDir, null);
         ProcessBuilder processBuilder = new ProcessBuilder();
-        processBuilder.command("unrar", "x", "-o+", sevenZFile.getAbsolutePath(), outputDir);
-        executingCommand(processBuilder, "rar");
+        processBuilder.command("tar", "-xzf", gzipFile.getAbsolutePath(), "-C" + outputDir);
+        // 将输出和错误流重定向到空输出流
+        executingCommand(processBuilder, "gzip");
+    }
+
+    private static void decompressBzip2(File bzip2File, String outputDir) throws IOException {
+        // 创建输出目录
+        createDirectory(outputDir, null);
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        processBuilder.command("tar", "-jxf", bzip2File.getAbsolutePath(), "-C" + outputDir);
+        // 将输出和错误流重定向到空输出流
+        executingCommand(processBuilder, "bzip2");
     }
 
     private static void executingCommand(ProcessBuilder processBuilder, String type) throws IOException {
@@ -208,36 +177,6 @@ public class CompressUtils {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Extraction interrupted", e);
         }
-    }
-
-    public static void decompressTar(File file, String outputDir, boolean isWrite) throws IOException {
-        TarArchiveInputStream inputStream = new TarArchiveInputStream(new FileInputStream(file));
-        //创建输出目录
-        createDirectory(outputDir, null);
-        TarArchiveEntry entry;
-        while (Objects.nonNull(entry = inputStream.getNextEntry())) {
-            decompress(outputDir, isWrite, inputStream, entry);
-        }
-    }
-
-    /**
-     * 解压缩tar.bz2文件
-     *
-     * @param file      压缩包文件
-     * @param outputDir 目标文件夹
-     */
-    public static void decompressTarBz2(File file, String outputDir, boolean isWrite) throws IOException {
-        TarArchiveInputStream tarIn = new TarArchiveInputStream(new BZip2CompressorInputStream(new FileInputStream(file)));
-        createDirectory(outputDir, null);
-        TarArchiveEntry entry;
-        while (Objects.nonNull(entry = tarIn.getNextEntry())) {
-            decompress(outputDir, isWrite, tarIn, entry);
-        }
-    }
-
-    private static void decompress(String outputDir, boolean isWrite, InputStream inputStream, ArchiveEntry entry) throws IOException {
-        //是目录
-        decompress(outputDir, isWrite, inputStream, entry.isDirectory(), entry.getName());
     }
 
     /**
