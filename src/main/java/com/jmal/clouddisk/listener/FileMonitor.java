@@ -211,9 +211,9 @@ public class FileMonitor {
     }
 
     /**
-     * 每3小时检查一次版本
+     * 每12小时检查一次版本
      */
-    @Scheduled(cron = "0 0 0/3 * * ?")
+    @Scheduled(cron = "0 0 0/12 * * ?")
     private void getNewVersion() {
         newVersion = SystemUtil.getNewVersion();
     }
