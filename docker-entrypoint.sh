@@ -41,6 +41,7 @@ exec gosu ${USER_UID}:${USER_GID} /app/jmalcloud ${JVM_OPTS} \
  -Duser.timezone=${TZ} \
  -Dfile.encoding=UTF-8 \
  --spring.profiles.active=${RUN_ENVIRONMENT:-"prod-mongodb"} \
+ --jmalcloud.datasource.migration=${MIGRATION:-"false"} \
  --spring.data.mongodb.uri=${MONGODB_URI:-""} \
  --tess4j.data-path=${TESS4J_DATA_PATH} \
  --file.frontendResourcePath=/app/frontend/ \

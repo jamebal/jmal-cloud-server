@@ -21,4 +21,3 @@ jmalcloud:
     type: sqlite
     migration: false
     jpa-enabled: true
-    mongo-enabled: false

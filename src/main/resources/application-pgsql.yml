@@ -22,4 +22,3 @@ jmalcloud:
     type: pgsql
     migration: false
     jpa-enabled: true
-    mongo-enabled: false

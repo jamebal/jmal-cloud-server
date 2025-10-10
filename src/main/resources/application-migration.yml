@@ -1,7 +1,6 @@
 jmalcloud:
   datasource:
     jpa-enabled: true
-    mongo-enabled: true
     migration: true
 logging:
   level:

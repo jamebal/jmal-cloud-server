@@ -46,13 +46,11 @@ public class AotBuildTimePropertiesInitializer implements ApplicationContextInit
         if (buildMode.equalsIgnoreCase("mongo")) {
             props.put("jmalcloud.datasource.type", "mongodb");
             props.put("jmalcloud.datasource.jpa-enabled", false);
-            props.put("jmalcloud.datasource.mongo-enabled", true);
             props.put("jmalcloud.datasource.migration", false);
             props.put("spring.data.mongodb.uri", "dummy");
         } else {
             props.put("jmalcloud.datasource.type", "sqlite");
             props.put("jmalcloud.datasource.jpa-enabled", true);
-            props.put("jmalcloud.datasource.mongo-enabled", true);
             props.put("jmalcloud.datasource.migration", true);
             props.put("spring.datasource.url", "dummy");
             props.put("spring.data.mongodb.uri", "dummy");
