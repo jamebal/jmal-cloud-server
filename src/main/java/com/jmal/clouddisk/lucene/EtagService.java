@@ -28,6 +28,7 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -238,7 +239,7 @@ public class EtagService {
                 // 如果没有内容，则设置初始ETag
                 String initialEtag = HashUtil.sha256(EMPTY_FOLDER_ETAG_BASE_STRING);
                 etagDAO.setEtagByUserIdAndPathAndName(userId, relativePath, fileName, initialEtag);
-                log.info("Initial ETag set for new folder {}: {}", currentFolderNormalizedPath, initialEtag);
+                log.debug("Initial ETag set for new folder {}: {}", currentFolderNormalizedPath, initialEtag);
             }
             // 标记父文件夹需要更新ETag
             markFolderForEtagUpdate(userService.getUserIdByUserName(username), relativePath);
@@ -324,13 +325,29 @@ public class EtagService {
                 log.debug("[Worker {}] Processing ETag for folder: {} (ID: {})", workerId, folderPath, docId);
 
                 try {
-                    boolean etagActuallyChanged = calculateAndUpdateSingleFolderEtagInternal(folderDoc, workerId);
-                    etagDAO.clearMarkUpdateById(docId);
-                    log.debug("[Worker {}] Cleared ETag update mark for folder: {}", workerId, folderPath + folderDoc.getName());
+                    EtagCalculationResult result = calculateAndUpdateSingleFolderEtagInternal(folderDoc, workerId);
 
-                    if (etagActuallyChanged) {
-                        // 如果ETag变化了，标记其父文件夹
-                        markFolderForEtagUpdate(userId, folderPath);
+                    switch (result) {
+                        case UPDATED:
+                            // 成功更新，清除标记并标记父文件夹
+                            etagDAO.clearMarkUpdateById(docId);
+                            log.debug("[Worker {}] Cleared ETag update mark for folder: {}", workerId, folderPath + folderDoc.getName());
+                            markFolderForEtagUpdate(userId, folderPath);
+                            break;
+                        case NOT_CHANGED:
+                            // ETag未变，只需清除标记
+                            etagDAO.clearMarkUpdateById(docId);
+                            log.debug("[Worker {}] Cleared ETag update mark for folder: {} as ETag was unchanged.", workerId, folderPath + folderDoc.getName());
+                            break;
+                        case SKIPPED_CHILD_NULL:
+                            // 跳过处理，不清除标记。增加一个小的延迟，避免立即重试导致CPU空转。
+                            log.warn("[Worker {}] Folder {} processing skipped, will be retried later.", workerId, folderPath);
+                            TimeUnit.MILLISECONDS.sleep(50);
+                            break;
+                        case ERROR:
+                            // 出现预料之外的错误
+                            handleProcessingError(docId, folderPath, new RuntimeException("Calculation returned ERROR state"), workerId);
+                            break;
                     }
                 } catch (Exception e) {
                     log.error("[Worker {}] Critical error processing ETag for folder {}: {}", workerId, folderPath, e.getMessage(), e);
@@ -374,7 +391,7 @@ public class EtagService {
      *
      * @return true 如果ETag实际发生了变化并被更新
      */
-    private boolean calculateAndUpdateSingleFolderEtagInternal(FileBaseEtagDTO folderDoc, String workerId) {
+    private EtagCalculationResult calculateAndUpdateSingleFolderEtagInternal(FileBaseEtagDTO folderDoc, String workerId) {
         String folderPath = folderDoc.getPath();
         String oldEtag = folderDoc.getEtag();
         String userId = folderDoc.getUserId();
@@ -391,7 +408,9 @@ public class EtagService {
             StringBuilder combinedRepresentation = new StringBuilder();
             for (String rep : childRepresentations) {
                 if (rep == null) {
-                    return false;
+                    // 子项未准备好，返回SKIPPED状态
+                    log.warn("[Worker {}] Skipped ETag calculation for folder {} because a child item's ETag was null.", workerId, folderPath);
+                    return EtagCalculationResult.SKIPPED_CHILD_NULL;
                 }
                 if (CharSequenceUtil.isNotBlank(rep)) {
                     combinedRepresentation.append(rep).append(";");
@@ -408,15 +427,15 @@ public class EtagService {
             long modifiedCount = etagDAO.updateEtagAndSizeById(folderDoc.getId(), newCalculatedEtag, folderSize);
             if (modifiedCount > 0) {
                 log.debug("[Worker {}] Folder ETag updated for {}: {} -> {}", workerId, folderPath + folderDoc.getName(), oldEtag, newCalculatedEtag);
-                return true;
+                return EtagCalculationResult.UPDATED;
             } else {
                 // 可能在计算和写入之间，该文档被其他worker处理了（如果ETag已更新为相同值）或版本冲突
                 log.warn("[Worker {}] Folder ETag for {} was calculated as {} (old: {}), but DB update reported no modification. Possible race condition or already up-to-date.", workerId, folderPath, newCalculatedEtag, oldEtag);
-                return false; // 没有实际修改数据库
+                return EtagCalculationResult.NOT_CHANGED; // 没有实际修改数据库
             }
         }
         log.debug("[Worker {}] Folder ETag for {} did not change (calculated: {}, current: {}).", workerId, folderPath, newCalculatedEtag, oldEtag);
-        return false;
+        return EtagCalculationResult.NOT_CHANGED;
     }
 
     private void handleProcessingError(String docId, String folderPath, Exception e, String workerId) {
