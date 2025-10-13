@@ -280,6 +280,7 @@ public class FileDAOImpl implements IFileDAO {
     private static void unsetShareProps(Update update) {
         update.unset(Constants.SHARE_ID);
         update.unset(Constants.IS_SHARE);
+        update.unset(Constants.SHARE_BASE);
         update.unset(Constants.SUB_SHARE);
         update.unset(Constants.EXPIRES_AT);
         update.unset(Constants.IS_PRIVACY);
