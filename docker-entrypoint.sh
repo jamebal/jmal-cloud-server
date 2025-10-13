@@ -47,7 +47,7 @@ exec gosu ${USER_UID}:${USER_GID} /app/jmalcloud ${JVM_OPTS} \
  --file.frontendResourcePath=/app/frontend/ \
  --file.pdfjsResourcePath=/webapp/plug/pdfjs/ \
  --file.drawioResourcePath=/webapp/plug/draw/ \
- --file.excalidrawResourcePath=/webapp/plug/excalidraw/ \
+ --file.excalidrawResourcePath=/webapp/plug/excalidraw/excalidraw/app/ \
  --file.exactSearch=${EXACT_SEARCH} \
  --file.ngramMaxContentLengthMB=${NGRAM_MAX_CONTENT_LENGTH_MB} \
  --file.ngramMinSize=${NGRAM_MIN_SIZE} \
