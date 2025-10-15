@@ -26,6 +26,7 @@ public class FileIntroVO extends FileBase implements Reflective {
      * 文件路径(根路径为"/")
      */
     private String path;
+    private Integer childrenCount;
     /***
      * updateDate 距离现在的时间
      */

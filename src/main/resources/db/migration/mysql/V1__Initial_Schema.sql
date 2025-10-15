@@ -42,8 +42,7 @@ CREATE TABLE `articles` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `UKqsi7ot2lswfqp9a772eqclp83` (`public_id`),
   UNIQUE KEY `UKrmuoi47xf7daot59dh80jcst0` (`file_id`),
-  KEY `articles_slug` (`slug`),
-  CONSTRAINT `fk_article_to_file` FOREIGN KEY (`file_id`) REFERENCES `files` (`id`)
+  KEY `articles_slug` (`slug`)
 ) ENGINE=InnoDB AUTO_INCREMENT=60 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -170,8 +169,7 @@ CREATE TABLE `files` (
   KEY `files_user_id` (`user_id`),
   KEY `files_path` (`path`),
   KEY `files_mount_file_id` (`mount_file_id`),
-  KEY `files_del_tag` (`del_tag`),
-  CONSTRAINT `FKrmivpiq5s6236tk73w1er54qp` FOREIGN KEY (`props_id`) REFERENCES `file_props` (`id`)
+  KEY `files_del_tag` (`del_tag`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3597 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

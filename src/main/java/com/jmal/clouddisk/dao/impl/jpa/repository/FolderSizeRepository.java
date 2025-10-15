@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -38,8 +39,8 @@ public interface FolderSizeRepository extends JpaRepository<FileMetadataDO, Stri
      * 更新指定文件的大小
      */
     @Modifying
-    @Query("UPDATE FileMetadataDO f SET f.size = :size, f.updateDate = CURRENT_TIMESTAMP WHERE f.publicId = :fileId")
-    int updateFileSize(@Param("fileId") String fileId, @Param("size") Long size);
+    @Query("UPDATE FileMetadataDO f SET f.size = :size, f.childrenCount = :childrenCount, f.updateDate = :updateDate WHERE f.publicId = :fileId")
+    int updateFileSize(@Param("fileId") String fileId, @Param("size") Long size, @Param("childrenCount") Integer childrenCount, LocalDateTime updateDate);
 
     /**
      * 清空所有文件夹的大小信息

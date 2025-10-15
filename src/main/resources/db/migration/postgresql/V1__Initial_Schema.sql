@@ -950,24 +950,3 @@ CREATE INDEX trash_update_date ON public.trash USING btree (update_date);
 
 CREATE INDEX trash_upload_date ON public.trash USING btree (upload_date);
 
-
---
--- Name: articles fk_article_to_file; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.articles
-    ADD CONSTRAINT fk_article_to_file FOREIGN KEY (file_id) REFERENCES public.files(id);
-
-
---
--- Name: files fkrmivpiq5s6236tk73w1er54qp; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.files
-    ADD CONSTRAINT fkrmivpiq5s6236tk73w1er54qp FOREIGN KEY (props_id) REFERENCES public.file_props(id);
-
-
---
--- PostgreSQL database dump complete
---
-

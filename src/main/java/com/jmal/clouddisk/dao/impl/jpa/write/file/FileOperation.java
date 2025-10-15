@@ -33,7 +33,7 @@ public final class FileOperation {
 
     public record RemoveByMountFileIdIn(List<String> fileIds) implements IFileOperation<Void> {}
 
-    public record UpdateFileSize(String fileId, Long size) implements IFileOperation<Integer> {}
+    public record UpdateFileSize(String fileId, Long size, int childrenCount) implements IFileOperation<Integer> {}
     public record ClearAllFolderSizes() implements IFileOperation<Integer> {}
 
     public record UpdateShareProps(

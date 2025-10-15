@@ -13,6 +13,7 @@ import lombok.Setter;
 import org.bson.types.ObjectId;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 /**
@@ -50,6 +51,7 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
     @Column(nullable = false)
     private String path;
     private Long size;
+    private Integer childrenCount;
     @Column(length = 128)
     private String contentType;
     @Column(length = 32)
@@ -92,9 +94,10 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
     // =========================== ETag相关字段 ===========================
     @Column(length = 64)
     private String etag;
+    private Instant retryAt;
     private Integer etagUpdateFailedAttempts;
     private Boolean needsEtagUpdate;
-    private LocalDateTime lastEtagUpdateRequestAt;
+    private Instant lastEtagUpdateRequestAt;
     @Column(columnDefinition = "TEXT")
     private String lastEtagUpdateError;
 
@@ -122,6 +125,7 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
         this.isFolder = fileDocument.getIsFolder();
         this.name = fileDocument.getName();
         this.size = fileDocument.getSize();
+        this.childrenCount = fileDocument.getChildrenCount();
         this.contentType = fileDocument.getContentType();
         this.uploadDate = fileDocument.getUploadDate();
         this.updateDate = fileDocument.getUpdateDate();
@@ -130,6 +134,7 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
         this.mountFileId = fileDocument.getMountFileId();
         this.ossFolder = fileDocument.getOssFolder();
         this.etag = fileDocument.getEtag();
+        this.retryAt = fileDocument.getRetryAt();
         this.etagUpdateFailedAttempts = fileDocument.getEtagUpdateFailedAttempts();
         this.needsEtagUpdate = fileDocument.getNeedsEtagUpdate();
         this.lastEtagUpdateRequestAt = fileDocument.getLastEtagUpdateRequestAt();
@@ -153,6 +158,7 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
         fileDocument.setUpdateDate(this.updateDate);
         fileDocument.setUserId(this.userId);
         fileDocument.setPath(this.path);
+        fileDocument.setChildrenCount(this.childrenCount);
         fileDocument.setSuffix(this.suffix);
         fileDocument.setIsFavorite(this.isFavorite);
         if (this.props != null) {
@@ -166,6 +172,7 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
         fileDocument.setDelete(this.getDelTag());
         fileDocument.setIndex(this.getLuceneIndex());
         fileDocument.setEtag(this.etag);
+        fileDocument.setRetryAt(this.retryAt);
         fileDocument.setEtagUpdateFailedAttempts(this.etagUpdateFailedAttempts);
         fileDocument.setNeedsEtagUpdate(this.needsEtagUpdate);
         fileDocument.setLastEtagUpdateRequestAt(this.lastEtagUpdateRequestAt);
@@ -182,6 +189,7 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
         fileDocument.setName(this.name);
         fileDocument.setMd5(this.md5);
         fileDocument.setSize(this.size);
+        fileDocument.setChildrenCount(this.childrenCount);
         fileDocument.setContentType(this.contentType);
         fileDocument.setUploadDate(this.uploadDate);
         fileDocument.setUpdateDate(this.updateDate);

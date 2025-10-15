@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+
 @Component("fileUpdateFileSizeHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
@@ -16,6 +18,6 @@ public class UpdateFileSizeHandler implements IDataOperationHandler<FileOperatio
 
     @Override
     public Integer handle(FileOperation.UpdateFileSize op) {
-        return repo.updateFileSize(op.fileId(), op.size());
+        return repo.updateFileSize(op.fileId(), op.size(), op.childrenCount(), LocalDateTime.now());
     }
 }

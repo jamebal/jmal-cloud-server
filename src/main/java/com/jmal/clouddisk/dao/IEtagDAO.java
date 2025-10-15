@@ -1,8 +1,8 @@
 package com.jmal.clouddisk.dao;
 
 import com.jmal.clouddisk.model.file.dto.FileBaseEtagDTO;
-import org.springframework.data.domain.Sort;
 
+import java.time.Instant;
 import java.util.List;
 
 public interface IEtagDAO {
@@ -12,6 +12,8 @@ public interface IEtagDAO {
     void setFoldersWithoutEtag();
 
     long getFolderSize(String userId, String path);
+
+    int countFilesInFolder(String userId, String path);
 
     boolean existsByNeedsEtagUpdateFolder();
 
@@ -25,7 +27,7 @@ public interface IEtagDAO {
 
     List<FileBaseEtagDTO> findFileBaseEtagDTOByRootDirFilesWithoutEtag();
 
-    List<FileBaseEtagDTO> findFileBaseEtagDTOByNeedUpdateFolder(Sort sort);
+    List<FileBaseEtagDTO> findFileBaseEtagDTOByNeedUpdateFolder();
 
     void clearMarkUpdateById(String fileId);
 
@@ -33,9 +35,11 @@ public interface IEtagDAO {
 
     List<FileBaseEtagDTO> findFileBaseEtagDTOByUserIdAndPath(String userId, String path);
 
-    long updateEtagAndSizeById(String fileId, String etag, long size);
+    long updateEtagAndSizeById(String fileId, String etag, long size, int childrenCount);
 
     int findEtagUpdateFailedAttemptsById(String fileId);
 
     void setFailedEtagById(String fileId, int attempts, String errorMsg, Boolean needsEtagUpdate);
+
+    void setRetryAtById(String fileId, Instant nextRetryTime, int attempts);
 }

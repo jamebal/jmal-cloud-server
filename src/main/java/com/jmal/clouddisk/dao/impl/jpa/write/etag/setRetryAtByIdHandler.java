@@ -7,17 +7,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-
-@Component("etagUpdateEtagAndSizeByIdHandler")
+@Component("setRetryAtByIdHandler")
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class UpdateEtagAndSizeByIdHandler implements IDataOperationHandler<EtagOperation.UpdateEtagAndSizeById, Integer> {
+public class setRetryAtByIdHandler implements IDataOperationHandler<EtagOperation.setRetryAtById, Void> {
 
     private final FileEtagRepository repo;
 
     @Override
-    public Integer handle(EtagOperation.UpdateEtagAndSizeById op) {
-        return repo.updateEtagAndSizeById(op.fileId(), op.etag(), op.size(), op.childrenCount(), LocalDateTime.now());
+    public Void handle(EtagOperation.setRetryAtById op) {
+        repo.setRetryAtById(op.fileId(), op.nextRetryTime(), op.attempts());
+        return null;
     }
 }

@@ -13,9 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -50,6 +50,12 @@ public class EtagDAOJpaImpl implements IEtagDAO {
     public long getFolderSize(String userId, String path) {
         String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(path) + "%";
         return fileEtagRepository.sumSizeByUserIdAndPathPrefix(userId, pathPrefixForLike);
+    }
+
+    @Override
+    public int countFilesInFolder(String userId, String path) {
+        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(path) + "%";
+        return fileEtagRepository.countByUserIdAndPathPrefix(userId, pathPrefixForLike);
     }
 
     @Override
@@ -88,9 +94,8 @@ public class EtagDAOJpaImpl implements IEtagDAO {
     }
 
     @Override
-    public List<FileBaseEtagDTO> findFileBaseEtagDTOByNeedUpdateFolder(Sort sort) {
-        Pageable pageable = PageRequest.of(0, 16, sort);
-        return fileEtagRepository.findFileBaseEtagDTOByNeedUpdateFolder(pageable);
+    public List<FileBaseEtagDTO> findFileBaseEtagDTOByNeedUpdateFolder() {
+        return fileEtagRepository.findFileBaseEtagDTOByNeedUpdateFolder(Instant.now());
     }
 
     @Override
@@ -121,9 +126,9 @@ public class EtagDAOJpaImpl implements IEtagDAO {
     }
 
     @Override
-    public long updateEtagAndSizeById(String fileId, String etag, long size) {
+    public long updateEtagAndSizeById(String fileId, String etag, long size, int childrenCount) {
         try {
-            return writeService.submit(new EtagOperation.UpdateEtagAndSizeById(fileId, etag, size)).get(30, TimeUnit.SECONDS);
+            return writeService.submit(new EtagOperation.UpdateEtagAndSizeById(fileId, etag, size, childrenCount)).get(30, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new CommonException(e.getMessage());
         }
@@ -138,6 +143,15 @@ public class EtagDAOJpaImpl implements IEtagDAO {
     public void setFailedEtagById(String fileId, int attempts, String errorMsg, Boolean needsEtagUpdate) {
         try {
             writeService.submit(new EtagOperation.SetFailedEtagById(fileId, attempts, errorMsg, needsEtagUpdate)).get(30, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
+    public void setRetryAtById(String fileId, Instant nextRetryTime, int attempts) {
+        try {
+            writeService.submit(new EtagOperation.setRetryAtById(fileId, nextRetryTime, attempts)).get(30, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new CommonException(e.getMessage());
         }

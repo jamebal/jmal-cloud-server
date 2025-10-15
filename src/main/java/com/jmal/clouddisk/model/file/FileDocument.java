@@ -12,7 +12,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.InputStream;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
@@ -51,6 +51,7 @@ public class FileDocument extends FileBase implements Reflective {
      * 文件路径(根路径为"/")
      */
     private String path;
+    private Integer childrenCount;
     /***
      * updateDate 距离现在的时间
      */
@@ -224,6 +225,11 @@ public class FileDocument extends FileBase implements Reflective {
     private String etag;
 
     /**
+     * 重试时间点
+     */
+    private Instant retryAt;
+
+    /**
      * ETag 更新失败次数
      */
     private Integer etagUpdateFailedAttempts;
@@ -236,7 +242,7 @@ public class FileDocument extends FileBase implements Reflective {
     /**
      * 最后Etag更新请求时间
      */
-    private LocalDateTime lastEtagUpdateRequestAt;
+    private Instant lastEtagUpdateRequestAt;
 
     /**
      * 最后Etag更新错误

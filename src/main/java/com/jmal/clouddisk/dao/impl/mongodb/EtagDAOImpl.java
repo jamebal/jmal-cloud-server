@@ -15,11 +15,14 @@ import org.bson.conversions.Bson;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.*;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -68,6 +71,15 @@ public class EtagDAOImpl implements IEtagDAO {
     }
 
     @Override
+    public int countFilesInFolder(String userId, String path) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(USER_ID).is(userId));
+        String regex = "^" + ReUtil.escape(path);
+        query.addCriteria(Criteria.where(Constants.PATH_FIELD).regex(regex));
+        return Math.toIntExact(mongoTemplate.count(query, FileDocument.class));
+    }
+
+    @Override
     public boolean existsByNeedsEtagUpdateFolder() {
         Query query = new Query();
         query.addCriteria(Criteria.where(Constants.NEEDS_ETAG_UPDATE_FIELD).is(true).and(Constants.IS_FOLDER).is(true));
@@ -111,14 +123,39 @@ public class EtagDAOImpl implements IEtagDAO {
     }
 
     @Override
-    public List<FileBaseEtagDTO> findFileBaseEtagDTOByNeedUpdateFolder(Sort sort) {
-        Query query = new Query();
-        query.addCriteria(Criteria
-                .where(Constants.NEEDS_ETAG_UPDATE_FIELD).is(true)
-                .and(Constants.IS_FOLDER).is(true));
-        query.limit(16);
-        query.with(sort);
-        return mongoTemplate.find(query, FileBaseEtagDTO.class, CommonFileService.COLLECTION_NAME);
+    public List<FileBaseEtagDTO> findFileBaseEtagDTOByNeedUpdateFolder() {
+        Criteria criteria = Criteria.where(Constants.NEEDS_ETAG_UPDATE_FIELD).is(true).and(Constants.IS_FOLDER).is(true);
+        Criteria or1 = Criteria.where("retryAt").exists(false);
+        Criteria or2 = Criteria.where("retryAt").lte(Instant.now());
+        MatchOperation matchOperation = Aggregation.match(new Criteria().andOperator(criteria, new Criteria().orOperator(or1, or2)));
+
+        AddFieldsOperation addFieldsOperation = Aggregation.addFields()
+                .addField("pathLength")
+                .withValue(StringOperators.StrLenCP.stringLengthOfCP("$" + Constants.PATH_FIELD))
+                .build();
+
+        SortOperation sortOperation = Aggregation.sort(
+                Sort.by(Sort.Direction.DESC, "pathLength")
+                        .and(Sort.by(Sort.Direction.ASC, Constants.LAST_ETAG_UPDATE_REQUEST_AT_FIELD))
+        );
+
+        LimitOperation limitOperation = Aggregation.limit(16);
+
+        // match -> addFields -> sort -> limit
+        Aggregation aggregation = Aggregation.newAggregation(
+                matchOperation,
+                addFieldsOperation,
+                sortOperation,
+                limitOperation
+        );
+
+        AggregationResults<FileBaseEtagDTO> results = mongoTemplate.aggregate(
+                aggregation,
+                CommonFileService.COLLECTION_NAME,
+                FileBaseEtagDTO.class
+        );
+
+        return results.getMappedResults();
     }
 
     @Override
@@ -126,6 +163,7 @@ public class EtagDAOImpl implements IEtagDAO {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
         Update update = new Update().set(Constants.NEEDS_ETAG_UPDATE_FIELD, false);
+        update.unset("retryAt");
         update.unset(Constants.ETAG_UPDATE_FAILED_ATTEMPTS_FIELD);
         update.unset(Constants.LAST_ETAG_UPDATE_ERROR_FIELD);
         mongoTemplate.updateFirst(query, update, FileDocument.class);
@@ -147,10 +185,14 @@ public class EtagDAOImpl implements IEtagDAO {
     }
 
     @Override
-    public long updateEtagAndSizeById(String fileId, String etag, long size) {
+    public long updateEtagAndSizeById(String fileId, String etag, long size, int childrenCount) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(fileId));
-        Update update = new Update().set(Constants.ETAG, etag).set(Constants.SIZE, size);
+        Update update = new Update();
+        update.set(Constants.ETAG, etag);
+        update.set(Constants.SIZE, size);
+        update.set(Constants.CHILDREN_COUNT, childrenCount);
+        update.set(Constants.UPDATE_DATE, LocalDateTime.now());
         UpdateResult updateResult = mongoTemplate.updateFirst(query, update, FileDocument.class);
         return updateResult.getModifiedCount();
     }
@@ -174,6 +216,16 @@ public class EtagDAOImpl implements IEtagDAO {
         if (needsEtagUpdate != null) {
             update.set(Constants.NEEDS_ETAG_UPDATE_FIELD, needsEtagUpdate);
         }
+        mongoTemplate.updateFirst(query, update, FileDocument.class);
+    }
+
+    @Override
+    public void setRetryAtById(String fileId, Instant nextRetryTime, int attempts) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        Update update = new Update()
+                .set("retryAt", nextRetryTime)
+                .set(Constants.ETAG_UPDATE_FAILED_ATTEMPTS_FIELD, attempts);
         mongoTemplate.updateFirst(query, update, FileDocument.class);
     }
 }

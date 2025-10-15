@@ -54,11 +54,11 @@ public class FolderSizeDAOJpaImpl implements IFolderSizeDAO {
     }
 
     @Override
-    public void updateFileSize(String fileId, long size) {
+    public void updateFileSize(String fileId, long size, int childrenCount) {
         log.debug("更新文件大小: fileId={}, size={}", fileId, size);
 
         try {
-            CompletableFuture<Integer> future = writeService.submit(new FileOperation.UpdateFileSize(fileId, size));
+            CompletableFuture<Integer> future = writeService.submit(new FileOperation.UpdateFileSize(fileId, size, childrenCount));
             int updatedCount = future.get(10, TimeUnit.SECONDS);
             if (updatedCount > 0) {
                 log.debug("文件大小更新成功: fileId={}, size={}", fileId, size);

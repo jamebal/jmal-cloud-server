@@ -14,10 +14,12 @@ public interface IFolderSizeDAO {
 
     /**
      * 更新文件大小
-     * @param fileId 文件ID
-     * @param size 文件大小
+     *
+     * @param fileId        文件ID
+     * @param size          文件大小
+     * @param childrenCount 子文件数量
      */
-    void updateFileSize(String fileId, long size);
+    void updateFileSize(String fileId, long size, int childrenCount);
 
     /**
      * 检查数据库中是否还有需要更新siz的文件夹

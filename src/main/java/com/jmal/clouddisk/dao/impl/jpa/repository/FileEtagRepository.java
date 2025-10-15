@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,9 +30,16 @@ public interface FileEtagRepository extends JpaRepository<FileMetadataDO, Long> 
 
     @Query("SELECT COALESCE(SUM(f.size), 0) FROM FileMetadataDO f " +
             "WHERE f.userId = :userId " +
+            "AND f.isFolder = false " +
             "AND f.path LIKE :pathPrefixForLike ESCAPE '\\'"
     )
     long sumSizeByUserIdAndPathPrefix(String userId, String pathPrefixForLike);
+
+    @Query("SELECT COUNT(f) FROM FileMetadataDO f " +
+            "WHERE f.userId = :userId " +
+            "AND f.path LIKE :pathPrefixForLike ESCAPE '\\'"
+    )
+    int countByUserIdAndPathPrefix(String userId, String pathPrefixForLike);
 
     boolean existsByNeedsEtagUpdateIsTrueAndIsFolderIsTrue();
 
@@ -64,13 +73,16 @@ public interface FileEtagRepository extends JpaRepository<FileMetadataDO, Long> 
     @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseEtagDTO(f.publicId, f.name, f.path, f.userId, f.etag) " +
             "FROM FileMetadataDO f " +
             "WHERE f.needsEtagUpdate = true " +
-            "AND f.isFolder = true"
+            "AND (f.retryAt IS NULL OR f.retryAt <= :now) " +
+            "AND f.isFolder = true " +
+            "ORDER BY LENGTH(f.path) DESC, f.lastEtagUpdateRequestAt ASC " +
+            "LIMIT 16"
     )
-    List<FileBaseEtagDTO> findFileBaseEtagDTOByNeedUpdateFolder(Pageable pageable);
+    List<FileBaseEtagDTO> findFileBaseEtagDTOByNeedUpdateFolder(Instant now);
 
     @Modifying
     @Query("UPDATE FileMetadataDO f " +
-            "SET f.needsEtagUpdate = false,f.etagUpdateFailedAttempts = null,f.lastEtagUpdateError = null " +
+            "SET f.needsEtagUpdate = false,f.retryAt = null,f.etagUpdateFailedAttempts = null,f.lastEtagUpdateError = null " +
             "WHERE f.publicId = :fileId")
     void clearMarkUpdateById(String fileId);
 
@@ -92,8 +104,8 @@ public interface FileEtagRepository extends JpaRepository<FileMetadataDO, Long> 
     List<FileBaseEtagDTO> findFileBaseEtagDTOByUserIdAndPath(String userId, String userId1);
 
     @Modifying
-    @Query("UPDATE FileMetadataDO f SET f.etag = :etag, f.size = :size WHERE f.publicId = :fileId")
-    Integer updateEtagAndSizeById(String fileId, String etag, long size);
+    @Query("UPDATE FileMetadataDO f SET f.etag = :etag, f.size = :size, f.childrenCount = :childrenCount, f.updateDate = :now WHERE f.publicId = :fileId")
+    Integer updateEtagAndSizeById(String fileId, String etag, long size, int childrenCount, LocalDateTime now);
 
     @Query("SELECT f.etagUpdateFailedAttempts FROM FileMetadataDO f WHERE f.publicId = :id")
     Optional<Integer> findEtagUpdateFailedAttemptsById(String id);
@@ -112,4 +124,11 @@ public interface FileEtagRepository extends JpaRepository<FileMetadataDO, Long> 
             "f.needsEtagUpdate = :needsEtagUpdate " +
             "WHERE f.publicId = :fileId")
     void setFailedEtagById(String fileId, int attempts, String errorMsg, Boolean needsEtagUpdate);
+
+    @Modifying
+    @Query("UPDATE FileMetadataDO f " +
+            "SET f.retryAt = :nextRetryTime, " +
+            "f.etagUpdateFailedAttempts = :attempts " +
+            "WHERE f.publicId = :fileId")
+    void setRetryAtById(String fileId, Instant nextRetryTime, int attempts);
 }

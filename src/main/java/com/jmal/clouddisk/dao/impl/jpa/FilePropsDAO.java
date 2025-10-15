@@ -109,7 +109,7 @@ public class FilePropsDAO {
         } else {
             shareProperties = newShareProperties;
         }
-        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(ReUtil.escape(file.getPath() + file.getName() + "/")) + "%";
+        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(file.getPath() + file.getName() + "/") + "%";
         writeService.submit(new FileOperation.UpdateShareProps(
                 file.getId(),
                 file.getUserId(),
@@ -125,7 +125,7 @@ public class FilePropsDAO {
     }
 
     public void unsetShareProps(FileDocument file, boolean isFolder) {
-        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(ReUtil.escape(file.getPath() + file.getName() + "/")) + "%";
+        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(file.getPath() + file.getName() + "/") + "%";
         writeService.submit(new FileOperation.UnsetShareProps(
                 file.getId(),
                 file.getUserId(),
@@ -136,7 +136,7 @@ public class FilePropsDAO {
     }
 
     public void setSubShareFormShareBase(FileDocument file) {
-        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(ReUtil.escape(file.getPath() + file.getName() + "/")) + "%";
+        String pathPrefixForLike = MyQuery.escapeLikeSpecialChars(file.getPath() + file.getName() + "/") + "%";
         writeService.submit(new FileOperation.SetSubShareFormShareBase(
                 file.getUserId(),
                 pathPrefixForLike

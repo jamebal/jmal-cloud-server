@@ -784,9 +784,9 @@ public class FileDAOImpl implements IFileDAO {
         update.set("m3u8", otherProperties.getM3u8());
         update.set("vtt", otherProperties.getVtt());
         if (otherProperties.getVideo() != null) {
-            update.set("video.toHeight", otherProperties.getVideo().getHeight());
-            update.set("video.toBitrate", otherProperties.getVideo().getBitrate());
-            update.set("video.toFrameRate", otherProperties.getVideo().getFrameRate());
+            update.set("video.toHeight", otherProperties.getVideo().getToHeight());
+            update.set("video.toBitrate", otherProperties.getVideo().getToBitrate());
+            update.set("video.toFrameRate", otherProperties.getVideo().getToFrameRate());
         }
         mongoTemplate.updateFirst(query, update, FileDocument.class);
     }

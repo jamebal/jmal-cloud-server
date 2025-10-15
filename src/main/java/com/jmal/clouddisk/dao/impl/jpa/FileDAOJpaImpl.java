@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository;
@@ -689,7 +688,6 @@ public class FileDAOJpaImpl implements IFileDAO {
     }
 
     private static String getPathPrefixForLike(FileBaseDTO fileBaseDTO) {
-        String path = ReUtil.escape(fileBaseDTO.getPath() + fileBaseDTO.getName() + "/");
-        return MyQuery.escapeLikeSpecialChars(path) + "%";
+        return MyQuery.escapeLikeSpecialChars(fileBaseDTO.getPath() + fileBaseDTO.getName() + "/") + "%";
     }
 }

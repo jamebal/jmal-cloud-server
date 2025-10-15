@@ -7,7 +7,6 @@ import cn.hutool.core.util.ObjectUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IEtagDAO;
 import com.jmal.clouddisk.model.file.dto.FileBaseEtagDTO;
-import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.util.HashUtil;
 import io.reactivex.rxjava3.core.Completable;
@@ -18,17 +17,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.dao.DataAccessException;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -89,6 +87,10 @@ public class EtagService {
      */
     public long getFolderSize(String userId, String path) {
         return etagDAO.getFolderSize(userId, path);
+    }
+
+    public int countFilesInFolder(String userId, String path) {
+        return etagDAO.countFilesInFolder(userId, path);
     }
 
     /**
@@ -156,17 +158,17 @@ public class EtagService {
      *
      * @param file 发生变化的文件
      */
-    private String updateFileEtagAndMarkParentAsync(String username, File file) {
+    private void updateFileEtagAndMarkParentAsync(String username, File file) {
         try {
             if (!FileUtil.exist(file) || !FileUtil.isFile(file)) {
-                return null;
+                return;
             }
             String newEtag = HashUtil.sha256(file);
 
             String fileName = file.getName();
             String relativePath = getDbPath(username, file);
             if (relativePath == null) {
-                return null;
+                return;
             }
             String userId = userService.getUserIdByUserName(username);
             String oldEtag = etagDAO.findEtagByUserIdAndPathAndName(userId, relativePath, fileName);
@@ -180,15 +182,13 @@ public class EtagService {
             } else {
                 log.debug("File ETag for {} did not change or calculation failed.", file.getAbsoluteFile());
             }
-            return newEtag;
         } catch (Exception e) {
             log.error("Error updating file ETag for {}: {}", file.getAbsoluteFile(), e.getMessage(), e);
         }
-        return null;
     }
 
     /**
-     * 获取改文件在数据库中的路径(PATH_FIELD)字段的值
+     * 获取该文件在数据库中的路径(PATH_FIELD)字段的值
      *
      * @param username     用户名
      * @param physicalFile 文件
@@ -304,8 +304,7 @@ public class EtagService {
     private void processMarkedFoldersLoop(String workerId) {
         boolean run = true;
         while (run && !Thread.currentThread().isInterrupted()) {
-            Sort sort = Sort.by(Sort.Direction.DESC, Constants.LAST_ETAG_UPDATE_REQUEST_AT_FIELD);
-            List<FileBaseEtagDTO> tasks = etagDAO.findFileBaseEtagDTOByNeedUpdateFolder(sort);
+            List<FileBaseEtagDTO> tasks = etagDAO.findFileBaseEtagDTOByNeedUpdateFolder();
             if (tasks.isEmpty()) {
                 run = false;
                 continue;
@@ -340,9 +339,15 @@ public class EtagService {
                             log.debug("[Worker {}] Cleared ETag update mark for folder: {} as ETag was unchanged.", workerId, folderPath + folderDoc.getName());
                             break;
                         case SKIPPED_CHILD_NULL:
-                            // 跳过处理，不清除标记。增加一个小的延迟，避免立即重试导致CPU空转。
-                            log.warn("[Worker {}] Folder {} processing skipped, will be retried later.", workerId, folderPath);
-                            TimeUnit.MILLISECONDS.sleep(50);
+                            // 计算失败，设置一个短暂的延迟后重试
+                            int attempts = etagDAO.findEtagUpdateFailedAttemptsById(docId); // 获取已失败次数
+                            // 简单的线性退避，每次延迟 3 秒 * 失败次数
+                            long delayMillis = 3000L * (attempts + 1);
+                            Instant nextRetryTime = Instant.now().plusMillis(delayMillis);
+                            etagDAO.setRetryAtById(docId, nextRetryTime, attempts + 1);
+                            if (attempts > 10) {
+                                log.warn("[Worker {}] ETag calculation for folder {} skipped due to null child ETag. Will retry after {} (attempt {}).", workerId, folderPath + folderDoc.getName(), nextRetryTime, attempts + 1);
+                            }
                             break;
                         case ERROR:
                             // 出现预料之外的错误
@@ -400,16 +405,17 @@ public class EtagService {
         String currentFolderNormalizedPath = folderDoc.getPath() + folderDoc.getName() + "/";
         List<FileBaseEtagDTO> children = etagDAO.findFileBaseEtagDTOByUserIdAndPath(userId, currentFolderNormalizedPath);
         long folderSize = 0;
+        int childrenCount = 0;
         if (children.isEmpty()) {
             newCalculatedEtag = HashUtil.sha256(EMPTY_FOLDER_ETAG_BASE_STRING);
         } else {
-            List<String> childRepresentations = children.stream().sorted(Comparator.comparing(FileBaseEtagDTO::getName)) // 按名称排序
-                    .map(child -> formatChildRepresentation(workerId, child)).toList();
+            List<String> childRepresentations = children.stream()
+                    .sorted(Comparator.comparing(FileBaseEtagDTO::getName)) // 按名称排序
+                    .map(child -> formatChildRepresentation(workerId, child, currentFolderNormalizedPath))
+                    .toList();
             StringBuilder combinedRepresentation = new StringBuilder();
             for (String rep : childRepresentations) {
                 if (rep == null) {
-                    // 子项未准备好，返回SKIPPED状态
-                    log.warn("[Worker {}] Skipped ETag calculation for folder {} because a child item's ETag was null.", workerId, folderPath);
                     return EtagCalculationResult.SKIPPED_CHILD_NULL;
                 }
                 if (CharSequenceUtil.isNotBlank(rep)) {
@@ -420,11 +426,13 @@ public class EtagService {
 
             // 计算文件夹大小
             folderSize = getFolderSize(userId, currentFolderNormalizedPath);
+            // 计算子项数量
+            childrenCount = countFilesInFolder(userId, currentFolderNormalizedPath);
         }
 
         if (!newCalculatedEtag.equals(oldEtag)) {
             // 更新文件夹大小(如果使用乐观锁，需要检查版本号)
-            long modifiedCount = etagDAO.updateEtagAndSizeById(folderDoc.getId(), newCalculatedEtag, folderSize);
+            long modifiedCount = etagDAO.updateEtagAndSizeById(folderDoc.getId(), newCalculatedEtag, folderSize, childrenCount);
             if (modifiedCount > 0) {
                 log.debug("[Worker {}] Folder ETag updated for {}: {} -> {}", workerId, folderPath + folderDoc.getName(), oldEtag, newCalculatedEtag);
                 return EtagCalculationResult.UPDATED;
@@ -477,23 +485,50 @@ public class EtagService {
         return pathWithoutTrailingSlash.substring(0, lastSlashIndex + 1);
     }
 
-    private String formatChildRepresentation(String workerId, FileBaseEtagDTO child) {
+    /**
+     * 格式化子项的字符串表示形式，用于父文件夹ETag的计算。
+     *
+     * @param workerId         工作线程ID
+     * @param child            子项的文档对象
+     * @param parentFolderPath 父文件夹的路径
+     * @return 子项的表示字符串 (name:etag)，如果子项未就绪则返回null，如果子项应被忽略则返回空字符串。
+     */
+    private String formatChildRepresentation(String workerId, FileBaseEtagDTO child, String parentFolderPath) {
+        // 1. 检查子项的ETag是否已存在
         if (child.getEtag() == null) {
-            String username = userService.getUserNameById(child.getUserId());
-            Path path = Paths.get(fileProperties.getRootDir(), username, child.getPath(), child.getName());
-            if (Files.exists(path)) {
-                // 只对文件执行此操作
-                if (!child.getIsFolder()) {
-                    return updateFileEtagAndMarkParentAsync(username, path.toFile());
-                } else {
-                    // 子文件夹ETag为null，父文件夹本次计算中止
-                    return null;
-                }
+            // 如果ETag为null，这是不正常状态。
+            // 父文件夹的计算必须中止，等待这个子项被处理。
+            // 打印详细的警告日志，指明是哪个父文件夹下的哪个子项出了问题。
+            log.debug("[Worker {}] In folder '{}', child item '{}' (isFolder: {}) has a null ETag. The parent ETag calculation will be skipped and retried.",
+                    workerId,
+                    parentFolderPath,
+                    child.getName(),
+                    child.getIsFolder());
+            // 返回 null 是一个明确的信号，告诉调用方中止计算。
+            if (child.getIsFolder()) {
+                markFolderForEtagUpdate(child.getUserId(), child.getPath());
             } else {
-                log.warn("[Worker {}] File {} does not exist. Skipping.", workerId, path);
-                return "";
+                String username = userService.getUserNameById(child.getUserId());
+                updateFileEtagAndMarkParentAsync(username, Paths.get(fileProperties.getRootDir(), username, child.getPath(), child.getName()).toFile());
             }
+            return null;
         }
+
+        // 2. 检查物理文件是否存在 (作为一种数据一致性的校验)
+        // 注意：这个检查会与文件系统交互，如果性能要求极高且能保证DB与FS同步，可以考虑移除。
+        String username = userService.getUserNameById(child.getUserId());
+        Path path = Paths.get(fileProperties.getRootDir(), username, child.getPath(), child.getName());
+        if (!Files.exists(path)) {
+            log.debug("[Worker {}] Child item '{}' found in DB but does not exist on filesystem at path '{}'. It will be ignored for ETag calculation.",
+                    workerId,
+                    parentFolderPath + child.getName(),
+                    path);
+            // 如果文件在数据库中有记录但物理上不存在，它不应该参与父文件夹ETag的计算。
+            // 返回空字符串，表示安全地忽略这个子项。
+            return "";
+        }
+
+        // 3. 返回标准的 "name:etag" 格式
         return child.getName() + ":" + child.getEtag();
     }
 

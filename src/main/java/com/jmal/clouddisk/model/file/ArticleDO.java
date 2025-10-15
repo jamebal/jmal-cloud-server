@@ -53,8 +53,7 @@ public class ArticleDO extends AuditablePerformanceEntity implements Reflective 
     @JoinColumn(name = "file_id", // 在 articles 表中创建的外键列名
             referencedColumnName = "id", // file_id 列引用的是 files 表的 id 列
             unique = true, // 确保一个文件只能被一篇文章引用，强制一对一
-            nullable = false, // 数据库层面强制外键不能为空
-            foreignKey = @ForeignKey(name = "fk_article_to_file")) // DDL生成时外键约束的名称
+            nullable = false) // 数据库层面强制外键不能为空
     private FileMetadataDO fileMetadata;
 
     public ArticleDO(String id, Boolean alonePage, String slug, LocalDateTime updateDate) {

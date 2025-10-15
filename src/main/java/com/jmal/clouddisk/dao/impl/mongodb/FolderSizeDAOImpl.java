@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -27,9 +28,11 @@ public class FolderSizeDAOImpl implements IFolderSizeDAO {
     }
 
     @Override
-    public void updateFileSize(String fileId, long size) {
+    public void updateFileSize(String fileId, long size, int childrenCount) {
         Update update = new Update();
         update.set(Constants.SIZE, size);
+        update.set(Constants.CHILDREN_COUNT, childrenCount);
+        update.set(Constants.UPDATE_DATE, LocalDateTime.now());
         mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(fileId)), update, FileDocument.class);
     }
 

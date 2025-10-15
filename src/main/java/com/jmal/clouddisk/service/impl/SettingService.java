@@ -311,8 +311,9 @@ public class SettingService {
                 try {
                     // 计算文件夹大小
                     long size = etagService.getFolderSize(folderDoc.getUserId(), currentFolderNormalizedPath);
+                    int childrenCount = etagService.countFilesInFolder(folderDoc.getUserId(), currentFolderNormalizedPath);
                     // 更新数据库中的大小
-                    folderSizeDAO.updateFileSize(folderDoc.getId(), size);
+                    folderSizeDAO.updateFileSize(folderDoc.getId(), size, childrenCount);
 
                     calculateFolderSizeProcessedCount.getAndIncrement();
                     // 推送进度
