@@ -96,8 +96,11 @@ public class CommonFileService {
             if (CharSequenceUtil.isBlank(contentType)) {
                 contentType = "application/octet-stream";
             }
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_TYPE, contentType)
+            ResponseEntity.BodyBuilder builder = ResponseEntity.ok();
+            if (fileDocument.getSize() != null) {
+                builder.header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getSize()));
+            }
+            return builder.header(HttpHeaders.CONTENT_TYPE, contentType)
                     .header(HttpHeaders.CONNECTION, "close")
                     .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
                     .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")

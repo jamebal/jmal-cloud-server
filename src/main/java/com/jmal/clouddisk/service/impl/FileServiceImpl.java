@@ -565,7 +565,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public ResponseEntity<InputStreamResource> getImageInputStreamResourceEntity(FileDocument fileDocument) {
-        return commonFileService.getInputStreamResourceEntity(fileDocument, "image/png");
+        return commonFileService.getInputStreamResourceEntity(fileDocument, fileDocument.getContentType() == null ? "image/png" : fileDocument.getContentType());
     }
 
     @Override
