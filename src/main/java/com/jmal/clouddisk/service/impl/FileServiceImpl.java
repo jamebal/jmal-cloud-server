@@ -515,6 +515,8 @@ public class FileServiceImpl implements IFileService {
                         throw new CommonException(ExceptionType.FILE_NOT_FIND);
                     }
                 }
+            } else {
+                fileDocument.setContentType("image/png");
             }
             return Optional.of(fileDocument);
         }

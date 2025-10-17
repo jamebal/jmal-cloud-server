@@ -97,8 +97,10 @@ public class CommonFileService {
                 contentType = "application/octet-stream";
             }
             ResponseEntity.BodyBuilder builder = ResponseEntity.ok();
-            if (fileDocument.getSize() != null) {
-                builder.header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getSize()));
+            if (contentType.contains("svg")) {
+                if (fileDocument.getSize() != null) {
+                    builder.header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileDocument.getSize()));
+                }
             }
             return builder.header(HttpHeaders.CONTENT_TYPE, contentType)
                     .header(HttpHeaders.CONNECTION, "close")
