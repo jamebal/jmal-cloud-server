@@ -28,11 +28,9 @@ public class DynamicDataSourceConfiguration {
     @Bean
     public DataSource dataSource() {
         String driverClassName = environment.getProperty("spring.datasource.driver-class-name");
-        if ("org.sqlite.JDBC".equals(driverClassName)) {
-            log.info("Runtime decision: Configuring SQLiteDataSource.");
+        if (DataSourceBeanPostProcessor.SQLITE_DRIVE_CLASS_NAME.equals(driverClassName)) {
             return createSqliteDataSource();
         } else {
-            log.info("Runtime decision: Configuring default DataSource using DataSourceBuilder (e.g., HikariCP for MySQL/PostgreSQL).");
             return DataSourceBuilder.create()
                     .type(HikariDataSource.class)
                     .url(environment.getProperty("spring.datasource.url"))

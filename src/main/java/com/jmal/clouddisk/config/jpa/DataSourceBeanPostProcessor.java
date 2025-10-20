@@ -47,7 +47,7 @@ public class DataSourceBeanPostProcessor implements BeanPostProcessor, PriorityO
     private void processSqliteDataSource(HikariDataSource dataSource) {
         String driverClassName = dataSource.getDriverClassName();
         if (CharSequenceUtil.equals(driverClassName, SQLITE_DRIVE_CLASS_NAME)) {
-            log.info("Sqlite 数据库驱动类名: [{}]", driverClassName);
+            log.debug("Sqlite 数据库驱动类名: [{}]", driverClassName);
             FileProperties fileProperties = SpringUtil.getBean(FileProperties.class);
             Path dbPath = Paths.get(fileProperties.getRootDir(), fileProperties.getJmalcloudDBDir(), "db");
             ensureDirectoryExists(dbPath);
@@ -58,8 +58,8 @@ public class DataSourceBeanPostProcessor implements BeanPostProcessor, PriorityO
 
     private void processFlywayLocations(FlywayProperties flywayProperties) {
         String driveClassName = SpringUtil.getProperty(DRIVE_CLASS_NAME_PROPERTIES);
-        log.info("当前数据源驱动类名: [{}]", driveClassName);
-        log.info("当前数据源驱动URL: [{}]", SpringUtil.getProperty(DRIVE_URL));
+        log.debug("当前数据源驱动类名: [{}]", driveClassName);
+        log.debug("当前数据源驱动URL: [{}]", SpringUtil.getProperty(DRIVE_URL));
         if (SQLITE_DRIVE_CLASS_NAME.equals(driveClassName)) {
             flywayProperties.setLocations(List.of("classpath:db/migration/sqlite"));
         } else if (MYSQL_DRIVE_CLASS_NAME.equals(driveClassName)) {
