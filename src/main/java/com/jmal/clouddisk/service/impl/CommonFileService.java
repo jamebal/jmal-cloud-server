@@ -104,7 +104,6 @@ public class CommonFileService {
             }
             return builder.header(HttpHeaders.CONTENT_TYPE, contentType)
                     .header(HttpHeaders.CONNECTION, "close")
-                    .header(HttpHeaders.CONTENT_ENCODING, "utf-8")
                     .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
                     .body(new InputStreamResource(fileDocument.getInputStream()));
         } else {
