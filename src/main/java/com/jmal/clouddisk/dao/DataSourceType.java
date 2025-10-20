@@ -12,6 +12,7 @@ public enum DataSourceType {
     mysql("mysql", "MySQL"),
     pgsql("pgsql", "PostgreSQL"),
     sqlite("sqlite", "sqlite"),
+    jpa("jpa", "JPA"),
     mongodb("mongodb", "MongoDB");
 
     private final String code;
@@ -26,7 +27,7 @@ public enum DataSourceType {
      * 判断是否为关系型数据库
      */
     public boolean isRelational() {
-        return this == mysql || this == sqlite || this == pgsql;
+        return this == mysql || this == sqlite || this == pgsql || this == jpa;
     }
 
     public static DataSourceType fromCode(String code) {

@@ -24,12 +24,11 @@ public interface UserRepository extends JpaRepository<ConsumerDO, String>, JpaSp
     Optional<ConsumerDO> findOneByCreatorTrue();
 
     @Query(value = "SELECT c FROM ConsumerDO c " +
-            "WHERE (:username IS NULL OR LOWER(c.username) LIKE LOWER(CONCAT('%', :username, '%'))) " +
-            "AND (:showName IS NULL OR LOWER(c.showName) LIKE LOWER(CONCAT('%', :showName, '%')))",
-            countQuery = "SELECT COUNT(c) FROM ConsumerDO c " +
-                    "WHERE (:username IS NULL OR LOWER(c.username) LIKE LOWER(CONCAT('%', :username, '%'))) " +
-                    "AND (:showName IS NULL OR LOWER(c.showName) LIKE LOWER(CONCAT('%', :showName, '%')))")
-    Page<ConsumerDO> findUserList( @Param("username") String username, @Param("showName") String showName, Pageable pageable);
+            "WHERE (:username IS NULL OR :username = '' OR LOWER(c.username) LIKE LOWER(CONCAT('%', :username, '%'))) " +
+            "AND (:showName IS NULL OR :showName = '' OR LOWER(c.showName) LIKE LOWER(CONCAT('%', :showName, '%')))")
+    Page<ConsumerDO> findUserList(@Param("username") String username,
+                                  @Param("showName") String showName,
+                                  Pageable pageable);
 
     Optional<ConsumerDO> findByShowName(String showName);
 

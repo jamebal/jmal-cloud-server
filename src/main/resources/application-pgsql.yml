@@ -10,10 +10,10 @@ spring:
           lob:
             non_contextual_creation: true
   datasource:
-    url: jdbc:postgresql://${PGSQL_HOST:localhost}:${PGSQL_PORT:5432}/${PGSQL_DATABASE:jmalcloud}
+    url: jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:jmalcloud}
     driver-class-name: org.postgresql.Driver
-    username: ${PGSQL_USER:jmalcloud}
-    password: ${PGSQL_PASSWORD:jmalcloud}
+    username: ${DATABASE_USER:jmalcloud}
+    password: ${DATABASE_PASSWORD:jmalcloud}
   flyway:
     locations:
       - classpath:db/migration/postgresql

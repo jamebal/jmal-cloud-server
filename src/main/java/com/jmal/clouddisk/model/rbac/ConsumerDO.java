@@ -13,7 +13,6 @@ import lombok.ToString;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
@@ -33,9 +32,7 @@ import java.util.List;
 @Table(name = "consumers")
 public class ConsumerDO extends ConsumerBase implements Reflective {
     @Schema(name = "username", title = "用户名", example = "admin")
-    @Indexed
     String username;
-    @Indexed
     @Schema(name = "showName", title = "显示用户名", example = "管理员1")
     String showName;
     @Schema(title = "头像", example = "https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif")
