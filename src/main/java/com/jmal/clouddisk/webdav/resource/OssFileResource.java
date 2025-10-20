@@ -14,6 +14,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
@@ -240,7 +241,7 @@ public class OssFileResource extends AbstractResource {
     @Override
     public URL getURL() {
         try {
-            return new URL(resource.getKey());
+            return URI.create(resource.getKey()).toURL();
         } catch (MalformedURLException e) {
             if (log.isDebugEnabled()) {
                 log.debug(sm.getString("fileResource.getUrlFail", resource.getKey()), e);

@@ -11,7 +11,7 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.listener.FileMonitor;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.aliyun.AliyunOssService;
-import com.jmal.clouddisk.oss.minio.MinIOService;
+import com.jmal.clouddisk.oss.s3.AwsS3Service;
 import com.jmal.clouddisk.oss.tencent.TencentOssService;
 import com.jmal.clouddisk.oss.web.model.OssConfigDO;
 import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
@@ -159,7 +159,7 @@ public class OssConfigService {
         switch (platformOSS) {
             case ALIYUN -> ossService = new AliyunOssService(fileProperties, ossConfigDTO);
             case TENCENT -> ossService = new TencentOssService(fileProperties, ossConfigDTO);
-            case MINIO -> ossService = new MinIOService(fileProperties, ossConfigDTO);
+            case MINIO -> ossService = new AwsS3Service(fileProperties, ossConfigDTO);
         }
         return ossService;
     }
