@@ -365,7 +365,7 @@ public class FileInterceptor implements HandlerInterceptor {
         String w = request.getParameter("w");
         String h = request.getParameter("h");
         responseImageFileHeader(response, file.getName());
-        ImageMagickProcessor.cropImage(file, q, w, h, response.getOutputStream());
+        ImageMagickProcessor.cropImage(new FileInputStream(file), q, w, h, response.getOutputStream());
     }
 
     private File getFileByRequest(HttpServletRequest request) {

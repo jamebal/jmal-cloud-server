@@ -3,23 +3,29 @@ package com.jmal.clouddisk.oss.s3; // 建议为 AWS S3 创建一个新的包
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.oss.*;
 import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StreamUtils;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -27,6 +33,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -37,6 +44,8 @@ public class AwsS3Service implements IOssService {
     private final S3Presigner s3Presigner; // 用于生成预签名URL
     private final BaseOssService baseOssService;
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
+
+    Consumer<AwsRequestOverrideConfiguration.Builder> unlimitTimeoutBuilderConsumer = builder -> builder.apiCallTimeout(Duration.ofDays(30)).build();
 
     public AwsS3Service(FileProperties fileProperties, OssConfigDTO ossConfigDTO) {
         this.bucketName = ossConfigDTO.getBucket();
@@ -50,6 +59,10 @@ public class AwsS3Service implements IOssService {
                 .region(Region.of(ossConfigDTO.getRegion() == null ? "cn1" : ossConfigDTO.getRegion()))
                 // 连接 MinIO 时必须开启路径风格访问
                 .forcePathStyle(true)
+                .serviceConfiguration(S3Configuration.builder()
+                        // 启用无签名负载。这会设置 x-amz-content-sha256: UNSIGNED-PAYLOAD
+                        .chunkedEncodingEnabled(false) // 对于MinIO，禁用分块编码通常更稳定
+                        .build())
                 .build();
 
         // S3Presigner 用于生成预签名URL，也应作为单例
@@ -107,6 +120,7 @@ public class AwsS3Service implements IOssService {
             HeadObjectResponse headResponse = s3Client.headObject(headRequest);
 
             GetObjectRequest.Builder getRequestBuilder = GetObjectRequest.builder()
+                    .overrideConfiguration(unlimitTimeoutBuilderConsumer)
                     .bucket(bucketName)
                     .key(objectName);
 
@@ -171,7 +185,7 @@ public class AwsS3Service implements IOssService {
             // 检查是否有删除失败的对象
             if (response.hasErrors()) {
                 response.errors().forEach(error ->
-                    log.error("Error deleting object {}: {}", error.key(), error.message()));
+                        log.error("Error deleting object {}: {}", error.key(), error.message()));
                 return false;
             }
             return true;
@@ -201,7 +215,7 @@ public class AwsS3Service implements IOssService {
             // 处理子目录 (CommonPrefixes)
             for (CommonPrefix commonPrefix : response.commonPrefixes()) {
                 String key = commonPrefix.prefix();
-                 if (fileInfoList.stream().noneMatch(fileInfo -> key.equals(fileInfo.getKey()))) {
+                if (fileInfoList.stream().noneMatch(fileInfo -> key.equals(fileInfo.getKey()))) {
                     fileInfoList.add(baseOssService.newFileInfo(key));
                 }
             }
@@ -250,18 +264,65 @@ public class AwsS3Service implements IOssService {
 
     @Override
     public void uploadFile(InputStream inputStream, String objectName, long inputStreamLength) {
-         try {
+        try {
             baseOssService.printOperation(getPlatform().getKey(), "uploadFile inputStream", objectName);
             PutObjectRequest request = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(objectName)
                     .contentType(baseOssService.getContentType(objectName))
-                    .contentLength(inputStreamLength)
                     .build();
-            s3Client.putObject(request, RequestBody.fromInputStream(inputStream, inputStreamLength));
+            s3Client.putObject(request, createSmartRequestBody(inputStream, inputStreamLength));
             baseOssService.onUploadSuccess(objectName, inputStreamLength);
         } catch (Exception e) {
             log.error("Error uploading from stream: {}", objectName, e);
+        }
+    }
+
+    /**
+     * 一个智能的、适应不同 InputStream 来源的 RequestBody。
+     * 这是解决 mark/reset 问题的核心。
+     *
+     * @param inputStream 原始输入流
+     * @param length      流的长度
+     * @return 一个适合上传的 RequestBody
+     * @throws IOException 如果创建临时文件或读取流失败
+     */
+    private RequestBody createSmartRequestBody(InputStream inputStream, long length) throws IOException {
+        // 检查流是否已经支持 mark/reset。如果是，直接使用，零开销！
+        // 比如 BufferedInputStream 就会返回 true。
+        if (inputStream.markSupported()) {
+            log.debug("InputStream supports mark/reset. Using directly.");
+            return RequestBody.fromInputStream(inputStream, length);
+        }
+
+        // 是缓冲到内存还是临时文件？
+        final long MEMORY_BUFFER_THRESHOLD = 20 * 1024 * 1024; // 20 MB
+
+        if (length < MEMORY_BUFFER_THRESHOLD) {
+            log.debug("InputStream does not support mark/reset. Buffering to memory (size: {} bytes).", length);
+            // 缓冲到内存
+            byte[] contentBytes = StreamUtils.copyToByteArray(inputStream);
+            return RequestBody.fromBytes(contentBytes);
+        } else {
+            log.debug("InputStream does not support mark/reset. Buffering to a temporary file (size: {} bytes).", length);
+            // 缓冲到临时文件
+            Path tempFile = null;
+            try {
+                tempFile = Files.createTempFile("s3-upload-", ".tmp");
+                // 将流的内容复制到临时文件
+                Files.copy(inputStream, tempFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                return RequestBody.fromFile(tempFile);
+            } catch (IOException e) {
+                if (tempFile != null) {
+                    try {
+                        Files.deleteIfExists(tempFile);
+                    } catch (IOException cleanupException) {
+                        e.addSuppressed(cleanupException);
+
+                    }
+                }
+                throw e;
+            }
         }
     }
 
@@ -306,9 +367,8 @@ public class AwsS3Service implements IOssService {
                     .key(objectName)
                     .uploadId(uploadId)
                     .partNumber(partNumber)
-                    .contentLength((long)partSize)
                     .build();
-            s3Client.uploadPart(request, RequestBody.fromInputStream(inputStream, partSize));
+            s3Client.uploadPart(request, createSmartRequestBody(inputStream, partSize));
             return true;
         } catch (Exception e) {
             log.error("Error uploading part #{} for object: {}", partNumber, objectName, e);
@@ -435,53 +495,113 @@ public class AwsS3Service implements IOssService {
     // 以下是继承自 IOssService 但未在 MinIOService 中详细实现的方法，
     // 将它们链接到 baseOssService 或提供简单实现。
 
-    @Override public FileInfo getFileInfo(String objectName) { return baseOssService.getFileInfo(objectName); }
-    @Override public boolean delete(String objectName) { return baseOssService.delete(objectName); }
-    @Override public boolean mkdir(String objectName) { return baseOssService.mkdir(objectName); }
-    @Override public boolean write(InputStream inputStream, String ossPath, String objectName) { return baseOssService.writeTempFile(inputStream, ossPath, objectName); }
-    @Override public String[] list(String objectName) { return baseOssService.getFileNameList(objectName).toArray(new String[0]); }
-    @Override public AbstractOssObject getObjectCache(String objectName) { return baseOssService.getObject(objectName); }
-    @Override public AbstractOssObject getAbstractOssObject(String objectName) { return getAbstractOssObject(objectName, null, null); }
-    @Override public List<FileInfo> getFileInfoListCache(String objectName) { return baseOssService.getFileInfoListCache(objectName); }
-    @Override public List<FileInfo> getAllObjectsWithPrefix(String objectName) {
+    @Override
+    public FileInfo getFileInfo(String objectName) {
+        return baseOssService.getFileInfo(objectName);
+    }
+
+    @Override
+    public boolean delete(String objectName) {
+        return baseOssService.delete(objectName);
+    }
+
+    @Override
+    public boolean mkdir(String objectName) {
+        return baseOssService.mkdir(objectName);
+    }
+
+    @Override
+    public boolean write(InputStream inputStream, String ossPath, String objectName) {
+        return baseOssService.writeTempFile(inputStream, ossPath, objectName);
+    }
+
+    @Override
+    public String[] list(String objectName) {
+        return baseOssService.getFileNameList(objectName).toArray(new String[0]);
+    }
+
+    @Override
+    public AbstractOssObject getObjectCache(String objectName) {
+        return baseOssService.getObject(objectName);
+    }
+
+    @Override
+    public AbstractOssObject getAbstractOssObject(String objectName) {
+        return getAbstractOssObject(objectName, null, null);
+    }
+
+    @Override
+    public List<FileInfo> getFileInfoListCache(String objectName) {
+        return baseOssService.getFileInfoListCache(objectName);
+    }
+
+    @Override
+    public List<FileInfo> getAllObjectsWithPrefix(String objectName) {
         List<FileInfo> fileInfoList = new ArrayList<>();
         try {
             ListObjectsV2Request listRequest = ListObjectsV2Request.builder().bucket(bucketName).prefix(objectName).build();
             s3Client.listObjectsV2Paginator(listRequest).contents().forEach(s3Object -> {
-                 S3ObjectSummary summary = new S3ObjectSummary(s3Object.size(), s3Object.key(), s3Object.eTag(), Date.from(s3Object.lastModified()), bucketName);
-                 fileInfoList.add(baseOssService.getFileInfo(summary));
+                S3ObjectSummary summary = new S3ObjectSummary(s3Object.size(), s3Object.key(), s3Object.eTag(), Date.from(s3Object.lastModified()), bucketName);
+                fileInfoList.add(baseOssService.getFileInfo(summary));
             });
         } catch (Exception e) {
             log.error("Error getting all objects with prefix: {}", objectName, e);
         }
         return fileInfoList;
     }
-    @Override public boolean doesBucketExist() {
+
+    @Override
+    public boolean doesBucketExist() {
         try {
             s3Client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
             return true;
         } catch (NoSuchBucketException e) {
             return false;
         } catch (Exception e) {
-             log.error("Error checking bucket existence: {}", bucketName, e);
-             return false;
+            log.error("Error checking bucket existence: {}", bucketName, e);
+            return false;
         }
     }
-    @Override public String getUploadId(String objectName) { return baseOssService.getUploadId(objectName); }
-    @Override public CopyOnWriteArrayList<Integer> getListParts(String objectName, String uploadId) { return new CopyOnWriteArrayList<>(getPartsList(objectName, uploadId).stream().map(Part::partNumber).toList()); }
-    @Override public FileInfo getThumbnail(String objectName, File file, int width) {
+
+    @Override
+    public String getUploadId(String objectName) {
+        return baseOssService.getUploadId(objectName);
+    }
+
+    @Override
+    public CopyOnWriteArrayList<Integer> getListParts(String objectName, String uploadId) {
+        return new CopyOnWriteArrayList<>(getPartsList(objectName, uploadId).stream().map(Part::partNumber).toList());
+    }
+
+    @Override
+    public FileInfo getThumbnail(String objectName, File file, int width) {
         try (InputStream is = s3Client.getObject(GetObjectRequest.builder().bucket(bucketName).key(objectName).build())) {
-            org.apache.commons.io.FileUtils.copyInputStreamToFile(is, file);
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            ImageMagickProcessor.cropImage(is, "80", String.valueOf(width), null, fileOutputStream);
             return baseOssService.getFileInfo(objectName);
         } catch (IOException e) {
             log.error("Error downloading thumbnail: {}", objectName, e);
             return null;
         }
     }
-    @Override public void lock(String objectName) { baseOssService.setObjectNameLock(objectName); }
-    @Override public void unlock(String objectName) { baseOssService.removeObjectNameLock(objectName); }
-    @Override public void clearCache(String objectName) { baseOssService.clearCache(objectName); }
-    @Override public void close() {
+
+    @Override
+    public void lock(String objectName) {
+        baseOssService.setObjectNameLock(objectName);
+    }
+
+    @Override
+    public void unlock(String objectName) {
+        baseOssService.removeObjectNameLock(objectName);
+    }
+
+    @Override
+    public void clearCache(String objectName) {
+        baseOssService.clearCache(objectName);
+    }
+
+    @Override
+    public void close() {
         baseOssService.closePrint();
         if (scheduledThreadPoolExecutor != null) scheduledThreadPoolExecutor.shutdown();
         if (s3Client != null) s3Client.close();

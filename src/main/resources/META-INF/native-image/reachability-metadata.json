@@ -11446,24 +11446,6 @@
       "type": "io.micrometer.context.ContextSnapshot"
     },
     {
-      "type": "io.minio.BucketExistsArgs",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "io.minio.messages.LocationConstraint",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
       "type": "io.netty.buffer.PooledByteBufAllocator"
     },
     {

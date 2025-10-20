@@ -69,15 +69,13 @@ public class ImageMagickProcessor {
     public void generateThumbnail(File file, FileDocument fileDocument) {
         try {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            cropImage(file, "1", "256", "256", byteArrayOutputStream);
+            cropImage(new FileInputStream(file), "1", "256", "256", byteArrayOutputStream);
             if (dataSourceProperties.getType() == DataSourceType.mongodb) {
                 fileDocument.setContent(byteArrayOutputStream.toByteArray());
             } else {
                 fileDocument.setContent(new byte[0]);
                 filePersistenceService.persistContent(fileDocument.getId(), byteArrayOutputStream);
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         } catch (IOException e) {
             log.error("生成缩略图失败: {}", file.getAbsolutePath(), e);
         }
@@ -146,70 +144,77 @@ public class ImageMagickProcessor {
     }
 
     /**
-     * 使用 ImageMagick 替换原有的 imageCrop 方法。
-     * 根据给定参数对图片进行缩放和质量调整，并返回 png 格式的字节数组。
+     * 使用单一的 ImageMagick 命令，从 InputStream 对图片进行条件性缩放和质量调整。
+     * 只有当图片尺寸大于目标尺寸时，才会进行缩放。
      *
-     * @param srcFile 源文件
-     * @param q       剪裁后的质量 (字符串 "0.0" 到 "1.0")
-     * @param w       剪裁后的宽度 (字符串)
-     * @param h       剪裁后的高度 (字符串)
-     * @param outputStream 输出流，用于接收处理后的图片数据
+     * @param inputStream 源图片输入流
+     * @param q           质量 (字符串 "0.0" 到 "1.0", 默认 0.8)
+     * @param w           目标最大宽度 (字符串)
+     * @param h           目标最大高度 (字符串, 可选)
+     * @param outputStream 输出流，用于接收处理后的 png 图片数据
      */
-    public static void cropImage(File srcFile, String q, String w, String h, OutputStream outputStream) throws IOException, InterruptedException {
-        checkFile(srcFile);
-        // 1. 获取源图片尺寸
-        ImageFormat imageFormat = identifyFormat(srcFile);
-        if (imageFormat == null) {
-            log.error("Could not get dimensions for file, aborting crop: {}", srcFile.getAbsolutePath());
-            throw new CommonException(ExceptionType.FILE_NOT_FIND);
-        }
-
-        // 2. 解析输入参数
+    public static void cropImage(InputStream inputStream, String q, String w, String h, OutputStream outputStream) {
+        // 1. 解析输入参数
         double quality = parseQuality(q);
         int targetWidth = parseDimension(w);
         int targetHeight = parseDimension(h);
 
-        // 3. 构建 ImageMagick 命令
-        CommandLine cmdLine = buildImageMagickThumbnailCommand(srcFile, targetWidth, imageFormat.getWidth(), targetHeight, imageFormat.getHeight(), quality);
-        CommandUtil.execCommand(cmdLine, null, outputStream);
-    }
+        // 如果没有提供有效的目标宽度，则不进行任何处理 (或根据业务抛出异常)
+        if (targetWidth <= 0) {
+            log.warn("Invalid target width provided. Skipping image processing.");
+            // 可以选择直接将输入流复制到输出流，或者什么都不做
+            // IoUtil.copy(inputStream, outputStream);
+            return;
+        }
 
-    private static void checkFile(File srcFile) {
-        if (srcFile == null || !srcFile.exists() || !srcFile.isFile()) {
-            log.error("Invalid source file: {}", srcFile);
-            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        // 2. 构建单一的、条件性的 ImageMagick 命令
+        CommandLine cmdLine = buildConditionalResizeCommand(targetWidth, targetHeight, quality);
+
+        // 3. 执行命令，将输入流管道连接到命令的标准输入
+        try {
+            CommandUtil.execCommand(cmdLine, inputStream, outputStream);
+        } catch (Exception e) {
+            log.error("Failed to execute ImageMagick command.", e);
+            // 根据你的异常处理策略，决定是抛出异常还是静默失败
+            throw new RuntimeException("Image processing failed", e);
         }
     }
 
     /**
-     * 构建 ImageMagick thumbnail 命令行参数
-     * @param srcFile 源文件
-     * @param targetWidth 目标宽度
-     * @param srcWidth 源文件宽度
-     * @param targetHeight 目标高度
-     * @param srcHeight 源文件高度
-     * @param quality 输出图片质量 (0.0 - 1.0)
-     * @return 构建好的命令行参数数组
+     * 构建一个使用条件缩放的 ImageMagick 命令行。
+     * @param targetWidth  目标宽度
+     * @param targetHeight 目标高度 (如果<0则忽略)
+     * @param quality      图片质量 (0.0-1.0)
+     * @return 构建好的命令行对象
      */
-    private static CommandLine buildImageMagickThumbnailCommand(File srcFile, int targetWidth, int srcWidth, int targetHeight, int srcHeight, double quality) {
+    private static CommandLine buildConditionalResizeCommand(int targetWidth, int targetHeight, double quality) {
         CommandLine cmdLine = new CommandLine("magick");
-        cmdLine.addArgument(srcFile.getAbsolutePath(), false);
-        // 只有当目标宽度有效且小于源宽度时，才进行缩放
-        if (targetWidth > 0 && srcWidth > targetWidth) {
-            cmdLine.addArgument("-thumbnail", false);
-            // 如果目标高度也有效且小于源高度，则使用 WxH 边界框
-            if (targetHeight > 0 && srcHeight > targetHeight) {
-                cmdLine.addArgument(targetWidth + "x" + targetHeight, false);
-            } else {
-                // 否则 (高度未指定或不造成缩小)，仅根据宽度缩放
-                cmdLine.addArgument(targetWidth + "x", false);
-            }
+
+        // 输入源是标准输入
+        cmdLine.addArgument("-", false);
+
+        // 使用 -thumbnail 命令，它比 -resize 更快，并且会移除图片的多余元数据
+        cmdLine.addArgument("-thumbnail", false);
+
+        // 构建几何尺寸参数，并添加 ">" 后缀
+        StringBuilder geometry = new StringBuilder();
+        geometry.append(targetWidth);
+        if (targetHeight > 0) {
+            geometry.append("x").append(targetHeight);
         }
+        // 关键：添加 ">" 实现条件缩放
+        geometry.append(">");
+
+        cmdLine.addArgument(geometry.toString(), false);
+
         // 添加质量和输出格式参数
         cmdLine.addArgument("-quality", false);
-        // ImageMagick 质量是 0-100
         cmdLine.addArgument(String.valueOf((int) (quality * 100)), false);
+
+        // 输出目标是标准输出，格式为 png
         cmdLine.addArgument("png:-", false);
+
+        log.info("Built ImageMagick command: {}", cmdLine);
         return cmdLine;
     }
 
@@ -264,13 +269,9 @@ public class ImageMagickProcessor {
         }
     }
 
-    /**
-     * 解析质量参数 (0.0 - 1.0), 默认 0.8.
-     */
+    // parseQuality 和 parseDimension 辅助方法保持不变
     private static double parseQuality(String q) {
-        if (CharSequenceUtil.isBlank(q)) {
-            return 0.8;
-        }
+        if (CharSequenceUtil.isBlank(q)) return 0.8;
         try {
             double quality = Double.parseDouble(q);
             return (quality >= 0 && quality <= 1) ? quality : 0.8;
@@ -279,17 +280,19 @@ public class ImageMagickProcessor {
         }
     }
 
-    /**
-     * 解析尺寸参数, 默认 -1.
-     */
     private static int parseDimension(String dim) {
-        if (CharSequenceUtil.isBlank(dim)) {
-            return -1;
-        }
+        if (CharSequenceUtil.isBlank(dim)) return -1;
         try {
             return Integer.parseInt(dim);
         } catch (NumberFormatException e) {
             return -1;
+        }
+    }
+
+    private static void checkFile(File srcFile) {
+        if (srcFile == null || !srcFile.exists() || !srcFile.isFile()) {
+            log.error("Invalid source file: {}", srcFile);
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
     }
 

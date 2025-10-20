@@ -391,11 +391,6 @@
             <artifactId>guava</artifactId>
             <version>33.3.1-jre</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.minio</groupId>-->
-<!--            <artifactId>minio</artifactId>-->
-<!--            <version>8.5.13</version>-->
-<!--        </dependency>-->
         <!-- 阿里云 OSS -->
         <dependency>
             <groupId>com.aliyun.oss</groupId>

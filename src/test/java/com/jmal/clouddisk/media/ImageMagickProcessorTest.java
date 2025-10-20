@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -74,7 +75,7 @@ public class ImageMagickProcessorTest {
 
         FileOutputStream fileOutputStream = new FileOutputStream(thumbnailFile);
 
-        ImageMagickProcessor.cropImage(resourcesFile, "1", Convert.toStr(targetWidth), null, fileOutputStream);
+        ImageMagickProcessor.cropImage(new FileInputStream(resourcesFile), "1", Convert.toStr(targetWidth), null, fileOutputStream);
         // 验证缩略图文件是否存在, 并且是否为一个正常的图片
         ImageMagickProcessor.ImageFormat imageFormat = ImageMagickProcessor.identifyFormat(thumbnailFile);
         Assertions.assertNotNull(imageFormat, "缩略图生成失败，文件可能不存在或不是有效的图片格式");
