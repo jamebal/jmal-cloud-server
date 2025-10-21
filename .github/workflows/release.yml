@@ -7,6 +7,7 @@ on:
 
 env:
   SOURCE_IMAGE_DOCKERHUB: jmal/jmalcloud:test
+  SOURCE_IMAGE_SQL_DOCKERHUB: jmal/jmalcloud-sql:test
 
 jobs:
   copy-tags:
@@ -36,6 +37,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
+      # MongoDB 版本 - Docker Hub
       - name: Copy Docker Hub tag jmalcloud:test -> latest (+version if present)
         run: |
           # latest
@@ -50,6 +52,7 @@ jobs:
               "${SOURCE_IMAGE_DOCKERHUB}"
           fi
 
+      # MongoDB 版本 - GHCR
       - name: Copy GHCR tag jmalcloud:test -> latest (+version if present)
         run: |
           # latest
@@ -62,4 +65,34 @@ jobs:
             docker buildx imagetools create \
               -t "ghcr.io/${{ github.actor }}/jmalcloud:${PROJECT_VERSION}" \
               "${SOURCE_IMAGE_DOCKERHUB}"
+          fi
+
+      # SQL 版本 - Docker Hub
+      - name: Copy Docker Hub tag jmalcloud-sql:test -> latest (+version if present)
+        run: |
+          # latest
+          docker buildx imagetools create \
+            -t jmal/jmalcloud-sql:latest \
+            "${SOURCE_IMAGE_SQL_DOCKERHUB}"
+
+          # version tag (only if PROJECT_VERSION is set)
+          if [ -n "${PROJECT_VERSION}" ]; then
+            docker buildx imagetools create \
+              -t "jmal/jmalcloud-sql:${PROJECT_VERSION}" \
+              "${SOURCE_IMAGE_SQL_DOCKERHUB}"
+          fi
+
+      # SQL 版本 - GHCR
+      - name: Copy GHCR tag jmalcloud-sql:test -> latest (+version if present)
+        run: |
+          # latest
+          docker buildx imagetools create \
+            -t "ghcr.io/${{ github.actor }}/jmalcloud-sql:latest" \
+            "${SOURCE_IMAGE_SQL_DOCKERHUB}"
+
+          # version tag (only if PROJECT_VERSION is set)
+          if [ -n "${PROJECT_VERSION}" ]; then
+            docker buildx imagetools create \
+              -t "ghcr.io/${{ github.actor }}/jmalcloud-sql:${PROJECT_VERSION}" \
+              "${SOURCE_IMAGE_SQL_DOCKERHUB}"
           fi

@@ -26,14 +26,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
-      - name: Copy Docker Hub tag jmalcloud_native:test -> jmalcloud:test
+      - name: Copy Docker Hub tag jmalcloud_native_mongo:test -> jmalcloud:test
         run: |
           docker buildx imagetools create \
             -t jmal/jmalcloud:test \
-            jmal/jmalcloud_native:test
+            jmal/jmalcloud_native_mongo:test
 
-      - name: Copy GHCR tag jmalcloud_native:test -> jmalcloud:test
+      - name: Copy GHCR tag jmalcloud_native_mongo:test -> jmalcloud:test
         run: |
           docker buildx imagetools create \
             -t ghcr.io/${{ github.actor }}/jmalcloud:test \
-            ghcr.io/${{ github.actor }}/jmalcloud_native:test
+            ghcr.io/${{ github.actor }}/jmalcloud_native_mongo:test
+
+      - name: Copy Docker Hub tag jmalcloud_native_jpa:test -> jmalcloud-sql:test
+        run: |
+          docker buildx imagetools create \
+            -t jmal/jmalcloud-sql:test \
+            jmal/jmalcloud_native_jpa:test
+
+      - name: Copy GHCR tag jmalcloud_native_jpa:test -> jmalcloud-sql:test
+        run: |
+          docker buildx imagetools create \
+            -t ghcr.io/${{ github.actor }}/jmalcloud-sql:test \
+            ghcr.io/${{ github.actor }}/jmalcloud_native_jpa:test

@@ -189,6 +189,14 @@ jobs:
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
+      - name: Set up GraalVM for Native Image
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: ${{ inputs.graal_version }}
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache: 'maven'
+
       - name: Extract project version from pom.xml
         id: project_version
         run: |
