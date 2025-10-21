@@ -54,6 +54,12 @@ jobs:
     runs-on: ${{ inputs.arch == 'amd64' && fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["self-hosted", "Linux", "ARM64"]') }}
 
     steps:
+      - name: Cleanup old failed caches
+        run: |
+          echo "Cleaning up caches older than 24 hours..."
+          find /tmp/github-actions-build-cache -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
+          echo "Old caches cleaned up"
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -283,12 +289,3 @@ jobs:
 
           echo "--- Inspecting GHCR image ---"
           docker manifest inspect ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ inputs.arch }}
-
-      # ✅ 清理本地缓存目录
-      - name: Cleanup local cache
-        if: always()
-        run: |
-          CACHE_DIR="/tmp/github-actions-build-cache/${{ github.run_id }}-${{ inputs.arch }}-${{ inputs.image_tag }}"
-          echo "Cleaning up cache directory: $CACHE_DIR"
-          rm -rf "$CACHE_DIR"
-          echo "Cache cleaned up successfully"
