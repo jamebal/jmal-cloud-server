@@ -197,6 +197,9 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: 'maven'
 
+      - name: Check Maven version
+        run: mvn -v
+
       - name: Extract project version from pom.xml
         id: project_version
         run: |
