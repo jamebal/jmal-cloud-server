@@ -525,11 +525,12 @@
                             </jvmArgs>
                             <buildArgs>
                                 <buildArg>${native-image.march}</buildArg>
-                                <!--                                <buildArg>&#45;&#45;enable-monitoring=jmxserver,jmxclient,jvmstat</buildArg>-->
+                                <!--<buildArg>&#45;&#45;enable-monitoring=jmxserver,jmxclient,jvmstat</buildArg>-->
                                 <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
                                 <buildArg>-H:+AddAllCharsets</buildArg>
                                 <buildArg>-H:+AllowIncompleteClasspath</buildArg>
                                 <buildArg>-H:ExcludeResources=META-INF/services/org.hibernate.bytecode.spi.BytecodeProvider</buildArg>
+                                <!--lucene MMapDirectory-->
                                 <buildArg>-H:+SharedArenaSupport</buildArg>
                                 <buildArg>--enable-native-access=ALL-UNNAMED</buildArg>
                                 <buildArg>--enable-http</buildArg>
