@@ -3,7 +3,6 @@ package com.jmal.clouddisk.listener;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.lucene.RebuildIndexTaskService;
 import com.jmal.clouddisk.service.IFileService;
 import io.methvin.watcher.DirectoryChangeEvent;
@@ -36,7 +35,6 @@ public class FileListener implements DirectoryChangeListener {
     private final FileProperties fileProperties;
     private final IFileService fileService;
     private final RebuildIndexTaskService rebuildIndexTaskService;
-    private final DataSourceProperties dataSourceProperties;
 
     /**
      * 需要过滤掉的目录列表
@@ -67,7 +65,6 @@ public class FileListener implements DirectoryChangeListener {
 
     @PostConstruct
     public void init() {
-        log.info("dataSourceProperties: {}", dataSourceProperties);
         // 定期将事件从Map转移到处理队列
         scheduler.scheduleAtFixedRate(this::transferEventsToQueue, 200, 200, TimeUnit.MILLISECONDS);
 

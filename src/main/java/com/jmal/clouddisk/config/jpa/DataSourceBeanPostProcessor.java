@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.flyway.FlywayProperties;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.core.PriorityOrdered;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+@Conditional(RelationalDataSourceCondition.class)
 @Slf4j
 @Component
 public class DataSourceBeanPostProcessor implements BeanPostProcessor, PriorityOrdered {
