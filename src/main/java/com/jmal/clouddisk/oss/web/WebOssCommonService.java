@@ -7,7 +7,6 @@ import com.jmal.clouddisk.oss.BaseOssService;
 import com.jmal.clouddisk.oss.BucketInfo;
 import com.jmal.clouddisk.oss.FileInfo;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.CommonUserFileService;
 import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.service.impl.MessageService;
@@ -34,8 +33,6 @@ public class WebOssCommonService {
     private final CommonUserFileService commonUserFileService;
 
     private final MessageService messageService;
-
-    private final CommonFileService commonFileService;
 
     private final IFileDAO fileDAO;
 

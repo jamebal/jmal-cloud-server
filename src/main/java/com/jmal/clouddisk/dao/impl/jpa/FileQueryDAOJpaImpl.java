@@ -164,7 +164,7 @@ public class FileQueryDAOJpaImpl implements IFileQueryDAO {
 
     @Override
     public List<FileBaseMountDTO> getDirDocuments(UploadApiParamDTO upload) {
-        return fileMetadataRepository.findAllByPathAndIsFolderIsTrue(upload.getCurrentDirectory());
+        return fileMetadataRepository.findAllByUserIdAndPathAndIsFolderIsTrue(upload.getUserId(), upload.getCurrentDirectory());
     }
 
     @Override

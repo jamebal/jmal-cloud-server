@@ -211,8 +211,8 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
     @Query("SELECT f.publicId FROM FileMetadataDO f WHERE f.userId = :userId AND f.mountFileId IS NOT NULL")
     Page<String> findIdsByUserIdAndMountFileIdIsNotNull(String userId, Pageable pageable);
 
-    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseMountDTO(f.publicId, f.name, f.path, f.userId, f.isFolder, f.mountFileId) FROM FileMetadataDO f WHERE f.path = :path AND f.isFolder = true")
-    List<FileBaseMountDTO> findAllByPathAndIsFolderIsTrue(String path);
+    @Query("SELECT new com.jmal.clouddisk.model.file.dto.FileBaseMountDTO(f.publicId, f.name, f.path, f.userId, f.isFolder, f.mountFileId) FROM FileMetadataDO f WHERE f.userId = :userId AND f.path = :path AND f.isFolder = true")
+    List<FileBaseMountDTO> findAllByUserIdAndPathAndIsFolderIsTrue(String userId, String path);
 
     @Modifying
     @Query("UPDATE FileMetadataDO f SET f.hasContent = true WHERE f.publicId = :fileId")
