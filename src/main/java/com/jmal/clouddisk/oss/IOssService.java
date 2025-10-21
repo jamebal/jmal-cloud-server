@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.oss;
 
-import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
@@ -191,10 +190,9 @@ public interface IOssService {
     /**
      * 获取缩略图, 指定目标图片宽度为 Width，高度等比缩放
      * @param objectName objectName
-     * @param file       临时文件
      * @param width      图片宽度
      */
-    FileInfo getThumbnail(String objectName, File file, int width);
+    InputStream getThumbnail(String objectName, int width);
 
     /**
      * 生成预签名URL

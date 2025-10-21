@@ -24,7 +24,6 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -379,14 +378,13 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
-    public FileInfo getThumbnail(String objectName, File file, int width) {
+    public InputStream getThumbnail(String objectName, int width) {
         try {
             GetObjectRequest request = new GetObjectRequest(bucketName, objectName);
             // 指定目标图片宽度为 Width，高度等比缩放
             String rule = "imageMogr2/thumbnail/" + width + "x";
             request.putCustomQueryParameter(rule, null);
-            cosClient.getObject(request, file);
-            return baseOssService.getFileInfo(objectName);
+            return cosClient.getObject(request).getObjectContent();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }

@@ -594,25 +594,23 @@ public class WebOssService {
             String tempFileName = SecureUtil.md5(pathName) + Paths.get(pathName).getFileName();
             File tempFile = Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir(), tempFileName).toFile();
             try {
-                FileInfo fileInfo = ossService.getThumbnail(objectName, tempFile, 256);
-                String username = WebOssCommonService.getUsernameByOssPath(ossPath);
-                FileDocument thumbnailDoc = fileInfo.toFileDocument(ossPath, userService.getUserIdByUserName(username));
-                thumbnailDoc.setContent(FileUtil.readBytes(tempFile));
-                thumbnailDoc.setInputStream(new FileInputStream(tempFile));
-                if (fileDocument != null) {
-                    fileDAO.setContent(thumbnailDoc.getId(), thumbnailDoc.getContent());
+                FileDocument thumbnailDoc = new FileDocument();
+                String suffix = MyFileUtils.extName(tempFile);
+                String contentType = FileContentTypeUtils.getContentType(suffix);
+                if (ImageExifUtil.isImageType(contentType, suffix)) {
+                    InputStream inputStream = ossService.getThumbnail(objectName, 256);
+                    thumbnailDoc.setInputStream(inputStream);
                 } else {
-                    fileDAO.save(thumbnailDoc);
+                    AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName);
+                    if (abstractOssObject != null) {
+                        thumbnailDoc.setContentType(contentType);
+                        thumbnailDoc.setInputStream(abstractOssObject.getInputStream());
+                        thumbnailDoc.setSize(abstractOssObject.getContentLength());
+                    }
                 }
-                if (thumbnailDoc.getInputStream() != null) {
-                    file = Optional.of(thumbnailDoc);
-                }
+                file = Optional.of(thumbnailDoc);
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
-            } finally {
-                if (tempFile.exists()) {
-                    FileUtil.del(tempFile);
-                }
             }
         }
         return file.map(commonFileService::getImageInputStreamResourceEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());

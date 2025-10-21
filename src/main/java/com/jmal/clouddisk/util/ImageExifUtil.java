@@ -20,7 +20,11 @@ import java.util.TimeZone;
 public class ImageExifUtil {
 
     public static boolean isImageType(String contentType, String suffix) {
-        return contentType.startsWith(Constants.CONTENT_TYPE_IMAGE) && (!"ico".equals(suffix) && !"svg".equals(suffix));
+        return contentType.startsWith(Constants.CONTENT_TYPE_IMAGE) && needToHandle(suffix);
+    }
+
+    public static boolean needToHandle(String suffix) {
+        return (!"ico".equals(suffix) && !"svg".equals(suffix));
     }
 
     public static ExifInfo getExif(File file) {

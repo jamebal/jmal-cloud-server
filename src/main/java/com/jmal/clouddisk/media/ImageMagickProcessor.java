@@ -214,7 +214,6 @@ public class ImageMagickProcessor {
         // 输出目标是标准输出，格式为 png
         cmdLine.addArgument("png:-", false);
 
-        log.info("Built ImageMagick command: {}", cmdLine);
         return cmdLine;
     }
 

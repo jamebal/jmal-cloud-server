@@ -15,7 +15,6 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -341,7 +340,7 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
-    public FileInfo getThumbnail(String objectName, File file, int width) {
+    public InputStream getThumbnail(String objectName, int width) {
         try {
             // 将图片缩放为固定宽高100 px。
             String style = "image/resize,m_mfit,w_" + width;
@@ -349,8 +348,7 @@ public class AliyunOssService implements IOssService {
             request.setProcess(style);
             // 将处理后的图片命名为example-resize.jpg并保存到本地。
             // 如果未指定本地路径只填写了本地文件名称（例如example-resize.jpg），则文件默认保存到示例程序所属项目对应本地路径中。
-            ossClient.getObject(request, file);
-            return baseOssService.getFileInfo(objectName);
+            return ossClient.getObject(request).getObjectContent();
         } catch (OSSException oe) {
             log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
@@ -415,7 +413,7 @@ public class AliyunOssService implements IOssService {
             ObjectMetadata objectMetadata = new ObjectMetadata();
             objectMetadata.setContentLength(inputStreamLength);
             // 创建PutObjectRequest对象。
-            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream, objectMetadata );
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream, objectMetadata);
             // 创建PutObject请求。
             ossClient.putObject(putObjectRequest);
             baseOssService.onUploadSuccess(objectName, inputStreamLength);

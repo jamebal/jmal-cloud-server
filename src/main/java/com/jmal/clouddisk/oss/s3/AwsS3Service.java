@@ -20,8 +20,8 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -574,11 +574,11 @@ public class AwsS3Service implements IOssService {
     }
 
     @Override
-    public FileInfo getThumbnail(String objectName, File file, int width) {
+    public InputStream getThumbnail(String objectName, int width) {
         try (InputStream is = s3Client.getObject(GetObjectRequest.builder().bucket(bucketName).key(objectName).build())) {
-            FileOutputStream fileOutputStream = new FileOutputStream(file);
-            ImageMagickProcessor.cropImage(is, "80", String.valueOf(width), null, fileOutputStream);
-            return baseOssService.getFileInfo(objectName);
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ImageMagickProcessor.cropImage(is, "80", String.valueOf(width), null, byteArrayOutputStream);
+            return new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
         } catch (IOException e) {
             log.error("Error downloading thumbnail: {}", objectName, e);
             return null;
