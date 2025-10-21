@@ -169,6 +169,25 @@ jobs:
         run: |
           mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }} -DskipTests -Dnative-image.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--enable-monitoring=heapdump --pgo=jmalcloud.iprof"
 
+      # 保存构建产物到本地共享目录
+      - name: Save build artifacts to local cache
+        run: |
+          CACHE_DIR="/tmp/github-actions-build-cache/${{ github.run_id }}-${{ inputs.arch }}-${{ inputs.image_tag }}"
+          echo "Creating cache directory: $CACHE_DIR"
+          mkdir -p "$CACHE_DIR"
+          
+          echo "Copying build artifacts to cache..."
+          cp -r target/ "$CACHE_DIR/"
+          cp -r frontend/frontend/ "$CACHE_DIR/" || echo "Warning: frontend/frontend/ not found"
+          cp pom.xml "$CACHE_DIR/"
+          
+          echo "Cache directory contents:"
+          ls -lah "$CACHE_DIR"
+          
+          # 保存缓存路径供下一个 job 使用
+          echo "CACHE_DIR=$CACHE_DIR" >> $GITHUB_ENV
+          echo "Build artifacts saved to: $CACHE_DIR"
+
   build-docker-and-push:
     needs: build-single-arch
     runs-on: ${{ inputs.arch == 'amd64' && fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["self-hosted", "Linux", "ARM64"]') }}
@@ -177,6 +196,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 从本地共享目录恢复构建产物
+      - name: Restore build artifacts from local cache
+        run: |
+          CACHE_DIR="/tmp/github-actions-build-cache/${{ github.run_id }}-${{ inputs.arch }}-${{ inputs.image_tag }}"
+          echo "Restoring from cache directory: $CACHE_DIR"
+          
+          if [ ! -d "$CACHE_DIR" ]; then
+            echo "Error: Cache directory not found: $CACHE_DIR"
+            exit 1
+          fi
+          
+          echo "Cache directory contents:"
+          ls -lah "$CACHE_DIR"
+          
+          echo "Copying artifacts from cache to workspace..."
+          cp -r "$CACHE_DIR"/target/ ./
+          cp -r "$CACHE_DIR"/frontend/ ./ || echo "Warning: frontend not found in cache"
+          cp "$CACHE_DIR"/pom.xml ./
+          
+          echo "Workspace after restore:"
+          ls -lah .
+          echo "Target directory:"
+          ls -lah target/ || echo "target/ not found"
+
+      # 设置 Maven 环境变量
       - name: Set Maven Environmental
         run: |
           echo "/opt/maven/bin" >> $GITHUB_PATH
@@ -239,3 +283,12 @@ jobs:
 
           echo "--- Inspecting GHCR image ---"
           docker manifest inspect ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ inputs.arch }}
+
+      # ✅ 清理本地缓存目录
+      - name: Cleanup local cache
+        if: always()
+        run: |
+          CACHE_DIR="/tmp/github-actions-build-cache/${{ github.run_id }}-${{ inputs.arch }}-${{ inputs.image_tag }}"
+          echo "Cleaning up cache directory: $CACHE_DIR"
+          rm -rf "$CACHE_DIR"
+          echo "Cache cleaned up successfully"

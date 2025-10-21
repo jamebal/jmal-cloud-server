@@ -8,21 +8,6 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # JPA builds
-  jpa-amd64:
-    name: JPA build - amd64
-    uses: ./.github/workflows/test-native-build.yml
-    with:
-      image_name: 'jmalcloud_native_jpa'
-      image_tag: "test"
-      profiles_active: "dev-sqlite"
-      aot_build_mode: "jpa"
-      arch: "amd64"
-      node_version: "16.20.2"
-      graal_version: "25"
-      dockerfile: "./Dockerfile"
-    secrets: inherit
-
   jpa-arm64:
     name: JPA build - arm64
     needs: jpa-amd64
@@ -33,6 +18,20 @@ jobs:
       profiles_active: "dev-sqlite"
       aot_build_mode: "jpa"
       arch: "arm64"
+      node_version: "16.20.2"
+      graal_version: "25"
+      dockerfile: "./Dockerfile"
+    secrets: inherit
+
+  jpa-amd64:
+    name: JPA build - amd64
+    uses: ./.github/workflows/test-native-build.yml
+    with:
+      image_name: 'jmalcloud_native_jpa'
+      image_tag: "test"
+      profiles_active: "dev-sqlite"
+      aot_build_mode: "jpa"
+      arch: "amd64"
       node_version: "16.20.2"
       graal_version: "25"
       dockerfile: "./Dockerfile"
