@@ -20,7 +20,7 @@ import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSLockFactory;
-import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.store.MMapDirectory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -66,14 +66,14 @@ public class LuceneConfig {
      */
     @Bean
     public Directory luceneDirectory() throws IOException {
-        return new NIOFSDirectory(getIndexDir(), FSLockFactory.getDefault());
+        return new MMapDirectory(getIndexDir(), FSLockFactory.getDefault());
     }
 
     /**
      * 创建一个用于精确子串匹配的 N-Gram Analyzer 实例
      * 策略: KeywordTokenizer -> LowerCaseFilter (可选) -> NGramTokenFilter
      */
-    @Bean("ngramAnalyzer") // 给它一个不同的名字，以便注入
+    @Bean("ngramAnalyzer")
     public Analyzer ngramAnalyzer() {
         return new Analyzer() {
             @Override

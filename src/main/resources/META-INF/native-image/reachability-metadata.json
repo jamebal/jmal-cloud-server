@@ -350,6 +350,9 @@
       "type": "com.fasterxml.jackson.annotation.JsonInclude$Value"
     },
     {
+      "type": "com.fasterxml.jackson.annotation.JsonProperty"
+    },
+    {
       "type": "com.fasterxml.jackson.annotation.JsonSetter$Value"
     },
     {
@@ -1697,6 +1700,15 @@
       "type": "com.jmal.clouddisk.config.jpa.AuditableTimeEntity_"
     },
     {
+      "type": "com.jmal.clouddisk.config.jpa.DataSourceBeanPostProcessor",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.config.jpa.DataSourceProperties",
       "fields": [
         {
@@ -1716,12 +1728,6 @@
         },
         {
           "name": "setMigration",
-          "parameterTypes": [
-            "java.lang.Boolean"
-          ]
-        },
-        {
-          "name": "setMongoEnabled",
           "parameterTypes": [
             "java.lang.Boolean"
           ]
@@ -1772,6 +1778,22 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.config.jpa.DynamicDataSourceConfiguration",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.core.env.Environment",
+            "com.jmal.clouddisk.config.FileProperties"
+          ]
+        },
+        {
+          "name": "dataSource",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.config.jpa.Identifiable",
       "methods": [
         {
@@ -1815,65 +1837,6 @@
         {
           "name": "<init>",
           "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.config.jpa.SqliteDataSource",
-      "methods": [
-        {
-          "name": "dataSource",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.config.jpa.SqliteDataSource$$SpringCGLIB$$0",
-      "fields": [
-        {
-          "name": "$$beanFactory"
-        },
-        {
-          "name": "CGLIB$CALLBACK_FILTER"
-        },
-        {
-          "name": "CGLIB$FACTORY_DATA"
-        }
-      ],
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "com.jmal.clouddisk.config.FileProperties"
-          ]
-        },
-        {
-          "name": "CGLIB$SET_STATIC_CALLBACKS",
-          "parameterTypes": [
-            "org.springframework.cglib.proxy.Callback[]"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.config.jpa.SqliteDataSource$$SpringCGLIB$$FastClass$$0",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "java.lang.Class"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.config.jpa.SqliteDataSource$$SpringCGLIB$$FastClass$$1",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "java.lang.Class"
-          ]
         }
       ]
     },
@@ -1933,6 +1896,22 @@
           "parameterTypes": [
             "java.lang.Class"
           ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.config.mongodb.MongoIndexInitializer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.core.env.Environment",
+            "org.springframework.data.mongodb.core.MongoTemplate"
+          ]
+        },
+        {
+          "name": "init",
+          "parameterTypes": []
         }
       ]
     },
@@ -2929,6 +2908,13 @@
           ]
         },
         {
+          "name": "countFilesInFolder",
+          "parameterTypes": [
+            "java.lang.String",
+            "java.lang.String"
+          ]
+        },
+        {
           "name": "countFoldersWithoutEtag",
           "parameterTypes": []
         },
@@ -2956,10 +2942,14 @@
           ]
         },
         {
-          "name": "findFileBaseEtagDTOByNeedUpdateFolder",
+          "name": "findEtagUpdateFailedAttemptsById",
           "parameterTypes": [
-            "org.springframework.data.domain.Sort"
+            "java.lang.String"
           ]
+        },
+        {
+          "name": "findFileBaseEtagDTOByNeedUpdateFolder",
+          "parameterTypes": []
         },
         {
           "name": "findFileBaseEtagDTOByRootDirFilesWithoutEtag",
@@ -2997,11 +2987,20 @@
           ]
         },
         {
+          "name": "setRetryAtById",
+          "parameterTypes": [
+            "java.lang.String",
+            "java.time.Instant",
+            "int"
+          ]
+        },
+        {
           "name": "updateEtagAndSizeById",
           "parameterTypes": [
             "java.lang.String",
             "java.lang.String",
-            "long"
+            "long",
+            "int"
           ]
         }
       ]
@@ -4116,6 +4115,73 @@
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.SafeWriteServiceDecorator"
     },
     {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.WriteServiceConfiguration",
+      "methods": [
+        {
+          "name": "actualWriteService",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.write.DataManipulationService"
+          ]
+        },
+        {
+          "name": "safeWriteService",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.write.IWriteService"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.WriteServiceConfiguration$$SpringCGLIB$$0",
+      "fields": [
+        {
+          "name": "$$beanFactory"
+        },
+        {
+          "name": "CGLIB$CALLBACK_FILTER"
+        },
+        {
+          "name": "CGLIB$FACTORY_DATA"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.core.env.Environment"
+          ]
+        },
+        {
+          "name": "CGLIB$SET_STATIC_CALLBACKS",
+          "parameterTypes": [
+            "org.springframework.cglib.proxy.Callback[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.WriteServiceConfiguration$$SpringCGLIB$$FastClass$$0",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.WriteServiceConfiguration$$SpringCGLIB$$FastClass$$1",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.accesstoken.AccessTokenOperation$Create"
     },
     {
@@ -4426,6 +4492,9 @@
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.etag.EtagOperation$UpdateEtagAndSizeById"
     },
     {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.etag.EtagOperation$setRetryAtById"
+    },
+    {
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.etag.SetEtagByUserIdAndPathAndNameHandler",
       "methods": [
         {
@@ -4471,6 +4540,17 @@
     },
     {
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.etag.UpdateEtagAndSizeByIdHandler",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.repository.FileEtagRepository"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.etag.setRetryAtByIdHandler",
       "methods": [
         {
           "name": "<init>",
@@ -5730,73 +5810,6 @@
       "type": "com.jmal.clouddisk.dao.util.MyUpdate"
     },
     {
-      "type": "com.jmal.clouddisk.dao.write.WriteServiceConfiguration",
-      "methods": [
-        {
-          "name": "actualWriteService",
-          "parameterTypes": [
-            "com.jmal.clouddisk.dao.impl.jpa.write.DataManipulationService"
-          ]
-        },
-        {
-          "name": "safeWriteService",
-          "parameterTypes": [
-            "com.jmal.clouddisk.dao.impl.jpa.write.IWriteService"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.dao.write.WriteServiceConfiguration$$SpringCGLIB$$0",
-      "fields": [
-        {
-          "name": "$$beanFactory"
-        },
-        {
-          "name": "CGLIB$CALLBACK_FILTER"
-        },
-        {
-          "name": "CGLIB$FACTORY_DATA"
-        }
-      ],
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "org.springframework.core.env.Environment"
-          ]
-        },
-        {
-          "name": "CGLIB$SET_STATIC_CALLBACKS",
-          "parameterTypes": [
-            "org.springframework.cglib.proxy.Callback[]"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.dao.write.WriteServiceConfiguration$$SpringCGLIB$$FastClass$$0",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "java.lang.Class"
-          ]
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.dao.write.WriteServiceConfiguration$$SpringCGLIB$$FastClass$$1",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "java.lang.Class"
-          ]
-        }
-      ]
-    },
-    {
       "type": "com.jmal.clouddisk.exception.CommonException"
     },
     {
@@ -5942,6 +5955,9 @@
           ]
         }
       ]
+    },
+    {
+      "type": "com.jmal.clouddisk.lucene.EtagCalculationResult"
     },
     {
       "type": "com.jmal.clouddisk.lucene.EtagService",
@@ -8034,6 +8050,10 @@
           "parameterTypes": []
         },
         {
+          "name": "getChildrenCount",
+          "parameterTypes": []
+        },
+        {
           "name": "getContentText",
           "parameterTypes": []
         },
@@ -8155,6 +8175,9 @@
       "type": "com.jmal.clouddisk.model.file.FileMetadataDO",
       "fields": [
         {
+          "name": "childrenCount"
+        },
+        {
           "name": "contentType"
         },
         {
@@ -8210,6 +8233,9 @@
         },
         {
           "name": "props"
+        },
+        {
+          "name": "retryAt"
         },
         {
           "name": "size"
@@ -8282,13 +8308,7 @@
       "type": "com.jmal.clouddisk.model.file.FilePropsDO$HibernateInstantiator"
     },
     {
-      "type": "com.jmal.clouddisk.model.file.FilePropsDO$HibernateProxy",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
+      "type": "com.jmal.clouddisk.model.file.FilePropsDO$HibernateProxy"
     },
     {
       "type": "com.jmal.clouddisk.model.file.FilePropsDO_"
@@ -8844,7 +8864,7 @@
       "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_"
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_mewjln",
+      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_la721v",
       "methods": [
         {
           "name": "<init>",
@@ -9826,7 +9846,7 @@
       "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_"
     },
     {
-      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Accessor_buet8u",
+      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Accessor_35lj4b",
       "methods": [
         {
           "name": "<init>",
@@ -11745,9 +11765,6 @@
       "type": "jakarta.mail.internet.MimeMessage"
     },
     {
-      "type": "jakarta.persistence.Cache"
-    },
-    {
       "type": "jakarta.persistence.CacheRetrieveMode"
     },
     {
@@ -11883,6 +11900,9 @@
     },
     {
       "type": "jakarta.persistence.Transient"
+    },
+    {
+      "type": "jakarta.persistence.TypedQuery"
     },
     {
       "type": "jakarta.persistence.UniqueConstraint"
@@ -12130,6 +12150,9 @@
       "type": "java.beans.PropertyChangeListener"
     },
     {
+      "type": "java.beans.PropertyDescriptor"
+    },
+    {
       "type": "java.io.ByteArrayOutputStream"
     },
     {
@@ -12154,15 +12177,7 @@
       "type": "java.io.FileNotFoundException"
     },
     {
-      "type": "java.io.IOException",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
+      "type": "java.io.IOException"
     },
     {
       "type": "java.io.InputStream"
@@ -12716,6 +12731,9 @@
       "type": "java.lang.constant.ConstantDesc[]"
     },
     {
+      "type": "java.lang.foreign.MemorySegment[]"
+    },
+    {
       "type": "java.lang.invoke.MethodHandle"
     },
     {
@@ -13089,9 +13107,6 @@
     },
     {
       "type": "java.security.SecureClassLoader"
-    },
-    {
-      "type": "java.security.cert.PKIXRevocationChecker"
     },
     {
       "type": "java.security.cert.X509Certificate"
@@ -14399,6 +14414,17 @@
       "type": "org.apache.hc.client5.http.impl.classic.HttpClients"
     },
     {
+      "type": "org.apache.http.client.config.RequestConfig$Builder",
+      "methods": [
+        {
+          "name": "setNormalizeUri",
+          "parameterTypes": [
+            "boolean"
+          ]
+        }
+      ]
+    },
+    {
       "type": "org.apache.jasper.compiler.JspConfig"
     },
     {
@@ -14771,7 +14797,21 @@
       "type": "org.apache.lucene.store.LockFactory"
     },
     {
-      "type": "org.apache.lucene.store.NIOFSDirectory"
+      "type": "org.apache.lucene.store.MMapDirectory"
+    },
+    {
+      "type": "org.apache.lucene.store.MMapDirectory$MMapIndexInputProvider"
+    },
+    {
+      "type": "org.apache.lucene.store.MemorySegmentIndexInputProvider",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "int"
+          ]
+        }
+      ]
     },
     {
       "type": "org.apache.lucene.store.TrackingDirectoryWrapper"
@@ -15084,852 +15124,6 @@
     },
     {
       "type": "org.aspectj.weaver.tools.Jdk14TraceFactory",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.COMPOSITE$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.CompositeSignatures$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.DH$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.DSA$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.DSTU4145$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.Dilithium$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.EC$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.ECGOST$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.EXTERNAL$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.EdEC$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.ElGamal$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.Falcon$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.GM$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.GOST$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.IES$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.LMS$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.NTRU$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.RSA$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.SPHINCSPlus$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.asymmetric.X509$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.Blake2b$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.Blake2s$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.Blake3$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.DSTU7564$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.GOST3411$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.Haraka$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.Keccak$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.MD2$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.MD4$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.MD5$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.RIPEMD128$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.RIPEMD160$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.RIPEMD256$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.RIPEMD320$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.SHA1$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.SHA224$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.SHA256$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.SHA3$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.SHA384$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.SHA512$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.SM3$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.Skein$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.Tiger$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.digest.Whirlpool$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.drbg.DRBG$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.keystore.BC$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.keystore.BCFKS$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.keystore.PKCS12$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.AES$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.ARC4$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.ARIA$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.Blowfish$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.CAST5$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.CAST6$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.Camellia$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.ChaCha$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.DES$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.DESede$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.DSTU7624$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.GOST28147$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.GOST3412_2015$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.Grain128$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.Grainv1$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.HC128$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.HC256$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.IDEA$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.Noekeon$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.OpenSSLPBKDF$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.PBEPBKDF1$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.PBEPBKDF2$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.PBEPKCS12$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.Poly1305$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.RC2$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.RC5$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.RC6$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.Rijndael$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.SCRYPT$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.SEED$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.SM4$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.Salsa20$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.Serpent$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.Shacal2$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.SipHash$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.SipHash128$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.Skipjack$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.TEA$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.TLSKDF$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.Threefish$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.Twofish$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.VMPC$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.VMPCKSA3$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.XSalsa20$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.XTEA$Mappings",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "org.bouncycastle.jcajce.provider.symmetric.Zuc$Mappings",
       "methods": [
         {
           "name": "<init>",
@@ -16578,6 +15772,23 @@
     },
     {
       "type": "org.hibernate.bytecode.enhance.internal.bytebuddy.CodeTemplates$TrackChange"
+    },
+    {
+      "type": "org.hibernate.bytecode.enhance.spi.interceptor.BytecodeInterceptorLogging_$logger",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.jboss.logging.Logger"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.hibernate.bytecode.enhance.spi.interceptor.BytecodeInterceptorLogging_$logger_zh"
+    },
+    {
+      "type": "org.hibernate.bytecode.enhance.spi.interceptor.BytecodeInterceptorLogging_$logger_zh_CN"
     },
     {
       "type": "org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl"
@@ -18805,19 +18016,6 @@
       "type": "org.reactivestreams.Publisher"
     },
     {
-      "type": "org.simpleframework.xml.core.TextLabel",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "org.simpleframework.xml.core.Contact",
-            "org.simpleframework.xml.Text",
-            "org.simpleframework.xml.stream.Format"
-          ]
-        }
-      ]
-    },
-    {
       "type": "org.slf4j.Logger"
     },
     {
@@ -18922,6 +18120,12 @@
           "parameterTypes": []
         },
         {
+          "name": "methodParameterPojoExtractor",
+          "parameterTypes": [
+            "org.springdoc.core.utils.SchemaUtils"
+          ]
+        },
+        {
           "name": "modelConverterRegistrar",
           "parameterTypes": [
             "java.util.Optional",
@@ -18953,7 +18157,6 @@
           "name": "parameterBuilder",
           "parameterTypes": [
             "org.springdoc.core.utils.PropertyResolverUtils",
-            "java.util.Optional",
             "java.util.Optional",
             "org.springdoc.core.providers.ObjectMapperProvider",
             "java.util.Optional"
@@ -18995,6 +18198,12 @@
           "parameterTypes": []
         },
         {
+          "name": "schemaUtils",
+          "parameterTypes": [
+            "java.util.Optional"
+          ]
+        },
+        {
           "name": "securityParser",
           "parameterTypes": [
             "org.springdoc.core.utils.PropertyResolverUtils"
@@ -19003,6 +18212,8 @@
         {
           "name": "springDocCustomizers",
           "parameterTypes": [
+            "java.util.Optional",
+            "java.util.Optional",
             "java.util.Optional",
             "java.util.Optional",
             "java.util.Optional",
@@ -19135,10 +18346,6 @@
           "parameterTypes": []
         },
         {
-          "name": "kotlinDefaultsInParamObjects",
-          "parameterTypes": []
-        },
-        {
           "name": "kotlinDeprecatedPropertyCustomizer",
           "parameterTypes": [
             "org.springdoc.core.providers.ObjectMapperProvider"
@@ -19149,6 +18356,10 @@
           "parameterTypes": [
             "org.springdoc.core.providers.ObjectMapperProvider"
           ]
+        },
+        {
+          "name": "springDocKotlinUtils",
+          "parameterTypes": []
         }
       ]
     },
@@ -19285,6 +18496,9 @@
     },
     {
       "type": "org.springdoc.core.discoverer.SpringDocParameterNameDiscoverer"
+    },
+    {
+      "type": "org.springdoc.core.extractor.MethodParameterPojoExtractor"
     },
     {
       "type": "org.springdoc.core.filters.OpenApiMethodFilter"
@@ -19494,6 +18708,21 @@
       "type": "org.springdoc.core.utils.PropertyResolverUtils"
     },
     {
+      "type": "org.springdoc.core.utils.SchemaUtils"
+    },
+    {
+      "type": "org.springdoc.core.utils.SpringDocKotlinUtils"
+    },
+    {
+      "type": "org.springdoc.scalar.ScalarDisableAutoConfiguration",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "org.springdoc.ui.AbstractSwaggerIndexTransformer"
     },
     {
@@ -19529,8 +18758,9 @@
           "parameterTypes": [
             "org.springdoc.core.service.GenericParameterService",
             "org.springdoc.core.service.RequestBodyService",
-            "java.util.Optional",
-            "org.springdoc.core.discoverer.SpringDocParameterNameDiscoverer"
+            "org.springdoc.core.customizers.SpringDocCustomizers",
+            "org.springdoc.core.discoverer.SpringDocParameterNameDiscoverer",
+            "org.springdoc.core.extractor.MethodParameterPojoExtractor"
           ]
         },
         {
@@ -21290,30 +20520,6 @@
           "parameterTypes": [
             "java.lang.String"
           ]
-        },
-        {
-          "name": "setName",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setPassword",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setUrl",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setUsername",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
         }
       ]
     },
@@ -21499,6 +20705,33 @@
           "parameterTypes": []
         }
       ]
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.netty.NettyAutoConfiguration",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.boot.autoconfigure.netty.NettyProperties"
+          ]
+        },
+        {
+          "name": "nettyAutoConfigurationLazyInitializationExcludeFilter",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.netty.NettyProperties",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.netty.NettyProperties$LeakDetection"
     },
     {
       "type": "org.springframework.boot.autoconfigure.orm.jpa.EntityManagerFactoryBuilderCustomizer"
@@ -25190,6 +24423,9 @@
       "type": "org.springframework.data.mongodb.core.index.CompoundIndex"
     },
     {
+      "type": "org.springframework.data.mongodb.core.index.CompoundIndex[]"
+    },
+    {
       "type": "org.springframework.data.mongodb.core.index.CompoundIndexes"
     },
     {
@@ -25197,9 +24433,6 @@
     },
     {
       "type": "org.springframework.data.mongodb.core.index.IndexOperationsProvider"
-    },
-    {
-      "type": "org.springframework.data.mongodb.core.index.Indexed"
     },
     {
       "type": "org.springframework.data.mongodb.core.index.SearchIndexOperations"
@@ -27487,6 +26720,9 @@
       "type": "scala.Option"
     },
     {
+      "type": "scala.util.Properties"
+    },
+    {
       "type": "schemaorg_apache_xmlbeans.system.sXMLCONFIG.TypeSystemHolder"
     },
     {
@@ -27501,6 +26737,9 @@
     {
       "type": "short[]",
       "serializable": true
+    },
+    {
+      "type": "software.amazon.awssdk.http.apache.ApacheSdkHttpService"
     },
     {
       "type": "sun.management.VMManagementImpl",
@@ -28364,7 +27603,21 @@
     {
       "type": {
         "proxy": [
-          "org.springframework.data.mongodb.core.index.Indexed"
+          "org.springframework.data.mongodb.core.index.CompoundIndex"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "org.springframework.data.mongodb.core.index.CompoundIndexes"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "org.springframework.data.mongodb.core.mapping.Document"
         ]
       }
     },
@@ -28450,16 +27703,6 @@
     {
       "type": {
         "lambda": {
-          "declaringClass": "org.springdoc.core.configuration.SpringDocKotlinConfiguration$KotlinReflectDependingConfiguration",
-          "interfaces": [
-            "org.springdoc.core.customizers.DelegatingMethodParameterCustomizer"
-          ]
-        }
-      }
-    },
-    {
-      "type": {
-        "lambda": {
           "declaringClass": "org.springframework.boot.LazyInitializationExcludeFilter",
           "interfaces": [
             "org.springframework.boot.LazyInitializationExcludeFilter"
@@ -28523,9 +27766,6 @@
       "glob": ""
     },
     {
-      "glob": "META-INF/MANIFEST.MF"
-    },
-    {
       "glob": "META-INF/build-info.properties"
     },
     {
@@ -28536,6 +27776,9 @@
     },
     {
       "glob": "META-INF/maven/org.xerial/sqlite-jdbc/pom.properties"
+    },
+    {
+      "glob": "META-INF/native/document-classes.txt"
     },
     {
       "glob": "META-INF/orm.xml"
@@ -28718,6 +27961,9 @@
       "glob": "META-INF/services/org.slf4j.spi.SLF4JServiceProvider"
     },
     {
+      "glob": "META-INF/services/software.amazon.awssdk.http.SdkHttpService"
+    },
+    {
       "glob": "META-INF/spring-autoconfigure-metadata.properties"
     },
     {
@@ -28853,19 +28099,25 @@
       "glob": "com/jmal/clouddisk/config/jpa/AuditableTimeEntity.class"
     },
     {
+      "glob": "com/jmal/clouddisk/config/jpa/DataSourceBeanPostProcessor.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/config/jpa/DataSourceProperties.class"
     },
     {
-      "glob": "com/jmal/clouddisk/config/jpa/JpaConfig.class"
+      "glob": "com/jmal/clouddisk/config/jpa/DynamicDataSourceConfiguration.class"
     },
     {
-      "glob": "com/jmal/clouddisk/config/jpa/SqliteDataSource.class"
+      "glob": "com/jmal/clouddisk/config/jpa/JpaConfig.class"
     },
     {
       "glob": "com/jmal/clouddisk/config/mongodb"
     },
     {
       "glob": "com/jmal/clouddisk/config/mongodb/MongoClientConfig.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/config/mongodb/MongoIndexInitializer.class"
     },
     {
       "glob": "com/jmal/clouddisk/controller/ArticlesController.class"
@@ -29192,6 +28444,9 @@
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/QueuedWriteServiceImpl.class"
     },
     {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/WriteServiceConfiguration.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/accesstoken/CreateAccessTokenOperationHandler.class"
     },
     {
@@ -29286,6 +28541,9 @@
     },
     {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/etag/UpdateEtagAndSizeByIdHandler.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/etag/setRetryAtByIdHandler.class"
     },
     {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/file/ClearAllFolderSizesHandler.class"
@@ -29592,9 +28850,6 @@
     },
     {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/trash/ITrashOperation.class"
-    },
-    {
-      "glob": "com/jmal/clouddisk/dao/write/WriteServiceConfiguration.class"
     },
     {
       "glob": "com/jmal/clouddisk/exception/CommonExceptionHandler.class"
@@ -29999,6 +29254,9 @@
       "glob": "db/migration/sqlite/V1__Initial_Schema.sql"
     },
     {
+      "glob": "db/migration/sqlite/V2__add_depth_and_children_count_and_retry_at.sql"
+    },
+    {
       "glob": "db/role.json"
     },
     {
@@ -30132,6 +29390,9 @@
     },
     {
       "glob": "logback.xml"
+    },
+    {
+      "glob": "mozilla/public-suffix-list.txt"
     },
     {
       "glob": "org/apache/catalina/Authenticator.class"
@@ -31211,6 +30472,9 @@
       "glob": "org/springframework/beans/factory/config/BeanFactoryPostProcessor.class"
     },
     {
+      "glob": "org/springframework/beans/factory/config/BeanPostProcessor.class"
+    },
+    {
       "glob": "org/springframework/boot/autoconfigure/AbstractDependsOnBeanFactoryPostProcessor.class"
     },
     {
@@ -31610,6 +30874,9 @@
       "glob": "org/springframework/boot/autoconfigure/mongo/MongoAutoConfiguration.class"
     },
     {
+      "glob": "org/springframework/boot/autoconfigure/netty/NettyAutoConfiguration.class"
+    },
+    {
       "glob": "org/springframework/boot/autoconfigure/orm/jpa/EntityManagerFactoryDependsOnPostProcessor.class"
     },
     {
@@ -31979,6 +31246,9 @@
       "glob": "org/springframework/core/Ordered.class"
     },
     {
+      "glob": "org/springframework/core/PriorityOrdered.class"
+    },
+    {
       "glob": "org/springframework/core/annotation/Order.class"
     },
     {
@@ -32117,6 +31387,15 @@
       "glob": "schema.sql"
     },
     {
+      "glob": "software/amazon/awssdk/global/handlers/execution.interceptors"
+    },
+    {
+      "glob": "software/amazon/awssdk/global/partitions.json"
+    },
+    {
+      "glob": "software/amazon/awssdk/services/s3/execution.interceptors"
+    },
+    {
       "glob": "spring.properties"
     },
     {
@@ -32188,10 +31467,6 @@
     {
       "module": "java.base",
       "glob": "jdk/internal/icu/impl/data/icudt76b/nfc.nrm"
-    },
-    {
-      "module": "java.base",
-      "glob": "jdk/internal/icu/impl/data/icudt76b/nfkc.nrm"
     },
     {
       "module": "java.base",
@@ -32310,5 +31585,21 @@
     {
       "bundle": "org.aspectj.weaver.weaver-messages"
     }
-  ]
+  ],
+  "foreign": {
+    "downcalls": [
+      {
+        "returnType": "jint",
+        "parameterTypes": [
+          "void*",
+          "jlong",
+          "jint"
+        ]
+      },
+      {
+        "returnType": "jint",
+        "parameterTypes": []
+      }
+    ]
+  }
 }
