@@ -4,31 +4,140 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: build-twice-${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  pass1:
-    name: First pass jpa
+  jpa-arm64:
+    name: JPA build - arm64
+    needs: jpa-amd64
     uses: ./.github/workflows/test-native-build.yml
     with:
       image_name: 'jmalcloud_native_jpa'
       image_tag: "test"
+      profiles_active: "dev-sqlite"
       aot_build_mode: "jpa"
+      arch: "arm64"
       node_version: "16.20.2"
       graal_version: "25"
       dockerfile: "./Dockerfile"
     secrets: inherit
 
-  pass2:
-    name: Second pass mongo
-    needs: pass1
+  jpa-amd64:
+    name: JPA build - amd64
     uses: ./.github/workflows/test-native-build.yml
     with:
-      image_name: 'jmalcloud_native_mongo'
+      image_name: 'jmalcloud_native_jpa'
       image_tag: "test"
-      aot_build_mode: "mongo"
+      profiles_active: "dev-sqlite"
+      aot_build_mode: "jpa"
+      arch: "amd64"
       node_version: "16.20.2"
       graal_version: "25"
       dockerfile: "./Dockerfile"
     secrets: inherit
+
+  jpa-merge-manifests:
+    name: Merge JPA manifests
+    needs: jpa-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for registry to become consistent
+        run: |
+          echo "Waiting for 30 seconds to allow registry caches to update..."
+          sleep 30
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_IO_USERNAME }}
+          password: ${{ secrets.GHCR_IO_TOKEN }}
+
+      - name: Create and push Docker Hub manifest
+        run: |
+          docker manifest create jmal/jmalcloud_native_jpa:test \
+            --amend jmal/jmalcloud_native_jpa:test-amd64 \
+            --amend jmal/jmalcloud_native_jpa:test-arm64
+          docker manifest push jmal/jmalcloud_native_jpa:test
+
+      - name: Create and push GHCR manifest
+        run: |
+          docker manifest create ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_jpa:test \
+            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_jpa:test-amd64 \
+            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_jpa:test-arm64
+          docker manifest push ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_jpa:test
+
+  # MongoDB builds
+  mongo-amd64:
+    name: MongoDB build - amd64
+    needs: jpa-merge-manifests
+    uses: ./.github/workflows/test-native-build.yml
+    with:
+      image_name: 'jmalcloud_native_mongo'
+      image_tag: "test"
+      profiles_active: "default"
+      aot_build_mode: "mongo"
+      arch: "amd64"
+      node_version: "16.20.2"
+      graal_version: "25"
+      dockerfile: "./Dockerfile"
+    secrets: inherit
+
+  mongo-arm64:
+    name: MongoDB build - arm64
+    needs: mongo-amd64
+    uses: ./.github/workflows/test-native-build.yml
+    with:
+      image_name: 'jmalcloud_native_mongo'
+      image_tag: "test"
+      profiles_active: "default"
+      aot_build_mode: "mongo"
+      arch: "arm64"
+      node_version: "16.20.2"
+      graal_version: "25"
+      dockerfile: "./Dockerfile"
+    secrets: inherit
+
+  mongo-merge-manifests:
+    name: Merge MongoDB manifests
+    needs: mongo-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for registry to become consistent
+        run: |
+          echo "Waiting for 30 seconds to allow registry caches to update..."
+          sleep 30
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_IO_USERNAME }}
+          password: ${{ secrets.GHCR_IO_TOKEN }}
+
+      - name: Create and push Docker Hub manifest
+        run: |
+          docker manifest create jmal/jmalcloud_native_mongo:test \
+            --amend jmal/jmalcloud_native_mongo:test-amd64 \
+            --amend jmal/jmalcloud_native_mongo:test-arm64
+          docker manifest push jmal/jmalcloud_native_mongo:test
+
+      - name: Create and push GHCR manifest
+        run: |
+          docker manifest create ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_mongo:test \
+            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_mongo:test-amd64 \
+            --amend ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_mongo:test-arm64
+          docker manifest push ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud_native_mongo:test
