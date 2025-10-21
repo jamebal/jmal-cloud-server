@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: build-twice-${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   jpa-arm64:
