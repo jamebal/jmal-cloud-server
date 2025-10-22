@@ -59,11 +59,11 @@ public class WebConfig implements WebMvcConfigurer {
 
         registry.addInterceptor(fileInterceptor).addPathPatterns(API_FILE_PREFIX + "**").addPathPatterns("/api/files/**");
 
-        registry.addInterceptor(shareFileInterceptor).addPathPatterns("/api/share-file/{fileId}/{token}/**");
+        registry.addInterceptor(shareFileInterceptor).addPathPatterns("/api/share-file/**");
 
         registry.addInterceptor(directFileInterceptor).addPathPatterns("/api/direct-file/{mark}/{filename}");
 
-        registry.addInterceptor(preFileInterceptor).addPathPatterns("/api/pre-file/{fileId}/**");
+        registry.addInterceptor(preFileInterceptor).addPathPatterns("/api/pre-file/**");
     }
 
     @Override

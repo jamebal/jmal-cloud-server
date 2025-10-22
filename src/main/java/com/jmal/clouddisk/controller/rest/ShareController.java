@@ -184,9 +184,9 @@ public class ShareController {
     }
 
     @Operation(summary = "打包下载")
-    @GetMapping("/public/s/{fileId}/packageDownload/{filename}")
+    @GetMapping("/public/s/packageDownload/{filename}")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public void publicPackageDownloadOne(HttpServletRequest request, HttpServletResponse response, @PathVariable String fileId, @PathVariable String filename) {
+    public void publicPackageDownloadOne(HttpServletRequest request, HttpServletResponse response, @RequestParam String fileId, @PathVariable String filename) {
         FileDocument fileDocument = commonFileService.getById(fileId);
         if (fileInterceptor.isNotAllowAccess(fileDocument, request)) {
             return;

@@ -8,6 +8,7 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IEtagDAO;
 import com.jmal.clouddisk.model.file.dto.FileBaseEtagDTO;
 import com.jmal.clouddisk.service.impl.CommonUserService;
+import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.HashUtil;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -494,6 +495,11 @@ public class EtagService {
      * @return 子项的表示字符串 (name:etag)，如果子项未就绪则返回null，如果子项应被忽略则返回空字符串。
      */
     private String formatChildRepresentation(String workerId, FileBaseEtagDTO child, String parentFolderPath) {
+        String ossPath = CaffeineUtil.getOssPath(Paths.get(child.getId()));
+        if (ossPath != null) {
+            return HashUtil.sha256(child.getId());
+        }
+
         // 1. 检查子项的ETag是否已存在
         if (child.getEtag() == null) {
             // 如果ETag为null，这是不正常状态。
