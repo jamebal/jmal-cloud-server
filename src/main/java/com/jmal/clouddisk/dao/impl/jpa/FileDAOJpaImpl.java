@@ -515,8 +515,8 @@ public class FileDAOJpaImpl implements IFileDAO {
     }
 
     @Override
-    public List<FileDocument> findByPath(String path) {
-        List<FileMetadataDO> fileMetadataDOList = fileMetadataRepository.findAllByPath(path);
+    public List<FileDocument> findByPath(String userId, String path) {
+        List<FileMetadataDO> fileMetadataDOList = fileMetadataRepository.findAllByUserIdAndPath(userId, path);
         if (fileMetadataDOList.isEmpty()) {
             return List.of();
         }

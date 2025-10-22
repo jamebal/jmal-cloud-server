@@ -156,7 +156,7 @@ public interface IFileDAO {
 
     void setUpdateDateById(String fileId, LocalDateTime time);
 
-    List<FileDocument> findByPath(String path);
+    List<FileDocument> findByPath(String userId, String path);
 
     List<FileDocument> findAllAndRemoveByPathPrefix(String pathName);
 

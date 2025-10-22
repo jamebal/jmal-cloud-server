@@ -93,7 +93,7 @@ public class FileDAOImpl implements IFileDAO {
     private static Query getFolderSubShareQuery(String userId, String pathPrefix) {
         Query query = new Query();
         query.addCriteria(Criteria.where(USER_ID).is(userId));
-        query.addCriteria(Criteria.where("path").regex("^" + pathPrefix));
+        query.addCriteria(Criteria.where(Constants.PATH_FIELD).regex("^" + pathPrefix));
         query.addCriteria(Criteria.where(Constants.SHARE_BASE).is(true));
         return query;
     }
@@ -153,7 +153,7 @@ public class FileDAOImpl implements IFileDAO {
     @Override
     public String findMountFilePath(String fileId, String userId) {
         Query query = getMountQuery(fileId, userId);
-        query.fields().include("path");
+        query.fields().include(Constants.PATH_FIELD);
         FileDocument fileDocument = mongoTemplate.findOne(query, FileDocument.class);
         return fileDocument != null ? fileDocument.getPath() : null;
     }
@@ -366,7 +366,7 @@ public class FileDAOImpl implements IFileDAO {
     private Query getAllByFolderQuery(FileBaseDTO fileBaseDTO) {
         Query query1 = new Query();
         query1.addCriteria(Criteria.where(USER_ID).is(fileBaseDTO.getUserId()));
-        query1.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(fileBaseDTO.getPath() + fileBaseDTO.getName() + "/")));
+        query1.addCriteria(Criteria.where(Constants.PATH_FIELD).regex("^" + ReUtil.escape(fileBaseDTO.getPath() + fileBaseDTO.getName() + "/")));
         return query1;
     }
 
@@ -521,7 +521,7 @@ public class FileDAOImpl implements IFileDAO {
     public List<FileBaseDTO> findAllByUserIdAndPathPrefix(String userId, String pathPrefix) {
         Query query = new Query();
         query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        query.addCriteria(Criteria.where("path").regex("^" + pathPrefix));
+        query.addCriteria(Criteria.where(Constants.PATH_FIELD).regex("^" + pathPrefix));
         return mongoTemplate.find(query, FileBaseDTO.class, CommonFileService.COLLECTION_NAME);
     }
 
@@ -695,9 +695,10 @@ public class FileDAOImpl implements IFileDAO {
     }
 
     @Override
-    public List<FileDocument> findByPath(String path) {
+    public List<FileDocument> findByPath(String userId, String path) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("path").is(path));
+        query.addCriteria(Criteria.where(USER_ID).is(userId));
+        query.addCriteria(Criteria.where(Constants.PATH_FIELD).is(path));
         query.fields().exclude(Constants.CONTENT, Constants.CONTENT_DRAFT, Constants.CONTENT_TEXT, Constants.CONTENT_HTML);
         return mongoTemplate.find(query, FileDocument.class);
     }
@@ -705,7 +706,7 @@ public class FileDAOImpl implements IFileDAO {
     @Override
     public List<FileDocument> findAllAndRemoveByPathPrefix(String pathName) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("path").regex("^" + pathName));
+        query.addCriteria(Criteria.where(Constants.PATH_FIELD).regex("^" + pathName));
         return mongoTemplate.findAllAndRemove(query, FileDocument.class);
     }
 
@@ -891,7 +892,7 @@ public class FileDAOImpl implements IFileDAO {
             query.addCriteria(Criteria.where("userId").is(userId));
         }
         if (StrUtil.isNotBlank(path)) {
-            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(path)));
+            query.addCriteria(Criteria.where(Constants.PATH_FIELD).regex("^" + ReUtil.escape(path)));
         }
         Update update = new Update();
         // 添加删除标记用于在之后删除
@@ -942,7 +943,7 @@ public class FileDAOImpl implements IFileDAO {
         Query query = new Query();
         if (isFolder) {
             query.addCriteria(Criteria.where(USER_ID).is(userLoginHolder.getUserId()));
-            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(file.getPath() + file.getName() + "/")));
+            query.addCriteria(Criteria.where(Constants.PATH_FIELD).regex("^" + ReUtil.escape(file.getPath() + file.getName() + "/")));
         } else {
             query = new Query();
             query.addCriteria(Criteria.where("_id").is(file.getId()));

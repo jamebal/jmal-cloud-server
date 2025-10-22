@@ -235,7 +235,8 @@ public class WebOssService {
         if (!parentName.isEmpty()) {
             path += parentName + MyWebdavServlet.PATH_DELIMITER;
         }
-        return fileDAO.findByPath(path);
+        String userId = userService.getUserIdByUserName(WebOssCommonService.getUsernameByOssPath(ossPath));
+        return fileDAO.findByPath(userId, path);
     }
 
     private static List<FileInfo> filterOther(UploadApiParamDTO upload, List<FileInfo> fileInfoList) {
