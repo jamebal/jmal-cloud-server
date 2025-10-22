@@ -524,9 +524,8 @@ public class FileDAOJpaImpl implements IFileDAO {
     }
 
     @Override
-    public List<FileDocument> findAllAndRemoveByPathPrefix(String pathName) {
-        String pathPrefixForLike = pathName + "%";
-        List<FileMetadataDO> fileMetadataDOList = fileMetadataRepository.findAllByPathPrefix(pathPrefixForLike);
+    public List<FileDocument> findAllAndRemoveByIdPrefix(String fileId) {
+        List<FileMetadataDO> fileMetadataDOList = findAllByIdPrefix(fileId);
         if (fileMetadataDOList.isEmpty()) {
             return List.of();
         }
@@ -536,9 +535,9 @@ public class FileDAOJpaImpl implements IFileDAO {
     }
 
     @Override
-    public List<FileDocument> findAllAndRemoveByMountFileIdPrefix(String pathName) {
-        String pathPrefixForLike = pathName + "%";
-        List<FileMetadataDO> fileMetadataDOList = fileMetadataRepository.findAllByMountFileIdPrefix(pathPrefixForLike);
+    public List<FileDocument> findAllAndRemoveByMountFileIdPrefix(String fileId) {
+        String idPrefixForLike = fileId + "%";
+        List<FileMetadataDO> fileMetadataDOList = fileMetadataRepository.findAllByMountFileIdPrefix(idPrefixForLike);
         if (fileMetadataDOList.isEmpty()) {
             return List.of();
         }
@@ -548,15 +547,19 @@ public class FileDAOJpaImpl implements IFileDAO {
     }
 
     @Override
-    public List<String> findIdsAndRemoveByIdPrefix(String pathName) {
-        String pathPrefixForLike = pathName + "%";
-        List<FileMetadataDO> fileMetadataDOList = fileMetadataRepository.findAllByIdPrefix(pathPrefixForLike);
+    public List<String> findIdsAndRemoveByIdPrefix(String fileId) {
+        List<FileMetadataDO> fileMetadataDOList = findAllByIdPrefix(fileId);
         if (fileMetadataDOList.isEmpty()) {
             return List.of();
         }
         List<String> foundIds = fileMetadataDOList.stream().map(FileMetadataDO::getId).toList();
         removeByIdIn(foundIds);
         return foundIds;
+    }
+
+    private List<FileMetadataDO> findAllByIdPrefix(String fileId) {
+        String pathPrefixForLike = fileId + "%";
+        return fileMetadataRepository.findAllByIdPrefix(pathPrefixForLike);
     }
 
     @Override

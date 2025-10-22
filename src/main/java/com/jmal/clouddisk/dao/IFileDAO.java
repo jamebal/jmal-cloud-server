@@ -158,11 +158,11 @@ public interface IFileDAO {
 
     List<FileDocument> findByPath(String userId, String path);
 
-    List<FileDocument> findAllAndRemoveByPathPrefix(String pathName);
+    List<FileDocument> findAllAndRemoveByIdPrefix(String fileId);
 
-    List<FileDocument> findAllAndRemoveByMountFileIdPrefix(String pathName);
+    List<FileDocument> findAllAndRemoveByMountFileIdPrefix(String fileId);
 
-    List<String> findIdsAndRemoveByIdPrefix(String pathName);
+    List<String> findIdsAndRemoveByIdPrefix(String fileId);
 
     FileDocument findThumbnailContentInputStreamById(String id);
 

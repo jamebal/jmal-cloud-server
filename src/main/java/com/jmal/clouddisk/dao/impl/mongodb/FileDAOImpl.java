@@ -704,9 +704,9 @@ public class FileDAOImpl implements IFileDAO {
     }
 
     @Override
-    public List<FileDocument> findAllAndRemoveByPathPrefix(String pathName) {
+    public List<FileDocument> findAllAndRemoveByIdPrefix(String fileId) {
         Query query = new Query();
-        query.addCriteria(Criteria.where(Constants.PATH_FIELD).regex("^" + pathName));
+        query.addCriteria(Criteria.where("_id").regex("^" + fileId));
         return mongoTemplate.findAllAndRemove(query, FileDocument.class);
     }
 

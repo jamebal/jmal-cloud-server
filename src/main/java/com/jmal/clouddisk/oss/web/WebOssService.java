@@ -491,7 +491,7 @@ public class WebOssService {
         // 删除临时文件，如果有的话
         deleteTemp(ossPath, objectName);
         // 检查该目录是否有其他依赖的缓存等等。。
-        List<FileDocument> fileDocumentList = fileDAO.findAllAndRemoveByPathPrefix(pathName);
+        List<FileDocument> fileDocumentList = fileDAO.findAllAndRemoveByIdPrefix(pathName);
         String newFullPathName = newFilePath.toString();
         if (isFolder) {
             newFullPathName += MyWebdavServlet.PATH_DELIMITER;

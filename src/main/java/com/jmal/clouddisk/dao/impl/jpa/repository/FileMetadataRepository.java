@@ -256,11 +256,6 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
 
     @Query("SELECT f " +
             "FROM FileMetadataDO f JOIN FETCH f.props p " +
-            "WHERE f.path LIKE :pathPrefix ESCAPE '\\'")
-    List<FileMetadataDO> findAllByPathPrefix(String pathPrefix);
-
-    @Query("SELECT f " +
-            "FROM FileMetadataDO f JOIN FETCH f.props p " +
             "WHERE f.mountFileId LIKE :pathPrefix ESCAPE '\\'")
     List<FileMetadataDO> findAllByMountFileIdPrefix(String pathPrefix);
 
