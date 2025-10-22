@@ -105,3 +105,20 @@ logging:
             scanner:
               classpath:
                 ClassPathScanner: error
+      hibernate:
+        orm:
+          connections:
+            pooling: warn
+        engine:
+          transaction:
+            jta:
+              platform:
+                internal:
+                  JtaPlatformInitiator: warn
+      springframework:
+        orm:
+          jpa: warn
+        data:
+          repository:
+            config:
+              RepositoryConfigurationDelegate: warn
