@@ -9,8 +9,10 @@ import com.jmal.clouddisk.dao.util.MyUpdate;
 import com.jmal.clouddisk.dao.util.PageableUtil;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.RoleService;
+import com.mongodb.client.result.UpdateResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
@@ -137,5 +139,15 @@ public class UserDAOImpl implements IUserDAO {
         query.fields().include(IUserService.USERNAME);
         List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class);
         return userList.stream().map(ConsumerDO::getUsername).toList();
+    }
+
+    @Override
+    public boolean resetAdminPassword() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("creator").is(true));
+        Update update = new Update();
+        update.set("password", Constants.INI_PASSWORD);
+        UpdateResult updateResult = mongoTemplate.updateFirst(query, update, ConsumerDO.class);
+        return updateResult.getModifiedCount() > 0;
     }
 }

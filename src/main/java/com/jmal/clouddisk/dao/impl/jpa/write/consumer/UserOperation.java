@@ -10,4 +10,6 @@ public final class UserOperation {
     public record CreateAll(Iterable<ConsumerDO> entities) implements IUserOperation<Void> {}
     public record Create(ConsumerDO entity) implements IUserOperation<ConsumerDO> {}
     public record DeleteAllById(List<String> idList) implements IUserOperation<Void> {}
+
+    public record ResetAdminPassword(String password) implements IUserOperation<Boolean> {}
 }

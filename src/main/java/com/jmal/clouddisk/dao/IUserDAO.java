@@ -34,4 +34,6 @@ public interface IUserDAO {
     String getUsernameById(String userId);
 
     List<String> findUsernamesByRoleIdList(Collection<String> roleId);
+
+    boolean resetAdminPassword();
 }

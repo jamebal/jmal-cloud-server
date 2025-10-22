@@ -65,7 +65,7 @@ file:
   ngramMaxSize: 6
   encryptionSecretKey: ${ENCRYPTION_SECRET_KEY}
   encryptionSalt: ${ENCRYPTION_SALT}
-
+  resetAdminPassword: false
   # 前端资源路径
   frontendResourcePath: /Users/jmal/studio/myProject/github/jmal-cloud-view/dist/
   # pdfjs资源路径

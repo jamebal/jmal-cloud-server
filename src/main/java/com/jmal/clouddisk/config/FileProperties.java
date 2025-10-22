@@ -125,6 +125,11 @@ public class FileProperties {
      */
     private Integer ngramMaxSize = 6;
 
+    /**
+     * 是否重置管理员密码
+     */
+    private Boolean resetAdminPassword = false;
+
     private String frontendResourcePath = "/app/frontend/dist/";
 
     private String pdfjsResourcePath = "/app/preview/pdfjs/";

@@ -27,8 +27,11 @@ import com.jmal.clouddisk.util.*;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
@@ -44,6 +47,7 @@ import java.util.List;
  * @Description UserServiceImpl
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class UserServiceImpl implements IUserService {
 
@@ -72,6 +76,15 @@ public class UserServiceImpl implements IUserService {
     private final FileMonitor fileMonitor;
 
     private final TextEncryptor textEncryptor;
+
+    @EventListener(ContextRefreshedEvent.class)
+    public void onApplicationReady() {
+        if (BooleanUtil.isTrue(fileProperties.getResetAdminPassword())) {
+            if (userDAO.resetAdminPassword()) {
+                log.warn("管理员密码已重置为 jmalcloud，请尽快修改密码！");
+            }
+        }
+    }
 
     @Override
     public synchronized ConsumerDO add(ConsumerDTO consumerDTO) {

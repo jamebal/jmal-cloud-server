@@ -15,6 +15,7 @@ chown -R ${USER_UID}:${USER_GID} /usr/local/mxcad
 chown -R ${USER_UID}:${USER_GID} /app
 
 DATA_BASE_TYPE=${DATA_BASE_TYPE:-"mongodb"}
+RESET_ADMIN_PASSWORD=${RESET_ADMIN_PASSWORD:-"false"}
 
 if [ -z "${MONGODB_URI}" ] && [ "${DATA_BASE_TYPE}" = "mongodb" ]; then
   RUN_ENVIRONMENT="prod-sqlite"
@@ -54,6 +55,7 @@ exec gosu ${USER_UID}:${USER_GID} /app/jmalcloud ${JVM_OPTS} \
  --file.ngramMaxSize=${NGRAM_MAX_SIZE} \
  --file.monitor=${FILE_MONITOR} \
  --file.rootDir=${FILE_ROOT_DIR} \
+ --file.resetAdminPassword=${RESET_ADMIN_PASSWORD} \
  --file.monitorIgnoreFilePrefix=${MONITOR_IGNORE_FILE_PREFIX} \
  --logging.level.root=${LOG_LEVEL} \
  --file.ip2region-db-path=/jmalcloud/ip2region.xdb \

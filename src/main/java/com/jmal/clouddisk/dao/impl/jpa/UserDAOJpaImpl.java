@@ -16,6 +16,7 @@ import com.jmal.clouddisk.dao.util.QuerySpecificationUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.JacksonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -143,6 +144,15 @@ public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
             return userRepository.findUsernamesByRoleIdList_SQLite(roleIdList);
         }
         return List.of();
+    }
+
+    @Override
+    public boolean resetAdminPassword() {
+        try {
+            return writeService.submit(new UserOperation.ResetAdminPassword(Constants.INI_PASSWORD)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
     }
 
     public void applyUpdateToEntity(ConsumerDO entity, MyUpdate update) {
