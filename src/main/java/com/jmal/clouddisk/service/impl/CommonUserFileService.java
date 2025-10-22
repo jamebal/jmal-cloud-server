@@ -188,15 +188,15 @@ public class CommonUserFileService {
     }
 
     @Nullable
-    public ShareBaseInfoDTO getShareBaseDocument(String relativePath) {
-        if (CharSequenceUtil.isBlank(relativePath)) {
+    public ShareBaseInfoDTO getShareBaseDocument(String userId, String relativePath) {
+        if (CharSequenceUtil.isBlank(relativePath) || CharSequenceUtil.isBlank(userId)) {
             return null;
         }
-        return fileDAO.getShareBaseByPath(relativePath);
+        return fileDAO.getShareBaseByPath(userId, relativePath);
     }
 
     public void checkShareBase(FileDocument fileDocument, String relativePath) {
-        ShareBaseInfoDTO shareDocument = getShareBaseDocument(relativePath);
+        ShareBaseInfoDTO shareDocument = getShareBaseDocument(fileDocument.getUserId(), relativePath);
         if (shareDocument == null) {
             return;
         }

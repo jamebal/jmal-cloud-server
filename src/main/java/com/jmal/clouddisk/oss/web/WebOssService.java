@@ -159,7 +159,7 @@ public class WebOssService {
     private List<FileIntroVO> setAdditionalAttributes(String ossPath, UploadApiParamDTO upload, List<FileInfo> list, String objectName, String finalUserId) {
         List<FileIntroVO> fileIntroVOList;
         // 检测上级目录是否有分享属性
-        ShareBaseInfoDTO shareBaseDocument = commonUserFileService.getShareBaseDocument(WebOssCommonService.getPath(list.getFirst().getKey(), WebOssCommonService.getOssRootFolderName(ossPath)));
+        ShareBaseInfoDTO shareBaseDocument = commonUserFileService.getShareBaseDocument(finalUserId, WebOssCommonService.getPath(list.getFirst().getKey(), WebOssCommonService.getOssRootFolderName(ossPath)));
 
         List<FileDocument> fileDocumentList = getFileDocuments(ossPath, objectName);
 

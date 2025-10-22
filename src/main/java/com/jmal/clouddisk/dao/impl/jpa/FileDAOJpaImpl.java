@@ -478,8 +478,8 @@ public class FileDAOJpaImpl implements IFileDAO {
     }
 
     @Override
-    public ShareBaseInfoDTO getShareBaseByPath(String relativePath) {
-        return filePropsDAO.getShareBaseByPath(relativePath);
+    public ShareBaseInfoDTO getShareBaseByPath(String userId, String relativePath) {
+        return filePropsDAO.getShareBaseByPath(userId, relativePath);
     }
 
     @Override

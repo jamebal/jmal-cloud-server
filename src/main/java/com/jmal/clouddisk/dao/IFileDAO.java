@@ -148,7 +148,7 @@ public interface IFileDAO {
 
     void setNameByMountFileId(String fileId, String newFileName);
 
-    ShareBaseInfoDTO getShareBaseByPath(String relativePath);
+    ShareBaseInfoDTO getShareBaseByPath(String userId, String relativePath);
 
     void updateFileByUserIdAndPathAndName(String userId, String path, String name, UpdateFile updateFile);
 

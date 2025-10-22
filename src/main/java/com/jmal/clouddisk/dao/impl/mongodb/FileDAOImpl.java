@@ -44,6 +44,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static com.jmal.clouddisk.service.IUserService.USER_ID;
@@ -600,7 +601,7 @@ public class FileDAOImpl implements IFileDAO {
     }
 
     @Override
-    public ShareBaseInfoDTO getShareBaseByPath(String relativePath) {
+    public ShareBaseInfoDTO getShareBaseByPath(String userId, String relativePath) {
         Path path = Paths.get(relativePath);
         StringBuilder pathStr = new StringBuilder("/");
         List<Document> documentList = new ArrayList<>(path.getNameCount());
@@ -616,8 +617,19 @@ public class FileDAOImpl implements IFileDAO {
         if (documentList.isEmpty()) {
             return null;
         }
-        List<Document> list = Arrays.asList(new Document("$match", new Document("$or", documentList)), new Document("$match", new Document(Constants.SHARE_BASE, true)));
-        AggregateIterable<Document> result = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(list);
+
+        // 合并所有查询条件到一个 $match
+        Document matchConditions = new Document()
+                .append(IUserService.USER_ID, userId)
+                .append(Constants.SHARE_BASE, true)
+                .append("$or", documentList);
+
+        List<Document> pipeline = Collections.singletonList(
+                new Document("$match", matchConditions)
+        );
+
+        AggregateIterable<Document> result = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(pipeline);
+
         Document shareDocument = null;
         try (MongoCursor<Document> mongoCursor = result.iterator()) {
             while (mongoCursor.hasNext()) {
@@ -627,7 +639,8 @@ public class FileDAOImpl implements IFileDAO {
         if (shareDocument == null) {
             return null;
         }
-        return mongoTemplate.getConverter().read(ShareBaseInfoDTO.class, shareDocument);
+        ShareProperties shareProperties = mongoTemplate.getConverter().read(ShareProperties.class, shareDocument);
+        return new ShareBaseInfoDTO(shareDocument.getString(Constants.SHARE_ID), shareProperties);
     }
 
     @Override

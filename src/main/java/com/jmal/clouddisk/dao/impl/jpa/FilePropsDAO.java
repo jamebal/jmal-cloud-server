@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
-import cn.hutool.core.util.ReUtil;
 import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.DataSourceType;
@@ -14,9 +13,13 @@ import com.jmal.clouddisk.media.TranscodeConfig;
 import com.jmal.clouddisk.media.VideoInfoDO;
 import com.jmal.clouddisk.model.ShareBaseInfoDTO;
 import com.jmal.clouddisk.model.Tag;
-import com.jmal.clouddisk.model.file.*;
+import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.FilePropsDO;
+import com.jmal.clouddisk.model.file.OtherProperties;
+import com.jmal.clouddisk.model.file.ShareProperties;
 import com.jmal.clouddisk.model.file.dto.FileBaseTagsDTO;
 import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.service.IUserService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.PersistenceContext;
@@ -174,7 +177,7 @@ public class FilePropsDAO {
         }
     }
 
-    public ShareBaseInfoDTO getShareBaseByPath(String relativePath) {
+    public ShareBaseInfoDTO getShareBaseByPath(String userId, String relativePath) {
         Path path = Paths.get(relativePath);
         if (path.getNameCount() == 0) {
             return null;
@@ -208,9 +211,12 @@ public class FilePropsDAO {
                 "p.shareId, p.shareProps" +
                 ") " +
                 "FROM FileMetadataDO f JOIN f.props p " +
-                "WHERE p.shareBase = true AND (" + whereClause + ")";
+                "WHERE f.userId = :userId " +
+                "AND p.shareBase = true " +
+                "AND (" + whereClause + ")";
 
         TypedQuery<ShareBaseInfoDTO> query = em.createQuery(jpql, ShareBaseInfoDTO.class);
+        query.setParameter(IUserService.USER_ID, userId);
         params.forEach(query::setParameter);
 
         List<ShareBaseInfoDTO> results = query.getResultList();
