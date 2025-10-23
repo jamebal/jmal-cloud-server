@@ -18,7 +18,7 @@ server:
       text/css,text/javascript,application/javascript,application/x-javascript,
       application/font-woff2,application/font-woff,application/font-ttf,font/woff,
       application/vnd.ms-fontobject,image/svg+xml
-version: 2.15.0
+version: 2.16.0
 tess4j:
   data-path: /Users/jmal/studio/myProject/github/jmal-cloud-server/tess4j/datapath
 spring:
