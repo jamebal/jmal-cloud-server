@@ -17,26 +17,30 @@ chown -R ${USER_UID}:${USER_GID} /app
 DATA_BASE_TYPE=${DATA_BASE_TYPE:-"mongodb"}
 RESET_ADMIN_PASSWORD=${RESET_ADMIN_PASSWORD:-"false"}
 
-if [ -z "${MONGODB_URI}" ] && [ "${DATA_BASE_TYPE}" = "mongodb" ]; then
-  RUN_ENVIRONMENT="prod-sqlite"
-fi
+case "${DATA_BASE_TYPE}" in
+  sqlite)
+    RUN_ENVIRONMENT="prod-sqlite"
+    ;;
+  mysql)
+    RUN_ENVIRONMENT="prod-mysql"
+    ;;
+  pgsql|postgresql)
+    RUN_ENVIRONMENT="prod-pgsql"
+    ;;
+  mongodb)
+    if [ -z "${MONGODB_URI}" ]; then
+      RUN_ENVIRONMENT="prod-sqlite"
+    else
+      MONGODB_URI=${MONGODB_URI:-"mongodb://mongo:27017/jmalcloud"}
+      RUN_ENVIRONMENT="prod-mongodb"
+    fi
+    ;;
+  *)
+    RUN_ENVIRONMENT="prod-sqlite"
+    ;;
+esac
 
-if [ "${DATA_BASE_TYPE}" = "sqlite" ]; then
-  RUN_ENVIRONMENT="prod-sqlite"
-fi
-if [ "${DATA_BASE_TYPE}" = "mysql" ]; then
-  RUN_ENVIRONMENT="prod-mysql"
-fi
-if [ "${DATA_BASE_TYPE}" = "pgsql" ]; then
-  RUN_ENVIRONMENT="prod-pgsql"
-fi
-if [ "${DATA_BASE_TYPE}" = "postgresql" ]; then
-  RUN_ENVIRONMENT="prod-pgsql"
-fi
-if [ "${DATA_BASE_TYPE}" = "mongodb" ]; then
-  MONGODB_URI=${MONGODB_URI:-"mongodb://mongo:27017/jmalcloud"}
-  RUN_ENVIRONMENT="prod-mongodb"
-fi
+echo "Starting JMalCloud with environment: ${RUN_ENVIRONMENT}"
 
 exec gosu ${USER_UID}:${USER_GID} /app/jmalcloud ${JVM_OPTS} \
  -Duser.timezone=${TZ} \
