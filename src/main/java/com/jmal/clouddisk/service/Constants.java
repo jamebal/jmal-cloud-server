@@ -6,7 +6,6 @@ public class Constants {
     public static final String LAST_ETAG_UPDATE_REQUEST_AT_FIELD = "lastEtagUpdateRequestAt";
     public static final String ETAG_UPDATE_FAILED_ATTEMPTS_FIELD = "etagUpdateFailedAttempts";
     public static final String LAST_ETAG_UPDATE_ERROR_FIELD = "lastEtagUpdateError";
-    public static final String INI_PASSWORD = "1000:c5b705ea13a1221f5e59110947ed806f8a978e955fbd2ed6:22508de12228c34a235454a0caf3bcaa5552858543258e56";
     public static String MOUNT_FILE_ID_FIELD = "mountFileId";
 
     private Constants() { }

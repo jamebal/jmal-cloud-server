@@ -9,7 +9,6 @@ import com.jmal.clouddisk.dao.util.MyUpdate;
 import com.jmal.clouddisk.dao.util.PageableUtil;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
-import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.RoleService;
 import com.mongodb.client.result.UpdateResult;
@@ -142,11 +141,11 @@ public class UserDAOImpl implements IUserDAO {
     }
 
     @Override
-    public boolean resetAdminPassword() {
+    public boolean resetAdminPassword(String hash) {
         Query query = new Query();
         query.addCriteria(Criteria.where("creator").is(true));
         Update update = new Update();
-        update.set("password", Constants.INI_PASSWORD);
+        update.set("password", hash);
         UpdateResult updateResult = mongoTemplate.updateFirst(query, update, ConsumerDO.class);
         return updateResult.getModifiedCount() > 0;
     }

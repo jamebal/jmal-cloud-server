@@ -93,6 +93,9 @@ public class OssConfigService {
                 }
             }
         }
+
+        userService.resetAdminPassword();
+
     }
 
     public void setOssServiceMap(String key, IOssService ossService) {

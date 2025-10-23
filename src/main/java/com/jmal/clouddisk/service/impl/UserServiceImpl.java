@@ -1,8 +1,11 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.codec.Base64;
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IAccessTokenDAO;
@@ -30,8 +33,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
@@ -76,15 +77,6 @@ public class UserServiceImpl implements IUserService {
     private final FileMonitor fileMonitor;
 
     private final TextEncryptor textEncryptor;
-
-    @EventListener(ContextRefreshedEvent.class)
-    public void onApplicationReady() {
-        if (BooleanUtil.isTrue(fileProperties.getResetAdminPassword())) {
-            if (userDAO.resetAdminPassword()) {
-                log.warn("管理员密码已重置为 jmalcloud，请尽快修改密码！");
-            }
-        }
-    }
 
     @Override
     public synchronized ConsumerDO add(ConsumerDTO consumerDTO) {
@@ -495,6 +487,25 @@ public class UserServiceImpl implements IUserService {
             return null;
         }
         return consumerDO.getAvatar();
+    }
+
+    public void resetAdminPassword() {
+        if (BooleanUtil.isTrue(fileProperties.getResetAdminPassword())) {
+            ConsumerDO consumer = userDAO.findOneByCreatorTrue();
+            if (consumer == null) {
+                return;
+            }
+            if (BooleanUtil.isTrue(consumer.getCreator())) {
+                // 生成密码
+                String randomPass = Base64.encodeUrlSafe(Convert.toStr(RandomUtil.randomInt(100000, 1000000)));
+                String hash = PasswordHash.createHash(randomPass);
+                if (userDAO.resetAdminPassword(hash)) {
+                    log.warn("管理员: {}, 密码已重置为: {}，请请务必将环境变量'RESET_ADMIN_PASSWORD'移除或设置为false！", consumer.getUsername(), randomPass);
+                }
+                consumer.setPassword(hash);
+                CaffeineUtil.setConsumerByUsernameCache(consumer.getUsername(), consumer);
+            }
+        }
     }
 
 }

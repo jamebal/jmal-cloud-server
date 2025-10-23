@@ -35,5 +35,5 @@ public interface IUserDAO {
 
     List<String> findUsernamesByRoleIdList(Collection<String> roleId);
 
-    boolean resetAdminPassword();
+    boolean resetAdminPassword(String hash);
 }
