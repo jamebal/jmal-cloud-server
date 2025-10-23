@@ -4,21 +4,22 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestAlgorithm;
 import com.jmal.clouddisk.service.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.mozilla.universalchardet.UniversalDetector;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * @author jmal
@@ -168,6 +169,63 @@ public class MyFileUtils {
         String hash1 = calculateHash(filePath1);
         String hash2 = calculateHash(filePath2);
         return hash1.equals(hash2);
+    }
+
+    /**
+     * GZIP压缩，返回压缩流
+     *
+     * @param rawInput    原始输入流
+     * @param compression 压缩方式
+     * @return 压缩后的输入流
+     * @throws IOException 发生IO异常
+     */
+    public static InputStream gzipCompress(InputStream rawInput, String compression) throws IOException {
+        if (!"gzip".equalsIgnoreCase(compression)) {
+            return rawInput;
+        }
+        final PipedOutputStream pipedOut = new PipedOutputStream();
+        final PipedInputStream pipedIn = new PipedInputStream(pipedOut);
+
+        Thread.startVirtualThread(() -> {
+            try (GZIPOutputStream gzipOut = new GZIPOutputStream(pipedOut)) {
+                rawInput.transferTo(gzipOut);
+            } catch (IOException e) {
+                log.error("GZIP压缩失败: {}", e.getMessage(), e);
+            } finally {
+                try {
+                    pipedOut.close();
+                } catch (Exception ignore) {
+                }
+                try {
+                    rawInput.close();
+                } catch (Exception ignore) {
+                }
+            }
+        });
+
+        return pipedIn;
+    }
+
+    /**
+     * GZIP解压，返回解压流和字符集
+     *
+     * @param inputStream 压缩后的 inputStream
+     * @param  isGzip      是否是gzip压缩
+     * @param  charset     字符集
+     * @return 解压后的 inputStream 和字符集
+     */
+    public static Pair<InputStream, String> gzipDecompress(InputStream inputStream, boolean isGzip, String charset) {
+        charset = StrUtil.isNotBlank(charset) ? charset : CharsetUtil.UTF_8;
+        if (!isGzip) {
+            // 不是gzip压缩，直接返回原流和字符集
+            return Pair.of(inputStream, charset);
+        }
+        try {
+            return Pair.of(new GZIPInputStream(inputStream), charset);
+        } catch (IOException e) {
+            log.error("GZIP解压失败: {}", e.getMessage(), e);
+            return Pair.of(new ByteArrayInputStream(new byte[0]), charset);
+        }
     }
 }
 

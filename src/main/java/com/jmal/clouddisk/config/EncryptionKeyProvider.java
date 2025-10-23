@@ -39,16 +39,15 @@ public class EncryptionKeyProvider {
 
         // 步骤 2: 如果环境变量没有提供密钥，则回退到文件系统
         if (!loadedFromEnv) {
-            log.info("Encryption keys not found in environment variables. Checking for .env file...");
+            log.info("加密密钥未在环境变量中找到。正在检查 `.env` 文件...");
             loadKeysFromFileSystem();
         }
 
         // 步骤 3: 最终验证，确保密钥已成功加载
         if (this.secretKey == null || this.secretKey.isBlank() || this.salt == null || this.salt.isBlank()) {
-            throw new IllegalStateException("Failed to load or generate encryption keys from any source (environment, .env file). Application cannot start securely.");
+            throw new IllegalStateException("加载或从任何来源（环境变量、.env文件）生成加密密钥失败。应用程序无法安全启动。");
         }
 
-        log.info("Encryption keys loaded successfully.");
     }
 
     /**
@@ -60,7 +59,7 @@ public class EncryptionKeyProvider {
         String envSalt = environment.getProperty(SALT_NAME);
 
         if (envSecretKey != null && !envSecretKey.isBlank() && envSalt != null && !envSalt.isBlank()) {
-            log.info("Found {} and {} in environment variables. Using them for encryption.", SECRET_KEY_NAME, SALT_NAME);
+            log.info("在环境变量中找到 {} 和 {}。使用它们进行加密。", SECRET_KEY_NAME, SALT_NAME);
             this.secretKey = envSecretKey;
             this.salt = envSalt;
             return true;
@@ -75,10 +74,10 @@ public class EncryptionKeyProvider {
         Path envPath = Paths.get(fileProperties.getRootDir(), ".env");
 
         if (Files.exists(envPath)) {
-            log.info("Found existing .env file at [{}]. Loading keys from file.", envPath);
+            log.info("在 [{}] 发现 `.env` 文件, 从该文件中加载加密密钥。", envPath);
             loadKeysFromDotenv(envPath.getParent().toString());
         } else {
-            log.warn("`.env` file not found at [{}]. Generating new encryption keys and saving to file. THIS IS A SECURITY-SENSITIVE EVENT.", envPath);
+            log.warn("在 [{}] 处找不到 `.env` 文件, 生成新的加密密钥并保存到文件。这是一个安全敏感事件。", envPath);
             createNewEnvFileAndSetKeys(envPath);
         }
     }
@@ -114,7 +113,7 @@ public class EncryptionKeyProvider {
             writer.println(SALT_NAME + "=" + newSalt);
         }
 
-        log.info("Successfully created and populated new .env file at [{}].", envPath);
+        log.info("成功在 [{}] 处创建并填充新的 .env 文件。", envPath);
 
         // 将新生成的密钥加载到当前实例中
         this.secretKey = newSecretKey;

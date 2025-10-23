@@ -1,22 +1,30 @@
 package com.jmal.clouddisk.media;
 
+import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.config.jpa.AuditableTimeEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
  * 转码配置
  */
-@Data
+@Getter
+@Setter
 @Document(collection = "transcodeConfig")
 @Valid
 @Schema
-public class TranscodeConfig {
+@Entity
+@Table(name = "transcode_config")
+public class TranscodeConfig extends AuditableTimeEntity implements Reflective {
 
-    @Schema(description = "是否启用转码, 默认开启")
+    @Schema(description = "是否启用转码, 默认关闭")
     private Boolean enable;
 
     @Max(value = 8, message = "最大任务数不能超过8")
@@ -64,7 +72,7 @@ public class TranscodeConfig {
 
     public Boolean getEnable() {
         if (enable == null)
-            return true;
+            return false;
         return enable;
     }
 

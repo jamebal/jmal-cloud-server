@@ -36,11 +36,6 @@ public class CaffeineUtil {
     public static final Cache<String, Long> FILE_HISTORY_CACHE = Caffeine.newBuilder().expireAfterWrite(3, TimeUnit.MINUTES).build();
 
     /**
-     * 缩略图请求缓存
-     */
-    private static final Cache<String, Boolean> THUMBNAIL_REQUEST_CACHE = Caffeine.newBuilder().expireAfterWrite(60, TimeUnit.SECONDS).build();
-
-    /**
      * 用户oss存储路径前缀缓存
      * key: 路径前缀，例如：/jmal/aliyunStorage ,其中jmal为用户名,aliyunStorage 为oss存储的挂载文件夹名称，由用户自定义
      * value: BucketInfo
@@ -280,14 +275,6 @@ public class CaffeineUtil {
 
     public static void setUploadFileCache(String key) {
         UPLOAD_FILE_CACHE.put(key, System.currentTimeMillis());
-    }
-
-    public static Boolean hasThumbnailRequestCache(String id) {
-        return THUMBNAIL_REQUEST_CACHE.get(id, key -> false);
-    }
-
-    public static void setThumbnailRequestCache(String id) {
-        THUMBNAIL_REQUEST_CACHE.put(id, true);
     }
 
     public static String getUsernameCache(String userId) {

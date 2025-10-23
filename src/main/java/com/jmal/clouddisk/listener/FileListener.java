@@ -59,6 +59,8 @@ public class FileListener implements DirectoryChangeListener {
 
     private final ScheduledExecutorService scheduler = ThreadUtil.createScheduledExecutor(2);
 
+    private final AtomicBoolean running = new AtomicBoolean(true);
+    private final List<Future<?>> consumerFutures = new CopyOnWriteArrayList<>();
     private final ExecutorService processExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     @PostConstruct
@@ -97,12 +99,7 @@ public class FileListener implements DirectoryChangeListener {
         }
         // 延时执行，确保当前处理队列中的事件都被处理完
         rebuildIndexTaskService.doSync(null, null, false);
-        rebuildIndexTaskService.onSyncComplete(() -> {
-            log.info("执行增量文件扫描，确保100%处理...");
-            rebuildIndexTaskService.doSync(null, null, false);
-
-            rebuildIndexTaskService.onSyncComplete(() -> scanningInProgress.set(false));
-        });
+        rebuildIndexTaskService.onSyncComplete(() -> scanningInProgress.set(false));
     }
 
     private void transferEventsToQueue() {
@@ -144,12 +141,13 @@ public class FileListener implements DirectoryChangeListener {
     private void startConsumerThreads() {
         int processors = Runtime.getRuntime().availableProcessors();
         for (int i = 0; i < processors; i++) {
-            processExecutor.submit(this::processQueueItems);
+            Future<?> f = processExecutor.submit(this::processQueueItems);
+            consumerFutures.add(f);
         }
     }
 
     private void processQueueItems() {
-        while (!Thread.currentThread().isInterrupted()) {
+        while (running.get() && !Thread.currentThread().isInterrupted()) {
             try {
                 DirectoryChangeEvent event = processingQueue.take();
                 try {
@@ -178,16 +176,11 @@ public class FileListener implements DirectoryChangeListener {
 
     @Override
     public void onEvent(DirectoryChangeEvent directoryChangeEvent) {
+        if (!running.get()) {
+            return;
+        }
         Path eventPath = directoryChangeEvent.path();
         DirectoryChangeEvent.EventType eventType = directoryChangeEvent.eventType();
-
-        // 增加事件计数器，检测高负载
-        int currentCount = eventBurstCounter.incrementAndGet();
-        lastBurstTime = Instant.now();
-        if (currentCount > EVENT_BURST_THRESHOLD && !highLoadDetected.get()) {
-            highLoadDetected.set(true);
-            log.warn("检测到高事件负载: {}事件/{}秒，标记为需要增量扫描", currentCount, BURST_WINDOW.getSeconds());
-        }
 
         // 检查是否为忽略路径
         if (filterDirSet.stream().anyMatch(eventPath::startsWith)) {
@@ -198,6 +191,14 @@ public class FileListener implements DirectoryChangeListener {
         if (fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(eventPath.getFileName()::startsWith)) {
             log.debug("忽略文件:{}", eventPath.toFile().getAbsolutePath());
             return;
+        }
+
+        // 增加事件计数器，检测高负载
+        int currentCount = eventBurstCounter.incrementAndGet();
+        lastBurstTime = Instant.now();
+        if (currentCount > EVENT_BURST_THRESHOLD && !highLoadDetected.get()) {
+            highLoadDetected.set(true);
+            log.warn("检测到高事件负载: {}事件/{}秒，标记为需要增量扫描", currentCount, BURST_WINDOW.getSeconds());
         }
 
         log.debug("接收到事件: {}, 路径: {}", eventType, eventPath);
@@ -315,26 +316,31 @@ public class FileListener implements DirectoryChangeListener {
 
     @PreDestroy
     public void shutdown() {
+        log.info("Shutting down FileListener...");
+        running.set(false);
         scheduler.shutdown();
-        processExecutor.shutdown();
         try {
-            // 等待处理线程池在指定时间内完成任务
-            if (!processExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
-                processExecutor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            processExecutor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-
-        try {
-            // 等待调度器在指定时间内完成任务
-            if (!scheduler.awaitTermination(1, TimeUnit.SECONDS)) {
+            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
                 scheduler.shutdownNow();
             }
         } catch (InterruptedException e) {
             scheduler.shutdownNow();
             Thread.currentThread().interrupt();
         }
+        for (Future<?> f : consumerFutures) {
+            f.cancel(true);
+        }
+        processExecutor.shutdown();
+        try {
+            if (!processExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                processExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            processExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+        processingQueue.clear();
+        eventMap.clear();
+        log.info("FileListener shut down complete.");
     }
 }

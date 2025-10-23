@@ -54,6 +54,12 @@ jobs:
     runs-on: ${{ inputs.arch == 'amd64' && fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["self-hosted", "Linux", "ARM64"]') }}
 
     steps:
+      - name: Cleanup old failed caches
+        run: |
+          echo "Cleaning up caches older than 24 hours..."
+          find /tmp/github-actions-build-cache -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
+          echo "Old caches cleaned up"
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -85,13 +91,18 @@ jobs:
         run: |
           echo "/opt/maven/bin" >> $GITHUB_PATH
 
-      - name: Set up GraalVM for Native Image
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: ${{ inputs.graal_version }}
-          distribution: 'graalvm'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          cache: 'maven'
+      - name: Set up GraalVM environment
+        run: |
+          GRAALVM_VERSION="${{ inputs.graal_version }}"
+          GRAALVM_HOME="/opt/graalvm-jdk-${GRAALVM_VERSION}"
+
+          if [ ! -d "$GRAALVM_HOME" ]; then
+            echo "Error: GraalVM $GRAALVM_VERSION not installed"
+            exit 1
+          fi
+
+          echo "JAVA_HOME=$GRAALVM_HOME" >> $GITHUB_ENV
+          echo "$GRAALVM_HOME/bin" >> $GITHUB_PATH
 
       - name: Check Maven version
         run: mvn -v
@@ -169,9 +180,62 @@ jobs:
         run: |
           mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }} -DskipTests -Dnative-image.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--enable-monitoring=heapdump --pgo=jmalcloud.iprof"
 
+      # 保存构建产物到本地共享目录
+      - name: Save build artifacts to local cache
+        run: |
+          CACHE_DIR="/tmp/github-actions-build-cache/${{ github.run_id }}-${{ inputs.arch }}-${{ inputs.image_tag }}"
+          echo "Creating cache directory: $CACHE_DIR"
+          mkdir -p "$CACHE_DIR"
+          
+          echo "Copying build artifacts to cache..."
+          cp -r target/ "$CACHE_DIR/"
+          cp -r frontend/frontend/ "$CACHE_DIR/" || echo "Warning: frontend/frontend/ not found"
+          cp pom.xml "$CACHE_DIR/"
+          
+          echo "Cache directory contents:"
+          ls -lah "$CACHE_DIR"
+          
+          # 保存缓存路径供下一个 job 使用
+          echo "CACHE_DIR=$CACHE_DIR" >> $GITHUB_ENV
+          echo "Build artifacts saved to: $CACHE_DIR"
+
   build-docker-and-push:
+    needs: build-single-arch
     runs-on: ${{ inputs.arch == 'amd64' && fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["self-hosted", "Linux", "ARM64"]') }}
+
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 从本地共享目录恢复构建产物
+      - name: Restore build artifacts from local cache
+        run: |
+          CACHE_DIR="/tmp/github-actions-build-cache/${{ github.run_id }}-${{ inputs.arch }}-${{ inputs.image_tag }}"
+          echo "Restoring from cache directory: $CACHE_DIR"
+          
+          if [ ! -d "$CACHE_DIR" ]; then
+            echo "Error: Cache directory not found: $CACHE_DIR"
+            exit 1
+          fi
+          
+          echo "Cache directory contents:"
+          ls -lah "$CACHE_DIR"
+          
+          echo "Copying artifacts from cache to workspace..."
+          cp -r "$CACHE_DIR"/target/ ./
+          cp -r "$CACHE_DIR"/frontend/ ./ || echo "Warning: frontend not found in cache"
+          cp "$CACHE_DIR"/pom.xml ./
+          
+          echo "Workspace after restore:"
+          ls -lah .
+          echo "Target directory:"
+          ls -lah target/ || echo "target/ not found"
+
+      # 设置 Maven 环境变量
+      - name: Set Maven Environmental
+        run: |
+          echo "/opt/maven/bin" >> $GITHUB_PATH
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -187,6 +251,22 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
+
+      - name: Set up GraalVM environment
+        run: |
+          GRAALVM_VERSION="${{ inputs.graal_version }}"
+          GRAALVM_HOME="/opt/graalvm-jdk-${GRAALVM_VERSION}"
+
+          if [ ! -d "$GRAALVM_HOME" ]; then
+            echo "Error: GraalVM $GRAALVM_VERSION not installed"
+            exit 1
+          fi
+
+          echo "JAVA_HOME=$GRAALVM_HOME" >> $GITHUB_ENV
+          echo "$GRAALVM_HOME/bin" >> $GITHUB_PATH
+
+      - name: Check Maven version
+        run: mvn -v
 
       - name: Extract project version from pom.xml
         id: project_version

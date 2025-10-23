@@ -1,11 +1,13 @@
 package com.jmal.clouddisk.webdav;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.service.impl.LogService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.catalina.connector.Request;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -29,12 +31,12 @@ public class WebdavAuthenticator extends BasicAuthenticator {
 
     private final FileProperties fileProperties;
 
-    private final LogService logService;
+    private final ObjectProvider<LogService> logServiceObjectProvider;
 
-    public WebdavAuthenticator(FileProperties fileProperties, LogService logService) {
+    public WebdavAuthenticator(FileProperties fileProperties, ObjectProvider<LogService> logServiceObjectProvider) {
         super(fileProperties);
         this.fileProperties = fileProperties;
-        this.logService = logService;
+        this.logServiceObjectProvider = logServiceObjectProvider;
     }
 
     @Override
@@ -50,7 +52,7 @@ public class WebdavAuthenticator extends BasicAuthenticator {
 
     private static void setScheme(Request request) {
         String destinationHeader = request.getHeader("Destination");
-        if (!destinationHeader.isBlank()) {
+        if (CharSequenceUtil.isNotBlank(destinationHeader)) {
             URI destinationUri;
             try {
                 destinationUri = new URI(destinationHeader);
@@ -75,7 +77,7 @@ public class WebdavAuthenticator extends BasicAuthenticator {
         logOperation.setOperationModule("WEBDAV");
         logOperation.setOperationFun("WebDAV请求");
         logOperation.setType(LogOperation.Type.WEBDAV.name());
-        logService.addLogBefore(logOperation, null, request, response);
+        logServiceObjectProvider.getObject().addLogBefore(logOperation, null, request, response);
     }
 
 }

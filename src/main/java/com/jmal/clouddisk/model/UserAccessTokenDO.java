@@ -1,7 +1,14 @@
 package com.jmal.clouddisk.model;
 
 import com.jmal.clouddisk.config.Reflective;
-import lombok.Data;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import com.jmal.clouddisk.dao.IAccessTokenDAO;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
@@ -10,9 +17,13 @@ import java.time.LocalDateTime;
  * @Author jmal
  * @Date 2020/9/30 10:34 上午
  */
-@Data
-public class UserAccessTokenDO implements Reflective {
-    String id;
+@Getter
+@Setter
+@RequiredArgsConstructor
+@Entity
+@Document(collection = IAccessTokenDAO.ACCESS_TOKEN_COLLECTION_NAME)
+@Table(name = IAccessTokenDAO.ACCESS_TOKEN_COLLECTION_NAME)
+public class UserAccessTokenDO extends AuditableEntity implements Reflective {
     /***
      * 授权码名称
      */

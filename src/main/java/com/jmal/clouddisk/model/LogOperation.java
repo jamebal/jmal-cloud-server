@@ -1,8 +1,17 @@
 package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
-import lombok.Data;
+import com.jmal.clouddisk.config.jpa.AuditablePerformanceEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -12,7 +21,8 @@ import java.time.LocalDateTime;
  * @Description 操作日志
  * @author jmal
  */
-@Data
+@Getter
+@Setter
 @Document(collection = "log")
 @CompoundIndex(name = "createTime_1", def = "{'createTime': 1}")
 @CompoundIndex(name = "time_1", def = "{'time': 1}")
@@ -31,8 +41,16 @@ import java.time.LocalDateTime;
 @CompoundIndex(name = "type_username_1", def = "{'type': 1, 'username': 1}")
 @CompoundIndex(name = "type_username_createTime_1", def = "{'type': 1, 'username': 1, 'createTime': 1}")
 @CompoundIndex(name = "fileUserId_type_1", def = "{'fileUserId': 1, 'type': 1}")
-public class LogOperation implements Reflective {
-    private String id;
+@Entity
+@Table(name = "log",
+        indexes = {
+                @Index(name = "log_create_time", columnList = "createTime"),
+                @Index(name = "log_username", columnList = "username"),
+                @Index(name = "log_ip", columnList = "ip"),
+                @Index(name = "log_type", columnList = "type"),
+        }
+)
+public class LogOperation extends AuditablePerformanceEntity implements Reflective {
     /***
      * 账号
      */
@@ -44,14 +62,17 @@ public class LogOperation implements Reflective {
     /***
      * ip地址
      */
+    @Column(length = 40)
     private String ip;
     /***
      * 操作模块
      */
+    @Column(length = 24)
     private String operationModule;
     /***
      * 操作功能
      */
+    @Column(length = 96)
     private String operationFun;
     /***
      * 请求地址
@@ -60,18 +81,22 @@ public class LogOperation implements Reflective {
     /***
      * 请求方式
      */
+    @Column(length = 10)
     private String method;
     /***
      * 设备型号
      */
+    @Column(length = 64)
     private String deviceModel;
     /***
      * 操作系统
      */
+    @Column(length = 64)
     private String operatingSystem;
     /***
      * 浏览器
      */
+    @Column(length = 64)
     private String browser;
     /***
      * 耗时
@@ -93,8 +118,11 @@ public class LogOperation implements Reflective {
     /***
      * 日志类型
      */
+    @Column(length = 16)
     private String type;
 
+    @Column(name = "ip_info")
+    @JdbcTypeCode(SqlTypes.JSON)
     private IpInfo ipInfo;
 
     /**
@@ -105,9 +133,12 @@ public class LogOperation implements Reflective {
     /**
      * 文件所属用户
      */
+    @Column(length = 24)
     private String fileUserId;
 
-    @Data
+    @Setter
+    @Getter
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class IpInfo {
         /***
          * 国家

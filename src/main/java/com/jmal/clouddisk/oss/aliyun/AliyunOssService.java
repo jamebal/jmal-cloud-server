@@ -10,17 +10,16 @@ import com.aliyun.oss.model.*;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.oss.*;
 import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
@@ -44,7 +43,8 @@ public class AliyunOssService implements IOssService {
         this.ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor, ossConfigDTO);
-        CompletableFuture.runAsync(this::getMultipartUploads);
+        Completable.fromAction(this::getMultipartUploads).subscribeOn(Schedulers.io())
+                .subscribe();
     }
 
     @Override
@@ -340,7 +340,7 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
-    public FileInfo getThumbnail(String objectName, File file, int width) {
+    public InputStream getThumbnail(String objectName, int width) {
         try {
             // 将图片缩放为固定宽高100 px。
             String style = "image/resize,m_mfit,w_" + width;
@@ -348,8 +348,7 @@ public class AliyunOssService implements IOssService {
             request.setProcess(style);
             // 将处理后的图片命名为example-resize.jpg并保存到本地。
             // 如果未指定本地路径只填写了本地文件名称（例如example-resize.jpg），则文件默认保存到示例程序所属项目对应本地路径中。
-            ossClient.getObject(request, file);
-            return baseOssService.getFileInfo(objectName);
+            return ossClient.getObject(request).getObjectContent();
         } catch (OSSException oe) {
             log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
@@ -414,7 +413,7 @@ public class AliyunOssService implements IOssService {
             ObjectMetadata objectMetadata = new ObjectMetadata();
             objectMetadata.setContentLength(inputStreamLength);
             // 创建PutObjectRequest对象。
-            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream, objectMetadata );
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, inputStream, objectMetadata);
             // 创建PutObject请求。
             ossClient.putObject(putObjectRequest);
             baseOssService.onUploadSuccess(objectName, inputStreamLength);
@@ -517,11 +516,11 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
-    public URL getPresignedObjectUrl(String objectName, int expiryTime) {
+    public String getPresignedObjectUrl(String objectName, int expiryTime) {
         try {
             Date expirationDate = new Date(System.currentTimeMillis() + expiryTime * 1000L);
             // 生成以GET方法访问的签名URL，访客可以直接通过浏览器访问相关内容。
-            return ossClient.generatePresignedUrl(bucketName, objectName, expirationDate);
+            return ossClient.generatePresignedUrl(bucketName, objectName, expirationDate).toString();
         } catch (OSSException oe) {
             log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {

@@ -9,7 +9,15 @@ RUN mkdir -p /tmp && chmod 1777 /tmp && \
     apt-get install -y wget unzip && \
     mkdir -p /temp && \
     cd /temp && \
-    wget https://github.com/jamebal/jmal-cloud-server/releases/download/v2.14.0/mxcad_${ARCH}.zip && \
+    wget https://github.com/jamebal/jmal-cloud-server/releases/download/v2.15.0/mxcad_${ARCH}.zip && \
+    wget https://github.com/jgraph/drawio/releases/download/v28.2.5/draw.war -O draw.war && \
+    wget https://github.com/mozilla/pdf.js/releases/download/v5.4.296/pdfjs-5.4.296-dist.zip -O pdfjs.zip && \
+    wget https://github.com/jamebal/excalidraw/releases/download/v0.17.3/build.tar.gz -O excalidraw.tar.gz && \
+    mkdir -p /webapp/plug/draw /webapp/plug/pdfjs /webapp/plug/excalidraw && \
+    unzip draw.war -d /webapp/plug/draw && \
+    unzip pdfjs.zip -d /webapp/plug/pdfjs && \
+    tar -xvf excalidraw.tar.gz -C /webapp/plug/excalidraw && \
+    rm -rf /webapp/plug/draw/META-INF /webapp/plug/draw/WEB-INF && \
     \
     # 解压 mxcad
     unzip -o mxcad_${ARCH}.zip -d /temp && \

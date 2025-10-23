@@ -7,7 +7,6 @@ import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.IUserService;
 import dev.samstevens.totp.code.CodeVerifier;
 import dev.samstevens.totp.qr.QrData;
-import dev.samstevens.totp.qr.QrGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Service;
 public class TotpService {
 
     private final SecretGenerator secretGenerator;
-    private final QrGenerator qrGenerator;
     private final CodeVerifier codeVerifier;
     private final TextEncryptor textEncryptor;
     private final IUserService userService;

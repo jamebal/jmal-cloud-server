@@ -1,41 +1,29 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.convert.Convert;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.jmal.clouddisk.controller.rest.sse.Message;
 import com.jmal.clouddisk.controller.rest.sse.SseController;
+import com.jmal.clouddisk.dao.ITrashDAO;
 import com.jmal.clouddisk.exception.CommonException;
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ThrottleExecutor;
-import com.mongodb.client.AggregateIterable;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.BsonNull;
 import org.bson.Document;
-import org.bson.conversions.Bson;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-
-import static com.mongodb.client.model.Accumulators.sum;
-import static com.mongodb.client.model.Aggregates.group;
-import static com.mongodb.client.model.Aggregates.match;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
 
 @Service
 @RequiredArgsConstructor
@@ -48,9 +36,24 @@ public class MessageService {
 
     private final CommonUserService commonUserService;
 
-    private final MongoTemplate mongoTemplate;
+    private final ITrashDAO trashDAO;
 
-    private final Cache<String, Map<String, ThrottleExecutor>> throttleExecutorCache = Caffeine.newBuilder().build();
+    private final Cache<String, Map<String, ThrottleExecutor>> throttleExecutorCache = Caffeine.newBuilder()
+            .expireAfterAccess(10, TimeUnit.MINUTES) // 用户10分钟不活跃后，缓存自动过期
+            .maximumSize(10000) // 最多缓存10000个用户的节流器
+            .removalListener((String username, Map<String, ThrottleExecutor> map, RemovalCause cause) -> {
+                // 2. 添加移除监听器，用于释放资源
+                log.info("Removing throttle executors for user '{}' due to {}", username, cause);
+                if (map != null) {
+                    map.values().forEach(executor -> {
+                        // 假设 ThrottleExecutor 实现了 shutdown 接口
+                        if (executor != null) {
+                            executor.shutdown();
+                        }
+                    });
+                }
+            })
+            .build();
 
     private final Cache<String, Long> userSpaceCache = Caffeine.newBuilder().expireAfterWrite(1, TimeUnit.SECONDS).build();
 
@@ -59,7 +62,7 @@ public class MessageService {
     }
 
     public long occupiedSpace(String userId) {
-        Long space = userSpaceCache.get(userId, key -> calculateTotalOccupiedSpace(userId).blockingGet());
+        Long space = userSpaceCache.get(userId, _ -> calculateTotalOccupiedSpace(userId).blockingGet());
         if (space == null) {
             space = 0L;
         }
@@ -84,18 +87,7 @@ public class MessageService {
     }
 
     public Single<Long> getOccupiedSpaceAsync(String userId, String collectionName) {
-        return Single.fromCallable(() -> getOccupiedSpace(userId, collectionName)).subscribeOn(Schedulers.io()).doOnError(e -> log.error(e.getMessage(), e));
-    }
-
-    public long getOccupiedSpace(String userId, String collectionName) {
-        Long space = 0L;
-        List<Bson> list = Arrays.asList(match(and(eq(IUserService.USER_ID, userId), eq(Constants.IS_FOLDER, false))), group(new BsonNull(), sum(Constants.TOTAL_SIZE, "$size")));
-        AggregateIterable<Document> aggregateIterable = mongoTemplate.getCollection(collectionName).aggregate(list);
-        Document doc = aggregateIterable.first();
-        if (doc != null) {
-            space = Convert.toLong(doc.get(Constants.TOTAL_SIZE), 0L);
-        }
-        return space;
+        return Single.fromCallable(() -> trashDAO.getOccupiedSpace(userId, collectionName)).subscribeOn(Schedulers.io()).doOnError(e -> log.error(e.getMessage(), e));
     }
 
     public void pushMessage(String username, Object message, String url) {
@@ -110,17 +102,18 @@ public class MessageService {
      * @param url      url
      */
     public void pushMessageSync(String username, Object message, String url) {
+        if (CharSequenceUtil.isBlank(username)) {
+            return;
+        }
         if (timelyPush(username, message, url)) return;
         if (Constants.CREATE_FILE.equals(url) || Constants.DELETE_FILE.equals(url)) {
-            Map<String, ThrottleExecutor> throttleExecutorMap = throttleExecutorCache.get(username, key -> new HashMap<>(8));
-            if (throttleExecutorMap != null) {
-                ThrottleExecutor throttleExecutor = throttleExecutorMap.get(url);
-                if (throttleExecutor == null) {
-                    throttleExecutor = new ThrottleExecutor(300);
-                    throttleExecutorMap.put(url, throttleExecutor);
-                }
-                throttleExecutor.schedule(() -> pushMsg(username, message, url));
-            }
+            Map<String, ThrottleExecutor> userExecutors = throttleExecutorCache.get(username, _ -> new ConcurrentHashMap<>(8));
+            ThrottleExecutor throttleExecutor = userExecutors.computeIfAbsent(url, key -> {
+                log.debug("Creating new ThrottleExecutor for user '{}' and url '{}'", username, key);
+                return new ThrottleExecutor(300); // 300ms 节流窗口
+            });
+
+            throttleExecutor.schedule(() -> pushMsg(username, message, url));
         } else {
             pushMsg(username, message, url);
         }
@@ -131,7 +124,7 @@ public class MessageService {
             if (message instanceof Document setDoc) {
                 Object set = setDoc.get("$set");
                 if (set instanceof Document doc) {
-                    doc.remove("content");
+                    doc.remove(Constants.CONTENT);
                     Boolean isFolder = doc.getBoolean(Constants.IS_FOLDER);
                     if (Boolean.TRUE.equals(isFolder)) {
                         pushMsg(username, message, url);
@@ -158,17 +151,13 @@ public class MessageService {
         }
         if (message instanceof FileDocument fileDocument) {
             fileDocument.setContent(null);
-            fileDocument.setMusic(null);
+            fileDocument.setMusicNull();
             fileDocument.setContentText(null);
         }
         msg.setUrl(url);
         msg.setUsername(username);
         msg.setBody(message);
         sseController.sendEvent(msg);
-    }
-
-    public void notifyCreateIndexQueue(String fileId) {
-
     }
 
 }

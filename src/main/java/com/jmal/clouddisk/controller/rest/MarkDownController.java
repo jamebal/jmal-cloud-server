@@ -4,6 +4,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;

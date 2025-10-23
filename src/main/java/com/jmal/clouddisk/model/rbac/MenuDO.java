@@ -1,8 +1,15 @@
 package com.jmal.clouddisk.model.rbac;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.jmal.clouddisk.config.LocalDateTimeFromTimestampDeserializer;
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import com.jmal.clouddisk.service.impl.MenuService;
-import lombok.Data;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -12,24 +19,26 @@ import java.time.LocalDateTime;
  * @Description 菜单模型
  * @Date 2021/1/7 8:53 下午
  */
-@Data
+@Getter
+@Setter
 @Document(collection = MenuService.COLLECTION_NAME)
-public class MenuDO implements Reflective {
-    /***
-     * 主键
-     */
-    String id;
+@Entity
+@Table(name = MenuService.COLLECTION_NAME)
+public class MenuDO extends AuditableEntity implements Reflective {
     /***
      * 父级菜单Id
      */
+    @Column(length = 24)
     String parentId;
     /***
      * 菜单名称
      */
+    @Column(length = 32)
     String name;
     /***
      * 权限标识
      */
+    @Column(length = 64)
     String authority;
     /***
      * 路由地址
@@ -58,9 +67,28 @@ public class MenuDO implements Reflective {
     /***
      * 创建时间
      */
+    @JsonDeserialize(using = LocalDateTimeFromTimestampDeserializer.class)
     LocalDateTime createTime;
     /***
      * 修改时间
      */
+    @JsonDeserialize(using = LocalDateTimeFromTimestampDeserializer.class)
     LocalDateTime updateTime;
+
+    public MenuDTO toDTO() {
+        MenuDTO menuDTO = new MenuDTO();
+        menuDTO.setId(this.getId());
+        menuDTO.setParentId(this.getParentId());
+        menuDTO.setName(this.getName());
+        menuDTO.setAuthority(this.getAuthority());
+        menuDTO.setPath(this.getPath());
+        menuDTO.setComponent(this.getComponent());
+        menuDTO.setIcon(this.getIcon());
+        menuDTO.setSortNumber(this.getSortNumber());
+        menuDTO.setMenuType(this.getMenuType());
+        menuDTO.setHide(this.getHide());
+        menuDTO.setCreateTime(this.getCreateTime());
+        menuDTO.setUpdateTime(this.getUpdateTime());
+        return menuDTO;
+    }
 }

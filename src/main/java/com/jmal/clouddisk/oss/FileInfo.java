@@ -2,8 +2,8 @@ package com.jmal.clouddisk.oss;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
 import com.jmal.clouddisk.config.Reflective;
-import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.FileIntroVO;
+import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.oss.web.WebOssCommonService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;

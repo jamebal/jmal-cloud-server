@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service;
 
 import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.util.ResponseResult;
 
 import java.util.List;

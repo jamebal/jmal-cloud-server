@@ -8,6 +8,7 @@ public class Metadata implements Reflective {
     String filepath;
     String filename;
     String time;
+    String charset;
     String compression;
     /**
      * 操作人(username)

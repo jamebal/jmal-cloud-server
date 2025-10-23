@@ -1,8 +1,6 @@
 package com.jmal.clouddisk.oss;
 
-import java.io.File;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -192,10 +190,9 @@ public interface IOssService {
     /**
      * 获取缩略图, 指定目标图片宽度为 Width，高度等比缩放
      * @param objectName objectName
-     * @param file       临时文件
      * @param width      图片宽度
      */
-    FileInfo getThumbnail(String objectName, File file, int width);
+    InputStream getThumbnail(String objectName, int width);
 
     /**
      * 生成预签名URL
@@ -204,7 +201,7 @@ public interface IOssService {
      * @param expiryTime 过期时间(秒)
      * @return 预签名URL
      */
-    URL getPresignedObjectUrl(String objectName, int expiryTime);
+    String getPresignedObjectUrl(String objectName, int expiryTime);
 
     /**
      * 拷贝对象(相同Bucket之间拷贝)

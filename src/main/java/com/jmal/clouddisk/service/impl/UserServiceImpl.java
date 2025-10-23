@@ -1,10 +1,20 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.codec.Base64;
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.dao.IAccessTokenDAO;
+import com.jmal.clouddisk.dao.IUserDAO;
+import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
+import com.jmal.clouddisk.dao.mapping.CommonField;
+import com.jmal.clouddisk.dao.mapping.UserField;
+import com.jmal.clouddisk.dao.util.MyQuery;
+import com.jmal.clouddisk.dao.util.MyUpdate;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.listener.FileMonitor;
@@ -14,17 +24,16 @@ import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerBase;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
-import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,19 +42,21 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @author jmal
  * @Description UserServiceImpl
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class UserServiceImpl implements IUserService {
 
     public static final String COLLECTION_NAME = "user";
 
-    private final MongoTemplate mongoTemplate;
+    private final IUserDAO userDAO;
+
+    private final IWebsiteSettingDAO websiteSettingDAO;
 
     private final CommonUserService commonUserService;
 
@@ -55,11 +66,9 @@ public class UserServiceImpl implements IUserService {
 
     private final IShareService shareService;
 
-    private final MenuService menuService;
-
     private final RoleService roleService;
 
-    private final IAuthDAO authDAO;
+    private final IAccessTokenDAO accessTokenDAO;
 
     private final FileProperties fileProperties;
 
@@ -85,11 +94,11 @@ public class UserServiceImpl implements IUserService {
             encryption(consumerDTO, originalPwd);
             consumerDO = new ConsumerDO();
             BeanUtils.copyProperties(consumerDTO, consumerDO);
-            consumerDO.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
+            consumerDO.setCreatedTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             consumerDO.setId(null);
             // 新建用户目录
             createUserDir(consumerDO.getUsername());
-            consumerDO = mongoTemplate.save(consumerDO, COLLECTION_NAME);
+            consumerDO = userDAO.save(consumerDO);
             // 更新用户缓存
             CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
         } else {
@@ -114,9 +123,7 @@ public class UserServiceImpl implements IUserService {
         if (idList.contains(currentUserId)) {
             return ResultUtil.warning("不能删除自己");
         }
-        Query query1 = new Query();
-        query1.addCriteria(Criteria.where("_id").in(idList));
-        List<ConsumerDO> userList = mongoTemplate.find(query1, ConsumerDO.class, COLLECTION_NAME);
+        List<ConsumerDO> userList = userDAO.findAllById(idList);
         // 过滤掉创建者
         ConsumerDO creator = userList.stream().filter(user -> user.getCreator() != null && user.getCreator()).findAny().orElse(null);
         if (creator != null) {
@@ -128,12 +135,10 @@ public class UserServiceImpl implements IUserService {
         // 删除关联分享
         shareService.deleteAllByUser(userList);
         // 删除关联token
-        authDAO.deleteAllByUser(userList);
+        accessTokenDAO.deleteAllByUser(userList);
         // 删除用户缓存
         CaffeineUtil.removeConsumerListByUsernameCache(userList);
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(idList));
-        mongoTemplate.remove(query, COLLECTION_NAME);
+        userDAO.deleteAllById(idList);
         return ResultUtil.success();
     }
 
@@ -145,15 +150,15 @@ public class UserServiceImpl implements IUserService {
             return ResultUtil.warning("请使用其他用户名");
         }
 
-        Query query = new Query();
+        MyQuery query = new MyQuery();
         String userId = user.getId();
         ConsumerDO consumerDO;
         if (!CharSequenceUtil.isBlank(userId)) {
-            query.addCriteria(Criteria.where("_id").is(userId));
+            query.eq(CommonField.ID.getLogical(), userId);
             consumerDO = getUserInfoById(userId);
         } else {
             if (!CharSequenceUtil.isBlank(name)) {
-                query.addCriteria(Criteria.where(USERNAME).is(name));
+                query.eq(USERNAME, name);
                 consumerDO = getUserInfoByUsername(name);
             } else {
                 return ResultUtil.success();
@@ -162,10 +167,10 @@ public class UserServiceImpl implements IUserService {
         if (consumerDO == null) {
             consumerDO = new ConsumerDO();
         }
-        Update update = new Update();
+        MyUpdate update = new MyUpdate();
         String showName = user.getShowName();
         if (!CharSequenceUtil.isBlank(showName)) {
-            update.set(SHOW_NAME, showName);
+            update.set(UserField.SHOW_NAME.getLogical(), showName);
             consumerDO.setShowName(showName);
         }
         Integer quota = user.getQuota();
@@ -189,7 +194,7 @@ public class UserServiceImpl implements IUserService {
 
         Boolean webpDisabled = user.getWebpDisabled();
         if (webpDisabled != null) {
-            update.set("webpDisabled", webpDisabled);
+            update.set(UserField.WEBP_DISABLED.getLogical(), webpDisabled);
             consumerDO.setWebpDisabled(webpDisabled);
         }
 
@@ -206,19 +211,21 @@ public class UserServiceImpl implements IUserService {
         // 设置用户头像
         fileId = setConsumerAvatar(blobAvatar, userId, consumerDO, update, fileId);
         LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
-        update.set("updateTime", now);
-        consumerDO.setUpdateTime(now);
+        update.set(UserField.UPDATED_TIME.getLogical(), now);
+        consumerDO.setUpdatedTime(now);
         updateConsumer(userId, query, update);
         if (user.getRoles() != null) {
             // 修改用户角色后更新相关角色用户的权限缓存
-            CompletableFuture.runAsync(() -> roleService.updateUserCacheByRole(user.getRoles()));
+            Completable.fromAction(() -> roleService.updateUserCacheByRole(user.getRoles()))
+                    .subscribeOn(Schedulers.io())
+                    .subscribe();
         }
         return ResultUtil.success(fileId);
     }
 
-    private String setConsumerAvatar(MultipartFile blobAvatar, String userId, ConsumerDO consumerDO, Update update, String fileId) {
+    private String setConsumerAvatar(MultipartFile blobAvatar, String userId, ConsumerDO consumerDO, MyUpdate update, String fileId) {
         if (blobAvatar != null) {
-            ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
+            ConsumerDO consumer = userDAO.findById(userId);
             if (consumer != null) {
                 UploadApiParamDTO upload = new UploadApiParamDTO();
                 upload.setUserId(userId);
@@ -238,7 +245,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public ResponseResult<ConsumerDTO> userInfo(String id) {
-        ConsumerDO consumer = mongoTemplate.findById(id, ConsumerDO.class, COLLECTION_NAME);
+        ConsumerDO consumer = userDAO.findById(id);
         return getConsumerDTOResponseResult(consumer);
     }
 
@@ -254,7 +261,7 @@ public class UserServiceImpl implements IUserService {
         if (consumerDTO.getAvatar() == null) {
             consumerDTO.setAvatar("");
         }
-        WebsiteSettingDO websiteSettingDO = mongoTemplate.findOne(new Query(), WebsiteSettingDO.class, SettingService.COLLECTION_NAME_WEBSITE_SETTING);
+        WebsiteSettingDO websiteSettingDO = websiteSettingDAO.findOne();
         if (websiteSettingDO != null) {
             consumerDTO.setNetdiskName(websiteSettingDO.getNetdiskName());
             consumerDTO.setNetdiskLogo(websiteSettingDO.getNetdiskLogo());
@@ -284,16 +291,8 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public ResponseResult<List<ConsumerDTO>> userList(QueryUserDTO queryDTO) {
-        Query query = new Query();
-        long count = mongoTemplate.count(query, COLLECTION_NAME);
-        MongoUtil.commonQuery(queryDTO, query);
-        if (!CharSequenceUtil.isBlank(queryDTO.getUsername())) {
-            query.addCriteria(Criteria.where(USERNAME).regex(queryDTO.getUsername(), "i"));
-        }
-        if (!CharSequenceUtil.isBlank(queryDTO.getShowName())) {
-            query.addCriteria(Criteria.where(SHOW_NAME).regex(queryDTO.getShowName(), "i"));
-        }
-        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class, COLLECTION_NAME);
+        Page<ConsumerDO> consumerDOPage = userDAO.findUserList(queryDTO);
+        List<ConsumerDO> userList = consumerDOPage.getContent();
         List<ConsumerDTO> consumerDTOList = userList.parallelStream().map(consumerDO -> {
             ConsumerDTO consumerDTO = new ConsumerDTO();
             BeanUtils.copyProperties(consumerDO, consumerDTO);
@@ -303,18 +302,7 @@ public class UserServiceImpl implements IUserService {
             }
             return consumerDTO;
         }).toList();
-        return ResultUtil.success(consumerDTOList).setCount(count);
-    }
-
-    @Override
-    public List<ConsumerDTO> userListAll() {
-        Query query = new Query();
-        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class);
-        return userList.parallelStream().map(consumerDO -> {
-            ConsumerDTO consumerDTO = new ConsumerDTO();
-            consumerDTO.setUsername(consumerDO.getUsername());
-            return consumerDTO;
-        }).toList();
+        return ResultUtil.success(consumerDTOList).setCount(consumerDOPage.getTotalElements());
     }
 
     @Override
@@ -322,7 +310,7 @@ public class UserServiceImpl implements IUserService {
         String userId = consumer.getId();
         String newPassword = consumer.getPassword();
         if (!CharSequenceUtil.isBlank(userId) && !CharSequenceUtil.isBlank(newPassword)) {
-            ConsumerDO consumer1 = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
+            ConsumerDO consumer1 = userDAO.findById(userId);
             if (consumer1 != null) {
                 if (newPassword.equals(consumer1.getPassword())) {
                     return ResultUtil.warning("新密码不能与旧密码相同!");
@@ -350,18 +338,18 @@ public class UserServiceImpl implements IUserService {
         if (originalPwd.length() < 8) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "密码长度不能少于8位");
         }
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(userId));
-        Update update = new Update();
+        MyQuery query = new MyQuery();
+        query.eq(CommonField.ID.getLogical(), userId);
+        MyUpdate update = new MyUpdate();
         String password = PasswordHash.createHash(originalPwd);
         LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
         update.set("password", password);
-        update.set("updateTime", now);
+        update.set(UserField.UPDATED_TIME.getLogical(), now);
         updateConsumer(userId, query, update);
     }
 
-    private void updateConsumer(String userId, Query query, Update update) {
-        mongoTemplate.upsert(query, update, COLLECTION_NAME);
+    private void updateConsumer(String userId, MyQuery query, MyUpdate update) {
+        userDAO.upsert(query, update);
         ConsumerDO consumerDO = commonUserService.getUserInfoByIdNoCache(userId);
         CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO);
     }
@@ -389,8 +377,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public ResponseResult<Boolean> hasUser() {
-        Query query = new Query();
-        long count = mongoTemplate.count(query, COLLECTION_NAME);
+        long count = userDAO.count();
         if (count > 0) {
             count = 1;
         }
@@ -399,14 +386,10 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public synchronized ResponseResult<Object> initialization(ConsumerDTO consumerDTO) {
-        Query query = new Query();
-        long count = mongoTemplate.count(query, COLLECTION_NAME);
+        long count = userDAO.count();
         if (count < 1) {
             ConsumerDO user = new ConsumerDO();
             BeanUtils.copyProperties(consumerDTO, user);
-            // 首先初始化菜单和角色
-            menuService.initMenus();
-            roleService.initRoles();
             // 再初始化创建者
             String roleId = roleService.getRoleIdByCode(RoleService.ADMINISTRATORS);
             user.setRoles(Collections.singletonList(roleId));
@@ -415,11 +398,11 @@ public class UserServiceImpl implements IUserService {
             user.setQuota((int) (SystemUtil.getFreeSpace() / 2));
             String originalPwd = user.getPassword();
             encryption(user, originalPwd);
-            user.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
+            user.setCreatedTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             user.setId(null);
             // 新建用户目录
             createUserDir(user.getUsername());
-            mongoTemplate.save(user, COLLECTION_NAME);
+            userDAO.save(user);
         }
         return ResultUtil.success();
     }
@@ -458,22 +441,27 @@ public class UserServiceImpl implements IUserService {
     public void enableMfa(String userId, String rawSecret) {
         // 加密密钥
         String encryptedSecret = textEncryptor.encrypt(rawSecret);
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(userId));
-        Update update = new Update();
-        update.set("mfaSecret", encryptedSecret);
-        update.set("mfaEnabled", true);
+        MyQuery query = new MyQuery();
+        query.eq(CommonField.ID.getLogical(), userId);
+        MyUpdate update = new MyUpdate();
+        update.set(UserField.MFA_SECRET.getLogical(), encryptedSecret);
+        update.set(UserField.MFA_ENABLED.getLogical(), true);
         updateConsumer(userId, query, update);
     }
 
     @Override
     public void disableMfa(String userId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(userId));
-        Update update = new Update();
-        update.unset("mfaSecret");
-        update.unset("mfaEnabled");
+        MyQuery query = new MyQuery();
+        query.eq(CommonField.ID.getLogical(), userId);
+        MyUpdate update = new MyUpdate();
+        update.unset(UserField.MFA_SECRET.getLogical());
+        update.unset(UserField.MFA_ENABLED.getLogical());
         updateConsumer(userId, query, update);
+    }
+
+    @Override
+    public String getUsername(String userId) {
+        return userDAO.getUsernameById(userId);
     }
 
     public ConsumerDO getUserInfoById(String userId) {
@@ -481,19 +469,8 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public boolean getIsCreator(String userId) {
-        ConsumerDO consumerDO = mongoTemplate.findById(userId, ConsumerDO.class, COLLECTION_NAME);
-        if (consumerDO == null) {
-            return false;
-        }
-        return consumerDO.getCreator() != null && consumerDO.getCreator();
-    }
-
-    @Override
     public String getUserIdByShowName(String showName) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(SHOW_NAME).is(showName));
-        ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
+        ConsumerDO consumerDO = userDAO.findByShowName(showName);
         if (consumerDO != null) {
             return consumerDO.getId();
         }
@@ -505,20 +482,30 @@ public class UserServiceImpl implements IUserService {
      * @return 头像文件Id
      */
     public String getCreatorAvatar() {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("creator").is(true));
-        ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class, COLLECTION_NAME);
+        ConsumerDO consumerDO = userDAO.findOneByCreatorTrue();
         if (consumerDO == null) {
             return null;
         }
         return consumerDO.getAvatar();
     }
 
-    /**
-     * 获取创建者的用户名
-     * @return 用户名
-     */
-    public String getCreatorUsername() {
-        return commonUserService.getCreatorUsername();
+    public void resetAdminPassword() {
+        if (BooleanUtil.isTrue(fileProperties.getResetAdminPassword())) {
+            ConsumerDO consumer = userDAO.findOneByCreatorTrue();
+            if (consumer == null) {
+                return;
+            }
+            if (BooleanUtil.isTrue(consumer.getCreator())) {
+                // 生成密码
+                String randomPass = Base64.encodeUrlSafe(Convert.toStr(RandomUtil.randomInt(100000, 1000000)));
+                String hash = PasswordHash.createHash(randomPass);
+                if (userDAO.resetAdminPassword(hash)) {
+                    log.warn("管理员: {}, 密码已重置为: {}，请请务必将环境变量'RESET_ADMIN_PASSWORD'移除或设置为false！", consumer.getUsername(), randomPass);
+                }
+                consumer.setPassword(hash);
+                CaffeineUtil.setConsumerByUsernameCache(consumer.getUsername(), consumer);
+            }
+        }
     }
+
 }

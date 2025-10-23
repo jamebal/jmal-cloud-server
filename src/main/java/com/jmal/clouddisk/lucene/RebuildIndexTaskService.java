@@ -3,16 +3,17 @@ package com.jmal.clouddisk.lucene;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.NumberUtil;
-import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.dao.IFileDAO;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.ocr.OcrService;
 import com.jmal.clouddisk.service.impl.*;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.ThrottleExecutor;
-import jakarta.annotation.PostConstruct;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +23,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.PrefixQuery;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -33,7 +32,10 @@ import java.math.RoundingMode;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -67,7 +69,7 @@ public class RebuildIndexTaskService {
 
     private final MessageService messageService;
 
-    private final MongoTemplate mongoTemplate;
+    private final IFileDAO fileDAO;
 
     private ExecutorService syncFileVisitorService;
 
@@ -119,7 +121,14 @@ public class RebuildIndexTaskService {
 
     private final ReentrantLock deleteDocWithDeleteFlagLock = new ReentrantLock();
 
-    @PostConstruct
+    @EventListener(ContextRefreshedEvent.class)
+    public void onApplicationReady(ContextRefreshedEvent event) {
+        if (event.getApplicationContext().getParent() != null) {
+            return;
+        }
+        ThreadUtil.execute(this::init);
+    }
+
     public void init() {
         // 启动时检测是否存在菜单，不存在则初始化
         if (!menuService.existsMenu()) {
@@ -150,7 +159,7 @@ public class RebuildIndexTaskService {
         }
         setPercentMap(0d, 0d);
         String finalUsername = username;
-        CompletableFuture.runAsync(() -> {
+        Completable.fromAction(() -> {
             if (!SYNC_FILE_LOCK.tryLock()) {
                 return;
             }
@@ -171,7 +180,8 @@ public class RebuildIndexTaskService {
                 setPercentMap(100d, 100d);
                 pushMessage();
             }
-        });
+        }).subscribeOn(Schedulers.io())
+                .subscribe();
     }
 
     /**
@@ -224,16 +234,21 @@ public class RebuildIndexTaskService {
      */
     private void deleteAllIndex(String path) {
         if (StrUtil.isBlank(path)) {
-            path = "/";
-        }
-        // 查询path下的所有索引
-        Term prefixTerm = new Term("path", path);
-        PrefixQuery prefixQuery = new PrefixQuery(prefixTerm);
-        try {
-            indexWriter.deleteDocuments(prefixQuery);
-            indexWriter.commit();
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            try {
+                indexWriter.deleteAll();
+                indexWriter.forceMergeDeletes();
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            }
+        } else {
+            // 查询path下的所有索引
+            Term prefixTerm = new Term("path", path);
+            PrefixQuery prefixQuery = new PrefixQuery(prefixTerm);
+            try {
+                indexWriter.deleteDocuments(prefixQuery);
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            }
         }
     }
 
@@ -322,6 +337,7 @@ public class RebuildIndexTaskService {
                 throttleExecutor = new ThrottleExecutor(10000);
             }
         }
+        throttleExecutor.cancel();
         throttleExecutor.schedule(this::rebuildingIndexCompleted);
     }
 
@@ -481,12 +497,11 @@ public class RebuildIndexTaskService {
                 commonUserFileService.createFile(username, file.toFile(), null, null);
             } catch (Exception e) {
                 log.error("createFile error {}{}", e.getMessage(), file, e);
-                Query query = new Query();
-                query.fields().include("_id");
-                FileDocument fileDocument = commonFileService.getFileDocument(username, file.toFile().getAbsolutePath(), query);
-                if (fileDocument != null) {
+                FileBaseDTO fileBaseDTO = commonFileService.getFileBaseDTO(username, file.toFile().getAbsolutePath());
+                String fileId = fileDAO.findIdByUserIdAndPathAndName(fileBaseDTO.getUserId(), fileBaseDTO.getName(), fileBaseDTO.getPath());
+                if (fileId != null) {
                     // 需要移除删除标记
-                    removeDeletedFlag(Collections.singletonList(fileDocument.getId()));
+                    removeDeletedFlag(Collections.singletonList(fileId));
                 }
             }
         }
@@ -542,20 +557,22 @@ public class RebuildIndexTaskService {
 
     private @Nullable FileVisitResult skipTempDirectory(Path dir) {
         // 跳过临时文件目录
-        if (dir.toFile().getName().equals(fileProperties.getChunkFileDir())) {
+        if (dir.startsWith(Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir()))) {
             return FileVisitResult.SKIP_SUBTREE;
         }
         // 跳过lucene索引目录
-        if (dir.toFile().getName().equals(fileProperties.getLuceneIndexDir())) {
+        if (dir.startsWith(Paths.get(fileProperties.getRootDir(), fileProperties.getLuceneIndexDir()))) {
+            return FileVisitResult.SKIP_SUBTREE;
+        }
+        // 跳过 jmalcloud 目录
+        if (dir.startsWith(Paths.get(fileProperties.getRootDir(), fileProperties.getJmalcloudDBDir()))) {
             return FileVisitResult.SKIP_SUBTREE;
         }
         return null;
     }
 
     public boolean checkIndexExists() {
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where("ossFolder").exists(true));
-        long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
+        long count = fileDAO.countOssFolder();
         long indexCount = indexWriter.getDocStats().numDocs;
         return indexCount > count;
     }
@@ -564,21 +581,14 @@ public class RebuildIndexTaskService {
      * 重置索引状态, 将正在索引的文件状态重置为未索引
      */
     public void resetIndexStatus() {
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where(LuceneService.MONGO_INDEX_FIELD).lte(IndexStatus.INDEXING.getStatus()));
-        Update update = new Update();
-        update.unset(LuceneService.MONGO_INDEX_FIELD);
-        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+        fileDAO.resetIndexStatus();
     }
 
     /**
      * 检查是否有未索引或正在索引的任务
      */
     public boolean hasUnIndexedTasks() {
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where(LuceneService.MONGO_INDEX_FIELD).lte(IndexStatus.INDEXING.getStatus()));
-        long count = mongoTemplate.count(query, CommonFileService.COLLECTION_NAME);
-        return count > 0;
+        return fileDAO.existsByUnIndexed();
     }
 
     /**
@@ -606,20 +616,7 @@ public class RebuildIndexTaskService {
                 path = "/";
             }
         }
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        query.addCriteria(Criteria.where("alonePage").exists(false));
-        query.addCriteria(Criteria.where("release").exists(false));
-        query.addCriteria(Criteria.where("mountFileId").exists(false));
-        if (StrUtil.isNotBlank(userId)) {
-            query.addCriteria(Criteria.where("userId").is(userId));
-        }
-        if (StrUtil.isNotBlank(path)) {
-            query.addCriteria(Criteria.where("path").regex("^" + ReUtil.escape(path)));
-        }
-        Update update = new Update();
-        // 添加删除标记用于在之后删除
-        update.set("delete", 1);
-        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+        fileDAO.setDelTag(userId, path);
         if (isDelIndex) {
             // 删除索引
             deleteAllIndex(path);
@@ -632,15 +629,7 @@ public class RebuildIndexTaskService {
      * @param fileIdList fileIdList
      */
     public void removeDeletedFlag(List<String> fileIdList) {
-        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
-        if (fileIdList == null || fileIdList.isEmpty()) {
-            query.addCriteria(Criteria.where("delete").is(1));
-        } else {
-            query.addCriteria(Criteria.where("_id").in(fileIdList).and("delete").is(1));
-        }
-        Update update = new Update();
-        update.unset("delete");
-        mongoTemplate.updateMulti(query, update, CommonFileService.COLLECTION_NAME);
+        fileDAO.UnsetDelTagByIdIn(fileIdList);
     }
 
     @PreDestroy

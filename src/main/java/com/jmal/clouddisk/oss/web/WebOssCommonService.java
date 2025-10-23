@@ -1,23 +1,18 @@
 package com.jmal.clouddisk.oss.web;
 
-import cn.hutool.core.convert.Convert;
-import com.jmal.clouddisk.model.FileDocument;
-import com.jmal.clouddisk.model.FileIntroVO;
-import com.jmal.clouddisk.model.OperationPermission;
+import com.jmal.clouddisk.dao.IFileDAO;
+import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.oss.BaseOssService;
 import com.jmal.clouddisk.oss.BucketInfo;
 import com.jmal.clouddisk.oss.FileInfo;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.CommonUserFileService;
 import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.service.impl.MessageService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
-import org.bson.Document;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Update;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -30,22 +25,16 @@ import java.time.LocalDateTime;
  * @date 2023/4/14 10:22
  */
 @Service
+@RequiredArgsConstructor
 public class WebOssCommonService {
 
-    @Autowired
-    MongoTemplate mongoTemplate;
+    private final CommonUserService userService;
 
-    @Autowired
-    CommonUserService userService;
+    private final CommonUserFileService commonUserFileService;
 
-    @Autowired
-    CommonUserFileService commonUserFileService;
+    private final MessageService messageService;
 
-    @Autowired
-    MessageService messageService;
-
-    @Autowired
-    CommonFileService commonFileService;
+    private final IFileDAO fileDAO;
 
     public void notifyCreateFile(String username, String objectName, String ossRootFolderName) {
         FileIntroVO fileIntroVO = new FileIntroVO();
@@ -117,31 +106,8 @@ public class WebOssCommonService {
             fileDocument = getFileDocument(ossPath, objectName);
         }
         String rootName = getOssRootFolderName(ossPath);
-        Update update = new Update();
-        commonUserFileService.checkShareBase(update, getPath(objectName, rootName));
-        Document updateObject = update.getUpdateObject();
-        if (updateObject.get("$set") != null) {
-            Document document = updateObject.get("$set", Document.class);
-            if (document.get(Constants.IS_SHARE) != null) {
-                fileDocument.setIsShare(document.getBoolean(Constants.IS_SHARE));
-            }
-            if (document.get(Constants.SHARE_ID) != null) {
-                fileDocument.setShareId(document.getString(Constants.SHARE_ID));
-            }
-            if (document.get(Constants.EXPIRES_AT) != null) {
-                fileDocument.setExpiresAt(document.getLong(Constants.EXPIRES_AT));
-            }
-            if (document.get(Constants.IS_PRIVACY) != null) {
-                fileDocument.setIsPrivacy(document.getBoolean(Constants.IS_PRIVACY));
-            }
-            if (document.get(Constants.EXTRACTION_CODE) != null) {
-                fileDocument.setExtractionCode(document.getString(Constants.EXTRACTION_CODE));
-            }
-            if (document.get(Constants.OPERATION_PERMISSION_LIST) != null) {
-                fileDocument.setOperationPermissionList(Convert.toList(OperationPermission.class, document.get(Constants.OPERATION_PERMISSION_LIST)));
-            }
-        }
-        mongoTemplate.save(fileDocument);
+        commonUserFileService.checkShareBase(fileDocument, getPath(objectName, rootName));
+        fileDAO.save(fileDocument);
     }
 
 }

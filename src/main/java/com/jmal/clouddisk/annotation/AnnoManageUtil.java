@@ -14,11 +14,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @Description 注解工具 (已适配 GraalVM Native Image)
- * @blame jmal
- * @Date 2021/1/8 8:38 下午
- */
 @Component
 @RequiredArgsConstructor
 public class AnnoManageUtil implements ApplicationListener<ContextRefreshedEvent> {
@@ -47,15 +42,12 @@ public class AnnoManageUtil implements ApplicationListener<ContextRefreshedEvent
     }
 
     private void initAuthorities() {
-        // 直接从 Spring 容器中获取所有被 @RestController 注解的 beans
         Map<String, Object> restControllers = applicationContext.getBeansWithAnnotation(RestController.class);
         Collection<Object> controllerInstances = restControllers.values();
 
         List<String> arrayList = new ArrayList<>();
         for (Object controller : controllerInstances) {
-            // 注意：这里我们拿到的是代理对象，需要获取其真实类型
             Class<?> controllerClass = controller.getClass();
-            // 如果你使用了 AOP (如事务)，可能会得到一个代理类，需要获取其父类
             if (controllerClass.getName().contains("$$SpringCGLIB")) {
                 controllerClass = controllerClass.getSuperclass();
             }

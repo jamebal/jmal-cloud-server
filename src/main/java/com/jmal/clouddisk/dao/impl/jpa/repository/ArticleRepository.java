@@ -1,0 +1,72 @@
+package com.jmal.clouddisk.dao.impl.jpa.repository;
+
+import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.model.ArchivesVO;
+import com.jmal.clouddisk.model.file.ArticleDO;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+@Conditional(RelationalDataSourceCondition.class)
+public interface ArticleRepository extends JpaRepository<ArticleDO, String> {
+
+
+    @Query("SELECT a FROM ArticleDO a " +
+            "JOIN FETCH a.fileMetadata fm " +
+            "JOIN FETCH a.fileMetadata.props fp " +
+            "WHERE a.fileMetadata.publicId = :fileId")
+    Optional<ArticleDO> findMarkdownByFileId(@Param("fileId") String fileId);
+
+    @Query("SELECT new ArticleDO(a.publicId, a.alonePage, a.slug, f.updateDate) FROM ArticleDO a " +
+            "JOIN a.fileMetadata f " +
+            "WHERE a.release = true")
+    List<ArticleDO> findByReleaseIsTrue();
+
+
+    @Query("SELECT new com.jmal.clouddisk.model.ArchivesVO(" +
+            "fm.publicId, " +
+            "fm.name, " +
+            "a.slug," +
+            "fm.uploadDate" +
+            ") " +
+            "FROM ArticleDO a JOIN a.fileMetadata fm " +
+            "WHERE a.release = true AND a.alonePage IS NULL " +
+            "ORDER BY fm.uploadDate DESC")
+    Page<ArchivesVO> findArchives(Pageable pageable);
+
+    @Query("SELECT a FROM ArticleDO a " +
+            "JOIN FETCH a.fileMetadata fm " +
+            "JOIN FETCH a.fileMetadata.props fp " +
+            "WHERE a.slug = :slug")
+    Optional<ArticleDO> findBySlug(String slug);
+
+    @Modifying
+    @Query("UPDATE ArticleDO a SET a.pageSort = :pageSort WHERE a.publicId = :id")
+    void updatePageSortById(String id, Integer pageSort);
+
+    boolean existsBySlug(String slug);
+
+    boolean existsBySlugAndPublicIdNot(String slug, String id);
+
+    @Modifying
+    @Query("UPDATE ArticleDO a SET a.hasDraft = :hasDraft WHERE a.publicId = :id")
+    void updateHasDraftById(String id, Boolean hasDraft);
+
+    @Modifying
+    @Query("DELETE FROM ArticleDO a WHERE a.publicId IN :publicIds")
+    void deleteAllByPublicIdIn(Collection<String> publicIds);
+
+    @Modifying
+    @Query("DELETE FROM ArticleDO a WHERE a.publicId = :publicId")
+    void deleteByPublicId(String publicId);
+}

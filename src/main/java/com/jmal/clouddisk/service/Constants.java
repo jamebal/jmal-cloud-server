@@ -6,6 +6,7 @@ public class Constants {
     public static final String LAST_ETAG_UPDATE_REQUEST_AT_FIELD = "lastEtagUpdateRequestAt";
     public static final String ETAG_UPDATE_FAILED_ATTEMPTS_FIELD = "etagUpdateFailedAttempts";
     public static final String LAST_ETAG_UPDATE_ERROR_FIELD = "lastEtagUpdateError";
+    public static String MOUNT_FILE_ID_FIELD = "mountFileId";
 
     private Constants() { }
 
@@ -13,7 +14,11 @@ public class Constants {
     public static final String SUFFIX = "suffix";
     public static final String RELEASE = "release";
     public static final String ALONE_PAGE = "alonePage";
-    public static final String DRAFT = "draft";
+    public static final String CONTENT_DRAFT = "draft";
+    public static final String CONTENT_TEXT = "contentText";
+    public static final String CONTENT = "content";
+    public static final String HISTORY = "history";
+    public static final String CONTENT_HTML = "html";
     public static final String IS_FOLDER = "isFolder";
     public static final String IS_FAVORITE = "isFavorite";
     public static final String TAG_IDS = "tagIds";
@@ -26,7 +31,6 @@ public class Constants {
     public static final String REGION_DEFAULT = "0";
     public static final String EXTRACTION_CODE = "extractionCode";
     public static final String IS_PRIVACY = "isPrivacy";
-    public static final String EXPIRE_DATE = "expireDate";
     public static final String OPERATION_PERMISSION_LIST = "operationPermissionList";
     public static final String SHARE_ID = "shareId";
     public static final String FATHER_SHARE_ID = "fatherShareId";
@@ -48,18 +52,17 @@ public class Constants {
 
     public static final String OCR_LITE_ONNX = "OcrLiteOnnx";
 
-    public static final String HEIF_CONVERT = "heif-convert";
-
     public static final String DOCUMENT = "document";
 
     public static final String OTHER = "other";
 
     public static final String CONTENT_TYPE_IMAGE = "image";
     public static final String CONTENT_TYPE_MARK_DOWN = "text/markdown";
-    public static final String CONTENT_TYPE_WEBP = "image/webp";
     public static final String SUFFIX_WEBP = "webp";
     public static final String POINT_SUFFIX_WEBP = ".webp";
 
+    public static final String DESCENDING = "descending";
+    public static final String ASCENDING = "ascending";
     public static final String CREATE_TIME = "createTime";
     public static final String UPLOAD_DATE = "uploadDate";
 
@@ -76,6 +79,8 @@ public class Constants {
     public static final String FILE_ID = "fileId";
 
     public static final String SIZE = "size";
+
+    public static final String CHILDREN_COUNT = "childrenCount";
 
     public static final String DELETE_FILE = "deleteFile";
 

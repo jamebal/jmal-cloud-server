@@ -1,12 +1,18 @@
 package com.jmal.clouddisk.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * @author jmal
  */
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Music implements Reflective {
     /***
      * 歌名
@@ -24,4 +30,12 @@ public class Music implements Reflective {
      * 封面
      */
     String coverBase64;
+
+    public Music(MusicInfo music) {
+        if (music != null) {
+            this.songName = music.getSongName();
+            this.singer = music.getSinger();
+            this.album = music.getAlbum();
+        }
+    }
 }

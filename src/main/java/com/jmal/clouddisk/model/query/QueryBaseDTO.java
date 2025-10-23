@@ -3,6 +3,7 @@ package com.jmal.clouddisk.model.query;
 import com.jmal.clouddisk.config.Reflective;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import org.springframework.data.domain.Sort;
 
 /**
  * @author jmal
@@ -20,4 +21,5 @@ public class QueryBaseDTO implements Reflective {
     String sortProp;
     @Schema(name = "sortProp", title = "要排序顺序(descending|ascending)")
     String sortOrder;
+    Sort firstSort;
 }

@@ -1,0 +1,22 @@
+package com.jmal.clouddisk.dao.impl.jpa.write.trash;
+
+import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.impl.jpa.repository.TrashRepository;
+import com.jmal.clouddisk.dao.impl.jpa.write.IDataOperationHandler;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
+
+@Component("trashDeleteByIdHandler")
+@RequiredArgsConstructor
+@Conditional(RelationalDataSourceCondition.class)
+public class DeleteByIdHandler implements IDataOperationHandler<TrashOperation.DeleteById, Void> {
+
+    private final TrashRepository repo;
+
+    @Override
+    public Void handle(TrashOperation.DeleteById op) {
+        repo.deleteByPublicId(op.trashFileId());
+        return null;
+    }
+}

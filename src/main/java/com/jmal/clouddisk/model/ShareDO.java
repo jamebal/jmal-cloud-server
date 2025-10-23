@@ -2,9 +2,15 @@ package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
-import com.jmal.clouddisk.service.impl.ShareServiceImpl;
-import lombok.Data;
-import org.springframework.data.annotation.Id;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -16,20 +22,27 @@ import java.util.List;
  * @Author jmal
  * @Date 2020-03-17 16:28
  */
-@Data
-@Document(collection = ShareServiceImpl.COLLECTION_NAME)
-public class ShareDO implements Reflective {
-    @Id
-    private String id;
+@Getter
+@Setter
+@Document(collection = "share")
+@Entity
+@Table(name = "share",
+        indexes = {
+                @Index(name = "share_short_id", columnList = "shortId"),
+        }
+)
+public class ShareDO extends AuditableEntity implements Reflective {
     /**
      * 父级分享Id
      */
+    @Column(length = 24)
     private String fatherShareId;
+    @Column(length = 24)
     private String shortId;
-    private Boolean shareBase;
     /**
      * 链接拥有者
      */
+    @Column(length = 24)
     private String userId;
     /**
      * 文件Id
@@ -42,6 +55,7 @@ public class ShareDO implements Reflective {
     /**
      * 文件类型
      */
+    @Column(length = 128)
     private String contentType;
     /**
      * 是否为文件夹
@@ -66,10 +80,12 @@ public class ShareDO implements Reflective {
     /**
      * 提取码
      */
+    @Column(length = 8)
     private String extractionCode;
     /**
      * 操作权限
      */
+    @JdbcTypeCode(SqlTypes.JSON)
     private List<OperationPermission> operationPermissionList;
 
 }

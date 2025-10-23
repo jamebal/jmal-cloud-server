@@ -1,0 +1,24 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  datasource:
+    url: jdbc:mysql://${DATABASE_HOST:localhost}:${DATABASE_PORT:3306}/${DATABASE_NAME:jmalcloud}?useUnicode=true&characterEncoding=UTF8&useSSL=false&useUnicode=true&serverTimezone=GMT&connectTimeout=60000&socketTimeout=60000
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DATABASE_USER:root}
+    password: ${DATABASE_PASSWORD:root}
+  flyway:
+    locations:
+      - classpath:db/migration/mysql
+jmalcloud:
+  datasource:
+    type: mysql
+    migration: false
+    jpa-enabled: true

@@ -1,0 +1,24 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  datasource:
+    url: jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:jmalcloud}
+    driver-class-name: org.postgresql.Driver
+    username: ${DATABASE_USER:jmalcloud}
+    password: ${DATABASE_PASSWORD:jmalcloud}
+  flyway:
+    locations:
+      - classpath:db/migration/postgresql
+jmalcloud:
+  datasource:
+    type: pgsql
+    migration: false
+    jpa-enabled: true

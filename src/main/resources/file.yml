@@ -3,6 +3,8 @@ file:
   testTempDir: /Users/jmal/Downloads/jmalcloud-test-temp
   # 文件存储根目录 文件监控目录
   rootDir: /Users/jmal/temp/filetest/rootpath
+  # 数据库文件和相关文件存储目录 位于 ${rootDir}/${dbDir}
+  dbDir: jmalcloud_db
   # markdown默认存储的位置
   documentDir: /Document/
   # markdown里图片存储的位置
@@ -63,13 +65,13 @@ file:
   ngramMaxSize: 6
   encryptionSecretKey: ${ENCRYPTION_SECRET_KEY}
   encryptionSalt: ${ENCRYPTION_SALT}
-
+  resetAdminPassword: false
   # 前端资源路径
   frontendResourcePath: /Users/jmal/studio/myProject/github/jmal-cloud-view/dist/
   # pdfjs资源路径
-  pdfjsResourcePath: /Users/jmal/Downloads/pdfjs/
+  pdfjsResourcePath: /Users/jmal/Downloads/jmalcloud_resource/pdfjs/
   # drawio资源路径
-  drawioResourcePath: /Users/jmal/Downloads/drawio/webapp/
+  drawioResourcePath: /Users/jmal/Downloads/jmalcloud_resource/draw/
   # excalidraw资源路径
-  excalidrawResourcePath: /Users/jmal/Downloads/excalidraw/app/
+  excalidrawResourcePath: /Users/jmal/Downloads/jmalcloud_resource/excalidraw/excalidraw/app/
 

@@ -1,11 +1,14 @@
 package com.jmal.clouddisk.model;
 
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.dao.util.PageableUtil;
+import com.jmal.clouddisk.model.query.QueryBaseDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import lombok.Data;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
 
 /**
  * @author jmal
@@ -51,4 +54,17 @@ public class ArticleDTO implements Reflective {
     Integer pageIndex;
     @Schema(hidden = true, name = "pageSize", title = "每页条数")
     Integer pageSize;
+
+    public QueryBaseDTO toQueryBaseDTO() {
+        QueryBaseDTO queryBaseDTO = new QueryBaseDTO();
+        queryBaseDTO.setPage(getPageIndex());
+        queryBaseDTO.setPageSize(getPageSize());
+        queryBaseDTO.setSortOrder(getOrder());
+        queryBaseDTO.setSortProp(getSortableProp());
+        return queryBaseDTO;
+    }
+
+    public Pageable getPageable() {
+        return PageableUtil.buildPageable(toQueryBaseDTO());
+    }
 }

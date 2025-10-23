@@ -1,0 +1,18 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://127.0.0.1:27017/jmalcloud
+
+jmalcloud:
+  datasource:
+    type: mongodb
+    jpa-enabled: false
+    migration: false
+logging:
+  level:
+    org:
+      springframework:
+        data:
+          repository:
+            config:
+              RepositoryConfigurationDelegate: off

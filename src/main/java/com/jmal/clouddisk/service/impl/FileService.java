@@ -1,7 +1,8 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.dao.IFileQueryDAO;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.FileInfo;
 import com.jmal.clouddisk.oss.IOssService;
@@ -11,9 +12,6 @@ import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Paths;
@@ -25,19 +23,13 @@ public class FileService {
 
     private final CommonUserService userService;
 
-    private final MongoTemplate mongoTemplate;
+    private final IFileQueryDAO fileQueryDAO;
 
     public FileDocument getFileDocumentById(String fileId, boolean excludeContent) {
         if (CharSequenceUtil.isBlank(fileId) || Constants.REGION_DEFAULT.equals(fileId)) {
             return null;
         }
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(fileId));
-        if (excludeContent) {
-            query.fields().exclude("content");
-        }
-        query.fields().exclude("contentText");
-        return mongoTemplate.findOne(query, FileDocument.class);
+        return fileQueryDAO.findBaseFileDocumentById(fileId, excludeContent);
     }
 
     public FileDocument getById(String fileId) {

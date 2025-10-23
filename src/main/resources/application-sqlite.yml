@@ -1,0 +1,22 @@
+spring:
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  datasource:
+    driver-class-name: org.sqlite.JDBC
+  flyway:
+    locations:
+      - classpath:db/migration/sqlite
+jmalcloud:
+  datasource:
+    type: sqlite
+    migration: false
+    jpa-enabled: true

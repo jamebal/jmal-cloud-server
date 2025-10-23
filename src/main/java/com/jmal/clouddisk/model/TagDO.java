@@ -1,9 +1,14 @@
 package com.jmal.clouddisk.model;
 
 import com.jmal.clouddisk.config.Reflective;
-import lombok.Data;
+import com.jmal.clouddisk.config.jpa.AuditableEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.text.Collator;
 import java.util.Comparator;
@@ -13,23 +18,28 @@ import java.util.Comparator;
  * @Description 标签
  * @Date 2020/10/26 4:30 下午
  */
-@Data
-public class TagDO implements Comparable<TagDO>, Reflective {
-    @Id
-    private String id;
+@Getter
+@Setter
+@Document(collection = "tag")
+@Entity
+@Table(name = "tag")
+public class TagDO extends AuditableEntity implements Comparable<TagDO>, Reflective {
 
     private String userId;
     /**
      * 标签名称
      */
+    @Column(length = 32)
     private String name;
     /**
      * 标签缩略名，默认为name
      */
+    @Column(length = 32)
     private String slug;
     /**
      * 标签颜色,十六进制字符串,例如#00000000
      */
+    @Column(length = 16)
     private String color;
     /**
      * 标签背景图

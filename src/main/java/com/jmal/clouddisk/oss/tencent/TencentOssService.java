@@ -19,17 +19,16 @@ import com.qcloud.cos.region.Region;
 import com.qcloud.cos.transfer.Copy;
 import com.qcloud.cos.transfer.TransferManager;
 import com.qcloud.cos.transfer.TransferManagerConfiguration;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
@@ -60,7 +59,8 @@ public class TencentOssService implements IOssService {
         this.cosClient = new COSClient(cred, clientConfig);
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor, ossConfigDTO);
-        CompletableFuture.runAsync(this::getMultipartUploads);
+        Completable.fromAction(this::getMultipartUploads).subscribeOn(Schedulers.io())
+                .subscribe();
         this.transferManager = new TransferManager(cosClient);
         createTransferManager();
     }
@@ -378,14 +378,13 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
-    public FileInfo getThumbnail(String objectName, File file, int width) {
+    public InputStream getThumbnail(String objectName, int width) {
         try {
             GetObjectRequest request = new GetObjectRequest(bucketName, objectName);
             // 指定目标图片宽度为 Width，高度等比缩放
             String rule = "imageMogr2/thumbnail/" + width + "x";
             request.putCustomQueryParameter(rule, null);
-            cosClient.getObject(request, file);
-            return baseOssService.getFileInfo(objectName);
+            return cosClient.getObject(request).getObjectContent();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -522,14 +521,14 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
-    public URL getPresignedObjectUrl(String objectName, int expiryTime) {
+    public String getPresignedObjectUrl(String objectName, int expiryTime) {
         try {
             // 设置签名过期时间(可选), 若未进行设置则默认使用 ClientConfig 中的签名过期时间(1小时)
             // 这里设置签名在半个小时后过期
             Date expirationDate = new Date(System.currentTimeMillis() + expiryTime * 1000L);
             // 请求的 HTTP 方法，上传请求用 PUT，下载请求用 GET，删除请求用 DELETE
             HttpMethodName method = HttpMethodName.GET;
-            return cosClient.generatePresignedUrl(bucketName, objectName, expirationDate, method);
+            return cosClient.generatePresignedUrl(bucketName, objectName, expirationDate, method).toString();
         } catch (CosClientException e) {
             log.error(e.getMessage(), e);
         }

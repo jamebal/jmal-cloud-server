@@ -11,6 +11,8 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -21,7 +23,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -194,7 +199,7 @@ public class BaseOssService {
     }
 
     public List<FileInfo> getFileInfoListCache(String objectName) {
-        return fileInfoListCache.get(objectName, key -> {
+        return fileInfoListCache.get(objectName, _ -> {
             List<FileInfo> fileInfos = ossService.getFileInfoList(objectName);
             if (fileInfos != null && !fileInfos.isEmpty()) {
                 for (FileInfo fileInfo : fileInfos) {
@@ -356,7 +361,9 @@ public class BaseOssService {
             // 临时文件的最后修改时间大于5秒就上传
             if ((System.currentTimeMillis() - lastModified) > 5000) {
                 removeWaitingUploadCache(objectName);
-                CompletableFuture.runAsync(() -> ossService.uploadFile(tempFileAbsolutePath, objectName));
+                Completable.fromAction(() -> ossService.uploadFile(tempFileAbsolutePath, objectName))
+                        .subscribeOn(Schedulers.io())
+                        .subscribe();
             }
         });
     }
@@ -557,6 +564,6 @@ public class BaseOssService {
     }
 
     public void closePrint() {
-        log.info("platform: {}, bucketName: {} shutdown... {}", this.ossService.getPlatform().getValue(), bucketName, this.ossService.hashCode());
+        log.debug("platform: {}, bucketName: {} shutdown... {}", this.ossService.getPlatform().getValue(), bucketName, this.ossService.hashCode());
     }
 }

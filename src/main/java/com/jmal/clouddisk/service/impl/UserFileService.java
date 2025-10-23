@@ -1,11 +1,11 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.file.PathUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
-import com.jmal.clouddisk.model.FileDocument;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;
@@ -14,10 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.mime.MimeType;
 import org.apache.tika.mime.MimeTypeException;
 import org.apache.tika.mime.MimeTypes;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,8 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static com.jmal.clouddisk.service.IUserService.USER_ID;
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -37,7 +31,7 @@ public class UserFileService {
 
     private final FileProperties fileProperties;
 
-    private final MongoTemplate mongoTemplate;
+    private final IFileDAO fileDAO;
 
     private final CommonUserFileService commonUserFileService;
 
@@ -45,14 +39,16 @@ public class UserFileService {
         if (userList == null || userList.isEmpty()) {
             return;
         }
-        userList.forEach(user -> {
-            String username = user.getUsername();
-            String userId = user.getId();
-            PathUtil.del(Paths.get(fileProperties.getRootDir(), username));
-            Query query = new Query();
-            query.addCriteria(Criteria.where(USER_ID).in(userId));
-            mongoTemplate.remove(query, FileDocument.class);
-        });
+        List<String> userIdList = userList.stream().map(ConsumerDO::getId).toList();
+        List<String> usernames = userList.stream().map(ConsumerDO::getUsername).toList();
+        // 删除用户文件夹
+        for (String username : usernames) {
+            Path userDir = Paths.get(fileProperties.getRootDir(), username);
+            if (FileUtil.exist(userDir.toFile())) {
+                FileUtil.del(userDir);
+            }
+        }
+        fileDAO.deleteAllByIdInBatch(userIdList);
     }
 
     public String uploadConsumerImage(UploadApiParamDTO upload) throws CommonException {
@@ -88,14 +84,10 @@ public class UserFileService {
     }
 
     public void setPublic(String fileId) {
-        if (fileId.isBlank()) {
+        if (CharSequenceUtil.isBlank(fileId)) {
             return;
         }
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(fileId));
-        Update update = new Update();
-        update.set("isPublic", true);
-        mongoTemplate.updateFirst(query, update, FileDocument.class);
+        fileDAO.updateIsPublicById(fileId);
     }
 
 }

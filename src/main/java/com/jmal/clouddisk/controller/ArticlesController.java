@@ -274,7 +274,7 @@ public class ArticlesController {
         }
         String tagId = null;
         if (!CharSequenceUtil.isBlank(tagSlugName)) {
-            TagDO tag = tagService.getTagInfoBySlug(null, tagSlugName);
+            TagDO tag = tagService.getTagInfoBySlug(tagSlugName);
             if (tag == null) {
                 return notFind(request, map);
             }
@@ -304,7 +304,7 @@ public class ArticlesController {
         ArticlesQueryVO query = new ArticlesQueryVO();
         Page<List<MarkdownVO>> articles = fileService.getArticlesByKeyword(page, pageSize, keyword);
         if (!articles.isEmpty()) {
-            MarkdownVO markdownVO = articles.getData().get(0);
+            MarkdownVO markdownVO = articles.getData().getFirst();
             query.setBackground(markdownVO.getCover());
         }
         query.setName("包含关键字 " + keyword + " 的文章");
@@ -330,7 +330,7 @@ public class ArticlesController {
         ArticlesQueryVO query = new ArticlesQueryVO();
         Page<List<MarkdownVO>> articles = fileService.getArticlesByAuthor(page, pageSize, userId);
         if (!articles.isEmpty()) {
-            MarkdownVO markdownVO = articles.getData().get(0);
+            MarkdownVO markdownVO = articles.getData().getFirst();
             query.setBackground(markdownVO.getCover());
         }
         query.setName(username + " 发布的文章");

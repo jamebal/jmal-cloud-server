@@ -1,0 +1,2 @@
+org.springframework.context.ApplicationContextInitializer=\
+com.jmal.clouddisk.config.aot.AotBuildTimePropertiesInitializer

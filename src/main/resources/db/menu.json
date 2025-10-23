@@ -629,7 +629,7 @@
   },
   {
     "authority": "",
-    "component": "http://blog/",
+    "component": "/articles",
     "createTime": 1611296098682,
     "hide": false,
     "icon": "blogger",
@@ -637,7 +637,7 @@
     "menuType": 3,
     "name": "menu.blog",
     "parentId": "",
-    "path": "http://blog/",
+    "path": "/articles",
     "sortNumber": 200,
     "updateTime": 1612864189374
   },

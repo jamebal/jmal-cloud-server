@@ -1,18 +1,14 @@
 package com.jmal.clouddisk.interceptor;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.alibaba.fastjson2.JSON;
+import com.jmal.clouddisk.dao.IAccessTokenDAO;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UserAccessTokenDO;
 import com.jmal.clouddisk.model.rbac.UserLoginContext;
-import com.jmal.clouddisk.repository.IAuthDAO;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.RoleService;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
-import com.jmal.clouddisk.util.CaffeineUtil;
-import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
-import com.jmal.clouddisk.util.TokenUtil;
+import com.jmal.clouddisk.util.*;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.servlet.ServletOutputStream;
@@ -28,6 +24,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -56,7 +53,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     private static final int SECONDS_IN_DAY = 24 * 60 * 60; // 86400
     private static final int NINETY_DAYS_IN_SECONDS = 90 * SECONDS_IN_DAY; // 7776000
 
-    private final IAuthDAO authDAO;
+    private final IAccessTokenDAO accessTokenDAO;
 
     private final UserServiceImpl userService;
 
@@ -158,7 +155,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (CharSequenceUtil.isBlank(token)) {
             return null;
         }
-        UserAccessTokenDO userAccessTokenDO = authDAO.getUserNameByAccessToken(token);
+        UserAccessTokenDO userAccessTokenDO = accessTokenDAO.getUserNameByAccessToken(token);
         if (userAccessTokenDO == null) {
             return null;
         }
@@ -167,7 +164,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             return null;
         }
         // access-token 认证通过 设置该身份的权限
-        Completable.fromAction(() -> authDAO.updateAccessToken(username, userAccessTokenDO.getAccessToken()))
+        Completable.fromAction(() -> accessTokenDAO.updateAccessToken(username, userAccessTokenDO.getAccessToken()))
                 .subscribeOn(Schedulers.io())
                 .subscribe();
         setAuthorities(username);
@@ -319,22 +316,20 @@ public class AuthInterceptor implements HandlerInterceptor {
     private void returnJson(HttpServletResponse response) {
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json; charset=utf-8");
-        ServletOutputStream out = null;
-        try {
-            out = response.getOutputStream();
-            ResponseResult<Object> result = ResultUtil.error(ExceptionType.LOGIN_EXCEPTION.getCode(), ExceptionType.LOGIN_EXCEPTION.getMsg());
-            out.write(JSON.toJSONString(result).getBytes());
-            removeCookies(response, IUserService.USERNAME, AuthInterceptor.JMAL_TOKEN);
+        ResponseResult<Object> result = ResultUtil.error(
+                ExceptionType.LOGIN_EXCEPTION.getCode(),
+                ExceptionType.LOGIN_EXCEPTION.getMsg()
+        );
+        String json = JacksonUtil.toJSONString(result);
+
+        try (ServletOutputStream out = response.getOutputStream()) {
+            out.write(json.getBytes(StandardCharsets.UTF_8));
+            out.flush();
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            log.error("Failed to write JSON response", e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         } finally {
-            try {
-                if (out != null) {
-                    out.flush();
-                }
-            } catch (IOException e) {
-                log.error(e.getMessage(), e);
-            }
+            removeCookies(response, IUserService.USERNAME, AuthInterceptor.JMAL_TOKEN);
         }
     }
 }

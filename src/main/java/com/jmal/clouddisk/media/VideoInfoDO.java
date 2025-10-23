@@ -1,8 +1,12 @@
 package com.jmal.clouddisk.media;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.persistence.Embeddable;
 import lombok.Data;
 
 @Data
+@Embeddable
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class VideoInfoDO {
     private Integer width;
     private Integer height;

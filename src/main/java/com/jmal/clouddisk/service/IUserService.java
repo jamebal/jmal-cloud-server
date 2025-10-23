@@ -67,12 +67,6 @@ public interface IUserService {
     ResponseResult<List<ConsumerDTO>> userList(QueryUserDTO queryDTO);
 
     /***
-     * 所有用户列表
-     * @return 用户列表
-     */
-    List<ConsumerDTO> userListAll();
-
-    /***
      * 修改用户密码
      * @param consumer ConsumerDO
      * @return ResponseResult
@@ -121,12 +115,6 @@ public interface IUserService {
     String getUserNameById(String userId);
 
     /***
-     * 判断该用户是否为创建者
-     * @param userId userId
-     */
-    boolean getIsCreator(String userId);
-
-    /***
      * 获取用户userId
      * @param showName 用户名
      * @return userId
@@ -158,4 +146,5 @@ public interface IUserService {
 
     void disableMfa(String userId);
 
+    String getUsername(String userId);
 }

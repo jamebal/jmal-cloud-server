@@ -51,7 +51,7 @@ public class CloudSettingController {
     @Permission(value = "cloud:file:upload")
     @LogOperatingFun
     public ResponseResult<Object> userSync(@RequestParam String username, String path) {
-        return rebuildIndexTaskService.sync(username, path, true);
+        return rebuildIndexTaskService.sync(username, path, false);
     }
 
     @Operation(summary = "重建索引-全盘")

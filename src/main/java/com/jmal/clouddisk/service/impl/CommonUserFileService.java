@@ -5,37 +5,38 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.config.jpa.DataSourceProperties;
+import com.jmal.clouddisk.dao.DataSourceType;
+import com.jmal.clouddisk.dao.IFileDAO;
+import com.jmal.clouddisk.dao.impl.jpa.FilePersistenceService;
 import com.jmal.clouddisk.lucene.EtagService;
 import com.jmal.clouddisk.lucene.LuceneIndexQueueEvent;
 import com.jmal.clouddisk.lucene.RebuildIndexTaskService;
-import com.jmal.clouddisk.media.*;
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.media.ImageMagickProcessor;
+import com.jmal.clouddisk.media.VideoInfo;
+import com.jmal.clouddisk.media.VideoInfoDO;
+import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.model.Music;
 import com.jmal.clouddisk.model.OperationPermission;
+import com.jmal.clouddisk.model.ShareBaseInfoDTO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.dto.UpdateFile;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
-import com.mongodb.client.AggregateIterable;
-import com.mongodb.client.MongoCursor;
-import com.mongodb.client.result.UpdateResult;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -47,15 +48,10 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import static com.jmal.clouddisk.service.Constants.UPDATE_DATE;
-import static com.jmal.clouddisk.service.Constants.UPLOAD_DATE;
 
 @Service
 @Slf4j
@@ -69,9 +65,9 @@ public class CommonUserFileService {
 
     private final FileProperties fileProperties;
 
-    private final PathService  pathService;
+    private final IFileDAO fileDAO;
 
-    private final MongoTemplate mongoTemplate;
+    private final PathService  pathService;
 
     private final MessageService messageService;
 
@@ -85,13 +81,11 @@ public class CommonUserFileService {
 
     private final ImageMagickProcessor imageMagickProcessor;
 
-    public FileDocument getFileDocument(String userId, String fileName, String relativePath, Query query) {
-        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
-        query.addCriteria(Criteria.where("path").is(relativePath));
-        query.addCriteria(Criteria.where("name").is(fileName));
-        // 文件是否存在
-        return mongoTemplate.findOne(query, FileDocument.class);
-    }
+    private final DataSourceProperties dataSourceProperties;
+
+    private final FilePersistenceService filePersistenceService;
+
+    private final AudioFileUtils audioFileUtils;
 
     /**
      * 创建文件索引
@@ -119,62 +113,61 @@ public class CommonUserFileService {
         String contentType = CommonFileService.getContentType(file, FileContentTypeUtils.getContentType(file, suffix));
         if (contentType.startsWith(Constants.CONTENT_TYPE_IMAGE)) {
             // 换成webp格式的图片
-            file = replaceWebp(userId, file, username);
+            file = replaceWebp(userId, file);
             if (file == null) {
                 return null;
             }
         }
 
         String fileAbsolutePath = file.getAbsolutePath();
-        Lock lock = uploadFileLockCache.get(fileAbsolutePath, key -> new ReentrantLock());
+        Lock lock = uploadFileLockCache.get(fileAbsolutePath, _ -> new ReentrantLock());
         if (lock != null) {
             lock.lock();
         }
-        UpdateResult updateResult = null;
+        String upsertFileId = null;
         ObjectId objectId = new ObjectId();
         String fileId = objectId.toHexString();
         try {
             String relativePath = pathService.getRelativePath(username, fileAbsolutePath, fileName);
             if (relativePath == null) return null;
-            Query query = new Query();
-            FileDocument fileExists = getFileDocument(userId, fileName, relativePath, query);
+            FileDocument fileExists = fileDAO.findByUserIdAndPathAndName(userId, relativePath, fileName);
             if (fileExists != null) {
                 // 添加文件索引
                 // 获取tagName
-                Update update = new Update();
-                updateExifInfo(file, fileExists, contentType, suffix, update);
-                updateVideoInfo(file, fileExists, contentType, update);
-                updateOtherInfo(fileExists, contentType, suffix, update);
-                updateLastModifiedTime(file, fileExists, update);
-                if (!update.getUpdateObject().isEmpty()) {
-                    mongoTemplate.updateFirst(query, update, FileDocument.class);
+                UpdateFile updateFile = new UpdateFile();
+                updateExifInfo(file, fileExists, contentType, suffix, updateFile);
+                updateVideoInfo(file, fileExists, contentType, updateFile);
+                updateOtherInfo(fileExists, contentType, suffix, updateFile);
+                updateLastModifiedTime(file, fileExists, updateFile);
+                if (updateFile.isNotEmpty()) {
+                    fileDAO.updateFileByUserIdAndPathAndName(userId, relativePath, fileName, updateFile);
                 }
                 eventPublisher.publishEvent(new LuceneIndexQueueEvent(this, fileExists.getId()));
                 return fileExists.getId();
             }
-            Update update = new Update();
+            FileDocument fileDocument = new FileDocument();
             // 设置创建时间和修改时间
-            update.set(UPLOAD_DATE, LocalDateTime.now(TimeUntils.ZONE_ID));
-            update.set(UPDATE_DATE, getFileLastModifiedTime(file));
-            update.set("_id", objectId);
-            update.set(IUserService.USER_ID, userId);
-            update.set("name", fileName);
-            update.set("path", relativePath);
-            update.set(Constants.IS_FOLDER, file.isDirectory());
-            update.set(Constants.IS_FAVORITE, false);
+            fileDocument.setUploadDate(LocalDateTime.now(TimeUntils.ZONE_ID));
+            fileDocument.setUpdateDate(getFileLastModifiedTime(file));
+            fileDocument.setId(fileId);
+            fileDocument.setUserId(userId);
+            fileDocument.setName(fileName);
+            fileDocument.setPath(relativePath);
+            fileDocument.setIsFolder(file.isDirectory());
+            fileDocument.setIsFavorite(false);
             if (isPublic != null) {
-                update.set("isPublic", true);
+                fileDocument.setIsPublic(true);
             }
             if (file.isFile()) {
-                setFileConfig(fileId, username, file, fileName, suffix, contentType, relativePath, update);
+                setFileConfig(fileId, username, file, fileName, suffix, contentType, relativePath, fileDocument);
             } else {
                 // 检查目录是否为OSS目录
-                checkOSSPath(username, relativePath, fileName, update);
+                checkOSSPath(username, relativePath, fileName, fileDocument);
             }
             // 检查该文件的上级目录是否有已经分享的目录
-            checkShareBase(update, relativePath);
-            updateResult = mongoTemplate.upsert(query, update, FileDocument.class);
-            messageService.pushMessage(username, update.getUpdateObject(), Constants.CREATE_FILE);
+            checkShareBase(fileDocument, relativePath);
+            upsertFileId = fileDAO.upsertByUserIdAndPathAndName(userId, relativePath, fileName, fileDocument);
+            messageService.pushMessage(username, fileDocument, Constants.CREATE_FILE);
             // 添加文件索引
             eventPublisher.publishEvent(new LuceneIndexQueueEvent(this, fileId));
             if (file.isDirectory()) {
@@ -188,69 +181,55 @@ public class CommonUserFileService {
                 uploadFileLockCache.invalidate(fileAbsolutePath);
             }
         }
-        if (updateResult != null && null != updateResult.getUpsertedId()) {
-            return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
+        if (upsertFileId != null) {
+            return upsertFileId;
         }
         return fileId;
     }
 
     @Nullable
-    public Document getShareBaseDocument(String relativePath) {
-        if (CharSequenceUtil.isBlank(relativePath)) {
+    public ShareBaseInfoDTO getShareBaseDocument(String userId, String relativePath) {
+        if (CharSequenceUtil.isBlank(relativePath) || CharSequenceUtil.isBlank(userId)) {
             return null;
         }
-        Path path = Paths.get(relativePath);
-        StringBuilder pathStr = new StringBuilder("/");
-        List<Document> documentList = new ArrayList<>(path.getNameCount());
-        for (int i = 0; i < path.getNameCount(); i++) {
-            String filename = path.getName(i).toString();
-            if (i > 0) {
-                pathStr.append("/");
-            }
-            Document document = new Document("path", pathStr.toString()).append("name", filename);
-            documentList.add(document);
-            pathStr.append(filename);
-        }
-        if (documentList.isEmpty()) {
-            return null;
-        }
-        List<Document> list = Arrays.asList(new Document("$match", new Document("$or", documentList)), new Document("$match", new Document(Constants.SHARE_BASE, true)));
-        AggregateIterable<Document> result = mongoTemplate.getCollection(CommonFileService.COLLECTION_NAME).aggregate(list);
-        Document shareDocument = null;
-        try (MongoCursor<Document> mongoCursor = result.iterator()) {
-            while (mongoCursor.hasNext()) {
-                shareDocument = mongoCursor.next();
-            }
-        }
-        return shareDocument;
+        return fileDAO.getShareBaseByPath(userId, relativePath);
     }
 
-    public void checkShareBase(Update update, String relativePath) {
-        Document shareDocument = getShareBaseDocument(relativePath);
+    public void checkShareBase(FileDocument fileDocument, String relativePath) {
+        ShareBaseInfoDTO shareDocument = getShareBaseDocument(fileDocument.getUserId(), relativePath);
         if (shareDocument == null) {
             return;
         }
-        Long expiresAt = Convert.toLong(shareDocument.get(Constants.EXPIRES_AT), null);
+        Long expiresAt = Convert.toLong(shareDocument.getExpireDate(), null);
         if (expiresAt == null) {
             return;
         }
-        String shareId = Convert.toStr(shareDocument.get(Constants.SHARE_ID), null);
+        String shareId = Convert.toStr(shareDocument.getShareId(), null);
         if (shareId == null) {
             return;
         }
-        Boolean isPrivacy = Convert.toBool(shareDocument.get(Constants.IS_PRIVACY), null);
+        Boolean isPrivacy = Convert.toBool(shareDocument.getIsPrivacy(), null);
         if (isPrivacy == null) {
             return;
         }
-        String extractionCode = Convert.toStr(shareDocument.get(Constants.EXTRACTION_CODE), null);
+        String extractionCode = Convert.toStr(shareDocument.getExtractionCode(), null);
         if (isPrivacy && extractionCode == null) {
             return;
         }
-        List<OperationPermission> operationPermissionList = new ArrayList<>();
-        if (shareDocument.get(Constants.OPERATION_PERMISSION_LIST) != null) {
-            operationPermissionList = Convert.toList(OperationPermission.class, shareDocument.get(Constants.OPERATION_PERMISSION_LIST));
+        List<OperationPermission> operationPermissionList;
+        if (shareDocument.getOperationPermissionList() != null) {
+            operationPermissionList = Convert.toList(OperationPermission.class, shareDocument.getOperationPermissionList());
+            fileDocument.setOperationPermissionList(operationPermissionList);
         }
-        CommonFileService.setShareAttribute(update, expiresAt, shareId, isPrivacy, extractionCode, operationPermissionList);
+        fileDocument.setIsShare(true);
+        fileDocument.setShareId(shareId);
+        fileDocument.setExpiresAt(expiresAt);
+        fileDocument.setIsPrivacy(isPrivacy);
+        if (BooleanUtil.isTrue(isPrivacy)) {
+            fileDocument.setExtractionCode(extractionCode);
+        } else {
+            fileDocument.setExtractionCode(null);
+        }
     }
 
     /**
@@ -259,32 +238,27 @@ public class CommonUserFileService {
      * @param username     username
      * @param relativePath relativePath
      * @param fileName     fileName
-     * @param update       Update
      */
-    private static void checkOSSPath(String username, String relativePath, String fileName, Update update) {
+    private static void checkOSSPath(String username, String relativePath, String fileName, FileDocument fileDocument) {
         if (!MyWebdavServlet.PATH_DELIMITER.equals(relativePath)) {
             return;
         }
         Path prePath = Paths.get(username, relativePath, fileName);
         String ossPath = CaffeineUtil.getOssPath(prePath);
         if (ossPath != null) {
-            update.set("ossFolder", CaffeineUtil.getOssDiameterPrefixCache(ossPath).getFolderName());
-            update.set("ossPlatform", OssConfigService.getOssStorageService(ossPath).getPlatform().getValue());
+            fileDocument.setOssFolder(CaffeineUtil.getOssDiameterPrefixCache(ossPath).getFolderName());
+            fileDocument.setOssPlatform(OssConfigService.getOssStorageService(ossPath).getPlatform().getValue());
         }
     }
 
     /**
      * 修改文件的最后修改时间
-     *
-     * @param file       文件
-     * @param fileExists FileDocument
-     * @param update     Update
      */
-    private void updateLastModifiedTime(File file, FileDocument fileExists, Update update) {
+    private void updateLastModifiedTime(File file, FileDocument fileExists, UpdateFile updateFile) {
         LocalDateTime lastModifiedTime = getFileLastModifiedTime(file);
         // 判断 fileExists.getUpdateDate() 和 lastModifiedTime是否在1ms内
         if (fileExists.getUpdateDate() != null && lastModifiedTime.isEqual(fileExists.getUpdateDate())) {
-            update.set(UPDATE_DATE, lastModifiedTime);
+            updateFile.setUpdateDate(lastModifiedTime);
         }
     }
 
@@ -304,12 +278,12 @@ public class CommonUserFileService {
         Files.setLastModifiedTime(filePath, fileTime);
     }
 
-    private void updateOtherInfo(FileDocument fileExists, String contentType, String suffix, Update update) {
+    private void updateOtherInfo(FileDocument fileExists, String contentType, String suffix, UpdateFile updateFile) {
         if (!contentType.equals(fileExists.getContentType())) {
-            update.set(Constants.CONTENT_TYPE, contentType);
+            updateFile.setContentType(contentType);
         }
         if (CharSequenceUtil.isNotBlank(suffix) && !suffix.equals(fileExists.getSuffix())) {
-            update.set(Constants.SUFFIX, suffix);
+            updateFile.setSuffix(suffix);
         }
     }
 
@@ -321,31 +295,24 @@ public class CommonUserFileService {
      * @param contentType 文件类型
      * @param suffix      文件后缀
      */
-    private void updateExifInfo(File file, FileDocument fileExists, String contentType, String suffix, Update update) {
+    private void updateExifInfo(File file, FileDocument fileExists, String contentType, String suffix, UpdateFile updateFile) {
         if (!ImageExifUtil.isImageType(contentType, suffix)) {
             return;
         }
         if (fileExists.getExif() == null || RebuildIndexTaskService.isSyncFile()) {
             // 更新图片Exif信息
-            update.set("exif", ImageExifUtil.getExif(file));
+            updateFile.setExif(ImageExifUtil.getExif(file));
         }
     }
 
-    private void updateVideoInfo(File file, FileDocument fileExists, String contentType, Update update) {
+    private void updateVideoInfo(File file, FileDocument fileExists, String contentType, UpdateFile updateFile) {
         if (!contentType.contains(Constants.VIDEO)) {
             return;
         }
         if (fileExists.getVideo() == null || RebuildIndexTaskService.isSyncFile()) {
             VideoInfo videoInfo = videoProcessService.getVideoInfo(file);
             VideoInfoDO videoInfoDO = videoInfo.toVideoInfoDO();
-            update.set("video.bitrate", videoInfoDO.getBitrate());
-            update.set("video.bitrateNum", videoInfoDO.getBitrateNum());
-            update.set("video.format", videoInfoDO.getFormat());
-            update.set("video.duration", videoInfoDO.getDuration());
-            update.set("video.durationNum", videoInfoDO.getDurationNum());
-            update.set("video.width", videoInfoDO.getWidth());
-            update.set("video.height", videoInfoDO.getHeight());
-            update.set("video.frameRate", videoInfoDO.getFrameRate());
+            updateFile.setVideo(videoInfoDO);
         }
     }
 
@@ -359,77 +326,84 @@ public class CommonUserFileService {
         }
     }
 
-    private void setFileConfig(String fileId, String username, File file, String fileName, String suffix, String contentType, String relativePath, Update update) {
+    private void setFileConfig(String fileId, String username, File file, String fileName, String suffix, String contentType, String relativePath, FileDocument fileDocument) {
         try {
             long size = file.length();
-            update.set("size", size);
-            update.set("md5", size + relativePath + fileName);
-            update.set(Constants.CONTENT_TYPE, contentType);
-            update.set(Constants.SUFFIX, suffix);
+            fileDocument.setSize(size);
+            fileDocument.setMd5(size + relativePath + fileName);
+            fileDocument.setContentType(contentType);
+            fileDocument.setSuffix(suffix);
             if (contentType.contains(Constants.AUDIO)) {
-                setMusic(file, update);
+                setMusic(file, fileDocument);
             }
             if (contentType.contains(Constants.VIDEO)) {
-                setMediaCover(fileId, username, fileName, relativePath, update);
+                setMediaCover(fileId, username, fileName, relativePath, fileDocument);
             }
             if (ImageExifUtil.isImageType(contentType, suffix)) {
                 // 处理图片
-                processImage(file, update);
+                processImage(file, fileDocument);
             }
             if (contentType.contains(Constants.CONTENT_TYPE_MARK_DOWN) || "md".equals(suffix)) {
                 // 写入markdown内容
                 String markDownContent = FileUtil.readString(file, MyFileUtils.getFileCharset(file));
-                update.set("contentText", markDownContent);
+
+                if (dataSourceProperties.getType() == DataSourceType.mongodb) {
+                    fileDocument.setContentText(markDownContent);
+                } else {
+                    fileDocument.setContentText("1");
+                    filePersistenceService.persistContent(fileDocument.getId(), file.toPath());
+                }
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }
 
-    private static void setMusic(File file, Update update) {
-        Music music = AudioFileUtils.readAudio(file);
-        if (update == null) {
-            update = new Update();
-        }
-        update.set("music", music);
+    private void setMusic(File file, FileDocument fileDocument) {
+        Music music = audioFileUtils.readAudio(fileDocument, file);
+        fileDocument.setMusic(music);
     }
 
-    private void setMediaCover(String fileId, String username, String fileName, String relativePath, Update update) {
+    private void setMediaCover(String fileId, String username, String fileName, String relativePath, FileDocument fileDocument) {
         VideoInfo videoInfo = videoProcessService.getVideoCover(fileId, username, relativePath, fileName);
         String coverPath = videoInfo.getCovertPath();
         log.debug("\r\ncoverPath:{}", coverPath);
         if (!CharSequenceUtil.isBlank(coverPath)) {
-            if (update == null) {
-                update = new Update();
+            Path contentPath = Paths.get(coverPath);
+
+            if (dataSourceProperties.getType() == DataSourceType.mongodb) {
+                fileDocument.setContent(PathUtil.readBytes(contentPath));
+            } else {
+                fileDocument.setContent(new byte[0]);
+                filePersistenceService.persistContent(fileDocument.getId(), contentPath);
             }
-            update.set("content", PathUtil.readBytes(Paths.get(coverPath)));
-            update.set("video", videoInfo.toVideoInfoDO());
+            fileDocument.setVideo(videoInfo.toVideoInfoDO());
             videoProcessService.convertToM3U8(fileId);
-            update.set("mediaCover", true);
+            fileDocument.setMediaCover(true);
             FileUtil.del(coverPath);
         } else {
-            update.set("mediaCover", false);
+            fileDocument.setMediaCover(false);
         }
     }
 
-    private void processImage(File file, Update update) {
+    private void processImage(File file, FileDocument fileDocument) {
         // 获取图片尺寸
         ImageMagickProcessor.ImageFormat imageFormat = ImageMagickProcessor.identifyFormat(file);
         if (imageFormat != null) {
             int srcWidth = imageFormat.getWidth();
             int srcHeight = imageFormat.getHeight();
             if (srcWidth > 0 && srcHeight > 0) {
-                update.set("w", imageFormat.getWidth());
-                update.set("h", imageFormat.getHeight());
+                fileDocument.setW(Convert.toStr(srcWidth));
+                fileDocument.setH(Convert.toStr(srcHeight));
             }
         }
         // 获取图片Exif信息
-        update.set("exif", ImageExifUtil.getExif(file));
+        fileDocument.setExif(ImageExifUtil.getExif(file));
         // 生成缩略图
-        imageMagickProcessor.generateThumbnail(file, update);
+        imageMagickProcessor.generateThumbnail(file, fileDocument);
     }
 
-    private File replaceWebp(String userId, File file, String username) {
+    private File replaceWebp(String userId, File file) {
         String suffix = FileUtil.getSuffix(file).toLowerCase();
 
         if (getDisabledWebp(userId) || ("ico".equals(suffix))) {
@@ -550,12 +524,11 @@ public class CommonUserFileService {
      * @return FileDocument
      */
     public FileDocument getFileDocumentByPath(String path, String filename, String userId, boolean excludeContent) {
-        Query query = CommonFileService.getQuery(path, filename, userId);
         if (excludeContent) {
-            query.fields().exclude("content");
+            return fileDAO.findByUserIdAndPathAndName(userId, path, filename);
+        } else {
+            return fileDAO.findByUserIdAndPathAndName(userId, path, filename, Constants.CONTENT);
         }
-        query.fields().exclude("contentText");
-        return mongoTemplate.findOne(query, FileDocument.class);
     }
 
 }

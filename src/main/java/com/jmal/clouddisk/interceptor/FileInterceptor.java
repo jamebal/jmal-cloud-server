@@ -7,7 +7,7 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.URLUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
@@ -321,7 +321,7 @@ public class FileInterceptor implements HandlerInterceptor {
         }
         Path relativePath = uriPath.subpath(MIN_COUNT - 1, uriPath.getNameCount());
         InputStream inputStream;
-        if (fileDocument.getContent() == null) {
+        if (fileDocument.getInputStream() == null) {
             File file = Paths.get(fileProperties.getRootDir(), relativePath.toString()).toFile();
             if (!file.exists() || !file.isFile() || !file.canRead()) {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -329,7 +329,7 @@ public class FileInterceptor implements HandlerInterceptor {
             }
             inputStream = new FileInputStream(file);
         } else {
-            inputStream = new ByteArrayInputStream(fileDocument.getContent());
+            inputStream = fileDocument.getInputStream();
         }
         responseImageFileHeader(response, fileDocument.getName());
         try (ServletOutputStream outputStream = response.getOutputStream()) {
@@ -365,7 +365,7 @@ public class FileInterceptor implements HandlerInterceptor {
         String w = request.getParameter("w");
         String h = request.getParameter("h");
         responseImageFileHeader(response, file.getName());
-        ImageMagickProcessor.cropImage(file, q, w, h, response.getOutputStream());
+        ImageMagickProcessor.cropImage(new FileInputStream(file), q, w, h, response.getOutputStream());
     }
 
     private File getFileByRequest(HttpServletRequest request) {

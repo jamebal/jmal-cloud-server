@@ -4,26 +4,22 @@ import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.model.FileDocument;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.SystemUtil;
 import io.methvin.watcher.DirectoryWatcher;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.type.filter.AnnotationTypeFilter;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.index.IndexOperations;
-import org.springframework.data.mongodb.core.index.MongoPersistentEntityIndexResolver;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +28,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @Description 启动时开启文件目录监控
@@ -45,8 +40,6 @@ import java.util.concurrent.CompletableFuture;
 public class FileMonitor {
 
     final FileProperties fileProperties;
-
-    final MongoTemplate mongoTemplate;
 
     final IFileService fileService;
 
@@ -69,42 +62,18 @@ public class FileMonitor {
         if (event.getApplicationContext().getParent() != null) {
             return;
         }
-        // 检查新版本
-        CompletableFuture.runAsync(() -> {
-            String newVersion = SystemUtil.getNewVersion();
-            log.debug("Current version: {}, Latest version: {}", version, newVersion);
-        });
-        // 初始化MongoDB索引
-        initializeMongoIndices();
-        // 启动文件监控服务
-        startFileMonitoringAsync();
+        ThreadUtil.execute(this::init);
     }
 
-    private void initializeMongoIndices() {
-        // 1. 获取映射上下文，这一步不变
-        MongoMappingContext mappingContext = (MongoMappingContext) mongoTemplate.getConverter().getMappingContext();
-
-        // 2. 创建索引解析器，这一步不变
-        MongoPersistentEntityIndexResolver resolver = new MongoPersistentEntityIndexResolver(mappingContext);
-
-        // 3. 使用 Spring 的类路径扫描器自动发现所有 @Document 注解的类
-        ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
-        provider.addIncludeFilter(new AnnotationTypeFilter(Document.class));
-
-        // 替换为你的实体类所在的包名
-        String basePackage = "com.jmal.clouddisk.model";
-
-        for (BeanDefinition beanDefinition : provider.findCandidateComponents(basePackage)) {
-            try {
-                Class<?> entityClass = Class.forName(beanDefinition.getBeanClassName());
-                // 获取对应实体类的 IndexOperations
-                IndexOperations indexOps = mongoTemplate.indexOps(entityClass);
-                resolver.resolveIndexFor(entityClass).forEach(indexOps::createIndex);
-            } catch (ClassNotFoundException e) {
-                // 处理异常
-                log.error("Error loading class: {}", e.getMessage(), e);
-            }
-        }
+    public void init() {
+        // 检查新版本
+        // 启动文件监控服务
+        startFileMonitoringAsync();
+        Completable.fromAction(() -> {
+            String newVersion = SystemUtil.getNewVersion();
+            log.debug("Current version: {}, Latest version: {}", version, newVersion);
+        }).subscribeOn(Schedulers.io())
+                .subscribe();
     }
 
     /**
@@ -112,10 +81,10 @@ public class FileMonitor {
      */
     public void startFileMonitoringAsync() {
         // 判断是否开启文件监控
-        if (Boolean.FALSE.equals(fileProperties.getMonitor())) {
+        if (!BooleanUtil.isTrue(fileProperties.getMonitor())) {
             return;
         }
-        CompletableFuture.runAsync(() -> {
+        Completable.fromAction(() -> {
             synchronized (watcherLock) {
                 try {
                     // 如果已经存在一个watcher (可能是重载逻辑调用)，先安全关闭
@@ -125,13 +94,15 @@ public class FileMonitor {
                     // 忽略目录
                     fileListener.addFilterDir(Paths.get(fileProperties.getRootDir(), fileProperties.getChunkFileDir()));
                     fileListener.addFilterDir(Paths.get(fileProperties.getRootDir(), fileProperties.getLuceneIndexDir()));
+                    fileListener.addFilterDir(Paths.get(fileProperties.getRootDir(), fileProperties.getJmalcloudDBDir()));
                     // 开启文件监控
                     newDirectoryWatcher();
                 } catch (IOException e) {
                     log.error("文件监控服务启动失败: {}", e.getMessage());
                 }
             }
-        });
+        }).subscribeOn(Schedulers.io())
+                .subscribe();
     }
 
     private void newDirectoryWatcher() throws IOException {
@@ -147,12 +118,6 @@ public class FileMonitor {
         log.info("\r\n文件监控服务已开启, 监控目录: {}, 忽略目录: {}", rootDir, fileListener.getFilterDirSet());
     }
 
-    private void reloadDirectoryWatcher() {
-        synchronized (watcherLock) {
-            startFileMonitoringAsync();
-        }
-    }
-
     /**
      * 在过滤器里添加路径
      * @param path 需要过滤掉的路径
@@ -162,7 +127,6 @@ public class FileMonitor {
         fileListener.addFilterDir(filepath);
         String username = Paths.get(path).getParent().getFileName().toString();
         fileService.createFile(username, filepath.toFile());
-        reloadDirectoryWatcher();
     }
 
     /**
@@ -175,7 +139,6 @@ public class FileMonitor {
             fileListener.removeFilterDir(filepath);
             String username = Paths.get(path).getParent().getFileName().toString();
             fileService.deleteFile(username, Paths.get(fileProperties.getRootDir(), path).toFile());
-            reloadDirectoryWatcher();
         }
     }
 
@@ -248,9 +211,9 @@ public class FileMonitor {
     }
 
     /**
-     * 每3小时检查一次版本
+     * 每12小时检查一次版本
      */
-    @Scheduled(cron = "0 0 0/3 * * ?")
+    @Scheduled(cron = "0 0 0/12 * * ?")
     private void getNewVersion() {
         newVersion = SystemUtil.getNewVersion();
     }

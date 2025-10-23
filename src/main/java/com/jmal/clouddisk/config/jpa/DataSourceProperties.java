@@ -1,0 +1,37 @@
+package com.jmal.clouddisk.config.jpa;
+
+import com.jmal.clouddisk.dao.DataSourceType;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.annotation.Validated;
+
+@Data
+@Validated
+@Configuration
+@ConfigurationProperties(prefix = "jmalcloud.datasource")
+public class DataSourceProperties {
+
+    @NotNull(message = "数据源类型不能为空")
+    private DataSourceType type;
+
+    /**
+     * 是否在启动时进行数据迁移，仅在type为jpa时有效(从mongodb迁移到jpa)
+     */
+    private Boolean migration = false;
+
+    private Boolean jpaEnabled = true;
+
+    private Boolean mongoEnabled = false;
+
+    public String toString() {
+        return "DataSourceProperties{" +
+                "type=" + type +
+                ", migration=" + migration +
+                ", jpaEnabled=" + jpaEnabled +
+                ", mongoEnabled=" + mongoEnabled +
+                '}';
+    }
+
+}

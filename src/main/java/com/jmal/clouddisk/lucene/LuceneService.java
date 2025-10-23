@@ -6,9 +6,9 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.model.FileIndex;
-import com.jmal.clouddisk.model.FileIntroVO;
-import com.jmal.clouddisk.model.Tag;
+import com.jmal.clouddisk.model.file.dto.FileBaseLuceneDTO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
@@ -16,7 +16,6 @@ import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.HashUtil;
 import com.jmal.clouddisk.util.MyFileUtils;
-import com.mongodb.client.AggregateIterable;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -24,12 +23,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.BytesRef;
 import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.context.ApplicationListener;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -39,12 +35,10 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.jmal.clouddisk.service.impl.CommonFileService.COLLECTION_NAME;
 
 /**
  * @author jmal
@@ -61,13 +55,13 @@ import static com.jmal.clouddisk.service.impl.CommonFileService.COLLECTION_NAME;
 public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent> {
 
     private final FileProperties fileProperties;
-    private final MongoTemplate mongoTemplate;
+    private final IFileDAO fileDAO;
     private final IndexWriter indexWriter;
     private final CommonUserService userService;
     private final ReadContentService readContentService;
     private final PopplerPdfReader popplerPdfReader;
     private final RebuildIndexTaskService rebuildIndexTaskService;
-    private final SearchFileService searchFileService;
+    private final LuceneQueryService luceneQueryService;
     private final EtagService esTagService;
 
     public static final String MONGO_INDEX_FIELD = "index";
@@ -114,6 +108,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
     public static final String FIELD_CONTENT_FUZZY = "content";
     public static final String FIELD_FILENAME_FUZZY = "filename";
     public static final String FIELD_TAG_NAME_FUZZY = "tagName";
+    public static final String FIELD_TAG_ID = "tagId";
 
     // 定义分段大小
     private static final int CHUNK_SIZE_CHARS = 1024; // 例如，每 1KB 左右一个块，或者按行数
@@ -148,7 +143,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
             bigProcessors = Math.max(bigProcessors, 1);
             executorUpdateBigContentIndexService = ThreadUtil.newFixedExecutor(bigProcessors, 100, "updateBigContentIndexTask", true);
         }
-        log.info("NGRAM_MAX_CONTENT_LENGTH_MB:{}, NGRAM_MIN_SIZE: {}, ngramMaxSize: {}", fileProperties.getNgramMaxContentLengthMB(), fileProperties.getNgramMinSize(), fileProperties.getNgramMaxSize());
+        log.debug("NGRAM_MAX_CONTENT_LENGTH_MB:{}, NGRAM_MIN_SIZE: {}, ngramMaxSize: {}", fileProperties.getNgramMaxContentLengthMB(), fileProperties.getNgramMinSize(), fileProperties.getNgramMaxSize());
     }
 
     @Override
@@ -249,35 +244,34 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
      */
     private void createIndexFiles(List<String> fileIdList) {
         // 提取出fileIdList
-        List<FileIntroVO> fileIntroVOList = searchFileService.getFileIntroVOs(fileIdList);
-        for (FileIntroVO fileIntroVO : fileIntroVOList) {
+        List<FileBaseLuceneDTO> fileBaseLuceneDTOList = fileDAO.findFileBaseLuceneDTOByIdIn(fileIdList);
+        for (FileBaseLuceneDTO fileBaseLuceneDTO : fileBaseLuceneDTOList) {
             rebuildIndexTaskService.incrementNotIndexTaskSize();
-            updateIndex(false, fileIntroVO);
+            updateIndex(false, fileBaseLuceneDTO);
         }
         rebuildIndexTaskService.removeDeletedFlag(fileIdList);
     }
 
-    private void updateIndex(boolean readContent, FileIntroVO fileIntroVO) {
+    private void updateIndex(boolean readContent, FileBaseLuceneDTO fileBaseLuceneDTO) {
         try {
-            File file = getFileByFileIntroVO(fileIntroVO);
+            File file = getFileByFileBaseLuceneDTO(fileBaseLuceneDTO);
             boolean isContent = checkFileContent(file);
             if (!readContent && isContent) {
-                pushCreateIndexContentQueue(fileIntroVO.getId());
+                pushCreateIndexContentQueue(fileBaseLuceneDTO.getId());
             }
             if (!readContent && !isContent) {
                 rebuildIndexTaskService.incrementIndexedTaskSize();
             }
-            FileIndex fileIndex = new FileIndex(file, fileIntroVO);
-            fileIndex.setTagName(getTagName(fileIntroVO));
+            FileIndex fileIndex = new FileIndex(file, fileBaseLuceneDTO);
             setFileIndex(fileIndex);
             if (readContent) {
                 String sha256 = HashUtil.sha256(file);
                 try (StringWriter contentWriter = new StringWriter()) {
-                    readFileContent(file, fileIntroVO.getId(), contentWriter);
+                    readFileContent(file, fileBaseLuceneDTO.getId(), contentWriter);
                     String fullContent = contentWriter.toString();
 
                     if (CharSequenceUtil.isBlank(fullContent)) {
-                        updateIndexStatus(fileIntroVO, IndexStatus.INDEXED);
+                        updateIndexStatus(fileBaseLuceneDTO, IndexStatus.INDEXED);
                         return;
                     }
                     // 调用改造后的 updateIndexDocument
@@ -291,7 +285,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
         } catch (Exception e) {
             log.warn("updateIndexError: {}", e.getMessage(), e);
         } finally {
-            updateIndexStatus(fileIntroVO, IndexStatus.INDEXED);
+            updateIndexStatus(fileBaseLuceneDTO, IndexStatus.INDEXED);
             if (readContent) {
                 rebuildIndexTaskService.incrementIndexedTaskSize();
             }
@@ -301,31 +295,19 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
     /**
      * 更新索引状态
      *
-     * @param fileIntroVO fileIntroVO
+     * @param fileBaseLuceneDTO FileBaseLuceneDTO
      * @param indexStatus IndexStatus
      */
-    private void updateIndexStatus(FileIntroVO fileIntroVO, IndexStatus indexStatus) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(fileIntroVO.getId()));
-        Update update = new Update();
-        update.set(MONGO_INDEX_FIELD, indexStatus.getStatus());
-        mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
-
+    private void updateIndexStatus(FileBaseLuceneDTO fileBaseLuceneDTO, IndexStatus indexStatus) {
+        fileDAO.updateLuceneIndexStatusByIdIn(Collections.singletonList(fileBaseLuceneDTO.getId()), indexStatus.getStatus());
         // set etag
-        String username = userService.getUserNameById(fileIntroVO.getUserId());
-        esTagService.updateFileEtagAsync(username, getFileByFileIntroVO(fileIntroVO));
+        String username = userService.getUserNameById(fileBaseLuceneDTO.getUserId());
+        esTagService.updateFileEtagAsync(username, getFileByFileBaseLuceneDTO(fileBaseLuceneDTO));
     }
 
-    private File getFileByFileIntroVO(FileIntroVO fileIntroVO) {
-        String username = userService.getUserNameById(fileIntroVO.getUserId());
-        return Paths.get(fileProperties.getRootDir(), username, fileIntroVO.getPath(), fileIntroVO.getName()).toFile();
-    }
-
-    private String getTagName(FileIntroVO fileIntroVO) {
-        if (fileIntroVO != null && fileIntroVO.getTags() != null && !fileIntroVO.getTags().isEmpty()) {
-            return fileIntroVO.getTags().stream().map(Tag::getName).reduce((a, b) -> a + " " + b).orElse("");
-        }
-        return null;
+    private File getFileByFileBaseLuceneDTO(FileBaseLuceneDTO fileBaseLuceneDTO) {
+        String username = userService.getUserNameById(fileBaseLuceneDTO.getUserId());
+        return Paths.get(fileProperties.getRootDir(), username, fileBaseLuceneDTO.getPath(), fileBaseLuceneDTO.getName()).toFile();
     }
 
     /**
@@ -465,7 +447,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
     public void updateIndexDocument(IndexWriter indexWriter, FileIndex fileIndex, String fullContent, String fileIndexHash) {
         String fileId = fileIndex.getFileId();
         try {
-            if (searchFileService.existsSha256(fileIndexHash)) {
+            if (luceneQueryService.existsSha256(fileIndexHash)) {
                 return;
             }
             String fileName = (fileIndex.getName() == null ? "" : fileIndex.getName()) + " " + fileIndex.getRemark();
@@ -485,9 +467,12 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
             if (CharSequenceUtil.isNotBlank(fileName)) {
                 newDocument.add(new Field(FIELD_FILENAME_NGRAM, fileName, TextField.TYPE_NOT_STORED));
                 newDocument.add(new TextField(FIELD_FILENAME_FUZZY, fileName, Field.Store.NO));
+                int extractIndex = Math.min(fileName.length() - 1, 2);
+                newDocument.add(new SortedDocValuesField("name_sort", new BytesRef(fileName.substring(0, extractIndex).toLowerCase().getBytes(StandardCharsets.UTF_8))));
             }
             if (isFolder != null) {
                 newDocument.add(new IntPoint(Constants.IS_FOLDER, isFolder ? 1 : 0));
+                newDocument.add(new NumericDocValuesField("is_folder_sort", isFolder ? 1 : 0));
             }
             if (isFavorite != null) {
                 newDocument.add(new IntPoint(Constants.IS_FAVORITE, isFavorite ? 1 : 0));
@@ -498,6 +483,13 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
             if (CharSequenceUtil.isNotBlank(tagName)) {
                 newDocument.add(new Field(FIELD_TAG_NAME_NGRAM, tagName, TextField.TYPE_NOT_STORED));
                 newDocument.add(new TextField(FIELD_TAG_NAME_FUZZY, tagName, Field.Store.NO));
+            }
+            if (fileIndex.getTagIds() != null && !fileIndex.getTagIds().isEmpty()) {
+                for (String tagId : fileIndex.getTagIds()) {
+                    if (CharSequenceUtil.isNotBlank(tagId)) {
+                        newDocument.add(new StringField(FIELD_TAG_ID, tagId, Field.Store.NO));
+                    }
+                }
             }
             if (CharSequenceUtil.isNotBlank(fullContent)) {
                 newDocument.add(new TextField(FIELD_CONTENT_FUZZY, fullContent, Field.Store.NO));
@@ -526,8 +518,11 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
             if (fileIndex.getModified() != null) {
                 newDocument.add(new NumericDocValuesField("modified", fileIndex.getModified()));
             }
+            if (fileIndex.getCreated() != null) {
+                newDocument.add(new NumericDocValuesField("created", fileIndex.getCreated()));
+            }
             if (fileIndex.getSize() != null) {
-                newDocument.add(new NumericDocValuesField("size", fileIndex.getSize()));
+                newDocument.add(new NumericDocValuesField(Constants.SIZE, fileIndex.getSize()));
             }
             indexWriter.updateDocument(new Term("id", fileId), newDocument);
         } catch (IOException e) {
@@ -600,13 +595,6 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
         return chunks;
     }
 
-    public FileIntroVO getFileIntroVO(String fileId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(fileId));
-        query.fields().include("id", "name", "userId", "path", "isFolder", "isFavorite", "remark", "tags", "etag", "size");
-        return mongoTemplate.findOne(query, FileIntroVO.class, COLLECTION_NAME);
-    }
-
     /**
      * 添加待索引标记
      */
@@ -614,11 +602,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
         if (fielIdList.isEmpty()) {
             return;
         }
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(fielIdList));
-        Update update = new Update();
-        update.set(MONGO_INDEX_FIELD, IndexStatus.NOT_INDEX.getStatus());
-        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
+        fileDAO.updateLuceneIndexStatusByIdIn(fielIdList, IndexStatus.NOT_INDEX.getStatus());
         // 添加待索引标记
         startProcessFilesToBeIndexed();
     }
@@ -632,20 +616,15 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
         while (run) {
             if (!hasUnIndexFile()) {
                 log.debug("待索引文件处理完成");
-                rebuildIndexTaskService.rebuildingIndexCompleted();
+                rebuildIndexTaskService.delayResetIndex();
                 indexWriter.commit();
                 run = false;
             }
-            List<org.bson.Document> pipeline = Arrays.asList(new org.bson.Document("$match", new org.bson.Document(MONGO_INDEX_FIELD, IndexStatus.NOT_INDEX.getStatus())), new org.bson.Document("$project", new org.bson.Document("_id", 1)), new org.bson.Document("$limit", 8));
-            AggregateIterable<org.bson.Document> aggregateIterable = mongoTemplate.getCollection(COLLECTION_NAME).aggregate(pipeline);
-            for (org.bson.Document document : aggregateIterable) {
-                String fileId = document.getObjectId("_id").toHexString();
-                FileIntroVO fileIntroVO = getFileIntroVO(fileId);
-                if (fileIntroVO != null) {
-                    // 处理待索引文件
-                    updateIndexStatus(fileIntroVO, IndexStatus.INDEXING);
-                    processFileThreaded(fileIntroVO);
-                }
+            List<FileBaseLuceneDTO> fileBaseLuceneDTOList = fileDAO.findFileBaseLuceneDTOByLuceneIndex(IndexStatus.NOT_INDEX.getStatus(), 8);
+            for (FileBaseLuceneDTO fileBaseLuceneDTO : fileBaseLuceneDTOList) {
+                // 处理待索引文件
+                updateIndexStatus(fileBaseLuceneDTO, IndexStatus.INDEXING);
+                processFileThreaded(fileBaseLuceneDTO);
             }
         }
     }
@@ -654,26 +633,24 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
      * 是否存在待索引文件
      */
     private boolean hasUnIndexFile() {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(MONGO_INDEX_FIELD).is(IndexStatus.NOT_INDEX.getStatus()));
-        long count = mongoTemplate.count(query, COLLECTION_NAME);
+        long count = fileDAO.countByLuceneIndex(IndexStatus.NOT_INDEX.getStatus());
         return count > 0;
     }
 
-    private void processFileThreaded(FileIntroVO fileIntroVO) {
-        long size = fileIntroVO.getSize();
+    private void processFileThreaded(FileBaseLuceneDTO fileBaseLuceneDTO) {
+        long size = fileBaseLuceneDTO.getSize();
 
         if (RebuildIndexTaskService.isSyncFile()) {
             // 单线程处理
-            updateIndex(true, fileIntroVO);
+            updateIndex(true, fileBaseLuceneDTO);
         } else {
             // 根据文件大小选择多线程处理
             if (size > 10 * 1024 * 1024) {
                 // 大文件，使用特定线程池处理
-                executorUpdateBigContentIndexService.execute(() -> updateIndex(true, fileIntroVO));
+                executorUpdateBigContentIndexService.execute(() -> updateIndex(true, fileBaseLuceneDTO));
             } else {
                 // 小文件，使用普通线程池处理
-                executorUpdateContentIndexService.execute(() -> updateIndex(true, fileIntroVO));
+                executorUpdateContentIndexService.execute(() -> updateIndex(true, fileBaseLuceneDTO));
             }
         }
     }

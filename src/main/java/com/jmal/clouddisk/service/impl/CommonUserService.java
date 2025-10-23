@@ -1,27 +1,23 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.jmal.clouddisk.dao.IUserDAO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-
-import static com.jmal.clouddisk.service.IUserService.USERNAME;
 
 @Service
 @RequiredArgsConstructor
 public class CommonUserService {
 
-    private final MongoTemplate mongoTemplate;
+    private final IUserDAO userDAO;
 
     public String getUserNameById(String userId) {
         if (!CharSequenceUtil.isBlank(userId)) {
             String username = CaffeineUtil.getUsernameCache(userId);
             if (CharSequenceUtil.isBlank(username)) {
-                ConsumerDO consumer = mongoTemplate.findById(userId, ConsumerDO.class);
+                ConsumerDO consumer = userDAO.findById(userId);
                 if (consumer != null) {
                     username = consumer.getUsername();
                     CaffeineUtil.setUsernameCache(userId, username);
@@ -55,20 +51,18 @@ public class CommonUserService {
 
     public String getAvatarByUsername(String username) {
         ConsumerDO consumer = getUserInfoByUsername(username);
-        if (consumer == null) {
+        if (consumer == null || CharSequenceUtil.isBlank(consumer.getAvatar())) {
             return "";
         }
         return consumer.getAvatar();
     }
 
     public ConsumerDO getUserInfo(String username) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(USERNAME).is(username));
-        return mongoTemplate.findOne(query, ConsumerDO.class);
+        return userDAO.findByUsername(username);
     }
 
     public ConsumerDO getUserInfoByIdNoCache(String userId) {
-        return mongoTemplate.findById(userId, ConsumerDO.class);
+        return userDAO.findById(userId);
     }
 
     public ConsumerDO getUserInfoById(String userId) {
@@ -76,14 +70,20 @@ public class CommonUserService {
         return getUserInfoByUsername(username);
     }
 
+    public boolean getIsCreator(String userId) {
+        ConsumerDO consumerDO = getUserInfoById(userId);
+        if (consumerDO == null) {
+            return false;
+        }
+        return consumerDO.getCreator() != null && consumerDO.getCreator();
+    }
+
     /**
      * 获取创建者的用户名
      * @return 用户名
      */
     public String getCreatorUsername() {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("creator").is(true));
-        ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class);
+        ConsumerDO consumerDO = userDAO.findOneByCreatorTrue();
         if (consumerDO == null) {
             return null;
         }
