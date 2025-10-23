@@ -7,6 +7,7 @@ on:
 
 env:
   SOURCE_IMAGE: jmal/jmalcloud:test
+  SOURCE_IMAGE_SQL: jmal/jmalcloud-sql:test
 
 jobs:
   copy_and_push:
@@ -47,6 +48,10 @@ jobs:
           echo "TAG_VERSION_0=registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:${PROJECT_VERSION}" >> $GITHUB_ENV
           echo "TAG_LATEST_1=registry.cn-beijing.aliyuncs.com/jmalcloud/jmalcloud:latest" >> $GITHUB_ENV
           echo "TAG_VERSION_1=registry.cn-beijing.aliyuncs.com/jmalcloud/jmalcloud:${PROJECT_VERSION}" >> $GITHUB_ENV
+          echo "TAG_LATEST_SQL_0=registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud-sql:latest" >> $GITHUB_ENV
+          echo "TAG_VERSION_SQL_0=registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud-sql:${PROJECT_VERSION}" >> $GITHUB_ENV
+          echo "TAG_LATEST_SQL_1=registry.cn-beijing.aliyuncs.com/jmalcloud/jmalcloud-sql:latest" >> $GITHUB_ENV
+          echo "TAG_VERSION_SQL_1=registry.cn-beijing.aliyuncs.com/jmalcloud/jmalcloud-sql:${PROJECT_VERSION}" >> $GITHUB_ENV
 
       - name: Set tags for non-amd64
         if: matrix.arch != 'amd64'
@@ -55,7 +60,12 @@ jobs:
           echo "TAG_VERSION_0=registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud:${PROJECT_VERSION}-${{ matrix.arch }}" >> $GITHUB_ENV
           echo "TAG_LATEST_1=registry.cn-beijing.aliyuncs.com/jmalcloud/jmalcloud:latest-${{ matrix.arch }}" >> $GITHUB_ENV
           echo "TAG_VERSION_1=registry.cn-beijing.aliyuncs.com/jmalcloud/jmalcloud:${PROJECT_VERSION}-${{ matrix.arch }}" >> $GITHUB_ENV
+          echo "TAG_LATEST_SQL_0=registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud-sql:latest-${{ matrix.arch }}" >> $GITHUB_ENV
+          echo "TAG_VERSION_SQL_0=registry.cn-guangzhou.aliyuncs.com/jmalcloud/jmalcloud-sql:${PROJECT_VERSION}-${{ matrix.arch }}" >> $GITHUB_ENV
+          echo "TAG_LATEST_SQL_1=registry.cn-beijing.aliyuncs.com/jmalcloud/jmalcloud-sql:latest-${{ matrix.arch }}" >> $GITHUB_ENV
+          echo "TAG_VERSION_SQL_1=registry.cn-beijing.aliyuncs.com/jmalcloud/jmalcloud-sql:${PROJECT_VERSION}-${{ matrix.arch }}" >> $GITHUB_ENV
 
+      # MongoDB 版本
       - name: Copy to Aliyun (Guangzhou) from ${{ env.SOURCE_IMAGE }} for linux/${{ matrix.arch }}
         run: |
           docker buildx imagetools create \
@@ -71,3 +81,20 @@ jobs:
             -t "${{ env.TAG_LATEST_1 }}" \
             -t "${{ env.TAG_VERSION_1 }}" \
             "${{ env.SOURCE_IMAGE }}"
+
+      # SQL 版本
+      - name: Copy to Aliyun (Guangzhou) from ${{ env.SOURCE_IMAGE_SQL }} for linux/${{ matrix.arch }}
+        run: |
+          docker buildx imagetools create \
+            --filter=platform=linux/${{ matrix.arch }} \
+            -t "${{ env.TAG_LATEST_SQL_0 }}" \
+            -t "${{ env.TAG_VERSION_SQL_0 }}" \
+            "${{ env.SOURCE_IMAGE_SQL }}"
+
+      - name: Copy to Aliyun (Beijing) from ${{ env.SOURCE_IMAGE_SQL }} for linux/${{ matrix.arch }}
+        run: |
+          docker buildx imagetools create \
+            --filter=platform=linux/${{ matrix.arch }} \
+            -t "${{ env.TAG_LATEST_SQL_1 }}" \
+            -t "${{ env.TAG_VERSION_SQL_1 }}" \
+            "${{ env.SOURCE_IMAGE_SQL }}"

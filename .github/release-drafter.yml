@@ -15,25 +15,4 @@ change-template: '- $TITLE (#$NUMBER)'
 no-changes-template: '- No changes'
 template: |
   
-  [docker-docker.yml](https://github.com/jamebal/jmal-cloud-server/blob/master/docker-compose.base.yml)
-  
-  #### 更新前备份数据库
-  
-  ```shell
-  docker exec -it jmalcloud_mongodb mongodump -d jmalcloud -o /dump/$PREVIOUS_TAG --gzip --quiet
-  ```
-  
-  ```shell
-  docker-compose pull && docker-compose up -d --remove-orphans
-  ```
-  
-  #### 清理旧镜像
-  ```shell
-  docker rmi $(docker images --filter "dangling=true" | grep "jmalcloud" | awk '{print $3}')
-  ```
-  
-  ## Changes in this release:
-
-  $CHANGES
-  
-  **Full Changelog**: [$PREVIOUS_TAG...v$NEXT_PATCH_VERSION](https://github.com/jamebal/jmal-cloud-server/compare/$PREVIOUS_TAG...v$NEXT_PATCH_VERSION)
+  [docker-docker.yml](https://jmalcloud.github.io/guide/installation.html#docker-compose)

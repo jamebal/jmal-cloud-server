@@ -474,10 +474,11 @@ public class MarkdownServiceImpl implements IMarkdownService {
         // 文件操作日志
         logService.asyncAddLogFileOperation(upload.getUsername(), upload.getRelativePath(), "修改文件");
         // 修改文件之后保存历史版本
+        String operator = userLoginHolder.getUsername();
         Completable.fromAction(() -> {
             Path userRootPath = Paths.get(fileProperties.getRootDir(), upload.getUsername());
             Path relativeNioPath = userRootPath.relativize(file.toPath());
-            eventPublisher.publishEvent(new FileVersionEvent(this, upload.getUsername(), relativeNioPath.toString(), userId, userLoginHolder.getUsername()));
+            eventPublisher.publishEvent(new FileVersionEvent(this, upload.getUsername(), relativeNioPath.toString(), userId, operator));
         }).subscribeOn(Schedulers.io()).subscribe();
 
         return ResultUtil.success();
