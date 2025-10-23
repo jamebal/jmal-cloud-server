@@ -91,13 +91,18 @@ jobs:
         run: |
           echo "/opt/maven/bin" >> $GITHUB_PATH
 
-      - name: Set up GraalVM for Native Image
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: ${{ inputs.graal_version }}
-          distribution: 'graalvm'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          cache: 'maven'
+      - name: Set up GraalVM environment
+        run: |
+          GRAALVM_VERSION="${{ inputs.graal_version }}"
+          GRAALVM_HOME="/opt/graalvm-jdk-${GRAALVM_VERSION}"
+
+          if [ ! -d "$GRAALVM_HOME" ]; then
+            echo "Error: GraalVM $GRAALVM_VERSION not installed"
+            exit 1
+          fi
+
+          echo "JAVA_HOME=$GRAALVM_HOME" >> $GITHUB_ENV
+          echo "$GRAALVM_HOME/bin" >> $GITHUB_PATH
 
       - name: Check Maven version
         run: mvn -v
@@ -247,13 +252,18 @@ jobs:
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
-      - name: Set up GraalVM for Native Image
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: ${{ inputs.graal_version }}
-          distribution: 'graalvm'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          cache: 'maven'
+      - name: Set up GraalVM environment
+        run: |
+          GRAALVM_VERSION="${{ inputs.graal_version }}"
+          GRAALVM_HOME="/opt/graalvm-jdk-${GRAALVM_VERSION}"
+
+          if [ ! -d "$GRAALVM_HOME" ]; then
+            echo "Error: GraalVM $GRAALVM_VERSION not installed"
+            exit 1
+          fi
+
+          echo "JAVA_HOME=$GRAALVM_HOME" >> $GITHUB_ENV
+          echo "$GRAALVM_HOME/bin" >> $GITHUB_PATH
 
       - name: Check Maven version
         run: mvn -v
