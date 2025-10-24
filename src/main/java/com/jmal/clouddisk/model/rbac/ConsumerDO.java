@@ -67,4 +67,8 @@ public class ConsumerDO extends ConsumerBase implements Reflective {
     @Column(columnDefinition = "TEXT")
     String mfaSecret;
 
+    @Column(name = "personalization")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Personalization personalization;
+
 }

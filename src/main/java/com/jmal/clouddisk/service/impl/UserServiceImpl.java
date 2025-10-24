@@ -24,6 +24,7 @@ import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerBase;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.ConsumerDTO;
+import com.jmal.clouddisk.model.rbac.Personalization;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.util.*;
@@ -508,4 +509,25 @@ public class UserServiceImpl implements IUserService {
         }
     }
 
+    public Personalization getPersonalization(String username) {
+        ConsumerDO consumerDO = getUserInfoByUsername(username);
+        if (consumerDO != null) {
+            Personalization personalization = consumerDO.getPersonalization();
+            if (personalization != null) {
+                return personalization;
+            }
+        }
+        return new Personalization();
+    }
+
+    public void savePersonalization(String username, Personalization personalization) {
+        ConsumerDO consumerDO = getUserInfoByUsername(username);
+        if (consumerDO != null) {
+            MyQuery query = new MyQuery();
+            query.eq(CommonField.ID.getLogical(), consumerDO.getId());
+            MyUpdate update = new MyUpdate();
+            update.set("personalization", personalization);
+            updateConsumer(consumerDO.getId(), query, update);
+        }
+    }
 }
