@@ -354,8 +354,13 @@ public class ShareServiceImpl implements IShareService {
         if (existsMountFile(fromFileDocument.getId(), upload.getUserId())) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "已经挂载过了");
         }
-        // 创建文件夹
         FileDocument fileDocument = getFileDocument(upload, fromFileDocument, toFileDocument);
+        // 判断是否存在同名文件夹
+        String existsFileId = fileDAO.findIdByUserIdAndPathAndName(fileDocument.getUserId(), fileDocument.getPath(), fileDocument.getName());
+        if (CharSequenceUtil.isNotEmpty(existsFileId)) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "已存在同名文件夹");
+        }
+        // 创建挂载
         String fileId = fileDAO.upsertMountFile(fileDocument);
         if (CharSequenceUtil.isNotEmpty(fileId)) {
             luceneService.pushCreateIndexQueue(fileId);
