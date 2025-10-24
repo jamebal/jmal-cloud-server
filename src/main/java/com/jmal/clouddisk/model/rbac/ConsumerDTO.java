@@ -77,4 +77,6 @@ public class ConsumerDTO extends ConsumerBase implements Reflective {
     @Schema(name = "mfaSecret", title = "mfaCode", hidden = true)
     String mfaSecret;
 
+    Personalization personalization;
+
 }

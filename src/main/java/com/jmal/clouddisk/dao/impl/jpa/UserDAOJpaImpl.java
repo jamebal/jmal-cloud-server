@@ -16,6 +16,7 @@ import com.jmal.clouddisk.dao.util.QuerySpecificationUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.query.QueryUserDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.model.rbac.Personalization;
 import com.jmal.clouddisk.util.JacksonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -187,6 +188,7 @@ public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
                 case "slogan" -> entity.setSlogan(isUnset ? null : Convert.toStr(value));
                 case "username" -> entity.setUsername(isUnset ? null : Convert.toStr(value));
                 case "roles" -> entity.setRoles(isUnset ? null : Convert.toList(String.class, value));
+                case "personalization" -> entity.setPersonalization(isUnset ? null : value == null ? null : (Personalization) value);
                 default -> log.warn("Unknown field: {} with value: {}", logicalFieldName, value);
             }
         } catch (Exception e) {

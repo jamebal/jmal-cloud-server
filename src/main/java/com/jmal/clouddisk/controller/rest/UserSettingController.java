@@ -2,8 +2,8 @@ package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
-import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.UserAccessTokenDTO;
+import com.jmal.clouddisk.model.rbac.Personalization;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -40,7 +40,6 @@ public class UserSettingController {
     @Operation(summary = "accessToken列表")
     @GetMapping("/user/setting/accessTokenList")
     @Permission("sys:user:list")
-    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     ResponseResult<List<UserAccessTokenDTO>> accessTokenList() {
         return settingService.accessTokenList(userLoginHolder.getUsername());
     }
@@ -51,6 +50,22 @@ public class UserSettingController {
     @LogOperatingFun
     ResponseResult<Object> deleteAccessToken(@RequestParam String id) {
         settingService.deleteAccessToken(id);
+        return ResultUtil.success();
+    }
+
+    @Operation(summary = "获取个性化配置")
+    @GetMapping("/user/setting/personalization")
+    @Permission("sys:user:list")
+    ResponseResult<Personalization> personalization() {
+        return ResultUtil.success(settingService.getPersonalization(userLoginHolder.getUsername()));
+    }
+
+    @Operation(summary = "保存个性化配置")
+    @PostMapping("/user/setting/personalization")
+    @Permission("sys:user:update")
+    @LogOperatingFun
+    ResponseResult<Object> savePersonalization(@RequestBody Personalization personalization) {
+        settingService.savePersonalization(userLoginHolder.getUsername(), personalization);
         return ResultUtil.success();
     }
 

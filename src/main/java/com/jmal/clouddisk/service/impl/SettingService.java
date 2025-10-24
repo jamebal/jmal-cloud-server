@@ -17,6 +17,7 @@ import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
 import com.jmal.clouddisk.lucene.EtagService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.rbac.Personalization;
 import com.jmal.clouddisk.util.HybridThrottleExecutor;
 import com.jmal.clouddisk.util.MyFileUtils;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -339,5 +340,13 @@ public class SettingService {
 
     public void setMfaForceEnable(Boolean mfaForceEnable) {
         websiteSettingDAO.setMfaForceEnable(mfaForceEnable);
+    }
+
+    public Personalization getPersonalization(String username) {
+        return userService.getPersonalization(username);
+    }
+
+    public void savePersonalization(String username, Personalization personalization) {
+        userService.savePersonalization(username, personalization);
     }
 }
