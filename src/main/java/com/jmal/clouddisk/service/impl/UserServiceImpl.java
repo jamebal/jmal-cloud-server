@@ -510,14 +510,9 @@ public class UserServiceImpl implements IUserService {
     }
 
     public Personalization getPersonalization(String username) {
-        ConsumerDO consumerDO = getUserInfoByUsername(username);
-        if (consumerDO != null) {
-            Personalization personalization = consumerDO.getPersonalization();
-            if (personalization != null) {
-                return personalization;
-            }
-        }
-        return new Personalization();
+        return java.util.Optional.ofNullable(getUserInfoByUsername(username))
+                .map(ConsumerDO::getPersonalization)
+                .orElseGet(Personalization::new);
     }
 
     public void savePersonalization(String username, Personalization personalization) {
