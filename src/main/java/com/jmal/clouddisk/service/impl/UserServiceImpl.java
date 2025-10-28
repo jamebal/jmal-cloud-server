@@ -32,7 +32,6 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
@@ -82,7 +81,10 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public synchronized ConsumerDO add(ConsumerDTO consumerDTO) {
-        String username = sanitizeFilename(consumerDTO.getUsername());
+        String username = consumerDTO.getUsername();
+        if (isValidUsername(username)) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "非法的用户名格式");
+        }
         if (fileProperties.notAllowUsername(username)) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "请使用其他用户名");
         }
@@ -109,19 +111,22 @@ public class UserServiceImpl implements IUserService {
         return consumerDO;
     }
 
-    public String sanitizeFilename(String username) {
-        if (username == null || username.trim().isEmpty()) {
-            throw new IllegalArgumentException("用户名不能为空");
+    /**
+     * 验证用户名是否安全
+     */
+    public static boolean isValidUsername(String username) {
+        if (username == null || username.isEmpty()) {
+            return false;
         }
 
-        // 标准化路径，移除 .. 和其他危险字符
-        String normalized = FilenameUtils.normalize(username);
-
-        if (normalized == null || !normalized.equals(FilenameUtils.getName(normalized))) {
-            throw new CommonException(ExceptionType.WARNING.getCode(), "非法的用户名格式");
+        // 禁止路径遍历字符
+        if (username.contains("..") || username.contains("/") ||
+                username.contains("\\") || username.contains("\0")) {
+            return false;
         }
 
-        return normalized;
+        // 只允许字母、数字、下划线、连字符
+        return username.matches("^[a-zA-Z0-9_-]+$");
     }
 
     /**
