@@ -84,7 +84,7 @@ public class ShareUploadFileController {
         Optional<FileDocument> optionalFileDocument = fileService.getById(fileId, false);
 
         if (optionalFileDocument.isEmpty()) {
-            throw new CommonException(ExceptionType.MISSING_PARAMETERS);
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
 
         FileDocument fileDocument = optionalFileDocument.get();

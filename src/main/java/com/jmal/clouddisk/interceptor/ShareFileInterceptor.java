@@ -144,10 +144,11 @@ public class ShareFileInterceptor implements HandlerInterceptor {
 
     /**
      * 判断字符串是否为 shareToken
-     * shareToken 格式: {shortKey}:{relativeExpiry}.{signature}
-     * 示例: 68f74bf842d14653658774c9:424125.U01uREMTZ4lNFEDjVffvIs8Fki04F0x_PafexIp-_7A
+     * shareToken 格式: {shortKey}:{pinHash}:{relativeExpiry}.{base64Signature}
+     * 示例: 68f74bf842d14653658774c9:YWJjZGVm:12345.dGVzdHNpZ25hdHVyZWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6
      * 组成部分：
      * - shortKey: 字母数字组合（压缩后的 key，无横线）
+     * - pinHash: Base64 URL-safe 编码的 PIN hash（8 字符，无填充）
      * - relativeExpiry: 纯数字（相对于 2025-01-01 的分钟数）
      * - signature: Base64 URL-safe 编码（字母、数字、下划线、横线）
      */
@@ -174,11 +175,11 @@ public class ShareFileInterceptor implements HandlerInterceptor {
             }
 
             String[] dataParts = parts[0].split(":");
-            if (dataParts.length != 2) {
+            if (dataParts.length != 3) {
                 return false;
             }
 
-            int relativeExpiry = Integer.parseInt(dataParts[1]);
+            int relativeExpiry = Integer.parseInt(dataParts[2]);
 
             // relativeExpiry 应该是正数且在合理范围内
             // 假设 token 最长有效期 10 年 = 10 * 365 * 24 * 60 = 5256000 分钟
