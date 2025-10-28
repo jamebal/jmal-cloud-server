@@ -15,4 +15,4 @@ change-template: '- $TITLE (#$NUMBER)'
 no-changes-template: '- No changes'
 template: |
   
-  [docker-docker.yml](https://jmalcloud.github.io/guide/installation.html#docker-compose)
+  [安装文档](https://jmalcloud.github.io/guide/installation.html)
