@@ -512,7 +512,8 @@ public class EtagService {
                     child.getIsFolder());
             // 返回 null 是一个明确的信号，告诉调用方中止计算。
             if (child.getIsFolder()) {
-                markFolderForEtagUpdate(child.getUserId(), child.getPath());
+                // 标记该子文件夹需要更新ETag，以便它能尽快被处理。
+                markFolderForEtagUpdate(child.getUserId(), child.getPath() + child.getName() + "/");
             } else {
                 String username = userService.getUserNameById(child.getUserId());
                 updateFileEtagAndMarkParentAsync(username, Paths.get(fileProperties.getRootDir(), username, child.getPath(), child.getName()).toFile());
