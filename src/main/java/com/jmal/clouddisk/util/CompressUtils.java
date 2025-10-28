@@ -10,10 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 
@@ -149,7 +146,16 @@ public class CompressUtils {
         // 创建输出目录
         createDirectory(outputDir, null);
         ProcessBuilder processBuilder = new ProcessBuilder();
-        processBuilder.command("tar", "-xzf", gzipFile.getAbsolutePath(), "-C" + outputDir);
+        processBuilder.command(
+                "tar",
+                "-xzf", gzipFile.getAbsolutePath(),
+                "-C", outputDir,
+                "--no-same-owner",           // 不保留原文件的所有者
+                "--no-same-permissions",     // 不保留原文件的权限
+                "--exclude", "..",           // 排除包含 .. 的路径
+                "--anchored",                // 只匹配开头的模式
+                "--no-wildcards-match-slash" // 通配符不匹配斜杠
+        );
         // 将输出和错误流重定向到空输出流
         executingCommand(processBuilder, "gzip");
     }

@@ -82,6 +82,9 @@ public class UserServiceImpl implements IUserService {
     @Override
     public synchronized ConsumerDO add(ConsumerDTO consumerDTO) {
         String username = consumerDTO.getUsername();
+        if (isValidUsername(username)) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "非法的用户名格式");
+        }
         if (fileProperties.notAllowUsername(username)) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "请使用其他用户名");
         }
@@ -106,6 +109,24 @@ public class UserServiceImpl implements IUserService {
             throw new CommonException(ExceptionType.WARNING.getCode(), "该用户已存在");
         }
         return consumerDO;
+    }
+
+    /**
+     * 验证用户名是否安全
+     */
+    public static boolean isValidUsername(String username) {
+        if (username == null || username.isEmpty()) {
+            return false;
+        }
+
+        // 禁止路径遍历字符
+        if (username.contains("..") || username.contains("/") ||
+                username.contains("\\") || username.contains("\0")) {
+            return false;
+        }
+
+        // 只允许字母、数字、下划线、连字符
+        return username.matches("^[a-zA-Z0-9_-]+$");
     }
 
     /**
