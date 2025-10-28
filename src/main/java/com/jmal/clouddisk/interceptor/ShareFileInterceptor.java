@@ -7,6 +7,7 @@ import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
+import com.jmal.clouddisk.util.ShortSignedIdUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Data;
@@ -19,7 +20,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.regex.Pattern;
 
 @Slf4j
 @Component
@@ -31,16 +31,6 @@ public class ShareFileInterceptor implements HandlerInterceptor {
     private final UserLoginHolder userLoginHolder;
 
     private static final String SHARE_FILE_PREFIX = "/api/share-file/";
-
-    /**
-     * shareToken 格式识别正则
-     * 格式: {shortKey}:{relativeExpiry}.{base64Signature}
-     * - shortKey: 字母数字组合（无横线的短ID）
-     * - relativeExpiry: 纯数字（相对时间戳）
-     * - signature: Base64 URL-safe 编码（无填充）
-     */
-    private static final Pattern SHARE_TOKEN_PATTERN =
-            Pattern.compile("^[a-zA-Z0-9]+:[0-9]+\\.[A-Za-z0-9_\\-]+$");
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request,
@@ -172,7 +162,7 @@ public class ShareFileInterceptor implements HandlerInterceptor {
         }
 
         // 正则匹配
-        if (!SHARE_TOKEN_PATTERN.matcher(segment).matches()) {
+        if (!ShortSignedIdUtil.isValidTokenFormat(segment)) {
             return false;
         }
 
