@@ -282,7 +282,7 @@ public class ShareServiceImpl implements IShareService {
         if (shareCode.equals(shareDO.getExtractionCode())) {
             // 验证成功 返回share-token
             // share-token有效期为3个小时
-            String shareToken = ShortSignedIdUtil.generateToken(shareId, LocalDateTimeUtil.now().plusHours(3));
+            String shareToken = ShortSignedIdUtil.generateToken(shareId, shareDO.getExtractionCode());
             return ResultUtil.success(shareToken);
         }
         return ResultUtil.warning("提取码有误");
@@ -394,7 +394,7 @@ public class ShareServiceImpl implements IShareService {
             return ResultUtil.error(ExceptionType.PERMISSION_DENIED);
         }
 
-        String shareToken = ShortSignedIdUtil.generateToken(shareDO.getId(), LocalDateTimeUtil.now().plusHours(3));
+        String shareToken = ShortSignedIdUtil.generateToken(shareDO.getId(), shareDO.getExtractionCode());
         return ResultUtil.success(shareToken);
     }
 
@@ -506,7 +506,7 @@ public class ShareServiceImpl implements IShareService {
                 }
             }
             // 再检查share-token是否正确
-            ShortSignedIdUtil.VerificationResult result = ShortSignedIdUtil.verifyToken(shareToken);
+            ShortSignedIdUtil.VerificationResult result = ShortSignedIdUtil.verifyToken(shareToken, shareDO.getExtractionCode());
             if (!shareDO.getId().equals(result.getKey()) || !result.isValid()) {
                 // 验证失败
                 shareValidFailed(shareDO);

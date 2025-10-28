@@ -7,6 +7,7 @@ import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
+import com.jmal.clouddisk.util.ShortSignedIdUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Data;
@@ -19,7 +20,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.regex.Pattern;
 
 @Slf4j
 @Component
@@ -31,16 +31,6 @@ public class ShareFileInterceptor implements HandlerInterceptor {
     private final UserLoginHolder userLoginHolder;
 
     private static final String SHARE_FILE_PREFIX = "/api/share-file/";
-
-    /**
-     * shareToken 格式识别正则
-     * 格式: {shortKey}:{relativeExpiry}.{base64Signature}
-     * - shortKey: 字母数字组合（无横线的短ID）
-     * - relativeExpiry: 纯数字（相对时间戳）
-     * - signature: Base64 URL-safe 编码（无填充）
-     */
-    private static final Pattern SHARE_TOKEN_PATTERN =
-            Pattern.compile("^[a-zA-Z0-9]+:[0-9]+\\.[A-Za-z0-9_\\-]+$");
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request,
@@ -154,10 +144,11 @@ public class ShareFileInterceptor implements HandlerInterceptor {
 
     /**
      * 判断字符串是否为 shareToken
-     * shareToken 格式: {shortKey}:{relativeExpiry}.{signature}
-     * 示例: 68f74bf842d14653658774c9:424125.U01uREMTZ4lNFEDjVffvIs8Fki04F0x_PafexIp-_7A
+     * shareToken 格式: {shortKey}:{pinHash}:{relativeExpiry}.{base64Signature}
+     * 示例: 68f74bf842d14653658774c9:YWJjZGVm:12345.dGVzdHNpZ25hdHVyZWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6
      * 组成部分：
      * - shortKey: 字母数字组合（压缩后的 key，无横线）
+     * - pinHash: Base64 URL-safe 编码的 PIN hash（8 字符，无填充）
      * - relativeExpiry: 纯数字（相对于 2025-01-01 的分钟数）
      * - signature: Base64 URL-safe 编码（字母、数字、下划线、横线）
      */
@@ -172,7 +163,7 @@ public class ShareFileInterceptor implements HandlerInterceptor {
         }
 
         // 正则匹配
-        if (!SHARE_TOKEN_PATTERN.matcher(segment).matches()) {
+        if (!ShortSignedIdUtil.isValidTokenFormat(segment)) {
             return false;
         }
 
@@ -184,11 +175,11 @@ public class ShareFileInterceptor implements HandlerInterceptor {
             }
 
             String[] dataParts = parts[0].split(":");
-            if (dataParts.length != 2) {
+            if (dataParts.length != 3) {
                 return false;
             }
 
-            int relativeExpiry = Integer.parseInt(dataParts[1]);
+            int relativeExpiry = Integer.parseInt(dataParts[2]);
 
             // relativeExpiry 应该是正数且在合理范围内
             // 假设 token 最长有效期 10 年 = 10 * 365 * 24 * 60 = 5256000 分钟
