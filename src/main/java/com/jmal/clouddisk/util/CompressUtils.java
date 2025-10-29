@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -262,22 +263,22 @@ public class CompressUtils {
     private static void decompress7z(File archiveFile, Path outputPath) throws IOException, InterruptedException {
         String outputDir = outputPath.toString();
 
-        ProcessBuilder pb = new ProcessBuilder(
-                "7z",
-                "x",                                  // 解压并保留目录结构
-                archiveFile.getAbsolutePath(),        // 输入文件
-                "-o" + outputDir,                     // 输出目录（-o 和路径之间不能有空格）
-                "-y",                                 // 自动回答 yes
-                "-aos",                               // 跳过已存在的文件
-                "-bb0",                               // 最小日志级别
-                "-bd",                                // 禁用进度指示器
-                "-snl",                               // 不存储符号链接
-                "-snh",                               // 不存储硬链接
-                "-sni",                               // 不存储 Alternate Data Streams (Windows)
-                "-xr!PaxHeader",                      // 排除所有 PaxHeader 文件
-                "-xr!@LongLink"                       // 排除 GNU tar 长文件名头
+        List<String> command = new ArrayList<>();
+        command.add("7z");
+        command.add("x");
+        command.add(archiveFile.getAbsolutePath());
+        command.add("-o" + outputDir);
+        command.add("-y");
+        // 跳过已存在的文件
+        command.add("-aos");
+        // 最小日志级别
+        command.add("-bb0");
+        // 禁用进度指示器
+        command.add("-bd");
 
-        );
+        // 添加排除参数
+        command.addAll(get7zExcludeParams());
+        ProcessBuilder pb = new ProcessBuilder(command);
 
         // 设置工作目录
         pb.directory(outputPath.toFile());
@@ -296,10 +297,12 @@ public class CompressUtils {
             throw new CommonException(ExceptionType.FILE_NOT_FIND.getCode(), "压缩文件不存在: " + archiveFile.getAbsolutePath());
         }
 
-        ProcessBuilder pb = new ProcessBuilder(
-                "7z", "l", "-slt", archiveFile.getAbsolutePath()
-        );
-
+        List<String> command = new ArrayList<>();
+        command.add("7z");
+        command.add("l");
+        command.add("-slt");
+        command.add(archiveFile.getAbsolutePath());
+        ProcessBuilder pb = new ProcessBuilder(command);
         Process proc = pb.start();
 
         try (BufferedReader reader = new BufferedReader(
@@ -357,6 +360,52 @@ public class CompressUtils {
         if (exitCode != 0) {
             log.warn("7z 列表命令退出码: {}", exitCode);
         }
+
+        // 解压后安全验证
+        postExtractionValidation(outputDir.toPath());
+    }
+
+    /**
+     * 获取 7z 排除参数列表
+     */
+    private static List<String> get7zExcludeParams() {
+        return List.of(
+                // 符号链接和硬链接
+                "-snl",                    // 不存储符号链接
+                "-snh",                    // 不存储硬链接
+                "-sni",                    // 不存储 ADS
+
+                // tar 元数据
+                "-xr!PaxHeader",           // PAX 扩展头
+                "-xr!@LongLink",           // GNU tar 长文件名头
+
+                // macOS 系统文件
+                "-x!._*",                  // 资源分叉（根目录）
+                "-xr!._*",                 // 资源分叉（所有目录）
+                "-xr!__MACOSX",            // 元数据目录
+                "-xr!.DS_Store",           // Finder 信息
+                "-xr!.AppleDouble",        // AppleDouble 文件
+                "-xr!.LSOverride",         // Launch Services
+                "-xr!.Spotlight-V100",     // Spotlight 索引
+                "-xr!.Trashes",            // 废纸篓
+                "-xr!.fseventsd",          // 文件系统事件
+
+                // Windows 系统文件
+                "-xr!Thumbs.db",           // 缩略图缓存
+                "-xr!desktop.ini",         // 文件夹配置
+                "-xr!$RECYCLE.BIN",        // 回收站
+                "-xr!System Volume Information",  // 系统卷信息
+
+                // 版本控制系统
+                "-xr!.git",                // Git
+                "-xr!.svn",                // SVN
+                "-xr!.hg",                 // Mercurial
+
+                // IDE 配置
+                "-xr!.idea",               // IntelliJ IDEA
+                "-xr!.vscode",             // VS Code
+                "-xr!.eclipse"             // Eclipse
+        );
     }
 
     /**
@@ -364,6 +413,57 @@ public class CompressUtils {
      */
     private static boolean isValidFilePath(String path) {
         if (path == null || path.trim().isEmpty()) {
+            return false;
+        }
+
+        // 获取文件名
+        String fileName = path;
+        int lastSlash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+        if (lastSlash >= 0) {
+            fileName = path.substring(lastSlash + 1);
+        }
+
+        // ⭐ 过滤规则
+
+        // 1. 过滤 PaxHeader
+        if (fileName.equals("PaxHeader") || path.contains("/PaxHeader/") || path.contains("\\PaxHeader\\")) {
+            log.debug("过滤 PaxHeader: {}", path);
+            return false;
+        }
+
+        // 2. 过滤 @LongLink (GNU tar 长文件名)
+        if (fileName.equals("@LongLink")) {
+            log.debug("过滤 @LongLink: {}", path);
+            return false;
+        }
+
+        // 3. 过滤 ._ 开头的文件（macOS 资源分叉）
+        if (fileName.startsWith("._")) {
+            log.debug("过滤 macOS 资源分叉: {}", path);
+            return false;
+        }
+
+        // 4. 过滤 __MACOSX 目录
+        if (path.contains("__MACOSX")) {
+            log.debug("过滤 __MACOSX: {}", path);
+            return false;
+        }
+
+        // 5. 过滤 .DS_Store
+        if (fileName.equals(".DS_Store")) {
+            log.debug("过滤 .DS_Store: {}", path);
+            return false;
+        }
+
+        // 6. 过滤 Thumbs.db
+        if (fileName.equalsIgnoreCase("Thumbs.db")) {
+            log.debug("过滤 Thumbs.db: {}", path);
+            return false;
+        }
+
+        // 7. 过滤 desktop.ini
+        if (fileName.equalsIgnoreCase("desktop.ini")) {
+            log.debug("过滤 desktop.ini: {}", path);
             return false;
         }
 
@@ -459,7 +559,6 @@ public class CompressUtils {
             log.warn("⚠️ 检测并删除了 {} 个路径逃逸文件", escapeCount.get());
         }
 
-        log.info("解压验证完成: {} 个文件, 总大小 {} MB", fileCount.get(), totalSize.get() / 1024 / 1024);
     }
 
     /**
