@@ -14,8 +14,16 @@ chown ${USER_UID}:${USER_GID} /jmalcloud/ip2region.xdb
 chown -R ${USER_UID}:${USER_GID} /usr/local/mxcad
 chown -R ${USER_UID}:${USER_GID} /app
 
-DATA_BASE_TYPE=${DATA_BASE_TYPE:-"mongodb"}
 RESET_ADMIN_PASSWORD=${RESET_ADMIN_PASSWORD:-"false"}
+
+# 如果设置了 MONGODB_URI 但没有显式指定数据库类型，自动使用 mongodb
+if [ -n "${MONGODB_URI}" ] && [ "${DATA_BASE_TYPE}" = "sqlite" ]; then
+  echo "检测到 MONGODB_URI，自动切换到 mongodb 模式"
+  DATA_BASE_TYPE="mongodb"
+fi
+
+# 设置默认值
+DATA_BASE_TYPE=${DATA_BASE_TYPE:-"sqlite"}
 
 case "${DATA_BASE_TYPE}" in
   sqlite)
@@ -28,12 +36,8 @@ case "${DATA_BASE_TYPE}" in
     RUN_ENVIRONMENT="prod-pgsql"
     ;;
   mongodb)
-    if [ -z "${MONGODB_URI}" ]; then
-      RUN_ENVIRONMENT="prod-sqlite"
-    else
-      MONGODB_URI=${MONGODB_URI:-"mongodb://mongo:27017/jmalcloud"}
-      RUN_ENVIRONMENT="prod-mongodb"
-    fi
+    MONGODB_URI=${MONGODB_URI:-"mongodb://mongo:27017/jmalcloud"}
+    RUN_ENVIRONMENT="prod-mongodb"
     ;;
   *)
     RUN_ENVIRONMENT="prod-sqlite"
