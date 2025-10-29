@@ -23,14 +23,11 @@ public class DataSourceProperties {
 
     private Boolean jpaEnabled = true;
 
-    private Boolean mongoEnabled = false;
-
     public String toString() {
         return "DataSourceProperties{" +
                 "type=" + type +
                 ", migration=" + migration +
                 ", jpaEnabled=" + jpaEnabled +
-                ", mongoEnabled=" + mongoEnabled +
                 '}';
     }
 
