@@ -74,7 +74,7 @@ public class FileMonitor {
         startFileMonitoringAsync();
         Completable.fromAction(() -> {
             newVersion = SystemUtil.getNewVersion();
-            log.info("Current version: v{}, Latest version: {}, dataSourceProperties: {}", version, newVersion, dataSourceProperties.toString());
+            log.info("Current version: v{}, Latest version: {}, {}", version, newVersion, dataSourceProperties.toString());
         }).subscribeOn(Schedulers.io())
                 .subscribe();
     }
