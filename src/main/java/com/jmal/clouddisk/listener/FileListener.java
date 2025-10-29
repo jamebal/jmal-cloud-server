@@ -188,7 +188,8 @@ public class FileListener implements DirectoryChangeListener {
             return;
         }
 
-        if (fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(eventPath.getFileName()::startsWith)) {
+        String filename = eventPath.getFileName().toString();
+        if (fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(filename::startsWith)) {
             log.debug("忽略文件:{}", eventPath.toFile().getAbsolutePath());
             return;
         }
