@@ -529,6 +529,7 @@
                                 <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
                                 <buildArg>-H:+AddAllCharsets</buildArg>
                                 <buildArg>-H:+AllowIncompleteClasspath</buildArg>
+                                <buildArg>-H:IncludeResources=org/apache/poi/schemas/ooxml/system/ooxml/.*</buildArg>
                                 <buildArg>-H:ExcludeResources=META-INF/services/org.hibernate.bytecode.spi.BytecodeProvider</buildArg>
                                 <!--lucene MMapDirectory-->
                                 <buildArg>-H:+SharedArenaSupport</buildArg>
