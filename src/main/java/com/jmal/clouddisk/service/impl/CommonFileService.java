@@ -420,7 +420,8 @@ public class CommonFileService {
                     String fileId = fileBaseDTO.getId();
                     String username = userService.getUserNameById(fileBaseDTO.getUserId());
                     File file = new File(Paths.get(fileProperties.getRootDir(), username, fileBaseDTO.getPath(), fileBaseDTO.getName()).toString());
-                    if (!file.exists() || fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(file.getName()::startsWith)) {
+                    String filename = file.getName();
+                    if (!file.exists() || fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(filename::startsWith)) {
                         deleteFile(username, file);
                         log.info("删除不存在的文档: {}", file.getAbsolutePath());
                         fileDAO.removeById(fileId);

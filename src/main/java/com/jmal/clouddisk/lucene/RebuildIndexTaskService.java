@@ -475,7 +475,8 @@ public class RebuildIndexTaskService {
         @Override
         public FileVisitResult visitFile(Path file, @NotNull BasicFileAttributes attrs) throws IOException {
             // 判断文件名是否在monitorIgnoreFilePrefix中
-            if (fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(file.getFileName()::startsWith)) {
+            String filename = file.getFileName().toString();
+            if (fileProperties.getMonitorIgnoreFilePrefix().stream().anyMatch(filename::startsWith)) {
                 log.debug("忽略文件:{}", file.getFileName());
                 return super.visitFile(file, attrs);
             }
