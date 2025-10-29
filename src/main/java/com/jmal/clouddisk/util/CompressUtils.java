@@ -376,7 +376,7 @@ public class CompressUtils {
         // 拒绝绝对路径
         if (path.startsWith("/") || path.startsWith("\\") ||
                 (path.length() > 1 && path.charAt(1) == ':')) {
-            log.warn("拒绝绝对路径: {}", path);
+            log.debug("拒绝绝对路径: {}", path);
             return false;
         }
 
@@ -469,15 +469,15 @@ public class CompressUtils {
         try {
             File file = path.toFile();
 
-            // 移除所有权限
-            file.setReadable(false, false);
-            file.setWritable(false, false);
-            file.setExecutable(false, false);
+            boolean success = file.setExecutable(false, false)
+                    && file.setWritable(false, false)
+                    && file.setReadable(false, false)
+                    && file.setWritable(true, true)
+                    && file.setReadable(true, true);
 
-            // 仅给所有者设置读写权限
-            file.setReadable(true, true);
-            file.setWritable(true, true);
-
+            if (!success) {
+                log.warn("无法为文件设置标准安全权限: {}", path);
+            }
             // 如果是 POSIX 系统，使用更严格的权限
             if (FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
                 try {
