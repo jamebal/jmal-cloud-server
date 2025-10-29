@@ -7,6 +7,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
@@ -45,6 +46,8 @@ public class FileMonitor {
 
     private final CommonFileService commonFileService;
 
+    private final DataSourceProperties dataSourceProperties;
+
     final FileListener fileListener;
 
     @Value("${version}")
@@ -70,8 +73,8 @@ public class FileMonitor {
         // 启动文件监控服务
         startFileMonitoringAsync();
         Completable.fromAction(() -> {
-            String newVersion = SystemUtil.getNewVersion();
-            log.debug("Current version: {}, Latest version: {}", version, newVersion);
+            newVersion = SystemUtil.getNewVersion();
+            log.info("Current version: v{}, Latest version: {}, dataSourceProperties: {}", version, newVersion, dataSourceProperties.toString());
         }).subscribeOn(Schedulers.io())
                 .subscribe();
     }
