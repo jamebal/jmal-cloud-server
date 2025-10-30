@@ -110,6 +110,8 @@ public class RoleService {
             // 分配权限后更新相关角色用户的权限缓存
             Completable.fromAction(() -> updateUserCacheByRole(roleDO))
                     .subscribeOn(Schedulers.io())
+                    .doOnError(e -> log.error(e.getMessage(), e))
+                    .onErrorComplete()
                     .subscribe();
         }
         roleDAO.save(roleDO);

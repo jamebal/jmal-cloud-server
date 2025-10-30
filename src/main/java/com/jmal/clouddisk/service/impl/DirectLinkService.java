@@ -9,6 +9,7 @@ import com.jmal.clouddisk.model.file.FileDocument;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class DirectLinkService {
 
     public static final String COLLECTION_NAME = "direct_links";
@@ -32,7 +34,10 @@ public class DirectLinkService {
             return directLink.getMark();
         }
         String mark = generateMark();
-        Completable.fromAction(() ->  upsertDirectLink(fileId, mark, userId)).subscribeOn(Schedulers.io()).subscribe();
+        Completable.fromAction(() ->  upsertDirectLink(fileId, mark, userId)).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
+                .subscribe();
         return mark;
     }
 
@@ -40,7 +45,10 @@ public class DirectLinkService {
         String userId = userLoginHolder.getUserId();
         checkOwnership(fileId, userId);
         String mark = generateMark();
-        Completable.fromAction(() ->  upsertDirectLink(fileId, mark, userId)).subscribeOn(Schedulers.io()).subscribe();
+        Completable.fromAction(() ->  upsertDirectLink(fileId, mark, userId)).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
+                .subscribe();
         return mark;
     }
 

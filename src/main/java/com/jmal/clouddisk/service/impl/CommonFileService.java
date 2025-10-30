@@ -253,7 +253,10 @@ public class CommonFileService {
     }
 
     public void deleteDependencies(String username, List<String> fileIds) {
-        Completable.fromAction(() -> syncDeleteDependencies(username, fileIds)).subscribeOn(Schedulers.io()).subscribe();
+        Completable.fromAction(() -> syncDeleteDependencies(username, fileIds)).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
+                .subscribe();
     }
 
     public void syncDeleteDependencies(String username, List<String> fileIds) {

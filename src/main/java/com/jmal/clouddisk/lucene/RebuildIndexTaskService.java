@@ -181,6 +181,8 @@ public class RebuildIndexTaskService {
                 pushMessage();
             }
         }).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
                 .subscribe();
     }
 
