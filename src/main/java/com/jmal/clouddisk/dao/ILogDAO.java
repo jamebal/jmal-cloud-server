@@ -8,7 +8,7 @@ public interface ILogDAO {
 
     void save(LogOperation logOperation);
 
-    Page<LogOperation> findAllByQuery(LogOperationDTO logOperationDTO, String currentUsername, String currentUserId, boolean isCreator);
+    Page<LogOperation> findAllByQuery(LogOperationDTO logOperationDTO, String currentUsername, String currentUserId, boolean isAdministrators);
 
     long countByUrl(String url);
 

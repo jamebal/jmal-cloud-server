@@ -106,4 +106,16 @@ public class RoleDAOImpl implements IRoleDAO {
     public void saveAll(List<RoleDO> roleDOList) {
         mongoTemplate.insertAll(roleDOList);
     }
+
+    @Override
+    public List<String> findAllCodeByIdIn(List<String> roleIdList) {
+        if(roleIdList == null || roleIdList.isEmpty()){
+            return List.of();
+        }
+        Query query = new Query();
+        query.fields().include("code");
+        query.addCriteria(Criteria.where("_id").in(roleIdList));
+        List<RoleDO> roleDOList = mongoTemplate.find(query, RoleDO.class);
+        return roleDOList.stream().map(RoleDO::getCode).toList();
+    }
 }

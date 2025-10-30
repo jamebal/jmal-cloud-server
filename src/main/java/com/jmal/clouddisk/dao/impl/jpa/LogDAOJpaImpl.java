@@ -48,8 +48,8 @@ public class LogDAOJpaImpl implements ILogDAO, IWriteCommon<LogOperation> {
     }
 
     @Override
-    public Page<LogOperation> findAllByQuery(LogOperationDTO logOperationDTO, String currentUsername, String currentUserId, boolean isCreator) {
-        Specification<LogOperation> spec = fromDTO(logOperationDTO, currentUsername, currentUserId, isCreator);
+    public Page<LogOperation> findAllByQuery(LogOperationDTO logOperationDTO, String currentUsername, String currentUserId, boolean isAdministrators) {
+        Specification<LogOperation> spec = fromDTO(logOperationDTO, currentUsername, currentUserId, isAdministrators);
         return logRepository.findAll(spec, logOperationDTO.getPageable());
     }
 
@@ -64,7 +64,7 @@ public class LogDAOJpaImpl implements ILogDAO, IWriteCommon<LogOperation> {
         return logRepository.findAll(spec, logOperationDTO.getPageable());
     }
 
-    public static Specification<LogOperation> fromDTO(LogOperationDTO dto, String currentUsername, String currentUserId, boolean isCreator) {
+    public static Specification<LogOperation> fromDTO(LogOperationDTO dto, String currentUsername, String currentUserId, boolean isAdministrators) {
         return (root, _, criteriaBuilder) -> {
 
             List<Predicate> predicates = new ArrayList<>();
@@ -87,7 +87,7 @@ public class LogDAOJpaImpl implements ILogDAO, IWriteCommon<LogOperation> {
             }
 
             // 处理特殊的权限逻辑
-            if (!isCreator && LogOperation.Type.OPERATION_FILE.name().equals(dto.getType())) {
+            if (!isAdministrators && LogOperation.Type.OPERATION_FILE.name().equals(dto.getType())) {
                 predicates.add(criteriaBuilder.equal(root.get("fileUserId"), currentUserId));
             }
 
