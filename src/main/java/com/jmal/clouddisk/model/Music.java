@@ -46,9 +46,9 @@ public class Music implements Reflective {
 
     public Music(MusicInfo music) {
         if (music != null) {
-            this.songName = music.getSongName();
-            this.singer = music.getSinger();
-            this.album = music.getAlbum();
+            this.songName = StringUtil.removeNullChar(music.getSongName());
+            this.singer = StringUtil.removeNullChar(music.getSinger());
+            this.album = StringUtil.removeNullChar(music.getAlbum());
         }
     }
 }
