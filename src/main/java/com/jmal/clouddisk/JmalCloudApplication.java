@@ -1,7 +1,6 @@
 package com.jmal.clouddisk;
 
 import cn.hutool.crypto.SecureUtil;
-import com.jmal.clouddisk.util.TesseractUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -27,9 +26,6 @@ public class JmalCloudApplication {
     public static void main(String[] args) {
         SecureUtil.disableBouncyCastle();
         SpringApplication application = new SpringApplication(JmalCloudApplication.class);
-
-        // dev环境下设置tesseract的lib路径
-        TesseractUtil.setTesseractLibPath();
 
         application.run(args);
     }

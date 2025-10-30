@@ -122,7 +122,7 @@ public class ImageExifUtil {
             return exifInfo;
         } catch (Exception e) {
             // 获取图片EXIF信息失败
-            log.warn("获取图片EXIF信息失败: {}, {}", e.getMessage(), file);
+            log.debug("获取图片EXIF信息失败: {}, {}", e.getMessage(), file);
         }
         return exifInfo;
     }
