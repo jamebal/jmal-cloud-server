@@ -153,6 +153,10 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
 
         if (luceneFileIds != null) {
             // 如果luceneFileIds不为null，说明进行了关键字搜索
+            if (luceneFileIds.isEmpty()) {
+                // 如果luceneFileIds为空，说明没有任何匹配结果，直接返回空页
+                return Page.empty(articleDTO.getPageable());
+            }
             whereBuild.append("AND a.public_id IN (:luceneFileIds) ");
             params.put("luceneFileIds", luceneFileIds);
         }
