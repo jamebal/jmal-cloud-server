@@ -227,8 +227,8 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
             whereBuild.append("AND jet.value IN (:tagIds) ");
             params.put("tagIds", tagIds);
         } else if (dataSourceProperties.getType() == DataSourceType.pgsql) {
-            whereBuild.append("AND tag_ids ?| :tagIds ");
-            params.put("tagIds", tagIds);
+            whereBuild.append("AND jsonb_exists_any(tag_ids, :tagIds) ");
+            params.put("tagIds", tagIds.toArray(new String[0]));
         } else if (dataSourceProperties.getType() == DataSourceType.mysql) {
             whereBuild.append("AND JSON_OVERLAPS(tag_ids, :tagIdListAsJson) ");
             String tagIdListAsJson = JacksonUtil.toJSONString(tagIds);
@@ -241,8 +241,8 @@ public class ArticleDAOJpaImpl implements IArticleDAO {
             whereBuild.append("AND jec.value IN (:categoryIds) ");
             params.put("categoryIds", categoryIds);
         } else if (dataSourceProperties.getType() == DataSourceType.pgsql) {
-            whereBuild.append("AND category_ids ?| :categoryIds ");
-            params.put("categoryIds", categoryIds);
+            whereBuild.append("AND jsonb_exists_any(category_ids, :categoryIds) ");
+            params.put("categoryIds", categoryIds.toArray(new String[0]));
         } else if (dataSourceProperties.getType() == DataSourceType.mysql) {
             whereBuild.append("AND JSON_OVERLAPS(category_ids, :categoryIdListAsJson) ");
             String categoryIdListAsJson = JacksonUtil.toJSONString(categoryIds);

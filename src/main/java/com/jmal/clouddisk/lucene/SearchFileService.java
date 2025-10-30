@@ -83,7 +83,10 @@ public class SearchFileService {
 
             String userId = userLoginHolder.getUserId();
             // 添加搜索历史
-            Completable.fromAction(() -> addSearchHistory(userId, searchDTO)).subscribeOn(Schedulers.io()).subscribe();
+            Completable.fromAction(() -> addSearchHistory(userId, searchDTO)).subscribeOn(Schedulers.io())
+                    .doOnError(e -> log.error(e.getMessage(), e))
+                    .onErrorComplete()
+                    .subscribe();
             return result;
         } catch (IOException | ParseException | java.lang.IllegalArgumentException e) {
             log.error("搜索失败", e);

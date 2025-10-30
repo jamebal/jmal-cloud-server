@@ -60,6 +60,8 @@ public class TencentOssService implements IOssService {
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor, ossConfigDTO);
         Completable.fromAction(this::getMultipartUploads).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
                 .subscribe();
         this.transferManager = new TransferManager(cosClient);
         createTransferManager();

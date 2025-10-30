@@ -80,6 +80,8 @@ public class EtagService {
             log.debug("Initial ETag setup finished. Ensuring ETag processing worker is active if needed.");
             ensureProcessingMarkedFolders();
         }).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
                 .subscribe();
     }
 

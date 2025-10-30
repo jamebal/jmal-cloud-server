@@ -81,17 +81,27 @@ public class MessageService {
     }
 
     public Single<Long> calculateTotalOccupiedSpace(String userId) {
-        Single<Long> space1Single = getOccupiedSpaceAsync(userId, CommonFileService.COLLECTION_NAME);
-        Single<Long> space2Single = getOccupiedSpaceAsync(userId, CommonFileService.TRASH_COLLECTION_NAME);
+        Single<Long> space1Single = getOccupiedSpaceAsync(userId, CommonFileService.COLLECTION_NAME)
+                .doOnError(e -> log.error("获取常规文件占用空间失败, userId: {}", userId, e))
+                .onErrorReturnItem(0L);
+
+        Single<Long> space2Single = getOccupiedSpaceAsync(userId, CommonFileService.TRASH_COLLECTION_NAME)
+                .doOnError(e -> log.error("获取回收站占用空间失败, userId: {}", userId, e))
+                .onErrorReturnItem(0L);
+
         return Single.zip(space1Single, space2Single, Long::sum);
     }
 
     public Single<Long> getOccupiedSpaceAsync(String userId, String collectionName) {
-        return Single.fromCallable(() -> trashDAO.getOccupiedSpace(userId, collectionName)).subscribeOn(Schedulers.io()).doOnError(e -> log.error(e.getMessage(), e));
+        return Single.fromCallable(() -> trashDAO.getOccupiedSpace(userId, collectionName))
+                .subscribeOn(Schedulers.io());
     }
 
     public void pushMessage(String username, Object message, String url) {
-        Completable.fromAction(() -> pushMessageSync(username, message, url)).subscribeOn(Schedulers.io()).subscribe();
+        Completable.fromAction(() -> pushMessageSync(username, message, url)).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
+                .subscribe();
     }
 
     /**

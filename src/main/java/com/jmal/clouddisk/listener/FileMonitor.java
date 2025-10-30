@@ -76,6 +76,8 @@ public class FileMonitor {
             newVersion = SystemUtil.getNewVersion();
             log.info("Current version: v{}, Latest version: {}, {}", version, newVersion, dataSourceProperties.toString());
         }).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
                 .subscribe();
     }
 
@@ -105,6 +107,8 @@ public class FileMonitor {
                 }
             }
         }).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
                 .subscribe();
     }
 

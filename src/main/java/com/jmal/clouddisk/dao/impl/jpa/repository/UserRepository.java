@@ -35,15 +35,15 @@ public interface UserRepository extends JpaRepository<ConsumerDO, String>, JpaSp
 
     /**
      * 根据 roleId 列表查询所有匹配的用户名 (PostgreSQL 版本)
-     * 使用 ?| 操作符，它检查左边的 jsonb 数组是否与右边的 text 数组有任何共同的元素。
+     * 使用 jsonb_exists_any 函数
      * JPA/Hibernate 会自动将 List<String> 绑定为 PostgreSQL 的数组类型。
      *
      * @param roleIdList 要查询的角色ID列表
      * @return 匹配的用户名列表
      */
-    @Query(value = "SELECT username FROM consumers WHERE roles ?| :roleIdList",
+    @Query(value = "SELECT username FROM consumers WHERE jsonb_exists_any(roles, :roleIdList)",
             nativeQuery = true)
-    List<String> findUsernamesByRoleIdList_PostgreSQL(@Param("roleIdList") Collection<String> roleIdList);
+    List<String> findUsernamesByRoleIdList_PostgreSQL(@Param("roleIdList") String[] roleIdList);
 
     /**
      * 根据 roleId 列表查询所有匹配的用户名 (MySQL 版本)

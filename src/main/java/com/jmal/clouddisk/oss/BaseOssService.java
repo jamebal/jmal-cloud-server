@@ -363,6 +363,8 @@ public class BaseOssService {
                 removeWaitingUploadCache(objectName);
                 Completable.fromAction(() -> ossService.uploadFile(tempFileAbsolutePath, objectName))
                         .subscribeOn(Schedulers.io())
+                        .doOnError(e -> log.error(e.getMessage(), e))
+                        .onErrorComplete()
                         .subscribe();
             }
         });

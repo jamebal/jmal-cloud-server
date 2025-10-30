@@ -479,7 +479,10 @@ public class MarkdownServiceImpl implements IMarkdownService {
             Path userRootPath = Paths.get(fileProperties.getRootDir(), upload.getUsername());
             Path relativeNioPath = userRootPath.relativize(file.toPath());
             eventPublisher.publishEvent(new FileVersionEvent(this, upload.getUsername(), relativeNioPath.toString(), userId, operator));
-        }).subscribeOn(Schedulers.io()).subscribe();
+        }).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
+                .subscribe();
 
         return ResultUtil.success();
     }

@@ -166,6 +166,8 @@ public class AuthInterceptor implements HandlerInterceptor {
         // access-token 认证通过 设置该身份的权限
         Completable.fromAction(() -> accessTokenDAO.updateAccessToken(username, userAccessTokenDO.getAccessToken()))
                 .subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
                 .subscribe();
         setAuthorities(username);
         return userAccessTokenDO.getUsername();

@@ -732,6 +732,8 @@ public class FileServiceImpl implements IFileService {
                         commonFileService.pushMessageOperationFileError(finalUsername, Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR), "重命名");
                     }
                 }).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
                 .subscribe();
         return ResultUtil.success();
     }
@@ -877,6 +879,8 @@ public class FileServiceImpl implements IFileService {
                         commonFileService.pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR), "移动");
                     }
                 }).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
                 .subscribe();
         return ResultUtil.success();
     }
@@ -934,6 +938,8 @@ public class FileServiceImpl implements IFileService {
                         commonFileService.pushMessageOperationFileError(upload.getUsername(), Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR), "复制");
                     }
                 }).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
                 .subscribe();
         return ResultUtil.success();
     }
@@ -1879,7 +1885,10 @@ public class FileServiceImpl implements IFileService {
             restoreFile(username, fileIds, logOperation);
             OperationTips operationTips = OperationTips.builder().success(true).operation("还原").build();
             messageService.pushMessage(username, operationTips, Constants.OPERATION_TIPS);
-        }).subscribeOn(Schedulers.io()).subscribe();
+        }).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
+                .subscribe();
         return ResultUtil.success();
     }
 
@@ -1891,7 +1900,10 @@ public class FileServiceImpl implements IFileService {
             deleteTrash(username, fileIds, logOperation);
             OperationTips operationTips = OperationTips.builder().success(true).operation("删除").build();
             messageService.pushMessage(username, operationTips, Constants.OPERATION_TIPS);
-        }).subscribeOn(Schedulers.io()).subscribe();
+        }).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
+                .subscribe();
         return ResultUtil.success();
     }
 
@@ -1915,7 +1927,10 @@ public class FileServiceImpl implements IFileService {
                 desc = fileDocument.getPath() + fileDocument.getName();
             }
             logService.asyncAddLogFileOperation(logOperation, fileUsername, desc, "下载文件");
-        }).subscribeOn(Schedulers.io()).subscribe();
+        }).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
+                .subscribe();
         return ResultUtil.success(true);
     }
 
@@ -1932,7 +1947,10 @@ public class FileServiceImpl implements IFileService {
             deleteFileLog(logOperation, true, username, true, null);
             OperationTips operationTips = OperationTips.builder().success(true).operation("清空回收站").build();
             messageService.pushMessage(username, operationTips, Constants.OPERATION_TIPS);
-        }).subscribeOn(Schedulers.io()).subscribe();
+        }).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
+                .subscribe();
         return ResultUtil.success();
     }
 

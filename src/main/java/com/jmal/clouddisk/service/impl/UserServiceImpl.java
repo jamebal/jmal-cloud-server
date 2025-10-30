@@ -82,7 +82,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public synchronized ConsumerDO add(ConsumerDTO consumerDTO) {
         String username = consumerDTO.getUsername();
-        if (isValidUsername(username)) {
+        if (isNotValidUsername(username)) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "非法的用户名格式");
         }
         if (fileProperties.notAllowUsername(username)) {
@@ -114,19 +114,13 @@ public class UserServiceImpl implements IUserService {
     /**
      * 验证用户名是否安全
      */
-    public static boolean isValidUsername(String username) {
+    public static boolean isNotValidUsername(String username) {
         if (username == null || username.isEmpty()) {
-            return false;
-        }
-
-        // 禁止路径遍历字符
-        if (username.contains("..") || username.contains("/") ||
-                username.contains("\\") || username.contains("\0")) {
-            return false;
+            return true;
         }
 
         // 只允许字母、数字、下划线、连字符
-        return username.matches("^[a-zA-Z0-9_-]+$");
+        return !username.matches("^[a-zA-Z0-9_-]+$");
     }
 
     /**
@@ -240,6 +234,8 @@ public class UserServiceImpl implements IUserService {
             // 修改用户角色后更新相关角色用户的权限缓存
             Completable.fromAction(() -> roleService.updateUserCacheByRole(user.getRoles()))
                     .subscribeOn(Schedulers.io())
+                    .doOnError(e -> log.error(e.getMessage(), e))
+                    .onErrorComplete()
                     .subscribe();
         }
         return ResultUtil.success(fileId);
@@ -501,6 +497,7 @@ public class UserServiceImpl implements IUserService {
 
     /**
      * 获取创建者的头像
+     *
      * @return 头像文件Id
      */
     public String getCreatorAvatar() {

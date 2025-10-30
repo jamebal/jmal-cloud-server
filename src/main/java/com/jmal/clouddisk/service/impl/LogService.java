@@ -245,7 +245,10 @@ public class LogService {
      * @param desc 描述
      */
     public void asyncAddLogFileOperation(LogOperation logOperation, String fileUsername, String filepath, String desc) {
-        Completable.fromAction(() -> addLogFileOperation(logOperation, fileUsername, filepath, desc)).subscribeOn(Schedulers.io()).subscribe();
+        Completable.fromAction(() -> addLogFileOperation(logOperation, fileUsername, filepath, desc)).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
+                .subscribe();
     }
 
     /**
@@ -300,6 +303,8 @@ public class LogService {
             logOperation.setCreateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
             logDAO.save(logOperation);
         }).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
                 .subscribe();
     }
 
