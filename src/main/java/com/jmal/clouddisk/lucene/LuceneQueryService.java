@@ -159,7 +159,7 @@ public class LuceneQueryService {
             BooleanQuery keywordQuery = getKeywordQuery(builder.build());
             fileQueryBuilder.add(keywordQuery, BooleanClause.Occur.MUST);
             fileQueryBuilder.add(LuceneQueryService.getPathQueryBuilder(fileProperties.getDocumentDir()), BooleanClause.Occur.MUST);
-            return find(keywordQuery);
+            return find(fileQueryBuilder.build());
         } catch (ParseException e) {
             throw new CommonException(e.getMessage());
         }
@@ -186,7 +186,7 @@ public class LuceneQueryService {
             List<String> fileIds = getFileIds(indexSearcher, topDocs);
             return new PageImpl<>(fileIds, Pageable.ofSize(pageSize).withPage(pageNum - 1), count);
         } catch (IOException e) {
-            log.error("查询失败, query: {}", query.toString(), e);
+            log.error("查询失败, query: {}", query, e);
         } finally {
             if (indexSearcher != null) {
                 try {
@@ -207,7 +207,7 @@ public class LuceneQueryService {
             TopDocs topDocs = indexSearcher.search(query, Integer.MAX_VALUE);
             return getFileIds(indexSearcher, topDocs);
         } catch (IOException e) {
-            log.error("查询失败, query: {}", query.toString(), e);
+            log.error("查询失败, query: {}", query, e);
         } finally {
             if (indexSearcher != null) {
                 try {
@@ -265,7 +265,7 @@ public class LuceneQueryService {
 
         // 如果keyword中有空格，将其拆分为多个关键字，这多个关键字之间是OR关系,在name或tag字段
         Query nameAndTagQuery = null;
-        if (!BooleanUtil.isTrue(searchDTO.getExactSearch())) {
+        if (isEnableFuzzyQuery(fuzzyKeyword, searchDTO.getExactSearch())) {
             nameAndTagQuery = getMultipleKeywordsQuery(searchDTO, exactKeyword);
         }
 
@@ -300,7 +300,7 @@ public class LuceneQueryService {
         Query exactQuery = null;
         if (fileProperties.getExactSearch()) {
             exactQuery = getExactQuery(fieldNameExact, exactKeyword);
-            if (!BooleanUtil.isTrue(searchDTO.getExactSearch())) {
+            if (isEnableFuzzyQuery(fuzzyKeyword, searchDTO.getExactSearch())) {
                 fuzzyQuery = getFuzzyQuery(fieldNameFuzzy, fuzzyKeyword);
             }
         } else {
@@ -318,6 +318,13 @@ public class LuceneQueryService {
             booleanQueryFieldBuilder.add(exactQuery, BooleanClause.Occur.SHOULD);
         }
         return booleanQueryFieldBuilder;
+    }
+
+    private boolean isEnableFuzzyQuery(String keyword, Boolean exactSearch) {
+        if (CharSequenceUtil.isBlank(keyword)) {
+            return true;
+        }
+        return !BooleanUtil.isTrue(exactSearch) || keyword.length() < fileProperties.getNgramMinSize();
     }
 
     private Query getMultipleKeywordsQuery(SearchDTO searchDTO, String exactKeyword) {

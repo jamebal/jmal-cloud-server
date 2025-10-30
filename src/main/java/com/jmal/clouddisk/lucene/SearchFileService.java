@@ -27,14 +27,16 @@ import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -48,7 +50,6 @@ import static com.jmal.clouddisk.lucene.LuceneService.FIELD_TAG_NAME_FUZZY;
 public class SearchFileService {
 
     private final LuceneQueryService luceneQueryService;
-    private final SearcherManager searcherManager;
     private final UserLoginHolder userLoginHolder;
     private final TagService tagService;
     private final ISearchHistoryDAO searchHistoryDAO;
@@ -73,7 +74,6 @@ public class SearchFileService {
             }
 
             Query query = getQuery(searchDTO);
-            searcherManager.maybeRefresh();
 
             Page<String> page = luceneQueryService.find(query, searchDTO);
 
@@ -88,7 +88,7 @@ public class SearchFileService {
                     .onErrorComplete()
                     .subscribe();
             return result;
-        } catch (IOException | ParseException | java.lang.IllegalArgumentException e) {
+        } catch (ParseException | java.lang.IllegalArgumentException e) {
             log.error("搜索失败", e);
             return result.setData(Collections.emptyList()).setCount(0);
         }
