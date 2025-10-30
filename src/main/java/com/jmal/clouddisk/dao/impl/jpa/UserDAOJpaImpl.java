@@ -135,7 +135,7 @@ public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
     @Override
     public List<String> findUsernamesByRoleIdList(Collection<String> roleIdList) {
         if (dataSourceProperties.getType() == DataSourceType.pgsql){
-            return userRepository.findUsernamesByRoleIdList_PostgreSQL(roleIdList);
+            return userRepository.findUsernamesByRoleIdList_PostgreSQL(roleIdList.toArray(new String[0]));
         } else if (dataSourceProperties.getType() == DataSourceType.mysql) {
             // 格式化为JSON数组的字符串, 例如 "[\"role1\", \"role2\"]"
             String roleIdListAsJson = JacksonUtil.toJSONString(roleIdList);

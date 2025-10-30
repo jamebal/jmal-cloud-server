@@ -21,4 +21,15 @@ public class StringUtil {
 
         return sb.toString();
     }
+
+    /**
+     * 移除字符串中的空字符 (\u0000)
+     *
+     * @param input 输入字符串
+     * @return 清理后的字符串，null 安全
+     */
+    public static String removeNullChar(String input) {
+        return input == null ? null : input.replace("\u0000", "");
+    }
+
 }
