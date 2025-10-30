@@ -103,6 +103,11 @@ public class RoleDAOJpaImpl implements IRoleDAO, IWriteCommon<RoleDO> {
         writeService.submit(new RoleOperation.CreateAll(roleDOList));
     }
 
+    @Override
+    public List<String> findAllCodeByIdIn(List<String> roleIdList) {
+        return roleRepository.findAllCodeByIdIn(roleIdList);
+    }
+
     /**
      * 根据 filed 进行不区分大小写的模糊查询 (keyword 不为空)
      */

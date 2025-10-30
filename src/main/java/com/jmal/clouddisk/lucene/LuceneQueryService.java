@@ -320,6 +320,14 @@ public class LuceneQueryService {
         return booleanQueryFieldBuilder;
     }
 
+    /**
+     * 是否启用模糊查询(分词)<br/>
+     * 如果关键字长度小于 ngramMinSize，则精确搜索无法命中，必须使用模糊搜索
+     *
+     * @param keyword  keyword
+     * @param exactSearch 是否开启精确搜索(不分词)
+     * @return boolean
+     */
     private boolean isEnableFuzzyQuery(String keyword, Boolean exactSearch) {
         if (CharSequenceUtil.isBlank(keyword)) {
             return true;

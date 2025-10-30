@@ -3,14 +3,18 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.IoUtil;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
-import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.dao.IRoleDAO;
 import com.jmal.clouddisk.dao.IUserDAO;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
-import com.jmal.clouddisk.util.*;
+import com.jmal.clouddisk.util.CaffeineUtil;
+import com.jmal.clouddisk.util.JacksonUtil;
+import com.jmal.clouddisk.util.MessageUtil;
+import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.TimeUntils;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
@@ -44,8 +48,6 @@ public class RoleService {
     private final IRoleDAO roleDAO;
 
     private final IUserDAO userDAO;
-
-    private final DataSourceProperties dataSourceProperties;
 
     private final CommonUserService commonUserService;
 
@@ -267,4 +269,24 @@ public class RoleService {
         return roleDO == null ? "" : roleDO.getId();
     }
 
+    private boolean isAdministratorsByRoleIds(List<String> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return false;
+        }
+        List<String> listCode = roleDAO.findAllCodeByIdIn(roleIds);
+        return !listCode.isEmpty() && listCode.contains(ADMINISTRATORS);
+    }
+
+    public boolean isAdministratorsByUserId(String userId) {
+        ConsumerDO consumerDO = commonUserService.getUserInfoById(userId);
+        if (consumerDO == null) {
+            return false;
+        }
+        // 检查是否为创建者
+        if (Boolean.TRUE.equals(consumerDO.getCreator())) {
+            return true;
+        }
+        // 检查是否为管理员角色
+        return isAdministratorsByRoleIds(consumerDO.getRoles());
+    }
 }

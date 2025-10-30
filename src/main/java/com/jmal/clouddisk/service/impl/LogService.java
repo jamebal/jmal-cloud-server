@@ -49,6 +49,8 @@ public class LogService {
 
     private final CommonUserService userService;
 
+    private final RoleService roleService;
+
     private final FileProperties fileProperties;
 
     private Searcher ipSearcher = null;
@@ -316,8 +318,8 @@ public class LogService {
     public ResponseResult<List<LogOperation>> list(LogOperationDTO logOperationDTO) {
         String currentUsername = userLoginHolder.getUsername();
         String currentUserId = userLoginHolder.getUserId();
-        boolean isCreator = userService.getIsCreator(userLoginHolder.getUserId());
-        Page<LogOperation> page = logDAO.findAllByQuery(logOperationDTO, currentUsername, currentUserId, isCreator);
+        boolean isAdministrators = roleService.isAdministratorsByUserId(currentUserId);
+        Page<LogOperation> page = logDAO.findAllByQuery(logOperationDTO, currentUsername, currentUserId, isAdministrators);
         return ResultUtil.success(page.getContent()).setCount(page.getTotalElements());
     }
 

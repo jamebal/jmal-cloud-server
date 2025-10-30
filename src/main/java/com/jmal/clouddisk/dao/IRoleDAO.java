@@ -26,4 +26,6 @@ public interface IRoleDAO {
     RoleDO findByCode(String roleCode);
 
     void saveAll(List<RoleDO> roleDOList);
+
+    List<String> findAllCodeByIdIn(List<String> roleIdList);
 }

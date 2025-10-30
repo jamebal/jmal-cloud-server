@@ -35,8 +35,8 @@ public class LogDAOImpl implements ILogDAO {
     }
 
     @Override
-    public Page<LogOperation> findAllByQuery(LogOperationDTO logOperationDTO, String currentUsername, String currentUserId, boolean isCreator) {
-        Query query = getQuery(logOperationDTO, currentUsername, currentUserId, isCreator);
+    public Page<LogOperation> findAllByQuery(LogOperationDTO logOperationDTO, String currentUsername, String currentUserId, boolean isAdministrators) {
+        Query query = getQuery(logOperationDTO, currentUsername, currentUserId, isAdministrators);
         return getLogOperations(logOperationDTO, query);
     }
 
@@ -75,7 +75,7 @@ public class LogDAOImpl implements ILogDAO {
      * @param logOperationDTO 查询条件
      * @return Query(mongodb的查询条件)
      */
-    private Query getQuery(LogOperationDTO logOperationDTO, String currentUsername, String currentUserId, boolean isCreator) {
+    private Query getQuery(LogOperationDTO logOperationDTO, String currentUsername, String currentUserId, boolean isAdministrators) {
         Query query = new Query();
         String excludeUsername = logOperationDTO.getExcludeUsername();
         String username = logOperationDTO.getUsername();
@@ -93,7 +93,7 @@ public class LogDAOImpl implements ILogDAO {
         if (!CharSequenceUtil.isBlank(type)) {
             query.addCriteria(Criteria.where("type").is(type));
         }
-        if (!isCreator && LogOperation.Type.OPERATION_FILE.name().equals(logOperationDTO.getType())) {
+        if (!isAdministrators && LogOperation.Type.OPERATION_FILE.name().equals(logOperationDTO.getType())) {
             query.addCriteria(Criteria.where("fileUserId").is(currentUserId));
         }
         Long startTime = logOperationDTO.getStartTime();
