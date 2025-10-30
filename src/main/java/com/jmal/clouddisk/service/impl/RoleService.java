@@ -274,21 +274,19 @@ public class RoleService {
             return false;
         }
         List<String> listCode = roleDAO.findAllCodeByIdIn(roleIds);
-        if (listCode == null || listCode.isEmpty()) {
-            return false;
-        }
-        return listCode.contains(ADMINISTRATORS);
+        return !listCode.isEmpty() && listCode.contains(ADMINISTRATORS);
     }
 
     public boolean isAdministratorsByUserId(String userId) {
-        boolean isCreator = commonUserService.getIsCreator(userId);
-        if (isCreator) {
-            return true;
-        }
         ConsumerDO consumerDO = commonUserService.getUserInfoById(userId);
         if (consumerDO == null) {
             return false;
         }
+        // 检查是否为创建者
+        if (Boolean.TRUE.equals(consumerDO.getCreator())) {
+            return true;
+        }
+        // 检查是否为管理员角色
         return isAdministratorsByRoleIds(consumerDO.getRoles());
     }
 }
