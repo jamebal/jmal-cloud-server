@@ -523,10 +523,6 @@ public class UserServiceImpl implements IUserService {
                 }
                 // 禁用MFA
                 disableMfa(consumer.getId());
-                consumer.setMfaSecret(null);
-                consumer.setMfaEnabled(null);
-                consumer.setPassword(hash);
-                CaffeineUtil.setConsumerByUsernameCache(consumer.getUsername(), consumer);
             }
         }
     }
