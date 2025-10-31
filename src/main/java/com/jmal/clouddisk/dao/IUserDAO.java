@@ -36,4 +36,6 @@ public interface IUserDAO {
     List<String> findUsernamesByRoleIdList(Collection<String> roleId);
 
     boolean resetAdminPassword(String hash);
+
+    void resetMfaForAllUsers();
 }

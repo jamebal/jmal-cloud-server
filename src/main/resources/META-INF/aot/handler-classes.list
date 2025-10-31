@@ -62,6 +62,7 @@ com.jmal.clouddisk.dao.impl.jpa.write.menu.CreateHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.UnsetSharePropsHandler
 com.jmal.clouddisk.dao.impl.jpa.write.etag.SetMarkUpdateByUserIdAndPathAndNameHandler
 com.jmal.clouddisk.dao.impl.jpa.write.article.UpdatePageSortByIdHandler
+com.jmal.clouddisk.dao.impl.jpa.write.consumer.ResetMfaForAllUsersHandler
 com.jmal.clouddisk.dao.impl.jpa.write.filehistory.CreateHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.SetIsFavoriteByIdInHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.UpdateSharePropsHandler

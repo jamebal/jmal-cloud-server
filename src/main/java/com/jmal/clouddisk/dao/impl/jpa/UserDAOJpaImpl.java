@@ -155,6 +155,15 @@ public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
         }
     }
 
+    @Override
+    public void resetMfaForAllUsers() {
+        try {
+            writeService.submit(new UserOperation.ResetMfaForAllUsers()).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+
     public void applyUpdateToEntity(ConsumerDO entity, MyUpdate update) {
         // 处理 set 操作
         for (var entry : update.getOperations().entrySet()) {

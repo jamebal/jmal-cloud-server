@@ -351,4 +351,8 @@ public class SettingService {
     public void savePersonalization(String username, Personalization personalization) {
         userService.savePersonalization(username, personalization);
     }
+
+    public void resetMfa() {
+        userService.resetMfaForAllUsers();
+    }
 }

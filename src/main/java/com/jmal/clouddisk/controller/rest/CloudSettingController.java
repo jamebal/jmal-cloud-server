@@ -210,4 +210,13 @@ public class CloudSettingController {
         return ResultUtil.success();
     }
 
+    @Operation(summary = "重置两步验证")
+    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
+    @PutMapping("/cloud/setting/reset-mfa")
+    @Permission(value = "cloud:set:sync")
+    public ResponseResult<Object> resetMfa() {
+        settingService.resetMfa();
+        return ResultUtil.success();
+    }
+
 }

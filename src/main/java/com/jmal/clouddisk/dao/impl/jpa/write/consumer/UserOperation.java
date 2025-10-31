@@ -12,4 +12,6 @@ public final class UserOperation {
     public record DeleteAllById(List<String> idList) implements IUserOperation<Void> {}
 
     public record ResetAdminPassword(String password) implements IUserOperation<Boolean> {}
+
+    public record ResetMfaForAllUsers() implements IUserOperation<Void> {}
 }
