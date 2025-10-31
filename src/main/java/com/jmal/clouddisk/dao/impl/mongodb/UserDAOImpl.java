@@ -149,4 +149,13 @@ public class UserDAOImpl implements IUserDAO {
         UpdateResult updateResult = mongoTemplate.updateFirst(query, update, ConsumerDO.class);
         return updateResult.getModifiedCount() > 0;
     }
+
+    @Override
+    public void resetMfaForAllUsers() {
+        Query query = new Query();
+        Update update = new Update();
+        update.set("mfaSecret", null);
+        update.set("mfaEnabled", null);
+        mongoTemplate.updateMulti(query, update, ConsumerDO.class);
+    }
 }

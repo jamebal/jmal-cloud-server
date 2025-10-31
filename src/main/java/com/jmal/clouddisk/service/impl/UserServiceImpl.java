@@ -547,4 +547,13 @@ public class UserServiceImpl implements IUserService {
             updateConsumer(consumerDO.getId(), query, update);
         }
     }
+
+    public void resetMfaForAllUsers() {
+        if (!commonUserService.getIsCreator(userLoginHolder.getUserId())) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
+        }
+        userDAO.resetMfaForAllUsers();
+        // 清除缓存
+        CaffeineUtil.invalidateAllConsumerCache();
+    }
 }

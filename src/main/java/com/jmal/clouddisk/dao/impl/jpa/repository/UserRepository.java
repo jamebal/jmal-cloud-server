@@ -71,4 +71,8 @@ public interface UserRepository extends JpaRepository<ConsumerDO, String>, JpaSp
     @Query("update ConsumerDO c set c.password = :password where c.creator = true")
     @Modifying
     int updatePasswordByCreatorTrue(String password);
+
+    @Query("update ConsumerDO c set c.mfaEnabled = null, c.mfaSecret = null")
+    @Modifying
+    void resetMfaForAllUsers();
 }

@@ -133,6 +133,10 @@ public class CaffeineUtil {
         USER_ID_CACHE.invalidate(username);
     }
 
+    public static void invalidateAllConsumerCache() {
+        CONSUMER_USERNAME.invalidateAll();
+    }
+
     @PostConstruct
     public void initCache(){
         initMyCache();
