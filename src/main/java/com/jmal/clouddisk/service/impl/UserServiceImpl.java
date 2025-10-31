@@ -345,7 +345,6 @@ public class UserServiceImpl implements IUserService {
         String userId = consumer.getId();
         if (!CharSequenceUtil.isBlank(userId)) {
             String originalPwd = "jmalcloud";
-            // password 1000:0b69ec810783195a102a73c12d4794c29d06904de2f95da1:37c6a397accb83909dc1d15824b8ffb6010649aad9567e99
             updatePwd(userId, originalPwd);
             return ResultUtil.successMsg("重置密码成功!");
         }
@@ -508,6 +507,7 @@ public class UserServiceImpl implements IUserService {
         return consumerDO.getAvatar();
     }
 
+    // 重置管理员密码
     public void resetAdminPassword() {
         if (BooleanUtil.isTrue(fileProperties.getResetAdminPassword())) {
             ConsumerDO consumer = userDAO.findOneByCreatorTrue();
@@ -519,8 +519,12 @@ public class UserServiceImpl implements IUserService {
                 String randomPass = Base64.encodeUrlSafe(Convert.toStr(RandomUtil.randomInt(100000, 1000000)));
                 String hash = PasswordHash.createHash(randomPass);
                 if (userDAO.resetAdminPassword(hash)) {
-                    log.warn("管理员: {}, 密码已重置为: {}，请请务必将环境变量'RESET_ADMIN_PASSWORD'移除或设置为false！", consumer.getUsername(), randomPass);
+                    log.warn("管理员: {}, 密码已重置为: {}，请务必将环境变量'RESET_ADMIN_PASSWORD'移除或设置为false！", consumer.getUsername(), randomPass);
                 }
+                // 禁用MFA
+                disableMfa(consumer.getId());
+                consumer.setMfaSecret(null);
+                consumer.setMfaEnabled(null);
                 consumer.setPassword(hash);
                 CaffeineUtil.setConsumerByUsernameCache(consumer.getUsername(), consumer);
             }
