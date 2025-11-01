@@ -75,6 +75,7 @@ spring:
     baseline-description: "项目初始版本"
     baseline-version: 1
     validate-on-migrate: true
+    mixed: true
 springdoc:
   packages-to-scan: com.jmal.clouddisk.controller,com.jmal.clouddisk.oss
   api-docs:

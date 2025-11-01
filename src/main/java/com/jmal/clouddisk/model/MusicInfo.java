@@ -2,6 +2,7 @@ package com.jmal.clouddisk.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.config.Reflective;
+import com.jmal.clouddisk.util.StringUtil;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -27,9 +28,23 @@ public class MusicInfo implements Reflective {
      */
     String album;
 
+    public void setSinger(String singer) {
+        this.singer = StringUtil.removeNullChar(singer);
+    }
+
+    public void setAlbum(String album) {
+        this.album = StringUtil.removeNullChar(album);
+    }
+
+    public void setSongName(String songName) {
+        this.songName = StringUtil.removeNullChar(songName);
+    }
+
     public MusicInfo(Music music) {
-        this.songName = music.getSongName();
-        this.singer = music.getSinger();
-        this.album = music.getAlbum();
+        if (music != null) {
+            setSongName(music.getSongName());
+            setSinger(music.getSinger());
+            setAlbum(music.getAlbum());
+        }
     }
 }

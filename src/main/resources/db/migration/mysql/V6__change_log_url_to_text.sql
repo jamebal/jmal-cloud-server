@@ -1,0 +1,2 @@
+ALTER TABLE log
+    MODIFY COLUMN url TEXT;
