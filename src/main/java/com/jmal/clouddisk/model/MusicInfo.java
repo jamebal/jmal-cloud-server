@@ -42,9 +42,9 @@ public class MusicInfo implements Reflective {
 
     public MusicInfo(Music music) {
         if (music != null) {
-            this.songName = StringUtil.removeNullChar(music.getSongName());
-            this.singer = StringUtil.removeNullChar(music.getSinger());
-            this.album = StringUtil.removeNullChar(music.getAlbum());
+            setSongName(music.getSongName());
+            setSinger(music.getSinger());
+            setAlbum(music.getAlbum());
         }
     }
 }
