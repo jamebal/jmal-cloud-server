@@ -11,6 +11,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author jmal
@@ -28,34 +30,38 @@ public class SystemUtil {
     /**
      * 获取硬盘可用空间(Gb)
      */
-    public static long getFreeSpace(){
+    public static long getFreeSpace() {
         File win = new File("/");
         if (win.exists()) {
             long freeSpace = win.getFreeSpace();
-            return freeSpace/1024/1024/1024;
+            return freeSpace / 1024 / 1024 / 1024;
         }
         return 0;
     }
 
     /**
      * 获取最新版本号
+     *
      * @return String
      */
     public static String getNewVersion() {
         String[] urls = {LATEST_RELEASE_URL, ALTERNATE_LATEST_RELEASE_URL};
 
-        for (String url : urls) {
-            try (HttpClient httpClient = HttpClient.newBuilder()
-                    .followRedirects(HttpClient.Redirect.NEVER)
-                    .connectTimeout(Duration.ofSeconds(5))
-                    .build()) {
-                String version = getLastVersion(httpClient, url);
-                if (version != null) {
-                    return version;
-                }
-            } catch (IOException | InterruptedException e) {
-                if (e instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
+        try (HttpClient httpClient = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .connectTimeout(Duration.ofSeconds(5))
+                .build()) {
+            for (String url : urls) {
+                try {
+                    String version = getLastVersion(httpClient, url);
+                    if (version != null) {
+                        return version;
+                    }
+                } catch (IOException | InterruptedException e) {
+                    if (e instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
+                    log.debug("从URL '{}' 获取最新版本失败: {}", url, e.getMessage());
                 }
             }
         }
@@ -84,14 +90,10 @@ public class SystemUtil {
 
         if (altResponse.statusCode() == 200) {
             String body = altResponse.body();
-            String pattern = RELEASE_TAG_URL_PREFIX;
-            int tagIndex = body.indexOf(pattern);
-            if (tagIndex != -1) {
-                int startIndex = tagIndex + pattern.length();
-                int endIndex = body.indexOf("\"", startIndex);
-                if (endIndex != -1) {
-                    return body.substring(startIndex, endIndex);
-                }
+            Pattern regex = Pattern.compile(Pattern.quote(RELEASE_TAG_URL_PREFIX) + "([^\\s\"']+)");
+            Matcher matcher = regex.matcher(body);
+            if (matcher.find()) {
+                return matcher.group(1);
             }
         }
         return null;
