@@ -68,6 +68,16 @@ jobs:
         run: |
           echo "/opt/maven/bin" >> $GITHUB_PATH
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_IO_USERNAME }}
+          password: ${{ secrets.GHCR_IO_TOKEN }}
+
       - name: Set up GraalVM environment
         run: |
           GRAALVM_VERSION="${{ inputs.graal_version }}"
@@ -154,37 +164,22 @@ jobs:
         run: |
           mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }} -DskipTests -Dnative-image.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--enable-monitoring=heapdump --pgo=jmalcloud.iprof"
 
-      # 准备构建产物用于上传（只上传二进制和 .so 文件）
-      - name: Prepare artifacts for upload
+      # 创建临时 Docker 镜像来传递构建产物
+      - name: Build and push artifacts image
         run: |
-          mkdir -p artifacts-upload/target
+          # 创建临时 Dockerfile
+          cat > Dockerfile.artifacts <<'EOF'
+          FROM scratch
+          COPY target/jmalcloud /artifacts/jmalcloud
+          COPY target/*.so /artifacts/
+          COPY pom.xml /artifacts/pom.xml
+          EOF
           
-          # 复制 jmalcloud 二进制文件
-          cp target/jmalcloud artifacts-upload/target/
+          # 构建并推送临时镜像
+          docker build -f Dockerfile.artifacts -t ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud-artifacts:${{ inputs.arch }}-${{ github.run_id }} .
+          docker push ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud-artifacts:${{ inputs.arch }}-${{ github.run_id }}
           
-          # 复制所有 .so 文件
-          find target -maxdepth 1 -name "*.so" -exec cp {} artifacts-upload/target/ \;
-          
-          # 复制 pom.xml（用于提取版本号）
-          cp pom.xml artifacts-upload/
-          
-          echo "Artifacts prepared:"
-          ls -lah artifacts-upload/
-          echo "Target directory contents:"
-          ls -lah artifacts-upload/target/
-          
-          # 显示总大小
-          echo "Total size:"
-          du -sh artifacts-upload/
-
-      # 上传构建产物到 GitHub Actions artifacts
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: native-build-${{ inputs.arch }}-${{ inputs.image_tag }}-${{ github.run_id }}
-          path: artifacts-upload/
-          retention-days: 1
-          compression-level: 0
+          echo "Artifacts image pushed successfully"
 
   # Job 2: 在 GitHub runner 上构建前端、构建和推送 Docker 镜像
   build-docker-and-push:
@@ -195,7 +190,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 构建前端（在 GitHub runner 上执行，速度快）
+      # 构建前端
       - name: Checkout frontend
         uses: actions/checkout@v4
         with:
@@ -222,28 +217,6 @@ jobs:
           mv dist/ frontend/
           mv frontend/dist/ frontend/frontend/
 
-      # 下载 Native Image 构建产物
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: native-build-${{ inputs.arch }}-${{ inputs.image_tag }}-${{ github.run_id }}
-          path: ./
-
-      - name: Verify downloaded artifacts and set permissions
-        run: |
-          echo "Downloaded artifacts:"
-          ls -lah .
-          echo "Target directory:"
-          ls -lah target/
-          echo "Frontend directory:"
-          ls -lah frontend/
-          
-          # 给二进制文件添加执行权限
-          chmod +x target/jmalcloud
-          
-          echo "Binary file permissions set:"
-          ls -lh target/jmalcloud
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -260,7 +233,31 @@ jobs:
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
-      # 设置 Maven（用于提取版本号）
+      # 从临时镜像中提取构建产物
+      - name: Extract artifacts from Docker image
+        run: |
+          # 创建临时容器并复制文件
+          CONTAINER_ID=$(docker create ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud-artifacts:${{ inputs.arch }}-${{ github.run_id }})
+          
+          # 创建 target 目录
+          mkdir -p target
+          
+          # 从容器中复制文件
+          docker cp $CONTAINER_ID:/artifacts/jmalcloud target/
+          docker cp $CONTAINER_ID:/artifacts/. target/ 2>/dev/null || true
+          docker cp $CONTAINER_ID:/artifacts/pom.xml ./
+          
+          # 删除临时容器
+          docker rm $CONTAINER_ID
+          
+          # 设置执行权限
+          chmod +x target/jmalcloud
+          
+          echo "Extracted artifacts:"
+          ls -lah target/
+          ls -lah .
+
+      # 设置 Maven
       - name: Set up Maven
         uses: actions/setup-java@v4
         with:
@@ -300,10 +297,16 @@ jobs:
           echo "--- Inspecting GHCR image ---"
           docker manifest inspect ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ inputs.arch }}
 
-      # 清理 artifacts
-      - name: Cleanup artifacts
+      # 清理临时 artifacts 镜像
+      - name: Delete artifacts image
         if: always()
-        uses: geekyeggo/delete-artifact@v5
-        with:
-          name: native-build-${{ inputs.arch }}-${{ inputs.image_tag }}-${{ github.run_id }}
-          failOnError: false
+        run: |
+          # 使用 GitHub API 删除临时镜像
+          curl -X DELETE \
+            -H "Authorization: Bearer ${{ secrets.GHCR_IO_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/user/packages/container/jmalcloud-artifacts/versions \
+            | jq -r '.[] | select(.metadata.container.tags[] | contains("${{ inputs.arch }}-${{ github.run_id }}")) | .id' \
+            | xargs -I {} curl -X DELETE \
+              -H "Authorization: Bearer ${{ secrets.GHCR_IO_TOKEN }}" \
+              https://api.github.com/user/packages/container/jmalcloud-artifacts/versions/{} || true
