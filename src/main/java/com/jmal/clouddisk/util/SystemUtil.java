@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 
 import java.io.File;
@@ -20,6 +21,8 @@ import java.time.Duration;
 public class SystemUtil {
 
     private static final String LATEST_RELEASE_URL = "https://github.com/jamebal/jmal-cloud-view/releases/latest";
+    private static final String ALTERNATE_LATEST_RELEASE_URL = "https://xget.jmalx.com/gh/jamebal/jmal-cloud-view/releases/latest";
+    private static final String RELEASE_TAG_URL_PREFIX = "https://github.com/jamebal/jmal-cloud-view/releases/tag/";
     private static final String USER_AGENT = "jmal-cloud-server";
 
     /**
@@ -39,31 +42,57 @@ public class SystemUtil {
      * @return String
      */
     public static String getNewVersion() {
-        try(HttpClient httpClient = HttpClient.newBuilder()
+        String[] urls = {LATEST_RELEASE_URL, ALTERNATE_LATEST_RELEASE_URL};
+
+        for (String url : urls) {
+            try (HttpClient httpClient = HttpClient.newBuilder()
                     .followRedirects(HttpClient.Redirect.NEVER)
                     .connectTimeout(Duration.ofSeconds(5))
                     .build()) {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(LATEST_RELEASE_URL))
-                    .timeout(Duration.ofSeconds(5))
-                    .header(HttpHeaders.USER_AGENT, USER_AGENT)
-                    .GET()
-                    .build();
-
-            HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
-
-            // 检查是否是重定向响应（301, 302, 303, 307, 308）
-            if (response.statusCode() >= 300 && response.statusCode() < 400) {
-                String location = response.headers().firstValue("Location").orElse(null);
-                if (location != null && location.contains("/tag/")) {
-                    return location.substring(location.lastIndexOf("/") + 1);
+                String version = getLastVersion(httpClient, url);
+                if (version != null) {
+                    return version;
+                }
+            } catch (IOException | InterruptedException e) {
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
                 }
             }
-        } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
+        }
+
+        log.warn("获取最新版本失败，请检查网络连接");
+        return null;
+    }
+
+    @Nullable
+    private static String getLastVersion(HttpClient httpClient, String url) throws IOException, InterruptedException {
+        HttpRequest altRequest = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(5))
+                .header(HttpHeaders.USER_AGENT, USER_AGENT)
+                .GET()
+                .build();
+
+        HttpResponse<String> altResponse = httpClient.send(altRequest, HttpResponse.BodyHandlers.ofString());
+
+        if (altResponse.statusCode() >= 300 && altResponse.statusCode() < 400) {
+            String location = altResponse.headers().firstValue("Location").orElse(null);
+            if (location != null && location.contains(RELEASE_TAG_URL_PREFIX)) {
+                return location.substring(location.lastIndexOf("/") + 1);
             }
-            log.warn("获取最新版本失败: {}", e.getMessage());
+        }
+
+        if (altResponse.statusCode() == 200) {
+            String body = altResponse.body();
+            String pattern = RELEASE_TAG_URL_PREFIX;
+            int tagIndex = body.indexOf(pattern);
+            if (tagIndex != -1) {
+                int startIndex = tagIndex + pattern.length();
+                int endIndex = body.indexOf("\"", startIndex);
+                if (endIndex != -1) {
+                    return body.substring(startIndex, endIndex);
+                }
+            }
         }
         return null;
     }
