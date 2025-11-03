@@ -16,10 +16,13 @@ public class FileNameUtils {
         if (encodedPath == null || encodedPath.isEmpty()) {
             return encodedPath;
         }
-        // 这样，URLDecoder在解码时，会把 '%2B' 转换回 '+'，而不是转换成空格。
-        // 同时，它仍然能正确地将真正的空格编码 '%20' 转换为空格。
-        String protectedPath = encodedPath.replace("+", "%2B");
-        return URLUtil.decode(protectedPath);
+        if (UrlEncodingChecker.isUrlEncoded(encodedPath)) {
+            // 这样，URLDecoder在解码时，会把 '%2B' 转换回 '+'，而不是转换成空格。
+            // 同时，它仍然能正确地将真正的空格编码 '%20' 转换为空格。
+            String protectedPath = encodedPath.replace("+", "%2B");
+            return URLUtil.decode(protectedPath);
+        }
+        return encodedPath;
     }
 
 }

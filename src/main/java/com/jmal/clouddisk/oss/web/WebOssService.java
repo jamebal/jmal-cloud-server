@@ -16,14 +16,35 @@ import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.dao.IShareDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
-import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.OperationPermission;
+import com.jmal.clouddisk.model.ShareBaseInfoDTO;
+import com.jmal.clouddisk.model.ShareDO;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.UploadResponse;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileIntroVO;
-import com.jmal.clouddisk.oss.*;
+import com.jmal.clouddisk.oss.AbstractOssObject;
+import com.jmal.clouddisk.oss.BaseOssService;
+import com.jmal.clouddisk.oss.BucketInfo;
+import com.jmal.clouddisk.oss.FileInfo;
+import com.jmal.clouddisk.oss.IOssService;
+import com.jmal.clouddisk.oss.OssConfigService;
+import com.jmal.clouddisk.oss.PlatformOSS;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
-import com.jmal.clouddisk.service.impl.*;
-import com.jmal.clouddisk.util.*;
+import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.CommonUserFileService;
+import com.jmal.clouddisk.service.impl.CommonUserService;
+import com.jmal.clouddisk.service.impl.FileSortService;
+import com.jmal.clouddisk.service.impl.MessageService;
+import com.jmal.clouddisk.service.impl.UserLoginHolder;
+import com.jmal.clouddisk.util.CaffeineUtil;
+import com.jmal.clouddisk.util.FileContentTypeUtils;
+import com.jmal.clouddisk.util.FileNameUtils;
+import com.jmal.clouddisk.util.ImageExifUtil;
+import com.jmal.clouddisk.util.MyFileUtils;
+import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -39,13 +60,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
@@ -92,6 +126,12 @@ public class WebOssService {
     }
 
     public static String getObjectName(Path prePath, String ossPath, boolean isFolder) {
+        // 判断prePath是否为url编码过的，如果是则解码
+        String prePathStr = prePath.toString();
+        String decodedPathStr = FileNameUtils.safeDecode(prePathStr);
+        if (!prePathStr.equals(decodedPathStr)) {
+            prePath = Paths.get(decodedPathStr);
+        }
         String name = "";
         int ossPathCount = Paths.get(ossPath).getNameCount();
         if (prePath.getNameCount() > ossPathCount) {
@@ -158,6 +198,9 @@ public class WebOssService {
     @NotNull
     private List<FileIntroVO> setAdditionalAttributes(String ossPath, UploadApiParamDTO upload, List<FileInfo> list, String objectName, String finalUserId) {
         List<FileIntroVO> fileIntroVOList;
+        if (list.isEmpty()) {
+            return List.of();
+        }
         // 检测上级目录是否有分享属性
         ShareBaseInfoDTO shareBaseDocument = commonUserFileService.getShareBaseDocument(finalUserId, WebOssCommonService.getPath(list.getFirst().getKey(), WebOssCommonService.getOssRootFolderName(ossPath)));
 
