@@ -53,6 +53,8 @@ jobs:
   # Job 1: 在自托管 runner 上构建 Native Image（只做编译）
   build-native-image:
     runs-on: ${{ inputs.arch == 'amd64' && fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["self-hosted", "Linux", "ARM64"]') }}
+    outputs:
+      cache-dir: ${{ steps.save-cache.outputs.cache-dir }}
 
     steps:
       - name: Cleanup old failed caches
@@ -156,6 +158,7 @@ jobs:
 
       # 保存构建产物到本地共享目录
       - name: Save build artifacts to local cache
+        id: save-cache
         run: |
           CACHE_DIR="/tmp/github-actions-build-cache/${{ github.run_id }}-${{ inputs.arch }}-${{ inputs.image_tag }}"
           echo "Creating cache directory: $CACHE_DIR"
@@ -169,7 +172,7 @@ jobs:
           ls -lah "$CACHE_DIR"
           
           # 保存缓存路径供下一个 job 使用
-          echo "CACHE_DIR=$CACHE_DIR" >> $GITHUB_ENV
+          echo "cache-dir=$CACHE_DIR" >> "$GITHUB_OUTPUT"
           echo "Build artifacts saved to: $CACHE_DIR"
 
   # Job 2: 创建临时 Docker 镜像来传递构建产物
@@ -193,8 +196,9 @@ jobs:
 
       # 从本地共享目录恢复构建产物
       - name: Restore build artifacts from local cache
+        env:
+          CACHE_DIR: ${{ needs.build-native-image.outputs.cache-dir }}
         run: |
-          CACHE_DIR="/tmp/github-actions-build-cache/${{ github.run_id }}-${{ inputs.arch }}-${{ inputs.image_tag }}"
           echo "Restoring from cache directory: $CACHE_DIR"
           
           if [ ! -d "$CACHE_DIR" ]; then
@@ -212,7 +216,7 @@ jobs:
           echo "Workspace after restore:"
           ls -lah .
           echo "Target directory:"
-          ls -lah target/ || echo "target/ not found"
+          ls -lah target/
 
       # 创建临时 Docker 镜像来传递构建产物
       - name: Build and push artifacts image
@@ -232,6 +236,17 @@ jobs:
           docker push ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud-artifacts:${{ inputs.arch }}-${{ github.run_id }}
           
           echo "Artifacts image pushed successfully"
+
+      # 清理本地缓存
+      - name: Cleanup local cache
+        if: always()
+        env:
+          CACHE_DIR: ${{ needs.build-native-image.outputs.cache-dir }}
+        run: |
+          if [ -d "$CACHE_DIR" ]; then
+            echo "Removing cache directory: $CACHE_DIR"
+            rm -rf "$CACHE_DIR"
+          fi
 
   # Job 3: 在 GitHub runner 上构建前端、构建和推送 Docker 镜像
   build-docker-and-push:
@@ -359,13 +374,32 @@ jobs:
       # 清理临时 artifacts 镜像
       - name: Delete artifacts image
         if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GHCR_IO_TOKEN }}
         run: |
-          # 使用 GitHub API 删除临时镜像
-          curl -X DELETE \
+          # 使用 GitHub CLI 删除包版本
+          echo "Attempting to delete artifacts package version..."
+          
+          # 获取包的所有版本
+          PACKAGE_VERSIONS=$(curl -s \
             -H "Authorization: Bearer ${{ secrets.GHCR_IO_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/user/packages/container/jmalcloud-artifacts/versions \
-            | jq -r '.[] | select(.metadata.container.tags[] | contains("${{ inputs.arch }}-${{ github.run_id }}")) | .id' \
-            | xargs -I {} curl -X DELETE \
+            "https://api.github.com/users/${{ secrets.GHCR_IO_USERNAME }}/packages/container/jmalcloud-artifacts/versions")
+          
+          echo "Package versions response:"
+          echo "$PACKAGE_VERSIONS" | jq '.'
+          
+          # 查找并删除匹配的版本
+          VERSION_ID=$(echo "$PACKAGE_VERSIONS" | jq -r ".[] | select(.metadata.container.tags[]? | contains(\"${{ inputs.arch }}-${{ github.run_id }}\")) | .id")
+          
+          if [ -n "$VERSION_ID" ]; then
+            echo "Found version ID: $VERSION_ID"
+            curl -X DELETE \
               -H "Authorization: Bearer ${{ secrets.GHCR_IO_TOKEN }}" \
-              https://api.github.com/user/packages/container/jmalcloud-artifacts/versions/{} || true
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/users/${{ secrets.GHCR_IO_USERNAME }}/packages/container/jmalcloud-artifacts/versions/$VERSION_ID"
+            echo "Artifacts image version deleted"
+          else
+            echo "No matching version found, skipping deletion"
+          fi
