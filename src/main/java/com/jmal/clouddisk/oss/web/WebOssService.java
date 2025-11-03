@@ -8,6 +8,7 @@ import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.URLUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -92,6 +93,11 @@ public class WebOssService {
     }
 
     public static String getObjectName(Path prePath, String ossPath, boolean isFolder) {
+        // 判断prePath是否为url编码过的，如果是则解码
+        String prePathStr = prePath.toString();
+        if (UrlEncodingChecker.isUrlEncoded(prePathStr)) {
+            prePath = Paths.get(URLUtil.decode(prePathStr, StandardCharsets.UTF_8));
+        }
         String name = "";
         int ossPathCount = Paths.get(ossPath).getNameCount();
         if (prePath.getNameCount() > ossPathCount) {
@@ -158,6 +164,9 @@ public class WebOssService {
     @NotNull
     private List<FileIntroVO> setAdditionalAttributes(String ossPath, UploadApiParamDTO upload, List<FileInfo> list, String objectName, String finalUserId) {
         List<FileIntroVO> fileIntroVOList;
+        if (list.isEmpty()) {
+            return List.of();
+        }
         // 检测上级目录是否有分享属性
         ShareBaseInfoDTO shareBaseDocument = commonUserFileService.getShareBaseDocument(finalUserId, WebOssCommonService.getPath(list.getFirst().getKey(), WebOssCommonService.getOssRootFolderName(ossPath)));
 
