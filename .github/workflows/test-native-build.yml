@@ -184,7 +184,7 @@ jobs:
           name: native-build-${{ inputs.arch }}-${{ inputs.image_tag }}-${{ github.run_id }}
           path: artifacts-upload/
           retention-days: 1
-          compression-level: 6
+          compression-level: 0
 
   # Job 2: 在 GitHub runner 上构建前端、构建和推送 Docker 镜像
   build-docker-and-push:
