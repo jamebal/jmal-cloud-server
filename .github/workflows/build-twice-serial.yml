@@ -9,7 +9,6 @@ concurrency:
 jobs:
   jpa-arm64:
     name: JPA build - arm64
-    needs: jpa-amd64
     uses: ./.github/workflows/test-native-build.yml
     with:
       image_name: 'jmalcloud_native_jpa'
@@ -24,6 +23,7 @@ jobs:
 
   jpa-amd64:
     name: JPA build - amd64
+    needs: jpa-arm64
     uses: ./.github/workflows/test-native-build.yml
     with:
       image_name: 'jmalcloud_native_jpa'
