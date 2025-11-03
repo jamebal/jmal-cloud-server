@@ -38,7 +38,7 @@ jobs:
 
   jpa-merge-manifests:
     name: Merge JPA manifests
-    needs: jpa-arm64
+    needs: jpa-amd64
     runs-on: ubuntu-latest
     steps:
       - name: Wait for registry to become consistent
