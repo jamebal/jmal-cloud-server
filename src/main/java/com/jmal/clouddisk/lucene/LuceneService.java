@@ -121,14 +121,14 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
     @PostConstruct
     public void init() {
         if (executorCreateIndexService == null) {
-            int processors = Runtime.getRuntime().availableProcessors() - 2;
-            executorCreateIndexService = ThreadUtil.newFixedExecutor(Math.max(processors, 3), 100, "createIndexFileTask", true);
+            int processors = Runtime.getRuntime().availableProcessors() / 2;
+            executorCreateIndexService = ThreadUtil.newFixedExecutor(Math.max(processors, 2), 100, "createIndexFileTask", true);
         }
         // 获取jvm可用内存
         long maxMemory = Runtime.getRuntime().maxMemory();
         if (executorUpdateContentIndexService == null) {
             // 获取可用处理器数量
-            int smallProcessors = Runtime.getRuntime().availableProcessors() - 3;
+            int smallProcessors = Runtime.getRuntime().availableProcessors() / 2;
             // 设置线程数, 假设每个线程占用内存为500M
             int maxSmallProcessors = Math.toIntExact((maxMemory / BYTES_PER_MB) / MEMORY_PER_SMALL_THREAD_MB);
             if (smallProcessors > maxSmallProcessors) {

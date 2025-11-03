@@ -42,8 +42,10 @@ public class FileListener implements DirectoryChangeListener {
     @Getter
     private final Set<Path> filterDirSet = new CopyOnWriteArraySet<>();
 
+    private static final Duration GRACE_PERIOD = Duration.ofSeconds(2); // 2秒的静默期
+
     // 使用ConcurrentHashMap存储最新事件，确保每个路径只有一个最新事件
-    private final Map<Path, DirectoryChangeEvent> eventMap = new ConcurrentHashMap<>();
+    private final Map<Path, EventWrapper> eventMap = new ConcurrentHashMap<>();
 
     // 处理队列 - 用于实际处理事件的工作队列
     private final BlockingQueue<DirectoryChangeEvent> processingQueue = new LinkedBlockingQueue<>(100000);
@@ -62,6 +64,16 @@ public class FileListener implements DirectoryChangeListener {
     private final AtomicBoolean running = new AtomicBoolean(true);
     private final List<Future<?>> consumerFutures = new CopyOnWriteArrayList<>();
     private final ExecutorService processExecutor = Executors.newVirtualThreadPerTaskExecutor();
+
+    private static class EventWrapper {
+        final DirectoryChangeEvent event;
+        final Instant timestamp;
+
+        EventWrapper(DirectoryChangeEvent event) {
+            this.event = event;
+            this.timestamp = Instant.now();
+        }
+    }
 
     @PostConstruct
     public void init() {
@@ -107,17 +119,26 @@ public class FileListener implements DirectoryChangeListener {
             return;
         }
 
+        List<Path> keysToRemove = new ArrayList<>();
         List<DirectoryChangeEvent> eventsToProcess = new ArrayList<>();
-        // 原子地将事件从map中取出，避免竞态条件
-        for (Path key : eventMap.keySet()) {
-            DirectoryChangeEvent event = eventMap.remove(key);
-            if (event != null) {
-                eventsToProcess.add(event);
+        Instant now = Instant.now();
+
+        // 遍历 Map，找出已经“稳定”的事件
+        for (Map.Entry<Path, EventWrapper> entry : eventMap.entrySet()) {
+            if (Duration.between(entry.getValue().timestamp, now).compareTo(GRACE_PERIOD) > 0) {
+                // 这个事件的时间戳距离现在已经超过了静默期，说明文件稳定了
+                keysToRemove.add(entry.getKey());
+                eventsToProcess.add(entry.getValue().event);
             }
         }
 
-        if (eventsToProcess.isEmpty()) {
+        if (keysToRemove.isEmpty()) {
             return;
+        }
+
+        // 从 Map 中移除已处理的事件
+        for (Path key : keysToRemove) {
+            eventMap.remove(key);
         }
 
         // 转移到处理队列
@@ -127,7 +148,7 @@ public class FileListener implements DirectoryChangeListener {
             if (!offered) {
                 log.error("处理队列已满，无法添加事件: {}, 路径: {}", event.eventType(), event.path());
                 // 放回原Map以便下次尝试
-                eventMap.put(event.path(), event);
+                eventMap.put(event.path(), new EventWrapper(event));
             } else {
                 transferCount++;
             }
@@ -205,7 +226,7 @@ public class FileListener implements DirectoryChangeListener {
         log.debug("接收到事件: {}, 路径: {}", eventType, eventPath);
 
         // 将事件放入Map
-        eventMap.put(eventPath, directoryChangeEvent);
+        eventMap.put(eventPath, new EventWrapper(directoryChangeEvent));
     }
 
     private void processEvent(DirectoryChangeEvent directoryChangeEvent) {
