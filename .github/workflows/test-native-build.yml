@@ -128,7 +128,7 @@ jobs:
           done
           
           # 创建管理员
-          curl --location --request POST 'http://localhost:8088/public/initialization?password=123456&id=&username=admin&showName=%E7%AE%A1%E7%90%86%E5%91%981&avatar=https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif&slogan=&introduction=&webpDisabled=&roles=&quota=10'
+          curl --location --request POST 'http://localhost:8088/api/public/initialization?password=123456&id=&username=admin&showName=%E7%AE%A1%E7%90%86%E5%91%981&avatar=https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif&slogan=&introduction=&webpDisabled=&roles=&quota=10'
           # 上传文件
           cp -r target/test-classes ${HOME}/jmalcloud/admin/
           
@@ -201,8 +201,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node_version }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install frontend dependencies and Build
         working-directory: ./frontend
