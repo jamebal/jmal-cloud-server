@@ -50,7 +50,8 @@ on:
         required: true
 
 jobs:
-  build-single-arch:
+  # Job 1: 在自托管 runner 上构建 Native Image（只做编译）
+  build-native-image:
     runs-on: ${{ inputs.arch == 'amd64' && fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["self-hosted", "Linux", "ARM64"]') }}
 
     steps:
@@ -62,30 +63,6 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Checkout frontend
-        uses: actions/checkout@v4
-        with:
-          repository: jamebal/jmal-cloud-view
-          path: frontend
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ inputs.node_version }}
-
-      - name: Install frontend dependencies and Build
-        working-directory: ./frontend
-        run: |
-          npm install
-          npm run build:prod
-
-      - name: rename frontend dist
-        working-directory: ./frontend
-        run: |
-          mkdir -p frontend
-          mv dist/ frontend/
-          mv frontend/dist/ frontend/frontend/
 
       - name: Set Maven Environmental
         run: |
@@ -110,7 +87,7 @@ jobs:
       # 构建带插桩的 Native Image
       - name: Build Instrumented Native Image
         run: |
-          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }}  -DskipTests -Dnative-image.jvmArgs="-Xmx23g" -Dnative-image.addArgs="--pgo-instrument -o target/jmalcloud-instrumented"
+          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }} -DskipTests -Dnative-image.jvmArgs="-Xmx23g" -Dnative-image.addArgs="--pgo-instrument -o target/jmalcloud-instrumented"
 
       # 运行插桩程序以生成 Profile 文件
       - name: Run Instrumented App to Generate Profile
@@ -126,11 +103,8 @@ jobs:
           mkdir -p ${HOME}/jmalcloud
           
           echo "Starting instrumented application in the background..."
-          # 在后台运行程序，并将 profile 文件名指定为 jmalcloud.iprof
-          # 使用 & 将其放入后台
           ./target/jmalcloud-instrumented --spring.profiles.active=${{ inputs.profiles_active }} -XX:ProfilesDumpFile='jmalcloud.iprof' --spring.data.mongodb.uri=${{secrets.MONGODB_URI}} --file.rootDir=${HOME}/jmalcloud > "${HOME}/app.log" 2>&1 &
           
-          # 获取后台进程的 PID (Process ID)
           APP_PID=$!
           echo "应用程序已启动，进程ID为: $APP_PID"
           
@@ -180,61 +154,95 @@ jobs:
         run: |
           mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }} -DskipTests -Dnative-image.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--enable-monitoring=heapdump --pgo=jmalcloud.iprof"
 
-      # 保存构建产物到本地共享目录
-      - name: Save build artifacts to local cache
+      # 准备构建产物用于上传（只上传二进制和 .so 文件）
+      - name: Prepare artifacts for upload
         run: |
-          CACHE_DIR="/tmp/github-actions-build-cache/${{ github.run_id }}-${{ inputs.arch }}-${{ inputs.image_tag }}"
-          echo "Creating cache directory: $CACHE_DIR"
-          mkdir -p "$CACHE_DIR"
+          mkdir -p artifacts-upload/target
           
-          echo "Copying build artifacts to cache..."
-          cp -r target/ "$CACHE_DIR/"
-          cp -r frontend/frontend/ "$CACHE_DIR/" || echo "Warning: frontend/frontend/ not found"
-          cp pom.xml "$CACHE_DIR/"
+          # 复制 jmalcloud 二进制文件
+          cp target/jmalcloud artifacts-upload/target/
           
-          echo "Cache directory contents:"
-          ls -lah "$CACHE_DIR"
+          # 复制所有 .so 文件
+          find target -maxdepth 1 -name "*.so" -exec cp {} artifacts-upload/target/ \;
           
-          # 保存缓存路径供下一个 job 使用
-          echo "CACHE_DIR=$CACHE_DIR" >> $GITHUB_ENV
-          echo "Build artifacts saved to: $CACHE_DIR"
+          # 复制 pom.xml（用于提取版本号）
+          cp pom.xml artifacts-upload/
+          
+          echo "Artifacts prepared:"
+          ls -lah artifacts-upload/
+          echo "Target directory contents:"
+          ls -lah artifacts-upload/target/
+          
+          # 显示总大小
+          echo "Total size:"
+          du -sh artifacts-upload/
 
+      # 上传构建产物到 GitHub Actions artifacts
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-build-${{ inputs.arch }}-${{ inputs.image_tag }}-${{ github.run_id }}
+          path: artifacts-upload/
+          retention-days: 1
+          compression-level: 6
+
+  # Job 2: 在 GitHub runner 上构建前端、构建和推送 Docker 镜像
   build-docker-and-push:
-    needs: build-single-arch
-    runs-on: ${{ inputs.arch == 'amd64' && fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["self-hosted", "Linux", "ARM64"]') }}
+    needs: build-native-image
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 从本地共享目录恢复构建产物
-      - name: Restore build artifacts from local cache
+      # 构建前端（在 GitHub runner 上执行，速度快）
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          repository: jamebal/jmal-cloud-view
+          path: frontend
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies and Build
+        working-directory: ./frontend
         run: |
-          CACHE_DIR="/tmp/github-actions-build-cache/${{ github.run_id }}-${{ inputs.arch }}-${{ inputs.image_tag }}"
-          echo "Restoring from cache directory: $CACHE_DIR"
-          
-          if [ ! -d "$CACHE_DIR" ]; then
-            echo "Error: Cache directory not found: $CACHE_DIR"
-            exit 1
-          fi
-          
-          echo "Cache directory contents:"
-          ls -lah "$CACHE_DIR"
-          
-          echo "Copying artifacts from cache to workspace..."
-          cp -r "$CACHE_DIR"/target/ ./
-          cp -r "$CACHE_DIR"/frontend/ ./ || echo "Warning: frontend not found in cache"
-          cp "$CACHE_DIR"/pom.xml ./
-          
-          echo "Workspace after restore:"
+          npm install
+          npm run build:prod
+
+      - name: Rename frontend dist
+        working-directory: ./frontend
+        run: |
+          mkdir -p frontend
+          mv dist/ frontend/
+          mv frontend/dist/ frontend/frontend/
+
+      # 下载 Native Image 构建产物
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: native-build-${{ inputs.arch }}-${{ inputs.image_tag }}-${{ github.run_id }}
+          path: ./
+
+      - name: Verify downloaded artifacts and set permissions
+        run: |
+          echo "Downloaded artifacts:"
           ls -lah .
           echo "Target directory:"
-          ls -lah target/ || echo "target/ not found"
-
-      # 设置 Maven 环境变量
-      - name: Set Maven Environmental
-        run: |
-          echo "/opt/maven/bin" >> $GITHUB_PATH
+          ls -lah target/
+          echo "Frontend directory:"
+          ls -lah frontend/
+          
+          # 给二进制文件添加执行权限
+          chmod +x target/jmalcloud
+          
+          echo "Binary file permissions set:"
+          ls -lh target/jmalcloud
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -252,21 +260,13 @@ jobs:
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
-      - name: Set up GraalVM environment
-        run: |
-          GRAALVM_VERSION="${{ inputs.graal_version }}"
-          GRAALVM_HOME="/opt/graalvm-jdk-${GRAALVM_VERSION}"
-
-          if [ ! -d "$GRAALVM_HOME" ]; then
-            echo "Error: GraalVM $GRAALVM_VERSION not installed"
-            exit 1
-          fi
-
-          echo "JAVA_HOME=$GRAALVM_HOME" >> $GITHUB_ENV
-          echo "$GRAALVM_HOME/bin" >> $GITHUB_PATH
-
-      - name: Check Maven version
-        run: mvn -v
+      # 设置 Maven（用于提取版本号）
+      - name: Set up Maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
 
       - name: Extract project version from pom.xml
         id: project_version
@@ -291,11 +291,19 @@ jobs:
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
 
-      - name: Inspect the pushed image RIGHT AFTER push
-        if: ${{ success() }}
+      - name: Inspect the pushed image
+        if: success()
         run: |
           echo "--- Inspecting Docker Hub image ---"
           docker manifest inspect jmal/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ inputs.arch }}
 
           echo "--- Inspecting GHCR image ---"
           docker manifest inspect ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ inputs.arch }}
+
+      # 清理 artifacts
+      - name: Cleanup artifacts
+        if: always()
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: native-build-${{ inputs.arch }}-${{ inputs.image_tag }}-${{ github.run_id }}
+          failOnError: false
