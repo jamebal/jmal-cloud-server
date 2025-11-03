@@ -68,16 +68,6 @@ jobs:
         run: |
           echo "/opt/maven/bin" >> $GITHUB_PATH
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.GHCR_IO_USERNAME }}
-          password: ${{ secrets.GHCR_IO_TOKEN }}
-
       - name: Set up GraalVM environment
         run: |
           GRAALVM_VERSION="${{ inputs.graal_version }}"
@@ -164,15 +154,77 @@ jobs:
         run: |
           mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }} -DskipTests -Dnative-image.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--enable-monitoring=heapdump --pgo=jmalcloud.iprof"
 
+      # 保存构建产物到本地共享目录
+      - name: Save build artifacts to local cache
+        run: |
+          CACHE_DIR="/tmp/github-actions-build-cache/${{ github.run_id }}-${{ inputs.arch }}-${{ inputs.image_tag }}"
+          echo "Creating cache directory: $CACHE_DIR"
+          mkdir -p "$CACHE_DIR"
+          
+          echo "Copying build artifacts to cache..."
+          cp -r target/ "$CACHE_DIR/"
+          cp pom.xml "$CACHE_DIR/"
+          
+          echo "Cache directory contents:"
+          ls -lah "$CACHE_DIR"
+          
+          # 保存缓存路径供下一个 job 使用
+          echo "CACHE_DIR=$CACHE_DIR" >> $GITHUB_ENV
+          echo "Build artifacts saved to: $CACHE_DIR"
+
+  # Job 2: 创建临时 Docker 镜像来传递构建产物
+  build-tmp-artifacts-image:
+    needs: build-native-image
+    runs-on: ${{ inputs.arch == 'amd64' && fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["self-hosted", "Linux", "ARM64"]') }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_IO_USERNAME }}
+          password: ${{ secrets.GHCR_IO_TOKEN }}
+
+      # 从本地共享目录恢复构建产物
+      - name: Restore build artifacts from local cache
+        run: |
+          CACHE_DIR="/tmp/github-actions-build-cache/${{ github.run_id }}-${{ inputs.arch }}-${{ inputs.image_tag }}"
+          echo "Restoring from cache directory: $CACHE_DIR"
+          
+          if [ ! -d "$CACHE_DIR" ]; then
+            echo "Error: Cache directory not found: $CACHE_DIR"
+            exit 1
+          fi
+          
+          echo "Cache directory contents:"
+          ls -lah "$CACHE_DIR"
+          
+          echo "Copying artifacts from cache to workspace..."
+          cp -r "$CACHE_DIR"/target/ ./
+          cp "$CACHE_DIR"/pom.xml ./
+          
+          echo "Workspace after restore:"
+          ls -lah .
+          echo "Target directory:"
+          ls -lah target/ || echo "target/ not found"
+
       # 创建临时 Docker 镜像来传递构建产物
       - name: Build and push artifacts image
         run: |
-          # 创建临时 Dockerfile
+          # 创建临时 Dockerfile，使用 busybox 作为基础镜像
           cat > Dockerfile.artifacts <<'EOF'
-          FROM scratch
+          FROM busybox:latest
+          WORKDIR /artifacts
           COPY target/jmalcloud /artifacts/jmalcloud
           COPY target/*.so /artifacts/
           COPY pom.xml /artifacts/pom.xml
+          CMD ["/bin/sh"]
           EOF
           
           # 构建并推送临时镜像
@@ -181,9 +233,9 @@ jobs:
           
           echo "Artifacts image pushed successfully"
 
-  # Job 2: 在 GitHub runner 上构建前端、构建和推送 Docker 镜像
+  # Job 3: 在 GitHub runner 上构建前端、构建和推送 Docker 镜像
   build-docker-and-push:
-    needs: build-native-image
+    needs: build-tmp-artifacts-image
     runs-on: ubuntu-latest
 
     steps:
@@ -234,16 +286,25 @@ jobs:
       # 从临时镜像中提取构建产物
       - name: Extract artifacts from Docker image
         run: |
-          # 创建临时容器并复制文件
-          CONTAINER_ID=$(docker create ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud-artifacts:${{ inputs.arch }}-${{ github.run_id }})
+          # 拉取镜像
+          docker pull ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud-artifacts:${{ inputs.arch }}-${{ github.run_id }}
+          
+          # 创建临时容器（使用 /bin/sh 作为命令）
+          CONTAINER_ID=$(docker create ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud-artifacts:${{ inputs.arch }}-${{ github.run_id }} /bin/sh)
+          
+          echo "Container ID: $CONTAINER_ID"
           
           # 创建 target 目录
           mkdir -p target
           
           # 从容器中复制文件
           docker cp $CONTAINER_ID:/artifacts/jmalcloud target/
-          docker cp $CONTAINER_ID:/artifacts/. target/ 2>/dev/null || true
           docker cp $CONTAINER_ID:/artifacts/pom.xml ./
+          
+          # 复制所有 .so 文件
+          docker cp $CONTAINER_ID:/artifacts/ temp_artifacts/
+          find temp_artifacts/ -name "*.so" -exec cp {} target/ \;
+          rm -rf temp_artifacts/
           
           # 删除临时容器
           docker rm $CONTAINER_ID
