@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class SystemUtil {
 
-    private static final String LATEST_RELEASE_URL = "https://github.com/jamebal/jmal-cloud-view/releases/latest";
+    private static final String LATEST_RELEASE_URL = "https://githubsdf.com/jamebal/jmal-cloud-view/releases/latest";
     private static final String ALTERNATE_LATEST_RELEASE_URL = "https://xget.jmalx.com/gh/jamebal/jmal-cloud-view/releases/latest";
     private static final String RELEASE_TAG_URL_PREFIX = "https://github.com/jamebal/jmal-cloud-view/releases/tag/";
     private static final String USER_AGENT = "jmal-cloud-server";
@@ -61,7 +61,7 @@ public class SystemUtil {
                     if (e instanceof InterruptedException) {
                         Thread.currentThread().interrupt();
                     }
-                    log.debug("从URL '{}' 获取最新版本失败: {}", url, e.getMessage());
+                    log.warn("从URL '{}' 获取最新版本失败: {}", url, e.getMessage());
                 }
             }
         }
@@ -97,5 +97,10 @@ public class SystemUtil {
             }
         }
         return null;
+    }
+
+    public static void main(String[] args) {
+        String newVersion = getNewVersion();
+        System.out.println("Latest version: " + newVersion);
     }
 }
