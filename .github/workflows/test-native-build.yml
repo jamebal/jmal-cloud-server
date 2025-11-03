@@ -50,11 +50,8 @@ on:
         required: true
 
 jobs:
-  # Job 1: 在自托管 runner 上构建 Native Image（只做编译）
-  build-native-image:
+  build-single-arch:
     runs-on: ${{ inputs.arch == 'amd64' && fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["self-hosted", "Linux", "ARM64"]') }}
-    outputs:
-      cache-dir: ${{ steps.save-cache.outputs.cache-dir }}
 
     steps:
       - name: Cleanup old failed caches
@@ -65,6 +62,30 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          repository: jamebal/jmal-cloud-view
+          path: frontend
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: Install frontend dependencies and Build
+        working-directory: ./frontend
+        run: |
+          npm install
+          npm run build:prod
+
+      - name: rename frontend dist
+        working-directory: ./frontend
+        run: |
+          mkdir -p frontend
+          mv dist/ frontend/
+          mv frontend/dist/ frontend/frontend/
 
       - name: Set Maven Environmental
         run: |
@@ -89,7 +110,7 @@ jobs:
       # 构建带插桩的 Native Image
       - name: Build Instrumented Native Image
         run: |
-          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }} -DskipTests -Dnative-image.jvmArgs="-Xmx23g" -Dnative-image.addArgs="--pgo-instrument -o target/jmalcloud-instrumented"
+          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }}  -DskipTests -Dnative-image.jvmArgs="-Xmx23g" -Dnative-image.addArgs="--pgo-instrument -o target/jmalcloud-instrumented"
 
       # 运行插桩程序以生成 Profile 文件
       - name: Run Instrumented App to Generate Profile
@@ -105,8 +126,11 @@ jobs:
           mkdir -p ${HOME}/jmalcloud
           
           echo "Starting instrumented application in the background..."
+          # 在后台运行程序，并将 profile 文件名指定为 jmalcloud.iprof
+          # 使用 & 将其放入后台
           ./target/jmalcloud-instrumented --spring.profiles.active=${{ inputs.profiles_active }} -XX:ProfilesDumpFile='jmalcloud.iprof' --spring.data.mongodb.uri=${{secrets.MONGODB_URI}} --file.rootDir=${HOME}/jmalcloud > "${HOME}/app.log" 2>&1 &
           
+          # 获取后台进程的 PID (Process ID)
           APP_PID=$!
           echo "应用程序已启动，进程ID为: $APP_PID"
           
@@ -158,7 +182,6 @@ jobs:
 
       # 保存构建产物到本地共享目录
       - name: Save build artifacts to local cache
-        id: save-cache
         run: |
           CACHE_DIR="/tmp/github-actions-build-cache/${{ github.run_id }}-${{ inputs.arch }}-${{ inputs.image_tag }}"
           echo "Creating cache directory: $CACHE_DIR"
@@ -166,39 +189,28 @@ jobs:
           
           echo "Copying build artifacts to cache..."
           cp -r target/ "$CACHE_DIR/"
+          cp -r frontend/frontend/ "$CACHE_DIR/" || echo "Warning: frontend/frontend/ not found"
           cp pom.xml "$CACHE_DIR/"
           
           echo "Cache directory contents:"
           ls -lah "$CACHE_DIR"
           
           # 保存缓存路径供下一个 job 使用
-          echo "cache-dir=$CACHE_DIR" >> "$GITHUB_OUTPUT"
+          echo "CACHE_DIR=$CACHE_DIR" >> $GITHUB_ENV
           echo "Build artifacts saved to: $CACHE_DIR"
 
-  # Job 2: 创建临时 Docker 镜像来传递构建产物
-  build-tmp-artifacts-image:
-    needs: build-native-image
+  build-docker-and-push:
+    needs: build-single-arch
     runs-on: ${{ inputs.arch == 'amd64' && fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["self-hosted", "Linux", "ARM64"]') }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.GHCR_IO_USERNAME }}
-          password: ${{ secrets.GHCR_IO_TOKEN }}
-
       # 从本地共享目录恢复构建产物
       - name: Restore build artifacts from local cache
-        env:
-          CACHE_DIR: ${{ needs.build-native-image.outputs.cache-dir }}
         run: |
+          CACHE_DIR="/tmp/github-actions-build-cache/${{ github.run_id }}-${{ inputs.arch }}-${{ inputs.image_tag }}"
           echo "Restoring from cache directory: $CACHE_DIR"
           
           if [ ! -d "$CACHE_DIR" ]; then
@@ -211,76 +223,18 @@ jobs:
           
           echo "Copying artifacts from cache to workspace..."
           cp -r "$CACHE_DIR"/target/ ./
+          cp -r "$CACHE_DIR"/frontend/ ./ || echo "Warning: frontend not found in cache"
           cp "$CACHE_DIR"/pom.xml ./
           
           echo "Workspace after restore:"
           ls -lah .
           echo "Target directory:"
-          ls -lah target/
+          ls -lah target/ || echo "target/ not found"
 
-      # 创建临时 Docker 镜像来传递构建产物
-      - name: Build and push artifacts image
+      # 设置 Maven 环境变量
+      - name: Set Maven Environmental
         run: |
-          # 创建临时 Dockerfile，使用 busybox 作为基础镜像
-          cat > Dockerfile.artifacts <<'EOF'
-          FROM busybox:latest
-          WORKDIR /artifacts
-          COPY target/jmalcloud /artifacts/jmalcloud
-          COPY target/*.so /artifacts/
-          COPY pom.xml /artifacts/pom.xml
-          CMD ["/bin/sh"]
-          EOF
-          
-          # 构建并推送临时镜像
-          docker build -f Dockerfile.artifacts -t ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud-artifacts:${{ inputs.arch }}-${{ github.run_id }} .
-          docker push ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud-artifacts:${{ inputs.arch }}-${{ github.run_id }}
-          
-          echo "Artifacts image pushed successfully"
-
-      # 清理本地缓存
-      - name: Cleanup local cache
-        if: always()
-        env:
-          CACHE_DIR: ${{ needs.build-native-image.outputs.cache-dir }}
-        run: |
-          if [ -d "$CACHE_DIR" ]; then
-            echo "Removing cache directory: $CACHE_DIR"
-            rm -rf "$CACHE_DIR"
-          fi
-
-  # Job 3: 在 GitHub runner 上构建前端、构建和推送 Docker 镜像
-  build-docker-and-push:
-    needs: build-tmp-artifacts-image
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # 构建前端
-      - name: Checkout frontend
-        uses: actions/checkout@v4
-        with:
-          repository: jamebal/jmal-cloud-view
-          path: frontend
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ inputs.node_version }}
-
-      - name: Install frontend dependencies and Build
-        working-directory: ./frontend
-        run: |
-          npm install
-          npm run build:prod
-
-      - name: Rename frontend dist
-        working-directory: ./frontend
-        run: |
-          mkdir -p frontend
-          mv dist/ frontend/
-          mv frontend/dist/ frontend/frontend/
+          echo "/opt/maven/bin" >> $GITHUB_PATH
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -298,46 +252,21 @@ jobs:
           username: ${{ secrets.GHCR_IO_USERNAME }}
           password: ${{ secrets.GHCR_IO_TOKEN }}
 
-      # 从临时镜像中提取构建产物
-      - name: Extract artifacts from Docker image
+      - name: Set up GraalVM environment
         run: |
-          # 拉取镜像
-          docker pull ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud-artifacts:${{ inputs.arch }}-${{ github.run_id }}
-          
-          # 创建临时容器（使用 /bin/sh 作为命令）
-          CONTAINER_ID=$(docker create ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/jmalcloud-artifacts:${{ inputs.arch }}-${{ github.run_id }} /bin/sh)
-          
-          echo "Container ID: $CONTAINER_ID"
-          
-          # 创建 target 目录
-          mkdir -p target
-          
-          # 从容器中复制文件
-          docker cp $CONTAINER_ID:/artifacts/jmalcloud target/
-          docker cp $CONTAINER_ID:/artifacts/pom.xml ./
-          
-          # 复制所有 .so 文件
-          docker cp $CONTAINER_ID:/artifacts/ temp_artifacts/
-          find temp_artifacts/ -name "*.so" -exec cp {} target/ \;
-          rm -rf temp_artifacts/
-          
-          # 删除临时容器
-          docker rm $CONTAINER_ID
-          
-          # 设置执行权限
-          chmod +x target/jmalcloud
-          
-          echo "Extracted artifacts:"
-          ls -lah target/
-          ls -lah .
+          GRAALVM_VERSION="${{ inputs.graal_version }}"
+          GRAALVM_HOME="/opt/graalvm-jdk-${GRAALVM_VERSION}"
 
-      # 设置 Maven
-      - name: Set up Maven
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'maven'
+          if [ ! -d "$GRAALVM_HOME" ]; then
+            echo "Error: GraalVM $GRAALVM_VERSION not installed"
+            exit 1
+          fi
+
+          echo "JAVA_HOME=$GRAALVM_HOME" >> $GITHUB_ENV
+          echo "$GRAALVM_HOME/bin" >> $GITHUB_PATH
+
+      - name: Check Maven version
+        run: mvn -v
 
       - name: Extract project version from pom.xml
         id: project_version
@@ -362,44 +291,11 @@ jobs:
           build-args: |
             VERSION=${{ env.PROJECT_VERSION }}
 
-      - name: Inspect the pushed image
-        if: success()
+      - name: Inspect the pushed image RIGHT AFTER push
+        if: ${{ success() }}
         run: |
           echo "--- Inspecting Docker Hub image ---"
           docker manifest inspect jmal/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ inputs.arch }}
 
           echo "--- Inspecting GHCR image ---"
           docker manifest inspect ghcr.io/${{ secrets.GHCR_IO_USERNAME }}/${{ inputs.image_name }}:${{ inputs.image_tag }}-${{ inputs.arch }}
-
-      # 清理临时 artifacts 镜像
-      - name: Delete artifacts image
-        if: always()
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GHCR_IO_TOKEN }}
-        run: |
-          # 使用 GitHub CLI 删除包版本
-          echo "Attempting to delete artifacts package version..."
-          
-          # 获取包的所有版本
-          PACKAGE_VERSIONS=$(curl -s \
-            -H "Authorization: Bearer ${{ secrets.GHCR_IO_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/users/${{ secrets.GHCR_IO_USERNAME }}/packages/container/jmalcloud-artifacts/versions")
-          
-          echo "Package versions response:"
-          echo "$PACKAGE_VERSIONS" | jq '.'
-          
-          # 查找并删除匹配的版本
-          VERSION_ID=$(echo "$PACKAGE_VERSIONS" | jq -r ".[] | select(.metadata.container.tags[]? | contains(\"${{ inputs.arch }}-${{ github.run_id }}\")) | .id")
-          
-          if [ -n "$VERSION_ID" ]; then
-            echo "Found version ID: $VERSION_ID"
-            curl -X DELETE \
-              -H "Authorization: Bearer ${{ secrets.GHCR_IO_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/users/${{ secrets.GHCR_IO_USERNAME }}/packages/container/jmalcloud-artifacts/versions/$VERSION_ID"
-            echo "Artifacts image version deleted"
-          else
-            echo "No matching version found, skipping deletion"
-          fi
