@@ -1,4 +1,4 @@
-FROM ghcr.io/jamebal/jmalcloud_mid:latest
+FROM jmal/jmalcloud_mid:latest
 
 ARG VERSION
 
