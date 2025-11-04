@@ -42,13 +42,14 @@ public class FileListener implements DirectoryChangeListener {
     @Getter
     private final Set<Path> filterDirSet = new CopyOnWriteArraySet<>();
 
-    private static final Duration GRACE_PERIOD = Duration.ofSeconds(2); // 2秒的静默期
+    // 2秒的静默期
+    private static final Duration GRACE_PERIOD = Duration.ofSeconds(2);
 
     // 使用ConcurrentHashMap存储最新事件，确保每个路径只有一个最新事件
     private final Map<Path, EventWrapper> eventMap = new ConcurrentHashMap<>();
 
     // 处理队列 - 用于实际处理事件的工作队列
-    private final BlockingQueue<DirectoryChangeEvent> processingQueue = new LinkedBlockingQueue<>(100000);
+    private final BlockingQueue<DirectoryChangeEvent> processingQueue = new LinkedBlockingQueue<>(1000000);
 
     // 负载检测
     private final AtomicInteger eventBurstCounter = new AtomicInteger(0);
@@ -90,8 +91,7 @@ public class FileListener implements DirectoryChangeListener {
         scheduler.scheduleAtFixedRate(() -> {
             eventBurstCounter.set(0);
             // 如果高负载标志已设置且已经过了一段闲置期，则进行一次全盘扫描
-            if (highLoadDetected.get() &&
-                    Duration.between(lastBurstTime, Instant.now()).compareTo(IDLE_THRESHOLD) > 0) {
+            if (highLoadDetected.get() && Duration.between(lastBurstTime, Instant.now()).compareTo(IDLE_THRESHOLD) > 0) {
                 checkAndStartScan();
             }
         }, BURST_WINDOW.toSeconds(), BURST_WINDOW.toSeconds(), TimeUnit.SECONDS);
@@ -119,26 +119,17 @@ public class FileListener implements DirectoryChangeListener {
             return;
         }
 
-        List<Path> keysToRemove = new ArrayList<>();
         List<DirectoryChangeEvent> eventsToProcess = new ArrayList<>();
         Instant now = Instant.now();
-
-        // 遍历 Map，找出已经“稳定”的事件
-        for (Map.Entry<Path, EventWrapper> entry : eventMap.entrySet()) {
+        eventMap.entrySet().removeIf(entry -> {
             if (Duration.between(entry.getValue().timestamp, now).compareTo(GRACE_PERIOD) > 0) {
-                // 这个事件的时间戳距离现在已经超过了静默期，说明文件稳定了
-                keysToRemove.add(entry.getKey());
                 eventsToProcess.add(entry.getValue().event);
+                return true;
             }
-        }
-
-        if (keysToRemove.isEmpty()) {
+            return false;
+        });
+        if (eventsToProcess.isEmpty()) {
             return;
-        }
-
-        // 从 Map 中移除已处理的事件
-        for (Path key : keysToRemove) {
-            eventMap.remove(key);
         }
 
         // 转移到处理队列
