@@ -115,6 +115,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
     private static final int CHUNK_OVERLAP_CHARS = 7; // 段落间的重叠字符数，防止边界切割问题 (NGramTokenFilter本身可能处理部分边界，但显式重叠更保险)
 
     public static final int BYTES_PER_MB = 1024 * 1024;
+    private static final long BIG_FILE_BYTES_MB = 10 * BYTES_PER_MB; // 10MB
     private static final long MEMORY_PER_SMALL_THREAD_MB = 500;
     private static final long MEMORY_PER_BIG_THREAD_MB = 4096;
 
@@ -274,9 +275,10 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
                         updateIndexStatus(fileBaseLuceneDTO, IndexStatus.INDEXED);
                         return;
                     }
-                    // 调用改造后的 updateIndexDocument
                     updateIndexDocument(indexWriter, fileIndex, fullContent, fileIndex.getFileIndexHash(sha256));
                     startProcessFilesToBeIndexed();
+                } catch (IOException e) {
+                    log.warn("读取文件内容失败: file={}, {}", file.getAbsolutePath(), e.getMessage(), e);
                 }
             } else {
                 updateIndexDocument(indexWriter, fileIndex, null, fileIndex.getFileIndexHash(null));
@@ -423,14 +425,19 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
         }
     }
 
+    private final Object commitLock = new Object();
 
     public void deleteIndexDocuments(List<String> fileIds) {
+        if (fileIds == null || fileIds.isEmpty()) {
+            return;
+        }
         try {
             for (String fileId : fileIds) {
-                Term term = new Term("id", fileId);
-                indexWriter.deleteDocuments(term);
+                indexWriter.deleteDocuments(new Term("id", fileId));
             }
-            indexWriter.commit();
+            synchronized (commitLock) {
+                indexWriter.commit();
+            }
         } catch (IOException e) {
             log.error("删除索引失败, fileIds: {}, {}", fileIds, e.getMessage(), e);
         }
@@ -645,7 +652,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
             updateIndex(true, fileBaseLuceneDTO);
         } else {
             // 根据文件大小选择多线程处理
-            if (size > 10 * 1024 * 1024) {
+            if (size > BIG_FILE_BYTES_MB) {
                 // 大文件，使用特定线程池处理
                 executorUpdateBigContentIndexService.execute(() -> updateIndex(true, fileBaseLuceneDTO));
             } else {
@@ -671,17 +678,43 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
 
     @PreDestroy
     public void destroy() {
-        if (executorCreateIndexService != null) {
-            executorCreateIndexService.shutdown();
+        log.debug("开始关闭 LuceneService 线程池...");
+        shutdownExecutor(executorCreateIndexService, "createIndexFileTask");
+        shutdownExecutor(executorUpdateContentIndexService, "updateContentIndexTask");
+        shutdownExecutor(executorUpdateBigContentIndexService, "updateBigContentIndexTask");
+        shutdownExecutor(scheduler, "luceneScheduler");
+
+        // 最后提交所有待处理的索引
+        try {
+            synchronized (commitLock) {
+                indexWriter.commit();
+                log.debug("最终索引提交完成");
+            }
+        } catch (IOException e) {
+            log.error("最终索引提交失败", e);
         }
-        if (executorUpdateContentIndexService != null) {
-            executorUpdateContentIndexService.shutdown();
+    }
+
+    private void shutdownExecutor(ExecutorService executor, String name) {
+        if (executor == null) {
+            return;
         }
-        if (executorUpdateBigContentIndexService != null) {
-            executorUpdateBigContentIndexService.shutdown();
-        }
-        if (scheduler != null) {
-            scheduler.shutdown();
+
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                log.warn("{} 线程池未能在60秒内完成，强制关闭", name);
+                List<Runnable> droppedTasks = executor.shutdownNow();
+                log.warn("{} 线程池丢弃了 {} 个任务", name, droppedTasks.size());
+
+                if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+                    log.error("{} 线程池无法完全关闭", name);
+                }
+            }
+        } catch (InterruptedException e) {
+            log.error("{} 线程池关闭被中断", name, e);
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
         }
     }
 
