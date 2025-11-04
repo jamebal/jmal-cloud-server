@@ -15,6 +15,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.dao.DataAccessException;
@@ -48,7 +49,7 @@ public class EtagService {
 
     private final CommonUserService userService;
 
-    private final RebuildIndexTaskService rebuildIndexTaskService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final String EMPTY_FOLDER_ETAG_BASE_STRING = "EMPTY_FOLDER_REPRESENTATION_MONGO_V2";
     private static final int MAX_ETAG_UPDATE_ATTEMPTS = 5; // 最大失败重试次数
@@ -355,7 +356,9 @@ public class EtagService {
                             }
                             if (attempts >= 50) {
                                 // 对目录 folderPath + folderDoc.getName() 重建索引
-                                rebuildIndexTaskService.sync(userService.getUserNameById(userId), folderPath + folderDoc.getName(), false);
+                                String username = userService.getUserNameById(userId);
+                                String path = Paths.get(fileProperties.getRootDir(), username, folderPath + folderDoc.getName()).toString();
+                                eventPublisher.publishEvent(new RebuildIndexEvent(this, username, path));
                             }
                             break;
                         case ERROR:
