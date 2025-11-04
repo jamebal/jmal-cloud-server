@@ -15,6 +15,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.dao.DataAccessException;
@@ -48,6 +49,8 @@ public class EtagService {
 
     private final CommonUserService userService;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     private static final String EMPTY_FOLDER_ETAG_BASE_STRING = "EMPTY_FOLDER_REPRESENTATION_MONGO_V2";
     private static final int MAX_ETAG_UPDATE_ATTEMPTS = 5; // 最大失败重试次数
 
@@ -71,15 +74,15 @@ public class EtagService {
             executorMarkedFoldersService = ThreadUtil.newFixedExecutor(1, 1, "EtagWorker-", false);
         }
         Completable.fromAction(() -> {
-            long countOfFoldersWithoutEtag = etagDAO.countFoldersWithoutEtag();
-            if (countOfFoldersWithoutEtag > 0) {
-                log.info("{} folders found without ETag. Marking them for ETag calculation.", countOfFoldersWithoutEtag);
-                etagDAO.setFoldersWithoutEtag();
-            }
-            processRootFolderFiles();
-            log.debug("Initial ETag setup finished. Ensuring ETag processing worker is active if needed.");
-            ensureProcessingMarkedFolders();
-        }).subscribeOn(Schedulers.io())
+                    long countOfFoldersWithoutEtag = etagDAO.countFoldersWithoutEtag();
+                    if (countOfFoldersWithoutEtag > 0) {
+                        log.info("{} folders found without ETag. Marking them for ETag calculation.", countOfFoldersWithoutEtag);
+                        etagDAO.setFoldersWithoutEtag();
+                    }
+                    processRootFolderFiles();
+                    log.debug("Initial ETag setup finished. Ensuring ETag processing worker is active if needed.");
+                    ensureProcessingMarkedFolders();
+                }).subscribeOn(Schedulers.io())
                 .doOnError(e -> log.error(e.getMessage(), e))
                 .onErrorComplete()
                 .subscribe();
@@ -350,6 +353,12 @@ public class EtagService {
                             etagDAO.setRetryAtById(docId, nextRetryTime, attempts + 1);
                             if (attempts > 10) {
                                 log.warn("[Worker {}] ETag calculation for folder {} skipped due to null child ETag. Will retry after {} (attempt {}).", workerId, folderPath + folderDoc.getName(), nextRetryTime, attempts + 1);
+                            }
+                            if (attempts >= 50) {
+                                // 对目录 folderPath + folderDoc.getName() 重建索引
+                                String username = userService.getUserNameById(userId);
+                                String path = Paths.get(fileProperties.getRootDir(), username, folderPath + folderDoc.getName()).toString();
+                                eventPublisher.publishEvent(new RebuildIndexEvent(this, username, path));
                             }
                             break;
                         case ERROR:

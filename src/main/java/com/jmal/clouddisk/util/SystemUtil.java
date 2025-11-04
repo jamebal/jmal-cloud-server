@@ -49,7 +49,7 @@ public class SystemUtil {
 
         try (HttpClient httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.NEVER)
-                .connectTimeout(Duration.ofSeconds(5))
+                .connectTimeout(Duration.ofSeconds(15))
                 .build()) {
             for (String url : urls) {
                 try {
@@ -61,7 +61,7 @@ public class SystemUtil {
                     if (e instanceof InterruptedException) {
                         Thread.currentThread().interrupt();
                     }
-                    log.debug("从URL '{}' 获取最新版本失败: {}", url, e.getMessage());
+                    log.warn("从URL '{}' 获取最新版本失败: {}", url, e.getMessage());
                 }
             }
         }
@@ -74,7 +74,7 @@ public class SystemUtil {
     private static String getLastVersion(HttpClient httpClient, String url) throws IOException, InterruptedException {
         HttpRequest altRequest = HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .timeout(Duration.ofSeconds(5))
+                .timeout(Duration.ofSeconds(15))
                 .header(HttpHeaders.USER_AGENT, USER_AGENT)
                 .GET()
                 .build();
@@ -98,4 +98,5 @@ public class SystemUtil {
         }
         return null;
     }
+
 }

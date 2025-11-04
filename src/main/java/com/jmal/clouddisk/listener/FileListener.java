@@ -42,11 +42,14 @@ public class FileListener implements DirectoryChangeListener {
     @Getter
     private final Set<Path> filterDirSet = new CopyOnWriteArraySet<>();
 
+    // 2秒的静默期
+    private static final Duration GRACE_PERIOD = Duration.ofSeconds(2);
+
     // 使用ConcurrentHashMap存储最新事件，确保每个路径只有一个最新事件
-    private final Map<Path, DirectoryChangeEvent> eventMap = new ConcurrentHashMap<>();
+    private final Map<Path, EventWrapper> eventMap = new ConcurrentHashMap<>();
 
     // 处理队列 - 用于实际处理事件的工作队列
-    private final BlockingQueue<DirectoryChangeEvent> processingQueue = new LinkedBlockingQueue<>(100000);
+    private final BlockingQueue<DirectoryChangeEvent> processingQueue = new LinkedBlockingQueue<>(1000000);
 
     // 负载检测
     private final AtomicInteger eventBurstCounter = new AtomicInteger(0);
@@ -63,6 +66,16 @@ public class FileListener implements DirectoryChangeListener {
     private final List<Future<?>> consumerFutures = new CopyOnWriteArrayList<>();
     private final ExecutorService processExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
+    private static class EventWrapper {
+        final DirectoryChangeEvent event;
+        final Instant timestamp;
+
+        EventWrapper(DirectoryChangeEvent event) {
+            this.event = event;
+            this.timestamp = Instant.now();
+        }
+    }
+
     @PostConstruct
     public void init() {
         // 定期将事件从Map转移到处理队列
@@ -78,8 +91,7 @@ public class FileListener implements DirectoryChangeListener {
         scheduler.scheduleAtFixedRate(() -> {
             eventBurstCounter.set(0);
             // 如果高负载标志已设置且已经过了一段闲置期，则进行一次全盘扫描
-            if (highLoadDetected.get() &&
-                    Duration.between(lastBurstTime, Instant.now()).compareTo(IDLE_THRESHOLD) > 0) {
+            if (highLoadDetected.get() && Duration.between(lastBurstTime, Instant.now()).compareTo(IDLE_THRESHOLD) > 0) {
                 checkAndStartScan();
             }
         }, BURST_WINDOW.toSeconds(), BURST_WINDOW.toSeconds(), TimeUnit.SECONDS);
@@ -108,14 +120,14 @@ public class FileListener implements DirectoryChangeListener {
         }
 
         List<DirectoryChangeEvent> eventsToProcess = new ArrayList<>();
-        // 原子地将事件从map中取出，避免竞态条件
-        for (Path key : eventMap.keySet()) {
-            DirectoryChangeEvent event = eventMap.remove(key);
-            if (event != null) {
-                eventsToProcess.add(event);
+        Instant now = Instant.now();
+        eventMap.entrySet().removeIf(entry -> {
+            if (Duration.between(entry.getValue().timestamp, now).compareTo(GRACE_PERIOD) > 0) {
+                eventsToProcess.add(entry.getValue().event);
+                return true;
             }
-        }
-
+            return false;
+        });
         if (eventsToProcess.isEmpty()) {
             return;
         }
@@ -127,7 +139,7 @@ public class FileListener implements DirectoryChangeListener {
             if (!offered) {
                 log.error("处理队列已满，无法添加事件: {}, 路径: {}", event.eventType(), event.path());
                 // 放回原Map以便下次尝试
-                eventMap.put(event.path(), event);
+                eventMap.put(event.path(), new EventWrapper(event));
             } else {
                 transferCount++;
             }
@@ -205,7 +217,7 @@ public class FileListener implements DirectoryChangeListener {
         log.debug("接收到事件: {}, 路径: {}", eventType, eventPath);
 
         // 将事件放入Map
-        eventMap.put(eventPath, directoryChangeEvent);
+        eventMap.put(eventPath, new EventWrapper(directoryChangeEvent));
     }
 
     private void processEvent(DirectoryChangeEvent directoryChangeEvent) {

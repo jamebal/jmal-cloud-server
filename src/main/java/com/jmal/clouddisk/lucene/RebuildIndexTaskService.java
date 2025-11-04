@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.lucene;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.NumberUtil;
@@ -23,6 +24,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.PrefixQuery;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -49,7 +51,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class RebuildIndexTaskService {
+public class RebuildIndexTaskService implements ApplicationListener<RebuildIndexEvent> {
 
     private final PathService pathService;
 
@@ -144,9 +146,17 @@ public class RebuildIndexTaskService {
     }
 
     private void getSyncFileVisitorService() {
-        int processors = Runtime.getRuntime().availableProcessors() - 4;
+        int processors = Runtime.getRuntime().availableProcessors() / 2;
         if (syncFileVisitorService == null || syncFileVisitorService.isShutdown()) {
-            syncFileVisitorService = ThreadUtil.newFixedExecutor(Math.max(processors, 2), 1, "syncFileVisitor", true);
+            syncFileVisitorService = ThreadUtil.newFixedExecutor(Math.max(processors, 2), 100, "syncFileVisitor", true);
+        }
+    }
+
+
+    @Override
+    public void onApplicationEvent(RebuildIndexEvent event) {
+        if (event.getUsername() != null && event.getFileAbsolutePath() != null) {
+            doSync(event.getUsername(), event.getFileAbsolutePath(), false);
         }
     }
 
@@ -212,7 +222,7 @@ public class RebuildIndexTaskService {
             FileCountVisitor fileCountVisitor = new FileCountVisitor();
             Files.walkFileTree(path, fileVisitOptions, Integer.MAX_VALUE, fileCountVisitor);
             totalCount = fileCountVisitor.getCount();
-            log.info("path: {}, 开始同步, 文件数: {}", path, totalCount);
+            log.info("path: {}, 开始扫描, 文件数: {}", path, totalCount);
             timeInterval.start();
             if (syncFileVisitor == null) {
                 syncFileVisitor = new SyncFileVisitor(totalCount);
@@ -226,7 +236,7 @@ public class RebuildIndexTaskService {
         } finally {
             setPercentMap(100d, getIndexedPercentValue());
             syncFileVisitor = null;
-            log.info("同步完成, 耗时: {}s", timeInterval.intervalSecond());
+            log.info("扫描完成, 耗时: {}s", Convert.toDouble(timeInterval.intervalMs() / 1000));
         }
     }
 
@@ -256,11 +266,11 @@ public class RebuildIndexTaskService {
 
     private void waitTaskCompleted() {
         try {
-            log.info("等待同步文件完成");
+            log.info("等待扫描文件完成");
             syncFileVisitorService.shutdown();
             // 等待线程池里所有任务完成
             if (!syncFileVisitorService.awaitTermination(10, TimeUnit.MINUTES)) {
-                log.warn("同步文件超时, 尝试强制停止所有任务");
+                log.warn("扫描文件超时, 尝试强制停止所有任务");
                 // 移除删除标记, 以免误删索引
                 removeDeletedFlag(null);
                 syncFileVisitorService.shutdownNow();
