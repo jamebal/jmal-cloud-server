@@ -115,7 +115,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
     private static final int CHUNK_OVERLAP_CHARS = 7; // 段落间的重叠字符数，防止边界切割问题 (NGramTokenFilter本身可能处理部分边界，但显式重叠更保险)
 
     public static final int BYTES_PER_MB = 1024 * 1024;
-    private static final long BIG_FILE_BYTES_MB = 10 * BYTES_PER_MB; // 10MB
+    private static final int BIG_FILE_BYTES_MB = 10 * BYTES_PER_MB; // 10MB
     private static final long MEMORY_PER_SMALL_THREAD_MB = 500;
     private static final long MEMORY_PER_BIG_THREAD_MB = 4096;
 
@@ -432,9 +432,10 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
             return;
         }
         try {
-            for (String fileId : fileIds) {
-                indexWriter.deleteDocuments(new Term("id", fileId));
-            }
+            Term[] termsToDelete = fileIds.stream()
+                    .map(fileId -> new Term("id", fileId))
+                    .toArray(Term[]::new);
+            indexWriter.deleteDocuments(termsToDelete);
             synchronized (commitLock) {
                 indexWriter.commit();
             }
