@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.jmal.clouddisk.model.OperationPermission;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.bson.Document;
 
 import java.util.List;
 
@@ -34,5 +35,17 @@ public class ShareProperties {
         this.expiresAt = expiresAt;
         this.operationPermissionList = operationPermissionList;
         this.isShare = isShare;
+    }
+
+    public ShareProperties(Document document) {
+        this.isPublic = document.getBoolean("isPublic");
+        this.isPrivacy = document.getBoolean("isPrivacy");
+        this.extractionCode = document.getString("extractionCode");
+        this.expiresAt = document.getLong("expiresAt");
+        List<String> operationPermissionList = document.getList("operationPermissionList", String.class);
+        if (operationPermissionList != null) {
+            this.operationPermissionList = operationPermissionList.stream().map(OperationPermission::fromString).toList();
+        }
+        this.isShare = document.getBoolean("isShare");
     }
 }

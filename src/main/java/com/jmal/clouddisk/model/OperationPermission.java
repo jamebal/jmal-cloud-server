@@ -10,4 +10,8 @@ public enum OperationPermission {
     UPLOAD,
     DELETE,
     PUT;
+
+    public static OperationPermission fromString(String s) {
+        return OperationPermission.valueOf(s);
+    }
 }
