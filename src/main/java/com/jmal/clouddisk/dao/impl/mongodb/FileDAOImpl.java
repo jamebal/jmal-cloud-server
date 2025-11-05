@@ -639,7 +639,7 @@ public class FileDAOImpl implements IFileDAO {
         if (shareDocument == null) {
             return null;
         }
-        ShareProperties shareProperties = mongoTemplate.getConverter().read(ShareProperties.class, shareDocument);
+        ShareProperties shareProperties = new ShareProperties(shareDocument);
         return new ShareBaseInfoDTO(shareDocument.getString(Constants.SHARE_ID), shareProperties);
     }
 

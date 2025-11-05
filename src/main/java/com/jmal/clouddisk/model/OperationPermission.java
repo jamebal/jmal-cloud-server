@@ -10,4 +10,15 @@ public enum OperationPermission {
     UPLOAD,
     DELETE,
     PUT;
+
+    public static OperationPermission fromString(String s) {
+        if (s == null) {
+            return null;
+        }
+        try {
+            return OperationPermission.valueOf(s.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
 }
