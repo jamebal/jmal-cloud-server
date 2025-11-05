@@ -12,6 +12,13 @@ public enum OperationPermission {
     PUT;
 
     public static OperationPermission fromString(String s) {
-        return OperationPermission.valueOf(s);
+        if (s == null) {
+            return null;
+        }
+        try {
+            return OperationPermission.valueOf(s.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }

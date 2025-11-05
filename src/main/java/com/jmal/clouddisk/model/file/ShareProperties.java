@@ -44,7 +44,7 @@ public class ShareProperties {
         this.expiresAt = document.getLong("expiresAt");
         List<String> operationPermissionList = document.getList("operationPermissionList", String.class);
         if (operationPermissionList != null) {
-            this.operationPermissionList = operationPermissionList.stream().map(OperationPermission::fromString).toList();
+            this.operationPermissionList = operationPermissionList.stream().map(OperationPermission::fromString).filter(java.util.Objects::nonNull).toList();
         }
         this.isShare = document.getBoolean("isShare");
     }
