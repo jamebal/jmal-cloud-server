@@ -6,6 +6,7 @@ import org.mozilla.universalchardet.UniversalDetector;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -26,7 +27,7 @@ public class CharsetDetector {
     /**
      * 从字节数组检测字符集（多重策略）
      */
-    public static Charset detect(byte[] bytes, int length) throws Exception {
+    public static Charset detect(File file, byte[] bytes, int length) {
         if (bytes == null || length <= 0) {
             return null;
         }
@@ -43,7 +44,7 @@ public class CharsetDetector {
         }
 
         // 策略3: 使用 UniversalDetector
-        Charset detectedCharset = detectByUniversalDetector(bytes, length);
+        Charset detectedCharset = detectByUniversalDetector(file, bytes, length);
         if (detectedCharset != null && identify(bytes, detectedCharset.newDecoder())) {
             return detectedCharset;
         }
@@ -62,8 +63,8 @@ public class CharsetDetector {
             if (bytesRead == -1) {
                 return null;
             }
-            return detect(buffer, bytesRead);
-        } catch (Exception e) {
+            return detect(file, buffer, bytesRead);
+        } catch (IOException e) {
             log.warn("检查文件字符集失败: {}", file.getAbsolutePath(), e);
         }
         return null;
@@ -123,7 +124,7 @@ public class CharsetDetector {
     /**
      * 使用 UniversalDetector 检测
      */
-    private static Charset detectByUniversalDetector(byte[] bytes, int length) throws Exception {
+    private static Charset detectByUniversalDetector(File file, byte[] bytes, int length) {
         try {
             UniversalDetector detector = new UniversalDetector(null);
             detector.handleData(bytes, 0, length);
@@ -134,11 +135,11 @@ public class CharsetDetector {
                 try {
                     return Charset.forName(encoding);
                 } catch (UnsupportedCharsetException e) {
-                    throw new UnsupportedCharsetException(encoding);
+                    log.warn("不支持的字符集: {}，文件: {}", encoding, file.getAbsolutePath(), e);
                 }
             }
         } catch (Exception e) {
-            throw new Exception(e);
+            log.warn("使用 UniversalDetector 检测字符集失败, 文件: {}", file.getAbsolutePath(), e);
         }
         return null;
     }
