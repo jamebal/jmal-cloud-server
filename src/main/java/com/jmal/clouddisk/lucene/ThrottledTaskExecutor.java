@@ -81,19 +81,15 @@ public class ThrottledTaskExecutor {
     public void shutdown() {
         delegate.shutdown();
         try {
-            if (awaitTermination(15, TimeUnit.SECONDS)) {
-                log.debug("执行器优雅地终止。");
-            } else {
+            if (!delegate.awaitTermination(15, TimeUnit.SECONDS)) {
                 log.warn("执行器在15秒内未优雅地终止。强制关闭中...");
-                // 尝试强制关闭
                 delegate.shutdownNow();
-                // 再次等待一小段时间以确保强制关闭生效
                 if (!delegate.awaitTermination(5, TimeUnit.SECONDS)) {
                     log.error("执行器即使在强制关闭后也没有终止。");
                 }
             }
         } catch (InterruptedException e) {
-            log.error("执行器关闭被中断。现在强制关闭。");
+            log.error("执行器关闭被中断。现在强制关闭。", e);
             delegate.shutdownNow();
             Thread.currentThread().interrupt();
         }
