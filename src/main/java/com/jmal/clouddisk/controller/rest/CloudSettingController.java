@@ -59,7 +59,7 @@ public class CloudSettingController {
     @Permission(value = "cloud:set:sync")
     @LogOperatingFun
     public ResponseResult<Object> sync(@RequestParam String username) {
-        return rebuildIndexTaskService.sync(username, null, false);
+        return rebuildIndexTaskService.sync(username, null, true);
     }
 
     @Operation(summary = "重新计算文件夹大小")

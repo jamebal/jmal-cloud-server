@@ -14,8 +14,17 @@ import com.jmal.clouddisk.media.TranscodeConfig;
 import com.jmal.clouddisk.media.VideoInfoDO;
 import com.jmal.clouddisk.model.ShareBaseInfoDTO;
 import com.jmal.clouddisk.model.Tag;
-import com.jmal.clouddisk.model.file.*;
-import com.jmal.clouddisk.model.file.dto.*;
+import com.jmal.clouddisk.model.file.FileDocument;
+import com.jmal.clouddisk.model.file.FileMetadataDO;
+import com.jmal.clouddisk.model.file.FilePropsDO;
+import com.jmal.clouddisk.model.file.OtherProperties;
+import com.jmal.clouddisk.model.file.ShareProperties;
+import com.jmal.clouddisk.model.file.dto.FileBaseAllDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseLuceneDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseOperationPermissionDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO;
+import com.jmal.clouddisk.model.file.dto.UpdateFile;
 import com.jmal.clouddisk.service.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +33,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -111,7 +121,7 @@ public class FileDAOJpaImpl implements IFileDAO {
     }
 
     @Override
-    public List<String> findByIdIn(List<String> fileIdList) {
+    public List<String> findByIdIn(Collection<String> fileIdList) {
         return fileMetadataRepository.findByPublicIdIn(fileIdList);
     }
 

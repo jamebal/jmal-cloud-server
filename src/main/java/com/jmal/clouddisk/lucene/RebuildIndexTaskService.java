@@ -27,8 +27,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.PrefixQuery;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.context.ApplicationListener;
@@ -97,6 +95,8 @@ public class RebuildIndexTaskService implements ApplicationListener<RebuildIndex
     private double totalCount;
 
     private final OcrService ocrService;
+
+    private final LuceneReconciliationService luceneReconciliationService;
 
     /**
      * 接收消息的用户
@@ -246,30 +246,6 @@ public class RebuildIndexTaskService implements ApplicationListener<RebuildIndex
             setPercentMap(100d, getIndexedPercentValue());
             syncFileVisitor = null;
             log.info("扫描完成, 耗时: {}s", Convert.toDouble(timeInterval.intervalMs() / 1000));
-        }
-    }
-
-    /**
-     * 删除path下的所有索引
-     * @param path path
-     */
-    private void deleteAllIndex(String path) {
-        if (StrUtil.isBlank(path)) {
-            try {
-                indexWriter.deleteAll();
-                indexWriter.forceMergeDeletes();
-            } catch (IOException e) {
-                log.error(e.getMessage(), e);
-            }
-        } else {
-            // 查询path下的所有索引
-            Term prefixTerm = new Term("path", path);
-            PrefixQuery prefixQuery = new PrefixQuery(prefixTerm);
-            try {
-                indexWriter.deleteDocuments(prefixQuery);
-            } catch (IOException e) {
-                log.error(e.getMessage(), e);
-            }
         }
     }
 
@@ -638,8 +614,8 @@ public class RebuildIndexTaskService implements ApplicationListener<RebuildIndex
         }
         fileDAO.setDelTag(userId, path);
         if (isDelIndex) {
-            // 删除索引
-            deleteAllIndex(path);
+            // 开启索引对账, 删除孤儿索引
+            luceneReconciliationService.startReconciliation();
         }
     }
 

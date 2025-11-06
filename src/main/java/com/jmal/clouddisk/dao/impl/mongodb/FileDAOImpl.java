@@ -16,7 +16,12 @@ import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.OtherProperties;
 import com.jmal.clouddisk.model.file.ShareProperties;
-import com.jmal.clouddisk.model.file.dto.*;
+import com.jmal.clouddisk.model.file.dto.FileBaseAllDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseLuceneDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseOperationPermissionDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO;
+import com.jmal.clouddisk.model.file.dto.UpdateFile;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
@@ -44,6 +49,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -159,7 +165,7 @@ public class FileDAOImpl implements IFileDAO {
     }
 
     @Override
-    public List<String> findByIdIn(List<String> fileIdList) {
+    public List<String> findByIdIn(Collection<String> fileIdList) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(fileIdList));
         query.fields().include("_id");
