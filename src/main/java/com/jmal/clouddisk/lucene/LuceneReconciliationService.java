@@ -125,6 +125,6 @@ public class LuceneReconciliationService {
 
     private void deleteOrphansFromIndex(Set<String> orphanIds) throws IOException {
         eventPublisher.publishEvent(new LuceneIndexQueueEvent(this, orphanIds));
-        log.debug("成功从Lucene索引中删除了{}个孤立的文档。", orphanIds.size());
+        log.debug("已发布事件，用于从Lucene索引中删除{}个孤立的文档。", orphanIds.size());
     }
 }
