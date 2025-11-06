@@ -69,9 +69,9 @@ file:
   # 前端资源路径
   frontendResourcePath: /Users/jmal/studio/myProject/github/jmal-cloud-view/dist/
   # pdfjs资源路径
-  pdfjsResourcePath: /Users/jmal/Downloads/jmalcloud_resource/pdfjs/
+  pdfjsResourcePath: /Users/jmal/software/jmalcloud/webapp/plug/pdfjs/
   # drawio资源路径
-  drawioResourcePath: /Users/jmal/Downloads/jmalcloud_resource/draw/
+  drawioResourcePath: /Users/jmal/software/jmalcloud/webapp/plug/draw/
   # excalidraw资源路径
-  excalidrawResourcePath: /Users/jmal/Downloads/jmalcloud_resource/excalidraw/excalidraw/app/
+  excalidrawResourcePath: /Users/jmal/software/jmalcloud/webapp/plug/excalidraw/excalidraw/app/
 

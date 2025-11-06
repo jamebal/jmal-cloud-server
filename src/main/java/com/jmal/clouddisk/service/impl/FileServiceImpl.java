@@ -381,8 +381,8 @@ public class FileServiceImpl implements IFileService {
             Path filepath = Paths.get(fileProperties.getRootDir(), username, currentDirectory, fileDocument.getName());
             if (Files.exists(filepath)) {
                 File file = filepath.toFile();
-                if (MyFileUtils.hasCharset(file)) {
-                    Charset charset = MyFileUtils.getFileCharset(file);
+                Charset charset = MyFileUtils.getCharset(file);
+                if (charset != null) {
                     fileDocument.setDecoder(charset.name());
                     if (BooleanUtil.isTrue(content)) {
                         fileDocument.setContentText(FileUtil.readString(file, charset));
@@ -432,8 +432,9 @@ public class FileServiceImpl implements IFileService {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         FileDocument fileDocument = new FileDocument();
-        if (MyFileUtils.hasCharset(file)) {
-            fileDocument.setDecoder(MyFileUtils.getFileCharset(file).name());
+        Charset charset = MyFileUtils.getCharset(file);
+        if (charset != null) {
+            fileDocument.setDecoder(charset.name());
         }
         Path path1 = path.subpath(0, path.getNameCount() - 1);
         int rootCount = Paths.get(fileProperties.getRootDir(), username).getNameCount();
