@@ -1,9 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
-import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IFileDAO;
@@ -29,7 +27,6 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
@@ -38,7 +35,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -160,26 +157,12 @@ public class CommonFileService {
 
     public static String getContentType(File file, String contentType) {
         try {
-            if (MyFileUtils.hasCharset(file)) {
-                String charset = UniversalDetector.detectCharset(file);
-                if (StrUtil.isNotBlank(charset)) {
-                    if (StandardCharsets.UTF_8.name().equals(charset)) {
-                        if (FileContentTypeUtils.DEFAULT_CONTENT_TYPE.equals(contentType)) {
-                            contentType = "text/plan;charset=utf-8";
-                        } else {
-                            contentType = contentType + ";charset=utf-8";
-                        }
-                    } else {
-                        if (file.length() < FileContentTypeUtils.MAX_DETECT_FILE_SIZE && CharsetDetector.detect(file).equals(StandardCharsets.UTF_8)) {
-                            if (FileContentTypeUtils.DEFAULT_CONTENT_TYPE.equals(contentType)) {
-                                contentType = "text/plan;charset=utf-8";
-                            } else {
-                                contentType = contentType + ";charset=utf-8";
-                            }
-                        } else {
-                            contentType = contentType + ";charset=" + charset;
-                        }
-                    }
+            Charset charset = MyFileUtils.getCharset(file);
+            if (charset != null) {
+                if (FileContentTypeUtils.DEFAULT_CONTENT_TYPE.equals(contentType)) {
+                    contentType = "text/plan;charset=utf-8";
+                } else {
+                    contentType = contentType + ";charset=utf-8";
                 }
             }
         } catch (Exception e) {

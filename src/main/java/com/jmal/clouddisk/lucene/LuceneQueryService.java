@@ -11,12 +11,24 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermInSetQuery;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -41,9 +53,8 @@ public class LuceneQueryService {
     private final Analyzer analyzer;
     private final FileProperties fileProperties;
 
-    public boolean existsSha256(String fileIndexHash) {
-        long count = count(getEtagQuery(fileIndexHash));
-        return count > 0;
+    public boolean existsSha256(String key, String fileIndexHash) {
+        return exists(getEtagQuery(key, fileIndexHash));
     }
 
     public long countByTagId(String tagId) {
@@ -62,13 +73,6 @@ public class LuceneQueryService {
         return find(new TermInSetQuery(LuceneService.FIELD_TAG_ID, terms));
     }
 
-    public Page<String> findByUserIdAndType(String userId, String type, SearchDTO searchDTO) {
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        builder.add(getUserIdQuery(userId), BooleanClause.Occur.MUST);
-        builder.add(getTypeQuery(type), BooleanClause.Occur.MUST);
-        return find(builder.build(), searchDTO);
-    }
-
     public Page<String> findByUserIdAndTagId(String userId, String tagId, SearchDTO searchDTO) {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         builder.add(getUserIdQuery(userId), BooleanClause.Occur.MUST);
@@ -76,49 +80,12 @@ public class LuceneQueryService {
         return find(builder.build(), searchDTO);
     }
 
-    public Page<String> findByUserIdAndPath(String userId, String path, SearchDTO searchDTO) {
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        builder.add(getUserIdQuery(userId), BooleanClause.Occur.MUST);
-        builder.add(getPathQuery(path), BooleanClause.Occur.MUST);
-        return find(builder.build(), searchDTO);
-    }
-
-    public Page<String> findByUserIdAndIsFolder(String userId, Boolean isFolder, SearchDTO searchDTO) {
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        builder.add(getUserIdQuery(userId), BooleanClause.Occur.MUST);
-        builder.add(getIsFolderQuery(isFolder), BooleanClause.Occur.MUST);
-        return find(builder.build(), searchDTO);
-    }
-
-    public Page<String> findByUserIdAndIsFavorite(String userId, Boolean isFavorite, SearchDTO searchDTO) {
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        builder.add(getUserIdQuery(userId), BooleanClause.Occur.MUST);
-        builder.add(getIsFavoriteQuery(isFavorite), BooleanClause.Occur.MUST);
-        return find(builder.build(), searchDTO);
-    }
-
-    public Query getIsFolderQuery(Boolean isFolder) {
-        return IntPoint.newExactQuery(Constants.IS_FOLDER, isFolder ? 1 : 0);
-    }
-
-    public Query getIsFavoriteQuery(Boolean isFavorite) {
-        return IntPoint.newExactQuery(Constants.IS_FAVORITE, isFavorite ? 1 : 0);
-    }
-
     public Query getTagIdQuery(String tagId) {
         return new TermQuery(new Term(LuceneService.FIELD_TAG_ID, tagId));
     }
 
-    public Query getEtagQuery(String etag) {
-        return new TermQuery(new Term(Constants.ETAG, etag));
-    }
-
-    public Query getPathQuery(String path) {
-        return new TermQuery(new Term(Constants.PATH_FIELD, path));
-    }
-
-    public Query getTypeQuery(String type) {
-        return new TermQuery(new Term("type", type));
+    public Query getEtagQuery(String key, String etag) {
+        return new TermQuery(new Term(key, etag));
     }
 
     public Query getUserIdQuery(String userId) {
@@ -126,11 +93,19 @@ public class LuceneQueryService {
     }
 
     public long count(Query query) {
+        return queryCount(query, Integer.MAX_VALUE);
+    }
+
+    public boolean exists(Query query) {
+        return queryCount(query, 1) > 0;
+    }
+
+    private long queryCount(Query query, int n) {
         IndexSearcher indexSearcher = null;
         try {
             searcherManager.maybeRefresh();
             indexSearcher = searcherManager.acquire();
-            TopDocs topDocs = indexSearcher.search(query, Integer.MAX_VALUE);
+            TopDocs topDocs = indexSearcher.search(query, n);
             return topDocs.totalHits.value();
         } catch (IOException e) {
             log.error("查询失败, query: {}", query.toString(), e);

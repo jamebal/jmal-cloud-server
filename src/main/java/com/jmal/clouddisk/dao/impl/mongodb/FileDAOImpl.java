@@ -844,7 +844,7 @@ public class FileDAOImpl implements IFileDAO {
         query.addCriteria(Criteria.where("_id").in(fileIdList));
         Update update = new Update();
         update.set(LuceneService.MONGO_INDEX_FIELD, indexStatus);
-        mongoTemplate.updateFirst(query, update, COLLECTION_NAME);
+        mongoTemplate.updateMulti(query, update, COLLECTION_NAME);
     }
 
     @Override
