@@ -12,6 +12,8 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 public class ThrottledTaskExecutor {
 
+    private static final long SHUTDOWN_GRACE_PERIOD_SECONDS = 15;
+
     private final ExecutorService delegate = Executors.newVirtualThreadPerTaskExecutor();
     private final AtomicInteger pendingTaskCount = new AtomicInteger(0);
     private final Semaphore permits;
@@ -81,10 +83,10 @@ public class ThrottledTaskExecutor {
     public void shutdown() {
         delegate.shutdown();
         try {
-            if (!delegate.awaitTermination(15, TimeUnit.SECONDS)) {
+            if (!delegate.awaitTermination(SHUTDOWN_GRACE_PERIOD_SECONDS, TimeUnit.SECONDS)) {
                 log.warn("执行器在15秒内未优雅地终止。强制关闭中...");
                 delegate.shutdownNow();
-                if (!delegate.awaitTermination(5, TimeUnit.SECONDS)) {
+                if (!delegate.awaitTermination(SHUTDOWN_GRACE_PERIOD_SECONDS, TimeUnit.SECONDS)) {
                     log.error("执行器即使在强制关闭后也没有终止。");
                 }
             }

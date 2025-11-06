@@ -114,6 +114,8 @@ public class RebuildIndexTaskService implements ApplicationListener<RebuildIndex
      */
     private static final AtomicInteger INDEXED_TASK_SIZE = new AtomicInteger(0);
 
+    private static final long SCAN_TERMINATION_TIMEOUT_MINUTES = 60;
+
     /**
      * 同步文件操作锁, 防止重复操作
      */
@@ -253,7 +255,7 @@ public class RebuildIndexTaskService implements ApplicationListener<RebuildIndex
         try {
             log.info("等待扫描文件完成");
             // 等待线程池里所有任务完成
-            if (!syncFileVisitorService.awaitTermination(60, TimeUnit.MINUTES)) {
+            if (!syncFileVisitorService.awaitTermination(SCAN_TERMINATION_TIMEOUT_MINUTES, TimeUnit.MINUTES)) {
                 log.warn("扫描文件超时, 尝试强制停止所有任务");
                 // 移除删除标记, 以免误删索引
                 removeDeletedFlag(null);
