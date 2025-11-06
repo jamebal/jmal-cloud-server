@@ -9,7 +9,14 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.ocr.OcrService;
-import com.jmal.clouddisk.service.impl.*;
+import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.CommonUserFileService;
+import com.jmal.clouddisk.service.impl.CommonUserService;
+import com.jmal.clouddisk.service.impl.MenuService;
+import com.jmal.clouddisk.service.impl.MessageService;
+import com.jmal.clouddisk.service.impl.PathService;
+import com.jmal.clouddisk.service.impl.RoleService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.ThrottleExecutor;
@@ -20,8 +27,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.PrefixQuery;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.context.ApplicationListener;
@@ -31,12 +36,22 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.math.RoundingMode;
-import java.nio.file.*;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -73,13 +88,15 @@ public class RebuildIndexTaskService implements ApplicationListener<RebuildIndex
 
     private final IFileDAO fileDAO;
 
-    private ExecutorService syncFileVisitorService;
+    private final ThrottledTaskExecutor syncFileVisitorService = new ThrottledTaskExecutor(Constants.MAX_CONCURRENT_PROCESSING_NUMBER);
 
     private SyncFileVisitor syncFileVisitor;
 
     private double totalCount;
 
     private final OcrService ocrService;
+
+    private final LuceneReconciliationService luceneReconciliationService;
 
     /**
      * 接收消息的用户
@@ -145,13 +162,6 @@ public class RebuildIndexTaskService implements ApplicationListener<RebuildIndex
         resetIndexStatus();
     }
 
-    private void getSyncFileVisitorService() {
-        int processors = Runtime.getRuntime().availableProcessors() / 2;
-        if (syncFileVisitorService == null || syncFileVisitorService.isShutdown()) {
-            syncFileVisitorService = ThreadUtil.newFixedExecutor(Math.max(processors, 2), 100, "syncFileVisitor", true);
-        }
-    }
-
 
     @Override
     public void onApplicationEvent(RebuildIndexEvent event) {
@@ -183,7 +193,6 @@ public class RebuildIndexTaskService implements ApplicationListener<RebuildIndex
                 if (!Files.exists(canPath)) {
                     return;
                 }
-                getSyncFileVisitorService();
                 rebuildingIndex(finalUsername, canPath, isDelIndex);
             } finally {
                 SYNC_FILE_LOCK.unlock();
@@ -240,44 +249,18 @@ public class RebuildIndexTaskService implements ApplicationListener<RebuildIndex
         }
     }
 
-    /**
-     * 删除path下的所有索引
-     * @param path path
-     */
-    private void deleteAllIndex(String path) {
-        if (StrUtil.isBlank(path)) {
-            try {
-                indexWriter.deleteAll();
-                indexWriter.forceMergeDeletes();
-            } catch (IOException e) {
-                log.error(e.getMessage(), e);
-            }
-        } else {
-            // 查询path下的所有索引
-            Term prefixTerm = new Term("path", path);
-            PrefixQuery prefixQuery = new PrefixQuery(prefixTerm);
-            try {
-                indexWriter.deleteDocuments(prefixQuery);
-            } catch (IOException e) {
-                log.error(e.getMessage(), e);
-            }
-        }
-    }
-
     private void waitTaskCompleted() {
         try {
             log.info("等待扫描文件完成");
-            syncFileVisitorService.shutdown();
             // 等待线程池里所有任务完成
-            if (!syncFileVisitorService.awaitTermination(10, TimeUnit.MINUTES)) {
+            if (!syncFileVisitorService.awaitTermination(60, TimeUnit.MINUTES)) {
                 log.warn("扫描文件超时, 尝试强制停止所有任务");
                 // 移除删除标记, 以免误删索引
                 removeDeletedFlag(null);
-                syncFileVisitorService.shutdownNow();
             }
         } catch (InterruptedException e) {
-            syncFileVisitorService.shutdownNow();
             Thread.currentThread().interrupt();
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -631,8 +614,8 @@ public class RebuildIndexTaskService implements ApplicationListener<RebuildIndex
         }
         fileDAO.setDelTag(userId, path);
         if (isDelIndex) {
-            // 删除索引
-            deleteAllIndex(path);
+            // 开启索引对账, 删除孤儿索引
+            luceneReconciliationService.startReconciliation();
         }
     }
 
@@ -647,9 +630,7 @@ public class RebuildIndexTaskService implements ApplicationListener<RebuildIndex
 
     @PreDestroy
     public void destroy() {
-        if (syncFileVisitorService != null) {
-            syncFileVisitorService.shutdown();
-        }
+        syncFileVisitorService.shutdown();
         if (throttleExecutor != null) {
             throttleExecutor.shutdown();
         }

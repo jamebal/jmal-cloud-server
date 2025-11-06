@@ -47,14 +47,12 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -323,10 +321,10 @@ public class CommonUserFileService {
 
     public static LocalDateTime getFileLastModifiedTime(File file) {
         try {
-            Map<String, Object> attributes = Files.readAttributes(file.toPath(), "lastModifiedTime,creationTime", LinkOption.NOFOLLOW_LINKS);
-            FileTime lastModifiedTime = (FileTime) attributes.get("lastModifiedTime");
+            FileTime lastModifiedTime = Files.getLastModifiedTime(file.toPath());
             return LocalDateTimeUtil.of(lastModifiedTime.toInstant());
         } catch (IOException e) {
+            log.error("获取文件修改时间失败: {}", file.getAbsolutePath(), e);
             return LocalDateTime.now(TimeUntils.ZONE_ID);
         }
     }

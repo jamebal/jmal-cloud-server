@@ -7,9 +7,15 @@ import com.jmal.clouddisk.model.Tag;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.OtherProperties;
 import com.jmal.clouddisk.model.file.ShareProperties;
-import com.jmal.clouddisk.model.file.dto.*;
+import com.jmal.clouddisk.model.file.dto.FileBaseAllDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseLuceneDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseOperationPermissionDTO;
+import com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO;
+import com.jmal.clouddisk.model.file.dto.UpdateFile;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 public interface IFileDAO {
@@ -54,7 +60,7 @@ public interface IFileDAO {
      * @param fileIdList fileIdList
      * @return List<String>
      */
-    List<String> findByIdIn(List<String> fileIdList);
+    List<String> findByIdIn(Collection<String> fileIdList);
 
     List<FileDocument> findAllAndRemoveByUserIdAndIdPrefix(String userId, String idPrefix);
 

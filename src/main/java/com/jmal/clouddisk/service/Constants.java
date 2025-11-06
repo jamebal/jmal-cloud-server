@@ -6,6 +6,7 @@ public class Constants {
     public static final String LAST_ETAG_UPDATE_REQUEST_AT_FIELD = "lastEtagUpdateRequestAt";
     public static final String ETAG_UPDATE_FAILED_ATTEMPTS_FIELD = "etagUpdateFailedAttempts";
     public static final String LAST_ETAG_UPDATE_ERROR_FIELD = "lastEtagUpdateError";
+    public static final int MAX_CONCURRENT_PROCESSING_NUMBER = 6;
     public static String MOUNT_FILE_ID_FIELD = "mountFileId";
 
     private Constants() { }
@@ -24,6 +25,7 @@ public class Constants {
     public static final String TAG_IDS = "tagIds";
     public static final String TOTAL_SIZE = "totalSize"; //totalSize
     public static final String ETAG = "etag";
+    public static final String NO_CONTENT_ETAG = "no_content_etag";
     public static final String PATH_FIELD = "path";
     public static final String FILENAME_FIELD = "name";
 

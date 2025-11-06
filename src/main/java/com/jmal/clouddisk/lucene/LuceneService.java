@@ -1,6 +1,5 @@
 package com.jmal.clouddisk.lucene;
 
-import cn.hutool.core.io.CharsetDetector;
 import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -14,30 +13,48 @@ import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
-import com.jmal.clouddisk.util.HashUtil;
 import com.jmal.clouddisk.util.MyFileUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
-import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -265,23 +282,35 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
             }
             FileIndex fileIndex = new FileIndex(file, fileBaseLuceneDTO);
             setFileIndex(fileIndex);
+
+            // 检查是否已存在相同的索引
+            String hash = readContent ? "1" : null;
+            String fileIndexHash = fileIndex.getFileIndexHash(hash);
+            String etagType = (hash == null) ? Constants.NO_CONTENT_ETAG : Constants.ETAG;
+            if (luceneQueryService.existsSha256(etagType, fileIndexHash)) {
+                return;
+            }
+
             if (readContent) {
-                String sha256 = HashUtil.sha256(file);
                 try (StringWriter contentWriter = new StringWriter()) {
                     readFileContent(file, fileBaseLuceneDTO.getId(), contentWriter);
                     String fullContent = contentWriter.toString();
 
                     if (CharSequenceUtil.isBlank(fullContent)) {
-                        updateIndexStatus(fileBaseLuceneDTO, IndexStatus.INDEXED);
                         return;
                     }
-                    updateIndexDocument(indexWriter, fileIndex, fullContent, fileIndex.getFileIndexHash(sha256));
+                    // 建立包含内容的索引
+                    updateIndexDocument(indexWriter, fileIndex, fullContent, fileIndexHash);
                     startProcessFilesToBeIndexed();
                 } catch (IOException e) {
                     log.warn("读取文件内容失败: file={}, {}", file.getAbsolutePath(), e.getMessage(), e);
                 }
             } else {
-                updateIndexDocument(indexWriter, fileIndex, null, fileIndex.getFileIndexHash(null));
+                // 不读取内容只建立基础索引
+                updateIndexDocument(indexWriter, fileIndex, null, fileIndexHash);
+                // 更新文件etag
+                String username = userService.getUserNameById(fileBaseLuceneDTO.getUserId());
+                esTagService.updateFileEtagAsync(username, getFileByFileBaseLuceneDTO(fileBaseLuceneDTO));
             }
             log.debug("添加索引, filepath: {}", file.getAbsoluteFile());
         } catch (Exception e) {
@@ -302,9 +331,6 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
      */
     private void updateIndexStatus(FileBaseLuceneDTO fileBaseLuceneDTO, IndexStatus indexStatus) {
         fileDAO.updateLuceneIndexStatusByIdIn(Collections.singletonList(fileBaseLuceneDTO.getId()), indexStatus.getStatus());
-        // set etag
-        String username = userService.getUserNameById(fileBaseLuceneDTO.getUserId());
-        esTagService.updateFileEtagAsync(username, getFileByFileBaseLuceneDTO(fileBaseLuceneDTO));
     }
 
     private File getFileByFileBaseLuceneDTO(FileBaseLuceneDTO fileBaseLuceneDTO) {
@@ -361,7 +387,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
     }
 
     private void readFileContent(File file, String fileId, Writer writer) {
-        String charset = null;
+        Charset charset = null;
         try {
             if (file == null || !file.isFile() || file.length() < 1) {
                 return;
@@ -376,15 +402,12 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
                 case "xls", "xlsx" -> readContentService.readExcelContent(file, writer);
                 default -> {
                     if (fileProperties.getSimText().contains(type)) {
-                        charset = UniversalDetector.detectCharset(file);
-                        if (CharSequenceUtil.isBlank(charset)) {
-                            charset = String.valueOf(CharsetDetector.detect(file, StandardCharsets.UTF_8));
-                        }
-                        if (CharSequenceUtil.isBlank(charset)) {
+                        charset = MyFileUtils.getCharset(file);
+                        if (charset == null) {
                             return;
                         }
                         // 对于纯文本，可以流式读取
-                        try (Reader reader = new InputStreamReader(new FileInputStream(file), Charset.forName(charset))) {
+                        try (Reader reader = new InputStreamReader(new FileInputStream(file), charset)) {
                             reader.transferTo(writer);
                         }
                     } else {
@@ -427,7 +450,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
 
     private final Object commitLock = new Object();
 
-    public void deleteIndexDocuments(List<String> fileIds) {
+    public void deleteIndexDocuments(Collection<String> fileIds) {
         if (fileIds == null || fileIds.isEmpty()) {
             return;
         }
@@ -447,17 +470,14 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
     /**
      * 添加/更新索引
      *
-     * @param indexWriter indexWriter
-     * @param fileIndex   FileIndex
-     * @param fullContent fullContent
-     * @param fileIndexHash fileIndexHash 唯一索引标识
+     * @param indexWriter   indexWriter
+     * @param fileIndex     FileIndex
+     * @param fullContent   fullContent
+     * @param fileIndexHash 文件索引哈希值
      */
     public void updateIndexDocument(IndexWriter indexWriter, FileIndex fileIndex, String fullContent, String fileIndexHash) {
         String fileId = fileIndex.getFileId();
         try {
-            if (luceneQueryService.existsSha256(fileIndexHash)) {
-                return;
-            }
             String fileName = (fileIndex.getName() == null ? "" : fileIndex.getName()) + " " + fileIndex.getRemark();
             String tagName = fileIndex.getTagName();
             Boolean isFolder = fileIndex.getIsFolder();
@@ -467,6 +487,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
             newDocument.add(new StringField("id", fileId, Field.Store.YES));
             newDocument.add(new StringField(IUserService.USER_ID, fileIndex.getUserId(), Field.Store.NO));
 
+            newDocument.add(new StringField(Constants.NO_CONTENT_ETAG, fileIndex.getFileIndexHash(null), Field.Store.NO));
             newDocument.add(new StringField(Constants.ETAG, fileIndexHash, Field.Store.NO));
 
             if (fileIndex.getType() != null) {
