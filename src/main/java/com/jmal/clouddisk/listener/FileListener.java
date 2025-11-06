@@ -53,6 +53,7 @@ public class FileListener implements DirectoryChangeListener {
     private final ThrottledTaskExecutor processExecutor = new ThrottledTaskExecutor(Constants.MAX_CONCURRENT_PROCESSING_NUMBER);
 
     // --- 高负载与全盘扫描状态 ---
+    private static final int IDLE_TASK_THRESHOLD = 5;
     private final AtomicBoolean rescanRequired = new AtomicBoolean(false);
     private final AtomicBoolean scanningInProgress = new AtomicBoolean(false);
     private final ScheduledExecutorService scanScheduler = ThreadUtil.createScheduledExecutor(1);
@@ -179,7 +180,7 @@ public class FileListener implements DirectoryChangeListener {
 
     private void checkAndTriggerScan() {
         // 如果需要重新扫描，且当前没有扫描任务在进行，并且待处理的单个事件很少（系统趋于空闲）
-        if (rescanRequired.get() && scheduledTasks.size() < 10 && scanningInProgress.compareAndSet(false, true)) {
+        if (rescanRequired.get() && scheduledTasks.size() < IDLE_TASK_THRESHOLD && scanningInProgress.compareAndSet(false, true)) {
             log.info("系统空闲，需要重新扫描。开始增量扫描...");
             rescanRequired.set(false); // 重置标志
             try {
