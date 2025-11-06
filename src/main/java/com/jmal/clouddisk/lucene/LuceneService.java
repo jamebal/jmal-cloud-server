@@ -47,6 +47,7 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -449,7 +450,7 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
 
     private final Object commitLock = new Object();
 
-    public void deleteIndexDocuments(List<String> fileIds) {
+    public void deleteIndexDocuments(Collection<String> fileIds) {
         if (fileIds == null || fileIds.isEmpty()) {
             return;
         }
