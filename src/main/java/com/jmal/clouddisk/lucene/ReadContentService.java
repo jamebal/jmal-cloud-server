@@ -69,7 +69,7 @@ public class ReadContentService {
             // 生成封面图像
             String username = pathService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
             if (CharSequenceUtil.isNotBlank(fileId)) {
-                File coverFile = FileContentUtil.epubCoverImage(book, pathService.getVideoCacheDir(username, fileId));
+                File coverFile = FileContentUtil.epubCoverImage(file, book, pathService.getVideoCacheDir(username, fileId));
                 coverFileService.updateCoverFileDocument(fileId, coverFile);
             }
 
