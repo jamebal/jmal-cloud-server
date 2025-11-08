@@ -134,4 +134,11 @@ public class FileIntroVO extends FileBase implements Reflective {
     public void setMusic(Music music) {
         this.music = music;
     }
+
+    public Integer getChildrenCount() {
+        if (this.getIsFolder()) {
+            return childrenCount != null ? childrenCount : 0;
+        }
+        return null;
+    }
 }
