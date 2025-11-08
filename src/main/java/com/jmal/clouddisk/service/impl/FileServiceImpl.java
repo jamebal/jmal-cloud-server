@@ -1016,8 +1016,10 @@ public class FileServiceImpl implements IFileService {
             }
             return ResultUtil.success(listFile(username, destDir, !isWrite));
         } catch (CommonException e) {
+            log.error("{}", e.getMessage(),  e);
             return ResultUtil.warning(e.getMessage());
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             return ResultUtil.error("解压失败!");
         }
     }
