@@ -82,12 +82,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public synchronized ConsumerDO add(ConsumerDTO consumerDTO) {
         String username = consumerDTO.getUsername();
-        if (isNotValidUsername(username)) {
-            throw new CommonException(ExceptionType.WARNING.getCode(), "非法的用户名格式");
-        }
-        if (fileProperties.notAllowUsername(username)) {
-            throw new CommonException(ExceptionType.WARNING.getCode(), "请使用其他用户名");
-        }
+        checkUsername(username);
         ConsumerDO consumerDO;
         ConsumerDO user1 = getUserInfoByUsername(username);
         if (user1 == null) {
@@ -109,6 +104,15 @@ public class UserServiceImpl implements IUserService {
             throw new CommonException(ExceptionType.WARNING.getCode(), "该用户已存在");
         }
         return consumerDO;
+    }
+
+    private void checkUsername(String username) {
+        if (isNotValidUsername(username)) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "非法的用户名格式");
+        }
+        if (fileProperties.notAllowUsername(username)) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "请使用其他用户名");
+        }
     }
 
     /**
@@ -162,10 +166,7 @@ public class UserServiceImpl implements IUserService {
     public ResponseResult<Object> update(ConsumerDTO user, MultipartFile blobAvatar) {
 
         String name = user.getUsername();
-        if (fileProperties.notAllowUsername(name)) {
-            return ResultUtil.warning("请使用其他用户名");
-        }
-
+        checkUsername(name);
         MyQuery query = new MyQuery();
         String userId = user.getId();
         ConsumerDO consumerDO;
@@ -406,6 +407,7 @@ public class UserServiceImpl implements IUserService {
         long count = userDAO.count();
         if (count < 1) {
             ConsumerDO user = new ConsumerDO();
+            checkUsername(user.getUsername());
             BeanUtils.copyProperties(consumerDTO, user);
             // 再初始化创建者
             String roleId = roleService.getRoleIdByCode(RoleService.ADMINISTRATORS);

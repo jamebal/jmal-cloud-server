@@ -9,6 +9,7 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.oss.web.WebOssService;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
@@ -253,7 +254,7 @@ public class FileInterceptor implements HandlerInterceptor {
             if (nameCount < MIN_COUNT) {
                 return true;
             }
-            if (nameCount == MIN_COUNT && path.startsWith("logo")) {
+            if (nameCount == MIN_COUNT && path.startsWith(Constants.LOGO_NAME_PREFIX)) {
                 return false;
             }
             if (!CharSequenceUtil.isBlank(username) && username.equals(uriPath.getName(MIN_COUNT - 1).toString())) {

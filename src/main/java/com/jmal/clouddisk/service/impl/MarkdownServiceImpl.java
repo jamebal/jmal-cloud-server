@@ -19,6 +19,7 @@ import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.Either;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.interceptor.ShareFileInterceptor;
 import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.model.*;
@@ -476,10 +477,10 @@ public class MarkdownServiceImpl implements IMarkdownService {
         // 修改文件之后保存历史版本
         String operator = userLoginHolder.getUsername();
         Completable.fromAction(() -> {
-            Path userRootPath = Paths.get(fileProperties.getRootDir(), upload.getUsername());
-            Path relativeNioPath = userRootPath.relativize(file.toPath());
-            eventPublisher.publishEvent(new FileVersionEvent(this, upload.getUsername(), relativeNioPath.toString(), userId, operator));
-        }).subscribeOn(Schedulers.io())
+                    Path userRootPath = Paths.get(fileProperties.getRootDir(), upload.getUsername());
+                    Path relativeNioPath = userRootPath.relativize(file.toPath());
+                    eventPublisher.publishEvent(new FileVersionEvent(this, upload.getUsername(), relativeNioPath.toString(), userId, operator));
+                }).subscribeOn(Schedulers.io())
                 .doOnError(e -> log.error(e.getMessage(), e))
                 .onErrorComplete()
                 .subscribe();
@@ -512,7 +513,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         commonUserFileService.upsertFolder(docImagePaths, username, userId);
         File newFile;
         try (HttpResponse response = HttpRequest.get(upload.getUrl()).setFollowRedirects(true).executeAsync();
-        InputStream inputStream = response.bodyStream()) {
+             InputStream inputStream = response.bodyStream()) {
             if (!response.isOk()) {
                 throw new HttpException("Server response error with status code: [{}]", response.getStatus());
             }
@@ -543,6 +544,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     /**
      * 获取url中的文件名
+     *
      * @param imageUrl 图片链接
      * @param response HttpResponse
      * @return 文件名
@@ -602,7 +604,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         }
         String fileId = commonUserFileService.createFile(username, newFile, userId, true);
         map.put(Constants.FILE_ID, fileId);
-        String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(WebConfig.API_FILE_PREFIX + Paths.get(username, docImagePaths.toString(), fileName), StandardCharsets.UTF_8);
+        String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(ShareFileInterceptor.SHARE_FILE_PREFIX + fileId + "/" + fileName, StandardCharsets.UTF_8);
         map.put(Constants.FILENAME, fileName);
         map.put(Constants.FILE_PATH, filepath);
         return map;

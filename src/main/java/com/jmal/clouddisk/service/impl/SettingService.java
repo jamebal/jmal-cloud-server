@@ -18,6 +18,7 @@ import com.jmal.clouddisk.lucene.EtagService;
 import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.rbac.Personalization;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.util.HybridThrottleExecutor;
 import com.jmal.clouddisk.util.MyFileUtils;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -93,7 +94,7 @@ public class SettingService {
      * @param file logo文件
      */
     public ResponseResult<Object> uploadLogo(MultipartFile file) {
-        String filename = "logo-" + System.currentTimeMillis() + "." + MyFileUtils.extName(file.getOriginalFilename());
+        String filename = Constants.LOGO_NAME_PREFIX + System.currentTimeMillis() + "." + MyFileUtils.extName(file.getOriginalFilename());
         File dist = new File(fileProperties.getRootDir() + File.separator + filename);
         try {
             String oldFilename = null;
@@ -123,6 +124,15 @@ public class SettingService {
     public ResponseResult<Object> updateNetdiskName(String netdiskName) {
         websiteSettingDAO.updateName(netdiskName);
         return ResultUtil.success("修改成功");
+    }
+
+    /**
+     * 修改网盘个性化配置
+     * @param personalization NetdiskPersonalization
+     */
+    public ResponseResult<Object> updateNetdiskPersonalization(NetdiskPersonalization personalization) {
+        websiteSettingDAO.updatePersonalization(personalization);
+        return ResultUtil.success("保存成功");
     }
 
     /***
@@ -170,6 +180,7 @@ public class SettingService {
         websiteSettingDTO1.setNetworkRecordNumber(websiteSettingDTO.getNetworkRecordNumber());
         websiteSettingDTO1.setNetworkRecordNumberStr(websiteSettingDTO.getNetworkRecordNumberStr());
         websiteSettingDTO1.setNetdiskName(websiteSettingDTO.getNetdiskName());
+        websiteSettingDTO1.setPersonalization(websiteSettingDTO.getPersonalization());
         websiteSettingDTO1.setExactSearch(fileProperties.getExactSearch());
         websiteSettingDTO1.setNetdiskLogo(websiteSettingDTO.getNetdiskLogo());
         websiteSettingDTO1.setFooterHtml(websiteSettingDTO.getFooterHtml());

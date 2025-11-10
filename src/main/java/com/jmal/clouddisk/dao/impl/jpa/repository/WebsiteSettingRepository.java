@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.dao.impl.jpa.repository;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.model.NetdiskPersonalization;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -46,4 +47,10 @@ public interface WebsiteSettingRepository extends JpaRepository<WebsiteSettingDO
     @Query("UPDATE WebsiteSettingDO w SET w.mfaForceEnable = :mfaForceEnable")
     int updateMfaForceEnable(@Param("mfaForceEnable") Boolean mfaForceEnable);
 
+    /**
+     * 更新个性化设置
+     */
+    @Modifying
+    @Query("UPDATE WebsiteSettingDO w SET w.personalization = :personalization")
+    int updatePersonalization(NetdiskPersonalization personalization);
 }

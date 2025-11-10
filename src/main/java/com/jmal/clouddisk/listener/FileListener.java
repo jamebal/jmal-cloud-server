@@ -159,16 +159,16 @@ public class FileListener implements DirectoryChangeListener {
 
             switch (event.eventType()) {
                 case CREATE -> {
-                    fileService.createFile(username, file);
                     log.info("用户：{}, 创建文件： {}", username, file.getAbsolutePath());
+                    fileService.createFile(username, file);
                 }
                 case MODIFY -> {
-                    fileService.updateFile(username, file);
                     log.info("用户：{}, 修改文件：{}", username, file.getAbsolutePath());
+                    fileService.updateFile(username, file);
                 }
                 case DELETE -> {
-                    fileService.deleteFile(username, file);
                     log.info("用户：{}, 删除文件：{}", username, file.getAbsolutePath());
+                    fileService.deleteFile(username, file);
                 }
                 default -> {
                 }
@@ -200,7 +200,12 @@ public class FileListener implements DirectoryChangeListener {
     private String ownerOfChangeFile(File file) {
         try {
             int rootPathCount = Paths.get(fileProperties.getRootDir()).getNameCount();
-            if (file.toPath().getNameCount() <= rootPathCount) {
+            int filePathCount = file.toPath().getNameCount();
+            if (filePathCount <= rootPathCount) {
+                return null;
+            }
+            if (filePathCount == rootPathCount + 1) {
+                // 根目录下的文件，忽略
                 return null;
             }
             return file.toPath().subpath(rootPathCount, rootPathCount + 1).toString();
