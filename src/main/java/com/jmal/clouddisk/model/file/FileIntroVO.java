@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model.file;
 
+import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.media.VideoInfoDO;
 import com.jmal.clouddisk.model.Music;
@@ -133,5 +134,12 @@ public class FileIntroVO extends FileBase implements Reflective {
 
     public void setMusic(Music music) {
         this.music = music;
+    }
+
+    public Integer getChildrenCount() {
+        if (BooleanUtil.isTrue(this.getIsFolder())) {
+            return childrenCount != null ? childrenCount : 0;
+        }
+        return null;
     }
 }

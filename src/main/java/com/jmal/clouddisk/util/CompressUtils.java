@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.util;
 
+import cn.hutool.core.io.FileUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import lombok.extern.slf4j.Slf4j;
@@ -7,20 +8,9 @@ import org.apache.tools.zip.ZipEntry;
 import org.apache.tools.zip.ZipOutputStream;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
@@ -263,9 +253,21 @@ public class CompressUtils {
      * 验证输出路径是否安全（防止命令注入）
      */
     private static boolean isValidOutputPath(String path) {
-        // 允许字母、数字、常见路径字符
-        // 禁止 ; & | $ ` < > 等可能导致命令注入的字符
-        return path.matches("^[a-zA-Z0-9/._\\-\\\\: ]+$");
+        if (path == null || path.trim().isEmpty()) {
+            return false;
+        }
+
+        try {
+            Path pathObj = Paths.get(path).normalize();
+            String normalized = pathObj.toString();
+
+            // 排除法：只禁止明确的危险字符
+            // 禁止命令注入字符: ; & | $ ` < >
+            // 禁止路径遍历: ..
+            return !normalized.matches(".*[;&|$`<>].*") && !normalized.contains("..");
+        } catch (InvalidPathException e) {
+            return false;
+        }
     }
 
     /**
@@ -322,6 +324,7 @@ public class CompressUtils {
             String line;
             String currentPath = null;
             boolean isFolder = false;
+            String attributes = null;
 
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
@@ -330,7 +333,12 @@ public class CompressUtils {
                     currentPath = line.substring(7).trim();
                 } else if (line.startsWith("Folder = ")) {
                     isFolder = line.substring(9).trim().equals("+");
+                } else if (line.startsWith("Attributes = ")) {
+                    // 读取属性字段
+                    attributes = line.substring(13).trim();
                 } else if (line.isEmpty() && currentPath != null) {
+                    // 综合判断是否为文件夹
+                    boolean isFolderFinal = determineFolderType(currentPath, isFolder, attributes);
                     // 安全检查
                     if (isValidFilePath(currentPath)) {
                         try {
@@ -338,10 +346,10 @@ public class CompressUtils {
 
                             // 确保在输出目录内
                             if (targetPath.startsWith(outputDir.toPath())) {
-                                if (isFolder) {
-                                    Files.createDirectories(targetPath);
+                                if (isFolderFinal) {
+                                    FileUtil.mkdir(targetPath);
                                 } else {
-                                    Files.createDirectories(targetPath.getParent());
+                                    FileUtil.mkdir(targetPath.getParent());
                                     if (!Files.exists(targetPath)) {
                                         Files.createFile(targetPath);
                                     }
@@ -358,7 +366,6 @@ public class CompressUtils {
                     isFolder = false;
                 }
             }
-
         }
 
         boolean finished = proc.waitFor(COMMAND_TIMEOUT_MINUTES, TimeUnit.MINUTES);
@@ -375,6 +382,25 @@ public class CompressUtils {
         // 解压后安全验证
         postExtractionValidation(outputDir.toPath());
     }
+
+    /**
+     * 综合判断是否为文件夹
+     */
+    private static boolean determineFolderType(String path, boolean folderFlag, String attributes) {
+        // 1. 检查路径是否以 / 或 \ 结尾（Unix/Windows 风格）
+        if (path.endsWith("/") || path.endsWith("\\")) {
+            return true;
+        }
+
+        // 2. 检查 Attributes 字段（D 表示 Directory）
+        if (attributes != null && attributes.startsWith("D")) {
+            return true;
+        }
+
+        // 3. 最后才使用 Folder 字段
+        return folderFlag;
+    }
+
 
     /**
      * 获取 7z 排除参数列表
