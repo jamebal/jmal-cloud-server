@@ -360,7 +360,7 @@ public class FileInterceptor implements HandlerInterceptor {
         return getFileDocument(uriPath, true);
     }
 
-    private void handleCrop(HttpServletRequest request, HttpServletResponse response) throws IOException, InterruptedException {
+    private void handleCrop(HttpServletRequest request, HttpServletResponse response) throws IOException {
         File file = getFileByRequest(request);
         String q = request.getParameter("q");
         String w = request.getParameter("w");

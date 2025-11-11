@@ -407,7 +407,7 @@ public class UserServiceImpl implements IUserService {
         long count = userDAO.count();
         if (count < 1) {
             ConsumerDO user = new ConsumerDO();
-            checkUsername(user.getUsername());
+            checkUsername(consumerDTO.getUsername());
             BeanUtils.copyProperties(consumerDTO, user);
             // 再初始化创建者
             String roleId = roleService.getRoleIdByCode(RoleService.ADMINISTRATORS);
