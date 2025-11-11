@@ -514,7 +514,6 @@ public class MarkdownServiceImpl implements IMarkdownService {
         List<UploadImageResult> list = new ArrayList<>();
         MultipartFile[] multipartFiles = upload.getFiles();
         if (multipartFiles != null) {
-            list = new ArrayList<>();
             for (MultipartFile multipartFile : multipartFiles) {
                 list.add(uploadImage(upload, multipartFile));
             }
@@ -578,7 +577,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
             newFile = commonUserFileService.createFileWithConversion(fileName, username, docImagePaths, inputStream);
             String fileId = commonUserFileService.createFile(username, newFile, userId, true);
             String filepath = getFileShareUrl(fileId, newFile);
-            return new UploadImageResult(fileId, fileName, filepath);
+            return new UploadImageResult(null, null, fileId, newFile.getName(), filepath);
         } catch (IOException e) {
             if (newFile != null && newFile.exists()) {
                 FileUtil.del(newFile);
@@ -596,11 +595,6 @@ public class MarkdownServiceImpl implements IMarkdownService {
         private String fileId;
         private String filename;
         private String filepath;
-        public UploadImageResult(String fileId, String filename, String filepath) {
-            this.fileId = fileId;
-            this.filename = filename;
-            this.filepath = filepath;
-        }
     }
 
     @NotNull
