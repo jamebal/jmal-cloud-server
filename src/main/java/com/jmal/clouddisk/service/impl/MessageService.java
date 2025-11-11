@@ -43,7 +43,7 @@ public class MessageService {
             .maximumSize(10000) // 最多缓存10000个用户的节流器
             .removalListener((String username, Map<String, ThrottleExecutor> map, RemovalCause cause) -> {
                 // 2. 添加移除监听器，用于释放资源
-                log.info("Removing throttle executors for user '{}' due to {}", username, cause);
+                log.debug("Removing throttle executors for user '{}' due to {}", username, cause);
                 if (map != null) {
                     map.values().forEach(executor -> {
                         // 假设 ThrottleExecutor 实现了 shutdown 接口
