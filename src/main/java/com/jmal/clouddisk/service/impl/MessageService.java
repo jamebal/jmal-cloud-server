@@ -118,12 +118,17 @@ public class MessageService {
         if (timelyPush(username, message, url)) return;
         if (Constants.CREATE_FILE.equals(url) || Constants.DELETE_FILE.equals(url)) {
             Map<String, ThrottleExecutor> userExecutors = throttleExecutorCache.get(username, _ -> new ConcurrentHashMap<>(8));
-            ThrottleExecutor throttleExecutor = userExecutors.computeIfAbsent(url, key -> {
-                log.debug("Creating new ThrottleExecutor for user '{}' and url '{}'", username, key);
-                return new ThrottleExecutor(300); // 300ms 节流窗口
-            });
+            ThrottleExecutor throttleExecutor = null;
+            if (userExecutors != null) {
+                throttleExecutor = userExecutors.computeIfAbsent(url, key -> {
+                    log.debug("Creating new ThrottleExecutor for user '{}' and url '{}'", username, key);
+                    return new ThrottleExecutor(300); // 300ms 节流窗口
+                });
+            }
 
-            throttleExecutor.schedule(() -> pushMsg(username, message, url));
+            if (throttleExecutor != null) {
+                throttleExecutor.schedule(() -> pushMsg(username, message, url));
+            }
         } else {
             pushMsg(username, message, url);
         }

@@ -88,7 +88,7 @@ public class FileInterceptor implements HandlerInterceptor {
     private final WebOssService webOssService;
 
     @Override
-    public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) throws IOException, InterruptedException {
+    public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) throws IOException {
         if (internalValid(request, response)) return true;
 
         if (fileAuthError(request, response)) {
