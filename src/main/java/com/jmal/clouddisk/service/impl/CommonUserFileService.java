@@ -46,6 +46,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -532,6 +533,40 @@ public class CommonUserFileService {
         } else {
             return fileDAO.findByUserIdAndPathAndName(userId, path, filename, Constants.CONTENT);
         }
+    }
+
+    /**
+     * 上传公共图片, 并转换为webp格式
+     * @param fileName 文件名
+     * @param username 用户名
+     * @param imagePath 图片存放路径
+     * @param inputStream 输入流
+     */
+    public File createFileWithConversion(String fileName, String username, Path imagePath, InputStream inputStream) throws IOException {
+
+        Path userRoot = Paths.get(fileProperties.getRootDir(), username);
+        Path targetPath = Paths.get(fileProperties.getRootDir(), username, imagePath.toString(), fileName);
+
+        // 防止路径遍历
+        if (!targetPath.startsWith(userRoot)) {
+            throw new SecurityException("Invalid file path detected");
+        }
+
+        File targetFile;
+        String extension = FileUtil.getSuffix(fileName);
+
+        if (Constants.SUFFIX_WEBP.equals(extension) || !ImageExifUtil.needToHandle(extension)) {
+            // 保存原始图片
+            targetFile = targetPath.toFile();
+            FileUtil.writeFromStream(inputStream, targetFile);
+        } else {
+            // 转换为 WebP
+            String fileNameWithoutSuffix = StrUtil.removeSuffix(fileName, "." + extension);
+            targetFile = targetPath.getParent().resolve(fileNameWithoutSuffix + Constants.POINT_SUFFIX_WEBP).toFile();
+            ImageMagickProcessor.convertToWebpFile(inputStream, targetFile);
+        }
+
+        return targetFile;
     }
 
 }

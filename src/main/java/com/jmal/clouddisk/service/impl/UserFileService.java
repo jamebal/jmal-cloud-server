@@ -5,10 +5,10 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.exception.CommonException;
-import com.jmal.clouddisk.media.ImageMagickProcessor;
+import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
-import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.util.FileNameUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.mime.MimeType;
@@ -55,7 +55,7 @@ public class UserFileService {
         MultipartFile multipartFile = upload.getFile();
         String username = upload.getUsername();
         String userId = upload.getUserId();
-        String fileName = upload.getFilename();
+        String fileName = FileNameUtils.validateAndSanitizeFilename(upload.getFilename());
         MimeTypes allTypes = MimeTypes.getDefaultMimeTypes();
         MimeType mimeType;
         try {
@@ -64,23 +64,20 @@ public class UserFileService {
         } catch (MimeTypeException e) {
             log.error(e.getMessage(), e);
         }
-        Path userImagePaths = Paths.get(fileProperties.getUserImgDir());
+        Path userImagePath = Paths.get(fileProperties.getUserImgDir());
         // userImagePaths 不存在则新建
-        commonUserFileService.upsertFolder(userImagePaths, username, userId);
-        File newFile;
+        commonUserFileService.upsertFolder(userImagePath, username, userId);
+        File newFile = null;
         try (InputStream inputStream = multipartFile.getInputStream()) {
-            if (commonUserFileService.getDisabledWebp(userId) || ("ico".equals(FileUtil.getSuffix(fileName)))) {
-                newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
-                FileUtil.writeFromStream(inputStream, newFile);
-            } else {
-                fileName = fileName + Constants.POINT_SUFFIX_WEBP;
-                newFile = Paths.get(fileProperties.getRootDir(), username, userImagePaths.toString(), fileName).toFile();
-                ImageMagickProcessor.convertToWebpFile(inputStream, newFile);
-            }
+            newFile = commonUserFileService.createFileWithConversion(fileName, username, userImagePath, inputStream);
+            return commonUserFileService.createFile(username, newFile, userId, true);
         } catch (IOException e) {
-            throw new CommonException(2, "上传失败");
+            if (newFile != null && newFile.exists()) {
+                FileUtil.del(newFile);
+            }
+            log.error("Failed to upload image: {}", fileName, e);
+            throw new CommonException(ExceptionType.WARNING, "上传失败: " + e.getMessage());
         }
-        return commonUserFileService.createFile(username, newFile, userId, true);
     }
 
     public void setPublic(String fileId) {

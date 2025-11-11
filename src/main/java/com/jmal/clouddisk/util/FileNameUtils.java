@@ -1,6 +1,10 @@
 package com.jmal.clouddisk.util;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
 
 public class FileNameUtils {
 
@@ -23,6 +27,38 @@ public class FileNameUtils {
             return URLUtil.decode(protectedPath);
         }
         return encodedPath;
+    }
+
+    public static String validateAndSanitizeFilename(String filename) {
+        if (StrUtil.isBlank(filename)) {
+            throw new CommonException(ExceptionType.PARAMETERS_VALUE.getCode(), "文件名不能为空");
+        }
+
+        // 使用正则一次性替换所有危险字符
+        String sanitized = filename
+                .replace("..", "_")
+                .replaceAll("[/\\\\;|&$`<>\"'*?:]", "_");
+
+        // 去除首尾空格和点
+        sanitized = sanitized.trim().replaceAll("^\\.+|\\.+$", "");
+
+        if (StrUtil.isBlank(sanitized)) {
+            throw new CommonException(ExceptionType.PARAMETERS_VALUE.getCode(), "文件名包含非法字符");
+        }
+
+        // 限制长度
+        if (sanitized.length() > 255) {
+            String ext = FileUtil.getSuffix(sanitized);
+            if (StrUtil.isNotBlank(ext)) {
+                int maxNameLength = 254 - ext.length();
+                String nameWithoutExt = StrUtil.removeSuffix(sanitized, "." + ext);
+                sanitized = nameWithoutExt.substring(0, Math.min(nameWithoutExt.length(), maxNameLength)) + "." + ext;
+            } else {
+                sanitized = sanitized.substring(0, 255);
+            }
+        }
+
+        return sanitized;
     }
 
 }

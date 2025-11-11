@@ -166,7 +166,6 @@ public class UserServiceImpl implements IUserService {
     public ResponseResult<Object> update(ConsumerDTO user, MultipartFile blobAvatar) {
 
         String name = user.getUsername();
-        checkUsername(name);
         MyQuery query = new MyQuery();
         String userId = user.getId();
         ConsumerDO consumerDO;
@@ -175,6 +174,7 @@ public class UserServiceImpl implements IUserService {
             consumerDO = getUserInfoById(userId);
         } else {
             if (!CharSequenceUtil.isBlank(name)) {
+                checkUsername(name);
                 query.eq(USERNAME, name);
                 consumerDO = getUserInfoByUsername(name);
             } else {
