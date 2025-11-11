@@ -138,7 +138,7 @@ public class FileDAOImpl implements IFileDAO {
         Query query = getQuery(fileDocument.getUserId(), fileDocument.getPath(), fileDocument.getName());
         UpdateResult updateResult = mongoTemplate.upsert(query, update, FileDocument.class);
         if (updateResult.getUpsertedId() != null) {
-            return updateResult.getUpsertedId().asString().getValue();
+            return updateResult.getUpsertedId().asObjectId().getValue().toHexString();
         }
         return null;
     }

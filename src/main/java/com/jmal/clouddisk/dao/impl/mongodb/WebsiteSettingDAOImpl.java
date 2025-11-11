@@ -2,6 +2,7 @@ package com.jmal.clouddisk.dao.impl.mongodb;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
+import com.jmal.clouddisk.model.NetdiskPersonalization;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 import com.jmal.clouddisk.util.MongoUtil;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,14 @@ public class WebsiteSettingDAOImpl implements IWebsiteSettingDAO {
     public void updateName(String name) {
         Update update = new Update();
         update.set("netdiskName", name);
+        mongoTemplate.upsert(new Query(), update, WebsiteSettingDO.class);
+    }
+
+
+    @Override
+    public void updatePersonalization(NetdiskPersonalization personalization) {
+        Update update = new Update();
+        update.set("personalization", personalization);
         mongoTemplate.upsert(new Query(), update, WebsiteSettingDO.class);
     }
 

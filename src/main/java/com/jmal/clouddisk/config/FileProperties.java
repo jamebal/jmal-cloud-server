@@ -3,6 +3,7 @@ package com.jmal.clouddisk.config;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.lucene.LuceneService;
+import com.jmal.clouddisk.service.Constants;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -231,7 +232,7 @@ public class FileProperties {
         if (getJmalcloudDBDir().equals(username)) {
             return true;
         }
-        return username.startsWith("log-");
+        return username.startsWith(Constants.LOGO_NAME_PREFIX);
     }
 
 

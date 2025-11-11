@@ -5,6 +5,7 @@ import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.WebsiteSettingRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
 import com.jmal.clouddisk.dao.impl.jpa.write.setting.WebSiteSettingOperation;
+import com.jmal.clouddisk.model.NetdiskPersonalization;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -87,6 +88,34 @@ public class WebsiteSettingDAOJpaImpl implements IWebsiteSettingDAO, IWriteCommo
         } catch (Exception e) {
             log.error("更新网站名称失败: name={}, error={}", name, e.getMessage(), e);
             throw new RuntimeException("更新网站名称失败", e);
+        }
+    }
+
+    @Override
+    public void updatePersonalization(NetdiskPersonalization personalization) {
+        log.debug("更新网站个性化配置: personalization={}", personalization);
+
+        try {
+            if (personalization == null) {
+                log.debug("个性化配置为null，跳过更新");
+                return;
+            }
+
+            CompletableFuture<Integer> future = writeService.submit(new WebSiteSettingOperation.UpdatePersonalization(personalization));
+            int updatedCount = future.get(10, TimeUnit.SECONDS);
+
+            if (updatedCount == 0) {
+                WebsiteSettingDO setting = createDefaultWebsiteSetting();
+                setting.setPersonalization(personalization);
+                writeService.submit(new WebSiteSettingOperation.Create(setting));
+                log.debug("创建带个性化配置的默认设置成功: personalization={}", personalization);
+            } else {
+                log.debug("网站个性化配置更新成功，影响行数: {}", updatedCount);
+            }
+        } catch (Exception e) {
+            log.error("更新网站个性化配置失败: personalization={}, error={}",
+                     personalization, e.getMessage(), e);
+            throw new RuntimeException("更新网站个性化配置失败", e);
         }
     }
 

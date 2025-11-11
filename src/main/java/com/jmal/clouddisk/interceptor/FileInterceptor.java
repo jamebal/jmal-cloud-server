@@ -9,6 +9,7 @@ import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.oss.web.WebOssService;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
@@ -87,7 +88,7 @@ public class FileInterceptor implements HandlerInterceptor {
     private final WebOssService webOssService;
 
     @Override
-    public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) throws IOException, InterruptedException {
+    public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) throws IOException {
         if (internalValid(request, response)) return true;
 
         if (fileAuthError(request, response)) {
@@ -253,7 +254,7 @@ public class FileInterceptor implements HandlerInterceptor {
             if (nameCount < MIN_COUNT) {
                 return true;
             }
-            if (nameCount == MIN_COUNT && path.startsWith("logo")) {
+            if (nameCount == MIN_COUNT && path.startsWith(Constants.LOGO_NAME_PREFIX)) {
                 return false;
             }
             if (!CharSequenceUtil.isBlank(username) && username.equals(uriPath.getName(MIN_COUNT - 1).toString())) {
@@ -359,7 +360,7 @@ public class FileInterceptor implements HandlerInterceptor {
         return getFileDocument(uriPath, true);
     }
 
-    private void handleCrop(HttpServletRequest request, HttpServletResponse response) throws IOException, InterruptedException {
+    private void handleCrop(HttpServletRequest request, HttpServletResponse response) throws IOException {
         File file = getFileByRequest(request);
         String q = request.getParameter("q");
         String w = request.getParameter("w");

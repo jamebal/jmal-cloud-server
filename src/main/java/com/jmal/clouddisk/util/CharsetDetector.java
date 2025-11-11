@@ -15,6 +15,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.Set;
 
 @Slf4j
 public class CharsetDetector {
@@ -24,11 +25,25 @@ public class CharsetDetector {
     private static final double MAX_NULL_BYTE_RATIO = 0.05;
     private static final double MAX_CONTROL_CHAR_RATIO = 0.1;
 
+    private static final Set<String> BINARY_EXTENSIONS = Set.of(
+            "png", "jpg", "jpeg", "gif", "bmp", "ico", "webp",
+            "mp3", "mp4", "avi", "mkv", "flv", "mov",
+            "zip", "rar", "7z", "gz", "tar", "bz2",
+            "exe", "dll", "so",
+            "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+            "glb", "gltf", "fbx", "obj", "dxf"
+    );
+
     /**
      * 从字节数组检测字符集（多重策略）
      */
     public static Charset detect(File file, byte[] bytes, int length) {
         if (bytes == null || length <= 0) {
+            return null;
+        }
+
+        String ext = MyFileUtils.extName(file);
+        if (BINARY_EXTENSIONS.contains(ext)) {
             return null;
         }
 

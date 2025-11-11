@@ -30,7 +30,7 @@ public class ShareFileInterceptor implements HandlerInterceptor {
     private final PreFileInterceptor preFileInterceptor;
     private final UserLoginHolder userLoginHolder;
 
-    private static final String SHARE_FILE_PREFIX = "/api/share-file/";
+    public static final String SHARE_FILE_PREFIX = "/api/share-file/";
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request,

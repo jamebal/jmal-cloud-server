@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.model;
 
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -50,6 +51,12 @@ public class WebsiteSettingDO extends AuditableEntity implements Reflective {
      * 网盘名称
      */
     String netdiskName;
+    /**
+     * 网盘个性化配置
+     */
+    @Column(name = "personalization")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private NetdiskPersonalization personalization;
     /***
      * 站点地址
      */
@@ -128,6 +135,7 @@ public class WebsiteSettingDO extends AuditableEntity implements Reflective {
         websiteSettingDTO.setBackgroundDescSite(this.backgroundDescSite);
         websiteSettingDTO.setNetdiskLogo(this.netdiskLogo);
         websiteSettingDTO.setNetdiskName(this.netdiskName);
+        websiteSettingDTO.setPersonalization(this.personalization);
         websiteSettingDTO.setSiteUrl(this.siteUrl);
         websiteSettingDTO.setSiteIco(this.siteIco);
         websiteSettingDTO.setSiteLogo(this.siteLogo);
@@ -145,5 +153,12 @@ public class WebsiteSettingDO extends AuditableEntity implements Reflective {
         websiteSettingDTO.setIframe(this.iframe);
         websiteSettingDTO.setMfaForceEnable(this.mfaForceEnable);
         return websiteSettingDTO;
+    }
+
+    public String getNetdiskName() {
+        if (personalization != null && !StrUtil.isBlank(personalization.getName())) {
+            return personalization.getName();
+        }
+        return netdiskName;
     }
 }

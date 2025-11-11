@@ -40,7 +40,7 @@ public class FileContentUtil {
         }
     }
 
-    public static File epubCoverImage(Book book, String outputPath) {
+    public static File epubCoverImage(File file, Book book, String outputPath) {
         // 获取封面图片
         Resource coverImage = book.getCoverImage();
         if (coverImage != null) {
@@ -54,11 +54,11 @@ public class FileContentUtil {
                 }
                 return coverImageFile;
             } catch (Throwable e) {
-                log.warn("epub 文件封面图像生成失败: {}", e.getMessage());
+                log.warn("epub 文件封面图像生成失败: {}, 文件: {}" ,e.getMessage(), file.getAbsoluteFile());
                 return null;
             }
         }
-        log.warn("epub 文件封面图像生成失败: 未找到封面图片");
+        log.warn("epub 文件封面图像生成失败: 未找到封面图片, 文件: {}", file.getAbsoluteFile());
         return null;
     }
 

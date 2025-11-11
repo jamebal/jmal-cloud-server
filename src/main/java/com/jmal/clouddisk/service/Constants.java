@@ -7,6 +7,7 @@ public class Constants {
     public static final String ETAG_UPDATE_FAILED_ATTEMPTS_FIELD = "etagUpdateFailedAttempts";
     public static final String LAST_ETAG_UPDATE_ERROR_FIELD = "lastEtagUpdateError";
     public static final int MAX_CONCURRENT_PROCESSING_NUMBER = 6;
+    public static final String LOGO_NAME_PREFIX = "logo-";
     public static String MOUNT_FILE_ID_FIELD = "mountFileId";
 
     private Constants() { }

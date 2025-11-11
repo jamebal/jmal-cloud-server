@@ -13,24 +13,43 @@ import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.config.WebConfig;
 import com.jmal.clouddisk.dao.IArticleDAO;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.Either;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.interceptor.ShareFileInterceptor;
 import com.jmal.clouddisk.lucene.LuceneService;
-import com.jmal.clouddisk.media.ImageMagickProcessor;
-import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.ArchivesVO;
+import com.jmal.clouddisk.model.ArticleDTO;
+import com.jmal.clouddisk.model.ArticleParamDTO;
+import com.jmal.clouddisk.model.ArticleVO;
+import com.jmal.clouddisk.model.CategoryDO;
+import com.jmal.clouddisk.model.MarkdownBaseFile;
+import com.jmal.clouddisk.model.MarkdownVO;
+import com.jmal.clouddisk.model.OperationPermission;
+import com.jmal.clouddisk.model.Page;
+import com.jmal.clouddisk.model.TagDO;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.UploadImageDTO;
+import com.jmal.clouddisk.model.Urlset;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.util.*;
+import com.jmal.clouddisk.util.CalcMd5;
+import com.jmal.clouddisk.util.FileNameUtils;
+import com.jmal.clouddisk.util.JacksonUtil;
+import com.jmal.clouddisk.util.MyFileUtils;
+import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.TimeUntils;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
@@ -48,7 +67,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author jmal
@@ -476,10 +498,10 @@ public class MarkdownServiceImpl implements IMarkdownService {
         // 修改文件之后保存历史版本
         String operator = userLoginHolder.getUsername();
         Completable.fromAction(() -> {
-            Path userRootPath = Paths.get(fileProperties.getRootDir(), upload.getUsername());
-            Path relativeNioPath = userRootPath.relativize(file.toPath());
-            eventPublisher.publishEvent(new FileVersionEvent(this, upload.getUsername(), relativeNioPath.toString(), userId, operator));
-        }).subscribeOn(Schedulers.io())
+                    Path userRootPath = Paths.get(fileProperties.getRootDir(), upload.getUsername());
+                    Path relativeNioPath = userRootPath.relativize(file.toPath());
+                    eventPublisher.publishEvent(new FileVersionEvent(this, upload.getUsername(), relativeNioPath.toString(), userId, operator));
+                }).subscribeOn(Schedulers.io())
                 .doOnError(e -> log.error(e.getMessage(), e))
                 .onErrorComplete()
                 .subscribe();
@@ -489,7 +511,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     @Override
     public ResponseResult<Object> uploadMarkdownImage(UploadImageDTO upload) throws CommonException {
-        List<Map<String, String>> list = new ArrayList<>();
+        List<UploadImageResult> list = new ArrayList<>();
         MultipartFile[] multipartFiles = upload.getFiles();
         if (multipartFiles != null) {
             for (MultipartFile multipartFile : multipartFiles) {
@@ -504,45 +526,85 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (CharSequenceUtil.isBlank(upload.getUrl())) {
             return ResultUtil.warning("url不能为空");
         }
-        Map<String, String> map = new HashMap<>(2);
         String username = upload.getUsername();
         String userId = upload.getUserId();
         Path docImagePaths = getDocImagePaths(upload);
         // docImagePaths 不存在则新建
         commonUserFileService.upsertFolder(docImagePaths, username, userId);
-        File newFile;
+        File newFile = null;
         try (HttpResponse response = HttpRequest.get(upload.getUrl()).setFollowRedirects(true).executeAsync();
-        InputStream inputStream = response.bodyStream()) {
+             InputStream inputStream = response.bodyStream()) {
             if (!response.isOk()) {
                 throw new HttpException("Server response error with status code: [{}]", response.getStatus());
             }
-            String fileName = getFileName(upload.getUrl(), response);
-            if (fileName.endsWith(Constants.POINT_SUFFIX_WEBP)) {
-                newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
-                // 保存原始webp文件
-                FileUtil.writeFromStream(inputStream, newFile);
-            } else {
-                // 去掉fileName中的后缀
-                String fileNameWithoutSuffix = StrUtil.removeSuffix(fileName, "." + FileUtil.getSuffix(fileName));
-                newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileNameWithoutSuffix + Constants.POINT_SUFFIX_WEBP).toFile();
-                ImageMagickProcessor.convertToWebpFile(inputStream, newFile);
-            }
+            String fileName = FileNameUtils.validateAndSanitizeFilename(getFileName(upload.getUrl(), response));
+            newFile = commonUserFileService.createFileWithConversion(fileName, username, docImagePaths, inputStream);
+            String fileId = commonUserFileService.createFile(username, newFile, userId, true);
+            String filepath = getFileShareUrl(fileId, newFile);
+            return ResultUtil.success(new UploadImageResult(filepath, upload.getUrl(), fileId, newFile.getName(), filepath));
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new CommonException(2, "上传失败");
+            if (newFile != null && newFile.exists()) {
+                FileUtil.del(newFile);
+            }
+            log.error("Failed to upload image: {}", upload.getUrl(), e);
+            throw new CommonException(ExceptionType.WARNING, "上传失败: " + e.getMessage());
         }
-        String fileId = commonUserFileService.createFile(username, newFile, userId, true);
-        map.put(Constants.FILE_ID, fileId);
-        String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(WebConfig.API_FILE_PREFIX + Paths.get(username, docImagePaths.toString(), newFile.getName()), StandardCharsets.UTF_8);
-        map.put("url", filepath);
-        map.put("originalURL", upload.getUrl());
-        map.put(Constants.FILENAME, newFile.getName());
-        map.put(Constants.FILE_PATH, filepath);
-        return ResultUtil.success(map);
+    }
+
+    /***
+     * 上传成功后返回文件名和路径
+     * @param upload UploadImageDTO
+     * @param multipartFile MultipartFile
+     * @return
+     * {
+     *    "filename1": "filepath1",
+     *    "filename2": "filepath2"
+     *    }
+     */
+    private UploadImageResult uploadImage(UploadImageDTO upload, MultipartFile multipartFile) {
+        String originalFilename = FileNameUtils.validateAndSanitizeFilename(multipartFile.getOriginalFilename());
+        String fileName = TimeUntils.getFileTimeStrOfDay() + originalFilename;
+
+        Path docImagePaths = getDocImagePaths(upload);
+        String username = upload.getUsername();
+        String userId = upload.getUserId();
+
+        // docImagePaths 不存在则新建
+        commonUserFileService.upsertFolder(docImagePaths, username, userId);
+
+        File newFile = null;
+        try (InputStream inputStream = multipartFile.getInputStream()) {
+            newFile = commonUserFileService.createFileWithConversion(fileName, username, docImagePaths, inputStream);
+            String fileId = commonUserFileService.createFile(username, newFile, userId, true);
+            String filepath = getFileShareUrl(fileId, newFile);
+            return new UploadImageResult(null, null, fileId, newFile.getName(), filepath);
+        } catch (IOException e) {
+            if (newFile != null && newFile.exists()) {
+                FileUtil.del(newFile);
+            }
+            log.error("Failed to upload image: {}", originalFilename, e);
+            throw new CommonException(ExceptionType.WARNING, "上传失败: " + e.getMessage());
+        }
+    }
+
+    @Data
+    @AllArgsConstructor
+    private static class UploadImageResult {
+        private String url;
+        private String originalURL;
+        private String fileId;
+        private String filename;
+        private String filepath;
+    }
+
+    @NotNull
+    private static String getFileShareUrl(String fileId, File newFile) {
+        return org.apache.catalina.util.URLEncoder.DEFAULT.encode(ShareFileInterceptor.SHARE_FILE_PREFIX + fileId + "/" + newFile.getName(), StandardCharsets.UTF_8);
     }
 
     /**
      * 获取url中的文件名
+     *
      * @param imageUrl 图片链接
      * @param response HttpResponse
      * @return 文件名
@@ -563,49 +625,6 @@ public class MarkdownServiceImpl implements IMarkdownService {
             }
         }
         return fileName;
-    }
-
-    /***
-     * 上传成功后返回文件名和路径
-     * @param upload UploadImageDTO
-     * @param multipartFile MultipartFile
-     * @return
-     * {
-     *    "filename1": "filepath1",
-     *    "filename2": "filepath2"
-     *    }
-     */
-    private Map<String, String> uploadImage(UploadImageDTO upload, MultipartFile multipartFile) {
-        Map<String, String> map = new HashMap<>(2);
-        String fileName = TimeUntils.getFileTimeStrOfDay() + multipartFile.getOriginalFilename();
-
-        Path docImagePaths = getDocImagePaths(upload);
-
-        String username = upload.getUsername();
-        String userId = upload.getUserId();
-        // docImagePaths 不存在则新建
-        commonUserFileService.upsertFolder(docImagePaths, username, userId);
-        File newFile;
-        try (InputStream inputStream = multipartFile.getInputStream()) {
-            if (commonUserFileService.getDisabledWebp(userId) || ("ico".equals(FileUtil.getSuffix(fileName)))) {
-                newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
-                FileUtil.writeFromStream(inputStream, newFile);
-            } else {
-                if (!fileName.endsWith(Constants.POINT_SUFFIX_WEBP)) {
-                    fileName = fileName + Constants.POINT_SUFFIX_WEBP;
-                }
-                newFile = Paths.get(fileProperties.getRootDir(), username, docImagePaths.toString(), fileName).toFile();
-                ImageMagickProcessor.convertToWebpFile(inputStream, newFile);
-            }
-        } catch (IOException e) {
-            throw new CommonException(2, "上传失败");
-        }
-        String fileId = commonUserFileService.createFile(username, newFile, userId, true);
-        map.put(Constants.FILE_ID, fileId);
-        String filepath = org.apache.catalina.util.URLEncoder.DEFAULT.encode(WebConfig.API_FILE_PREFIX + Paths.get(username, docImagePaths.toString(), fileName), StandardCharsets.UTF_8);
-        map.put(Constants.FILENAME, fileName);
-        map.put(Constants.FILE_PATH, filepath);
-        return map;
     }
 
     @NotNull

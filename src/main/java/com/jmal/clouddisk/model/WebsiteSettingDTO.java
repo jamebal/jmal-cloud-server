@@ -39,6 +39,7 @@ public class WebsiteSettingDTO implements Reflective {
      * 网盘名称
      */
     String netdiskName;
+    private NetdiskPersonalization personalization;
     /***
      * 站点地址
      */
@@ -145,4 +146,10 @@ public class WebsiteSettingDTO implements Reflective {
         return !StrUtil.isBlank(networkRecordNumberStr);
     }
 
+    public String getNetdiskName() {
+        if (personalization != null && !StrUtil.isBlank(personalization.getName())) {
+            return personalization.getName();
+        }
+        return netdiskName;
+    }
 }

@@ -91,6 +91,8 @@ public class ImageMagickProcessor {
         // 命令: magick - webp:output.webp
         CommandLine commandLine = new CommandLine("magick");
         commandLine.addArgument("-");
+        commandLine.addArgument("-quality");
+        commandLine.addArgument("80");
         commandLine.addArgument("webp:" + destFile.getAbsolutePath());
         CommandUtil.execCommand(commandLine, originImageStream, null);
     }

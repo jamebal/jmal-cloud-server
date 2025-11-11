@@ -43,7 +43,7 @@ public class MessageService {
             .maximumSize(10000) // 最多缓存10000个用户的节流器
             .removalListener((String username, Map<String, ThrottleExecutor> map, RemovalCause cause) -> {
                 // 2. 添加移除监听器，用于释放资源
-                log.info("Removing throttle executors for user '{}' due to {}", username, cause);
+                log.debug("Removing throttle executors for user '{}' due to {}", username, cause);
                 if (map != null) {
                     map.values().forEach(executor -> {
                         // 假设 ThrottleExecutor 实现了 shutdown 接口
@@ -118,12 +118,17 @@ public class MessageService {
         if (timelyPush(username, message, url)) return;
         if (Constants.CREATE_FILE.equals(url) || Constants.DELETE_FILE.equals(url)) {
             Map<String, ThrottleExecutor> userExecutors = throttleExecutorCache.get(username, _ -> new ConcurrentHashMap<>(8));
-            ThrottleExecutor throttleExecutor = userExecutors.computeIfAbsent(url, key -> {
-                log.debug("Creating new ThrottleExecutor for user '{}' and url '{}'", username, key);
-                return new ThrottleExecutor(300); // 300ms 节流窗口
-            });
+            ThrottleExecutor throttleExecutor = null;
+            if (userExecutors != null) {
+                throttleExecutor = userExecutors.computeIfAbsent(url, key -> {
+                    log.debug("Creating new ThrottleExecutor for user '{}' and url '{}'", username, key);
+                    return new ThrottleExecutor(300); // 300ms 节流窗口
+                });
+            }
 
-            throttleExecutor.schedule(() -> pushMsg(username, message, url));
+            if (throttleExecutor != null) {
+                throttleExecutor.schedule(() -> pushMsg(username, message, url));
+            }
         } else {
             pushMsg(username, message, url);
         }

@@ -778,5 +778,8 @@ public class FileContentTypeUtils {
         CONTENT_TYPE_MAP.put("z", "application/x-compress");
         CONTENT_TYPE_MAP.put("zabw", "application/x-abiword");
         CONTENT_TYPE_MAP.put("zip", "application/zip");
+        CONTENT_TYPE_MAP.put("glb", "model/gltf-binary");
+        CONTENT_TYPE_MAP.put("gltf", "model/gltf+json");
+        CONTENT_TYPE_MAP.put("fbx", "application/octet-stream");
     }
 }

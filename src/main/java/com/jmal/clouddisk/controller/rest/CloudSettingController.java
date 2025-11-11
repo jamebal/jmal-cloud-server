@@ -9,6 +9,7 @@ import com.jmal.clouddisk.media.TranscodeConfig;
 import com.jmal.clouddisk.media.VideoProcessService;
 import com.jmal.clouddisk.model.LdapConfigDTO;
 import com.jmal.clouddisk.model.LogOperation;
+import com.jmal.clouddisk.model.NetdiskPersonalization;
 import com.jmal.clouddisk.model.WebsiteSettingDTO;
 import com.jmal.clouddisk.ocr.OcrConfig;
 import com.jmal.clouddisk.ocr.OcrService;
@@ -126,6 +127,14 @@ public class CloudSettingController {
     @LogOperatingFun
     public ResponseResult<Object> updateNetdiskName(@RequestParam String netdiskName) {
         return settingService.updateNetdiskName(netdiskName);
+    }
+
+    @Operation(summary = "修改网盘个性化配置")
+    @PutMapping("/user/setting/update_netdisk_personalization")
+    @Permission(value = "cloud:set:sync")
+    @LogOperatingFun
+    public ResponseResult<Object> updateNetdiskPersonalization(@RequestBody NetdiskPersonalization personalization) {
+        return settingService.updateNetdiskPersonalization(personalization);
     }
 
     @Operation(summary = "重置角色菜单")

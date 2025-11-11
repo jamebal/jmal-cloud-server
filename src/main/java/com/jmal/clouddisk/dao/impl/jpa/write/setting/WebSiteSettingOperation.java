@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.dao.impl.jpa.write.setting;
 
 import com.jmal.clouddisk.model.HeartwingsDO;
+import com.jmal.clouddisk.model.NetdiskPersonalization;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 
 public final class WebSiteSettingOperation {
@@ -14,4 +15,6 @@ public final class WebSiteSettingOperation {
     public record UpdateMfaForceEnable(Boolean mfaForceEnable) implements IWebSiteSettingOperation<Integer> {}
 
     public record CreateHeartwings(HeartwingsDO entity) implements IWebSiteSettingOperation<Void> {}
+
+    public record UpdatePersonalization(NetdiskPersonalization personalization) implements IWebSiteSettingOperation<Integer> {}
 }
