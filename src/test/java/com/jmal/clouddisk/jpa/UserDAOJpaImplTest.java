@@ -14,7 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +45,7 @@ public class UserDAOJpaImplTest {
         testUser.setUsername("testuser");
         testUser.setPassword("password123");
         testUser.setShowName("Test User");
-        testUser.setCreatedTime(LocalDateTime.now());
+        testUser.setCreatedTime(Instant.now());
         testUser.setRoles(Arrays.asList("USER", "ADMIN"));
         testUser.setQuota(1000);
         testUser.setTakeUpSpace(500L);

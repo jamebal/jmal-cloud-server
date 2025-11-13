@@ -17,7 +17,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
@@ -53,7 +53,7 @@ public class UserDAOImplTest {
         testUser.setUsername("testuser");
         testUser.setPassword("password123");
         testUser.setShowName("Test User");
-        testUser.setCreatedTime(LocalDateTime.now());
+        testUser.setCreatedTime(Instant.now());
         testUser.setRoles(Arrays.asList("USER", "ADMIN"));
         testUser.setQuota(1000);
         testUser.setTakeUpSpace(500L);
