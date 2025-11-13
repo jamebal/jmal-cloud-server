@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.date.DateUnit;
+import com.google.common.util.concurrent.Striped;
 import com.jmal.clouddisk.dao.BurnNoteFileService;
 import com.jmal.clouddisk.dao.IBurnNoteDAO;
 import com.jmal.clouddisk.dao.impl.BurnNoteCleanupService;
@@ -15,12 +16,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.concurrent.locks.Lock;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class BurnNoteService {
 
+    private final Striped<Lock> noteLocks = Striped.lazyWeakLock(16);
     private final BurnNoteCleanupService burnNoteCleanupService;
     private final IBurnNoteDAO burnNoteDAO;
     private final BurnNoteFileService burnNoteFileService;
@@ -67,42 +70,49 @@ public class BurnNoteService {
      * 读取后减少次数或删除
      */
     public BurnNoteResponseDTO consumeBurnNote(String id) {
-        BurnNoteDO burnNote = burnNoteDAO.findById(id);
+        Lock lock = noteLocks.get(id);
+        lock.lock();
+        try {
+            BurnNoteDO burnNote = burnNoteDAO.findById(id);
 
-        if (burnNote == null) {
-            throw new CommonException(ExceptionType.WARNING.getCode(), "笔记不存在或已被销毁");
-        }
-
-        // 检查是否过期
-        if (burnNote.getExpireAt() != null && Instant.now().isAfter(burnNote.getExpireAt())) {
-            deleteBurnNote(burnNote);
-            throw new CommonException(ExceptionType.WARNING.getCode(), "笔记已过期");
-        }
-
-        // 检查查看次数
-        if (burnNote.getViewsLeft() != null) {
-            int viewsLeft = burnNote.getViewsLeft() - 1;
-
-            if (viewsLeft <= 0) {
-                if (burnNote.getIsFile()) {
-                    // 文件类型：标记为待删除
-                    burnNote.setViewsLeft(0);
-                    burnNoteDAO.save(burnNote);
-                    log.debug("文件笔记标记为待删除: noteId={}", id);
-                } else {
-                    // 文本类型：立即删除
-                    burnNoteDAO.deleteById(id);
-                    log.debug("文本笔记已销毁: noteId={}", id);
-                }
-            } else {
-                // 更新剩余次数
-                burnNote.setViewsLeft(viewsLeft);
-                burnNoteDAO.save(burnNote);
-                log.debug("笔记查看次数减1: id={}, 剩余次数={}", id, viewsLeft);
+            if (burnNote == null) {
+                throw new CommonException(ExceptionType.WARNING.getCode(), "笔记不存在或已被销毁");
             }
+
+            // 检查是否过期
+            if (burnNote.getExpireAt() != null && Instant.now().isAfter(burnNote.getExpireAt())) {
+                deleteBurnNote(burnNote);
+                throw new CommonException(ExceptionType.WARNING.getCode(), "笔记已过期");
+            }
+
+            // 检查查看次数
+            if (burnNote.getViewsLeft() != null) {
+                int viewsLeft = burnNote.getViewsLeft() - 1;
+
+                if (viewsLeft <= 0) {
+                    if (burnNote.getIsFile()) {
+                        // 文件类型：标记为待删除
+                        burnNote.setViewsLeft(0);
+                        burnNoteDAO.save(burnNote);
+                        log.debug("文件笔记标记为待删除: noteId={}", id);
+                    } else {
+                        // 文本类型：立即删除
+                        burnNoteDAO.deleteById(id);
+                        log.debug("文本笔记已销毁: noteId={}", id);
+                    }
+                } else {
+                    // 更新剩余次数
+                    burnNote.setViewsLeft(viewsLeft);
+                    burnNoteDAO.save(burnNote);
+                    log.debug("笔记查看次数减1: id={}, 剩余次数={}", id, viewsLeft);
+                }
+            }
+
+            return new BurnNoteResponseDTO(burnNote.getEncryptedContent(), burnNote.getIsFile());
+        } finally {
+            lock.unlock();
         }
 
-        return new BurnNoteResponseDTO(burnNote.getEncryptedContent(), burnNote.getIsFile());
     }
 
     /**
