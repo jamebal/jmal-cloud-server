@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 
 @Service
 @RequiredArgsConstructor
@@ -29,8 +28,14 @@ public class BurnNoteFileService {
 
         Path targetFile = filePersistenceService.buildFilePathForWrite(noteId, BURN_CHUNKS_DIR, String.valueOf(chunkIndex)).toPath();
 
+        // 判断分片是否已存在，避免重复保存
+        if (Files.exists(targetFile)) {
+            log.debug("分片已存在，跳过保存: noteId={}, chunk={}", noteId, chunkIndex);
+            return;
+        }
+
         try (InputStream inputStream = file.getInputStream()) {
-            Files.copy(inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
+            FileUtil.writeFromStream(inputStream, targetFile.toFile());
         }
 
         log.debug("保存分片: noteId={}, chunk={}, size={}KB",
@@ -55,40 +60,6 @@ public class BurnNoteFileService {
      */
     public void deleteAllChunks(String noteId) {
         filePersistenceService.deleteContents(noteId);
-    }
-
-    /**
-     * 检查分片是否完整
-     */
-    public boolean isChunksComplete(String noteId, int totalChunks) {
-        Path chunkDir = filePersistenceService.buildFilePathForWrite(noteId, BURN_CHUNKS_DIR, String.valueOf(totalChunks)).toPath();
-
-        if (!Files.exists(chunkDir)) {
-            return false;
-        }
-
-        for (int i = 0; i < totalChunks; i++) {
-            if (!Files.exists(chunkDir.resolve(String.valueOf(i)))) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * 获取已上传的分片数量
-     */
-    public int getUploadedChunksCount(String noteId) {
-        File file = filePersistenceService.buildFilePathForRead(noteId, BURN_CHUNKS_DIR, "1");
-        File chunkDir = file.getParentFile();
-
-        if (!FileUtil.exist(chunkDir)) {
-            return 0;
-        }
-
-        File[] files = chunkDir.listFiles();
-        return files != null ? files.length : 0;
     }
 
 }

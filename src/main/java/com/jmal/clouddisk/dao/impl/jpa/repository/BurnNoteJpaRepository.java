@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
 
 @Repository
@@ -20,9 +20,9 @@ public interface BurnNoteJpaRepository extends JpaRepository<BurnNoteDO, String>
     @Query("DELETE FROM BurnNoteDO b WHERE b.id in :ids")
     int deleteExpiredNotes(Collection<String> ids);
 
-    @Query("SELECT b.id FROM BurnNoteDO b WHERE b.expireAt IS NOT NULL AND b.expireAt < :now " +
-            "OR b.createdTime < :expireAt")
-    Collection<String> findExpiredNotes(LocalDateTime now, LocalDateTime expireAt);
+    @Query("SELECT b.id FROM BurnNoteDO b WHERE (b.expireAt IS NOT NULL AND b.expireAt < :now) " +
+            "OR (b.createdTime < :expireAt)")
+    Collection<String> findExpiredNotes(Instant now, Instant expireAt);
 
     @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END FROM BurnNoteDO b")
     boolean existsAny();

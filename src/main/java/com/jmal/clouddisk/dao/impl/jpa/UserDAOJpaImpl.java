@@ -25,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -186,9 +187,9 @@ public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
                 case "mfaEnabled" -> entity.setMfaEnabled(isUnset ? null : Convert.toBool(value));
                 case "quota" -> entity.setQuota(isUnset ? null : Convert.toInt(value));
                 case "webpDisabled" -> entity.setWebpDisabled(isUnset ? null : Convert.toBool(value));
-                case "createdTime" -> entity.setCreatedTime(isUnset ? null : Convert.toLocalDateTime(value));
+                case "createdTime" -> entity.setCreatedTime(isUnset ? null : Convert.convertQuietly(Instant.class, value, Instant.now()));
                 case "takeUpSpace" -> entity.setTakeUpSpace(isUnset ? null : Convert.toLong(value));
-                case "updatedTime" -> entity.setUpdatedTime(isUnset ? null : Convert.toLocalDateTime(value));
+                case "updatedTime" -> entity.setUpdatedTime(isUnset ? null : Convert.convertQuietly(Instant.class, value, Instant.now()));
                 case "avatar" -> entity.setAvatar(isUnset ? null : Convert.toStr(value));
                 case "introduction" -> entity.setIntroduction(isUnset ? null : Convert.toStr(value));
                 case "mfaSecret" -> entity.setMfaSecret(isUnset ? null : Convert.toStr(value));

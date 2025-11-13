@@ -13,7 +13,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * 阅后即焚笔记模型
@@ -72,6 +72,6 @@ public class BurnNoteDO extends AuditableTimeEntity implements Reflective {
      */
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime expireAt;
+    private Instant expireAt;
 
 }

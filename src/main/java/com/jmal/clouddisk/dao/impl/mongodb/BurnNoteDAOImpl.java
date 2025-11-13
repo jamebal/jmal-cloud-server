@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.dao.impl.mongodb;
 
+import cn.hutool.core.date.DateUnit;
 import com.jmal.clouddisk.dao.BurnNoteFileService;
 import com.jmal.clouddisk.dao.IBurnNoteDAO;
 import com.jmal.clouddisk.model.BurnNoteDO;
@@ -11,6 +12,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,7 +26,7 @@ public class BurnNoteDAOImpl implements IBurnNoteDAO {
 
     @Override
     public BurnNoteDO save(BurnNoteDO burnNoteDO) {
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
         burnNoteDO.setCreatedTime(now);
         burnNoteDO.setUpdatedTime(now);
         return mongoTemplate.save(burnNoteDO);
@@ -42,10 +44,10 @@ public class BurnNoteDAOImpl implements IBurnNoteDAO {
     }
 
     private List<String> findExpiredNotes() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expireAt = now.minusHours(24);
+        Instant now = Instant.now();
+        Instant expireAt = now.minusMillis(DateUnit.DAY.getMillis());
 
-        Criteria or1 = Criteria.where("retryAt").lte(LocalDateTime.now());
+        Criteria or1 = Criteria.where("expireAt").lte(LocalDateTime.now());
         Criteria or2 = Criteria.where("createdTime").lt(expireAt);
 
         Query query = new Query();

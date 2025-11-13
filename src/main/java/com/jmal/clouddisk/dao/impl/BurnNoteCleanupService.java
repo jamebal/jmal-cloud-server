@@ -30,19 +30,18 @@ public class BurnNoteCleanupService {
             return;
         }
         try {
+            if (!burnNoteDAO.existData()) {
+                // 没有更多过期数据，停止任务
+                cleanupScheduled.set(false);
+                log.info("已无阅后即焚笔记，清理任务暂停");
+                return;
+            }
             long deletedCount = burnNoteDAO.deleteExpiredNotes();
             if (deletedCount > 0) {
-                log.info("清理了 {} 个过期笔记", deletedCount);
-                if (burnNoteDAO.existData()) {
-                    // 如果还有过期数据，继续安排下一次清理
-                    scheduleCleanupIfNecessary();
-                } else {
-                    // 没有更多过期数据，停止任务
-                    cleanupScheduled.set(false);
-                }
+                log.info("清理了 {} 个过期的阅后即焚笔记", deletedCount);
             }
         } catch (Exception e) {
-            log.error("清理过期笔记失败", e);
+            log.error("清理过期的阅后即焚笔记失败", e);
         }
     }
 }

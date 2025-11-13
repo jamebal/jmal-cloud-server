@@ -3,7 +3,6 @@ package com.jmal.clouddisk.controller.rest;
 import com.jmal.clouddisk.dao.BurnNoteFileService;
 import com.jmal.clouddisk.model.BurnNoteDO;
 import com.jmal.clouddisk.model.dto.BurnNoteCreateDTO;
-import com.jmal.clouddisk.model.dto.BurnNoteProgressDTO;
 import com.jmal.clouddisk.model.dto.BurnNoteResponseDTO;
 import com.jmal.clouddisk.service.impl.BurnNoteService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
@@ -59,16 +58,9 @@ public class BurnNoteController {
             @RequestParam("file") MultipartFile file) {
         try {
             BurnNoteDO burnNote = burnNoteService.getBurnNoteById(noteId);
-            if (burnNote == null) {
-                return ResultUtil.error("笔记不存在");
-            }
-
-            if (!burnNote.getIsFile()) {
-                return ResultUtil.error("不是文件类型笔记");
-            }
-
-            if (chunkIndex < 0 || chunkIndex >= burnNote.getTotalChunks()) {
-                return ResultUtil.error("分片索引无效");
+            ResponseResult<Void> validation = validateAndGetFileNote(burnNote, chunkIndex);
+            if (validation.getCode() != 0) {
+                return validation;
             }
 
             burnNoteFileService.saveChunk(noteId, chunkIndex, file);
@@ -88,15 +80,8 @@ public class BurnNoteController {
     public ResponseEntity<Resource> downloadChunk(@PathVariable String noteId, @PathVariable Integer chunkIndex) {
         try {
             BurnNoteDO burnNote = burnNoteService.getBurnNoteById(noteId);
-            if (burnNote == null) {
-                return ResponseEntity.notFound().build();
-            }
-
-            if (!burnNote.getIsFile()) {
-                return ResponseEntity.badRequest().build();
-            }
-
-            if (chunkIndex < 0 || chunkIndex >= burnNote.getTotalChunks()) {
+            ResponseResult<Void> validation = validateAndGetFileNote(burnNote, chunkIndex);
+            if (validation.getCode() != 0) {
                 return ResponseEntity.badRequest().build();
             }
 
@@ -115,23 +100,20 @@ public class BurnNoteController {
         }
     }
 
-    @Operation(summary = "检查上传进度")
-    @GetMapping("/public/burn-notes/{noteId}/progress")
-    public ResponseResult<BurnNoteProgressDTO> getProgress(@PathVariable String noteId) {
-        BurnNoteDO burnNote = burnNoteService.getBurnNoteById(noteId);
-        if (burnNote == null || !burnNote.getIsFile()) {
-            return ResultUtil.error("笔记不存在或不是文件类型");
+    private ResponseResult<Void> validateAndGetFileNote(BurnNoteDO burnNote, int chunkIndex) {
+        if (burnNote == null) {
+            return ResultUtil.error("笔记不存在");
         }
 
-        int uploadedChunks = burnNoteFileService.getUploadedChunksCount(noteId);
-        boolean isComplete = burnNoteFileService.isChunksComplete(noteId, burnNote.getTotalChunks());
+        if (!burnNote.getIsFile()) {
+            return ResultUtil.error("不是文件类型笔记");
+        }
 
-        BurnNoteProgressDTO progress = new BurnNoteProgressDTO();
-        progress.setUploadedChunks(uploadedChunks);
-        progress.setTotalChunks(burnNote.getTotalChunks());
-        progress.setComplete(isComplete);
+        if (chunkIndex < 0 || chunkIndex >= burnNote.getTotalChunks()) {
+            return ResultUtil.error("分片索引无效");
+        }
 
-        return ResultUtil.success(progress);
+        return ResultUtil.success();
     }
 
     @Operation(summary = "检查笔记是否存在")

@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.date.DateUnit;
 import com.jmal.clouddisk.dao.BurnNoteFileService;
 import com.jmal.clouddisk.dao.IBurnNoteDAO;
 import com.jmal.clouddisk.dao.impl.BurnNoteCleanupService;
@@ -13,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Service
 @Slf4j
@@ -48,7 +49,7 @@ public class BurnNoteService {
         if (dto.getViews() != null && dto.getViews() > 0) {
             burnNote.setViewsLeft(dto.getViews());
         } else if (dto.getExpirationMinutes() != null && dto.getExpirationMinutes() > 0) {
-            burnNote.setExpireAt(LocalDateTime.now().plusMinutes(dto.getExpirationMinutes()));
+            burnNote.setExpireAt(Instant.now().plusMillis(dto.getExpirationMinutes() * DateUnit.MINUTE.getMillis()));
         } else {
             burnNote.setViewsLeft(1); // 默认1次
         }
@@ -73,7 +74,7 @@ public class BurnNoteService {
         }
 
         // 检查是否过期
-        if (burnNote.getExpireAt() != null && LocalDateTime.now().isAfter(burnNote.getExpireAt())) {
+        if (burnNote.getExpireAt() != null && Instant.now().isAfter(burnNote.getExpireAt())) {
             deleteBurnNote(burnNote);
             throw new CommonException(ExceptionType.WARNING.getCode(), "笔记已过期");
         }
@@ -87,11 +88,11 @@ public class BurnNoteService {
                     // 文件类型：标记为待删除
                     burnNote.setViewsLeft(0);
                     burnNoteDAO.save(burnNote);
-                    log.info("文件笔记标记为待删除: noteId={}", id);
+                    log.debug("文件笔记标记为待删除: noteId={}", id);
                 } else {
                     // 文本类型：立即删除
                     burnNoteDAO.deleteById(id);
-                    log.info("文本笔记已销毁: noteId={}", id);
+                    log.debug("文本笔记已销毁: noteId={}", id);
                 }
             } else {
                 // 更新剩余次数
@@ -126,7 +127,7 @@ public class BurnNoteService {
         }
 
         // 检查是否过期
-        if (burnNote.getExpireAt() != null && LocalDateTime.now().isAfter(burnNote.getExpireAt())) {
+        if (burnNote.getExpireAt() != null && Instant.now().isAfter(burnNote.getExpireAt())) {
             deleteBurnNote(burnNote);
             return false;
         }

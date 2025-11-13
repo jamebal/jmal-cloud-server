@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
+import cn.hutool.core.date.DateUnit;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.BurnNoteFileService;
 import com.jmal.clouddisk.dao.IBurnNoteDAO;
@@ -13,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
@@ -55,8 +56,8 @@ public class BurnNoteDAOJpaImpl implements IBurnNoteDAO {
     }
 
     private Collection<String> findExpiredNotes() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expireAt = now.minusHours(24);
+        Instant now = Instant.now();
+        Instant expireAt = now.minusMillis(DateUnit.DAY.getMillis());
         return burnNoteJpaRepository.findExpiredNotes(now, expireAt);
     }
 
