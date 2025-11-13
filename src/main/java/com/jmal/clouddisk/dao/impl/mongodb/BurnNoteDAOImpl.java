@@ -3,10 +3,16 @@ package com.jmal.clouddisk.dao.impl.mongodb;
 import cn.hutool.core.date.DateUnit;
 import com.jmal.clouddisk.dao.BurnNoteFileService;
 import com.jmal.clouddisk.dao.IBurnNoteDAO;
+import com.jmal.clouddisk.dao.util.PageableUtil;
 import com.jmal.clouddisk.model.BurnNoteDO;
+import com.jmal.clouddisk.model.dto.BurnNoteVO;
+import com.jmal.clouddisk.model.query.QueryBaseDTO;
+import com.jmal.clouddisk.service.IUserService;
+import com.jmal.clouddisk.service.impl.BurnNoteService;
 import com.mongodb.client.result.DeleteResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -74,5 +80,22 @@ public class BurnNoteDAOImpl implements IBurnNoteDAO {
         Query query = new Query();
         query.limit(1);
         return mongoTemplate.exists(query, BurnNoteDO.class);
+    }
+
+    @Override
+    public List<BurnNoteVO> findAll(QueryBaseDTO queryBaseDTO) {
+        Pageable pageable = PageableUtil.buildPageable(queryBaseDTO);
+        Query query = new Query();
+        query.with(pageable);
+        return mongoTemplate.find(query, BurnNoteVO.class, BurnNoteService.TABLE_NAME);
+    }
+
+    @Override
+    public List<BurnNoteVO> findAllByUserId(QueryBaseDTO queryBaseDTO, String userId) {
+        Pageable pageable = PageableUtil.buildPageable(queryBaseDTO);
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USER_ID).is(userId));
+        query.with(pageable);
+        return mongoTemplate.find(query, BurnNoteVO.class, BurnNoteService.TABLE_NAME);
     }
 }

@@ -1,9 +1,12 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.dao.BurnNoteFileService;
 import com.jmal.clouddisk.model.BurnNoteDO;
 import com.jmal.clouddisk.model.dto.BurnNoteCreateDTO;
 import com.jmal.clouddisk.model.dto.BurnNoteResponseDTO;
+import com.jmal.clouddisk.model.dto.BurnNoteVO;
+import com.jmal.clouddisk.model.query.QueryBaseDTO;
 import com.jmal.clouddisk.service.impl.BurnNoteService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -29,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 @Tag(name = "阅后即焚")
 @RestController
@@ -39,6 +43,22 @@ public class BurnNoteController {
     private final BurnNoteService burnNoteService;
     private final BurnNoteFileService burnNoteFileService;
     private final UserLoginHolder userLoginHolder;
+
+    @Operation(summary = "阅后即焚笔记列表")
+    @Permission("cloud:file:list")
+    @GetMapping("/burn-notes/list")
+    public ResponseResult<List<BurnNoteVO>> listNote(QueryBaseDTO queryBaseDTO) {
+        String userId = userLoginHolder.getUserId();
+        return ResultUtil.success(burnNoteService.burnNoteList(queryBaseDTO, userId));
+    }
+
+    @Operation(summary = "删除阅后即焚笔记")
+    @Permission("cloud:file:delete")
+    @DeleteMapping("/burn-notes/delete/{noteId}")
+    public ResponseResult<List<BurnNoteVO>> listNote(@PathVariable String noteId) {
+        burnNoteService.deleteBurnNote(noteId);
+        return ResultUtil.success();
+    }
 
     @Operation(summary = "创建阅后即焚笔记")
     @PostMapping("/burn-notes/create")

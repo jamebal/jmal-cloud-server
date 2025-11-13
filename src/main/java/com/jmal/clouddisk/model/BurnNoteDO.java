@@ -1,8 +1,8 @@
 package com.jmal.clouddisk.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableTimeEntity;
+import com.jmal.clouddisk.service.impl.BurnNoteService;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -11,7 +11,6 @@ import lombok.Setter;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.Instant;
 
@@ -20,9 +19,9 @@ import java.time.Instant;
  */
 @Getter
 @Setter
-@Document(collection = "burn_notes")
+@Document(collection = BurnNoteService.TABLE_NAME)
 @Entity
-@Table(name = "burn_notes")
+@Table(name = BurnNoteService.TABLE_NAME)
 @CompoundIndexes({
         @CompoundIndex(name = "userId_1", def = "{'userId': 1}"),
         @CompoundIndex(name = "expireAt_1", def = "{'expireAt': 1}"),
@@ -70,8 +69,6 @@ public class BurnNoteDO extends AuditableTimeEntity implements Reflective {
      * 过期时间
      * null 表示使用查看次数而非时间限制
      */
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Instant expireAt;
 
 }

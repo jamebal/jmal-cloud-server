@@ -1,6 +1,10 @@
 package com.jmal.clouddisk.dao;
 
 import com.jmal.clouddisk.model.BurnNoteDO;
+import com.jmal.clouddisk.model.dto.BurnNoteVO;
+import com.jmal.clouddisk.model.query.QueryBaseDTO;
+
+import java.util.List;
 
 /**
  * 阅后即焚笔记 DAO 接口
@@ -29,4 +33,8 @@ public interface IBurnNoteDAO {
     long deleteExpiredNotes();
 
     boolean existData();
+
+    List<BurnNoteVO> findAll(QueryBaseDTO queryBaseDTO);
+
+    List<BurnNoteVO> findAllByUserId(QueryBaseDTO queryBaseDTO, String userId);
 }

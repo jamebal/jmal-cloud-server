@@ -7,8 +7,11 @@ import com.jmal.clouddisk.dao.IBurnNoteDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.BurnNoteJpaRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
 import com.jmal.clouddisk.dao.impl.jpa.write.burnnote.BurnNoteOperation;
+import com.jmal.clouddisk.dao.util.PageableUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.BurnNoteDO;
+import com.jmal.clouddisk.model.dto.BurnNoteVO;
+import com.jmal.clouddisk.model.query.QueryBaseDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -80,4 +84,15 @@ public class BurnNoteDAOJpaImpl implements IBurnNoteDAO {
     public boolean existData() {
         return burnNoteJpaRepository.existsAny();
     }
+
+    @Override
+    public List<BurnNoteVO> findAll(QueryBaseDTO queryBaseDTO) {
+        return burnNoteJpaRepository.findAllBurnNoteVO(PageableUtil.buildPageable(queryBaseDTO));
+    }
+
+    @Override
+    public List<BurnNoteVO> findAllByUserId(QueryBaseDTO queryBaseDTO, String userId) {
+        return burnNoteJpaRepository.findAllBurnNoteVOByUserId(userId, PageableUtil.buildPageable(queryBaseDTO));
+    }
+
 }
