@@ -1,6 +1,10 @@
 package com.jmal.clouddisk.config.jpa;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PrePersist;
 import lombok.Getter;
 import lombok.Setter;
 import org.bson.types.ObjectId;
@@ -9,7 +13,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -24,11 +28,11 @@ public abstract class AuditableTimeEntity implements Identifiable {
 
     @CreatedDate
     @Column(name = "created_time", updatable = false)
-    private LocalDateTime createdTime;
+    private Instant createdTime;
 
     @LastModifiedDate
     @Column(name = "updated_time")
-    private LocalDateTime updatedTime;
+    private Instant updatedTime;
 
     @PrePersist
     protected void onPrePersist() {

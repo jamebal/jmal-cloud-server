@@ -36,7 +36,7 @@ public class FileProperties {
     /**
      * 数据库文件和相关文件存储目录, 位于rootDir下
      */
-    private String dbDir = "jmalcloud_";
+    private String dbDir = "jmalcloud_db";
     /***
      * 断点续传的临时文件目录名称 位于rootDir下,文件监控扫描忽略的目录
      */

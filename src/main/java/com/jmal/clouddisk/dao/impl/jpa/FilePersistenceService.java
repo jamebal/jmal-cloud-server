@@ -258,7 +258,7 @@ public class FilePersistenceService {
      * @param filename 具体的文件名
      * @return 构建好的文件路径
      */
-    private File buildFilePathForRead(String fileId, String subDir, String filename) {
+    public File buildFilePathForRead(String fileId, String subDir, String filename) {
         if (CharSequenceUtil.isBlank(fileId) || fileId.length() < 4) {
             throw new IllegalArgumentException("File ID is invalid for sharding: " + fileId);
         }
@@ -315,7 +315,7 @@ public class FilePersistenceService {
         return buildFilePathForWrite(fileId, subDir, fileId);
     }
 
-    private File buildFilePathForWrite(String fileId, String subDir, String filename) {
+    public File buildFilePathForWrite(String fileId, String subDir, String filename) {
         File file = buildFilePathForRead(fileId, subDir, filename); // 复用路径构建逻辑
         File parentDir = file.getParentFile();
         if (!parentDir.exists()) {

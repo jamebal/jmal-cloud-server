@@ -40,6 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -93,7 +94,7 @@ public class UserServiceImpl implements IUserService {
             encryption(consumerDTO, originalPwd);
             consumerDO = new ConsumerDO();
             BeanUtils.copyProperties(consumerDTO, consumerDO);
-            consumerDO.setCreatedTime(LocalDateTime.now(TimeUntils.ZONE_ID));
+            consumerDO.setCreatedTime(Instant.now());
             consumerDO.setId(null);
             // 新建用户目录
             createUserDir(consumerDO.getUsername());
@@ -227,7 +228,7 @@ public class UserServiceImpl implements IUserService {
         }
         // 设置用户头像
         fileId = setConsumerAvatar(blobAvatar, userId, consumerDO, update, fileId);
-        LocalDateTime now = LocalDateTime.now(TimeUntils.ZONE_ID);
+        Instant now = Instant.now();
         update.set(UserField.UPDATED_TIME.getLogical(), now);
         consumerDO.setUpdatedTime(now);
         updateConsumer(userId, query, update);
@@ -417,7 +418,7 @@ public class UserServiceImpl implements IUserService {
             user.setQuota((int) (SystemUtil.getFreeSpace() / 2));
             String originalPwd = user.getPassword();
             encryption(user, originalPwd);
-            user.setCreatedTime(LocalDateTime.now(TimeUntils.ZONE_ID));
+            user.setCreatedTime(Instant.now());
             user.setId(null);
             // 新建用户目录
             createUserDir(user.getUsername());
