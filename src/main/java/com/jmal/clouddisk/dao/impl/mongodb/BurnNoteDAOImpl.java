@@ -13,7 +13,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -47,7 +46,7 @@ public class BurnNoteDAOImpl implements IBurnNoteDAO {
         Instant now = Instant.now();
         Instant expireAt = now.minusMillis(DateUnit.DAY.getMillis());
 
-        Criteria or1 = Criteria.where("expireAt").lte(LocalDateTime.now());
+        Criteria or1 = Criteria.where("expireAt").lte(Instant.now());
         Criteria or2 = Criteria.where("createdTime").lt(expireAt);
 
         Query query = new Query();

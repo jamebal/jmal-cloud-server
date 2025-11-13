@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @RequiredArgsConstructor
 public class BurnNoteCleanupService {
 
-    // 任务是否需要运行的标志，默认为false
+    // 任务是否需要运行的标志，默认为true
     private final AtomicBoolean cleanupScheduled = new AtomicBoolean(true);
 
     private final IBurnNoteDAO burnNoteDAO;
@@ -23,7 +23,7 @@ public class BurnNoteCleanupService {
         cleanupScheduled.compareAndSet(false, true);
     }
 
-    @Scheduled(cron = "0/10 * * * * ?")
+    @Scheduled(cron = "0 * * * * ?")
     public void cleanupExpiredNotes() {
         // 如果任务不需要运行，直接返回
         if (!cleanupScheduled.get()) {

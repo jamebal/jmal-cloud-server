@@ -77,12 +77,12 @@ public class BurnNoteController {
 
     @Operation(summary = "下载文件分片")
     @GetMapping("/public/burn-notes/{noteId}/chunks/{chunkIndex}")
-    public ResponseEntity<Resource> downloadChunk(@PathVariable String noteId, @PathVariable Integer chunkIndex) {
+    public ResponseEntity<?> downloadChunk(@PathVariable String noteId, @PathVariable Integer chunkIndex) {
         try {
             BurnNoteDO burnNote = burnNoteService.getBurnNoteById(noteId);
             ResponseResult<Void> validation = validateAndGetFileNote(burnNote, chunkIndex);
             if (validation.getCode() != 0) {
-                return ResponseEntity.badRequest().build();
+                return ResponseEntity.badRequest().body(validation);
             }
 
             File chunkFile = burnNoteFileService.getChunkFile(noteId, chunkIndex);
