@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 
@@ -103,6 +104,11 @@ public class BurnNoteService {
                     if (burnNote.getIsFile()) {
                         // 文件类型：标记为待删除
                         burnNote.setViewsLeft(0);
+                        // 确保文件在30分钟内过期，如果已有过期时间更短则不更新
+                        Instant thirtyMinuteLater = Instant.now().plus(30, ChronoUnit.MINUTES);
+                        if (burnNote.getExpireAt() == null || thirtyMinuteLater.isBefore(burnNote.getExpireAt())) {
+                            burnNote.setExpireAt(thirtyMinuteLater); // 30分钟后删除
+                        }
                         burnNoteDAO.save(burnNote);
                         log.debug("文件笔记标记为待删除: noteId={}", id);
                     } else {
@@ -133,7 +139,6 @@ public class BurnNoteService {
         BurnNoteDO burnNote = burnNoteDAO.findById(noteId);
         if (burnNote != null && burnNote.getViewsLeft() != null && burnNote.getViewsLeft() == 0) {
             deleteBurnNote(burnNote);
-            log.debug("确认删除笔记: noteId={}", noteId);
         }
     }
 
@@ -149,6 +154,14 @@ public class BurnNoteService {
         // 检查是否过期
         if (burnNote.getExpireAt() != null && Instant.now().isAfter(burnNote.getExpireAt())) {
             deleteBurnNote(burnNote);
+            return false;
+        }
+
+        // 检查查看次数
+        if (burnNote.getViewsLeft() != null && burnNote.getViewsLeft() <= 0) {
+            if (!burnNote.getIsFile()) {
+                deleteBurnNote(burnNote);
+            }
             return false;
         }
 

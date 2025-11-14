@@ -1,8 +1,10 @@
 package com.jmal.clouddisk.controller.rest;
 
+import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.dao.BurnNoteFileService;
 import com.jmal.clouddisk.model.BurnNoteDO;
+import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.dto.BurnNoteCreateDTO;
 import com.jmal.clouddisk.model.dto.BurnNoteResponseDTO;
 import com.jmal.clouddisk.model.dto.BurnNoteVO;
@@ -53,6 +55,7 @@ public class BurnNoteController {
     }
 
     @Operation(summary = "删除阅后即焚笔记")
+    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
     @Permission("cloud:file:delete")
     @DeleteMapping("/burn-notes/delete/{noteId}")
     public ResponseResult<Void> deleteNote(@PathVariable String noteId) {
@@ -62,6 +65,7 @@ public class BurnNoteController {
     }
 
     @Operation(summary = "创建阅后即焚笔记")
+    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
     @PostMapping("/burn-notes/create")
     public ResponseResult<String> createNote(@RequestBody BurnNoteCreateDTO dto) {
         String userId = userLoginHolder.getUserId();
@@ -145,6 +149,7 @@ public class BurnNoteController {
     }
 
     @Operation(summary = "读取并消费笔记 (阅后即焚)")
+    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
     @DeleteMapping("/public/burn-notes/{id}")
     public ResponseResult<BurnNoteResponseDTO> consumeNote(@PathVariable String id) {
         BurnNoteResponseDTO response = burnNoteService.consumeBurnNote(id);
