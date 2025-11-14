@@ -103,6 +103,11 @@ public class BurnNoteService {
                     if (burnNote.getIsFile()) {
                         // 文件类型：标记为待删除
                         burnNote.setViewsLeft(0);
+                        // 设置过期时间为30分钟后（如果当前过期时间更晚则不更新）
+                        Instant thirtyMinuteLater = Instant.now().plusMillis(DateUnit.MINUTE.getMillis() * 30);
+                        if (burnNote .getExpireAt() == null || thirtyMinuteLater.isBefore(burnNote.getExpireAt())) {
+                            burnNote.setExpireAt(thirtyMinuteLater); // 30分钟后删除
+                        }
                         burnNoteDAO.save(burnNote);
                         log.debug("文件笔记标记为待删除: noteId={}", id);
                     } else {
@@ -133,7 +138,6 @@ public class BurnNoteService {
         BurnNoteDO burnNote = burnNoteDAO.findById(noteId);
         if (burnNote != null && burnNote.getViewsLeft() != null && burnNote.getViewsLeft() == 0) {
             deleteBurnNote(burnNote);
-            log.debug("确认删除笔记: noteId={}", noteId);
         }
     }
 
@@ -149,6 +153,15 @@ public class BurnNoteService {
         // 检查是否过期
         if (burnNote.getExpireAt() != null && Instant.now().isAfter(burnNote.getExpireAt())) {
             deleteBurnNote(burnNote);
+            return false;
+        }
+
+        // 检查查看次数
+        if (burnNote.getViewsLeft() != null && burnNote.getViewsLeft() <= 0) {
+            if (!burnNote.getIsFile()) {
+                deleteBurnNote(burnNote);
+                return false;
+            }
             return false;
         }
 
