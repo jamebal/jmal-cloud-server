@@ -10,12 +10,15 @@ import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.BurnNoteDO;
 import com.jmal.clouddisk.model.dto.BurnNoteCreateDTO;
 import com.jmal.clouddisk.model.dto.BurnNoteResponseDTO;
+import com.jmal.clouddisk.model.dto.BurnNoteVO;
+import com.jmal.clouddisk.model.query.QueryBaseDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 
 @Service
@@ -23,8 +26,11 @@ import java.util.concurrent.locks.Lock;
 @RequiredArgsConstructor
 public class BurnNoteService {
 
+    public static final String TABLE_NAME = "burn_notes";
+
     private final Striped<Lock> noteLocks = Striped.lazyWeakLock(16);
     private final BurnNoteCleanupService burnNoteCleanupService;
+    private final RoleService roleService;
     private final IBurnNoteDAO burnNoteDAO;
     private final BurnNoteFileService burnNoteFileService;
     private static final int MAX_VIEWS = 100;
@@ -55,6 +61,10 @@ public class BurnNoteService {
             burnNote.setExpireAt(Instant.now().plusMillis(dto.getExpirationMinutes() * DateUnit.MINUTE.getMillis()));
         } else {
             burnNote.setViewsLeft(1); // 默认1次
+        }
+        if (burnNote.getExpireAt() == null) {
+            // 默认1天后过期
+            burnNote.setExpireAt(Instant.now().plusMillis(DateUnit.DAY.getMillis()));
         }
 
         String id = burnNoteDAO.save(burnNote).getId();
@@ -162,6 +172,18 @@ public class BurnNoteService {
         burnNoteDAO.deleteById(burnNote.getId());
     }
 
+    public void deleteBurnNote(String noteId, String userId) {
+        BurnNoteDO burnNote = burnNoteDAO.findById(noteId);
+        if (burnNote != null) {
+            boolean isOwner = burnNote.getUserId() != null && burnNote.getUserId().equals(userId);
+            boolean isAdmin = roleService.isAdministratorsByUserId(userId);
+            if (!isOwner && !isAdmin) {
+                throw new CommonException(ExceptionType.PERMISSION_DENIED);
+            }
+            deleteBurnNote(burnNote);
+        }
+    }
+
     /**
      * 参数校验
      */
@@ -191,4 +213,14 @@ public class BurnNoteService {
         }
     }
 
+    public List<BurnNoteVO> burnNoteList(QueryBaseDTO queryBaseDTO, String userId) {
+        boolean isAdministrators = roleService.isAdministratorsByUserId(userId);
+
+        if (isAdministrators) {
+           return burnNoteDAO.findAll(queryBaseDTO);
+        } else {
+            return burnNoteDAO.findAllByUserId(queryBaseDTO, userId);
+        }
+
+    }
 }

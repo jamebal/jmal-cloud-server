@@ -12,6 +12,7 @@ com.jmal.clouddisk.dao.impl.jpa.write.share.CreateHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.UnsetShareBaseHandler
 com.jmal.clouddisk.dao.impl.jpa.write.share.SetFileNameByFileIdHandler
 com.jmal.clouddisk.dao.impl.jpa.write.share.UpdateSubShareHandler
+com.jmal.clouddisk.dao.impl.jpa.write.burnnote.CreateHandler
 com.jmal.clouddisk.dao.impl.jpa.write.accesstoken.UpdateLastActiveTimeByUsernameAndTokenHandler
 com.jmal.clouddisk.dao.impl.jpa.write.setting.CreateOperationHandler
 com.jmal.clouddisk.dao.impl.jpa.write.searchhistory.RemoveAllByUserIdHandler
@@ -56,16 +57,18 @@ com.jmal.clouddisk.dao.impl.jpa.write.trash.DeleteAllByIdInBatchHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.UnsetDelTagHandler
 com.jmal.clouddisk.dao.impl.jpa.write.log.CreateHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.SetNameByMountFileIdHandler
-com.jmal.clouddisk.dao.impl.jpa.write.file.SetShareBaseHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.CreateAllFileMetadataHandler
+com.jmal.clouddisk.dao.impl.jpa.write.file.SetShareBaseHandler
 com.jmal.clouddisk.dao.impl.jpa.write.menu.CreateHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.UnsetSharePropsHandler
 com.jmal.clouddisk.dao.impl.jpa.write.etag.SetMarkUpdateByUserIdAndPathAndNameHandler
 com.jmal.clouddisk.dao.impl.jpa.write.article.UpdatePageSortByIdHandler
 com.jmal.clouddisk.dao.impl.jpa.write.consumer.ResetMfaForAllUsersHandler
 com.jmal.clouddisk.dao.impl.jpa.write.filehistory.CreateHandler
+com.jmal.clouddisk.dao.impl.jpa.write.setting.UpdatePersonalizationHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.SetIsFavoriteByIdInHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.UpdateSharePropsHandler
+com.jmal.clouddisk.dao.impl.jpa.write.burnnote.DeleteHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.UpdateTranscodeVideoByIdInHandler
 com.jmal.clouddisk.dao.impl.jpa.write.officeconfig.UpsertHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.RemoveDelTagByIdInHandler
@@ -89,6 +92,7 @@ com.jmal.clouddisk.dao.impl.jpa.write.menu.UpdateHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.SetSetOtherPropsByIdHandler
 com.jmal.clouddisk.dao.impl.jpa.write.category.DeleteAllByIdInHandler
 com.jmal.clouddisk.dao.impl.jpa.write.setting.CreateAllOperationHandler
+com.jmal.clouddisk.dao.impl.jpa.write.burnnote.DeleteAllByIdsHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.SetNameAndSuffixByIdHandler
 com.jmal.clouddisk.dao.impl.jpa.write.role.CreateHandler
 com.jmal.clouddisk.dao.impl.jpa.write.file.DeleteAllByUserIdInBatchHandler
@@ -104,8 +108,8 @@ com.jmal.clouddisk.dao.impl.jpa.write.accesstoken.CreateAccessTokenOperationHand
 com.jmal.clouddisk.dao.impl.jpa.write.file.UnsetTranscodeVideoHandler
 com.jmal.clouddisk.dao.impl.jpa.write.officeconfig.CreateAllHandler
 com.jmal.clouddisk.dao.impl.jpa.write.role.RemoveByIdInHandler
-com.jmal.clouddisk.dao.impl.jpa.write.setting.UpdateNetdiskNameHandler
 com.jmal.clouddisk.dao.impl.jpa.write.directlink.DeleteByUserIdHandler
+com.jmal.clouddisk.dao.impl.jpa.write.setting.UpdateNetdiskNameHandler
 com.jmal.clouddisk.dao.impl.jpa.write.trash.CreateAllHandler
 com.jmal.clouddisk.dao.impl.jpa.write.accesstoken.CreateAllAccessTokenOperationHandler
 com.jmal.clouddisk.dao.impl.jpa.write.directlink.UpdateByFileIdHandler

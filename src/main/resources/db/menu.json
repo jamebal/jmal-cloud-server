@@ -794,5 +794,19 @@
     "path": "/trash",
     "sortNumber": 9,
     "updateTime": 1719912071511
+  },
+  {
+    "authority": "",
+    "component": "/setting/burnNotes",
+    "createTime": 1719912060104,
+    "hide": false,
+    "icon": "burn_note",
+    "id": "69159dac9384a4ce19220578",
+    "menuType": 2,
+    "name": "menu.burnNote",
+    "parentId": "",
+    "path": "/setting/burnNotes",
+    "sortNumber": 301,
+    "updateTime": 1763024365342
   }
 ]
