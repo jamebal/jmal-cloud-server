@@ -34,7 +34,7 @@ public class OssController {
     }
 
     @Operation(summary = "OSS配置列表")
-    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     @GetMapping("ossConfigList")
     @Permission(value = "cloud:oss:get")
     public ResponseResult<Object> ossConfigList() {
