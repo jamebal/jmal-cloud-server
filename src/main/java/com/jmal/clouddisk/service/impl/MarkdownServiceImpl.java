@@ -20,36 +20,16 @@ import com.jmal.clouddisk.exception.Either;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.interceptor.ShareFileInterceptor;
 import com.jmal.clouddisk.lucene.LuceneService;
-import com.jmal.clouddisk.model.ArchivesVO;
-import com.jmal.clouddisk.model.ArticleDTO;
-import com.jmal.clouddisk.model.ArticleParamDTO;
-import com.jmal.clouddisk.model.ArticleVO;
-import com.jmal.clouddisk.model.CategoryDO;
-import com.jmal.clouddisk.model.MarkdownBaseFile;
-import com.jmal.clouddisk.model.MarkdownVO;
-import com.jmal.clouddisk.model.OperationPermission;
-import com.jmal.clouddisk.model.Page;
-import com.jmal.clouddisk.model.TagDO;
-import com.jmal.clouddisk.model.UploadApiParamDTO;
-import com.jmal.clouddisk.model.UploadImageDTO;
-import com.jmal.clouddisk.model.Urlset;
+import com.jmal.clouddisk.model.*;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.util.CalcMd5;
-import com.jmal.clouddisk.util.FileNameUtils;
-import com.jmal.clouddisk.util.JacksonUtil;
-import com.jmal.clouddisk.util.MyFileUtils;
-import com.jmal.clouddisk.util.ResponseResult;
-import com.jmal.clouddisk.util.ResultUtil;
-import com.jmal.clouddisk.util.TimeUntils;
+import com.jmal.clouddisk.util.*;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
@@ -585,16 +565,6 @@ public class MarkdownServiceImpl implements IMarkdownService {
             log.error("Failed to upload image: {}", originalFilename, e);
             throw new CommonException(ExceptionType.WARNING, "上传失败: " + e.getMessage());
         }
-    }
-
-    @Data
-    @AllArgsConstructor
-    private static class UploadImageResult {
-        private String url;
-        private String originalURL;
-        private String fileId;
-        private String filename;
-        private String filepath;
     }
 
     @NotNull
