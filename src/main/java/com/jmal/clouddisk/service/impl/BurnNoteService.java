@@ -175,13 +175,10 @@ public class BurnNoteService {
     public void deleteBurnNote(String noteId, String userId) {
         BurnNoteDO burnNote = burnNoteDAO.findById(noteId);
         if (burnNote != null) {
-            if (burnNote.getUserId() != null && !burnNote.getUserId().equals(userId)) {
+            boolean isOwner = burnNote.getUserId() != null && burnNote.getUserId().equals(userId);
+            boolean isAdmin = roleService.isAdministratorsByUserId(userId);
+            if (!isOwner && !isAdmin) {
                 throw new CommonException(ExceptionType.PERMISSION_DENIED);
-            } else {
-                boolean isAdministrators = roleService.isAdministratorsByUserId(userId);
-                if (!isAdministrators) {
-                    throw new CommonException(ExceptionType.PERMISSION_DENIED);
-                }
             }
             deleteBurnNote(burnNote);
         }

@@ -55,7 +55,7 @@ public class BurnNoteController {
     @Operation(summary = "删除阅后即焚笔记")
     @Permission("cloud:file:delete")
     @DeleteMapping("/burn-notes/delete/{noteId}")
-    public ResponseResult<List<BurnNoteVO>> listNote(@PathVariable String noteId) {
+    public ResponseResult<Void> deleteNote(@PathVariable String noteId) {
         String userId = userLoginHolder.getUserId();
         burnNoteService.deleteBurnNote(noteId, userId);
         return ResultUtil.success();
