@@ -32,6 +32,7 @@ import com.jmal.clouddisk.model.Page;
 import com.jmal.clouddisk.model.TagDO;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.UploadImageDTO;
+import com.jmal.clouddisk.model.UploadImageResult;
 import com.jmal.clouddisk.model.Urlset;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
@@ -48,8 +49,6 @@ import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
@@ -585,16 +584,6 @@ public class MarkdownServiceImpl implements IMarkdownService {
             log.error("Failed to upload image: {}", originalFilename, e);
             throw new CommonException(ExceptionType.WARNING, "上传失败: " + e.getMessage());
         }
-    }
-
-    @Data
-    @AllArgsConstructor
-    private static class UploadImageResult {
-        private String url;
-        private String originalURL;
-        private String fileId;
-        private String filename;
-        private String filepath;
     }
 
     @NotNull
