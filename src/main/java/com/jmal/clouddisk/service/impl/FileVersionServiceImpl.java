@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.service.impl;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
@@ -217,7 +218,7 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
         return ResultUtil.success(page.getContent()).setCount(page.getTotalElements());
     }
 
-    public Page<GridFSBO> listFileVersionBySort(String fileId, Integer pageSize, Integer pageIndex, Sort sort) {
+    private Page<GridFSBO> listFileVersionBySort(String fileId, Integer pageSize, Integer pageIndex, Sort sort) {
         Pageable pageable = PageRequest.of(pageIndex - 1, pageSize, sort);
         return fileHistoryDAO.findPageByFileId(fileId, pageable);
     }
@@ -227,6 +228,7 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
         Sort sort = Sort.by(Sort.Direction.ASC, Constants.UPLOAD_DATE);
         Page<GridFSBO> page = listFileVersionBySort(path, pageSize, pageIndex, sort);
         List<GridFSBO> gridFSBOList = page.getContent();
+        final long versionOffset = (long)(pageIndex - 1) * pageSize;
         List<OfficeHistory> officeHistoryList = IntStream.range(0, gridFSBOList.size())
                 .mapToObj(i -> {
                     GridFSBO gridFSBO = gridFSBOList.get(i);
@@ -234,7 +236,7 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
             officeHistory.setCreated(gridFSBO.getMetadata().getTime());
             officeHistory.setKey(gridFSBO.getId());
             // 用顺序设置版本号
-            officeHistory.setVersion(String.valueOf(i + 1));
+            officeHistory.setVersion(Convert.toStr(versionOffset + i + 1));
             OfficeHistory.User user = new OfficeHistory.User();
             String username = gridFSBO.getMetadata().getOperator();
             if (CharSequenceUtil.isBlank(username)) {
