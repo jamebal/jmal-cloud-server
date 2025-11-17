@@ -23,7 +23,12 @@ import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
-import com.jmal.clouddisk.util.*;
+import com.jmal.clouddisk.util.CaffeineUtil;
+import com.jmal.clouddisk.util.FileNameUtils;
+import com.jmal.clouddisk.util.MyFileUtils;
+import com.jmal.clouddisk.util.Pair;
+import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
@@ -42,7 +47,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -53,6 +62,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 /**
  * @author jmal
@@ -203,20 +213,28 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
     @Override
     public ResponseResult<List<GridFSBO>> listFileVersion(String fileId, Integer pageSize, Integer pageIndex) {
         Sort sort = Sort.by(Sort.Direction.DESC, Constants.UPLOAD_DATE);
-        Pageable pageable = PageRequest.of(pageIndex - 1, pageSize, sort);
-        Page<GridFSBO> page = fileHistoryDAO.findPageByFileId(fileId, pageable);
+        Page<GridFSBO> page = listFileVersionBySort(fileId, pageSize, pageIndex, sort);
         return ResultUtil.success(page.getContent()).setCount(page.getTotalElements());
+    }
+
+    public Page<GridFSBO> listFileVersionBySort(String fileId, Integer pageSize, Integer pageIndex, Sort sort) {
+        Pageable pageable = PageRequest.of(pageIndex - 1, pageSize, sort);
+        return fileHistoryDAO.findPageByFileId(fileId, pageable);
     }
 
     @Override
     public ResponseResult<List<OfficeHistory>> officeListFileVersion(String path, Integer pageSize, Integer pageIndex) {
-        ResponseResult<List<GridFSBO>> result = listFileVersion(path, pageSize, pageIndex);
-        List<OfficeHistory> officeHistoryList = result.getData().stream().map(gridFSBO -> {
+        Sort sort = Sort.by(Sort.Direction.ASC, Constants.UPLOAD_DATE);
+        Page<GridFSBO> page = listFileVersionBySort(path, pageSize, pageIndex, sort);
+        List<GridFSBO> gridFSBOList = page.getContent();
+        List<OfficeHistory> officeHistoryList = IntStream.range(0, gridFSBOList.size())
+                .mapToObj(i -> {
+                    GridFSBO gridFSBO = gridFSBOList.get(i);
             OfficeHistory officeHistory = new OfficeHistory();
             officeHistory.setCreated(gridFSBO.getMetadata().getTime());
             officeHistory.setKey(gridFSBO.getId());
-            // 将时间设置为版本号, 格式转换为MM-dd
-            officeHistory.setVersion(gridFSBO.getUploadDate().format(DateTimeFormatter.ofPattern("MM-dd")));
+            // 用顺序设置版本号
+            officeHistory.setVersion(String.valueOf(i + 1));
             OfficeHistory.User user = new OfficeHistory.User();
             String username = gridFSBO.getMetadata().getOperator();
             if (CharSequenceUtil.isBlank(username)) {
@@ -227,7 +245,7 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
             officeHistory.setUser(user);
             return officeHistory;
         }).toList();
-        return ResultUtil.success(officeHistoryList).setCount(result.getCount());
+        return ResultUtil.success(officeHistoryList).setCount(page.getTotalElements());
     }
 
     @Override
