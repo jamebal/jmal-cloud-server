@@ -24,6 +24,9 @@ jobs:
           ver="${ver#v}"
           echo "PROJECT_VERSION=$ver" >> $GITHUB_ENV
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -66,35 +69,27 @@ jobs:
           echo "TAG_VERSION_SQL_1=registry.cn-beijing.aliyuncs.com/jmalcloud/jmalcloud-sql:${PROJECT_VERSION}-${{ matrix.arch }}" >> $GITHUB_ENV
 
       # MongoDB 版本
-      - name: Copy to Aliyun (Guangzhou) from ${{ env.SOURCE_IMAGE }} for linux/${{ matrix.arch }}
+      - name: Pull, tag and push MongoDB version for linux/${{ matrix.arch }}
         run: |
-          docker buildx imagetools create \
-            --filter=platform=linux/${{ matrix.arch }} \
-            -t "${{ env.TAG_LATEST_0 }}" \
-            -t "${{ env.TAG_VERSION_0 }}" \
-            "${{ env.SOURCE_IMAGE }}"
-
-      - name: Copy to Aliyun (Beijing) from ${{ env.SOURCE_IMAGE }} for linux/${{ matrix.arch }}
-        run: |
-          docker buildx imagetools create \
-            --filter=platform=linux/${{ matrix.arch }} \
-            -t "${{ env.TAG_LATEST_1 }}" \
-            -t "${{ env.TAG_VERSION_1 }}" \
-            "${{ env.SOURCE_IMAGE }}"
+          docker pull --platform linux/${{ matrix.arch }} ${{ env.SOURCE_IMAGE }}
+          docker tag ${{ env.SOURCE_IMAGE }} ${{ env.TAG_LATEST_0 }}
+          docker tag ${{ env.SOURCE_IMAGE }} ${{ env.TAG_VERSION_0 }}
+          docker tag ${{ env.SOURCE_IMAGE }} ${{ env.TAG_LATEST_1 }}
+          docker tag ${{ env.SOURCE_IMAGE }} ${{ env.TAG_VERSION_1 }}
+          docker push ${{ env.TAG_LATEST_0 }}
+          docker push ${{ env.TAG_VERSION_0 }}
+          docker push ${{ env.TAG_LATEST_1 }}
+          docker push ${{ env.TAG_VERSION_1 }}
 
       # SQL 版本
-      - name: Copy to Aliyun (Guangzhou) from ${{ env.SOURCE_IMAGE_SQL }} for linux/${{ matrix.arch }}
+      - name: Pull, tag and push SQL version for linux/${{ matrix.arch }}
         run: |
-          docker buildx imagetools create \
-            --filter=platform=linux/${{ matrix.arch }} \
-            -t "${{ env.TAG_LATEST_SQL_0 }}" \
-            -t "${{ env.TAG_VERSION_SQL_0 }}" \
-            "${{ env.SOURCE_IMAGE_SQL }}"
-
-      - name: Copy to Aliyun (Beijing) from ${{ env.SOURCE_IMAGE_SQL }} for linux/${{ matrix.arch }}
-        run: |
-          docker buildx imagetools create \
-            --filter=platform=linux/${{ matrix.arch }} \
-            -t "${{ env.TAG_LATEST_SQL_1 }}" \
-            -t "${{ env.TAG_VERSION_SQL_1 }}" \
-            "${{ env.SOURCE_IMAGE_SQL }}"
+          docker pull --platform linux/${{ matrix.arch }} ${{ env.SOURCE_IMAGE_SQL }}
+          docker tag ${{ env.SOURCE_IMAGE_SQL }} ${{ env.TAG_LATEST_SQL_0 }}
+          docker tag ${{ env.SOURCE_IMAGE_SQL }} ${{ env.TAG_VERSION_SQL_0 }}
+          docker tag ${{ env.SOURCE_IMAGE_SQL }} ${{ env.TAG_LATEST_SQL_1 }}
+          docker tag ${{ env.SOURCE_IMAGE_SQL }} ${{ env.TAG_VERSION_SQL_1 }}
+          docker push ${{ env.TAG_LATEST_SQL_0 }}
+          docker push ${{ env.TAG_VERSION_SQL_0 }}
+          docker push ${{ env.TAG_LATEST_SQL_1 }}
+          docker push ${{ env.TAG_VERSION_SQL_1 }}
