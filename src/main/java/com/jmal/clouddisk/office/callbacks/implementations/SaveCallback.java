@@ -9,16 +9,22 @@ import com.jmal.clouddisk.model.file.dto.FileBaseOperationPermissionDTO;
 import com.jmal.clouddisk.office.callbacks.Callback;
 import com.jmal.clouddisk.office.callbacks.Status;
 import com.jmal.clouddisk.office.model.Track;
+import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
-import com.jmal.clouddisk.service.IFileVersionService;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.service.impl.*;
+import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.FileVersionEvent;
+import com.jmal.clouddisk.service.impl.LogService;
+import com.jmal.clouddisk.service.impl.MessageService;
+import com.jmal.clouddisk.service.impl.UserLoginHolder;
+import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.TimeUntils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -48,7 +54,7 @@ public class SaveCallback implements Callback {
 
     private final IUserService userService;
 
-    private final IFileVersionService fileVersionService;
+    private final WebOssService webOssService;
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -67,24 +73,35 @@ public class SaveCallback implements Callback {
             List<OperationPermission> operationPermissionList = fileBaseOperationPermissionDTO.getOperationPermissionList();
             commonFileService.checkPermissionUserId(userId, operationPermissionList, OperationPermission.PUT);
 
+            // 下载最新文件
             Path path = Paths.get(fileProperties.getRootDir(), fileUsername, fileBaseOperationPermissionDTO.getPath(), fileBaseOperationPermissionDTO.getName());
-
-            // 下载最新的文件
             long size = HttpUtil.downloadFile(body.getUrl(), path.toString());
-            String md5 = size + "/" + fileBaseOperationPermissionDTO.getName();
-            LocalDateTime updateDate = LocalDateTime.now(TimeUntils.ZONE_ID);
-            // 推送修改文件的通知
-            FileDocument fileDocument = fileBaseOperationPermissionDTO.toFileDocument();
-            fileDocument.setSize(size);
-            fileDocument.setMd5(md5);
-            fileDocument.setUpdateDate(updateDate);
-            // 修改文件日志
-            logService.asyncAddLogFileOperation(fileUsername, Paths.get(fileBaseOperationPermissionDTO.getPath(), fileBaseOperationPermissionDTO.getName()).toString(), "修改文件");
-            messageService.pushMessage(userLoginHolder.getUsername(), fileDocument, Constants.UPDATE_FILE);
 
-            // 修改文件之后保存历史版本
-            String relativePath = Paths.get(fileBaseOperationPermissionDTO.getPath(), fileBaseOperationPermissionDTO.getName()).toString();
-            eventPublisher.publishEvent(new FileVersionEvent(this, fileUsername, relativePath, userId, userLoginHolder.getUsername()));
+            // 判断是否为oss存储
+            Path prePath = Paths.get(fileUsername, fileBaseOperationPermissionDTO.getPath(), fileBaseOperationPermissionDTO.getName());
+            String ossPath = CaffeineUtil.getOssPath(prePath);
+            if (ossPath != null) {
+                // 保存到oss
+                File file = path.toFile();
+                if (file.exists()) {
+                    webOssService.putOfficeCallback(ossPath, prePath, path.toFile(), size);
+                }
+            } else {
+                String md5 = size + "/" + fileBaseOperationPermissionDTO.getName();
+                LocalDateTime updateDate = LocalDateTime.now(TimeUntils.ZONE_ID);
+                // 推送修改文件的通知
+                FileDocument fileDocument = fileBaseOperationPermissionDTO.toFileDocument();
+                fileDocument.setSize(size);
+                fileDocument.setMd5(md5);
+                fileDocument.setUpdateDate(updateDate);
+                // 修改文件日志
+                logService.asyncAddLogFileOperation(fileUsername, Paths.get(fileBaseOperationPermissionDTO.getPath(), fileBaseOperationPermissionDTO.getName()).toString(), "修改文件");
+                messageService.pushMessage(userLoginHolder.getUsername(), fileDocument, Constants.UPDATE_FILE);
+
+                // 修改文件之后保存历史版本
+                String relativePath = Paths.get(fileBaseOperationPermissionDTO.getPath(), fileBaseOperationPermissionDTO.getName()).toString();
+                eventPublisher.publishEvent(new FileVersionEvent(this, fileUsername, relativePath, userId, userLoginHolder.getUsername()));
+            }
 
         } catch (Exception e) {
             log.error(e.getMessage(), e);

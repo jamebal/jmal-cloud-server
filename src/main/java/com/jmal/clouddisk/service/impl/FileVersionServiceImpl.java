@@ -2,7 +2,6 @@ package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -20,7 +19,6 @@ import com.jmal.clouddisk.model.Metadata;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileHistoryDTO;
 import com.jmal.clouddisk.office.OfficeHistory;
-import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
@@ -101,6 +99,9 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
 
     private void saveFileVersion(String fileUsername, String relativePath, String userId, String operator) {
         File file = new File(Paths.get(fileProperties.getRootDir(), fileUsername, relativePath).toString());
+        if (!file.exists() || !file.isFile()) {
+            return;
+        }
         String filepath = Paths.get(fileUsername, relativePath).toString();
         Object lock = fileLocks.get(filepath, _ -> new Object());
         if (lock != null) {
@@ -142,30 +143,6 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
             charset = CharsetUtil.UTF_8;
         }
         return charset;
-    }
-
-    @Override
-    public void saveFileVersion(AbstractOssObject abstractOssObject, String fileId) {
-        Object lock = fileLocks.get(fileId, _ -> new Object());
-        if (lock != null) {
-            synchronized (lock) {
-                if (CaffeineUtil.hasFileHistoryCache(fileId)) {
-                    return;
-                }
-                long size = abstractOssObject.getContentLength();
-                String filename = Paths.get(abstractOssObject.getKey()).getFileName().toString();
-                String updateDate = DateUtil.format(abstractOssObject.getFileInfo().getLastModified(), DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN));
-                Metadata metadata = setMetadata(size, fileId, filename, updateDate, userLoginHolder.getUsername(), null);
-                if (metadata == null) return;
-                try (InputStream inputStream = abstractOssObject.getInputStream();
-                     InputStream gzipInputStream = MyFileUtils.gzipCompress(inputStream, metadata.getCompression())) {
-                    fileHistoryDAO.store(gzipInputStream, fileId, metadata);
-                    CaffeineUtil.setFileHistoryCache(fileId);
-                } catch (IOException e) {
-                    log.error(e.getMessage(), e);
-                }
-            }
-        }
     }
 
     /**

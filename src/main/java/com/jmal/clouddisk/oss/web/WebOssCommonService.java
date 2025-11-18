@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.oss.web;
 
+import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileIntroVO;
@@ -107,7 +108,9 @@ public class WebOssCommonService {
         }
         String rootName = getOssRootFolderName(ossPath);
         commonUserFileService.checkShareBase(fileDocument, getPath(objectName, rootName));
-        fileDAO.save(fileDocument);
+        if (BooleanUtil.isTrue(fileDocument.getIsShare())) {
+            fileDAO.save(fileDocument);
+        }
     }
 
 }
