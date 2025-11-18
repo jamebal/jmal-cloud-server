@@ -37,7 +37,6 @@ import com.jmal.clouddisk.service.impl.CommonUserFileService;
 import com.jmal.clouddisk.service.impl.CommonUserService;
 import com.jmal.clouddisk.service.impl.FileSortService;
 import com.jmal.clouddisk.service.impl.MessageService;
-import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.FileNameUtils;
@@ -64,6 +63,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -100,8 +100,6 @@ public class WebOssService {
     private final FileProperties fileProperties;
 
     private final IFileVersionService fileVersionService;
-
-    private final UserLoginHolder userLoginHolder;
 
     private final CommonUserService userService;
 
@@ -697,24 +695,24 @@ public class WebOssService {
     }
 
     public void putObjectText(String ossPath, Path prePth, String contentText) {
-        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
-        String objectName = getObjectName(prePth, ossPath, false);
+        byte[] contentBytes = contentText.getBytes(StandardCharsets.UTF_8);
+        putObject(ossPath, prePth, new ByteArrayInputStream(contentBytes), contentBytes.length);
+    }
 
-        try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName)) {
-            // 修改文件之前保存历史版本
-            String username = WebOssCommonService.getUsernameByOssPath(ossPath);
-            if (!username.equals(userLoginHolder.getUsername())) {
-                throw new CommonException(ExceptionType.PERMISSION_DENIED);
-            }
-            String fileId = WebOssCommonService.getFileId(WebOssCommonService.getOssRootFolderName(ossPath), objectName, username);
-            fileVersionService.saveFileVersion(abstractOssObject, fileId);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
+
+    public void putOfficeCallback(String ossPath, Path prePth, File file, long size) throws IOException {
+        putObject(ossPath, prePth, new FileInputStream(file), size);
+    }
+
+    public void putObject(String ossPath, Path prePth, InputStream inputStream, long size) {
+        try {
+            IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+            String objectName = getObjectName(prePth, ossPath, false);
+            ossService.write(inputStream, ossPath, objectName);
+            webOssCommonService.notifyUpdateFile(ossPath, objectName, size);
+        } finally {
+            IoUtil.close(inputStream);
         }
-
-        InputStream inputStream = new ByteArrayInputStream(CharSequenceUtil.bytes(contentText, StandardCharsets.UTF_8));
-        ossService.write(inputStream, ossPath, objectName);
-        webOssCommonService.notifyUpdateFile(ossPath, objectName, contentText.length());
     }
 
     public void download(String ossPath, Path prePth, HttpServletRequest request, HttpServletResponse response, String downloadFilename) {

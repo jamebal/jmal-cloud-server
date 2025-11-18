@@ -37,7 +37,7 @@ public interface IOssService {
 
     /**
      * Webdav 上传文件
-     * @param inputStream 文件输入流
+     * @param inputStream 文件输入流, 使用后需要关闭
      * @param ossPath     ossPath
      * @param objectName  object key
      * @return 是否上传成功

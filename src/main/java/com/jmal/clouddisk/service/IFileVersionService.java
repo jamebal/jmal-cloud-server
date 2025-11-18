@@ -3,7 +3,6 @@ package com.jmal.clouddisk.service;
 import com.jmal.clouddisk.model.GridFSBO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.office.OfficeHistory;
-import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.util.ResponseResult;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
@@ -17,14 +16,6 @@ import java.util.List;
  * @date 2023/5/9 17:52
  */
 public interface IFileVersionService {
-
-    /**
-     * 保存当前文件为历史文件
-     *
-     * @param abstractOssObject AbstractOssObject
-     * @param fileId fileId
-     */
-    void saveFileVersion(AbstractOssObject abstractOssObject, String fileId);
 
     /**
      * 列出文件的历史版本

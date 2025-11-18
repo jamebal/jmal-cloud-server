@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.webdav.resource;
 
+import cn.hutool.core.io.IoUtil;
 import com.jmal.clouddisk.oss.FileInfo;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.util.CaffeineUtil;
@@ -115,47 +116,51 @@ public class FileResourceSet extends AbstractFileResourceSet {
     public boolean write(String path, InputStream is, boolean overwrite) {
         checkPath(path);
 
-        if (is == null) {
-            throw new NullPointerException(
-                    sm.getString("dirResourceSet.writeNpe"));
-        }
-
-        if (isReadOnly()) {
-            return false;
-        }
-
-        if (path.endsWith("/")) {
-            return false;
-        }
-
-        File dest;
-        Path prePath = Paths.get(path);
-        String ossPath = CaffeineUtil.getOssPath(prePath);
-        if (ossPath != null) {
-            if (prePath.getNameCount() > 2) {
-                path = path.substring(ossPath.length() + 1);
-            }
-            return OssConfigService.getOssStorageService(ossPath).write(is, ossPath, path);
-        } else {
-            dest = file(path, false);
-        }
-
-        if (dest == null) {
-            return false;
-        }
-
-        if (dest.exists() && !overwrite) {
-            return false;
-        }
-
         try {
-            if (overwrite) {
-                Files.copy(is, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            } else {
-                Files.copy(is, dest.toPath());
+            if (is == null) {
+                throw new NullPointerException(
+                        sm.getString("dirResourceSet.writeNpe"));
             }
-        } catch (IOException ioe) {
-            return false;
+
+            if (isReadOnly()) {
+                return false;
+            }
+
+            if (path.endsWith("/")) {
+                return false;
+            }
+
+            File dest;
+            Path prePath = Paths.get(path);
+            String ossPath = CaffeineUtil.getOssPath(prePath);
+            if (ossPath != null) {
+                if (prePath.getNameCount() > 2) {
+                    path = path.substring(ossPath.length() + 1);
+                }
+                return OssConfigService.getOssStorageService(ossPath).write(is, ossPath, path);
+            } else {
+                dest = file(path, false);
+            }
+
+            if (dest == null) {
+                return false;
+            }
+
+            if (dest.exists() && !overwrite) {
+                return false;
+            }
+
+            try {
+                if (overwrite) {
+                    Files.copy(is, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                } else {
+                    Files.copy(is, dest.toPath());
+                }
+            } catch (IOException ioe) {
+                return false;
+            }
+        } finally {
+            IoUtil.close(is);
         }
 
         return true;

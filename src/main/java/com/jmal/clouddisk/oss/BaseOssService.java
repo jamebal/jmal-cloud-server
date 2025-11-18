@@ -278,11 +278,11 @@ public class BaseOssService {
      * @param tempFileAbsolutePath 临时文件绝对路径
      */
     public void onUploadSuccess(String objectName, Path tempFileAbsolutePath) {
-        clearTempFileCache(objectName);
+        log.debug("put file success: {}", objectName);
         setFileInfoCache(objectName, newFileInfo(objectName, tempFileAbsolutePath.toFile()));
+        clearTempFileCache(objectName);
         clearFileListCache(objectName);
         removeWaitingUploadCache(objectName);
-        printSuccess(objectName);
     }
 
     /**
@@ -291,15 +291,11 @@ public class BaseOssService {
      * @param fileSize 文件大小
      */
     public void onUploadSuccess(String objectName, Long fileSize) {
-        clearTempFileCache(objectName);
+        log.debug("upload file success: {}", objectName);
         setFileInfoCache(objectName, newFileInfo(objectName, fileSize));
+        clearTempFileCache(objectName);
         clearFileListCache(objectName);
         removeWaitingUploadCache(objectName);
-        printSuccess(objectName);
-    }
-
-    private static void printSuccess(String objectName) {
-        log.info("upload success: {}", objectName);
     }
 
     /**
@@ -356,6 +352,9 @@ public class BaseOssService {
      * 该方法每秒执行一次 <br/>
      */
     private void checkUpload() {
+        if (waitingUploadCache.estimatedSize() < 1) {
+            return;
+        }
         getWaitingUploadCacheMap().forEach((objectName, tempFileAbsolutePath) -> {
             long lastModified = tempFileAbsolutePath.toFile().lastModified();
             // 临时文件的最后修改时间大于5秒就上传

@@ -85,9 +85,8 @@ public class ImageMagickProcessor {
      * 将输入流转换为 WebP 格式并保存到指定文件
      * @param originImageStream 原始图片的输入流
      * @param destFile 目标文件，必须是 WebP 格式
-     * @throws IOException 如果转换过程中发生 I/O 错误
      */
-    public static void convertToWebpFile(InputStream originImageStream, File destFile) throws IOException {
+    public static void convertToWebpFile(InputStream originImageStream, File destFile) {
         // 命令: magick - webp:output.webp
         CommandLine commandLine = new CommandLine("magick");
         commandLine.addArgument("-");
@@ -177,7 +176,6 @@ public class ImageMagickProcessor {
             CommandUtil.execCommand(cmdLine, inputStream, outputStream);
         } catch (Exception e) {
             log.error("Failed to execute ImageMagick command.", e);
-            // 根据你的异常处理策略，决定是抛出异常还是静默失败
             throw new RuntimeException("Image processing failed", e);
         }
     }
