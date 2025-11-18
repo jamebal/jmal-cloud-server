@@ -24,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -82,10 +81,7 @@ public class SaveCallback implements Callback {
             String ossPath = CaffeineUtil.getOssPath(prePath);
             if (ossPath != null) {
                 // 保存到oss
-                File file = path.toFile();
-                if (file.exists()) {
-                    webOssService.putOfficeCallback(ossPath, prePath, path.toFile(), size);
-                }
+                webOssService.putOfficeCallback(ossPath, prePath, path.toFile(), size);
             } else {
                 String md5 = size + "/" + fileBaseOperationPermissionDTO.getName();
                 LocalDateTime updateDate = LocalDateTime.now(TimeUntils.ZONE_ID);

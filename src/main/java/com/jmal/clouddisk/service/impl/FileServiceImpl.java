@@ -1616,6 +1616,12 @@ public class FileServiceImpl implements IFileService {
             webOssService.mkdir(ossPath, prePth);
             return ResultUtil.success();
         }
+        // 判断当前目录是否存在该文件夹
+        String fileId = fileDAO.findIdByUserIdAndPathAndName(upload.getUserId(), commonFileService.getUserDirectory(upload.getCurrentDirectory()), upload.getFilename());
+        if (fileId != null) {
+            throw new CommonException(ExceptionType.EXISTING_RESOURCES);
+        }
+
         commonUserFileService.createFolder(upload);
         // 文件操作日志
         logService.syncAddLogFileOperation(upload.getUsername(), commonUserFileService.getUserDirectoryFilePath(upload), "上传文件夹");
