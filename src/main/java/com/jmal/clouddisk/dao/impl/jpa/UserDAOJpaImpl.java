@@ -50,7 +50,7 @@ public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
         try {
             return future.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
-            log.error("Error saving ConsumerDO: {}", e.getMessage());
+            log.error("Error saving ConsumerDO: {}", e.getMessage(), e);
             throw new CommonException(e.getMessage());
         }
     }
@@ -60,7 +60,7 @@ public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
         try {
             writeService.submit(new UserOperation.CreateAll(consumerDOs)).get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
-            log.error("Error saving ConsumerDOs: {}", e.getMessage());
+            log.error("Error saving ConsumerDOs: {}", e.getMessage(), e);
             throw new CommonException(e.getMessage());
         }
     }

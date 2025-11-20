@@ -147,6 +147,7 @@ public class MenuService {
         menuDO.setIcon(menuDTO.getIcon());
         menuDO.setSortNumber(menuDTO.getSortNumber());
         menuDO.setHide(menuDTO.getHide());
+        menuDO.setParentId(menuDTO.getParentId());
         menuDO.setUpdateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
         menuDAO.save(menuDO);
         return ResultUtil.success();
