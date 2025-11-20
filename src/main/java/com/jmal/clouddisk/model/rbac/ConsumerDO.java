@@ -49,9 +49,20 @@ public class ConsumerDO extends ConsumerBase implements Reflective {
      * 角色ID列表
      * 存储格式：["66cb6e9c507f4a2b8c1d3e5f", "66cb6e9c507f4a2b8c1d3e60"]
      */
+    @Schema(name = "roles", title = "角色ID列表")
     @Column(name = "roles")
     @JdbcTypeCode(SqlTypes.JSON)
     List<String> roles;
+
+    /**
+     * 用户组ID列表
+     * 用户可以属于多个组，继承所有组的角色
+     * 存储格式：["66cb6e9c507f4a2b8c1d3e5f", "66cb6e9c507f4a2b8c1d3e60"]
+     */
+    @Schema(name = "groups", title = "用户组ID列表")
+    @Column(name = "groups")
+    @JdbcTypeCode(SqlTypes.JSON)
+    List<String> groups;
 
     @Schema(name = "quota", title = "默认配额, 10G", example = "10")
     Integer quota;

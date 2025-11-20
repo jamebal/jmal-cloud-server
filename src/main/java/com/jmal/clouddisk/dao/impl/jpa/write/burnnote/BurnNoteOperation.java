@@ -7,9 +7,11 @@ import java.util.Collection;
 public final class BurnNoteOperation {
     private BurnNoteOperation() {}
 
-    public record Create(BurnNoteDO entities) implements IBurnNoteOperation<BurnNoteDO> {}
+    public record Create(BurnNoteDO entity) implements IBurnNoteOperation<BurnNoteDO> {}
 
     public record Delete(String id) implements IBurnNoteOperation<Void> {}
 
     public record DeleteAllByIds(Collection<String> ids) implements IBurnNoteOperation<Integer> {}
+
+    public record CreateAll(Iterable<BurnNoteDO> entities) implements IBurnNoteOperation<Void> {}
 }

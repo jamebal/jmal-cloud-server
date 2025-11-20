@@ -150,7 +150,7 @@
     "name": "menu.managerRole",
     "parentId": "6020dec9cfb7a66f628397a8",
     "path": "/setting/manager-roles",
-    "sortNumber": 1,
+    "sortNumber": 2,
     "updateTime": 1612767355583
   },
   {
@@ -164,7 +164,7 @@
     "name": "menu.managerMenu",
     "parentId": "6020dec9cfb7a66f628397a8",
     "path": "/setting/manager-menus",
-    "sortNumber": 2,
+    "sortNumber": 3,
     "updateTime": 1612767360124
   },
   {
@@ -320,20 +320,21 @@
     "path": "",
     "sortNumber": 103,
     "updateTime": 1610431881591
-  },{
-  "authority": "cloud:file:packageDownload",
-  "component": "",
-  "createTime": 1749449364061,
-  "hide": false,
-  "icon": "",
-  "id": "6846798fd910ad3d1894e333",
-  "menuType": 1,
-  "name": "menu.packageDownload",
-  "parentId": "",
-  "path": "",
-  "sortNumber": 105,
-  "updateTime": 1749449364061
-},
+  },
+  {
+    "authority": "cloud:file:packageDownload",
+    "component": "",
+    "createTime": 1749449364061,
+    "hide": false,
+    "icon": "",
+    "id": "6846798fd910ad3d1894e333",
+    "menuType": 1,
+    "name": "menu.packageDownload",
+    "parentId": "",
+    "path": "",
+    "sortNumber": 105,
+    "updateTime": 1749449364061
+  },
   {
     "authority": "cloud:file:upload",
     "component": "",
@@ -680,7 +681,7 @@
     "name": "menu.logLogin",
     "parentId": "6020dec9cfb7a66f628397a8",
     "path": "/setting/log-login",
-    "sortNumber": 3,
+    "sortNumber": 4,
     "updateTime": 1612767741226
   },
   {
@@ -694,7 +695,7 @@
     "name": "menu.logOperation",
     "parentId": "6020dec9cfb7a66f628397a8",
     "path": "/setting/log-operation",
-    "sortNumber": 4,
+    "sortNumber": 5,
     "updateTime": 1612858032483
   },
   {
@@ -808,5 +809,75 @@
     "path": "/setting/burnNotes",
     "sortNumber": 301,
     "updateTime": 1763024365342
+  },
+  {
+    "path": "/setting/manager-groups",
+    "component": "/setting/sys/groupManager",
+    "hide": false,
+    "createTime": 1763546105227,
+    "authority": "",
+    "sortNumber": 1,
+    "name": "用户组管理",
+    "icon": "group-manage",
+    "menuType": 2,
+    "updateTime": 1763546105227,
+    "id": "691d3f1c4a088a4b7926d621",
+    "parentId": "6020dec9cfb7a66f628397a8"
+  },
+  {
+    "path": "",
+    "component": "",
+    "hide": false,
+    "createTime": 1763546105227,
+    "authority": "sys:group:list",
+    "sortNumber": 0,
+    "name": "查询用户组",
+    "icon": "",
+    "menuType": 1,
+    "updateTime": 1763546105227,
+    "id": "691d82e7812a02cc7131fc5f",
+    "parentId": "691d3f1c4a088a4b7926d621"
+  },
+  {
+    "path": "",
+    "component": "",
+    "hide": false,
+    "createTime": 1763546105227,
+    "authority": "sys:group:add",
+    "sortNumber": 1,
+    "name": "添加用户组",
+    "icon": "",
+    "menuType": 1,
+    "updateTime": 1763546105227,
+    "id": "691d830b812a02cc7131fc61",
+    "parentId": "691d3f1c4a088a4b7926d621"
+  },
+  {
+    "path": "",
+    "component": "",
+    "hide": false,
+    "createTime": 1763546105227,
+    "authority": "sys:group:update",
+    "sortNumber": 2,
+    "name": "更新用户组",
+    "icon": "",
+    "menuType": 1,
+    "updateTime":1763546105227,
+    "id": "691d8331812a02cc7131fc63",
+    "parentId": "691d3f1c4a088a4b7926d621"
+  },
+  {
+    "path": "",
+    "component": "",
+    "hide": false,
+    "createTime": 1763546105227,
+    "authority": "sys:group:delete",
+    "sortNumber": 3,
+    "name": "删除用户组",
+    "icon": "",
+    "menuType": 1,
+    "updateTime": 1763546105227,
+    "id": "691d8347812a02cc7131fc65",
+    "parentId": "691d3f1c4a088a4b7926d621"
   }
 ]

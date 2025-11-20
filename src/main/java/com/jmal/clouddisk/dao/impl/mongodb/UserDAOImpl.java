@@ -158,4 +158,20 @@ public class UserDAOImpl implements IUserDAO {
         update.set("mfaEnabled", null);
         mongoTemplate.updateMulti(query, update, ConsumerDO.class);
     }
+
+    @Override
+    public List<String> findUsernamesByGroupIdList(Collection<String> groupIdList) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("groups").in(groupIdList));
+        query.fields().include(IUserService.USERNAME);
+        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class);
+        return userList.stream().map(ConsumerDO::getUsername).toList();
+    }
+
+    @Override
+    public List<ConsumerDO> findAllByUsername(List<String> toRemoveUsernameList) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USERNAME).in(toRemoveUsernameList));
+        return mongoTemplate.find(query, ConsumerDO.class);
+    }
 }

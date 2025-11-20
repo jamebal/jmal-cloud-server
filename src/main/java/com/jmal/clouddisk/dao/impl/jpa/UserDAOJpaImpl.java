@@ -165,6 +165,25 @@ public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
         }
     }
 
+    @Override
+    public List<String> findUsernamesByGroupIdList(Collection<String> groupIdList) {
+        if (dataSourceProperties.getType() == DataSourceType.pgsql){
+            return userRepository.findUsernamesByGroupIdList_PostgreSQL(groupIdList.toArray(new String[0]));
+        } else if (dataSourceProperties.getType() == DataSourceType.mysql) {
+            // 格式化为JSON数组的字符串, 例如 "[\"role1\", \"role2\"]"
+            String roleIdListAsJson = JacksonUtil.toJSONString(groupIdList);
+            return userRepository.findUsernamesByGroupIdList_MySQL(roleIdListAsJson);
+        } else if (dataSourceProperties.getType() == DataSourceType.sqlite) {
+            return userRepository.findUsernamesByGroupIdList_SQLite(groupIdList);
+        }
+        return List.of();
+    }
+
+    @Override
+    public List<ConsumerDO> findAllByUsername(List<String> toRemoveUsernameList) {
+        return userRepository.findAllByUsernameIn(toRemoveUsernameList);
+    }
+
     public void applyUpdateToEntity(ConsumerDO entity, MyUpdate update) {
         // 处理 set 操作
         for (var entry : update.getOperations().entrySet()) {
@@ -198,6 +217,7 @@ public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
                 case "slogan" -> entity.setSlogan(isUnset ? null : Convert.toStr(value));
                 case "username" -> entity.setUsername(isUnset ? null : Convert.toStr(value));
                 case "roles" -> entity.setRoles(isUnset ? null : Convert.toList(String.class, value));
+                case "groups" -> entity.setGroups(isUnset ? null : Convert.toList(String.class, value));
                 case "personalization" -> entity.setPersonalization(isUnset ? null : value == null ? null : (Personalization) value);
                 default -> log.warn("Unknown field: {} with value: {}", logicalFieldName, value);
             }

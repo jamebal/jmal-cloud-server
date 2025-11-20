@@ -192,7 +192,7 @@ public class CloudSettingController {
 
     @Operation(summary = "加载任务进度")
     @GetMapping("/cloud/task/progress")
-    @Permission(value = "cloud:file:upload")
+    @Permission(value = "cloud:file:list")
     public ResponseResult<List<TaskProgress>> getTaskProgress() {
         return ResultUtil.success(taskProgressService.getTaskProgressList());
     }

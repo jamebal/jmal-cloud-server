@@ -3,12 +3,15 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.dao.IMenuDAO;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.MenuDTO;
-import com.jmal.clouddisk.util.*;
+import com.jmal.clouddisk.util.JacksonUtil;
+import com.jmal.clouddisk.util.MessageUtil;
+import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.TimeUntils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -18,7 +21,14 @@ import org.springframework.stereotype.Service;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -26,8 +36,6 @@ import java.util.*;
 public class MenuService {
 
     public static final String COLLECTION_NAME = "menu";
-
-    private final DataSourceProperties dataSourceProperties;
 
     private final MessageUtil messageUtil;
 
@@ -130,8 +138,15 @@ public class MenuService {
         if(menuDAO.existsByNameAndIdNot(menuDTO.getName(), menuDTO.getId())){
             return ResultUtil.warning("该菜单名称已存在");
         }
-        MenuDO menuDO = new MenuDO();
-        BeanUtils.copyProperties(menuDTO, menuDO);
+        MenuDO menuDO = menuDAO.findById(menuDTO.getId());
+        menuDO.setMenuType(menuDTO.getMenuType());
+        menuDO.setName(menuDTO.getName());
+        menuDO.setAuthority(menuDTO.getAuthority());
+        menuDO.setPath(menuDTO.getPath());
+        menuDO.setComponent(menuDTO.getComponent());
+        menuDO.setIcon(menuDTO.getIcon());
+        menuDO.setSortNumber(menuDTO.getSortNumber());
+        menuDO.setHide(menuDTO.getHide());
         menuDO.setUpdateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
         menuDAO.save(menuDO);
         return ResultUtil.success();
@@ -232,5 +247,9 @@ public class MenuService {
      */
     public boolean existsMenu(){
        return menuDAO.exists();
+    }
+
+    public List<MenuDO> getAllMenus() {
+        return menuDAO.findAll();
     }
 }

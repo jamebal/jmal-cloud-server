@@ -9,6 +9,8 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IAccessTokenDAO;
+import com.jmal.clouddisk.dao.IGroupDAO;
+import com.jmal.clouddisk.dao.IRoleDAO;
 import com.jmal.clouddisk.dao.IUserDAO;
 import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
 import com.jmal.clouddisk.dao.mapping.CommonField;
@@ -27,7 +29,12 @@ import com.jmal.clouddisk.model.rbac.ConsumerDTO;
 import com.jmal.clouddisk.model.rbac.Personalization;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
-import com.jmal.clouddisk.util.*;
+import com.jmal.clouddisk.util.CaffeineUtil;
+import com.jmal.clouddisk.util.PasswordHash;
+import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.SystemUtil;
+import com.jmal.clouddisk.util.TimeUntils;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +64,10 @@ public class UserServiceImpl implements IUserService {
     public static final String COLLECTION_NAME = "user";
 
     private final IUserDAO userDAO;
+
+    private final IRoleDAO roleDAO;
+
+    private final IGroupDAO groupDAO;
 
     private final IWebsiteSettingDAO websiteSettingDAO;
 
@@ -226,15 +237,26 @@ public class UserServiceImpl implements IUserService {
             update.set(RoleService.ROLES, user.getRoles());
             consumerDO.setRoles(user.getRoles());
         }
+        if (user.getGroups() != null) {
+            update.set("groups", user.getGroups());
+            consumerDO.setGroups(user.getGroups());
+        }
         // 设置用户头像
         fileId = setConsumerAvatar(blobAvatar, userId, consumerDO, update, fileId);
         Instant now = Instant.now();
         update.set(UserField.UPDATED_TIME.getLogical(), now);
         consumerDO.setUpdatedTime(now);
         updateConsumer(userId, query, update);
-        if (user.getRoles() != null) {
+        if (user.getRoles() != null || user.getGroups() != null) {
             // 修改用户角色后更新相关角色用户的权限缓存
-            Completable.fromAction(() -> roleService.updateUserCacheByRole(user.getRoles()))
+            ConsumerDO finalConsumerDO = consumerDO;
+            Completable.fromAction(() -> {
+                        // 直接刷新该用户的权限缓存，比通过角色反查用户更直接
+                        // 如果只是修改了当前用户的配置，直接刷新该用户即可
+                        if (finalConsumerDO.getUsername() != null) {
+                            roleService.refreshUserAuthoritiesCache(finalConsumerDO.getUsername());
+                        }
+                    })
                     .subscribeOn(Schedulers.io())
                     .doOnError(e -> log.error(e.getMessage(), e))
                     .onErrorComplete()
@@ -315,11 +337,11 @@ public class UserServiceImpl implements IUserService {
         List<ConsumerDO> userList = consumerDOPage.getContent();
         List<ConsumerDTO> consumerDTOList = userList.parallelStream().map(consumerDO -> {
             ConsumerDTO consumerDTO = new ConsumerDTO();
-            BeanUtils.copyProperties(consumerDO, consumerDTO);
-            List<String> roleIds = consumerDO.getRoles();
-            if (roleIds != null && !roleIds.isEmpty()) {
-                consumerDTO.setRoleList(roleService.getRoleList(roleIds));
-            }
+            consumerDTO.setId(consumerDO.getId());
+            consumerDTO.setUsername(consumerDO.getUsername());
+            consumerDTO.setShowName(consumerDO.getShowName());
+            consumerDTO.setGroups(consumerDO.getGroups());
+            consumerDTO.setRoles(consumerDO.getRoles());
             return consumerDTO;
         }).toList();
         return ResultUtil.success(consumerDTOList).setCount(consumerDOPage.getTotalElements());

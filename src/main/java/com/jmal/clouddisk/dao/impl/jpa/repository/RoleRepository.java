@@ -33,5 +33,5 @@ public interface RoleRepository extends JpaRepository<RoleDO, String>, JpaSpecif
     Set<List<String>> findMenuIdsByIdIn(Collection<String> ids);
 
     @Query("SELECT r.code from RoleDO r where r.id in :ids")
-    List<String> findAllCodeByIdIn(List<String> ids);
+    List<String> findAllCodeByIdIn(Set<String> ids);
 }

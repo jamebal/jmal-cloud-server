@@ -3,10 +3,12 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.IoUtil;
 import com.jmal.clouddisk.annotation.AnnoManageUtil;
+import com.jmal.clouddisk.dao.IGroupDAO;
 import com.jmal.clouddisk.dao.IRoleDAO;
 import com.jmal.clouddisk.dao.IUserDAO;
 import com.jmal.clouddisk.model.query.QueryRoleDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.model.rbac.GroupDO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
 import com.jmal.clouddisk.model.rbac.RoleDTO;
 import com.jmal.clouddisk.util.CaffeineUtil;
@@ -19,6 +21,7 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -27,8 +30,11 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,6 +54,8 @@ public class RoleService {
     private final IRoleDAO roleDAO;
 
     private final IUserDAO userDAO;
+
+    private final IGroupDAO groupDAO;
 
     private final CommonUserService commonUserService;
 
@@ -120,7 +128,7 @@ public class RoleService {
         return ResultUtil.success();
     }
 
-    /***
+    /**
      * 更新相关角色的用户缓存
      * @param roleDO RoleDO
      */
@@ -131,32 +139,17 @@ public class RoleService {
         if (roleDO.getMenuIds() == null || roleDO.getMenuIds().isEmpty()) {
             return;
         }
-        // 根据角色获取用户名列表
-        List<String> usernameList = userDAO.findUsernamesByRoleIdList(Collections.singleton(roleDO.getId()));
-        updateUserCacheByNames(usernameList);
+        updateUserCacheByRoleIds(Collections.singleton(roleDO.getId()));
     }
 
-    /***
+    /**
      * 更新相关角色的用户缓存
-     * @param usernameList 用户名列表
+     * @param roleIds 角色id列表
      */
-    private void updateUserCacheByNames(List<String> usernameList) {
-        usernameList.forEach(username -> {
-            // 获取该用户最新的权限列表
-            List<String> authorities = getAuthorities(username);
-            if (CaffeineUtil.existsAuthoritiesCache(username)) {
-                CaffeineUtil.setAuthoritiesCache(username, authorities);
-            }
-        });
-    }
-
-    /***
-     * 更新相关角色的用户缓存
-     * @param rolesIds rolesIds
-     */
-    public void updateUserCacheByRole(List<String> rolesIds) {
-        List<String> usernameList = userDAO.findUsernamesByRoleIdList(rolesIds);
-        updateUserCacheByNames(usernameList);
+    private void updateUserCacheByRoleIds(Collection<String> roleIds) {
+        List<String> usernameList = userDAO.findUsernamesByRoleIdList(roleIds);
+        // 获取该用户最新的权限列表
+        usernameList.forEach(this::refreshUserAuthoritiesCache);
     }
 
     /***
@@ -165,8 +158,19 @@ public class RoleService {
      */
     public void delete(String[] roleIds) {
         roleDAO.removeByIdIn(List.of(roleIds));
+        // 删除角色后更新相关角色用户的权限缓存
+        Completable.fromAction(() -> updateUserCacheByRoleIds(List.of(roleIds)))
+                .subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
+                .subscribe();
     }
 
+    /**
+     * 获取用户的最终权限列表（并集）
+     * @param username 用户名
+     * @return 权限标识列表 (如: ["sys:user:add", "sys:file:list"])
+     */
     public List<String> getAuthorities(String username) {
         List<String> authorities = new ArrayList<>();
         ConsumerDO consumerDO = commonUserService.getUserInfoByUsername(username);
@@ -177,14 +181,48 @@ public class RoleService {
         if (consumerDO.getCreator() != null && consumerDO.getCreator()) {
             return AnnoManageUtil.AUTHORITIES;
         }
-        List<String> roleIdList = consumerDO.getRoles();
-        if (roleIdList == null || roleIdList.isEmpty()) {
+
+        // 收集所有角色ID
+        Set<String> allRoleIds = getAllRoleIds(consumerDO);
+
+        if (allRoleIds.isEmpty()) {
             return authorities;
         }
-        return getAuthorities(roleIdList);
+
+        return getAuthorities(new ArrayList<>(allRoleIds));
     }
 
-    /***
+    @NotNull
+    private Set<String> getAllRoleIds(ConsumerDO consumerDO) {
+        Set<String> allRoleIds = new HashSet<>();
+
+        // 添加用户直属的角色
+        if (consumerDO.getRoles() != null) {
+            allRoleIds.addAll(consumerDO.getRoles());
+        }
+
+        // 添加用户所属组的角色
+        if (consumerDO.getGroups() != null && !consumerDO.getGroups().isEmpty()) {
+            // 查询用户所属的所有组
+            List<GroupDO> groups = groupDAO.findAllByIdIn(consumerDO.getGroups());
+            for (GroupDO group : groups) {
+                if (group.getRoles() != null) {
+                    allRoleIds.addAll(group.getRoles());
+                }
+            }
+        }
+        return allRoleIds;
+    }
+
+    /**
+     * 刷新指定用户的权限缓存
+     */
+    public void refreshUserAuthoritiesCache(String username) {
+        List<String> authorities = getAuthorities(username);
+        CaffeineUtil.setAuthoritiesCache(username, authorities);
+    }
+
+    /**
      * 获取权限列表
      * @param roleIdList 角色Id列表
      * @return 权限列表
@@ -213,21 +251,9 @@ public class RoleService {
         return menuService.getAuthorities(menuIdList);
     }
 
-    /***
-     * 获取角色列表
-     * @param roleIds 角色id列表
-     */
-    public List<RoleDTO> getRoleList(List<String> roleIds) {
-        List<RoleDO> roleDOList = roleDAO.findAllByIdIn(roleIds);
-        if (roleDOList.isEmpty()) {
-            return List.of();
-        }
-        return roleDOList.stream().map(this::getRoleDTO).collect(Collectors.toList());
-    }
-
-    private RoleDTO getRoleDTO(RoleDO roleDO) {
+    private RoleDTO getRoleDTO(RoleDO roleDO, String... ignoreProperties) {
         RoleDTO roleDTO = new RoleDTO();
-        BeanUtils.copyProperties(roleDO, roleDTO);
+        BeanUtils.copyProperties(roleDO, roleDTO, ignoreProperties);
         roleDTO.setName(messageUtil.getMessage(roleDO.getName()));
         roleDTO.setRemarks(messageUtil.getMessage(roleDO.getRemarks()));
         return roleDTO;
@@ -269,7 +295,7 @@ public class RoleService {
         return roleDO == null ? "" : roleDO.getId();
     }
 
-    private boolean isAdministratorsByRoleIds(List<String> roleIds) {
+    private boolean isAdministratorsByRoleIds(Set<String> roleIds) {
         if (roleIds == null || roleIds.isEmpty()) {
             return false;
         }
@@ -286,7 +312,17 @@ public class RoleService {
         if (Boolean.TRUE.equals(consumerDO.getCreator())) {
             return true;
         }
+
+        Set<String> allRoleIds = getAllRoleIds(consumerDO);
+
         // 检查是否为管理员角色
-        return isAdministratorsByRoleIds(consumerDO.getRoles());
+        return isAdministratorsByRoleIds(allRoleIds);
+    }
+
+    public List<RoleDO> getAllRoles() {
+        QueryRoleDTO queryRoleDTO = new QueryRoleDTO();
+        queryRoleDTO.setPageSize(Integer.MAX_VALUE);
+        Page<RoleDO> roleDOPage = roleDAO.page(queryRoleDTO);
+        return roleDOPage.getContent();
     }
 }

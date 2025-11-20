@@ -46,6 +46,17 @@ public interface UserRepository extends JpaRepository<ConsumerDO, String>, JpaSp
     List<String> findUsernamesByRoleIdList_PostgreSQL(@Param("roleIdList") String[] roleIdList);
 
     /**
+     * 根据 groupId 列表查询所有匹配的用户名 (PostgreSQL 版本)
+     * 使用 jsonb_exists_any 函数
+     *
+     * @param groupIdList 要查询的组ID列表 (数组格式)
+     * @return 匹配的用户名列表
+     */
+    @Query(value = "SELECT username FROM consumers WHERE jsonb_exists_any(groups, :groupIdList)",
+            nativeQuery = true)
+    List<String> findUsernamesByGroupIdList_PostgreSQL(@Param("groupIdList") String[] groupIdList);
+
+    /**
      * 根据 roleId 列表查询所有匹配的用户名 (MySQL 版本)
      * 使用 JSON_OVERLAPS 函数，它检查两个JSON数组是否有共同元素。
      *
@@ -55,6 +66,17 @@ public interface UserRepository extends JpaRepository<ConsumerDO, String>, JpaSp
     @Query(value = "SELECT username FROM consumers WHERE JSON_OVERLAPS(roles, :roleIdListAsJson)",
             nativeQuery = true)
     List<String> findUsernamesByRoleIdList_MySQL(@Param("roleIdListAsJson") String roleIdListAsJson);
+
+    /**
+     * 根据 groupId 列表查询所有匹配的用户名 (MySQL 版本)
+     * 使用 JSON_OVERLAPS 函数
+     *
+     * @param groupIdListAsJson 一个已经格式化为JSON数组的字符串, 例如 "[\"group1\", \"group2\"]"
+     * @return 匹配的用户名列表
+     */
+    @Query(value = "SELECT username FROM consumers WHERE JSON_OVERLAPS(groups, :groupIdListAsJson)",
+            nativeQuery = true)
+    List<String> findUsernamesByGroupIdList_MySQL(@Param("groupIdListAsJson") String groupIdListAsJson);
 
     /**
      * 根据 roleId 列表查询所有匹配的用户名 (SQLite 版本)
@@ -68,6 +90,17 @@ public interface UserRepository extends JpaRepository<ConsumerDO, String>, JpaSp
             nativeQuery = true)
     List<String> findUsernamesByRoleIdList_SQLite(@Param("roleIdList") Collection<String> roleIdList);
 
+    /**
+     * 根据 groupId 列表查询所有匹配的用户名 (SQLite 版本)
+     * 将 groups 数组展开，然后使用标准的 IN 子句匹配。
+     *
+     * @param groupIdList 要查询的组ID列表
+     * @return 匹配的用户名列表
+     */
+    @Query(value = "SELECT DISTINCT c.username FROM consumers c, json_each(c.groups) je WHERE je.value IN (:groupIdList)",
+            nativeQuery = true)
+    List<String> findUsernamesByGroupIdList_SQLite(@Param("groupIdList") Collection<String> groupIdList);
+
     @Query("update ConsumerDO c set c.password = :password where c.creator = true")
     @Modifying
     int updatePasswordByCreatorTrue(String password);
@@ -75,4 +108,7 @@ public interface UserRepository extends JpaRepository<ConsumerDO, String>, JpaSp
     @Query("update ConsumerDO c set c.mfaEnabled = null, c.mfaSecret = null")
     @Modifying
     void resetMfaForAllUsers();
+
+    @Query("SELECT c FROM ConsumerDO c WHERE c.username IN :usernameList")
+    List<ConsumerDO> findAllByUsernameIn(List<String> usernameList);
 }

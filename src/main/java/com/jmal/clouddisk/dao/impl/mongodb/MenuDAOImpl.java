@@ -4,8 +4,10 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.dao.IMenuDAO;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.model.rbac.GroupDO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
+import com.jmal.clouddisk.service.impl.RoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -15,7 +17,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,6 +28,10 @@ import java.util.stream.Collectors;
 public class MenuDAOImpl implements IMenuDAO {
 
     private final MongoTemplate mongoTemplate;
+
+    private final RoleDAOImpl roleDAOImpl;
+
+    private final GroupDAOImpl groupDAOImpl;
 
     @Override
     public List<MenuDO> treeMenu(QueryMenuDTO queryDTO) {
@@ -131,6 +139,11 @@ public class MenuDAOImpl implements IMenuDAO {
         mongoTemplate.insertAll(menuDOList);
     }
 
+    @Override
+    public List<MenuDO> findAll() {
+        return mongoTemplate.findAll(MenuDO.class);
+    }
+
     /**
      * 获取角色的菜单id列表
      * @param roleId 角色id
@@ -161,7 +174,38 @@ public class MenuDAOImpl implements IMenuDAO {
             // 如果是创建者则返回所有菜单
             return getAllMenuIdList();
         }
-        return getMenuIdListByRoleIdList(consumerDO.getRoles());
+
+        Set<String> roleIdList = new HashSet<>();
+
+        // 添加用户的直接角色
+        if (consumerDO.getRoles() != null && !consumerDO.getRoles().isEmpty()) {
+            roleIdList.addAll(consumerDO.getRoles());
+        }
+
+        // 添加用户所属组的角色
+        if (consumerDO.getGroups() != null && !consumerDO.getGroups().isEmpty()) {
+            List<GroupDO> groupDOList = groupDAOImpl.findAllByIdIn(consumerDO.getGroups());
+            for (GroupDO groupDO : groupDOList) {
+                if (groupDO.getRoles() != null) {
+                    roleIdList.addAll(groupDO.getRoles());
+                }
+            }
+        }
+
+        if (isAdministratorsByRoleIds(roleIdList)) {
+            // 如果是超级管理员则返回所有菜单
+            return getAllMenuIdList();
+        }
+
+        return getMenuIdListByRoleIdList(roleIdList);
+    }
+
+    private boolean isAdministratorsByRoleIds(Set<String> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return false;
+        }
+        List<String> listCode = roleDAOImpl.findAllCodeByIdIn(roleIds);
+        return !listCode.isEmpty() && listCode.contains(RoleService.ADMINISTRATORS);
     }
 
     /***
@@ -169,7 +213,7 @@ public class MenuDAOImpl implements IMenuDAO {
      * @param roleIdList 角色id列表
      * @return 菜单id列表
      */
-    public List<String> getMenuIdListByRoleIdList(List<String> roleIdList) {
+    public List<String> getMenuIdListByRoleIdList(Set<String> roleIdList) {
         List<String> menuIdList = new ArrayList<>();
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(roleIdList));
