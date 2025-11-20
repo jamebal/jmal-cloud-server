@@ -145,6 +145,17 @@ public class MenuDAOImpl implements IMenuDAO {
         return mongoTemplate.findAll(MenuDO.class);
     }
 
+    @Override
+    public List<String> findIdsAll() {
+        Query query = new Query();
+        query.fields().include("_id");
+        List<MenuDO> menuDOList = mongoTemplate.find(query, MenuDO.class);
+        if(menuDOList.isEmpty()){
+            return List.of();
+        }
+        return menuDOList.stream().map(MenuDO::getId).collect(Collectors.toList());
+    }
+
     /**
      * 获取角色的菜单id列表
      * @param roleId 角色id

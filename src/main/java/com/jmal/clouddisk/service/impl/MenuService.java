@@ -221,14 +221,26 @@ public class MenuService {
         if (menuDOList.isEmpty()) return;
         // 提取出需要更新的菜单
         List<MenuDO> needUpdateMenuList = new ArrayList<>();
-        menuDOList.forEach(menuDO -> {
-            if (!menuDAO.existsById(menuDO.getId())) {
+        List<String> dbMenuIds = menuDAO.findIdsAll();
+        for (MenuDO menuDO : menuDOList) {
+            if (!dbMenuIds.contains(menuDO.getId())) {
                 needUpdateMenuList.add(menuDO);
             }
-        });
+        }
         if (needUpdateMenuList.isEmpty()) return;
         menuDAO.saveAll(needUpdateMenuList);
         log.info("更新菜单， 耗时:{}ms", timeInterval.intervalMs());
+    }
+
+    /**
+     * 重置菜单数据
+     */
+    public void restMenus() {
+        TimeInterval timeInterval = new TimeInterval();
+        List<MenuDO> menuDOList = getMenuDOListByConfigJSON();
+        if (menuDOList.isEmpty()) return;
+        menuDAO.saveAll(menuDOList);
+        log.info("重置菜单， 耗时:{}ms", timeInterval.intervalMs());
     }
 
     /**

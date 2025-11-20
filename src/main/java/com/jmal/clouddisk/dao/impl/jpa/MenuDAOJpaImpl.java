@@ -152,6 +152,11 @@ public class MenuDAOJpaImpl implements IMenuDAO, IWriteCommon<MenuDO> {
         return menuRepository.findAll();
     }
 
+    @Override
+    public List<String> findIdsAll() {
+        return menuRepository.findIdsAll();
+    }
+
     private Set<String> findAllMenuId() {
         return menuRepository.findAll().stream()
                 .map(MenuDO::getId)
