@@ -175,13 +175,14 @@ public class GroupService {
                 .filter(id -> !oldUsernameSet.contains(id))
                 .collect(Collectors.toList());
 
+        Set<ConsumerDO> updatedUsers = new HashSet<>();
         // 4. 执行移除操作
         if (!toRemoveUsernameList.isEmpty()) {
             List<ConsumerDO> removeUsers = userDAO.findAllByUsername(toRemoveUsernameList);
             for (ConsumerDO user : removeUsers) {
                 if (user.getGroups() != null) {
                     user.getGroups().remove(groupId);
-                    updateConsumerCache(user);
+                    updatedUsers.add(user);
                 }
             }
         }
@@ -195,23 +196,28 @@ public class GroupService {
                 }
                 if (!user.getGroups().contains(groupId)) {
                     user.getGroups().add(groupId);
-                    updateConsumerCache(user);
+                    updatedUsers.add(user);
                 }
             }
         }
+
+        // 6. 批量更新用户并刷新缓存
+        updateConsumerCache(updatedUsers);
 
         return ResultUtil.success();
     }
 
     /**
      * 更新用户并刷新缓存
-     * @param user 用户对象
+     * @param users 用户集合
      */
-    private void updateConsumerCache(ConsumerDO user) {
-        ConsumerDO newConsumerDO = userDAO.save(user);
-        // 更新用户缓存
-        CaffeineUtil.setConsumerByUsernameCache(newConsumerDO.getUsername(), newConsumerDO);
-        // 刷新权限缓存
-        roleService.refreshUserAuthoritiesCache(newConsumerDO.getUsername());
+    private void updateConsumerCache(Set<ConsumerDO> users) {
+        userDAO.saveAll(users);
+        for (ConsumerDO user : users) {
+            // 更新用户缓存
+            CaffeineUtil.setConsumerByUsernameCache(user.getUsername(), user);
+            // 刷新权限缓存
+            roleService.refreshUserAuthoritiesCache(user.getUsername());
+        }
     }
 }

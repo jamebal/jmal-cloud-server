@@ -11,7 +11,6 @@ import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
 import com.jmal.clouddisk.dao.impl.jpa.write.menu.MenuOperation;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
-import com.jmal.clouddisk.model.rbac.GroupDO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.service.impl.RoleService;
 import jakarta.persistence.criteria.Predicate;
@@ -211,12 +210,8 @@ public class MenuDAOJpaImpl implements IMenuDAO, IWriteCommon<MenuDO> {
 
         // 添加用户所属组的角色
         if (consumer.getGroups() != null && !consumer.getGroups().isEmpty()) {
-            Set<GroupDO> groupDOS = groupRepository.findAllByIdIn(consumer.getGroups());
-            for (GroupDO groupDO : groupDOS) {
-                if (groupDO.getRoles() != null) {
-                    roleIdList.addAll(groupDO.getRoles());
-                }
-            }
+            List<List<String>> groupRoles = groupRepository.findRolesByGroupIds(consumer.getGroups());
+            groupRoles.forEach(roleIdList::addAll);
         }
 
         if (isAdministratorsByRoleIds(roleIdList)) {

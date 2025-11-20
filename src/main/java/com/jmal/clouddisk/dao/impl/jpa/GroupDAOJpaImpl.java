@@ -82,8 +82,7 @@ public class GroupDAOJpaImpl implements IGroupDAO, IWriteCommon<GroupDO> {
 
     @Override
     public List<GroupDO> findAllByIdIn(List<String> groupIds) {
-        Set<GroupDO> groupDOSet = groupRepository.findAllByIdIn(groupIds);
-        return new ArrayList<>(groupDOSet);
+        return groupRepository.findAllByIdIn(groupIds);
     }
 
     @Override

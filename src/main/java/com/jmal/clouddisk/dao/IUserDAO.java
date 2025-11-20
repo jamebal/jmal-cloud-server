@@ -13,6 +13,8 @@ public interface IUserDAO {
 
     ConsumerDO save(ConsumerDO consumerDO);
 
+    void saveAll(Collection<ConsumerDO> consumerDOCollection);
+
     List<ConsumerDO> findAllById(List<String> idList);
 
     void deleteAllById(List<String> idList);

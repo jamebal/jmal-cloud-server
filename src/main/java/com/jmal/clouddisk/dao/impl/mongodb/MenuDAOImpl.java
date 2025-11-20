@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -184,12 +185,8 @@ public class MenuDAOImpl implements IMenuDAO {
 
         // 添加用户所属组的角色
         if (consumerDO.getGroups() != null && !consumerDO.getGroups().isEmpty()) {
-            List<GroupDO> groupDOList = groupDAOImpl.findAllByIdIn(consumerDO.getGroups());
-            for (GroupDO groupDO : groupDOList) {
-                if (groupDO.getRoles() != null) {
-                    roleIdList.addAll(groupDO.getRoles());
-                }
-            }
+            List<List<String>> groupRoles = findRolesByGroupIds(consumerDO.getGroups());
+            groupRoles.forEach(roleIdList::addAll);
         }
 
         if (isAdministratorsByRoleIds(roleIdList)) {
@@ -206,6 +203,13 @@ public class MenuDAOImpl implements IMenuDAO {
         }
         List<String> listCode = roleDAOImpl.findAllCodeByIdIn(roleIds);
         return !listCode.isEmpty() && listCode.contains(RoleService.ADMINISTRATORS);
+    }
+
+    public List<List<String>> findRolesByGroupIds(List<String> groupIds) {
+        Query query = new Query(Criteria.where("_id").in(groupIds));
+        query.fields().include("roles").exclude("_id");
+        List<GroupDO> groups = mongoTemplate.find(query, GroupDO.class);
+        return groups.stream().map(GroupDO::getRoles).filter(Objects::nonNull).toList();
     }
 
     /***

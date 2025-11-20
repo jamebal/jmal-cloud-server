@@ -39,6 +39,11 @@ public class UserDAOImpl implements IUserDAO {
     }
 
     @Override
+    public void saveAll(Collection<ConsumerDO> consumerDOCollection) {
+        mongoTemplate.insertAll(consumerDOCollection);
+    }
+
+    @Override
     public List<ConsumerDO> findAllById(List<String> idList) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(idList));

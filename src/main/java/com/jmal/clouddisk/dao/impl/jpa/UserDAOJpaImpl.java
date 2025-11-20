@@ -56,6 +56,16 @@ public class UserDAOJpaImpl implements IUserDAO, IWriteCommon<ConsumerDO> {
     }
 
     @Override
+    public void saveAll(Collection<ConsumerDO> consumerDOs) {
+        try {
+            writeService.submit(new UserOperation.CreateAll(consumerDOs)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.error("Error saving ConsumerDOs: {}", e.getMessage());
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    @Override
     public List<ConsumerDO> findAllById(List<String> idList) {
         return userRepository.findAllById(idList);
     }
