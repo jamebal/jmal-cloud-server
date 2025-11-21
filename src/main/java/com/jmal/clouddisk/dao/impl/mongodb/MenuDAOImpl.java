@@ -32,8 +32,6 @@ public class MenuDAOImpl implements IMenuDAO {
 
     private final RoleDAOImpl roleDAOImpl;
 
-    private final GroupDAOImpl groupDAOImpl;
-
     @Override
     public List<MenuDO> treeMenu(QueryMenuDTO queryDTO) {
         Query query = new Query();
@@ -137,7 +135,7 @@ public class MenuDAOImpl implements IMenuDAO {
 
     @Override
     public void saveAll(List<MenuDO> menuDOList) {
-        mongoTemplate.insertAll(menuDOList);
+        menuDOList.forEach(mongoTemplate::save);
     }
 
     @Override
@@ -177,7 +175,7 @@ public class MenuDAOImpl implements IMenuDAO {
         List<String> menuIdList = new ArrayList<>();
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(userId));
-        query.fields().include("roles").include("creator");
+        query.fields().include("roles", "groups", "creator");
         ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class);
         if (consumerDO == null || consumerDO.getRoles() == null) {
             return menuIdList;

@@ -11,8 +11,6 @@ import com.jmal.clouddisk.model.rbac.GroupDTO;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -95,12 +93,8 @@ public class GroupService {
 
         groupDAO.save(groupDO);
 
-        // 异步刷新属于该组的所有用户的权限缓存
-        Completable.fromAction(() -> refreshUserAuthoritiesCacheByGroupIds(Collections.singleton(groupDO.getId())))
-                .subscribeOn(Schedulers.io())
-                .doOnError(e -> log.error("刷新用户组缓存失败: {}", e.getMessage(), e))
-                .onErrorComplete()
-                .subscribe();
+        // 刷新属于该组的所有用户的权限缓存
+        refreshUserAuthoritiesCacheByGroupIds(Collections.singleton(groupDO.getId()));
 
         return ResultUtil.success();
     }
@@ -120,12 +114,20 @@ public class GroupService {
     public ResponseResult<Object> delete(List<String> groupIds) {
         groupDAO.removeByIdIn(groupIds);
 
-        // 异步刷新属于该组的所有用户的权限缓存
-        Completable.fromAction(() -> refreshUserAuthoritiesCacheByGroupIds(groupIds))
-                .subscribeOn(Schedulers.io())
-                .doOnError(e -> log.error("刷新用户组缓存失败: {}", e.getMessage(), e))
-                .onErrorComplete()
-                .subscribe();
+        // 清除用户所属的已删除用户组ID
+        List<String> toRemoveUsernameList = userDAO.findUsernamesByGroupIdList(groupIds);
+        Set<ConsumerDO> updatedUsers = new HashSet<>();
+        if (!toRemoveUsernameList.isEmpty()) {
+            List<ConsumerDO> removeUsers = userDAO.findAllByUsername(toRemoveUsernameList);
+            for (ConsumerDO user : removeUsers) {
+                if (user.getGroups() != null) {
+                    user.getGroups().removeAll(groupIds);
+                    updatedUsers.add(user);
+                }
+            }
+        }
+        // 批量更新用户并刷新缓存
+        updateConsumerCache(updatedUsers);
 
         return ResultUtil.success();
     }

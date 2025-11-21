@@ -52,7 +52,7 @@ public interface UserRepository extends JpaRepository<ConsumerDO, String>, JpaSp
      * @param groupIdList 要查询的组ID列表 (数组格式)
      * @return 匹配的用户名列表
      */
-    @Query(value = "SELECT username FROM consumers WHERE jsonb_exists_any(groups, :groupIdList)",
+    @Query(value = "SELECT username FROM consumers WHERE jsonb_exists_any(group_ids, :groupIdList)",
             nativeQuery = true)
     List<String> findUsernamesByGroupIdList_PostgreSQL(@Param("groupIdList") String[] groupIdList);
 
@@ -74,7 +74,7 @@ public interface UserRepository extends JpaRepository<ConsumerDO, String>, JpaSp
      * @param groupIdListAsJson 一个已经格式化为JSON数组的字符串, 例如 "[\"group1\", \"group2\"]"
      * @return 匹配的用户名列表
      */
-    @Query(value = "SELECT username FROM consumers WHERE JSON_OVERLAPS(groups, :groupIdListAsJson)",
+    @Query(value = "SELECT username FROM consumers WHERE JSON_OVERLAPS(group_ids, :groupIdListAsJson)",
             nativeQuery = true)
     List<String> findUsernamesByGroupIdList_MySQL(@Param("groupIdListAsJson") String groupIdListAsJson);
 
@@ -92,12 +92,12 @@ public interface UserRepository extends JpaRepository<ConsumerDO, String>, JpaSp
 
     /**
      * 根据 groupId 列表查询所有匹配的用户名 (SQLite 版本)
-     * 将 groups 数组展开，然后使用标准的 IN 子句匹配。
+     * 将 group_ids 数组展开，然后使用标准的 IN 子句匹配。
      *
      * @param groupIdList 要查询的组ID列表
      * @return 匹配的用户名列表
      */
-    @Query(value = "SELECT DISTINCT c.username FROM consumers c, json_each(c.groups) je WHERE je.value IN (:groupIdList)",
+    @Query(value = "SELECT DISTINCT c.username FROM consumers c, json_each(c.group_ids) je WHERE je.value IN (:groupIdList)",
             nativeQuery = true)
     List<String> findUsernamesByGroupIdList_SQLite(@Param("groupIdList") Collection<String> groupIdList);
 

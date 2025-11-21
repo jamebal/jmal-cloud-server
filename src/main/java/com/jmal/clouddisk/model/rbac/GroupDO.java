@@ -2,6 +2,7 @@ package com.jmal.clouddisk.model.rbac;
 
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableTimeEntity;
+import com.jmal.clouddisk.service.impl.GroupService;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,9 +22,9 @@ import java.util.List;
 @Getter
 @Setter
 @Schema(description = "用户组")
-@Document(collection = "user_groups")
+@Document(collection = GroupService.COLLECTION_NAME)
 @Entity
-@Table(name = "user_groups")
+@Table(name = GroupService.COLLECTION_NAME)
 public class GroupDO extends AuditableTimeEntity implements Reflective {
 
     @Schema(name = "code", title = "组标识", example = "dev_group")

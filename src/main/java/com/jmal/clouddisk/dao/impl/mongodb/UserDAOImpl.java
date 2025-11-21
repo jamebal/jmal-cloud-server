@@ -40,7 +40,7 @@ public class UserDAOImpl implements IUserDAO {
 
     @Override
     public void saveAll(Collection<ConsumerDO> consumerDOCollection) {
-        mongoTemplate.insertAll(consumerDOCollection);
+        consumerDOCollection.forEach(mongoTemplate::save);
     }
 
     @Override

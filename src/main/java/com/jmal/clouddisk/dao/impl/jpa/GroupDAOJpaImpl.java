@@ -1,7 +1,9 @@
 package com.jmal.clouddisk.dao.impl.jpa;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.jmal.clouddisk.config.jpa.DataSourceProperties;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.dao.DataSourceType;
 import com.jmal.clouddisk.dao.IGroupDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.GroupRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
@@ -10,6 +12,7 @@ import com.jmal.clouddisk.dao.util.PageableUtil;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.model.query.QueryGroupDTO;
 import com.jmal.clouddisk.model.rbac.GroupDO;
+import com.jmal.clouddisk.util.JacksonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
@@ -19,6 +22,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -31,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 public class GroupDAOJpaImpl implements IGroupDAO, IWriteCommon<GroupDO> {
 
     private final GroupRepository groupRepository;
+
+    private final DataSourceProperties dataSourceProperties;
 
     private final IWriteService writeService;
 
@@ -66,6 +72,16 @@ public class GroupDAOJpaImpl implements IGroupDAO, IWriteCommon<GroupDO> {
     }
 
     @Override
+    public void saveAll(Set<GroupDO> updateGroups) {
+        try {
+            writeService.submit(new GroupOperation.CreateAll(updateGroups)).get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.error("Save GroupDO failed: {}", e.getMessage(), e);
+            throw new CommonException("保存失败，原因: " + e.getMessage());
+        }
+    }
+
+    @Override
     public boolean existsByCodeAndIdNot(String code, String id) {
         return groupRepository.existsByCodeAndIdNot(code, id);
     }
@@ -86,18 +102,22 @@ public class GroupDAOJpaImpl implements IGroupDAO, IWriteCommon<GroupDO> {
     }
 
     @Override
-    public void saveAll(List<GroupDO> groupDOList) {
-        try {
-            writeService.submit(new GroupOperation.CreateAll(groupDOList)).get(10, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            log.error("Save all GroupDO failed: {}", e.getMessage(), e);
-            throw new CommonException("批量保存失败，原因: " + e.getMessage());
-        }
+    public Optional<GroupDO> findById(String id) {
+        return groupRepository.findById(id);
     }
 
     @Override
-    public Optional<GroupDO> findById(String id) {
-        return groupRepository.findById(id);
+    public List<GroupDO> findAllByRoleIdList(Collection<String> roleIdList) {
+        if (dataSourceProperties.getType() == DataSourceType.pgsql){
+            return groupRepository.findAllByRoleIdList_PostgreSQL(roleIdList.toArray(new String[0]));
+        } else if (dataSourceProperties.getType() == DataSourceType.mysql) {
+            // 格式化为JSON数组的字符串, 例如 "[\"role1\", \"role2\"]"
+            String roleIdListAsJson = JacksonUtil.toJSONString(roleIdList);
+            return groupRepository.findAllByRoleIdList_MySQL(roleIdListAsJson);
+        } else if (dataSourceProperties.getType() == DataSourceType.sqlite) {
+            return groupRepository.findAllByRoleIdList_SQLite(roleIdList);
+        }
+        return List.of();
     }
 
     /**

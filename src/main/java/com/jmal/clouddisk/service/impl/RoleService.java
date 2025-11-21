@@ -17,8 +17,6 @@ import com.jmal.clouddisk.util.MessageUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -116,15 +114,9 @@ public class RoleService {
         RoleDO roleDO = new RoleDO();
         BeanUtils.copyProperties(roleDTO, roleDO);
         roleDO.setUpdateTime(LocalDateTime.now(TimeUntils.ZONE_ID));
-        if (roleDO.getMenuIds() != null) {
-            // 分配权限后更新相关角色用户的权限缓存
-            Completable.fromAction(() -> updateUserCacheByRole(roleDO))
-                    .subscribeOn(Schedulers.io())
-                    .doOnError(e -> log.error(e.getMessage(), e))
-                    .onErrorComplete()
-                    .subscribe();
-        }
         roleDAO.save(roleDO);
+        // 分配权限后更新相关角色用户的权限缓存
+        updateUserCacheByRole(roleDO);
         return ResultUtil.success();
     }
 
@@ -147,9 +139,15 @@ public class RoleService {
      * @param roleIds 角色id列表
      */
     private void updateUserCacheByRoleIds(Collection<String> roleIds) {
+        // 获取拥有这些角色的用户列表
         List<String> usernameList = userDAO.findUsernamesByRoleIdList(roleIds);
-        // 获取该用户最新的权限列表
-        usernameList.forEach(this::refreshUserAuthoritiesCache);
+        Set<String> usernameSet = new HashSet<>(usernameList);
+        // 获取拥有这些角色的用户组列表
+        List<GroupDO> groupDOList = groupDAO.findAllByRoleIdList(roleIds);
+        List<String> groupIds = groupDOList.stream().map(GroupDO::getId).collect(Collectors.toList());
+        usernameSet.addAll(userDAO.findUsernamesByGroupIdList(groupIds));
+        // 刷新指定用户的权限缓存
+        usernameSet.forEach(this::refreshUserAuthoritiesCache);
     }
 
     /***
@@ -157,13 +155,40 @@ public class RoleService {
      * @param roleIds 角色id列表
      */
     public void delete(String[] roleIds) {
-        roleDAO.removeByIdIn(List.of(roleIds));
-        // 删除角色后更新相关角色用户的权限缓存
-        Completable.fromAction(() -> updateUserCacheByRoleIds(List.of(roleIds)))
-                .subscribeOn(Schedulers.io())
-                .doOnError(e -> log.error(e.getMessage(), e))
-                .onErrorComplete()
-                .subscribe();
+        List<String> roleIdList = List.of(roleIds);
+        roleDAO.removeByIdIn(roleIdList);
+
+        List<String> usernameList = userDAO.findUsernamesByRoleIdList(roleIdList);
+        Set<String> usernameSet = new HashSet<>(usernameList);
+
+        // 清除用户组角色关联
+        Set<GroupDO> updateGroups = new HashSet<>();
+        List<GroupDO> groupDOList = groupDAO.findAllByRoleIdList(roleIdList);
+        List<String> groupIds = groupDOList.stream().map(GroupDO::getId).collect(Collectors.toList());
+        usernameSet.addAll(userDAO.findUsernamesByGroupIdList(groupIds));
+        for (GroupDO groupDO : groupDOList) {
+            if (groupDO.getRoles() != null) {
+                groupDO.getRoles().removeAll(roleIdList);
+                updateGroups.add(groupDO);
+            }
+        }
+        // 清除用户角色关联
+        Set<ConsumerDO> updatedUsers = new HashSet<>();
+        if (!usernameList.isEmpty()) {
+            List<ConsumerDO> users = userDAO.findAllByUsername(usernameList);
+            for (ConsumerDO user : users) {
+                if (user.getRoles() != null) {
+                    user.getRoles().removeAll(roleIdList);
+                    updatedUsers.add(user);
+                }
+            }
+        }
+
+        userDAO.saveAll(updatedUsers);
+        groupDAO.saveAll(updateGroups);
+
+        // 刷新指定用户的权限缓存
+        usernameSet.forEach(this::refreshUserAuthoritiesCache);
     }
 
     /**

@@ -5,6 +5,7 @@ import com.jmal.clouddisk.dao.IGroupDAO;
 import com.jmal.clouddisk.dao.util.PageableUtil;
 import com.jmal.clouddisk.model.query.QueryGroupDTO;
 import com.jmal.clouddisk.model.rbac.GroupDO;
+import com.jmal.clouddisk.service.impl.RoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
@@ -15,8 +16,10 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -61,6 +64,11 @@ public class GroupDAOImpl implements IGroupDAO {
     }
 
     @Override
+    public void saveAll(Set<GroupDO> updateGroups) {
+        updateGroups.forEach(mongoTemplate::save);
+    }
+
+    @Override
     public boolean existsByCodeAndIdNot(String code, String id) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").nin(id));
@@ -86,13 +94,15 @@ public class GroupDAOImpl implements IGroupDAO {
     }
 
     @Override
-    public void saveAll(List<GroupDO> groupDOList) {
-        mongoTemplate.insertAll(groupDOList);
-    }
-
-    @Override
     public Optional<GroupDO> findById(String id) {
         GroupDO groupDO = mongoTemplate.findById(id, GroupDO.class);
         return Optional.ofNullable(groupDO);
+    }
+
+    @Override
+    public List<GroupDO> findAllByRoleIdList(Collection<String> roleIdList) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(RoleService.ROLES).in(roleIdList));
+        return mongoTemplate.find(query, GroupDO.class);
     }
 }

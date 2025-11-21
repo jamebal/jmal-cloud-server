@@ -16,7 +16,7 @@ COMMENT ON COLUMN "user_groups"."code" IS '组标识';
 COMMENT ON COLUMN "user_groups"."name" IS '组名';
 COMMENT ON COLUMN "user_groups"."roles" IS '角色ID列表';
 
--- 在 consumers 表中添加 groups 字段
-ALTER TABLE "consumers" ADD COLUMN "groups" jsonb;
+-- 在 consumers 表中添加 group_ids 字段
+ALTER TABLE "consumers" ADD COLUMN "group_ids" jsonb;
 
-COMMENT ON COLUMN "consumers"."groups" IS '用户组ID列表';
+COMMENT ON COLUMN "consumers"."group_ids" IS '用户组ID列表';

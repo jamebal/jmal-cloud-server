@@ -60,7 +60,7 @@ public class ConsumerDO extends ConsumerBase implements Reflective {
      * 存储格式：["66cb6e9c507f4a2b8c1d3e5f", "66cb6e9c507f4a2b8c1d3e60"]
      */
     @Schema(name = "groups", title = "用户组ID列表")
-    @Column(name = "groups")
+    @Column(name = "group_ids")
     @JdbcTypeCode(SqlTypes.JSON)
     List<String> groups;
 

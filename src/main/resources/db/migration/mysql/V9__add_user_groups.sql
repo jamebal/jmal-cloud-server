@@ -11,5 +11,5 @@ CREATE TABLE `user_groups` (
                                UNIQUE KEY `uk_user_groups_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户组表';
 
--- 在 consumers 表中添加 groups 字段
-ALTER TABLE `consumers` ADD COLUMN `groups` json DEFAULT NULL COMMENT '用户组ID列表';
+-- 在 consumers 表中添加 group_ids 字段
+ALTER TABLE `consumers` ADD COLUMN `group_ids` json DEFAULT NULL COMMENT '用户组ID列表';

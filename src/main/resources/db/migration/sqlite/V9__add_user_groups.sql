@@ -13,6 +13,6 @@ CREATE TABLE `user_groups` (
 -- 创建唯一索引
 CREATE UNIQUE INDEX `uk_user_groups_code` ON `user_groups` (`code`);
 
--- 2. 在 consumers 表中添加 groups 字段
+-- 2. 在 consumers 表中添加 group_ids 字段
 -- SQLite 的 ALTER TABLE 支持添加列
-ALTER TABLE `consumers` ADD COLUMN `groups` text;
+ALTER TABLE `consumers` ADD COLUMN `group_ids` text;
