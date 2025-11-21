@@ -185,6 +185,10 @@ public class RoleService {
         }
 
         userDAO.saveAll(updatedUsers);
+
+        // 更新用户缓存
+        updatedUsers.forEach(consumerDO -> CaffeineUtil.setConsumerByUsernameCache(consumerDO.getUsername(), consumerDO));
+
         groupDAO.saveAll(updateGroups);
 
         // 刷新指定用户的权限缓存
