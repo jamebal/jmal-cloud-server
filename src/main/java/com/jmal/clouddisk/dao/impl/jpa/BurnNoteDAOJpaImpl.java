@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 @Repository
 @RequiredArgsConstructor
 @Conditional(RelationalDataSourceCondition.class)
-public class BurnNoteDAOJpaImpl implements IBurnNoteDAO {
+public class BurnNoteDAOJpaImpl implements IBurnNoteDAO, IWriteCommon<BurnNoteDO> {
 
     private final IWriteService writeService;
 
@@ -95,4 +95,8 @@ public class BurnNoteDAOJpaImpl implements IBurnNoteDAO {
         return burnNoteJpaRepository.findAllBurnNoteVOByUserId(userId, PageableUtil.buildPageable(queryBaseDTO));
     }
 
+    @Override
+    public void AsyncSaveAll(Iterable<BurnNoteDO> entities) {
+        writeService.submit(new BurnNoteOperation.CreateAll(entities));
+    }
 }

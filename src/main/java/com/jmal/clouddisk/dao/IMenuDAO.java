@@ -30,4 +30,8 @@ public interface IMenuDAO {
     boolean exists();
 
     void saveAll(List<MenuDO> menuDOList);
+
+    List<MenuDO> findAll();
+
+    List<String> findIdsAll();
 }

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
+import java.util.Set;
 
 public interface IRoleDAO {
 
@@ -27,5 +28,5 @@ public interface IRoleDAO {
 
     void saveAll(List<RoleDO> roleDOList);
 
-    List<String> findAllCodeByIdIn(List<String> roleIdList);
+    List<String> findAllCodeByIdIn(Set<String> roleIdList);
 }

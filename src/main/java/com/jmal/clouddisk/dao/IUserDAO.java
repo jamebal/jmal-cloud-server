@@ -13,6 +13,8 @@ public interface IUserDAO {
 
     ConsumerDO save(ConsumerDO consumerDO);
 
+    void saveAll(Collection<ConsumerDO> consumerDOCollection);
+
     List<ConsumerDO> findAllById(List<String> idList);
 
     void deleteAllById(List<String> idList);
@@ -33,9 +35,18 @@ public interface IUserDAO {
 
     String getUsernameById(String userId);
 
-    List<String> findUsernamesByRoleIdList(Collection<String> roleId);
+    List<String> findUsernamesByRoleIdList(Collection<String> roleIds);
 
     boolean resetAdminPassword(String hash);
 
     void resetMfaForAllUsers();
+
+    /**
+     * 根据用户组ID查询包含该组的用户列表
+     * @param groupIdList 用户组ID列表
+     * @return 用户列表
+     */
+    List<String> findUsernamesByGroupIdList(Collection<String> groupIdList);
+
+    List<ConsumerDO> findAllByUsername(List<String> toRemoveUsernameList);
 }

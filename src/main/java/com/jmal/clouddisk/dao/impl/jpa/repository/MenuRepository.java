@@ -27,4 +27,7 @@ public interface MenuRepository extends JpaRepository<MenuDO, String>, JpaSpecif
 
     @Query("SELECT m.authority FROM MenuDO m WHERE m.id IN :ids")
     List<String> findAuthorityAllByIds(List<String> ids);
+
+    @Query("SELECT m.id FROM MenuDO m")
+    List<String> findIdsAll();
 }

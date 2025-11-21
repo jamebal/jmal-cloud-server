@@ -3,6 +3,7 @@ package com.jmal.clouddisk.dao.impl.jpa;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
 import com.jmal.clouddisk.dao.IMenuDAO;
+import com.jmal.clouddisk.dao.impl.jpa.repository.GroupRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.MenuRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.RoleRepository;
 import com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository;
@@ -11,16 +12,21 @@ import com.jmal.clouddisk.dao.impl.jpa.write.menu.MenuOperation;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
+import com.jmal.clouddisk.service.impl.RoleService;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -35,6 +41,7 @@ public class MenuDAOJpaImpl implements IMenuDAO, IWriteCommon<MenuDO> {
     private final MenuRepository menuRepository;
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final GroupRepository groupRepository;
 
     @Override
     public List<MenuDO> treeMenu(QueryMenuDTO queryDTO) {
@@ -140,6 +147,22 @@ public class MenuDAOJpaImpl implements IMenuDAO, IWriteCommon<MenuDO> {
         writeService.submit(new MenuOperation.CreateAll(menuDOList));
     }
 
+    @Override
+    public List<MenuDO> findAll() {
+        return menuRepository.findAll();
+    }
+
+    @Override
+    public List<String> findIdsAll() {
+        return menuRepository.findIdsAll();
+    }
+
+    private Set<String> findAllMenuId() {
+        return menuRepository.findAll().stream()
+                .map(MenuDO::getId)
+                .collect(Collectors.toSet());
+    }
+
     /**
      * 根据查询DTO获取用户有权访问的菜单ID集合。
      * 迁移自MongoDB实现的逻辑。
@@ -163,7 +186,6 @@ public class MenuDAOJpaImpl implements IMenuDAO, IWriteCommon<MenuDO> {
         if (!CharSequenceUtil.isBlank(queryDTO.getRoleId())) {
             permittedMenuIds.addAll(getMenuIdListByRoleId(queryDTO.getRoleId()));
         }
-
         return permittedMenuIds;
     }
 
@@ -181,17 +203,36 @@ public class MenuDAOJpaImpl implements IMenuDAO, IWriteCommon<MenuDO> {
         ConsumerDO consumer = consumerOpt.get();
         // 如果是超级管理员(creator)，则拥有所有菜单权限
         if (consumer.getCreator() != null && consumer.getCreator()) {
-            return menuRepository.findAll().stream()
-                    .map(MenuDO::getId)
-                    .collect(Collectors.toSet());
+            return findAllMenuId();
         }
 
-        // 否则，根据其角色列表查询菜单权限
-        if (consumer.getRoles() == null || consumer.getRoles().isEmpty()) {
-            return Collections.emptySet();
+        Set<String> roleIdList = new HashSet<>();
+
+        // 添加用户的直接角色
+        if (consumer.getRoles() != null && !consumer.getRoles().isEmpty()) {
+            roleIdList.addAll(consumer.getRoles());
         }
 
-        return getMenuIdListByRoleIdList(consumer.getRoles());
+        // 添加用户所属组的角色
+        if (consumer.getGroups() != null && !consumer.getGroups().isEmpty()) {
+            List<List<String>> groupRoles = groupRepository.findRolesByGroupIds(consumer.getGroups());
+            groupRoles.forEach(roleIdList::addAll);
+        }
+
+        if (isAdministratorsByRoleIds(roleIdList)) {
+            // 如果是超级管理员则返回所有菜单
+            return findAllMenuId();
+        }
+
+        return getMenuIdListByRoleIdList(roleIdList);
+    }
+
+    private boolean isAdministratorsByRoleIds(Set<String> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return false;
+        }
+        List<String> listCode = roleRepository.findAllCodeByIdIn(roleIds);
+        return !listCode.isEmpty() && listCode.contains(RoleService.ADMINISTRATORS);
     }
 
     /**
@@ -200,7 +241,7 @@ public class MenuDAOJpaImpl implements IMenuDAO, IWriteCommon<MenuDO> {
      * @return 菜单ID列表
      */
     private Set<String> getMenuIdListByRoleId(String roleId) {
-        return getMenuIdListByRoleIdList(Collections.singletonList(roleId));
+        return getMenuIdListByRoleIdList(Collections.singleton(roleId));
     }
 
     /**
@@ -208,10 +249,8 @@ public class MenuDAOJpaImpl implements IMenuDAO, IWriteCommon<MenuDO> {
      * @param roleIdList 角色ID列表
      * @return 去重后的菜单ID集合
      */
-    public Set<String> getMenuIdListByRoleIdList(List<String> roleIdList) {
+    public Set<String> getMenuIdListByRoleIdList(Set<String> roleIdList) {
         Set<String> menuIdList = new HashSet<>();
-        Query query = new Query();
-        query.addCriteria(Criteria.where("_id").in(roleIdList));
         Set<List<String>> roleDOList = roleRepository.findMenuIdsByIdIn(roleIdList);
         roleDOList.forEach(menuIdList::addAll);
         return menuIdList;

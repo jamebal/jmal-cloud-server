@@ -104,7 +104,7 @@ public class RoleDAOJpaImpl implements IRoleDAO, IWriteCommon<RoleDO> {
     }
 
     @Override
-    public List<String> findAllCodeByIdIn(List<String> roleIdList) {
+    public List<String> findAllCodeByIdIn(Set<String> roleIdList) {
         return roleRepository.findAllCodeByIdIn(roleIdList);
     }
 

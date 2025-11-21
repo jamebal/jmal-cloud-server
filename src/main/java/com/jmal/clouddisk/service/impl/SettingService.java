@@ -250,7 +250,7 @@ public class SettingService {
     }
 
     public void resetMenuAndRole() {
-        menuService.initMenus();
+        menuService.restMenus();
         roleService.initRoles();
     }
 

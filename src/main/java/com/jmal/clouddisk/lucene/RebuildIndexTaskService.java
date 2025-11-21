@@ -153,9 +153,9 @@ public class RebuildIndexTaskService implements ApplicationListener<RebuildIndex
     public void init() {
         // 启动时检测是否存在菜单，不存在则初始化
         if (!menuService.existsMenu()) {
-            menuService.initMenus();
             roleService.initRoles();
         }
+        menuService.initMenus();
         // 启动时检测是否存在lucene索引，不存在则初始化
         if (!checkIndexExists()) {
             doSync(commonUserService.getCreatorUsername(), null, true);

@@ -39,6 +39,11 @@ public class UserDAOImpl implements IUserDAO {
     }
 
     @Override
+    public void saveAll(Collection<ConsumerDO> consumerDOCollection) {
+        consumerDOCollection.forEach(mongoTemplate::save);
+    }
+
+    @Override
     public List<ConsumerDO> findAllById(List<String> idList) {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(idList));
@@ -157,5 +162,21 @@ public class UserDAOImpl implements IUserDAO {
         update.set("mfaSecret", null);
         update.set("mfaEnabled", null);
         mongoTemplate.updateMulti(query, update, ConsumerDO.class);
+    }
+
+    @Override
+    public List<String> findUsernamesByGroupIdList(Collection<String> groupIdList) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("groups").in(groupIdList));
+        query.fields().include(IUserService.USERNAME);
+        List<ConsumerDO> userList = mongoTemplate.find(query, ConsumerDO.class);
+        return userList.stream().map(ConsumerDO::getUsername).toList();
+    }
+
+    @Override
+    public List<ConsumerDO> findAllByUsername(List<String> toRemoveUsernameList) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(IUserService.USERNAME).in(toRemoveUsernameList));
+        return mongoTemplate.find(query, ConsumerDO.class);
     }
 }

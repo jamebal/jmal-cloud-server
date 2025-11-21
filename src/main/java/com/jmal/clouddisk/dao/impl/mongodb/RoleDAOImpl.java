@@ -16,6 +16,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -108,7 +109,7 @@ public class RoleDAOImpl implements IRoleDAO {
     }
 
     @Override
-    public List<String> findAllCodeByIdIn(List<String> roleIdList) {
+    public List<String> findAllCodeByIdIn(Set<String> roleIdList) {
         if(roleIdList == null || roleIdList.isEmpty()){
             return List.of();
         }

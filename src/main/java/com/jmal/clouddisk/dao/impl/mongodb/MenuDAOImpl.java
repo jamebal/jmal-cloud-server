@@ -4,8 +4,10 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.dao.IMenuDAO;
 import com.jmal.clouddisk.model.query.QueryMenuDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
+import com.jmal.clouddisk.model.rbac.GroupDO;
 import com.jmal.clouddisk.model.rbac.MenuDO;
 import com.jmal.clouddisk.model.rbac.RoleDO;
+import com.jmal.clouddisk.service.impl.RoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -15,7 +17,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,6 +29,8 @@ import java.util.stream.Collectors;
 public class MenuDAOImpl implements IMenuDAO {
 
     private final MongoTemplate mongoTemplate;
+
+    private final RoleDAOImpl roleDAOImpl;
 
     @Override
     public List<MenuDO> treeMenu(QueryMenuDTO queryDTO) {
@@ -128,7 +135,23 @@ public class MenuDAOImpl implements IMenuDAO {
 
     @Override
     public void saveAll(List<MenuDO> menuDOList) {
-        mongoTemplate.insertAll(menuDOList);
+        menuDOList.forEach(mongoTemplate::save);
+    }
+
+    @Override
+    public List<MenuDO> findAll() {
+        return mongoTemplate.findAll(MenuDO.class);
+    }
+
+    @Override
+    public List<String> findIdsAll() {
+        Query query = new Query();
+        query.fields().include("_id");
+        List<MenuDO> menuDOList = mongoTemplate.find(query, MenuDO.class);
+        if(menuDOList.isEmpty()){
+            return List.of();
+        }
+        return menuDOList.stream().map(MenuDO::getId).collect(Collectors.toList());
     }
 
     /**
@@ -152,7 +175,7 @@ public class MenuDAOImpl implements IMenuDAO {
         List<String> menuIdList = new ArrayList<>();
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(userId));
-        query.fields().include("roles").include("creator");
+        query.fields().include("roles", "groups", "creator");
         ConsumerDO consumerDO = mongoTemplate.findOne(query, ConsumerDO.class);
         if (consumerDO == null || consumerDO.getRoles() == null) {
             return menuIdList;
@@ -161,7 +184,41 @@ public class MenuDAOImpl implements IMenuDAO {
             // 如果是创建者则返回所有菜单
             return getAllMenuIdList();
         }
-        return getMenuIdListByRoleIdList(consumerDO.getRoles());
+
+        Set<String> roleIdList = new HashSet<>();
+
+        // 添加用户的直接角色
+        if (consumerDO.getRoles() != null && !consumerDO.getRoles().isEmpty()) {
+            roleIdList.addAll(consumerDO.getRoles());
+        }
+
+        // 添加用户所属组的角色
+        if (consumerDO.getGroups() != null && !consumerDO.getGroups().isEmpty()) {
+            List<List<String>> groupRoles = findRolesByGroupIds(consumerDO.getGroups());
+            groupRoles.forEach(roleIdList::addAll);
+        }
+
+        if (isAdministratorsByRoleIds(roleIdList)) {
+            // 如果是超级管理员则返回所有菜单
+            return getAllMenuIdList();
+        }
+
+        return getMenuIdListByRoleIdList(roleIdList);
+    }
+
+    private boolean isAdministratorsByRoleIds(Set<String> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return false;
+        }
+        List<String> listCode = roleDAOImpl.findAllCodeByIdIn(roleIds);
+        return !listCode.isEmpty() && listCode.contains(RoleService.ADMINISTRATORS);
+    }
+
+    public List<List<String>> findRolesByGroupIds(List<String> groupIds) {
+        Query query = new Query(Criteria.where("_id").in(groupIds));
+        query.fields().include("roles").exclude("_id");
+        List<GroupDO> groups = mongoTemplate.find(query, GroupDO.class);
+        return groups.stream().map(GroupDO::getRoles).filter(Objects::nonNull).toList();
     }
 
     /***
@@ -169,7 +226,7 @@ public class MenuDAOImpl implements IMenuDAO {
      * @param roleIdList 角色id列表
      * @return 菜单id列表
      */
-    public List<String> getMenuIdListByRoleIdList(List<String> roleIdList) {
+    public List<String> getMenuIdListByRoleIdList(Set<String> roleIdList) {
         List<String> menuIdList = new ArrayList<>();
         Query query = new Query();
         query.addCriteria(Criteria.where("_id").in(roleIdList));
