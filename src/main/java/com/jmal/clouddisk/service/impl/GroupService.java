@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -161,7 +162,7 @@ public class GroupService {
      */
     public ResponseResult<Object> assignUsers(GroupAssignDTO assignDTO) {
         String groupId = assignDTO.getGroupId();
-        List<String> newUsernameList = assignDTO.getUsernameList() == null ? new ArrayList<>() : assignDTO.getUsernameList();
+        List<String> newUsernameList = Optional.ofNullable(assignDTO.getUsernameList()).orElse(Collections.emptyList());
 
         // 1. 找出当前已经在该组的所有用户
         List<String> oldUsers = userDAO.findUsernamesByGroupIdList(Collections.singleton(groupId));
