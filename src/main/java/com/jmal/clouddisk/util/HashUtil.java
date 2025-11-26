@@ -4,6 +4,8 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 public class HashUtil {
 
@@ -17,19 +19,19 @@ public class HashUtil {
             return "";
         }
         long size = file.length();
-        long lastModified = file. lastModified();
+        long lastModified = file.lastModified();
 
         // 将两个 long 转为 16 字节数组
-        byte[] bytes = new byte[16];
-        for (int i = 0; i < 8; i++) {
-            bytes[i] = (byte) (size >>> (56 - i * 8));
-            bytes[i + 8] = (byte) (lastModified >>> (56 - i * 8));
-        }
+        byte[] bytes = ByteBuffer
+                .allocate(16)
+                .putLong(size)
+                .putLong(lastModified)
+                .array();
 
         return SHA256.hashBytes(bytes).toString();
     }
 
     public static String sha256(String str) {
-        return SHA256.hashString(str, java.nio.charset.StandardCharsets.UTF_8).toString();
+        return SHA256.hashString(str, StandardCharsets.UTF_8).toString();
     }
 }
