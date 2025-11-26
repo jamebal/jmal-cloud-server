@@ -169,7 +169,7 @@ public class EtagService {
             if (!FileUtil.exist(file) || !FileUtil.isFile(file)) {
                 return;
             }
-            String newEtag = HashUtil.sha256(file);
+            String newEtag = HashUtil.fileEtag(file);
 
             String fileName = file.getName();
             String relativePath = getDbPath(username, file);
