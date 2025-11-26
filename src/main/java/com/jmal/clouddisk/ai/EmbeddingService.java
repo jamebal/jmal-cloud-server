@@ -43,7 +43,7 @@ public class EmbeddingService {
             }
 
             EmbeddingResponse response = embeddingModel.embedForResponse(List.of(text));
-            if (response != null && !response.getResults().isEmpty()) {
+            if (response != null && response.getResults() != null && !response.getResults().isEmpty()) {
                 return response.getResults().getFirst().getOutput();
             }
         } catch (Exception e) {

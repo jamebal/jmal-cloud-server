@@ -182,8 +182,7 @@ public class VectorStoreService {
             return results;
         }
 
-        try {
-            DirectoryReader reader = DirectoryReader.open(vectorDirectory);
+        try (DirectoryReader reader = DirectoryReader.open(vectorDirectory)) {
             IndexSearcher searcher = new IndexSearcher(reader);
 
             KnnFloatVectorQuery query = new KnnFloatVectorQuery(FIELD_VECTOR, queryVector, topK);
@@ -198,8 +197,6 @@ public class VectorStoreService {
                     results.add(new VectorSearchResult(fileId, scoreDoc.score, preview));
                 }
             }
-
-            reader.close();
         } catch (IOException e) {
             log.error("Failed to search vectors: {}", e.getMessage(), e);
         }
@@ -218,14 +215,12 @@ public class VectorStoreService {
             return false;
         }
 
-        try {
-            DirectoryReader reader = DirectoryReader.open(vectorDirectory);
+        try (DirectoryReader reader = DirectoryReader.open(vectorDirectory)) {
             IndexSearcher searcher = new IndexSearcher(reader);
 
             org.apache.lucene.search.TermQuery query = new org.apache.lucene.search.TermQuery(new Term(FIELD_FILE_ID, fileId));
             TopDocs topDocs = searcher.search(query, 1);
 
-            reader.close();
             return topDocs.totalHits.value() > 0;
         } catch (IOException e) {
             log.debug("Failed to check vector existence: {}", e.getMessage());

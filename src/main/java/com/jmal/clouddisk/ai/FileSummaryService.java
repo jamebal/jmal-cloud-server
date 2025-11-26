@@ -4,7 +4,6 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.impl.CommonFileService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -14,6 +13,8 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 文件摘要服务
@@ -23,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "jmalcloud.ai", name = "enabled", havingValue = "true")
 public class FileSummaryService {
 
@@ -31,6 +31,16 @@ public class FileSummaryService {
     private final IFileDAO fileDAO;
     private final CommonFileService commonFileService;
     private final AiProperties aiProperties;
+    private final ExecutorService aiExecutor;
+
+    public FileSummaryService(ChatClient chatClient, IFileDAO fileDAO, 
+                              CommonFileService commonFileService, AiProperties aiProperties) {
+        this.chatClient = chatClient;
+        this.fileDAO = fileDAO;
+        this.commonFileService = commonFileService;
+        this.aiProperties = aiProperties;
+        this.aiExecutor = Executors.newFixedThreadPool(4);
+    }
 
     private static final String SUMMARY_PROMPT_TEMPLATE = """
             请对以下文件内容生成简洁的摘要（不超过%d字）：
@@ -151,12 +161,12 @@ public class FileSummaryService {
             return results;
         }
 
-        // 异步批量生成
+        // 异步批量生成 - 使用自定义线程池
         List<CompletableFuture<FileSummaryResult>> futures = fileIds.stream()
                 .map(fileId -> CompletableFuture.supplyAsync(() -> {
                     String summary = generateSummary(fileId);
                     return new FileSummaryResult(fileId, summary, summary != null);
-                }))
+                }, aiExecutor))
                 .toList();
 
         // 收集结果

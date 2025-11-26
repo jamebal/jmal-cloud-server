@@ -9,7 +9,6 @@ import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.service.impl.TagService;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -19,6 +18,8 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 文件智能分类服务
@@ -28,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "jmalcloud.ai", name = "enabled", havingValue = "true")
 public class FileClassificationService {
 
@@ -38,6 +38,19 @@ public class FileClassificationService {
     private final TagService tagService;
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
+    private final ExecutorService aiExecutor;
+
+    public FileClassificationService(ChatClient chatClient, CommonFileService commonFileService,
+                                     FileSummaryService fileSummaryService, TagService tagService,
+                                     AiProperties aiProperties, ObjectMapper objectMapper) {
+        this.chatClient = chatClient;
+        this.commonFileService = commonFileService;
+        this.fileSummaryService = fileSummaryService;
+        this.tagService = tagService;
+        this.aiProperties = aiProperties;
+        this.objectMapper = objectMapper;
+        this.aiExecutor = Executors.newFixedThreadPool(4);
+    }
 
     /**
      * 预定义分类
@@ -232,7 +245,7 @@ public class FileClassificationService {
             return results;
         }
 
-        // 异步批量分类
+        // 异步批量分类 - 使用自定义线程池
         List<CompletableFuture<FileClassificationResult>> futures = fileIds.stream()
                 .map(fileId -> CompletableFuture.supplyAsync(() -> {
                     FileClassificationResult result = classifyFile(fileId);
@@ -240,7 +253,7 @@ public class FileClassificationService {
                         result.setFileId(fileId);
                     }
                     return result;
-                }))
+                }, aiExecutor))
                 .toList();
 
         // 收集结果
