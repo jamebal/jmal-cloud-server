@@ -21,7 +21,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lucene.version>10.2.2</lucene.version>
         <zxing.version>3.5.3</zxing.version>
-        <spring-ai.version>1.0.0-M4</spring-ai.version>
+        <spring-ai.version>1.0.0</spring-ai.version>
         <native-image.jvmArgs>-Xmx15g</native-image.jvmArgs>
         <native-image.march>-march=compatibility</native-image.march>
         <native-image.addArgs>--gc=serial</native-image.addArgs>
@@ -36,14 +36,6 @@
         <repository>
             <id>e-iceblue</id>
             <url>https://repo.e-iceblue.cn/repository/maven-public/</url>
-        </repository>
-        <repository>
-            <id>spring-milestones</id>
-            <name>Spring Milestones</name>
-            <url>https://repo.spring.io/milestone</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
         </repository>
     </repositories>
 
