@@ -88,4 +88,6 @@ public final class FileOperation {
     public record SetDelTag(String userId, String path) implements IFileOperation<Void> {}
 
     public record ResetIndexStatus() implements IFileOperation<Void> {}
+
+    public record UpdateSummary(String fileId, String summary) implements IFileOperation<Void> {}
 }

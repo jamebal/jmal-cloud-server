@@ -21,6 +21,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lucene.version>10.2.2</lucene.version>
         <zxing.version>3.5.3</zxing.version>
+        <spring-ai.version>1.0.0-M4</spring-ai.version>
         <native-image.jvmArgs>-Xmx15g</native-image.jvmArgs>
         <native-image.march>-march=compatibility</native-image.march>
         <native-image.addArgs>--gc=serial</native-image.addArgs>
@@ -35,6 +36,14 @@
         <repository>
             <id>e-iceblue</id>
             <url>https://repo.e-iceblue.cn/repository/maven-public/</url>
+        </repository>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
         </repository>
     </repositories>
 
@@ -54,6 +63,13 @@
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>bom</artifactId>
                 <version>2.35.10</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -101,6 +117,16 @@
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-expressions</artifactId>
             <version>${lucene.version}</version>
+        </dependency>
+        <!-- Spring AI OpenAI -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+        </dependency>
+        <!-- Spring AI Ollama (local LLM support) -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-ollama-spring-boot-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.cdimascio</groupId>
