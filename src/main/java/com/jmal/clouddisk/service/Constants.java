@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 public class Constants {
 
-    public static final byte[] NEWLINE = "\n".getBytes(StandardCharsets. UTF_8);
+    public static final byte[] NEWLINE = "\n".getBytes(StandardCharsets.UTF_8);
     public static final Pattern ANSI_PATTERN = Pattern.compile("\u001B\\[[;\\d]*m");
 
     public static final String NEEDS_ETAG_UPDATE_FIELD = "needsEtagUpdate";
@@ -16,7 +16,8 @@ public class Constants {
     public static final String LOGO_NAME_PREFIX = "logo-";
     public static String MOUNT_FILE_ID_FIELD = "mountFileId";
 
-    private Constants() { }
+    private Constants() {
+    }
 
     public static final String CONTENT_TYPE = "contentType";
     public static final String SUFFIX = "suffix";
@@ -107,6 +108,6 @@ public class Constants {
 
     public static final int LOCAL_CHUNK_SIZE = 1024 * 1024;
 
-    public static final String MXWEB_SUFFIX =  ".mxweb";
+    public static final String MXWEB_SUFFIX = ".mxweb";
 
 }

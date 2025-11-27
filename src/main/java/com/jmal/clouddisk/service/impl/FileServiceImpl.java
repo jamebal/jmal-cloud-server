@@ -489,7 +489,7 @@ public class FileServiceImpl implements IFileService {
 
     private static StreamingResponseBody getStreamingResponseBody(File file) {
         // 通过扩展名判断，而不是读取文件内容
-        boolean isLogFile = file.getName().toLowerCase(). endsWith(".log");
+        boolean isLogFile = file.getName().toLowerCase().endsWith(".log");
 
         return outputStream -> {
             try (BufferedReader bufferedReader = ReaderFactory.createBufferedReader(file)) {
