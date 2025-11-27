@@ -3,7 +3,6 @@ package com.jmal.clouddisk.service.impl;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -25,7 +24,18 @@ import com.jmal.clouddisk.lucene.LuceneService;
 import com.jmal.clouddisk.lucene.SearchFileService;
 import com.jmal.clouddisk.media.VideoInfo;
 import com.jmal.clouddisk.media.VideoProcessService;
-import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.EditTagDTO;
+import com.jmal.clouddisk.model.LogOperation;
+import com.jmal.clouddisk.model.Music;
+import com.jmal.clouddisk.model.OperationPermission;
+import com.jmal.clouddisk.model.OperationTips;
+import com.jmal.clouddisk.model.ShareDO;
+import com.jmal.clouddisk.model.Tag;
+import com.jmal.clouddisk.model.TagDO;
+import com.jmal.clouddisk.model.TagDTO;
+import com.jmal.clouddisk.model.Trash;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.UploadResponse;
 import com.jmal.clouddisk.model.file.FileBase;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileIntroVO;
@@ -39,7 +49,14 @@ import com.jmal.clouddisk.oss.web.WebOssCopyFileService;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
-import com.jmal.clouddisk.util.*;
+import com.jmal.clouddisk.util.CaffeineUtil;
+import com.jmal.clouddisk.util.CompressUtils;
+import com.jmal.clouddisk.util.FileContentTypeUtils;
+import com.jmal.clouddisk.util.FileContentUtil;
+import com.jmal.clouddisk.util.MyFileUtils;
+import com.jmal.clouddisk.util.ResponseResult;
+import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.TimeUntils;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -61,7 +78,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -70,7 +93,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -459,33 +487,29 @@ public class FileServiceImpl implements IFileService {
         return getStreamingResponseBody(file);
     }
 
-    @NotNull
     private static StreamingResponseBody getStreamingResponseBody(File file) {
+        // 通过扩展名判断，而不是读取文件内容
+        boolean isLogFile = file.getName().toLowerCase(). endsWith(".log");
+
         return outputStream -> {
             try (BufferedReader bufferedReader = ReaderFactory.createBufferedReader(file)) {
-                // 判断file是否为log文件
-                boolean logFile = file.length() > 0 && FileTypeUtil.getType(file).equalsIgnoreCase("log");
+
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {
-                    if (logFile) {
-                        String processedLine = removeAnsiCodes(line);
-                        outputStream.write(processedLine.getBytes());
-                    } else {
-                        outputStream.write(line.getBytes());
+                    if (isLogFile) {
+                        line = Constants.ANSI_PATTERN.matcher(line).replaceAll("");
                     }
-                    outputStream.write("\n".getBytes());
+                    outputStream.write(line.getBytes(StandardCharsets.UTF_8));
+                    outputStream.write(Constants.NEWLINE);
                     outputStream.flush();
                 }
+
             } catch (ClientAbortException ignored) {
                 // ignored
             } catch (IOException e) {
                 log.error(e.getMessage(), e);
             }
         };
-    }
-
-    private static String removeAnsiCodes(String text) {
-        return text.replaceAll("\\033\\[[;\\d]*[^\\x40-\\x7E]*[a-zA-Z]?", "");
     }
 
     @Override

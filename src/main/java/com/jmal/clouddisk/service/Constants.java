@@ -1,6 +1,12 @@
 package com.jmal.clouddisk.service;
 
+import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
+
 public class Constants {
+
+    public static final byte[] NEWLINE = "\n".getBytes(StandardCharsets. UTF_8);
+    public static final Pattern ANSI_PATTERN = Pattern.compile("\u001B\\[[;\\d]*m");
 
     public static final String NEEDS_ETAG_UPDATE_FIELD = "needsEtagUpdate";
     public static final String LAST_ETAG_UPDATE_REQUEST_AT_FIELD = "lastEtagUpdateRequestAt";

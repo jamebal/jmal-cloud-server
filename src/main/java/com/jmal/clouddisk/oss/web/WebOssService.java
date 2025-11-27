@@ -364,7 +364,7 @@ public class WebOssService {
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {
                     outputStream.write(line.getBytes(StandardCharsets.UTF_8));
-                    outputStream.write("\n".getBytes(StandardCharsets.UTF_8));
+                    outputStream.write(Constants.NEWLINE);
                     outputStream.flush();
                 }
             } catch (IOException e) {
