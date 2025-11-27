@@ -203,7 +203,6 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
             fileDocument.setTags(this.props.getTags());
             this.props.toFileIntroVOFragment(fileDocument);
         }
-        fileDocument.setEtag(this.etag);
         fileDocument.setMountFileId(this.mountFileId);
         fileDocument.setOssFolder(this.ossFolder);
         return fileDocument;

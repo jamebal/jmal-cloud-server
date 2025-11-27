@@ -118,10 +118,6 @@ public class FileIntroVO extends FileBase implements Reflective {
      * 操作权限
      */
     private List<OperationPermission> operationPermissionList;
-    /**
-     * 文件的etag
-     */
-    private String etag;
 
     private Set<String> tagIds;
 
