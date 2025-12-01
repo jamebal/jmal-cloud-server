@@ -208,4 +208,27 @@ public interface IFileDAO {
 
     List<FileBaseDTO> findMountFileBaseDTOByUserId(String userId);
 
+    /**
+     * 搜索文件ID列表
+     * @param keyword 关键词
+     * @param userId 用户ID
+     * @param limit 限制数量
+     * @return 文件ID列表
+     */
+    List<String> searchFileIdsByKeyword(String keyword, String userId, int limit);
+
+    /**
+     * 获取文件摘要
+     * @param fileId 文件ID
+     * @return 摘要内容
+     */
+    String getFileSummary(String fileId);
+
+    /**
+     * 更新文件摘要
+     * @param fileId 文件ID
+     * @param summary 摘要内容
+     */
+    void updateFileSummary(String fileId, String summary);
+
 }
