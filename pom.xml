@@ -403,7 +403,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- 腾讯云 OSS -->
+        <!-- 腾讯云 cos -->
         <dependency>
             <groupId>com.qcloud</groupId>
             <artifactId>cos_api</artifactId>

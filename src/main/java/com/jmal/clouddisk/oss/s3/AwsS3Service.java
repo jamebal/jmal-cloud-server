@@ -4,8 +4,16 @@ import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
-import com.jmal.clouddisk.oss.*;
+import com.jmal.clouddisk.oss.AbstractOssObject;
+import com.jmal.clouddisk.oss.BaseOssService;
+import com.jmal.clouddisk.oss.FileInfo;
+import com.jmal.clouddisk.oss.IOssService;
+import com.jmal.clouddisk.oss.PartInfo;
+import com.jmal.clouddisk.oss.PlatformOSS;
+import com.jmal.clouddisk.oss.S3ObjectSummary;
 import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StreamUtils;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -15,10 +23,42 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
-import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.CommonPrefix;
+import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadResponse;
+import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
+import software.amazon.awssdk.services.s3.model.CompletedPart;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.CreateMultipartUploadResponse;
+import software.amazon.awssdk.services.s3.model.Delete;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.ListMultipartUploadsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.ListPartsRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
+import software.amazon.awssdk.services.s3.model.Part;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.services.s3.model.UploadPartRequest;
+import software.amazon.awssdk.services.s3.paginators.ListMultipartUploadsIterable;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedUploadPartRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.UploadPartPresignRequest;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,8 +69,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.function.Consumer;
@@ -56,7 +99,7 @@ public class AwsS3Service implements IOssService {
                 .endpointOverride(endpointUri)
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(ossConfigDTO.getAccessKey(), ossConfigDTO.getSecretKey())))
-                .region(Region.of(ossConfigDTO.getRegion() == null ? "cn1" : ossConfigDTO.getRegion()))
+                .region(Region.of(ossConfigDTO.getRegion() == null ? "Auto" : ossConfigDTO.getRegion()))
                 // 连接 MinIO 时必须开启路径风格访问
                 .forcePathStyle(true)
                 .serviceConfiguration(S3Configuration.builder()
@@ -70,13 +113,13 @@ public class AwsS3Service implements IOssService {
                 .endpointOverride(endpointUri)
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(ossConfigDTO.getAccessKey(), ossConfigDTO.getSecretKey())))
-                .region(Region.of(ossConfigDTO.getRegion() == null ? "cn1" : ossConfigDTO.getRegion()))
+                .region(Region.of(ossConfigDTO.getRegion() == null ? "Auto" : ossConfigDTO.getRegion()))
                 .build();
 
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor, ossConfigDTO);
 
-        // Completable.fromAction(this::getMultipartUploads).subscribeOn(Schedulers.io()).doOnError(e -> log.error(e.getMessage(), e)).onErrorComplete().subscribe();
+        Completable.fromAction(this::getMultipartUploads).subscribeOn(Schedulers.io()).doOnError(e -> log.error(e.getMessage(), e)).onErrorComplete().subscribe();
     }
 
     @Override
@@ -84,31 +127,31 @@ public class AwsS3Service implements IOssService {
         return PlatformOSS.MINIO;
     }
 
-    // private void getMultipartUploads() {
-    //     try {
-    //
-    //         ListMultipartUploadsRequest listRequest = ListMultipartUploadsRequest.builder()
-    //                 .bucket(bucketName)
-    //                 .build();
-    //
-    //         ListMultipartUploadsIterable paginator = s3Client.listMultipartUploadsPaginator(listRequest);
-    //
-    //         // 遍历所有未完成的分片上传事件
-    //         paginator.uploads().forEach(multipartUpload -> {
-    //             log.info("{}, Found pending multipart upload: objectName: {}, uploadId: {}",
-    //                     getPlatform().getValue(), multipartUpload.key(), multipartUpload.uploadId());
-    //
-    //             baseOssService.setUpdateIdCache(multipartUpload.key(), multipartUpload.uploadId());
-    //         });
-    //
-    //     } catch (Exception e) {
-    //         // 在 Native Image 或某些环境中，如果没有配置正确的 IAM 权限，
-    //         // s3:ListMultipartUploads 可能会失败。
-    //         log.error("Failed to list multipart uploads for bucket '{}'. " +
-    //                         "Please ensure the credentials have 's3:ListMultipartUploads' permission. Error: {}",
-    //                 bucketName, e.getMessage(), e);
-    //     }
-    // }
+    private void getMultipartUploads() {
+        try {
+
+            ListMultipartUploadsRequest listRequest = ListMultipartUploadsRequest.builder()
+                    .bucket(bucketName)
+                    .build();
+
+            ListMultipartUploadsIterable paginator = s3Client.listMultipartUploadsPaginator(listRequest);
+
+            // 遍历所有未完成的分片上传事件
+            paginator.uploads().forEach(multipartUpload -> {
+                log.info("{}, bucket: {}, Found pending multipart upload: objectName: {}, uploadId: {}",
+                        getPlatform().getValue(), bucketName, multipartUpload.key(), multipartUpload.uploadId());
+
+                baseOssService.setUpdateIdCache(multipartUpload.key(), multipartUpload.uploadId());
+            });
+
+        } catch (Exception e) {
+            // 在 Native Image 或某些环境中，如果没有配置正确的 IAM 权限，
+            // s3:ListMultipartUploads 可能会失败。
+            log.warn("无法列出存储桶[{}]的多部分上传. " +
+                            "。Error: {}",
+                    bucketName, e.getMessage());
+        }
+    }
 
     @Override
     public AbstractOssObject getAbstractOssObject(String objectName, Long rangeStart, Long rangeEnd) {
@@ -407,6 +450,7 @@ public class AwsS3Service implements IOssService {
     @Override
     public void completeMultipartUpload(String objectName, String uploadId, Long fileTotalSize) {
         try {
+            log.info("Completing multipart upload for object: {}, uploadId: {}", objectName, uploadId);
             List<Part> parts = getPartsList(objectName, uploadId);
             List<CompletedPart> completedParts = parts.stream()
                     .map(part -> CompletedPart.builder().partNumber(part.partNumber()).eTag(part.eTag()).build())
@@ -426,6 +470,41 @@ public class AwsS3Service implements IOssService {
             baseOssService.onUploadSuccess(objectName, fileTotalSize);
         } catch (Exception e) {
             log.error("Error completing multipart upload for: {}", objectName, e);
+        }
+    }
+
+    /**
+     * 完成分片上传 - 使用前端传递的 parts 信息
+     */
+    public void completeMultipartUploadWithParts(String objectName, String uploadId, List<PartInfo> parts, Long fileTotalSize) {
+        try {
+
+            List<CompletedPart> completedParts = parts.stream()
+                    .map(part -> CompletedPart.builder()
+                            .partNumber(part.getPartNumber())
+                            .eTag(part.getEtag())
+                            . build())
+                    .sorted(Comparator.comparing(CompletedPart::partNumber))
+                    .collect(Collectors.toList());
+
+            CompletedMultipartUpload completedInfo = CompletedMultipartUpload.builder()
+                    .parts(completedParts)
+                    .build();
+
+            CompleteMultipartUploadRequest request = CompleteMultipartUploadRequest.builder()
+                    .bucket(bucketName)
+                    . key(objectName)
+                    . uploadId(uploadId)
+                    .multipartUpload(completedInfo)
+                    .build();
+
+            CompleteMultipartUploadResponse response = s3Client.completeMultipartUpload(request);
+            log.debug("Complete success - location: {}, etag: {}", response.location(), response.eTag());
+
+            baseOssService.onUploadSuccess(objectName, fileTotalSize);
+        } catch (Exception e) {
+            log.error("Error completing multipart upload for: {}", objectName, e);
+            throw new RuntimeException("Failed to complete multipart upload: " + e.getMessage(), e);
         }
     }
 
@@ -490,6 +569,71 @@ public class AwsS3Service implements IOssService {
             log.error("Error generating presigned URL for: {}", objectName, e);
             return null;
         }
+    }
+
+    @Override
+    public String getPresignedPutUrl(String objectName, String contentType, int expiryTime) {
+        try {
+            PutObjectRequest.Builder putBuilder = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(objectName);
+            if (contentType != null && !contentType.isEmpty()) {
+                putBuilder.contentType(contentType);
+            }
+            PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                    .signatureDuration(Duration.ofSeconds(expiryTime))
+                    .putObjectRequest(putBuilder.build())
+                    .build();
+            PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
+            return presignedRequest.url().toString();
+        } catch (Exception e) {
+            log.error("Error generating presigned PUT URL for: {}", objectName, e);
+            return null;
+        }
+    }
+
+    /**
+     * 生成分片上传的预签名URL
+     */
+    public String getPresignedUploadPartUrl(String objectName, String uploadId, int partNumber, int expiryTime) {
+        try {
+            // String decodedObjectName = URLDecoder.decode(objectName, StandardCharsets.UTF_8);
+            UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
+                    .bucket(bucketName)
+                    .key(objectName)
+                    .uploadId(uploadId)
+                    .partNumber(partNumber)
+                    .build();
+
+            UploadPartPresignRequest presignRequest = UploadPartPresignRequest.builder()
+                    .signatureDuration(Duration.ofSeconds(expiryTime))
+                    .uploadPartRequest(uploadPartRequest)
+                    .build();
+
+            PresignedUploadPartRequest presignedRequest = s3Presigner.presignUploadPart(presignRequest);
+            return presignedRequest.url().toString();
+        } catch (Exception e) {
+            log.error("Error generating presigned upload part URL for: {}, partNumber: {}", objectName, partNumber, e);
+            return null;
+        }
+    }
+
+    /**
+     * 批量生成分片上传的预签名URL
+     */
+    @Override
+    public Map<Integer, String> getPresignedUploadPartUrls(String objectName, String uploadId, int totalParts, int expiryTime) {
+        log.info("Generating {} presigned upload part URLs for object: {}, uploadId: {}", totalParts, objectName, uploadId);
+        Map<Integer, String> urlMap = new HashMap<>(totalParts);
+
+        for (int partNumber = 1; partNumber <= totalParts; partNumber++) {
+            String url = getPresignedUploadPartUrl(objectName, uploadId, partNumber, expiryTime);
+            if (url != null) {
+                urlMap.put(partNumber, url);
+            }
+        }
+
+        return urlMap;
     }
 
     // 以下是继承自 IOssService 但未在 MinIOService 中详细实现的方法，

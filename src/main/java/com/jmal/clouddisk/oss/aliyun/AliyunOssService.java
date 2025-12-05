@@ -3,12 +3,42 @@ package com.jmal.clouddisk.oss.aliyun;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.aliyun.oss.ClientException;
+import com.aliyun.oss.HttpMethod;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
-import com.aliyun.oss.model.*;
+import com.aliyun.oss.model.AbortMultipartUploadRequest;
+import com.aliyun.oss.model.CompleteMultipartUploadRequest;
+import com.aliyun.oss.model.DeleteObjectsRequest;
+import com.aliyun.oss.model.GeneratePresignedUrlRequest;
+import com.aliyun.oss.model.GetObjectRequest;
+import com.aliyun.oss.model.InitiateMultipartUploadRequest;
+import com.aliyun.oss.model.InitiateMultipartUploadResult;
+import com.aliyun.oss.model.ListMultipartUploadsRequest;
+import com.aliyun.oss.model.ListObjectsRequest;
+import com.aliyun.oss.model.ListPartsRequest;
+import com.aliyun.oss.model.MultipartUpload;
+import com.aliyun.oss.model.MultipartUploadListing;
+import com.aliyun.oss.model.OSSObject;
+import com.aliyun.oss.model.OSSObjectSummary;
+import com.aliyun.oss.model.ObjectListing;
+import com.aliyun.oss.model.ObjectMetadata;
+import com.aliyun.oss.model.PartETag;
+import com.aliyun.oss.model.PartListing;
+import com.aliyun.oss.model.PartSummary;
+import com.aliyun.oss.model.PutObjectRequest;
+import com.aliyun.oss.model.PutObjectResult;
+import com.aliyun.oss.model.UploadPartCopyRequest;
+import com.aliyun.oss.model.UploadPartCopyResult;
+import com.aliyun.oss.model.UploadPartRequest;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.oss.*;
+import com.jmal.clouddisk.oss.AbstractOssObject;
+import com.jmal.clouddisk.oss.BaseOssService;
+import com.jmal.clouddisk.oss.FileInfo;
+import com.jmal.clouddisk.oss.IOssService;
+import com.jmal.clouddisk.oss.PartInfo;
+import com.jmal.clouddisk.oss.PlatformOSS;
+import com.jmal.clouddisk.oss.S3ObjectSummary;
 import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -19,7 +49,10 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
@@ -342,6 +375,21 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
+    public void completeMultipartUploadWithParts(String objectName, String uploadId, List<PartInfo> partInfoList, Long fileTotalSize) {
+        baseOssService.printOperation(getPlatform().getKey(), "completeMultipartUploadWithParts", objectName);
+        List<PartETag> partETags = new ArrayList<>();
+        for (PartInfo partInfo : partInfoList) {
+            partETags.add(new PartETag(partInfo.getPartNumber(), partInfo.getEtag()));
+        }
+        // 创建CompleteMultipartUploadRequest对象。
+        CompleteMultipartUploadRequest completeMultipartUploadRequest =
+                new CompleteMultipartUploadRequest(bucketName, objectName, uploadId, partETags);
+        // 完成分片上传。
+        ossClient.completeMultipartUpload(completeMultipartUploadRequest);
+        baseOssService.onUploadSuccess(objectName, fileTotalSize);
+    }
+
+    @Override
     public InputStream getThumbnail(String objectName, int width) {
         try {
             // 将图片缩放为固定宽高100 px。
@@ -521,14 +569,59 @@ public class AliyunOssService implements IOssService {
     public String getPresignedObjectUrl(String objectName, int expiryTime) {
         try {
             Date expirationDate = new Date(System.currentTimeMillis() + expiryTime * 1000L);
+            GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, objectName, HttpMethod.GET);
+            generatePresignedUrlRequest.setExpiration(expirationDate);
             // 生成以GET方法访问的签名URL，访客可以直接通过浏览器访问相关内容。
-            return ossClient.generatePresignedUrl(bucketName, objectName, expirationDate).toString();
+            return ossClient.generatePresignedUrl(generatePresignedUrlRequest).toString();
         } catch (OSSException oe) {
             log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
             log.error(ce.getMessage(), ce);
         }
         return null;
+    }
+
+    @Override
+    public String getPresignedPutUrl(String objectName, String contentType, int expiryTime) {
+        try {
+            Date expirationDate = new Date(System.currentTimeMillis() + expiryTime * 1000L);
+            GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, objectName, com.aliyun.oss.HttpMethod.PUT);
+            generatePresignedUrlRequest.setExpiration(expirationDate);
+            if (contentType != null) {
+                generatePresignedUrlRequest.setContentType(contentType);
+            }
+            return ossClient.generatePresignedUrl(generatePresignedUrlRequest).toString();
+        } catch (OSSException oe) {
+            log.error(oe.getMessage(), oe);
+        } catch (ClientException ce) {
+            log.error(ce.getMessage(), ce);
+        }
+        return null;
+    }
+
+    @Override
+    public Map<Integer, String> getPresignedUploadPartUrls(String objectName, String uploadId, int totalParts, int expiryTime) {
+        Map<Integer, String> urlMap = new HashMap<>(totalParts);
+        for (int partNumber = 1; partNumber <= totalParts; partNumber++) {
+            try {
+                Date expirationDate = new Date(System. currentTimeMillis() + expiryTime * 1000L);
+                Map<String, String> params = new LinkedHashMap<>();
+                params.put("uploadId", uploadId);
+                params.put("partNumber", String.valueOf(partNumber));
+
+                GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucketName, objectName, HttpMethod.PUT);
+                request.setExpiration(expirationDate);
+                request.setQueryParameter(params);
+                String url = ossClient.generatePresignedUrl(request).toString();
+                if (url != null) {
+                    urlMap.put(partNumber, url);
+                }
+            } catch (Exception e) {
+                log.error("Error generating presigned upload part URL for: {}", objectName, e);
+                return null;
+            }
+        }
+        return urlMap;
     }
 
     @Override
