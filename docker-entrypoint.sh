@@ -65,6 +65,7 @@ exec gosu ${USER_UID}:${USER_GID} /app/jmalcloud ${JVM_OPTS} \
  --file.rootDir=${FILE_ROOT_DIR} \
  --file.resetAdminPassword=${RESET_ADMIN_PASSWORD} \
  --file.monitorIgnoreFilePrefix=${MONITOR_IGNORE_FILE_PREFIX} \
+ --file.enabledS3Proxy=${ENABLED_S3_PROXY} \
  --logging.level.root=${LOG_LEVEL} \
  --file.ip2region-db-path=/jmalcloud/ip2region.xdb \
  --file.ocr-lite-onnx-model-path=/jmalcloud/models

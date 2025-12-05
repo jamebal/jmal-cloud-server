@@ -60,6 +60,7 @@ import com.jmal.clouddisk.util.TimeUntils;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -153,6 +154,13 @@ public class FileServiceImpl implements IFileService {
     private final LogService logService;
 
     private final ApplicationEventPublisher eventPublisher;
+
+    private Constants.UploaderOption loadStoreUploaderOption;
+
+    @PostConstruct
+    private void init() {
+        loadStoreUploaderOption = new Constants.UploaderOption(Constants.LOCAL_CHUNK_SIZE, fileProperties.getEnabledS3Proxy());
+    }
 
     @Override
     public ResponseResult<Object> listFiles(UploadApiParamDTO upload) throws CommonException {
@@ -271,7 +279,7 @@ public class FileServiceImpl implements IFileService {
     private ResponseResult<Object> getFileIntroVOResult(UploadApiParamDTO upload, String currentDirectory, ResponseResult<Object> result) {
         upload.setCurrentDirectory(currentDirectory);
         Page<FileIntroVO> page = fileQueryDAO.getFileIntroVO(upload);
-        messageService.pushMessage(upload.getUsername(), Constants.LOCAL_CHUNK_SIZE, Constants.UPLOADER_CHUNK_SIZE);
+        messageService.pushMessage(upload.getUsername(), loadStoreUploaderOption, Constants.UPLOADER_CHUNK_SIZE);
         result.setData(page.getContent());
         result.setCount(page.getTotalElements());
         if (upload.getProps() != null) {

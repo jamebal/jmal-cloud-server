@@ -3,6 +3,7 @@ package com.jmal.clouddisk.oss;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -187,6 +188,8 @@ public interface IOssService {
      */
     void completeMultipartUpload(String objectName, String uploadId, Long fileTotalSize);
 
+    void completeMultipartUploadWithParts(String objectName, String uploadId, List<PartInfo> partInfoList, Long fileTotalSize);
+
     /**
      * 获取缩略图, 指定目标图片宽度为 Width，高度等比缩放
      * @param objectName objectName
@@ -202,6 +205,26 @@ public interface IOssService {
      * @return 预签名URL
      */
     String getPresignedObjectUrl(String objectName, int expiryTime);
+
+    /**
+     * 生成上传用的预签名URL（PUT）
+     *
+     * @param objectName  文件 key
+     * @param contentType 文件的 Content-Type
+     * @param expiryTime  过期时间(秒)
+     * @return 预签名URL
+     */
+    String getPresignedPutUrl(String objectName, String contentType, int expiryTime);
+
+    /**
+     * 获取分片上传预签名URLs
+     * @param objectName objectName
+     * @param uploadId uploadId
+     * @param totalParts 总分片数
+     * @param expiryTime 过期时间(秒)
+     * @return 分片号和预签名URL的映射表
+     */
+    Map<Integer, String> getPresignedUploadPartUrls(String objectName, String uploadId, int totalParts, int expiryTime);
 
     /**
      * 拷贝对象(相同Bucket之间拷贝)

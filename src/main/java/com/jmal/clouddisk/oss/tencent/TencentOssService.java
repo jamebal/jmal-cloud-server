@@ -5,7 +5,13 @@ import cn.hutool.core.thread.ThreadUtil;
 import com.aliyun.oss.ClientException;
 import com.aliyun.oss.OSSException;
 import com.jmal.clouddisk.config.FileProperties;
-import com.jmal.clouddisk.oss.*;
+import com.jmal.clouddisk.oss.AbstractOssObject;
+import com.jmal.clouddisk.oss.BaseOssService;
+import com.jmal.clouddisk.oss.FileInfo;
+import com.jmal.clouddisk.oss.IOssService;
+import com.jmal.clouddisk.oss.PartInfo;
+import com.jmal.clouddisk.oss.PlatformOSS;
+import com.jmal.clouddisk.oss.S3ObjectSummary;
 import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
@@ -14,7 +20,30 @@ import com.qcloud.cos.auth.COSCredentials;
 import com.qcloud.cos.exception.CosClientException;
 import com.qcloud.cos.http.HttpMethodName;
 import com.qcloud.cos.http.HttpProtocol;
-import com.qcloud.cos.model.*;
+import com.qcloud.cos.model.AbortMultipartUploadRequest;
+import com.qcloud.cos.model.COSObject;
+import com.qcloud.cos.model.COSObjectSummary;
+import com.qcloud.cos.model.CompleteMultipartUploadRequest;
+import com.qcloud.cos.model.CopyObjectRequest;
+import com.qcloud.cos.model.DeleteObjectsRequest;
+import com.qcloud.cos.model.GeneratePresignedUrlRequest;
+import com.qcloud.cos.model.GetObjectRequest;
+import com.qcloud.cos.model.InitiateMultipartUploadRequest;
+import com.qcloud.cos.model.InitiateMultipartUploadResult;
+import com.qcloud.cos.model.ListMultipartUploadsRequest;
+import com.qcloud.cos.model.ListObjectsRequest;
+import com.qcloud.cos.model.ListPartsRequest;
+import com.qcloud.cos.model.MultipartUpload;
+import com.qcloud.cos.model.MultipartUploadListing;
+import com.qcloud.cos.model.ObjectListing;
+import com.qcloud.cos.model.ObjectMetadata;
+import com.qcloud.cos.model.PartETag;
+import com.qcloud.cos.model.PartListing;
+import com.qcloud.cos.model.PartSummary;
+import com.qcloud.cos.model.PutObjectRequest;
+import com.qcloud.cos.model.PutObjectResult;
+import com.qcloud.cos.model.StorageClass;
+import com.qcloud.cos.model.UploadPartRequest;
 import com.qcloud.cos.region.Region;
 import com.qcloud.cos.transfer.Copy;
 import com.qcloud.cos.transfer.TransferManager;
@@ -28,7 +57,9 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
@@ -380,6 +411,19 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
+    public void completeMultipartUploadWithParts(String objectName, String uploadId, List<PartInfo> partInfoList, Long fileTotalSize) {
+        baseOssService.printOperation(getPlatform().getKey(), "completeMultipartUploadWithParts", objectName);
+        List<PartETag> partETags = new ArrayList<>();
+        for (PartInfo partInfo : partInfoList) {
+            partETags.add(new PartETag(partInfo.getPartNumber(), partInfo.getEtag()));
+        }
+        // 完成分片上传
+        CompleteMultipartUploadRequest completeMultipartUploadRequest = new CompleteMultipartUploadRequest(bucketName, objectName, uploadId, partETags);
+        cosClient.completeMultipartUpload(completeMultipartUploadRequest);
+        baseOssService.onUploadSuccess(objectName, fileTotalSize);
+    }
+
+    @Override
     public InputStream getThumbnail(String objectName, int width) {
         try {
             GetObjectRequest request = new GetObjectRequest(bucketName, objectName);
@@ -529,12 +573,54 @@ public class TencentOssService implements IOssService {
             // 这里设置签名在半个小时后过期
             Date expirationDate = new Date(System.currentTimeMillis() + expiryTime * 1000L);
             // 请求的 HTTP 方法，上传请求用 PUT，下载请求用 GET，删除请求用 DELETE
-            HttpMethodName method = HttpMethodName.GET;
-            return cosClient.generatePresignedUrl(bucketName, objectName, expirationDate, method).toString();
+            GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, objectName, HttpMethodName.GET);
+            generatePresignedUrlRequest.setExpiration(expirationDate);
+            return cosClient.generatePresignedUrl(generatePresignedUrlRequest).toString();
         } catch (CosClientException e) {
             log.error(e.getMessage(), e);
         }
         return null;
+    }
+
+    @Override
+    public String getPresignedPutUrl(String objectName, String contentType, int expiryTime) {
+        try {
+            // 设置签名过期时间(可选), 若未进行设置则默认使用 ClientConfig 中的签名过期时间(1小时)
+            // 这里设置签名在半个小时后过期
+            Date expirationDate = new Date(System.currentTimeMillis() + expiryTime * 1000L);
+            GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, objectName, HttpMethodName.PUT);
+            generatePresignedUrlRequest.setExpiration(expirationDate);
+            if (contentType != null) {
+                generatePresignedUrlRequest.setContentType(contentType);
+            }
+            // 请求的 HTTP 方法，上传请求用 PUT，下载请求用 GET，删除请求用 DELETE
+            return cosClient.generatePresignedUrl(generatePresignedUrlRequest).toString();
+        } catch (CosClientException e) {
+            log.error(e.getMessage(), e);
+        }
+        return null;
+    }
+
+    @Override
+    public Map<Integer, String> getPresignedUploadPartUrls(String objectName, String uploadId, int totalParts, int expiryTime) {
+        Map<Integer, String> urlMap = new HashMap<>(totalParts);
+        for (int partNumber = 1; partNumber <= totalParts; partNumber++) {
+            try {
+                Date expirationDate = new Date(System. currentTimeMillis() + expiryTime * 1000L);
+                GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucketName, objectName, HttpMethodName.PUT);
+                request.setExpiration(expirationDate);
+                request.addRequestParameter("partNumber", String.valueOf(partNumber));
+                request.addRequestParameter("uploadId", uploadId);
+                String url = cosClient.generatePresignedUrl(request).toString();
+                if (url != null) {
+                    urlMap.put(partNumber, url);
+                }
+            } catch (Exception e) {
+                log.error("Error generating presigned upload part URL for: {}", objectName, e);
+                return null;
+            }
+        }
+        return urlMap;
     }
 
     @Override
