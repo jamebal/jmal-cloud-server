@@ -1991,12 +1991,13 @@ public class FileServiceImpl implements IFileService {
         if (fileIds.isEmpty()) {
             return ResultUtil.error("文件不存在");
         }
-        String fileId = fileIds.getFirst();
-        // 判断是否为ossPath
-        Path path = Paths.get(fileId);
-        String ossPath = CaffeineUtil.getOssPath(path);
-        if (ossPath != null) {
-            throw new CommonException(ExceptionType.WARNING.getCode(), "暂不支持打包下载");
+        for (String fileId : fileIds) {
+            // 判断是否为ossPath
+            Path path = Paths.get(fileId);
+            String ossPath = CaffeineUtil.getOssPath(path);
+            if (ossPath != null) {
+                throw new CommonException(ExceptionType.WARNING.getCode(), "暂不支持打包下载");
+            }
         }
         return isAllowDownload(fileIds);
     }
