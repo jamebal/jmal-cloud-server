@@ -403,7 +403,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- 腾讯云 OSS -->
+        <!-- 腾讯云 cos -->
         <dependency>
             <groupId>com.qcloud</groupId>
             <artifactId>cos_api</artifactId>
@@ -525,17 +525,11 @@
                             </jvmArgs>
                             <buildArgs>
                                 <buildArg>${native-image.march}</buildArg>
-                                <!--<buildArg>&#45;&#45;enable-monitoring=jmxserver,jmxclient,jvmstat</buildArg>-->
                                 <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
                                 <buildArg>-H:+AddAllCharsets</buildArg>
                                 <buildArg>-H:+AllowIncompleteClasspath</buildArg>
                                 <buildArg>-H:IncludeResources=org/apache/poi/schemas/ooxml/system/ooxml/.*</buildArg>
-                                <buildArg>
-                                    -H:ExcludeResources=META-INF/services/org.hibernate.bytecode.spi.BytecodeProvider
-                                </buildArg>
-                                <!--<buildArg>-H:-ReduceImplicitExceptionStackTraceInformation</buildArg>-->
-                                <!--lucene MMapDirectory-->
-                                <!--<buildArg>-H:+SharedArenaSupport</buildArg>-->
+                                <buildArg>-H:ExcludeResources=META-INF/services/org.hibernate.bytecode.spi.BytecodeProvider</buildArg>
                                 <buildArg>--enable-native-access=ALL-UNNAMED</buildArg>
                                 <buildArg>--enable-http</buildArg>
                                 <buildArg>--enable-https</buildArg>

@@ -103,7 +103,7 @@ public class FilePropsDO extends AuditablePerformanceEntity implements Reflectiv
         }
         if (this.props != null) {
             fileDocument.setOssPlatform(this.props.getOssPlatform());
-            fileDocument.setMusic(this.props.getMusic());
+            fileDocument.setMusicInfo(this.props.getMusic());
             fileDocument.setExif(this.props.getExif());
             fileDocument.setVideo(this.props.getVideo());
             fileDocument.setW(this.props.getW());
