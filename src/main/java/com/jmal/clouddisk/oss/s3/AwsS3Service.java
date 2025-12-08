@@ -225,6 +225,17 @@ public class AwsS3Service implements IOssService {
                     .build();
             DeleteObjectsResponse response = s3Client.deleteObjects(deleteRequest);
 
+            // 3. 删除自身（如果有的话）
+            try {
+                DeleteObjectRequest selfDeleteRequest = DeleteObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(objectName)
+                        .build();
+                s3Client.deleteObject(selfDeleteRequest);
+            } catch (Exception e) {
+                log.debug("No self object to delete for directory: {}", objectName);
+            }
+
             // 检查是否有删除失败的对象
             if (response.hasErrors()) {
                 response.errors().forEach(error ->
