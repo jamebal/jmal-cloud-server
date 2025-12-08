@@ -68,6 +68,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -138,9 +139,18 @@ public class AwsS3Service implements IOssService {
 
             // 遍历所有未完成的分片上传事件
             paginator.uploads().forEach(multipartUpload -> {
-                log.info("{}, bucket: {}, Found pending multipart upload: objectName: {}, uploadId: {}",
-                        getPlatform().getValue(), bucketName, multipartUpload.key(), multipartUpload.uploadId());
-
+                // 删除7天前的未完成分片上传
+                Instant now = Instant.now();
+                Instant uploadInitiated = multipartUpload.initiated();
+                Duration duration = Duration.between(uploadInitiated, now);
+                if (duration.toDays() >= 7) {
+                    log.info("{}, bucket: {}, 中止过时的多部分上传: objectName: {}, time: {}, uploadId: {}",
+                            getPlatform().getValue(), bucketName, multipartUpload.key(), multipartUpload.initiated(), multipartUpload.uploadId());
+                    abortMultipartUpload(multipartUpload.key(), multipartUpload.uploadId());
+                    return;
+                }
+                log.info("{}, bucket: {}, 发现待处理的多部分上传: objectName: {}, time: {}, uploadId: {}",
+                        getPlatform().getValue(), bucketName, multipartUpload.key(), multipartUpload.initiated(), multipartUpload.uploadId());
                 baseOssService.setUpdateIdCache(multipartUpload.key(), multipartUpload.uploadId());
             });
 
