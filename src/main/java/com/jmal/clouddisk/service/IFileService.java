@@ -1,7 +1,10 @@
 package com.jmal.clouddisk.service;
 
+import com.jmal.clouddisk.controller.rest.FileController;
 import com.jmal.clouddisk.exception.CommonException;
-import com.jmal.clouddisk.model.*;
+import com.jmal.clouddisk.model.EditTagDTO;
+import com.jmal.clouddisk.model.ShareDO;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileIntroVO;
 import com.jmal.clouddisk.util.ResponseResult;
@@ -419,5 +422,12 @@ public interface IFileService {
      * @param fileIds 文件id列表
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> isAllowDownload(List<String> fileIds);
+    ResponseResult<FileController.DownloadBeforeResult> isAllowDownload(List<String> fileIds);
+
+    /**
+     * 是否允许批量下载
+     * @param fileIds 文件id列表
+     * @return ResponseResult<Object>
+     */
+    ResponseResult<FileController.DownloadBeforeResult> isAllowPackageDownload(List<String> fileIds);
 }

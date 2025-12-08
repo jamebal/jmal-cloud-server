@@ -724,17 +724,24 @@ public class WebOssService {
         }
     }
 
+    public static String getPresignedUrl(String ossPath, Path prePth, boolean isDownload) {
+        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+        String objectName = WebOssService.getObjectName(prePth, ossPath, false);
+        return getPresignedUrl(ossService, objectName, isDownload);
+    }
+
+    private static String getPresignedUrl(IOssService ossService, String objectName, boolean isDownload) {
+        return ossService.getPresignedObjectUrl(objectName, 3600, isDownload);
+    }
+
     public void download(String ossPath, Path prePth, HttpServletRequest request, HttpServletResponse response, String downloadFilename) {
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, false);
         if (BooleanUtil.isFalse(fileProperties.getEnabledS3Proxy())) {
-            // 通过302重定向到oss直链下载
-            String presignedUrl = ossService.getPresignedObjectUrl(objectName, 3600);
-            try {
-                response.sendRedirect(presignedUrl);
-            } catch (IOException e) {
-                log.error(e.getMessage(), e);
-            }
+            // 通过307重定向到oss直链下载
+            String presignedUrl = getPresignedUrl(ossService, objectName, CharSequenceUtil.isNotBlank(downloadFilename));
+            response.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
+            response.setHeader("Location", presignedUrl);
             return;
         }
         try (AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName);

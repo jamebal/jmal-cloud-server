@@ -389,7 +389,7 @@ public class VideoProcessService implements ApplicationListener<ContextRefreshed
             if (ossPath != null) {
                 IOssService ossService = OssConfigService.getOssStorageService(ossPath);
                 String objectName = WebOssService.getObjectName(prePath, ossPath, false);
-                String url = ossService.getPresignedObjectUrl(objectName, 60);
+                String url = ossService.getPresignedObjectUrl(objectName, 60, false);
                 if (url != null) {
                     videoPath = url;
                 }

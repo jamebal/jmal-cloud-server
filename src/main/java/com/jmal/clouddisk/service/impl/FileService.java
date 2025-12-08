@@ -39,6 +39,10 @@ public class FileService {
     public FileDocument getById(String fileId, boolean excludeContent) {
         String ossPath = CaffeineUtil.getOssPath(Paths.get(fileId));
         if (ossPath != null) {
+            FileDocument fileDocument = getFileDocumentById(fileId, excludeContent);
+            if (fileDocument != null) {
+                return fileDocument;
+            }
             return getFileDocumentByOssPath(ossPath, fileId);
         }
         return getFileDocumentById(fileId, excludeContent);

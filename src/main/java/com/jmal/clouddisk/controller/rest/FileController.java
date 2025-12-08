@@ -75,6 +75,8 @@ public class FileController {
 
     private final IUserService userService;
 
+    public record DownloadBeforeResult(boolean allowDownload, boolean isRedirect, String redirectUrl) {}
+
     @Operation(summary = "根据id获取文件信息")
     @GetMapping("/file_info")
     @Permission("cloud:file:list")
@@ -234,15 +236,15 @@ public class FileController {
     @Operation(summary = "是否允许下载")
     @GetMapping("/isAllowDownload")
     @Permission("cloud:file:download")
-    public ResponseResult<Object> isAllowDownload(@RequestParam List<String> fileIds) {
+    public ResponseResult<DownloadBeforeResult> isAllowDownload(@RequestParam List<String> fileIds) {
         return fileService.isAllowDownload(fileIds);
     }
 
     @Operation(summary = "是否允许批量下载")
     @GetMapping("/isAllowPackageDownload")
     @Permission("cloud:file:packageDownload")
-    public ResponseResult<Object> isAllowPackageDownload(@RequestParam List<String> fileIds) {
-        return fileService.isAllowDownload(fileIds);
+    public ResponseResult<FileController.DownloadBeforeResult> isAllowPackageDownload(@RequestParam List<String> fileIds) {
+        return fileService.isAllowPackageDownload(fileIds);
     }
 
     @Operation(summary = "打包下载")

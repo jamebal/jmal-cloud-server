@@ -202,9 +202,10 @@ public interface IOssService {
      *
      * @param objectName objectName
      * @param expiryTime 过期时间(秒)
+     * @param isDownload 是否直接下载
      * @return 预签名URL
      */
-    String getPresignedObjectUrl(String objectName, int expiryTime);
+    String getPresignedObjectUrl(String objectName, int expiryTime, boolean isDownload);
 
     /**
      * 生成上传用的预签名URL（PUT）

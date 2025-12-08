@@ -574,15 +574,21 @@ public class AwsS3Service implements IOssService {
     }
 
     @Override
-    public String getPresignedObjectUrl(String objectName, int expiryTime) {
+    public String getPresignedObjectUrl(String objectName, int expiryTime, boolean isDownload) {
         try {
-            GetObjectRequest getRequest = GetObjectRequest.builder()
+            GetObjectRequest.Builder getRequestBuilder = GetObjectRequest.builder()
                     .bucket(bucketName)
-                    .key(objectName)
-                    .build();
+                    .key(objectName);
+            if (isDownload) {
+                String downloadFileName = Path.of(objectName).getFileName().toString();
+                String contentDisposition = "attachment; filename=\"" + downloadFileName + "\"";
+                String contentType = baseOssService.getContentType(objectName);
+                getRequestBuilder.responseContentType(contentType);
+                getRequestBuilder.responseContentDisposition(contentDisposition);
+            }
             GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
                     .signatureDuration(Duration.ofSeconds(expiryTime))
-                    .getObjectRequest(getRequest)
+                    .getObjectRequest(getRequestBuilder.build())
                     .build();
             PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
             return presignedRequest.url().toString();

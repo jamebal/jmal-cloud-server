@@ -567,13 +567,24 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
-    public String getPresignedObjectUrl(String objectName, int expiryTime) {
+    public String getPresignedObjectUrl(String objectName, int expiryTime, boolean isDownload) {
         try {
             // 设置签名过期时间(可选), 若未进行设置则默认使用 ClientConfig 中的签名过期时间(1小时)
             // 这里设置签名在半个小时后过期
             Date expirationDate = new Date(System.currentTimeMillis() + expiryTime * 1000L);
             // 请求的 HTTP 方法，上传请求用 PUT，下载请求用 GET，删除请求用 DELETE
             GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, objectName, HttpMethodName.GET);
+
+            if (isDownload) {
+                String downloadFileName = Path.of(objectName).getFileName().toString();
+                String contentDisposition = "attachment; filename=\"" + downloadFileName + "\"";
+                String contentType = baseOssService.getContentType(objectName);
+                com.qcloud.cos.model.ResponseHeaderOverrides responseHeaderOverrides = new com.qcloud.cos.model.ResponseHeaderOverrides();
+                responseHeaderOverrides.setContentDisposition(contentDisposition);
+                responseHeaderOverrides.setContentType(contentType);
+                generatePresignedUrlRequest.setResponseHeaders(responseHeaderOverrides);
+            }
+
             generatePresignedUrlRequest.setExpiration(expirationDate);
             return cosClient.generatePresignedUrl(generatePresignedUrlRequest).toString();
         } catch (CosClientException e) {

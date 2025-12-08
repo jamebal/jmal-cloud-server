@@ -12,6 +12,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.controller.rest.FileController;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.dao.IFileQueryDAO;
 import com.jmal.clouddisk.dao.IShareDAO;
@@ -1949,9 +1950,19 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult<Object> isAllowDownload(List<String> fileIds) {
+    public ResponseResult<FileController.DownloadBeforeResult> isAllowDownload(List<String> fileIds) {
         if (fileIds.isEmpty()) {
             return ResultUtil.error("文件不存在");
+        }
+        if (BooleanUtil.isFalse(fileProperties.getEnabledS3Proxy())) {
+            String fileId = fileIds.getFirst();
+            // 判断是否为ossPath
+            Path prePth = Paths.get(fileId);
+            String ossPath = CaffeineUtil.getOssPath(prePth);
+            if (ossPath != null) {
+                String presignedUrl = WebOssService.getPresignedUrl(ossPath, prePth, true);
+                return ResultUtil.success(new FileController.DownloadBeforeResult(true, true, presignedUrl));
+            }
         }
         LogOperation logOperation = logService.getLogOperation();
         Completable.fromAction(() -> {
@@ -1972,7 +1983,22 @@ public class FileServiceImpl implements IFileService {
                 .doOnError(e -> log.error(e.getMessage(), e))
                 .onErrorComplete()
                 .subscribe();
-        return ResultUtil.success(true);
+        return ResultUtil.success(new FileController.DownloadBeforeResult(true, false, null));
+    }
+
+    @Override
+    public ResponseResult<FileController.DownloadBeforeResult> isAllowPackageDownload(List<String> fileIds) {
+        if (fileIds.isEmpty()) {
+            return ResultUtil.error("文件不存在");
+        }
+        String fileId = fileIds.getFirst();
+        // 判断是否为ossPath
+        Path path = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(path);
+        if (ossPath != null) {
+            throw new CommonException(ExceptionType.WARNING.getCode(), "暂不支持打包下载");
+        }
+        return isAllowDownload(fileIds);
     }
 
     @Override
