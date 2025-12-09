@@ -44,16 +44,27 @@ public class OssConfigDTO implements Reflective {
     @Schema(hidden = true)
     private String id;
 
-    public OssConfigDO toOssConfigDO(TextEncryptor textEncryptor) {
-        OssConfigDO ossConfigDO = new OssConfigDO();
+    @Schema(name = "pathStyleAccessEnabled", title = "pathStyleAccessEnabled", description = "启用路径风格访问以访问S3对象，而非DNS风格访问")
+    private Boolean pathStyleAccessEnabled;
+
+    @Schema(name = "proxyEnabled", title = "proxyEnabled", description = "是否启用 S3 代理功能, 启用后上传下载流量会通过jmalcloud服务中转, 默认关闭")
+    private Boolean proxyEnabled;
+
+    public OssConfigDO toOssConfigDO(OssConfigDO ossConfigDO, TextEncryptor textEncryptor) {
         ossConfigDO.setEndpoint(this.endpoint);
         ossConfigDO.setPlatform(PlatformOSS.getPlatform(this.platform));
         ossConfigDO.setFolderName(this.folderName);
         ossConfigDO.setBucket(this.bucket);
         ossConfigDO.setRegion(this.region);
         ossConfigDO.setUserId(this.userId);
+        ossConfigDO.setProxyEnabled(this.proxyEnabled);
+        ossConfigDO.setPathStyleAccessEnabled(this.pathStyleAccessEnabled);
         ossConfigDO.setAccessKey(textEncryptor.encrypt(accessKey));
         ossConfigDO.setSecretKey(textEncryptor.encrypt(secretKey));
         return ossConfigDO;
+    }
+
+    public OssConfigDO toOssConfigDO(TextEncryptor textEncryptor) {
+        return toOssConfigDO(new OssConfigDO(), textEncryptor);
     }
 }

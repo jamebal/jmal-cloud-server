@@ -139,8 +139,6 @@ public class FileProperties {
 
     private String excalidrawResourcePath = "/app/preview/excalidraw/";
 
-    private Boolean enabledS3Proxy = false;
-
     public void setIp2regionDbPath(String path) {
         Path dbPath = Paths.get(path);
         if (!PathUtil.exists(dbPath, true)) {

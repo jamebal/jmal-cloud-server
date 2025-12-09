@@ -8,6 +8,7 @@ import cn.hutool.jwt.signers.JWTSignerUtil;
 import com.jmal.clouddisk.dao.IOfficeConfigDAO;
 import com.jmal.clouddisk.office.model.OfficeConfigDO;
 import com.jmal.clouddisk.office.model.OfficeConfigDTO;
+import com.jmal.clouddisk.service.Constants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Service;
@@ -17,8 +18,6 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class OfficeConfigService {
-
-    public final static String VO_KEY = "****************";
 
     private final IOfficeConfigDAO officeConfigDAO;
 
@@ -60,7 +59,7 @@ public class OfficeConfigService {
         officeConfigVO.setTokenEnabled(officeConfigDTO.isTokenEnabled());
         officeConfigVO.setFormat(officeConfigDTO.getFormat());
         if (StrUtil.isNotBlank(officeConfigDTO.getSecret())) {
-            officeConfigVO.setSecret(VO_KEY);
+            officeConfigVO.setSecret(Constants.VO_KEY);
         }
         return officeConfigVO;
     }
@@ -75,7 +74,7 @@ public class OfficeConfigService {
             this.officeConfigDTO.setCallbackServer(officeConfigDTO.getCallbackServer());
             this.officeConfigDTO.setFormat(officeConfigDTO.getFormat());
             this.officeConfigDTO.setTokenEnabled(StrUtil.isNotBlank(officeConfigDTO.getSecret()));
-            if (VO_KEY.equals(officeConfigDTO.getSecret())) {
+            if (Constants.VO_KEY.equals(officeConfigDTO.getSecret())) {
                 return;
             }
             if (BooleanUtil.isTrue(this.officeConfigDTO.isTokenEnabled())) {

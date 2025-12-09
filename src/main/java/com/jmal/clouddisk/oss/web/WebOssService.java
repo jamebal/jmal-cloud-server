@@ -45,7 +45,6 @@ import com.jmal.clouddisk.util.MyFileUtils;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -106,14 +105,6 @@ public class WebOssService {
 
     private final IShareDAO shareDAO;
 
-
-    private Constants.UploaderOption s3StoreUploaderOption;
-
-    @PostConstruct
-    private void init() {
-        s3StoreUploaderOption = new Constants.UploaderOption(Constants.OSS_CHUNK_SIZE, fileProperties.getEnabledS3Proxy());
-    }
-
     /***
      * 断点恢复上传缓存(已上传的分片缓存)
      * key: uploadId
@@ -152,7 +143,8 @@ public class WebOssService {
 
     public ResponseResult<Object> searchFileAndOpenOssFolder(Path prePth, UploadApiParamDTO upload) {
         String ossPath = CaffeineUtil.getOssPath(prePth);
-        messageService.pushMessage(upload.getUsername(), s3StoreUploaderOption, Constants.UPLOADER_CHUNK_SIZE);
+        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+        messageService.pushMessage(upload.getUsername(), new Constants.UploaderOption(Constants.OSS_CHUNK_SIZE, ossService.getProxyEnabled()), Constants.UPLOADER_CHUNK_SIZE);
         if (ossPath == null) {
             return ResultUtil.success().setData(new ArrayList<>(0)).setCode(0);
         }
@@ -737,7 +729,7 @@ public class WebOssService {
     public void download(String ossPath, Path prePth, HttpServletRequest request, HttpServletResponse response, String downloadFilename) {
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
         String objectName = getObjectName(prePth, ossPath, false);
-        if (BooleanUtil.isFalse(fileProperties.getEnabledS3Proxy())) {
+        if (BooleanUtil.isFalse(ossService.getProxyEnabled())) {
             // 通过307重定向到oss直链下载
             String presignedUrl = getPresignedUrl(ossService, objectName, CharSequenceUtil.isNotBlank(downloadFilename));
             response.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);

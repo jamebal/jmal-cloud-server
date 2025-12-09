@@ -102,7 +102,7 @@ public class Constants {
 
     public static final String OPERATION_TIPS = "operationTips";
 
-    public record UploaderOption(Integer chunkSize, Boolean enabledS3Proxy) {}
+    public record UploaderOption(Integer chunkSize, Boolean proxyEnabled) {}
 
     public static final String UPLOADER_CHUNK_SIZE = "uploaderChunkSize";
 
@@ -111,5 +111,7 @@ public class Constants {
     public static final int LOCAL_CHUNK_SIZE = 1024 * 1024;
 
     public static final String MXWEB_SUFFIX = ".mxweb";
+
+    public final static String VO_KEY = "****************";
 
 }

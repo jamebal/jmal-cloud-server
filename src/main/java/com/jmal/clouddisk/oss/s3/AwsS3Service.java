@@ -114,6 +114,8 @@ public class AwsS3Service implements IOssService {
                 .endpointOverride(endpointUri)
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(ossConfigDTO.getAccessKey(), ossConfigDTO.getSecretKey())))
+                .serviceConfiguration(S3Configuration.builder()
+                        .pathStyleAccessEnabled(ossConfigDTO.getPathStyleAccessEnabled()).build())
                 .region(Region.of(ossConfigDTO.getRegion() == null ? "Auto" : ossConfigDTO.getRegion()))
                 .build();
 
@@ -126,6 +128,11 @@ public class AwsS3Service implements IOssService {
     @Override
     public PlatformOSS getPlatform() {
         return PlatformOSS.MINIO;
+    }
+
+    @Override
+    public Boolean getProxyEnabled() {
+        return this.baseOssService.getProxyEnabled();
     }
 
     private void getMultipartUploads() {
@@ -157,9 +164,7 @@ public class AwsS3Service implements IOssService {
         } catch (Exception e) {
             // 在 Native Image 或某些环境中，如果没有配置正确的 IAM 权限，
             // s3:ListMultipartUploads 可能会失败。
-            log.warn("无法列出存储桶[{}]的多部分上传. " +
-                            "。Error: {}",
-                    bucketName, e.getMessage());
+            log.warn("{}, bucket: {}, 无法列出存储桶的多部分上传. 。Error: {}", getPlatform().getValue(), bucketName, e.getMessage());
         }
     }
 
@@ -504,7 +509,7 @@ public class AwsS3Service implements IOssService {
                     .map(part -> CompletedPart.builder()
                             .partNumber(part.getPartNumber())
                             .eTag(part.getEtag())
-                            . build())
+                            .build())
                     .sorted(Comparator.comparing(CompletedPart::partNumber))
                     .collect(Collectors.toList());
 
@@ -514,8 +519,8 @@ public class AwsS3Service implements IOssService {
 
             CompleteMultipartUploadRequest request = CompleteMultipartUploadRequest.builder()
                     .bucket(bucketName)
-                    . key(objectName)
-                    . uploadId(uploadId)
+                    .key(objectName)
+                    .uploadId(uploadId)
                     .multipartUpload(completedInfo)
                     .build();
 

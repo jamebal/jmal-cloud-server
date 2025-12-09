@@ -2,7 +2,7 @@ package com.jmal.clouddisk.office.model;
 
 import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.Reflective;
-import com.jmal.clouddisk.office.OfficeConfigService;
+import com.jmal.clouddisk.service.Constants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
@@ -45,7 +45,7 @@ public class OfficeConfigDTO implements Reflective {
         officeConfigDO.setFormat(this.format);
         boolean tokenEnabled = StrUtil.isNotBlank(this.secret);
         officeConfigDO.setTokenEnabled(tokenEnabled);
-        if (OfficeConfigService.VO_KEY.equals(this.secret)) {
+        if (Constants.VO_KEY.equals(this.secret)) {
             return officeConfigDO;
         }
         if (tokenEnabled) {
