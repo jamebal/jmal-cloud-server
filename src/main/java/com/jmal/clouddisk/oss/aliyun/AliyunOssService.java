@@ -28,6 +28,7 @@ import com.aliyun.oss.model.PartListing;
 import com.aliyun.oss.model.PartSummary;
 import com.aliyun.oss.model.PutObjectRequest;
 import com.aliyun.oss.model.PutObjectResult;
+import com.aliyun.oss.model.ResponseHeaderOverrides;
 import com.aliyun.oss.model.UploadPartCopyRequest;
 import com.aliyun.oss.model.UploadPartCopyResult;
 import com.aliyun.oss.model.UploadPartRequest;
@@ -566,11 +567,20 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
-    public String getPresignedObjectUrl(String objectName, int expiryTime) {
+    public String getPresignedObjectUrl(String objectName, int expiryTime, boolean isDownload) {
         try {
             Date expirationDate = new Date(System.currentTimeMillis() + expiryTime * 1000L);
             GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, objectName, HttpMethod.GET);
             generatePresignedUrlRequest.setExpiration(expirationDate);
+            if (isDownload) {
+                String downloadFileName = Path.of(objectName).getFileName().toString();
+                String contentDisposition = "attachment; filename=\"" + downloadFileName + "\"";
+                String contentType = baseOssService.getContentType(objectName);
+                ResponseHeaderOverrides responseHeaderOverrides = new ResponseHeaderOverrides();
+                responseHeaderOverrides.setContentDisposition(contentDisposition);
+                responseHeaderOverrides.setContentType(contentType);
+                generatePresignedUrlRequest.setResponseHeaders(responseHeaderOverrides);
+            }
             // 生成以GET方法访问的签名URL，访客可以直接通过浏览器访问相关内容。
             return ossClient.generatePresignedUrl(generatePresignedUrlRequest).toString();
         } catch (OSSException oe) {

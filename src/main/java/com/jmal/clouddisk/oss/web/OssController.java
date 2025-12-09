@@ -87,7 +87,7 @@ public class OssController {
     @GetMapping("/presign/download")
     public ResponseResult<String> getDownloadUrl(@RequestParam String objectName) {
         Result result = getResult(objectName);
-        String url = result.ossService().getPresignedObjectUrl(result.realityObjectName, 3600);
+        String url = result.ossService().getPresignedObjectUrl(result.realityObjectName, 3600, false);
         return ResultUtil.success(url);
     }
 
