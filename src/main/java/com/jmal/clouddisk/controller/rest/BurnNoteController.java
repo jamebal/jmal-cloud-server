@@ -73,7 +73,7 @@ public class BurnNoteController {
 
     @Operation(summary = "查询是否允许访客使用阅后即焚功能")
     @Permission("cloud:file:list")
-    @GetMapping("/burn-notes/allow-guest-burnNote")
+    @GetMapping("/burn-notes/allow-guest-burn-note")
     public ResponseResult<Boolean> getAllowGuestBurnNote() {
         return ResultUtil.success(burnNoteService.getAllowGuestBurnNote());
     }
@@ -81,7 +81,7 @@ public class BurnNoteController {
     @Operation(summary = "设置是否允许访客使用阅后即焚功能")
     @Permission("cloud:file:update")
     @LogOperatingFun(logType = LogOperation.Type.OPERATION)
-    @PutMapping("/burn-notes/allow-guest-burnNote")
+    @PutMapping("/burn-notes/allow-guest-burn-note")
     public ResponseResult<Void> setAllowGuestBurnNote(@RequestParam Boolean allowGuestBurnNote) {
         burnNoteService.setAllowGuestBurnNote(allowGuestBurnNote);
         return ResultUtil.success();
