@@ -6,7 +6,6 @@ import com.jmal.clouddisk.dao.impl.jpa.repository.OssConfigRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
 import com.jmal.clouddisk.dao.impl.jpa.write.ossconfig.OssConfigOperation;
 import com.jmal.clouddisk.exception.CommonException;
-import com.jmal.clouddisk.oss.PlatformOSS;
 import com.jmal.clouddisk.oss.web.model.OssConfigDO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,8 +41,8 @@ public class OssConfigDAOJpaImpl implements IOssConfigDAO, IWriteCommon<OssConfi
     }
 
     @Override
-    public OssConfigDO findByUserIdAndEndpointAndBucketAndPlatform(String userId, String endpoint, String bucket, PlatformOSS platform) {
-        return ossConfigRepository.findByUserIdAndEndpointAndBucketAndPlatform(userId, endpoint, bucket, platform);
+    public OssConfigDO findById(String id) {
+        return ossConfigRepository.findById(id).orElse(null);
     }
 
     @Override

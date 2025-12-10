@@ -3,6 +3,7 @@ package com.jmal.clouddisk.oss;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.BooleanUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jmal.clouddisk.config.FileProperties;
@@ -13,6 +14,7 @@ import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -78,9 +80,13 @@ public class BaseOssService {
 
     private final IOssService ossService;
 
+    @Getter
+    private final Boolean proxyEnabled;
+
     public BaseOssService(IOssService ossService, String bucketName, FileProperties fileProperties, ScheduledThreadPoolExecutor scheduledThreadPoolExecutor, OssConfigDTO ossConfigDTO) {
         this.ossService = ossService;
         this.bucketName = bucketName;
+        this.proxyEnabled = BooleanUtil.isTrue(ossConfigDTO.getProxyEnabled());
         this.fileProperties = fileProperties;
         scheduledThreadPoolExecutor.scheduleWithFixedDelay(this::checkUpload, 1, 1, TimeUnit.SECONDS);
         this.fileInfoListCache = Caffeine.newBuilder().initialCapacity(128).maximumSize(1024).expireAfterWrite(5, TimeUnit.SECONDS).build();

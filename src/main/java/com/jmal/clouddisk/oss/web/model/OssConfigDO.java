@@ -4,6 +4,7 @@ import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.config.jpa.AuditableTimeEntity;
 import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.PlatformOSS;
+import com.jmal.clouddisk.service.Constants;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -34,6 +35,14 @@ public class OssConfigDO extends AuditableTimeEntity implements Reflective {
     private String bucket;
     @Column(length = 24)
     private String userId;
+    /**
+     * 是否启用路径风格访问以访问S3对象，而非DNS风格访问
+     */
+    private Boolean pathStyleAccessEnabled;
+    /**
+     * 是否启用 S3 代理功能, 启用后上传下载流量会通过jmalcloud服务中转, 默认关闭
+     */
+    private Boolean proxyEnabled;
 
     public OssConfigDTO toOssConfigDTO(TextEncryptor textEncryptor) {
         OssConfigDTO ossConfigDTO = new OssConfigDTO();
@@ -57,6 +66,10 @@ public class OssConfigDO extends AuditableTimeEntity implements Reflective {
         ossConfigDTO.setPlatform(this.platform.getKey());
         ossConfigDTO.setRegion(this.region);
         ossConfigDTO.setUserId(this.userId);
+        ossConfigDTO.setProxyEnabled(this.proxyEnabled);
+        ossConfigDTO.setPathStyleAccessEnabled(this.pathStyleAccessEnabled);
+        ossConfigDTO.setAccessKey(Constants.VO_KEY);
+        ossConfigDTO.setSecretKey(Constants.VO_KEY);
         return ossConfigDTO;
     }
 }

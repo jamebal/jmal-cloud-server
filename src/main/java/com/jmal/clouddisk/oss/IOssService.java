@@ -16,6 +16,11 @@ public interface IOssService {
     PlatformOSS getPlatform();
 
     /**
+     * 是否启用 S3 代理功能, 启用后上传下载流量会通过jmalcloud服务中转, 默认关闭
+     */
+    Boolean getProxyEnabled();
+
+    /**
      * Webdav 获取FileInfo
      * @param objectName object key
      * @return FileInfo

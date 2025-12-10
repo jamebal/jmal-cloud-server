@@ -74,6 +74,4 @@ file:
   drawioResourcePath: /Users/jmal/software/jmalcloud/webapp/plug/draw/
   # excalidraw资源路径
   excalidrawResourcePath: /Users/jmal/software/jmalcloud/webapp/plug/excalidraw/excalidraw/app/
-  # 是否启用 S3 代理功能, 启用后上传下载流量会通过jmalcloud服务中转, 默认关闭
-  enabledS3Proxy: false
 

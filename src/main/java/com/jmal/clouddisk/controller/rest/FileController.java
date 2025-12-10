@@ -4,6 +4,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.EditTagDTO;
@@ -75,7 +76,7 @@ public class FileController {
 
     private final IUserService userService;
 
-    public record DownloadBeforeResult(boolean allowDownload, boolean isRedirect, String redirectUrl) {}
+    public record DownloadBeforeResult(boolean allowDownload, boolean isRedirect, String redirectUrl) implements Reflective {}
 
     @Operation(summary = "根据id获取文件信息")
     @GetMapping("/file_info")

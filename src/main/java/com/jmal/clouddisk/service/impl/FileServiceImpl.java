@@ -45,6 +45,8 @@ import com.jmal.clouddisk.model.file.dto.FileBaseDTO;
 import com.jmal.clouddisk.model.file.dto.FileBaseMountDTO;
 import com.jmal.clouddisk.model.file.dto.FileBaseOssPathDTO;
 import com.jmal.clouddisk.model.query.SearchDTO;
+import com.jmal.clouddisk.oss.IOssService;
+import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.web.WebOssCommonService;
 import com.jmal.clouddisk.oss.web.WebOssCopyFileService;
 import com.jmal.clouddisk.oss.web.WebOssService;
@@ -160,7 +162,7 @@ public class FileServiceImpl implements IFileService {
 
     @PostConstruct
     private void init() {
-        loadStoreUploaderOption = new Constants.UploaderOption(Constants.LOCAL_CHUNK_SIZE, fileProperties.getEnabledS3Proxy());
+        loadStoreUploaderOption = new Constants.UploaderOption(Constants.LOCAL_CHUNK_SIZE, false);
     }
 
     @Override
@@ -1954,12 +1956,13 @@ public class FileServiceImpl implements IFileService {
         if (fileIds.isEmpty()) {
             return ResultUtil.error("文件不存在");
         }
-        if (BooleanUtil.isFalse(fileProperties.getEnabledS3Proxy())) {
-            String fileId = fileIds.getFirst();
-            // 判断是否为ossPath
-            Path prePth = Paths.get(fileId);
-            String ossPath = CaffeineUtil.getOssPath(prePth);
-            if (ossPath != null) {
+        String fileId = fileIds.getFirst();
+        // 判断是否为ossPath
+        Path prePth = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(prePth);
+        if (ossPath != null) {
+            IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+            if (BooleanUtil.isFalse(ossService.getProxyEnabled())) {
                 String presignedUrl = WebOssService.getPresignedUrl(ossPath, prePth, true);
                 return ResultUtil.success(new FileController.DownloadBeforeResult(true, true, presignedUrl));
             }

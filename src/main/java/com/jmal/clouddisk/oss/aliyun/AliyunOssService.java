@@ -89,6 +89,11 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
+    public Boolean getProxyEnabled() {
+        return baseOssService.getProxyEnabled();
+    }
+
+    @Override
     public FileInfo getFileInfo(String objectName) {
         return baseOssService.getFileInfo(objectName);
     }

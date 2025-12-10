@@ -3,6 +3,7 @@ package com.jmal.clouddisk.oss;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.StrUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.dao.IOssConfigDAO;
@@ -15,6 +16,7 @@ import com.jmal.clouddisk.oss.s3.AwsS3Service;
 import com.jmal.clouddisk.oss.tencent.TencentOssService;
 import com.jmal.clouddisk.oss.web.model.OssConfigDO;
 import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
+import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.service.impl.UserServiceImpl;
 import com.jmal.clouddisk.util.CaffeineUtil;
@@ -181,13 +183,7 @@ public class OssConfigService {
         }
         ossConfigDTO.setUsername(consumerDO.getUsername());
         // 销毁旧配置
-        String oldId = destroyOldConfig(ossConfigDTO, userId, consumerDO);
-
-        // 配置转换 DTO -> DO
-        OssConfigDO ossConfigDO = ossConfigDTO.toOssConfigDO(textEncryptor);
-        if (oldId != null) {
-            ossConfigDO.setId(oldId);
-        }
+        OssConfigDO ossConfigDO = destroyOldConfig(ossConfigDTO, consumerDO);
         String configErr = "配置有误 或者 Access Key 没有权限";
         try {
             // 检查配置可用性
@@ -204,7 +200,7 @@ public class OssConfigService {
                 updateOssConfig(ossConfigDTO, ossService, ossConfigDO);
             }
         } catch (Exception e) {
-            log.warn(e.getMessage());
+            log.warn(e.getMessage(), e);
             if (ossService != null) {
                 ossService.close();
             }
@@ -215,36 +211,39 @@ public class OssConfigService {
     /**
      * 销毁旧配置
      */
-    private String destroyOldConfig(OssConfigDTO ossConfigDTO, String userId, ConsumerDO consumerDO) {
+    private OssConfigDO destroyOldConfig(OssConfigDTO ossConfigDTO, ConsumerDO consumerDO) {
         // 检查目录是否存在
         boolean existFolder = existFolderName(consumerDO.getUsername(), ossConfigDTO.getFolderName());
         // 旧配置
-        OssConfigDO oldOssConfigDO = ossConfigDAO.findByUserIdAndEndpointAndBucketAndPlatform(userId, ossConfigDTO.getEndpoint(), ossConfigDTO.getBucket(), PlatformOSS.getPlatform(ossConfigDTO.getPlatform()));
-        if (oldOssConfigDO != null) {
-            String webPathPrefix = MyWebdavServlet.getPathDelimiter(ossConfigDTO.getUsername(), oldOssConfigDO.getFolderName());
-            if (!oldOssConfigDO.getFolderName().equals(ossConfigDTO.getFolderName())) {
-                // 修改了目录名
-                // 修改了目录名
-                Path oldPath = Paths.get(fileProperties.getRootDir(), ossConfigDTO.getUsername(), oldOssConfigDO.getFolderName());
-                PathUtil.del(oldPath);
-                fileMonitor.removeDirFilter(webPathPrefix);
-                if (existFolder) {
-                    throw new CommonException(ExceptionType.WARNING.getCode(), "目录已存在: " + ossConfigDTO.getFolderName());
+        String oldId = ossConfigDTO.getId();
+        if (StrUtil.isNotBlank(oldId)) {
+            OssConfigDO oldOssConfigDO = ossConfigDAO.findById(oldId);
+            if (oldOssConfigDO != null) {
+                String webPathPrefix = MyWebdavServlet.getPathDelimiter(ossConfigDTO.getUsername(), oldOssConfigDO.getFolderName());
+                if (!oldOssConfigDO.getFolderName().equals(ossConfigDTO.getFolderName())) {
+                    // 修改了目录名
+                    Path oldPath = Paths.get(fileProperties.getRootDir(), ossConfigDTO.getUsername(), oldOssConfigDO.getFolderName());
+                    PathUtil.del(oldPath);
+                    fileMonitor.removeDirFilter(webPathPrefix);
+                    if (existFolder) {
+                        throw new CommonException(ExceptionType.WARNING.getCode(), "目录已存在: " + ossConfigDTO.getFolderName());
+                    }
                 }
-            }
-            // 销毁 old OssService
-            destroyOssService(webPathPrefix);
-            if (ossConfigDTO.getAccessKey().contains("*")) {
-                ossConfigDTO.setAccessKey(textEncryptor.decrypt(oldOssConfigDO.getAccessKey()));
-            }
-            if (ossConfigDTO.getSecretKey().contains("*")) {
-                ossConfigDTO.setSecretKey(textEncryptor.decrypt(oldOssConfigDO.getSecretKey()));
+                // 销毁 old OssService
+                destroyOssService(webPathPrefix);
+                if (ossConfigDTO.getAccessKey().equals(Constants.VO_KEY)) {
+                    ossConfigDTO.setAccessKey(textEncryptor.decrypt(oldOssConfigDO.getAccessKey()));
+                }
+                if (ossConfigDTO.getSecretKey().equals(Constants.VO_KEY)) {
+                    ossConfigDTO.setSecretKey(textEncryptor.decrypt(oldOssConfigDO.getSecretKey()));
+                }
+                return ossConfigDTO.toOssConfigDO(oldOssConfigDO, textEncryptor);
             }
         }
-        if (existFolder && oldOssConfigDO == null) {
+        if (existFolder) {
             throw new CommonException(ExceptionType.WARNING.getCode(), "目录已存在: " + ossConfigDTO.getFolderName());
         }
-        return oldOssConfigDO == null ? null : oldOssConfigDO.getId();
+        return ossConfigDTO.toOssConfigDO(textEncryptor);
     }
 
     /**
