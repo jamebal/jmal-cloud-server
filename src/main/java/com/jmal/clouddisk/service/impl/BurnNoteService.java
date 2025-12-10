@@ -252,13 +252,11 @@ public class BurnNoteService {
 
     public void setAllowGuestBurnNote(Boolean allowGuestBurnNote) {
         WebsiteSettingDO websiteSettingDO = websiteSettingDAO.findOne();
-        if (websiteSettingDO == null) {
-            websiteSettingDO = new WebsiteSettingDO();
+        NetdiskPersonalization personalization = (websiteSettingDO != null) ? websiteSettingDO.getPersonalization() : null;
+        if (personalization == null) {
+            personalization = new NetdiskPersonalization();
         }
-        if (websiteSettingDO.getPersonalization() == null) {
-            websiteSettingDO.setPersonalization(new NetdiskPersonalization());
-        }
-        websiteSettingDO.getPersonalization().setAllowGuestBurnNote(allowGuestBurnNote);
-        websiteSettingDAO.updatePersonalization(websiteSettingDO.getPersonalization());
+        personalization.setAllowGuestBurnNote(allowGuestBurnNote);
+        websiteSettingDAO.updatePersonalization(personalization);
     }
 }
