@@ -21,4 +21,9 @@ public class NetdiskPersonalization {
      */
     private Integer loginBackgroundBlur;
 
+    /**
+     * 是否允许访客使用阅后即焚功能
+     */
+    private Boolean allowGuestBurnNote;
+
 }

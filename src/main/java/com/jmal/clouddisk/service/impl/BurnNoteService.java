@@ -1,13 +1,17 @@
 package com.jmal.clouddisk.service.impl;
 
 import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.util.BooleanUtil;
 import com.google.common.util.concurrent.Striped;
 import com.jmal.clouddisk.dao.BurnNoteFileService;
 import com.jmal.clouddisk.dao.IBurnNoteDAO;
+import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
 import com.jmal.clouddisk.dao.impl.BurnNoteCleanupService;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.BurnNoteDO;
+import com.jmal.clouddisk.model.NetdiskPersonalization;
+import com.jmal.clouddisk.model.WebsiteSettingDO;
 import com.jmal.clouddisk.model.dto.BurnNoteCreateDTO;
 import com.jmal.clouddisk.model.dto.BurnNoteResponseDTO;
 import com.jmal.clouddisk.model.dto.BurnNoteVO;
@@ -36,6 +40,7 @@ public class BurnNoteService {
     private final BurnNoteFileService burnNoteFileService;
     private static final int MAX_VIEWS = 100;
     private static final int MAX_EXPIRATION_MINUTES = 1440; // 24小时
+    private final IWebsiteSettingDAO websiteSettingDAO;
 
     /**
      * 创建阅后即焚笔记
@@ -235,5 +240,25 @@ public class BurnNoteService {
             return burnNoteDAO.findAllByUserId(queryBaseDTO, userId);
         }
 
+    }
+
+    public Boolean getAllowGuestBurnNote() {
+        WebsiteSettingDO websiteSettingDO = websiteSettingDAO.findOne();
+        if (websiteSettingDO != null && websiteSettingDO.getPersonalization() != null) {
+            return BooleanUtil.isTrue(websiteSettingDO.getPersonalization().getAllowGuestBurnNote());
+        }
+        return false;
+    }
+
+    public void setAllowGuestBurnNote(Boolean allowGuestBurnNote) {
+        WebsiteSettingDO websiteSettingDO = websiteSettingDAO.findOne();
+        if (websiteSettingDO == null) {
+            websiteSettingDO = new WebsiteSettingDO();
+        }
+        if (websiteSettingDO.getPersonalization() == null) {
+            websiteSettingDO.setPersonalization(new NetdiskPersonalization());
+        }
+        websiteSettingDO.getPersonalization().setAllowGuestBurnNote(allowGuestBurnNote);
+        websiteSettingDAO.updatePersonalization(websiteSettingDO.getPersonalization());
     }
 }
