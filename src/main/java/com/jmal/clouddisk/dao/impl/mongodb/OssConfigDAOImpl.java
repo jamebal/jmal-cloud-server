@@ -32,8 +32,7 @@ public class OssConfigDAOImpl implements IOssConfigDAO {
 
     @Override
     public OssConfigDO findById(String id) {
-        Query query = new Query();
-        return mongoTemplate.findById(query, OssConfigDO.class);
+        return mongoTemplate.findById(id, OssConfigDO.class);
     }
 
     @Override

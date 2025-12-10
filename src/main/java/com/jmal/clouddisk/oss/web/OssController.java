@@ -2,6 +2,7 @@ package com.jmal.clouddisk.oss.web;
 
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
+import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.LogOperation;
@@ -142,7 +143,7 @@ public class OssController {
         return new Result(ossService, realityObjectName);
     }
 
-    private record Result(IOssService ossService, String realityObjectName) {}
+    private record Result(IOssService ossService, String realityObjectName) implements Reflective {}
 
 
 }

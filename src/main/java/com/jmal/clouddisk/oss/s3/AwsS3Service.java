@@ -1,7 +1,9 @@
 package com.jmal.clouddisk.oss.s3; // 建议为 AWS S3 创建一个新的包
 
 import cn.hutool.core.io.file.PathUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.oss.AbstractOssObject;
@@ -95,14 +97,15 @@ public class AwsS3Service implements IOssService {
         this.bucketName = ossConfigDTO.getBucket();
         URI endpointUri = URI.create(ossConfigDTO.getEndpoint());
 
+        String region = CharSequenceUtil.isBlank(ossConfigDTO.getRegion()) ? "Auto" : ossConfigDTO.getRegion();
+
         // AWS SDK v2 的 S3Client 是线程安全的，推荐作为单例使用
         this.s3Client = S3Client.builder()
                 .endpointOverride(endpointUri)
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(ossConfigDTO.getAccessKey(), ossConfigDTO.getSecretKey())))
-                .region(Region.of(ossConfigDTO.getRegion() == null ? "Auto" : ossConfigDTO.getRegion()))
-                // 连接 MinIO 时必须开启路径风格访问
-                .forcePathStyle(true)
+                .region(Region.of(region))
+                .forcePathStyle(BooleanUtil.isTrue(ossConfigDTO.getPathStyleAccessEnabled()))
                 .serviceConfiguration(S3Configuration.builder()
                         // 启用无签名负载。这会设置 x-amz-content-sha256: UNSIGNED-PAYLOAD
                         .chunkedEncodingEnabled(false) // 对于MinIO，禁用分块编码通常更稳定
@@ -115,8 +118,8 @@ public class AwsS3Service implements IOssService {
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(ossConfigDTO.getAccessKey(), ossConfigDTO.getSecretKey())))
                 .serviceConfiguration(S3Configuration.builder()
-                        .pathStyleAccessEnabled(ossConfigDTO.getPathStyleAccessEnabled()).build())
-                .region(Region.of(ossConfigDTO.getRegion() == null ? "Auto" : ossConfigDTO.getRegion()))
+                        .pathStyleAccessEnabled(BooleanUtil.isTrue(ossConfigDTO.getPathStyleAccessEnabled())).build())
+                .region(Region.of(region))
                 .build();
 
         scheduledThreadPoolExecutor = ThreadUtil.createScheduledExecutor(1);

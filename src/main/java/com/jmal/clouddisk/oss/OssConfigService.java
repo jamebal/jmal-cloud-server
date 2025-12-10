@@ -200,7 +200,7 @@ public class OssConfigService {
                 updateOssConfig(ossConfigDTO, ossService, ossConfigDO);
             }
         } catch (Exception e) {
-            log.warn(e.getMessage());
+            log.warn(e.getMessage(), e);
             if (ossService != null) {
                 ossService.close();
             }

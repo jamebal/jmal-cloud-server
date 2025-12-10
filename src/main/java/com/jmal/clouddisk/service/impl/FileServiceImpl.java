@@ -162,7 +162,7 @@ public class FileServiceImpl implements IFileService {
 
     @PostConstruct
     private void init() {
-        loadStoreUploaderOption = new Constants.UploaderOption(Constants.LOCAL_CHUNK_SIZE, null);
+        loadStoreUploaderOption = new Constants.UploaderOption(Constants.LOCAL_CHUNK_SIZE, false);
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.jmal.clouddisk.service;
 
+import com.jmal.clouddisk.config.Reflective;
+
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
@@ -102,7 +104,7 @@ public class Constants {
 
     public static final String OPERATION_TIPS = "operationTips";
 
-    public record UploaderOption(Integer chunkSize, Boolean proxyEnabled) {}
+    public record UploaderOption(Integer chunkSize, Boolean proxyEnabled) implements Reflective {}
 
     public static final String UPLOADER_CHUNK_SIZE = "uploaderChunkSize";
 
