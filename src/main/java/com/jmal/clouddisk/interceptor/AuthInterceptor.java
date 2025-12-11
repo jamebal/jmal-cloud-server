@@ -63,6 +63,10 @@ public class AuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
         // 身份认证
+        return authentication(request, response);
+    }
+
+    public boolean authentication(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
         String username = getUserNameByHeader(request, response);
         if (!CharSequenceUtil.isBlank(username)) {
             // jmal-token 身份认证通过, 设置该身份的权限

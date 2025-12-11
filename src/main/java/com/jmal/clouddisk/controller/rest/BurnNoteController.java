@@ -3,6 +3,9 @@ package com.jmal.clouddisk.controller.rest;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.dao.BurnNoteFileService;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.interceptor.AuthInterceptor;
 import com.jmal.clouddisk.model.BurnNoteDO;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.dto.BurnNoteCreateDTO;
@@ -15,6 +18,8 @@ import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
@@ -27,6 +32,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,6 +51,7 @@ public class BurnNoteController {
     private final BurnNoteService burnNoteService;
     private final BurnNoteFileService burnNoteFileService;
     private final UserLoginHolder userLoginHolder;
+    private final AuthInterceptor authInterceptor;
 
     @Operation(summary = "阅后即焚笔记列表")
     @Permission("cloud:file:list")
@@ -64,10 +71,27 @@ public class BurnNoteController {
         return ResultUtil.success();
     }
 
+    @Operation(summary = "查询是否允许访客使用阅后即焚功能")
+    @Permission("cloud:file:list")
+    @GetMapping("/burn-notes/allow-guest-burn-note")
+    public ResponseResult<Boolean> getAllowGuestBurnNote() {
+        return ResultUtil.success(burnNoteService.getAllowGuestBurnNote());
+    }
+
+    @Operation(summary = "设置是否允许访客使用阅后即焚功能")
+    @Permission("cloud:file:update")
+    @LogOperatingFun(logType = LogOperation.Type.OPERATION)
+    @PutMapping("/burn-notes/allow-guest-burn-note")
+    public ResponseResult<Void> setAllowGuestBurnNote(@RequestParam Boolean allowGuestBurnNote) {
+        burnNoteService.setAllowGuestBurnNote(allowGuestBurnNote);
+        return ResultUtil.success();
+    }
+
     @Operation(summary = "创建阅后即焚笔记")
     @LogOperatingFun(logType = LogOperation.Type.OPERATION)
-    @PostMapping("/burn-notes/create")
-    public ResponseResult<String> createNote(@RequestBody BurnNoteCreateDTO dto) {
+    @PostMapping("/public/burn-notes/create")
+    public ResponseResult<String> createNote(@RequestBody BurnNoteCreateDTO dto, HttpServletRequest request, HttpServletResponse response) {
+        checkAuth(request, response);
         String userId = userLoginHolder.getUserId();
         if (userId == null) {
             userId = "anonymous";
@@ -76,12 +100,13 @@ public class BurnNoteController {
     }
 
     @Operation(summary = "上传文件分片")
-    @PostMapping("/burn-notes/{noteId}/chunks/{chunkIndex}")
+    @PostMapping("/public/burn-notes/{noteId}/chunks/{chunkIndex}")
     public ResponseResult<Void> uploadChunk(
             @PathVariable String noteId,
             @PathVariable Integer chunkIndex,
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file, HttpServletRequest request, HttpServletResponse response) {
         try {
+            checkAuth(request, response);
             BurnNoteDO burnNote = burnNoteService.getBurnNoteById(noteId);
             ResponseResult<Void> validation = validateAndGetFileNote(burnNote, chunkIndex);
             if (validation.getCode() != 0) {
@@ -97,6 +122,15 @@ public class BurnNoteController {
         } catch (IOException e) {
             log.error("上传分片失败: noteId={}, chunk={}", noteId, chunkIndex, e);
             return ResultUtil.error("上传分片失败: " + e.getMessage());
+        }
+    }
+
+    private void checkAuth(HttpServletRequest request, HttpServletResponse response) {
+        if (!burnNoteService.getAllowGuestBurnNote()) {
+            boolean auth = authInterceptor.authentication(request, response);
+            if (!auth) {
+                throw new CommonException(ExceptionType.PERMISSION_DENIED);
+            }
         }
     }
 

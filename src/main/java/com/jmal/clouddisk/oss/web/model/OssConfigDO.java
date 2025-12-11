@@ -54,6 +54,8 @@ public class OssConfigDO extends AuditableTimeEntity implements Reflective {
         ossConfigDTO.setUserId(this.userId);
         ossConfigDTO.setAccessKey(textEncryptor.decrypt(accessKey));
         ossConfigDTO.setSecretKey(textEncryptor.decrypt(secretKey));
+        ossConfigDTO.setPathStyleAccessEnabled(this.pathStyleAccessEnabled);
+        ossConfigDTO.setProxyEnabled(this.proxyEnabled);
         return ossConfigDTO;
     }
 
