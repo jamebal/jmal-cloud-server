@@ -335,7 +335,7 @@ public class AwsS3Service implements IOssService {
     }
 
     @Override
-    public void uploadFile(InputStream inputStream, String objectName, long inputStreamLength) {
+    public boolean uploadFile(InputStream inputStream, String objectName, long inputStreamLength) {
         try {
             baseOssService.printOperation(getPlatform().getKey(), "uploadFile inputStream", objectName);
             PutObjectRequest request = PutObjectRequest.builder()
@@ -345,9 +345,11 @@ public class AwsS3Service implements IOssService {
                     .build();
             s3Client.putObject(request, createSmartRequestBody(inputStream, inputStreamLength));
             baseOssService.onUploadSuccess(objectName, inputStreamLength);
+            return true;
         } catch (Exception e) {
             log.error("Error uploading from stream: {}", objectName, e);
         }
+        return false;
     }
 
     /**
@@ -696,8 +698,7 @@ public class AwsS3Service implements IOssService {
 
     @Override
     public boolean write(InputStream inputStream, String ossPath, String objectName, long size) {
-        uploadFile(inputStream, objectName, size);
-        return true;
+        return uploadFile(inputStream, objectName, size);
     }
 
     @Override

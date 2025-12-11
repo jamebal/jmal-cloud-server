@@ -145,8 +145,7 @@ public class TencentOssService implements IOssService {
 
     @Override
     public boolean write(InputStream inputStream, String ossPath, String objectName, long size) {
-        uploadFile(inputStream, objectName, size);
-        return true;
+        return uploadFile(inputStream, objectName, size);
     }
 
     @Override
@@ -561,7 +560,7 @@ public class TencentOssService implements IOssService {
     }
 
     @Override
-    public void uploadFile(InputStream inputStream, String objectName, long inputStreamLength) {
+    public boolean uploadFile(InputStream inputStream, String objectName, long inputStreamLength) {
         baseOssService.printOperation(getPlatform().getKey(), "uploadFile inputStream", objectName);
         ObjectMetadata objectMetadata = new ObjectMetadata();
         // 上传的流如果能够获取准确的流长度，则推荐一定填写 content-length
@@ -572,9 +571,11 @@ public class TencentOssService implements IOssService {
         try {
             cosClient.putObject(putObjectRequest);
             baseOssService.onUploadSuccess(objectName, inputStreamLength);
+            return true;
         } catch (CosClientException e) {
             log.error(e.getMessage(), e);
         }
+        return false;
     }
 
     @Override
@@ -628,7 +629,7 @@ public class TencentOssService implements IOssService {
         Map<Integer, String> urlMap = new HashMap<>(totalParts);
         for (int partNumber = 1; partNumber <= totalParts; partNumber++) {
             try {
-                Date expirationDate = new Date(System. currentTimeMillis() + expiryTime * 1000L);
+                Date expirationDate = new Date(System.currentTimeMillis() + expiryTime * 1000L);
                 GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucketName, objectName, HttpMethodName.PUT);
                 request.setExpiration(expirationDate);
                 request.addRequestParameter("partNumber", String.valueOf(partNumber));
