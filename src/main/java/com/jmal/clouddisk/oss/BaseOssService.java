@@ -241,7 +241,7 @@ public class BaseOssService {
      * @param objectName objectName
      */
     private void onDeleteSuccess(String objectName) {
-        log.info("delete success: {}", objectName);
+        log.debug("delete success: {}", objectName);
         FileInfo fileInfo = getFileInfoCache(objectName);
         if (fileInfo != null) {
             clearFileCache(objectName);
@@ -310,7 +310,7 @@ public class BaseOssService {
      * @param fileInfo FileInfo
      */
     private void onMkdirSuccess(String objectName, FileInfo fileInfo) {
-        log.info("mkdir success: {}", objectName);
+        log.debug("mkdir success: {}", objectName);
         setFileInfoCache(objectName, fileInfo);
         clearFileListCache(objectName);
     }
@@ -468,7 +468,7 @@ public class BaseOssService {
     }
 
     public void printOperation(String platform, String operation, String objectName) {
-        log.info("{}, {}, {}", platform, operation, objectName);
+        log.debug("{}, {}, {}", platform, operation, objectName);
     }
 
     /**

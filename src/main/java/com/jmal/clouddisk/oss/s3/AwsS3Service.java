@@ -695,6 +695,12 @@ public class AwsS3Service implements IOssService {
     }
 
     @Override
+    public boolean write(InputStream inputStream, String ossPath, String objectName, long size) {
+        uploadFile(inputStream, objectName, size);
+        return true;
+    }
+
+    @Override
     public String[] list(String objectName) {
         return baseOssService.getFileNameList(objectName).toArray(new String[0]);
     }
