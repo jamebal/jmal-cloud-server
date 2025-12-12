@@ -709,8 +709,9 @@ public class WebOssService {
         try {
             IOssService ossService = OssConfigService.getOssStorageService(ossPath);
             String objectName = getObjectName(prePth, ossPath, false);
-            ossService.write(inputStream, ossPath, objectName);
-            webOssCommonService.notifyUpdateFile(ossPath, objectName, size);
+            ossService.write(inputStream, ossPath, objectName, size);
+            FileInfo fileInfo = ossService.getFileInfo(objectName);
+            webOssCommonService.notifyUpdateFile(ossPath, objectName, fileInfo);
         } finally {
             IoUtil.close(inputStream);
         }

@@ -51,6 +51,17 @@ public interface IOssService {
     boolean write(InputStream inputStream, String ossPath, String objectName);
 
     /**
+     * Webdav 上传文件
+     *
+     * @param inputStream 文件输入流, 使用后需要关闭
+     * @param ossPath     ossPath
+     * @param objectName  object key
+     * @param size       文件大小
+     * @return 是否上传成功
+     */
+    boolean write(InputStream inputStream, String ossPath, String objectName, long size);
+
+    /**
      * Webdav 列出当前文件夹下的所有文件和文件夹
      * @param objectName object key
      * @return 文件名称列表(包含文件夹)
@@ -132,7 +143,7 @@ public interface IOssService {
      * @param inputStream inputStream
      * @param objectName object key
      */
-    void uploadFile(InputStream inputStream, String objectName, long inputStreamLength);
+    boolean uploadFile(InputStream inputStream, String objectName, long inputStreamLength);
 
     /**
      * 检查Bucket是否存在，并且验证配置是否可用，用于创建OSS配置时使用

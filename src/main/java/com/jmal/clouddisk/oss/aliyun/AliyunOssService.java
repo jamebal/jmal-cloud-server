@@ -114,6 +114,11 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
+    public boolean write(InputStream inputStream, String ossPath, String objectName, long size) {
+        return uploadFile(inputStream, objectName, size);
+    }
+
+    @Override
     public String[] list(String objectName) {
         return baseOssService.getFileNameList(objectName).toArray(new String[0]);
     }
@@ -463,7 +468,7 @@ public class AliyunOssService implements IOssService {
     }
 
     @Override
-    public void uploadFile(InputStream inputStream, String objectName, long inputStreamLength) {
+    public boolean uploadFile(InputStream inputStream, String objectName, long inputStreamLength) {
         try {
             baseOssService.printOperation(getPlatform().getKey(), "uploadFile inputStream", objectName);
             ObjectMetadata objectMetadata = new ObjectMetadata();
@@ -473,11 +478,13 @@ public class AliyunOssService implements IOssService {
             // 创建PutObject请求。
             ossClient.putObject(putObjectRequest);
             baseOssService.onUploadSuccess(objectName, inputStreamLength);
+            return true;
         } catch (OSSException oe) {
             log.error(oe.getMessage(), oe);
         } catch (ClientException ce) {
             log.error(ce.getMessage(), ce);
         }
+        return false;
     }
 
     public List<String> copyObject(String sourceKey, String destinationKey) {

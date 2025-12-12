@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.oss.web;
 
+import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.dao.IFileDAO;
 import com.jmal.clouddisk.model.file.FileDocument;
@@ -18,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 
 /**
  * @author jmal
@@ -44,27 +44,32 @@ public class WebOssCommonService {
         messageService.pushMessage(username, fileIntroVO, Constants.CREATE_FILE);
     }
 
-    public void notifyUpdateFile(String ossPath, String objectName, long size) {
+    public void notifyUpdateFile(String ossPath, String objectName, FileInfo fileInfo) {
         FileIntroVO fileIntroVO = new FileIntroVO();
         String username = getUsernameByOssPath(ossPath);
         String id = getFileId(getOssRootFolderName(ossPath), objectName, username);
         fileIntroVO.setId(id);
-        fileIntroVO.setSize(size);
-        fileIntroVO.setUpdateDate(LocalDateTime.now());
+        fileIntroVO.setSize(fileInfo.getSize());
+        fileIntroVO.setUpdateDate(LocalDateTimeUtil.of(fileInfo.getLastModified()));
         messageService.pushMessage(username, fileIntroVO, Constants.UPDATE_FILE);
     }
 
     public void notifyDeleteFile(String ossPath, String objectName) {
         String username = getUsernameByOssPath(ossPath);
         String id = getFileId(getOssRootFolderName(ossPath), objectName, username);
-        String filename = Paths.get(objectName).getFileName().toString();
-        String path = id.substring(username.length(), id.length() - filename.length());
+        String path = id.substring(username.length(), id.length() - getObjectNameLastLength(objectName));
         messageService.pushMessage(username, path, Constants.DELETE_FILE);
     }
 
     public static String getFileId(String rootName, String objectName, String username) {
         boolean isFolder = objectName.endsWith("/");
         return Paths.get(username, rootName, objectName) + (isFolder ? MyWebdavServlet.PATH_DELIMITER : "");
+    }
+
+    public static int getObjectNameLastLength(String objectName) {
+        boolean isFolder = objectName.endsWith("/");
+        String filename = Paths.get(objectName).getFileName().toString();
+        return isFolder ? filename.length() + 1 : filename.length();
     }
 
     public static String getPathByObjectName(String ossRootFolderName, String objectName) {
