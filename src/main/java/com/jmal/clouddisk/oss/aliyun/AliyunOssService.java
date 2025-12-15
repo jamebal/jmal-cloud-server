@@ -14,6 +14,7 @@ import com.aliyun.oss.model.CompleteMultipartUploadRequest;
 import com.aliyun.oss.model.CopyObjectRequest;
 import com.aliyun.oss.model.CopyObjectResult;
 import com.aliyun.oss.model.DeleteObjectsRequest;
+import com.aliyun.oss.model.DeleteVersionsRequest;
 import com.aliyun.oss.model.GeneratePresignedUrlRequest;
 import com.aliyun.oss.model.GetObjectRequest;
 import com.aliyun.oss.model.InitiateMultipartUploadRequest;
@@ -282,24 +283,28 @@ public class AliyunOssService implements IOssService {
      * @param objectName 对象名称
      */
     private void deletePermanent(String objectName) {
-        List<String> keys = new ArrayList<>();
-        String nextMarker = null;
+        List<DeleteVersionsRequest.KeyVersion> keyVersions = new ArrayList<>();
+        String nextKeyMarker = null;
+        String nextVersionIdMarker = null;
         VersionListing versionListing;
         do {
-            ListVersionsRequest listVersionsRequest = new ListVersionsRequest()
-                    .withBucketName(bucketName)
-                    .withPrefix(objectName)
-                    .withKeyMarker(nextMarker);
+            ListVersionsRequest listVersionsRequest = new ListVersionsRequest(bucketName, objectName, nextKeyMarker, nextVersionIdMarker, null, 1000);
             versionListing = ossClient.listVersions(listVersionsRequest);
-            if (!versionListing.getVersionSummaries().isEmpty()) {
-                for (var vs : versionListing.getVersionSummaries()) {
-                    keys.add(vs.getKey());
+            for (OSSVersionSummary vs : versionListing.getVersionSummaries()) {
+                if (vs.getKey().equals(objectName)) {
+                    keyVersions.add(new DeleteVersionsRequest.KeyVersion(vs.getKey(), vs.getVersionId()));
                 }
             }
-            nextMarker = versionListing.getNextKeyMarker();
+            nextKeyMarker = versionListing.getNextKeyMarker();
+            nextVersionIdMarker = versionListing.getNextVersionIdMarker();
         } while (versionListing.isTruncated());
-        DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucketName).withKeys(keys).withEncodingType("url");
-        ossClient.deleteObjects(deleteObjectsRequest);
+
+        if (!keyVersions.isEmpty()) {
+            DeleteVersionsRequest deleteVersionsRequest = new DeleteVersionsRequest(bucketName);
+            deleteVersionsRequest.setKeys(keyVersions);
+            deleteVersionsRequest.setQuiet(true);
+            ossClient.deleteVersions(deleteVersionsRequest);
+        }
     }
 
     @Override

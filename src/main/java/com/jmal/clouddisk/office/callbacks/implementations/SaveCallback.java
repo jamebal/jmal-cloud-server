@@ -73,7 +73,7 @@ public class SaveCallback implements Callback {
                     return -1;
                 }
                 fileUsername = WebOssCommonService.getUsernameByOssPath(ossPath);
-                userId = userService.getUserIdByUserName(WebOssCommonService.getUsernameByOssPath(ossPath));
+                userId = userService.getUserIdByUserName(fileUsername);
 
                 fileBaseOperationPermissionDTO = new FileBaseOperationPermissionDTO();
                 String objectName = WebOssService.getObjectName(prePath, ossPath, false);

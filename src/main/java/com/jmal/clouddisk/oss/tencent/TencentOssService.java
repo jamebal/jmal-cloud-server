@@ -308,24 +308,33 @@ public class TencentOssService implements IOssService {
      */
     private void deletePermanent(String objectName) {
         ArrayList<DeleteObjectsRequest.KeyVersion> delObjects = new ArrayList<>();
-        String nextMarker = null;
+        String nextKeyMarker = null;
+        String nextVersionIdMarker = null;
         VersionListing versionListing;
         do {
-            ListVersionsRequest listVersionsRequest = new ListVersionsRequest()
-                    .withBucketName(bucketName)
-                    .withPrefix(objectName)
-                    .withKeyMarker(nextMarker);
+            ListVersionsRequest listVersionsRequest = new ListVersionsRequest();
+            listVersionsRequest.setBucketName(bucketName);
+            listVersionsRequest.setPrefix(objectName);
+            listVersionsRequest.setKeyMarker(nextKeyMarker);
+            listVersionsRequest.setVersionIdMarker(nextVersionIdMarker);
+
             versionListing = cosClient.listVersions(listVersionsRequest);
             if (!versionListing.getVersionSummaries().isEmpty()) {
-                for (var vs : versionListing.getVersionSummaries()) {
-                    delObjects.add(new DeleteObjectsRequest.KeyVersion(vs.getKey()));
+                for (COSVersionSummary vs : versionListing.getVersionSummaries()) {
+                    if (vs.getKey().equals(objectName)) {
+                        delObjects.add(new DeleteObjectsRequest.KeyVersion(vs.getKey(), vs.getVersionId()));
+                    }
                 }
             }
-            nextMarker = versionListing.getNextKeyMarker();
+            nextKeyMarker = versionListing.getNextKeyMarker();
+            nextVersionIdMarker = versionListing.getNextVersionIdMarker();
         } while (versionListing.isTruncated());
-        DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucketName);
-        deleteObjectsRequest.setKeys(delObjects);
-        cosClient.deleteObjects(deleteObjectsRequest);
+
+        if (!delObjects.isEmpty()) {
+            DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucketName);
+            deleteObjectsRequest.setKeys(delObjects);
+            cosClient.deleteObjects(deleteObjectsRequest);
+        }
     }
 
 
