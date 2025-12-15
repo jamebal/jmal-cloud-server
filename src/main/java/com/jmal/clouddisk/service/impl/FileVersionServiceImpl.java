@@ -19,6 +19,9 @@ import com.jmal.clouddisk.model.Metadata;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileHistoryDTO;
 import com.jmal.clouddisk.office.OfficeHistory;
+import com.jmal.clouddisk.oss.AbstractOssObject;
+import com.jmal.clouddisk.oss.IOssService;
+import com.jmal.clouddisk.oss.OssConfigService;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileVersionService;
@@ -55,6 +58,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -190,8 +194,21 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
 
     @Override
     public ResponseResult<List<GridFSBO>> listFileVersion(String fileId, Integer pageSize, Integer pageIndex) {
+        Path prePath = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(prePath);
+        if (ossPath != null) {
+            String objectName = WebOssService.getObjectName(prePath, ossPath, false);
+            return getS3VersionListResult(pageSize, pageIndex, ossPath, objectName);
+        }
         Sort sort = Sort.by(Sort.Direction.DESC, Constants.UPLOAD_DATE);
         Page<GridFSBO> page = listFileVersionBySort(fileId, pageSize, pageIndex, sort);
+        return ResultUtil.success(page.getContent()).setCount(page.getTotalElements());
+    }
+
+
+    private static ResponseResult<List<GridFSBO>> getS3VersionListResult(Integer pageSize, Integer pageIndex, String ossPath, String objectName) {
+        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+        Page<GridFSBO> page = ossService.listObjectVersions(objectName, pageSize, pageIndex);
         return ResultUtil.success(page.getContent()).setCount(page.getTotalElements());
     }
 
@@ -234,7 +251,8 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
         Path prePth = Paths.get(username, path);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
-            fileId = WebOssService.getObjectName(prePth, ossPath, false);
+            String objectName = WebOssService.getObjectName(prePth, ossPath, false);
+            return getS3VersionListResult(pageSize, pageIndex, ossPath, objectName);
         } else {
             Path filePath = Paths.get(FileNameUtils.safeDecode(path));
             String relativePath = File.separator;
@@ -257,7 +275,27 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
     }
 
     @Override
-    public FileDocument getFileById(String gridFSId) {
+    public FileDocument getFileById(String gridFSId, String fileId) {
+        Path prePath = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(prePath);
+        if (ossPath != null) {
+            String objectName = WebOssService.getObjectName(prePath, ossPath, false);
+            IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+            AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName, gridFSId);
+            if (abstractOssObject == null) {
+                return null;
+            }
+            FileDocument fileDocument = new FileDocument();
+            fileDocument.setName(abstractOssObject.getFileInfo().getName());
+            fileDocument.setSize(abstractOssObject.getFileInfo().getSize());
+            try (InputStream inputStream = abstractOssObject.getInputStream()) {
+                String content = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+                fileDocument.setContentText(content);
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            }
+            return fileDocument;
+        }
         FileHistoryDTO fileHistoryDTO = fileHistoryDAO.getFileHistoryDTO(gridFSId);
         if (fileHistoryDTO == null) {
             return null;
@@ -312,7 +350,18 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
     }
 
     @Override
-    public void deleteOne(String id) {
+    public void deleteOne(String id, String fileId) {
+        Path prePath = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(prePath);
+        if (ossPath != null) {
+            String objectName = WebOssService.getObjectName(prePath, ossPath, false);
+            IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+            boolean deleted = ossService.deleteObject(objectName, id);
+            if (!deleted) {
+                throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), "删除版本失败");
+            }
+            return;
+        }
         fileHistoryDAO.deleteByIdIn(List.of(id));
     }
 
@@ -322,12 +371,20 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
     }
 
     @Override
-    public Long recovery(String gridFSId) {
+    public Long recovery(String gridFSId, String fileId) {
+        Path prePath = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(prePath);
+        if (ossPath != null) {
+            String objectName = WebOssService.getObjectName(prePath, ossPath, false);
+            IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+            ossService.restoreVersion(objectName, gridFSId);
+            return Instant.now().toEpochMilli();
+        }
         FileHistoryDTO fileHistoryDTO = fileHistoryDAO.getFileHistoryDTO(gridFSId);
         if (fileHistoryDTO == null) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
-        String fileId = fileHistoryDTO.getFileId();
+        fileId = fileHistoryDTO.getFileId();
         FileDocument fileDocument = fileService.getById(fileId);
         if (fileDocument == null) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
@@ -356,7 +413,12 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
     }
 
     @Override
-    public ResponseEntity<InputStreamResource> readHistoryFile(String gridFSId) {
+    public ResponseEntity<InputStreamResource> readHistoryFile(String gridFSId, String fileId) {
+        Path prePath = Paths.get(fileId);
+        String ossPath = CaffeineUtil.getOssPath(prePath);
+        if (ossPath != null) {
+            return getInputStreamResourceResponseEntity(gridFSId, prePath, ossPath);
+        }
         FileHistoryDTO fileHistoryDTO = fileHistoryDAO.getFileHistoryDTO(gridFSId);
         if (fileHistoryDTO == null) {
             return ResponseEntity.notFound().build();
@@ -378,6 +440,27 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
             }
         }
         return ResponseEntity.notFound().build();
+    }
+
+    private static ResponseEntity<InputStreamResource> getInputStreamResourceResponseEntity(String gridFSId, Path prePath, String ossPath) {
+        String objectName = WebOssService.getObjectName(prePath, ossPath, false);
+        IOssService ossService = OssConfigService.getOssStorageService(ossPath);
+        AbstractOssObject abstractOssObject = ossService.getAbstractOssObject(objectName, gridFSId);
+        if (abstractOssObject == null) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            InputStream inputStream = abstractOssObject.getInputStream();
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + URLEncoder.encode(abstractOssObject.getFileInfo().getName(), StandardCharsets.UTF_8) + "\"");
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentType(MediaType.parseMediaType("application/octet-stream"))
+                    .body(new InputStreamResource(inputStream));
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return ResponseEntity.notFound().build();
+        }
     }
 
 }

@@ -1,11 +1,14 @@
 package com.jmal.clouddisk.oss.s3; // 建议为 AWS S3 创建一个新的包
 
+import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.file.PathUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
+import com.jmal.clouddisk.model.GridFSBO;
+import com.jmal.clouddisk.model.Metadata;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.BaseOssService;
 import com.jmal.clouddisk.oss.FileInfo;
@@ -17,6 +20,9 @@ import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.util.StreamUtils;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -43,17 +49,22 @@ import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListMultipartUploadsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectVersionsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.ListPartsRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
+import software.amazon.awssdk.services.s3.model.ObjectVersion;
 import software.amazon.awssdk.services.s3.model.Part;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.UploadPartRequest;
 import software.amazon.awssdk.services.s3.paginators.ListMultipartUploadsIterable;
+import software.amazon.awssdk.services.s3.paginators.ListObjectVersionsIterable;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -90,6 +101,7 @@ public class AwsS3Service implements IOssService {
     private final S3Presigner s3Presigner; // 用于生成预签名URL
     private final BaseOssService baseOssService;
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
+    private boolean hasHistoryVersion = true;
 
     Consumer<AwsRequestOverrideConfiguration.Builder> unlimitTimeoutBuilderConsumer = builder -> builder.apiCallTimeout(Duration.ofDays(30)).build();
 
@@ -173,6 +185,10 @@ public class AwsS3Service implements IOssService {
 
     @Override
     public AbstractOssObject getAbstractOssObject(String objectName, Long rangeStart, Long rangeEnd) {
+        return getAbstractOssObject(objectName, null, rangeStart, rangeEnd);
+    }
+
+    private AbstractOssObject getAbstractOssObject(String objectName, String versionId, Long rangeStart, Long rangeEnd) {
         try {
             HeadObjectRequest headRequest = HeadObjectRequest.builder()
                     .bucket(bucketName)
@@ -190,6 +206,10 @@ public class AwsS3Service implements IOssService {
                 getRequestBuilder.range(range);
             }
 
+            if (CharSequenceUtil.isNotBlank(versionId)) {
+                getRequestBuilder.versionId(versionId);
+            }
+
             return new AwsS3Object(headResponse, s3Client.getObject(getRequestBuilder.build()), this, bucketName, objectName);
 
         } catch (NoSuchKeyException e) {
@@ -203,17 +223,90 @@ public class AwsS3Service implements IOssService {
 
     @Override
     public boolean deleteObject(String objectName) {
+        return deleteObjectVersion(objectName, null);
+    }
+
+    @Override
+    public boolean deleteObject(String objectName, String versionId) {
+        return deleteObjectVersion(objectName, versionId);
+    }
+
+    private boolean deleteObjectVersion(String objectName, String versionId) {
         try {
             baseOssService.printOperation(getPlatform().getKey(), "deleteObject", objectName);
-            DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+            DeleteObjectRequest.Builder builder = DeleteObjectRequest.builder()
                     .bucket(bucketName)
-                    .key(objectName)
-                    .build();
-            s3Client.deleteObject(deleteRequest);
+                    .key(objectName);
+            if (CharSequenceUtil.isNotBlank(versionId)) {
+                builder.versionId(versionId);
+                s3Client.deleteObject(builder.build());
+            } else {
+                deletePermanent(objectName);
+            }
             return true;
         } catch (Exception e) {
             log.error("Error deleting object: {}", objectName, e);
             return false;
+        }
+    }
+
+    /**
+     * 永久删除对象, 删除对象的所有版本（包括删除标记）
+     * @param objectName 对象名称
+     */
+    private void deletePermanent(String objectName) {
+        List<ObjectIdentifier> toDelete = new ArrayList<>();
+        ListObjectVersionsRequest listRequest = ListObjectVersionsRequest.builder()
+                .bucket(bucketName)
+                .prefix(objectName)
+                .build();
+
+        ListObjectVersionsIterable listObjectVersionsIterable = s3Client.listObjectVersionsPaginator(listRequest);
+        listObjectVersionsIterable.forEach(response -> {
+            response.versions().forEach(objectVersion -> {
+                if (objectVersion.key().equals(objectName)) {
+                    toDelete.add(ObjectIdentifier.builder()
+                            .key(objectName)
+                            .versionId(objectVersion.versionId())
+                            .build());
+                }
+            });
+            response.deleteMarkers().forEach(marker -> {
+                if (marker.key().equals(objectName)) {
+                    toDelete.add(ObjectIdentifier.builder()
+                            .key(objectName)
+                            .versionId(marker.versionId())
+                            .build());
+                }
+            });
+        });
+
+        if (!toDelete.isEmpty()) {
+            DeleteObjectsRequest deleteRequest = DeleteObjectsRequest.builder()
+                    .bucket(bucketName)
+                    .delete(Delete.builder()
+                            .objects(toDelete)
+                            .build())
+                    .build();
+            s3Client.deleteObjects(deleteRequest);
+        }
+    }
+
+    @Override
+    public void restoreVersion(String objectName, String versionId) {
+        try {
+            baseOssService.printOperation(getPlatform().getKey(), "restoreVersion", objectName);
+            // 复制指定版本到当前版本
+            CopyObjectRequest copyRequest = CopyObjectRequest.builder()
+                    .sourceBucket(bucketName)
+                    .sourceKey(objectName)
+                    .sourceVersionId(versionId)
+                    .destinationBucket(bucketName)
+                    .destinationKey(objectName)
+                    .build();
+            s3Client.copyObject(copyRequest);
+        } catch (Exception e) {
+            log.error("Error restoring version for object: {}", objectName, e);
         }
     }
 
@@ -407,8 +500,8 @@ public class AwsS3Service implements IOssService {
                     .bucket(bucketName)
                     .key(objectName)
                     .build();
-            s3Client.headObject(request);
-            return true;
+            HeadObjectResponse headObjectResponse = s3Client.headObject(request);
+            return BooleanUtil.isFalse(headObjectResponse.deleteMarker());
         } catch (NoSuchKeyException e) {
             return false;
         } catch (Exception e) {
@@ -713,7 +806,89 @@ public class AwsS3Service implements IOssService {
 
     @Override
     public AbstractOssObject getAbstractOssObject(String objectName) {
-        return getAbstractOssObject(objectName, null, null);
+        return getAbstractOssObject(objectName, null, null, null);
+    }
+
+    @Override
+    public AbstractOssObject getAbstractOssObject(String objectName, String versionId) {
+        return getAbstractOssObject(objectName, versionId, null, null);
+    }
+
+    @Override
+    public Page<GridFSBO> listObjectVersions(String objectName, Integer pageSize, Integer pageIndex) {
+        if (!hasHistoryVersion) {
+            return Page.empty();
+        }
+
+        List<GridFSBO> allVersions = new ArrayList<>();
+        String keyMarker = null;
+        String versionIdMarker = null;
+
+        int skipCount = (pageIndex - 1) * pageSize;
+        int totalCount = 0;
+        boolean hasMore = true;
+
+        try {
+            while (hasMore) {
+                ListObjectVersionsRequest request = ListObjectVersionsRequest.builder()
+                        .bucket(bucketName)
+                        .prefix(objectName)
+                        .keyMarker(keyMarker)
+                        .versionIdMarker(versionIdMarker)
+                        .maxKeys(1000)
+                        .build();
+
+                ListObjectVersionsResponse response = s3Client.listObjectVersions(request);
+
+                // 只筛选精确匹配 objectName 的版本
+                for (ObjectVersion version : response.versions()) {
+                    if (version.key().equals(objectName)) {
+                        totalCount++;
+                        // 跳过前面的页，收集当前页的数据
+                        if (totalCount > skipCount && allVersions.size() < pageSize) {
+                            allVersions.add(getGridFSBO(version));
+                        }
+                    }
+                }
+
+                // 检查是否还有更多数据
+                if (response.isTruncated()) {
+                    keyMarker = response.nextKeyMarker();
+                    versionIdMarker = response.nextVersionIdMarker();
+                } else {
+                    hasMore = false;
+                }
+
+                // 如果已经收集够当前页的数据，且不需要统计总数，可以提前退出
+                if (allVersions.size() >= pageSize && !response.isTruncated()) {
+                    break;
+                }
+            }
+        } catch (S3Exception e) {
+            if (e.awsErrorDetails().errorMessage().contains("not implemented")) {
+                log.warn("Bucket versioning not enabled for bucket: {}. Cannot list object versions.", bucketName);
+                this.hasHistoryVersion = false;
+                return Page.empty();
+            }
+            log.warn("Error listing object versions for: {}, {}", objectName, e.awsErrorDetails());
+        } catch (Exception e) {
+            log.error("Unexpected error listing object versions for: {}", objectName, e);
+        }
+        return new PageImpl<>(allVersions, PageRequest.of(pageIndex - 1, pageSize), totalCount);
+    }
+
+    private static GridFSBO getGridFSBO(ObjectVersion version) {
+        String objectName = version.key();
+        String filename = Path.of(objectName).getFileName().toString();
+        GridFSBO gridFSBO = new GridFSBO();
+        gridFSBO.setId(version.versionId());
+        gridFSBO.setUploadDate(LocalDateTimeUtil.of(version.lastModified()));
+        Metadata metadata = new Metadata();
+        metadata.setSize(version.size());
+        metadata.setFilename(filename);
+        metadata.setTime(LocalDateTimeUtil.format(gridFSBO.getUploadDate(), "yyyy-MM-dd HH:mm:ss"));
+        gridFSBO.setMetadata(metadata);
+        return gridFSBO;
     }
 
     @Override

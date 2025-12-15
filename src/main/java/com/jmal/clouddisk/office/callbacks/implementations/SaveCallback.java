@@ -9,6 +9,7 @@ import com.jmal.clouddisk.model.file.dto.FileBaseOperationPermissionDTO;
 import com.jmal.clouddisk.office.callbacks.Callback;
 import com.jmal.clouddisk.office.callbacks.Status;
 import com.jmal.clouddisk.office.model.Track;
+import com.jmal.clouddisk.oss.web.WebOssCommonService;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IUserService;
@@ -61,16 +62,32 @@ public class SaveCallback implements Callback {
     public int handle(Track body) {
         int result = 0;
         try {
+
+            String fileUsername;
+            String userId;
             FileBaseOperationPermissionDTO fileBaseOperationPermissionDTO = fileDAO.findFileBaseOperationPermissionDTOById(body.getFileId());
             if (fileBaseOperationPermissionDTO == null) {
-                return 1;
-            }
+                Path prePath = Paths.get(body.getFileId());
+                String ossPath = CaffeineUtil.getOssPath(prePath);
+                if (ossPath == null) {
+                    return -1;
+                }
+                fileUsername = WebOssCommonService.getUsernameByOssPath(ossPath);
+                userId = userService.getUserIdByUserName(WebOssCommonService.getUsernameByOssPath(ossPath));
 
-            // 检查权限
-            String userId = fileBaseOperationPermissionDTO.getUserId();
-            String fileUsername = userService.getUserNameById(userId);
-            List<OperationPermission> operationPermissionList = fileBaseOperationPermissionDTO.getOperationPermissionList();
-            commonFileService.checkPermissionUserId(userId, operationPermissionList, OperationPermission.PUT);
+                fileBaseOperationPermissionDTO = new FileBaseOperationPermissionDTO();
+                String objectName = WebOssService.getObjectName(prePath, ossPath, false);
+                String ossRootFolderName = WebOssCommonService.getOssRootFolderName(ossPath);
+                fileBaseOperationPermissionDTO.setPath(WebOssCommonService.getPathByObjectName(ossRootFolderName, objectName));
+                fileBaseOperationPermissionDTO.setName(WebOssService.getFilenameFromObjectName(objectName));
+
+            } else {
+                // 检查权限
+                userId = fileBaseOperationPermissionDTO.getUserId();
+                fileUsername = userService.getUserNameById(userId);
+                List<OperationPermission> operationPermissionList = fileBaseOperationPermissionDTO.getOperationPermissionList();
+                commonFileService.checkPermissionUserId(userId, operationPermissionList, OperationPermission.PUT);
+            }
 
             // 下载最新文件
             Path path = Paths.get(fileProperties.getRootDir(), fileUsername, fileBaseOperationPermissionDTO.getPath(), fileBaseOperationPermissionDTO.getName());

@@ -20,14 +20,14 @@ public class GridFSBO implements Reflective {
 
     String filename;
 
-    long length;
+    Long length;
 
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd HH:mm:ss")
     LocalDateTime uploadDate;
 
     Metadata metadata;
 
-    public GridFSBO(String id, String filename, long length, LocalDateTime uploadDate, String filepath, String name, String time, String operator, Long size) {
+    public GridFSBO(String id, String filename, Long length, LocalDateTime uploadDate, String filepath, String name, String time, String operator, Long size) {
         this.id = id;
         this.filename = filename;
         this.length = length;

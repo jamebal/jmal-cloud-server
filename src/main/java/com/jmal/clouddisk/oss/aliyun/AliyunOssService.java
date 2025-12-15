@@ -1,6 +1,8 @@
 package com.jmal.clouddisk.oss.aliyun;
 
+import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.file.PathUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.aliyun.oss.ClientException;
 import com.aliyun.oss.HttpMethod;
@@ -9,6 +11,8 @@ import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
 import com.aliyun.oss.model.AbortMultipartUploadRequest;
 import com.aliyun.oss.model.CompleteMultipartUploadRequest;
+import com.aliyun.oss.model.CopyObjectRequest;
+import com.aliyun.oss.model.CopyObjectResult;
 import com.aliyun.oss.model.DeleteObjectsRequest;
 import com.aliyun.oss.model.GeneratePresignedUrlRequest;
 import com.aliyun.oss.model.GetObjectRequest;
@@ -17,10 +21,12 @@ import com.aliyun.oss.model.InitiateMultipartUploadResult;
 import com.aliyun.oss.model.ListMultipartUploadsRequest;
 import com.aliyun.oss.model.ListObjectsRequest;
 import com.aliyun.oss.model.ListPartsRequest;
+import com.aliyun.oss.model.ListVersionsRequest;
 import com.aliyun.oss.model.MultipartUpload;
 import com.aliyun.oss.model.MultipartUploadListing;
 import com.aliyun.oss.model.OSSObject;
 import com.aliyun.oss.model.OSSObjectSummary;
+import com.aliyun.oss.model.OSSVersionSummary;
 import com.aliyun.oss.model.ObjectListing;
 import com.aliyun.oss.model.ObjectMetadata;
 import com.aliyun.oss.model.PartETag;
@@ -32,7 +38,11 @@ import com.aliyun.oss.model.ResponseHeaderOverrides;
 import com.aliyun.oss.model.UploadPartCopyRequest;
 import com.aliyun.oss.model.UploadPartCopyResult;
 import com.aliyun.oss.model.UploadPartRequest;
+import com.aliyun.oss.model.VersionListing;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.model.GridFSBO;
+import com.jmal.clouddisk.model.Metadata;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.BaseOssService;
 import com.jmal.clouddisk.oss.FileInfo;
@@ -44,6 +54,9 @@ import com.jmal.clouddisk.oss.web.model.OssConfigDTO;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -130,16 +143,88 @@ public class AliyunOssService implements IOssService {
 
     @Override
     public AbstractOssObject getAbstractOssObject(String objectName) {
-        return getAbstractOssObject(objectName, null, null);
+        return getAbstractOssObject(objectName, null, null, null);
+    }
+
+    @Override
+    public AbstractOssObject getAbstractOssObject(String objectName, String versionId) {
+        return getAbstractOssObject(objectName, versionId, null, null);
+    }
+
+    @Override
+    public Page<GridFSBO> listObjectVersions(String objectName, Integer pageSize, Integer pageIndex) {
+
+        List<GridFSBO> allVersions = new ArrayList<>();
+        String nextMarker = null;
+
+        int skipCount = (pageIndex - 1) * pageSize;
+        int totalCount = 0;
+        boolean hasMore = true;
+        String versionIdMarker = null;
+
+        VersionListing versionListing;
+        while (hasMore) {
+            ListVersionsRequest listVersionsRequest = new ListVersionsRequest()
+                    .withBucketName(bucketName)
+                    .withPrefix(objectName)
+                    .withKeyMarker(nextMarker)
+                    .withVersionIdMarker(versionIdMarker);
+            versionListing = ossClient.listVersions(listVersionsRequest);
+            if (!versionListing.getVersionSummaries().isEmpty()) {
+                for (var version : versionListing.getVersionSummaries()) {
+                    if (version.getKey().equals(objectName)) {
+                        totalCount++;
+                        // 跳过前面的页，收集当前页的数据
+                        if (totalCount > skipCount && allVersions.size() < pageSize) {
+                            allVersions.add(getGridFSBO(version));
+                        }
+                    }
+                }
+            }
+            // 检查是否还有更多数据
+            if (versionListing.isTruncated()) {
+                nextMarker = versionListing.getNextKeyMarker();
+                versionIdMarker = versionListing.getNextVersionIdMarker();
+            } else {
+                hasMore = false;
+            }
+
+            // 如果已经收集够当前页的数据，且不需要统计总数，可以提前退出
+            if (allVersions.size() >= pageSize && !versionListing.isTruncated()) {
+                break;
+            }
+        }
+        return new PageImpl<>(allVersions, PageRequest.of(pageIndex - 1, pageSize), totalCount);
+    }
+
+    private static GridFSBO getGridFSBO(OSSVersionSummary versionSummary) {
+        String objectName = versionSummary.getKey();
+        String filename = Path.of(objectName).getFileName().toString();
+        GridFSBO gridFSBO = new GridFSBO();
+        gridFSBO.setId(versionSummary.getVersionId());
+        gridFSBO.setUploadDate(LocalDateTimeUtil.of(versionSummary.getLastModified()));
+        Metadata metadata = new Metadata();
+        metadata.setSize(versionSummary.getSize());
+        metadata.setFilename(filename);
+        metadata.setTime(LocalDateTimeUtil.format(gridFSBO.getUploadDate(), "yyyy-MM-dd HH:mm:ss"));
+        gridFSBO.setMetadata(metadata);
+        return gridFSBO;
     }
 
     @Override
     public AbstractOssObject getAbstractOssObject(String objectName, Long rangeStart, Long rangeEnd) {
+        return  getAbstractOssObject(objectName, null, rangeStart, rangeEnd);
+    }
+
+    private AbstractOssObject getAbstractOssObject(String objectName, String versionId, Long rangeStart, Long rangeEnd) {
         OSSObject ossObject = null;
         try {
             GetObjectRequest getObjectRequest = new GetObjectRequest(bucketName, objectName);
             if (rangeStart != null && rangeEnd != null) {
                 getObjectRequest.setRange(rangeStart, rangeEnd);
+            }
+            if (versionId != null) {
+                getObjectRequest.setVersionId(versionId);
             }
             ossObject = this.ossClient.getObject(getObjectRequest);
         } catch (Exception e) {
@@ -154,14 +239,67 @@ public class AliyunOssService implements IOssService {
 
     @Override
     public boolean deleteObject(String objectName) {
+        return deleteObjectVersion(objectName, null);
+    }
+
+    @Override
+    public boolean deleteObject(String objectName, String versionId) {
+        return deleteObjectVersion(objectName, versionId);
+    }
+
+    @Override
+    public void restoreVersion(String objectName, String versionId) {
+        // 复制指定版本到当前版本
+        try {
+            CopyObjectRequest copyObjectRequest = new CopyObjectRequest(bucketName, objectName, versionId, bucketName, objectName);
+            CopyObjectResult result = ossClient.copyObject(copyObjectRequest);
+            if (!result.getResponse().isSuccessful()) {
+                throw new CommonException(result.getResponse().getErrorResponseAsString());
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    private boolean deleteObjectVersion(String objectName, String versionId) {
         try {
             baseOssService.printOperation(getPlatform().getKey(), "deleteObject", objectName);
-            ossClient.deleteObject(bucketName, objectName);
+            if (CharSequenceUtil.isNotBlank(versionId)) {
+                ossClient.deleteVersion(bucketName, objectName, versionId);
+            } else {
+                deletePermanent(objectName);
+            }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return false;
         }
         return true;
+    }
+
+    /**
+     * 永久删除对象, 删除对象的所有版本（包括删除标记）
+     * @param objectName 对象名称
+     */
+    private void deletePermanent(String objectName) {
+        List<String> keys = new ArrayList<>();
+        String nextMarker = null;
+        VersionListing versionListing;
+        do {
+            ListVersionsRequest listVersionsRequest = new ListVersionsRequest()
+                    .withBucketName(bucketName)
+                    .withPrefix(objectName)
+                    .withKeyMarker(nextMarker);
+            versionListing = ossClient.listVersions(listVersionsRequest);
+            if (!versionListing.getVersionSummaries().isEmpty()) {
+                for (var vs : versionListing.getVersionSummaries()) {
+                    keys.add(vs.getKey());
+                }
+            }
+            nextMarker = versionListing.getNextKeyMarker();
+        } while (versionListing.isTruncated());
+        DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucketName).withKeys(keys).withEncodingType("url");
+        ossClient.deleteObjects(deleteObjectsRequest);
     }
 
     @Override
@@ -626,7 +764,7 @@ public class AliyunOssService implements IOssService {
         Map<Integer, String> urlMap = new HashMap<>(totalParts);
         for (int partNumber = 1; partNumber <= totalParts; partNumber++) {
             try {
-                Date expirationDate = new Date(System. currentTimeMillis() + expiryTime * 1000L);
+                Date expirationDate = new Date(System.currentTimeMillis() + expiryTime * 1000L);
                 Map<String, String> params = new LinkedHashMap<>();
                 params.put("uploadId", uploadId);
                 params.put("partNumber", String.valueOf(partNumber));

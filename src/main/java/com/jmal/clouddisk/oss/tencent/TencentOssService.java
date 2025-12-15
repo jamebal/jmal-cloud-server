@@ -1,10 +1,15 @@
 package com.jmal.clouddisk.oss.tencent;
 
+import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.file.PathUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.aliyun.oss.ClientException;
 import com.aliyun.oss.OSSException;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.model.GridFSBO;
+import com.jmal.clouddisk.model.Metadata;
 import com.jmal.clouddisk.oss.AbstractOssObject;
 import com.jmal.clouddisk.oss.BaseOssService;
 import com.jmal.clouddisk.oss.FileInfo;
@@ -23,6 +28,7 @@ import com.qcloud.cos.http.HttpProtocol;
 import com.qcloud.cos.model.AbortMultipartUploadRequest;
 import com.qcloud.cos.model.COSObject;
 import com.qcloud.cos.model.COSObjectSummary;
+import com.qcloud.cos.model.COSVersionSummary;
 import com.qcloud.cos.model.CompleteMultipartUploadRequest;
 import com.qcloud.cos.model.CopyObjectRequest;
 import com.qcloud.cos.model.DeleteObjectsRequest;
@@ -33,6 +39,7 @@ import com.qcloud.cos.model.InitiateMultipartUploadResult;
 import com.qcloud.cos.model.ListMultipartUploadsRequest;
 import com.qcloud.cos.model.ListObjectsRequest;
 import com.qcloud.cos.model.ListPartsRequest;
+import com.qcloud.cos.model.ListVersionsRequest;
 import com.qcloud.cos.model.MultipartUpload;
 import com.qcloud.cos.model.MultipartUploadListing;
 import com.qcloud.cos.model.ObjectListing;
@@ -44,6 +51,7 @@ import com.qcloud.cos.model.PutObjectRequest;
 import com.qcloud.cos.model.PutObjectResult;
 import com.qcloud.cos.model.StorageClass;
 import com.qcloud.cos.model.UploadPartRequest;
+import com.qcloud.cos.model.VersionListing;
 import com.qcloud.cos.region.Region;
 import com.qcloud.cos.transfer.Copy;
 import com.qcloud.cos.transfer.TransferManager;
@@ -51,6 +59,9 @@ import com.qcloud.cos.transfer.TransferManagerConfiguration;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -160,16 +171,88 @@ public class TencentOssService implements IOssService {
 
     @Override
     public AbstractOssObject getAbstractOssObject(String objectName) {
-        return getAbstractOssObject(objectName, null, null);
+        return getAbstractOssObject(objectName, null, null, null);
+    }
+
+    @Override
+    public AbstractOssObject getAbstractOssObject(String objectName, String versionId) {
+        return getAbstractOssObject(objectName, versionId, null, null);
+    }
+
+    @Override
+    public Page<GridFSBO> listObjectVersions(String objectName, Integer pageSize, Integer pageIndex) {
+
+        List<GridFSBO> allVersions = new ArrayList<>();
+        String nextMarker = null;
+
+        int skipCount = (pageIndex - 1) * pageSize;
+        int totalCount = 0;
+        boolean hasMore = true;
+        String versionIdMarker = null;
+
+        VersionListing versionListing;
+        while (hasMore) {
+            ListVersionsRequest listVersionsRequest = new ListVersionsRequest()
+                    .withBucketName(bucketName)
+                    .withPrefix(objectName)
+                    .withKeyMarker(nextMarker)
+                    .withVersionIdMarker(versionIdMarker);
+            versionListing = cosClient.listVersions(listVersionsRequest);
+            if (!versionListing.getVersionSummaries().isEmpty()) {
+                for (var version : versionListing.getVersionSummaries()) {
+                    if (version.getKey().equals(objectName)) {
+                        totalCount++;
+                        // 跳过前面的页，收集当前页的数据
+                        if (totalCount > skipCount && allVersions.size() < pageSize) {
+                            allVersions.add(getGridFSBO(version));
+                        }
+                    }
+                }
+            }
+            // 检查是否还有更多数据
+            if (versionListing.isTruncated()) {
+                nextMarker = versionListing.getNextKeyMarker();
+                versionIdMarker = versionListing.getNextVersionIdMarker();
+            } else {
+                hasMore = false;
+            }
+
+            // 如果已经收集够当前页的数据，且不需要统计总数，可以提前退出
+            if (allVersions.size() >= pageSize && !versionListing.isTruncated()) {
+                break;
+            }
+        }
+        return new PageImpl<>(allVersions, PageRequest.of(pageIndex - 1, pageSize), totalCount);
+    }
+
+    private static GridFSBO getGridFSBO(COSVersionSummary versionSummary) {
+        String objectName = versionSummary.getKey();
+        String filename = Path.of(objectName).getFileName().toString();
+        GridFSBO gridFSBO = new GridFSBO();
+        gridFSBO.setId(versionSummary.getVersionId());
+        gridFSBO.setUploadDate(LocalDateTimeUtil.of(versionSummary.getLastModified()));
+        Metadata metadata = new Metadata();
+        metadata.setSize(versionSummary.getSize());
+        metadata.setFilename(filename);
+        metadata.setTime(LocalDateTimeUtil.format(gridFSBO.getUploadDate(), "yyyy-MM-dd HH:mm:ss"));
+        gridFSBO.setMetadata(metadata);
+        return gridFSBO;
     }
 
     @Override
     public AbstractOssObject getAbstractOssObject(String objectName, Long rangeStart, Long rangeEnd) {
+        return getAbstractOssObject(objectName, null, rangeStart, rangeEnd);
+    }
+
+    private AbstractOssObject getAbstractOssObject(String objectName, String versionId, Long rangeStart, Long rangeEnd) {
         COSObject ossObject = null;
         try {
             GetObjectRequest getObjectRequest = new GetObjectRequest(bucketName, objectName);
             if (rangeStart != null && rangeEnd != null) {
                 getObjectRequest.setRange(rangeStart, rangeEnd);
+            }
+            if (versionId != null) {
+                getObjectRequest.setVersionId(versionId);
             }
             ossObject = this.cosClient.getObject(getObjectRequest);
         } catch (Exception e) {
@@ -183,15 +266,68 @@ public class TencentOssService implements IOssService {
 
     @Override
     public boolean deleteObject(String objectName) {
+        return deleteObjectVersion(objectName, null);
+    }
+
+    @Override
+    public boolean deleteObject(String objectName, String versionId) {
+        return deleteObjectVersion(objectName, versionId);
+    }
+
+    @Override
+    public void restoreVersion(String objectName, String versionId) {
+        // 复制指定版本到当前版本
+        try {
+            CopyObjectRequest copyObjectRequest = new CopyObjectRequest(region, bucketName, objectName, bucketName, objectName);
+            copyObjectRequest.setSourceVersionId(versionId);
+            cosClient.copyObject(copyObjectRequest);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new CommonException(e.getMessage());
+        }
+    }
+
+    private boolean deleteObjectVersion(String objectName, String versionId) {
         try {
             baseOssService.printOperation(getPlatform().getKey(), "deleteObject", objectName);
-            cosClient.deleteObject(bucketName, objectName);
+            if (CharSequenceUtil.isNotBlank(versionId)) {
+                cosClient.deleteVersion(bucketName, objectName, versionId);
+            } else {
+                deletePermanent(objectName);
+            }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return false;
         }
         return true;
     }
+
+    /**
+     * 永久删除对象, 删除对象的所有版本（包括删除标记）
+     * @param objectName 对象名称
+     */
+    private void deletePermanent(String objectName) {
+        ArrayList<DeleteObjectsRequest.KeyVersion> delObjects = new ArrayList<>();
+        String nextMarker = null;
+        VersionListing versionListing;
+        do {
+            ListVersionsRequest listVersionsRequest = new ListVersionsRequest()
+                    .withBucketName(bucketName)
+                    .withPrefix(objectName)
+                    .withKeyMarker(nextMarker);
+            versionListing = cosClient.listVersions(listVersionsRequest);
+            if (!versionListing.getVersionSummaries().isEmpty()) {
+                for (var vs : versionListing.getVersionSummaries()) {
+                    delObjects.add(new DeleteObjectsRequest.KeyVersion(vs.getKey()));
+                }
+            }
+            nextMarker = versionListing.getNextKeyMarker();
+        } while (versionListing.isTruncated());
+        DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucketName);
+        deleteObjectsRequest.setKeys(delObjects);
+        cosClient.deleteObjects(deleteObjectsRequest);
+    }
+
 
     @Override
     public boolean deleteDir(String objectName) {
