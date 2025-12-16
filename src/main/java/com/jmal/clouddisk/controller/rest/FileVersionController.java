@@ -60,32 +60,32 @@ public class FileVersionController {
     @GetMapping("/preview/file")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<InputStreamResource> readHistoryFile(@RequestParam String id) {
-        return fileVersionService.readHistoryFile(id);
+    public ResponseEntity<InputStreamResource> readHistoryFile(@RequestParam String id, @RequestParam String fileId) {
+        return fileVersionService.readHistoryFile(id, fileId);
     }
 
     @Operation(summary = "读取历史simText文件")
     @GetMapping("/preview/text")
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseResult<Object> previewText(@RequestParam String id) {
-        return ResultUtil.success(fileVersionService.getFileById(id));
+    public ResponseResult<Object> previewText(@RequestParam String id, @RequestParam String fileId) {
+        return ResultUtil.success(fileVersionService.getFileById(id, fileId));
     }
 
     @Operation(summary = "恢复该历史版本")
     @PutMapping("/recovery")
     @Permission("cloud:file:update")
     @LogOperatingFun(logType = LogOperation.Type.OPERATION)
-    public ResponseResult<Long> recovery(@RequestParam String id) {
-        return ResultUtil.success(fileVersionService.recovery(id));
+    public ResponseResult<Long> recovery(@RequestParam String id, @RequestParam String fileId) {
+        return ResultUtil.success(fileVersionService.recovery(id, fileId));
     }
 
     @Operation(summary = "删除该历史版本")
     @DeleteMapping("/delete")
     @Permission("cloud:file:delete")
     @LogOperatingFun(logType = LogOperation.Type.OPERATION)
-    public ResponseResult<Object> delete(@RequestParam String id) {
-        fileVersionService.deleteOne(id);
+    public ResponseResult<Object> delete(@RequestParam String id, @RequestParam String fileId) {
+        fileVersionService.deleteOne(id, fileId);
         return ResultUtil.success();
     }
 

@@ -141,6 +141,10 @@ public class WebOssService {
         return FileNameUtils.safeDecode(name);
     }
 
+    public static String getFilenameFromObjectName(String objectName) {
+        return Paths.get(objectName).getFileName().toString();
+    }
+
     public ResponseResult<Object> searchFileAndOpenOssFolder(Path prePth, UploadApiParamDTO upload) {
         String ossPath = CaffeineUtil.getOssPath(prePth);
         IOssService ossService = OssConfigService.getOssStorageService(ossPath);
@@ -188,10 +192,11 @@ public class WebOssService {
 
     /**
      * 设置附加属性
-     * @param ossPath ossPath
-     * @param upload upload
-     * @param list   list
-     * @param objectName objectName
+     *
+     * @param ossPath     ossPath
+     * @param upload      upload
+     * @param list        list
+     * @param objectName  objectName
      * @param finalUserId finalUserId
      */
     @NotNull
@@ -769,12 +774,12 @@ public class WebOssService {
     /**
      * 处理 Range 请求
      *
-     * @param response        HttpServletResponse
-     * @param ossService      IOssService
-     * @param objectName      objectName
-     * @param outputStream    response OutputStream
-     * @param fileSize        文件总大小
-     * @param range           header range 的 值
+     * @param response     HttpServletResponse
+     * @param ossService   IOssService
+     * @param objectName   objectName
+     * @param outputStream response OutputStream
+     * @param fileSize     文件总大小
+     * @param range        header range 的 值
      */
     private void handlerRange(HttpServletResponse response, IOssService ossService, String objectName, OutputStream outputStream, long fileSize, String range) {
         long[] ranges = parseRange(range, fileSize);

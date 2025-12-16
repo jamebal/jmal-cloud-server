@@ -1,5 +1,8 @@
 package com.jmal.clouddisk.oss;
 
+import com.jmal.clouddisk.model.GridFSBO;
+import org.springframework.data.domain.Page;
+
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
@@ -86,6 +89,16 @@ public interface IOssService {
     /**
      * 获取 AbstractOssObject
      * @param objectName object key
+     * @param versionId versionId 版本ID
+     * @return AbstractOssObject
+     */
+    AbstractOssObject getAbstractOssObject(String objectName, String versionId);
+
+    Page<GridFSBO> listObjectVersions(String objectName, Integer pageSize, Integer pageIndex);
+
+    /**
+     * 获取 AbstractOssObject
+     * @param objectName object key
      * @param rangeStart rangeStart 分段
      * @param rangeEnd rangeEnd 分段
      * @return AbstractOssObject
@@ -97,6 +110,15 @@ public interface IOssService {
      * @param objectName object key
      */
     boolean deleteObject(String objectName);
+
+    /**
+     * 删除文件
+     * @param objectName object key
+     * @param versionId versionId 版本ID
+     */
+    boolean deleteObject(String objectName, String versionId);
+
+    void restoreVersion(String objectName, String versionId);
 
     /**
      * 删除文件夹

@@ -47,9 +47,10 @@ public interface IFileVersionService {
     /**
      * 获取历史文件信息
      * @param gridFSId gridFSId
+     * @param fileId 文件id
      * @return FileDocument
      */
-    FileDocument getFileById(String gridFSId);
+    FileDocument getFileById(String gridFSId, String fileId);
 
     /**
      * 流式读取历史simText文件
@@ -73,8 +74,9 @@ public interface IFileVersionService {
     /**
      * 删除指定的历史文件
      * @param id 历史文件id
+     * @param fileId 文件id
      */
-    void deleteOne(String id);
+    void deleteOne(String id, String fileId);
 
     /**
      * 重命名后的需要修改历史文件中 filename
@@ -88,12 +90,13 @@ public interface IFileVersionService {
      *
      * @param gridFSId gridFSId
      */
-    Long recovery(String gridFSId);
+    Long recovery(String gridFSId, String fileId);
 
     /**
      * readHistoryFile
      * @param id 历史文件id
+     * @param fileId 文件id
      * @return ResponseEntity<InputStream>
      */
-    ResponseEntity<InputStreamResource> readHistoryFile(String id);
+    ResponseEntity<InputStreamResource> readHistoryFile(String id, String fileId);
 }
