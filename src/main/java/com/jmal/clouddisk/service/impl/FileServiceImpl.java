@@ -592,11 +592,6 @@ public class FileServiceImpl implements IFileService {
         return commonFileService.getInputStreamResourceEntity(fileDocument, fileDocument.getContentType() == null ? "image/png" : fileDocument.getContentType());
     }
 
-    @Override
-    public ResponseEntity<InputStreamResource> getInputStreamResourceEntity(FileDocument fileDocument) {
-        return commonFileService.getInputStreamResourceEntity(fileDocument, fileDocument.getContentType());
-    }
-
     private void setMediaCover(String id, String username, FileDocument fileDocument, boolean hasOldFileDocument) {
         String contentType = fileDocument.getContentType();
         if (contentType.contains(Constants.VIDEO)) {
