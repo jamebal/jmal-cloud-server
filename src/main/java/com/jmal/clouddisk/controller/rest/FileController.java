@@ -44,7 +44,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -259,15 +258,6 @@ public class FileController {
         } else {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(), ExceptionType.MISSING_PARAMETERS.getMsg());
         }
-    }
-
-    @Operation(summary = "获取dwg文件对应的mxweb文件")
-    @GetMapping("/view/mxweb/{fileId}")
-    @Permission("cloud:file:list")
-    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<InputStreamResource> getMxweb(@PathVariable String fileId) throws FileNotFoundException {
-        Optional<FileDocument> file = fileService.getMxweb(fileId);
-        return file.map(fileService::getInputStreamResourceEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     @Operation(summary = "显示缩略图")

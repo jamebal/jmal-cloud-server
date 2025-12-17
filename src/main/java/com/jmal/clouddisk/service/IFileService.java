@@ -16,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -179,13 +178,6 @@ public interface IFileService {
     Optional<FileDocument> thumbnail(String id, Boolean showCover);
 
     /**
-     * 获取dwg文件对应的mxweb文件
-     * @param id fileId
-     * @return FileDocument
-     */
-    Optional<FileDocument> getMxweb(String id) throws FileNotFoundException;
-
-    /**
      * 显示缩略图(媒体文件封面)
      * @param id fileId
      * @param username username
@@ -194,7 +186,6 @@ public interface IFileService {
     Optional<FileDocument> coverOfMedia(String id, String username);
 
     ResponseEntity<InputStreamResource> getImageInputStreamResourceEntity(FileDocument fileDocument);
-    ResponseEntity<InputStreamResource> getInputStreamResourceEntity(FileDocument fileDocument);
 
     /**
      * 分享里的打包下载

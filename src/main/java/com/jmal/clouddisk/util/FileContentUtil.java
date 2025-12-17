@@ -5,19 +5,17 @@ import lombok.extern.slf4j.Slf4j;
 import nl.siegmann.epublib.domain.Book;
 import nl.siegmann.epublib.domain.Resource;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.jmal.clouddisk.util.FFMPEGUtils.getWaitingForResults;
 
 @Slf4j
 public class FileContentUtil {
-
-    private static final String mxcadassemblyPath = "/usr/local/mxcad";
 
     public static void readFailed(File file, IOException e) {
         log.warn("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage());
@@ -62,48 +60,4 @@ public class FileContentUtil {
         return null;
     }
 
-    /**
-     * 将dwg文件转换为mxweb文件的命令
-     *
-     * @param sourceFile dwg文件绝对路径
-     * @param outputPath 输出路径
-     * @param outputFile 输出文件名
-     */
-    public static void dwgConvert(String sourceFile, String outputPath, String outputFile) {
-        if (!Paths.get(mxcadassemblyPath).toFile().exists()) {
-            return;
-        }
-        try {
-            ProcessBuilder processBuilder = dwgConvertCommand(sourceFile, outputPath, outputFile);
-            Process process = processBuilder.start();
-            outputPath = getWaitingForResults(outputPath, processBuilder, process, 60);
-            if (outputPath != null) {
-                log.info("dwg文件转换成功, outputPath: {}", outputPath);
-            }
-        } catch (InterruptedException | IOException e) {
-            log.error(e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 将dwg文件转换为mxweb文件的命令
-     * @param sourceFile dwg文件绝对路径
-     * @param outPath 输出路径
-     * @param outFile 输出文件名
-     * @return ProcessBuilder
-     */
-    private static ProcessBuilder dwgConvertCommand(String sourceFile, String outPath, String outFile) {
-        // 转换文件路径.
-        String command = "./mxcadassembly";
-        // 转换参数。
-        String path = "{'srcpath':'" + sourceFile + "','outpath':'" + outPath + "','outname':'" + outFile + "'}";
-        ProcessBuilder processBuilder = new ProcessBuilder();
-        processBuilder.redirectErrorStream(true);
-        List<String> commands = new ArrayList<>();
-        commands.add(command);
-        commands.add(path);
-        processBuilder.command(commands).directory(new File(mxcadassemblyPath));
-        processBuilder.redirectErrorStream(true);
-        return processBuilder;
-    }
 }

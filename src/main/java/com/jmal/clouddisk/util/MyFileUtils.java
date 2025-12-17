@@ -29,7 +29,7 @@ import java.util.zip.GZIPOutputStream;
 @Slf4j
 public class MyFileUtils {
 
-    public static Set<String> hasContentTypes = Set.of("pdf", "drawio", "mind", "doc", "docx", "xls", "xlsx", "xlsm", "ppt", "pptx", "csv", "tsv", "dotm", "xlt", "xltm", "dot", "dotx", "xlam", "xla", "pages", "epub", "dwg");
+    public static Set<String> hasContentTypes = Set.of("pdf", "drawio", "mind", "doc", "docx", "xls", "xlsx", "xlsm", "ppt", "pptx", "csv", "tsv", "dotm", "xlt", "xltm", "dot", "dotx", "xlam", "xla", "pages", "epub");
 
     private static final Set<String> BINARY_TYPE_KEYWORDS = Set.of(
             Constants.VIDEO,

@@ -395,7 +395,6 @@ public class LuceneService implements ApplicationListener<LuceneIndexQueueEvent>
             String type = FileTypeUtil.getType(file).toLowerCase();
             switch (type) {
                 case "pdf" -> popplerPdfReader.readPdfContent(file, fileId, writer);
-                case "dwg" -> readContentService.dwg2mxweb(file, fileId);
                 case "epub" -> readContentService.readEpubContent(file, fileId, writer);
                 case "ppt", "pptx" -> readContentService.readPPTContent(file, writer);
                 case "doc", "docx" -> readContentService.readWordContent(file, writer);

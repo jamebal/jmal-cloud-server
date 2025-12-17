@@ -11,7 +11,6 @@ chown ${USER_UID}:${USER_GID} /jmalcloud
 chown -R ${USER_UID}:${USER_GID} /jmalcloud/models
 chown -R ${USER_UID}:${USER_GID} /jmalcloud/tess4j
 chown ${USER_UID}:${USER_GID} /jmalcloud/ip2region.xdb
-chown -R ${USER_UID}:${USER_GID} /usr/local/mxcad
 chown -R ${USER_UID}:${USER_GID} /app
 
 RESET_ADMIN_PASSWORD=${RESET_ADMIN_PASSWORD:-"false"}
