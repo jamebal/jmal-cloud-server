@@ -31,7 +31,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -207,15 +206,6 @@ public class ShareController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseEntity<InputStreamResource> publicThumbnail(String id, Boolean showCover, HttpServletRequest request) {
         return thumbnail(id, showCover, request);
-    }
-
-    @Operation(summary = "获取dwg文件对应的mxweb文件")
-    @GetMapping("/public/s/view/mxweb/{fileId}/{shareId}")
-    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
-    public ResponseEntity<InputStreamResource> publicGetMxweb(HttpServletRequest request, @PathVariable String shareId, @PathVariable String fileId) throws FileNotFoundException {
-        validShare(request, shareId);
-        Optional<FileDocument> file = fileService.getMxweb(fileId);
-        return file.map(fileService::getImageInputStreamResourceEntity).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     @Operation(summary = "显示缩略图")

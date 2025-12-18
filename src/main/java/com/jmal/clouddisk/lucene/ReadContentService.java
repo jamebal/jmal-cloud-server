@@ -1,7 +1,6 @@
 package com.jmal.clouddisk.lucene;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.impl.PathService;
 import com.jmal.clouddisk.util.FileContentUtil;
 import lombok.RequiredArgsConstructor;
@@ -19,18 +18,32 @@ import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.hwpf.extractor.WordExtractor;
 import org.apache.poi.openxml4j.exceptions.OLE2NotOfficeXmlFileException;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xslf.usermodel.XSLFShape;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.apache.poi.xslf.usermodel.XSLFTextShape;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.poi.xwpf.usermodel.*;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFFooter;
+import org.apache.poi.xwpf.usermodel.XWPFHeader;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFTable;
+import org.apache.poi.xwpf.usermodel.XWPFTableCell;
+import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
@@ -43,22 +56,6 @@ public class ReadContentService {
     private final PathService pathService;
 
     private final CoverFileService coverFileService;
-
-
-    /**
-     * 将 DWG 文件转换为 MXWeb 文件
-     *
-     * @param file   文件
-     * @param fileId 文件 ID
-     */
-    public void dwg2mxweb(File file, String fileId) {
-        String username = pathService.getUsernameByAbsolutePath(Path.of(file.getAbsolutePath()));
-        // 生成封面图像
-        if (CharSequenceUtil.isNotBlank(fileId)) {
-            String outputName = file.getName() + Constants.MXWEB_SUFFIX;
-            FileContentUtil.dwgConvert(file.getAbsolutePath(), pathService.getVideoCacheDir(username, fileId), outputName);
-        }
-    }
 
     public void readEpubContent(File file, String fileId, Writer writer) {
         try (InputStream fileInputStream = new FileInputStream(file)) {

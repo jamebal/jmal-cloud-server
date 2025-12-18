@@ -560,20 +560,6 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public Optional<FileDocument> getMxweb(String id) throws FileNotFoundException {
-        FileDocument fileDocument = fileQueryDAO.findBaseFileDocumentById(id, true);
-        if (fileDocument != null) {
-            String username = userService.getUserNameById(fileDocument.getUserId());
-            File file = Paths.get(pathService.getVideoCacheDir(username, id), fileDocument.getName() + Constants.MXWEB_SUFFIX).toFile();
-            if (file.exists()) {
-                fileDocument.setInputStream(new FileInputStream(file));
-                return Optional.of(fileDocument);
-            }
-        }
-        return Optional.empty();
-    }
-
-    @Override
     public Optional<FileDocument> coverOfMedia(String id, String username) throws CommonException {
         username = userLoginHolder.getUsername();
         FileDocument fileDocument = commonFileService.getFileDocumentById(id, false);
@@ -604,11 +590,6 @@ public class FileServiceImpl implements IFileService {
     @Override
     public ResponseEntity<InputStreamResource> getImageInputStreamResourceEntity(FileDocument fileDocument) {
         return commonFileService.getInputStreamResourceEntity(fileDocument, fileDocument.getContentType() == null ? "image/png" : fileDocument.getContentType());
-    }
-
-    @Override
-    public ResponseEntity<InputStreamResource> getInputStreamResourceEntity(FileDocument fileDocument) {
-        return commonFileService.getInputStreamResourceEntity(fileDocument, fileDocument.getContentType());
     }
 
     private void setMediaCover(String id, String username, FileDocument fileDocument, boolean hasOldFileDocument) {

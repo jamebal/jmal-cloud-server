@@ -112,8 +112,6 @@ public class Constants {
 
     public static final int LOCAL_CHUNK_SIZE = 1024 * 1024;
 
-    public static final String MXWEB_SUFFIX = ".mxweb";
-
     public final static String VO_KEY = "****************";
 
 }
