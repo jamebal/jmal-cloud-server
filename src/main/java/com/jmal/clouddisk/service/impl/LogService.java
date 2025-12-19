@@ -152,14 +152,13 @@ public class LogService {
     }
 
     private String getIpAddress(HttpServletRequest request) {
-        String ip = request.getRemoteHost();
-        if (CharSequenceUtil.isNotBlank(ip)) {
-            return ip;
-        }
-        ip = request.getHeader("x-forwarded-for");
+        String ip = request.getHeader("x-forwarded-for");
         if (!CharSequenceUtil.isBlank(ip) && (ip.contains(","))) {
             // 多次反向代理后会有多个ip值，第一个ip才是真实ip
             ip = ip.split(",")[0];
+        }
+        if (CharSequenceUtil.isBlank(ip)) {
+            ip = request.getHeader("CF-Connecting-IP");
         }
         if (CharSequenceUtil.isBlank(ip)) {
             ip = request.getHeader("X-real-ip");
@@ -178,6 +177,9 @@ public class LogService {
         }
         if (CharSequenceUtil.isBlank(ip)) {
             ip = request.getHeader("X-Real-IP");
+        }
+        if (CharSequenceUtil.isNotBlank(ip)) {
+            return request.getRemoteHost();
         }
         return ip;
     }
