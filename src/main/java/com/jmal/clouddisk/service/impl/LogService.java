@@ -321,7 +321,7 @@ public class LogService {
             try {
                 ipSearcher.close();
             } catch (IOException e) {
-                log.error("failed to close searcher\n", e);
+                log.error("failed to close ip searcher", e);
             }
         }
     }
