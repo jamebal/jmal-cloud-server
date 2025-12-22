@@ -179,7 +179,7 @@ public class LogService {
             return ipInfo;
         }
 
-        String[] parts = IPUtil.SPLIT_PATTERN.split(region, IPUtil.REGION_LENGTH);
+        String[] parts = IPUtil.SPLIT_PATTERN.split(region);
 
         if (parts.length != IPUtil.REGION_LENGTH) {
             return ipInfo;

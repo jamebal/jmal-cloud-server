@@ -30,8 +30,12 @@ public final class IPUtil {
     public static String getClientIP(HttpServletRequest request) {
         for (String header : IP_HEADERS) {
             String ip = request.getHeader(header);
-            if (isValidIp(ip)) {
-                return extractFirstIp(ip);
+            if (ip == null) {
+                continue;
+            }
+            String firstIp = extractFirstIp(ip);
+            if (isValidIp(firstIp)) {
+                return firstIp;
             }
         }
         return request.getRemoteAddr();
