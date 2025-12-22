@@ -175,7 +175,7 @@ public class LogService {
     public LogOperation.IpInfo region2IpInfo(String region) {
         LogOperation.IpInfo ipInfo = new LogOperation.IpInfo();
 
-        if (region == null || region.isEmpty()) {
+        if (CharSequenceUtil.isBlank(region)) {
             return ipInfo;
         }
 
