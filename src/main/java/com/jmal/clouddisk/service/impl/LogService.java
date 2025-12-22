@@ -10,12 +10,14 @@ import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.LogOperationDTO;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.service.Constants;
+import com.jmal.clouddisk.util.IPUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import com.jmal.clouddisk.util.TimeUntils;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,8 +43,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class LogService {
-
-    private static final int REGION_LENGTH = 5;
 
     private final ILogDAO logDAO;
 
@@ -145,43 +146,10 @@ public class LogService {
         // 请求方式
         logOperation.setMethod(request.getMethod());
         // 客户端ip
-        String ip = getIpAddress(request);
+        String ip = IPUtil.getClientIP(request);
         logOperation.setIp(ip);
         setIpInfo(logOperation, ip);
         return logOperation;
-    }
-
-    private String getIpAddress(HttpServletRequest request) {
-        String ip = request.getHeader("x-forwarded-for");
-        if (!CharSequenceUtil.isBlank(ip) && (ip.contains(","))) {
-            // 多次反向代理后会有多个ip值，第一个ip才是真实ip
-            ip = ip.split(",")[0];
-        }
-        if (CharSequenceUtil.isBlank(ip)) {
-            ip = request.getHeader("CF-Connecting-IP");
-        }
-        if (CharSequenceUtil.isBlank(ip)) {
-            ip = request.getHeader("X-real-ip");
-        }
-        if (CharSequenceUtil.isBlank(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (CharSequenceUtil.isBlank(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (CharSequenceUtil.isBlank(ip)) {
-            ip = request.getHeader("HTTP_CLIENT_IP");
-        }
-        if (CharSequenceUtil.isBlank(ip)) {
-            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
-        }
-        if (CharSequenceUtil.isBlank(ip)) {
-            ip = request.getHeader("X-Real-IP");
-        }
-        if (CharSequenceUtil.isNotBlank(ip)) {
-            return request.getRemoteHost();
-        }
-        return ip;
     }
 
     /***
@@ -201,33 +169,30 @@ public class LogService {
         }
     }
 
-    /***
-     * 解析IP区域信息
+    /**
+     * 解析IP区域信息, region格式: 国家|区域|省份|城市|运营商
      */
     public LogOperation.IpInfo region2IpInfo(String region) {
         LogOperation.IpInfo ipInfo = new LogOperation.IpInfo();
-        String[] r = region.split("\\|");
-        if (r.length != REGION_LENGTH) return ipInfo;
-        String country = r[0];
-        if (!Constants.REGION_DEFAULT.equals(country)) {
-            ipInfo.setCountry(country);
+
+        if (region == null || region.isEmpty()) {
+            return ipInfo;
         }
-        String area = r[1];
-        if (!Constants.REGION_DEFAULT.equals(area)) {
-            ipInfo.setArea(area);
+
+        String[] parts = IPUtil.SPLIT_PATTERN.split(region, IPUtil.REGION_LENGTH);
+
+        if (parts.length != IPUtil.REGION_LENGTH) {
+            return ipInfo;
         }
-        String province = r[2];
-        if (!Constants.REGION_DEFAULT.equals(province)) {
-            ipInfo.setProvince(province);
-        }
-        String city = r[3];
-        if (!Constants.REGION_DEFAULT.equals(city)) {
-            ipInfo.setCity(city);
-        }
-        String operators = r[4];
-        if (!Constants.REGION_DEFAULT.equals(operators)) {
-            ipInfo.setOperators(operators);
-        }
+
+        String def = Constants.REGION_DEFAULT;
+
+        if (!def.equals(parts[0])) ipInfo.setCountry(parts[0]);
+        if (!def.equals(parts[1])) ipInfo.setArea(parts[1]);
+        if (!def.equals(parts[2])) ipInfo.setProvince(parts[2]);
+        if (!def.equals(parts[3])) ipInfo.setCity(parts[3]);
+        if (!def.equals(parts[4])) ipInfo.setOperators(parts[4]);
+
         return ipInfo;
     }
 
@@ -348,5 +313,16 @@ public class LogService {
      */
     public long getVisitsByUrl(String url) {
         return logDAO.countByUrl(url);
+    }
+
+    @PreDestroy
+    public void destroy() {
+        if (ipSearcher != null) {
+            try {
+                ipSearcher.close();
+            } catch (IOException e) {
+                log.error("failed to close searcher\n", e);
+            }
+        }
     }
 }
