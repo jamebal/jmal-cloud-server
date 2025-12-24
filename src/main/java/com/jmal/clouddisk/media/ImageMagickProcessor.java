@@ -67,14 +67,14 @@ public class ImageMagickProcessor {
      * @param file   File
      */
     public void generateThumbnail(File file, FileDocument fileDocument) {
-        try {
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        try(FileInputStream fileInputStream = new FileInputStream(file);
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
             String extName = FileUtil.extName(file);
             if ("gif".equalsIgnoreCase(extName)) {
                 // GIF 图片单独处理，保持动画效果
-                cropImage(new FileInputStream(file), "1", "256", "256", byteArrayOutputStream, "gif");
+                cropImage(fileInputStream, "1", "256", "256", byteArrayOutputStream, "gif");
             } else {
-                cropImage(new FileInputStream(file), "1", "256", "256", byteArrayOutputStream, "png");
+                cropImage(fileInputStream, "1", "256", "256", byteArrayOutputStream, "png");
             }
             if (dataSourceProperties.getType() == DataSourceType.mongodb) {
                 fileDocument.setContent(byteArrayOutputStream.toByteArray());
@@ -173,7 +173,7 @@ public class ImageMagickProcessor {
      * @param w           目标最大宽度 (字符串)
      * @param h           目标最大高度 (字符串, 可选)
      * @param outputStream 输出流，用于接收处理后的 png 图片数据
-     * @param outputFormat 输出格式 (如 "png", "jpeg")
+     * @param outputFormat 输出格式 (png 和 gif)
      */
     public static void cropImage(InputStream inputStream, String q, String w, String h, OutputStream outputStream, String outputFormat) {
         // 1. 解析输入参数
@@ -285,18 +285,22 @@ public class ImageMagickProcessor {
      * @return 一个包含 [width, height] 的数组，如果失败则返回 null
      */
     public static ImageFormat identifyFormat(File imageFile) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            CommandLine cmdLine = new CommandLine("magick");
+            cmdLine.addArgument("identify", false);
+            cmdLine.addArgument("-format", false);
+            cmdLine.addArgument(ImageFormat.DEFAULT_FORMAT_PARAM, false);
+            cmdLine.addArgument(imageFile.getAbsolutePath(), false);
+            CommandUtil.execCommand(cmdLine, null, outputStream);
 
-        CommandLine cmdLine = new CommandLine("magick");
-        cmdLine.addArgument("identify", false);
-        cmdLine.addArgument("-format", false);
-        cmdLine.addArgument(ImageFormat.DEFAULT_FORMAT_PARAM, false);
-        cmdLine.addArgument(imageFile.getAbsolutePath(), false);
-        CommandUtil.execCommand(cmdLine, null, outputStream);
+            String output = IoUtil.toStr(outputStream, StandardCharsets.UTF_8);
 
-        String output = IoUtil.toStr(outputStream, StandardCharsets.UTF_8);
+            return ImageFormat.getImageFormat(output);
+        } catch (IOException e) {
+            log.error("Failed to identify image format: {}", imageFile.getAbsolutePath(), e);
+            throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), "获取图片信息失败");
+        }
 
-        return ImageFormat.getImageFormat(output);
     }
 
     @Builder
