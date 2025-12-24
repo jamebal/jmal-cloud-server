@@ -272,7 +272,7 @@ public class ImageMagickProcessor {
         cmdLine.addArgument("-layers", false);
         cmdLine.addArgument("optimize", false);
 
-        cmdLine.addArgument("-", false);
+        cmdLine.addArgument("gif:-", false);
 
         return cmdLine;
     }
@@ -294,7 +294,10 @@ public class ImageMagickProcessor {
             CommandUtil.execCommand(cmdLine, null, outputStream);
 
             String output = IoUtil.toStr(outputStream, StandardCharsets.UTF_8);
-
+            if (CharSequenceUtil.isBlank(output)) {
+                log.error("ImageMagick identify command returned empty output for file: {}", imageFile.getAbsolutePath());
+                throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), "获取图片信息失败: identify 命令返回为空");
+            }
             return ImageFormat.getImageFormat(output);
         } catch (IOException e) {
             log.error("Failed to identify image format: {}", imageFile.getAbsolutePath(), e);
