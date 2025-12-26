@@ -35,28 +35,31 @@ public class CommandUtil {
      */
     public static void execCommand(CommandLine cmdLine, InputStream inputStream, OutputStream outputStream, Duration timeout) {
         DefaultExecutor executor = DefaultExecutor.builder().get();
-        ByteArrayOutputStream stdErr = new ByteArrayOutputStream();
-        // 参数：标准输出、标准错误、标准输入
-        PumpStreamHandler streamHandler = new PumpStreamHandler(outputStream, stdErr, inputStream);
-        executor.setStreamHandler(streamHandler);
+        try(ByteArrayOutputStream stdErr = new ByteArrayOutputStream()) {
+            // 参数：标准输出、标准错误、标准输入
+            PumpStreamHandler streamHandler = new PumpStreamHandler(outputStream, stdErr, inputStream);
+            executor.setStreamHandler(streamHandler);
 
-        ExecuteWatchdog watchdog = ExecuteWatchdog.builder().setTimeout(timeout).get();
-        executor.setWatchdog(watchdog);
+            ExecuteWatchdog watchdog = ExecuteWatchdog.builder().setTimeout(timeout).get();
+            executor.setWatchdog(watchdog);
 
-        try {
-            int exitValue = executor.execute(cmdLine);
-            log.debug("command exec success, command: {}", String.join(" ", cmdLine.toStrings()));
-            if (exitValue != 0) {
+            try {
+                int exitValue = executor.execute(cmdLine);
+                log.debug("command exec success, command: {}", String.join(" ", cmdLine.toStrings()));
+                if (exitValue != 0) {
+                    String errMsg = stdErr.toString(StandardCharsets.UTF_8);
+                    log.error("command exec failed, command: {}, exit code: {}, stderr: {}", String.join(" ", cmdLine.toStrings()), exitValue, errMsg);
+                }
+            } catch (IOException e) {
                 String errMsg = stdErr.toString(StandardCharsets.UTF_8);
-                log.error("command exec failed, command: {}, exit code: {}, stderr: {}", String.join(" ", cmdLine.toStrings()), exitValue, errMsg);
+                if (watchdog.killedProcess()) {
+                    log.error("command exec timeout, command: {}, stderr: {}", String.join(" ", cmdLine.toStrings()), errMsg);
+                } else {
+                    log.error("command exec error, command: {}, stderr: {}, {}", String.join(" ", cmdLine.toStrings()), errMsg, e.getMessage());
+                }
             }
         } catch (IOException e) {
-            String errMsg = stdErr.toString(StandardCharsets.UTF_8);
-            if (watchdog.killedProcess()) {
-                log.error("command exec timeout, command: {}, stderr: {}", String.join(" ", cmdLine.toStrings()), errMsg);
-            } else {
-                log.error("command exec error, command: {}, stderr: {}, {}", String.join(" ", cmdLine.toStrings()), errMsg, e.getMessage());
-            }
+            log.error("command exec error, command: {}, {}", String.join(" ", cmdLine.toStrings()), e.getMessage());
         }
     }
 

@@ -33,7 +33,7 @@ public interface GroupRepository extends JpaRepository<GroupDO, String>, JpaSpec
             nativeQuery = true)
     List<GroupDO> findAllByRoleIdList_MySQL(@Param("roleIdListAsJson") String roleIdListAsJson);
 
-    @Query(value = "SELECT DISTINCT * FROM user_groups g, json_each(g.roles) je WHERE je.value IN (:roleIdList)",
+    @Query(value = "SELECT DISTINCT g.* FROM user_groups g, json_each(g.roles) je WHERE je.value IN (:roleIdList)",
             nativeQuery = true)
     List<GroupDO> findAllByRoleIdList_SQLite(@Param("roleIdList") Collection<String> roleIdList);
 }

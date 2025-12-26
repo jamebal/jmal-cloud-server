@@ -89,11 +89,11 @@ public class FileInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) throws IOException {
-        if (internalValid(request, response)) return true;
-
-        if (fileAuthError(request, response)) {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            return false;
+        if (!internalValid(request, response)) {
+            if (fileAuthError(request, response)) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return false;
+            }
         }
         Path path = Paths.get(request.getRequestURI());
         String filename = getDownloadFilename(request, path);
@@ -177,6 +177,9 @@ public class FileInterceptor implements HandlerInterceptor {
         System.out.println(URLUtil.encode("未命名文件 副本.txt", StandardCharsets.UTF_8));
     }
 
+    /**
+     * 内部请求校验
+     */
     private boolean internalValid(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
         String requestId = (String) request.getAttribute("requestId");
         String internalToken = (String) request.getAttribute("internalToken");
@@ -184,11 +187,8 @@ public class FileInterceptor implements HandlerInterceptor {
         if (CharSequenceUtil.isNotBlank(requestId) && CharSequenceUtil.isNotBlank(internalToken)) {
             if (!PreFileInterceptor.isValidInternalTokenCache(requestId, internalToken)) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return false;
             }
-            Path path = Paths.get(request.getRequestURI());
-            String filename = getDownloadFilename(request, path);
-            if (downloadOssFile(request, response, filename, path)) return false;
-            setHeader(request, response);
             return true;
         }
         return false;
@@ -366,7 +366,9 @@ public class FileInterceptor implements HandlerInterceptor {
         String w = request.getParameter("w");
         String h = request.getParameter("h");
         responseImageFileHeader(response, file.getName());
-        ImageMagickProcessor.cropImage(new FileInputStream(file), q, w, h, response.getOutputStream());
+        try (InputStream inputStream = new FileInputStream(file)) {
+            ImageMagickProcessor.cropImage(inputStream, q, w, h, response.getOutputStream());
+        }
     }
 
     private File getFileByRequest(HttpServletRequest request) {

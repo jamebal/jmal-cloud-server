@@ -67,9 +67,15 @@ public class ImageMagickProcessor {
      * @param file   File
      */
     public void generateThumbnail(File file, FileDocument fileDocument) {
-        try {
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            cropImage(new FileInputStream(file), "1", "256", "256", byteArrayOutputStream);
+        try(FileInputStream fileInputStream = new FileInputStream(file);
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+            String extName = FileUtil.extName(file);
+            if ("gif".equalsIgnoreCase(extName)) {
+                // GIF 图片单独处理，保持动画效果
+                cropImage(fileInputStream, "1", "256", "256", byteArrayOutputStream, "gif");
+            } else {
+                cropImage(fileInputStream, "1", "256", "256", byteArrayOutputStream, "png");
+            }
             if (dataSourceProperties.getType() == DataSourceType.mongodb) {
                 fileDocument.setContent(byteArrayOutputStream.toByteArray());
             } else {
@@ -155,6 +161,21 @@ public class ImageMagickProcessor {
      * @param outputStream 输出流，用于接收处理后的 png 图片数据
      */
     public static void cropImage(InputStream inputStream, String q, String w, String h, OutputStream outputStream) {
+        cropImage(inputStream, q, w, h, outputStream, null);
+    }
+
+    /**
+     * 使用单一的 ImageMagick 命令，从 InputStream 对图片进行条件性缩放和质量调整。
+     * 只有当图片尺寸大于目标尺寸时，才会进行缩放。
+     *
+     * @param inputStream 源图片输入流
+     * @param q           质量 (字符串 "0.0" 到 "1.0", 默认 0.8)
+     * @param w           目标最大宽度 (字符串)
+     * @param h           目标最大高度 (字符串, 可选)
+     * @param outputStream 输出流，用于接收处理后的 png 图片数据
+     * @param outputFormat 输出格式 (png 和 gif)
+     */
+    public static void cropImage(InputStream inputStream, String q, String w, String h, OutputStream outputStream, String outputFormat) {
         // 1. 解析输入参数
         double quality = parseQuality(q);
         int targetWidth = parseDimension(w);
@@ -167,9 +188,17 @@ public class ImageMagickProcessor {
             // IoUtil.copy(inputStream, outputStream);
             return;
         }
+        if (outputFormat == null) {
+            outputFormat = "png";
+        }
 
         // 2. 构建单一的、条件性的 ImageMagick 命令
-        CommandLine cmdLine = buildConditionalResizeCommand(targetWidth, targetHeight, quality);
+        CommandLine cmdLine;
+        if ("gif".equals(outputFormat)) {
+            cmdLine = buildConditionalResizeGIFCommand(targetWidth, targetHeight);
+        } else {
+            cmdLine = buildConditionalResizeCommand(targetWidth, targetHeight, quality);
+        }
 
         // 3. 执行命令，将输入流管道连接到命令的标准输入
         try {
@@ -218,6 +247,37 @@ public class ImageMagickProcessor {
     }
 
     /**
+     * 构建一个使用条件缩放的 ImageMagick 命令行，专门用于处理 GIF 图片以保持动画效果。
+     * @param targetWidth 目标宽度
+     * @param targetHeight 目标高度 (如果<0则忽略)
+     * @return 构建好的命令行对象
+     */
+    private static CommandLine buildConditionalResizeGIFCommand(int targetWidth, int targetHeight) {
+        CommandLine cmdLine = new CommandLine("magick");
+
+        cmdLine.addArgument("-", false);
+
+        cmdLine.addArgument("-coalesce", false);
+        cmdLine.addArgument("-resize", false);
+
+        StringBuilder geometry = new StringBuilder();
+        geometry.append(targetWidth);
+        if (targetHeight > 0) {
+            geometry.append("x").append(targetHeight);
+        }
+        geometry.append(">");
+
+        cmdLine.addArgument(geometry.toString(), false);
+
+        cmdLine.addArgument("-layers", false);
+        cmdLine.addArgument("optimize", false);
+
+        cmdLine.addArgument("gif:-", false);
+
+        return cmdLine;
+    }
+
+    /**
      * <p>获取图片尺寸</p>
      * 命令: identify -format "%w %h" image.jpg
      *
@@ -225,18 +285,25 @@ public class ImageMagickProcessor {
      * @return 一个包含 [width, height] 的数组，如果失败则返回 null
      */
     public static ImageFormat identifyFormat(File imageFile) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            CommandLine cmdLine = new CommandLine("magick");
+            cmdLine.addArgument("identify", false);
+            cmdLine.addArgument("-format", false);
+            cmdLine.addArgument(ImageFormat.DEFAULT_FORMAT_PARAM, false);
+            cmdLine.addArgument(imageFile.getAbsolutePath(), false);
+            CommandUtil.execCommand(cmdLine, null, outputStream);
 
-        CommandLine cmdLine = new CommandLine("magick");
-        cmdLine.addArgument("identify", false);
-        cmdLine.addArgument("-format", false);
-        cmdLine.addArgument(ImageFormat.DEFAULT_FORMAT_PARAM, false);
-        cmdLine.addArgument(imageFile.getAbsolutePath(), false);
-        CommandUtil.execCommand(cmdLine, null, outputStream);
+            String output = IoUtil.toStr(outputStream, StandardCharsets.UTF_8);
+            if (CharSequenceUtil.isBlank(output)) {
+                log.error("ImageMagick identify command returned empty output for file: {}", imageFile.getAbsolutePath());
+                throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), "获取图片信息失败: identify 命令返回为空");
+            }
+            return ImageFormat.getImageFormat(output);
+        } catch (IOException e) {
+            log.error("Failed to identify image format: {}", imageFile.getAbsolutePath(), e);
+            throw new CommonException(ExceptionType.SYSTEM_ERROR.getCode(), "获取图片信息失败");
+        }
 
-        String output = IoUtil.toStr(outputStream, StandardCharsets.UTF_8);
-
-        return ImageFormat.getImageFormat(output);
     }
 
     @Builder
