@@ -7,38 +7,46 @@ import org.springframework.aot.hint.TypeReference;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class PoiRuntimeHints implements RuntimeHintsRegistrar {
 
     @Override
     public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-        // 扫描整个根包
-        String rootPackage = "org.openxmlformats.schemas";
+        Set<String> packages = new HashSet<>();
+        packages.add("org.openxmlformats.schemas.wordprocessingml.x2006.main");
+        packages.add("org.openxmlformats.schemas.wordprocessingml.x2006.main.impl");
+        packages.add("org.openxmlformats.schemas.spreadsheetml.x2006.main");
+        packages.add("org.openxmlformats.schemas.spreadsheetml.x2006.main.impl");
+        packages.add("org.openxmlformats.schemas.presentationml.x2006.main");
+        packages.add("org.openxmlformats.schemas.presentationml.x2006.main.impl");
+
+        packages.add("org.openxmlformats.schemas.drawingml.x2006.main");
+        packages.add("org.openxmlformats.schemas.drawingml.x2006.main.impl");
+        packages.add("org.openxmlformats.schemas.drawingml.x2006.picture");
+        packages.add("org.openxmlformats.schemas.drawingml.x2006.picture.impl");
+        packages.add("org.openxmlformats.schemas.drawingml.x2006.wordprocessingDrawing");
+        packages.add("org.openxmlformats.schemas.drawingml.x2006.wordprocessingDrawing.impl");
+
+        packages.add("org.openxmlformats.schemas.officeDocument.x2006.main");
+        packages.add("org.openxmlformats.schemas.officeDocument.x2006.main.impl");
+        packages.add("org.openxmlformats.schemas.officeDocument.x2006.relationships");
+        packages.add("org.openxmlformats.schemas.officeDocument.x2006.relationships.impl");
 
         ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
         scanner.addIncludeFilter(new AssignableTypeFilter(Object.class));
 
-        // 扫描所有类
-        scanner.findCandidateComponents(rootPackage).forEach(bean -> {
-            String className = bean.getBeanClassName();
-            if (className != null) {
-                // 注册类本身
-                registerWithFactory(hints, className);
-            }
-        });
-
-        scanner.findCandidateComponents("org.apache.poi.schemas").forEach(bean -> {
-            registerWithFactory(hints, bean.getBeanClassName());
-        });
-
-        // XMLBeans 基础实现类
-        String[] baseImpls = {
-                "org.apache.xmlbeans.impl.values.XmlComplexContentImpl",
-                "org.apache.xmlbeans.impl.values.XmlAnyTypeImpl",
-                "org.apache.xmlbeans.impl.store.Xobj",
-        };
-        for (String impl : baseImpls) {
-            hints.reflection().registerType(TypeReference.of(impl),
-                    MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
+        for (String basePackage : packages) {
+            scanner.findCandidateComponents(basePackage).forEach(bean -> {
+                String className = bean.getBeanClassName();
+                if (className != null) {
+                    registerType(hints, className);
+                    // 强制注册其内部工厂 Factory
+                    registerType(hints, className + "$Factory");
+                    registerType(hints, className + "$Enum");
+                }
+            });
         }
 
         // 资源全量注册
@@ -50,21 +58,10 @@ public class PoiRuntimeHints implements RuntimeHintsRegistrar {
         hints.resources().registerPattern("META-INF/services/org.apache.*");
     }
 
-    private void registerWithFactory(RuntimeHints hints, String className) {
-        // 注册当前类
+    private void registerType(RuntimeHints hints, String className) {
         hints.reflection().registerType(TypeReference.of(className),
                 MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
                 MemberCategory.INVOKE_PUBLIC_METHODS,
                 MemberCategory.DECLARED_FIELDS);
-
-        // XMLBeans 的每个类基本都有一个 $Factory 内部类负责实例化
-        // 比如 CTPicture -> CTPicture$Factory
-        hints.reflection().registerType(TypeReference.of(className + "$Factory"),
-                MemberCategory.INVOKE_PUBLIC_METHODS,
-                MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
-
-        // 某些还有 $Enum 内部类
-        hints.reflection().registerType(TypeReference.of(className + "$Enum"),
-                MemberCategory.INVOKE_PUBLIC_METHODS);
     }
 }
