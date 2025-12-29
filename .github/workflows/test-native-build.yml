@@ -107,78 +107,82 @@ jobs:
       - name: Check Maven version
         run: mvn -v
 
-      # 构建带插桩的 Native Image
-      - name: Build Instrumented Native Image
-        run: |
-          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }}  -DskipTests -Dnative-image.jvmArgs="-Xmx28g" -Dnative-image.addArgs="--pgo-instrument -o target/jmalcloud-instrumented"
+#      # 构建带插桩的 Native Image
+#      - name: Build Instrumented Native Image
+#        run: |
+#          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }}  -DskipTests -Dnative-image.jvmArgs="-Xmx32g" -Dnative-image.addArgs="--pgo-instrument -o target/jmalcloud-instrumented"
+#
+#      # 运行插桩程序以生成 Profile 文件
+#      - name: Run Instrumented App to Generate Profile
+#        env:
+#          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+#          HOME_DIR: ${{ env.HOME }}
+#        run: |
+#          chmod +x target/jmalcloud-instrumented
+#
+#          rm -rf ${HOME}/jmalcloud
+#          rm -f jmalcloud.iprof
+#
+#          mkdir -p ${HOME}/jmalcloud
+#
+#          echo "Starting instrumented application in the background..."
+#          # 在后台运行程序，并将 profile 文件名指定为 jmalcloud.iprof
+#          # 使用 & 将其放入后台
+#          ./target/jmalcloud-instrumented --spring.profiles.active=${{ inputs.profiles_active }} -XX:ProfilesDumpFile='jmalcloud.iprof' --spring.data.mongodb.uri=${{secrets.MONGODB_URI}} --file.rootDir=${HOME}/jmalcloud > "${HOME}/app.log" 2>&1 &
+#
+#          # 获取后台进程的 PID (Process ID)
+#          APP_PID=$!
+#          echo "应用程序已启动，进程ID为: $APP_PID"
+#
+#          # 等待应用启动
+#          for i in {1..30}; do
+#            if curl -s http://localhost:8088/public/health | grep -q '^UP'; then
+#              echo "App is up"
+#              break
+#            fi
+#            sleep 2
+#          done
+#
+#          # 创建管理员
+#          curl --location --request POST 'http://localhost:8088/api/public/initialization?password=123456&id=&username=admin&showName=%E7%AE%A1%E7%90%86%E5%91%981&avatar=https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif&slogan=&introduction=&webpDisabled=&roles=&quota=10'
+#          # 上传文件
+#          cp -r target/test-classes ${HOME}/jmalcloud/admin/
+#
+#          # 等待应用程序运行一段时间以收集性能数据
+#          echo "等待应用程序运行 120 秒以收集性能数据..."
+#          sleep 120
+#
+#          # 打印日志文件的最后 100 行
+#          tail -n 100 "${HOME}/app.log"
+#
+#          echo "发送 SIGINT 信号来优雅地终止进程，这会触发 profile 文件的写入"
+#          kill -15 $APP_PID
+#
+#          echo "等待几秒钟，让进程优雅地终止..."
+#          sleep 5
+#
+#          ls -lh 'jmalcloud.iprof'
+#
+#          ls -lh 'jmalcloud.iprof'
+#
+#      # 验证 Profile 文件是否已创建
+#      - name: Verify Profile File Creation
+#        run: |
+#          echo "Checking if profile file was created..."
+#          ls -l jmalcloud.iprof
+#          if [ ! -f "jmalcloud.iprof" ]; then
+#            echo "Error: Profile file jmalcloud.iprof was not created."
+#            exit 1
+#          fi
 
-      # 运行插桩程序以生成 Profile 文件
-      - name: Run Instrumented App to Generate Profile
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          HOME_DIR: ${{ env.HOME }}
-        run: |
-          chmod +x target/jmalcloud-instrumented
-          
-          rm -rf ${HOME}/jmalcloud
-          rm -f jmalcloud.iprof
-          
-          mkdir -p ${HOME}/jmalcloud
-          
-          echo "Starting instrumented application in the background..."
-          # 在后台运行程序，并将 profile 文件名指定为 jmalcloud.iprof
-          # 使用 & 将其放入后台
-          ./target/jmalcloud-instrumented --spring.profiles.active=${{ inputs.profiles_active }} -XX:ProfilesDumpFile='jmalcloud.iprof' --spring.data.mongodb.uri=${{secrets.MONGODB_URI}} --file.rootDir=${HOME}/jmalcloud > "${HOME}/app.log" 2>&1 &
-          
-          # 获取后台进程的 PID (Process ID)
-          APP_PID=$!
-          echo "应用程序已启动，进程ID为: $APP_PID"
-          
-          # 等待应用启动
-          for i in {1..30}; do
-            if curl -s http://localhost:8088/public/health | grep -q '^UP'; then
-              echo "App is up"
-              break
-            fi
-            sleep 2
-          done
-          
-          # 创建管理员
-          curl --location --request POST 'http://localhost:8088/api/public/initialization?password=123456&id=&username=admin&showName=%E7%AE%A1%E7%90%86%E5%91%981&avatar=https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif&slogan=&introduction=&webpDisabled=&roles=&quota=10'
-          # 上传文件
-          cp -r target/test-classes ${HOME}/jmalcloud/admin/
-          
-          # 等待应用程序运行一段时间以收集性能数据
-          echo "等待应用程序运行 120 秒以收集性能数据..."
-          sleep 120
-          
-          # 打印日志文件的最后 100 行
-          tail -n 100 "${HOME}/app.log"
-          
-          echo "发送 SIGINT 信号来优雅地终止进程，这会触发 profile 文件的写入"
-          kill -15 $APP_PID
-          
-          echo "等待几秒钟，让进程优雅地终止..."
-          sleep 5
-          
-          ls -lh 'jmalcloud.iprof'
-          
-          ls -lh 'jmalcloud.iprof'
+#      # 使用传入参数构建最终优化的 Native Image
+#      - name: Build final PGO-Optimized Native Image
+#        run: |
+#          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }} -DskipTests -Dnative-image.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--enable-monitoring=heapdump --pgo=jmalcloud.iprof"
 
-      # 验证 Profile 文件是否已创建
-      - name: Verify Profile File Creation
+      - name: Build Native Image
         run: |
-          echo "Checking if profile file was created..."
-          ls -l jmalcloud.iprof
-          if [ ! -f "jmalcloud.iprof" ]; then
-            echo "Error: Profile file jmalcloud.iprof was not created."
-            exit 1
-          fi
-
-      # 使用传入参数构建最终优化的 Native Image
-      - name: Build final PGO-Optimized Native Image
-        run: |
-          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }} -DskipTests -Dnative-image.jvmArgs="-Xmx15g" -Dnative-image.addArgs="--enable-monitoring=heapdump --pgo=jmalcloud.iprof"
+          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }} -DskipTests
 
       # 保存构建产物到本地共享目录
       - name: Save build artifacts to local cache
