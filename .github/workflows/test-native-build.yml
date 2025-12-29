@@ -110,7 +110,7 @@ jobs:
       # 构建带插桩的 Native Image
       - name: Build Instrumented Native Image
         run: |
-          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }}  -DskipTests -Dnative-image.jvmArgs="-Xmx24g" -Dnative-image.addArgs="--pgo-instrument -o target/jmalcloud-instrumented"
+          mvn clean package -Pnative -Daot.build.mode=${{ inputs.aot_build_mode }}  -DskipTests -Dnative-image.jvmArgs="-Xmx25g" -Dnative-image.addArgs="--pgo-instrument -o target/jmalcloud-instrumented"
 
       # 运行插桩程序以生成 Profile 文件
       - name: Run Instrumented App to Generate Profile
