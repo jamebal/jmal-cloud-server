@@ -29,10 +29,10 @@ public class PoiRuntimeHints implements RuntimeHintsRegistrar {
         packages.add("org.openxmlformats.schemas.drawingml.x2006.wordprocessingDrawing");
         packages.add("org.openxmlformats.schemas.drawingml.x2006.wordprocessingDrawing.impl");
 
-        packages.add("org.openxmlformats.schemas.officeDocument.x2006.main");
-        packages.add("org.openxmlformats.schemas.officeDocument.x2006.main.impl");
         packages.add("org.openxmlformats.schemas.officeDocument.x2006.relationships");
         packages.add("org.openxmlformats.schemas.officeDocument.x2006.relationships.impl");
+        packages.add("org.openxmlformats.schemas.officeDocument.x2006.sharedTypes");
+        packages.add("org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.impl");
 
         ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
         scanner.addIncludeFilter(new AssignableTypeFilter(Object.class));
@@ -41,27 +41,36 @@ public class PoiRuntimeHints implements RuntimeHintsRegistrar {
             scanner.findCandidateComponents(basePackage).forEach(bean -> {
                 String className = bean.getBeanClassName();
                 if (className != null) {
-                    registerType(hints, className);
-                    // 强制注册其内部工厂 Factory
-                    registerType(hints, className + "$Factory");
-                    registerType(hints, className + "$Enum");
+                    registerAll(hints, className);
                 }
             });
         }
 
+        // 针对 .doc (HWPF) 的特殊注册 (HWPF 不使用 XMLBeans，但需要反射)
+        hints.reflection().registerType(TypeReference.of("org.apache.poi.hwpf.model.StyleDescription"),
+                MemberCategory.DECLARED_FIELDS, MemberCategory.INVOKE_PUBLIC_METHODS);
+
         // 资源全量注册
         hints.resources().registerPattern("org/apache/poi/schemas/ooxml/system/ooxml/**/*");
         hints.resources().registerPattern("org/apache/xmlbeans/metadata/system/**/*");
-        hints.resources().registerPattern("schemaorg_apache_xmlbeans/**/*");
         hints.resources().registerPattern("org/apache/poi/**/*.txt");
         hints.resources().registerPattern("org/apache/poi/**/*.properties");
-        hints.resources().registerPattern("META-INF/services/org.apache.*");
     }
 
-    private void registerType(RuntimeHints hints, String className) {
+    private void registerAll(RuntimeHints hints, String className) {
+        // 注册类本身
         hints.reflection().registerType(TypeReference.of(className),
                 MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
                 MemberCategory.INVOKE_PUBLIC_METHODS,
                 MemberCategory.DECLARED_FIELDS);
+
+        // 注册数组类型
+        hints.reflection().registerType(TypeReference.of(className + "[]"),
+                MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
+
+        // 注册内部 Factory
+        hints.reflection().registerType(TypeReference.of(className + "$Factory"),
+                MemberCategory.INVOKE_PUBLIC_METHODS,
+                MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
     }
 }
