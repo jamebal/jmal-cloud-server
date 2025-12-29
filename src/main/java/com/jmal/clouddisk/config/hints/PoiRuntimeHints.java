@@ -35,7 +35,6 @@ public class PoiRuntimeHints implements RuntimeHintsRegistrar {
                 "org.apache.xmlbeans.impl.values.XmlComplexContentImpl",
                 "org.apache.xmlbeans.impl.values.XmlAnyTypeImpl",
                 "org.apache.xmlbeans.impl.store.Xobj",
-                "com.sun.org.apache.xerces.internal.dom.DocumentImpl"
         };
         for (String impl : baseImpls) {
             hints.reflection().registerType(TypeReference.of(impl),
