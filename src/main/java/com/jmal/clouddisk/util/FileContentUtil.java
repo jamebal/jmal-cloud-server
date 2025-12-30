@@ -7,7 +7,6 @@ import nl.siegmann.epublib.domain.Resource;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -17,8 +16,8 @@ import java.nio.file.Paths;
 @Slf4j
 public class FileContentUtil {
 
-    public static void readFailed(File file, IOException e) {
-        log.warn("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage());
+    public static void readFailed(File file, Exception e) {
+        log.error("读取文件内容失败, file: {}, {}", file.getAbsolutePath(), e.getMessage());
     }
 
     public static File getCoverPath(String outputPath) {
@@ -33,7 +32,7 @@ public class FileContentUtil {
             PopplerPdfReader.executeCommand("pdftoppm", "-png", "-f", "1", "-l", "1", "-singlefile", pdfFile.getAbsolutePath(), coverPath.toString().replace(".png", ""));
             return coverPath.toFile();
         } catch (Throwable e) {
-            log.warn("PDF 文件封面图像生成失败: {}, file: {}", e.getMessage(), pdfFile.getName());
+            log.error("PDF 文件封面图像生成失败: {}, file: {}", e.getMessage(), pdfFile.getName());
             return null;
         }
     }

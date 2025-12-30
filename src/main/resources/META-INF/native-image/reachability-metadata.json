@@ -258,6 +258,15 @@
       "type": "ch.qos.logback.core.spi.FilterReply"
     },
     {
+      "type": "ch.qos.logback.core.status.NopStatusListener",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "ch.qos.logback.core.util.FileSize",
       "methods": [
         {
@@ -357,6 +366,9 @@
     },
     {
       "type": "com.fasterxml.jackson.annotation.JsonTypeInfo$As"
+    },
+    {
+      "type": "com.fasterxml.jackson.annotation.JsonValue"
     },
     {
       "type": "com.fasterxml.jackson.annotation.JsonView"
@@ -1245,6 +1257,12 @@
           ]
         },
         {
+          "name": "setResetAdminPassword",
+          "parameterTypes": [
+            "java.lang.Boolean"
+          ]
+        },
+        {
           "name": "setRootDir",
           "parameterTypes": [
             "java.lang.String"
@@ -1679,7 +1697,7 @@
         {
           "name": "setCreatedTime",
           "parameterTypes": [
-            "java.time.LocalDateTime"
+            "java.time.Instant"
           ]
         },
         {
@@ -1691,7 +1709,7 @@
         {
           "name": "setUpdatedTime",
           "parameterTypes": [
-            "java.time.LocalDateTime"
+            "java.time.Instant"
           ]
         }
       ]
@@ -1737,6 +1755,10 @@
           "parameterTypes": [
             "com.jmal.clouddisk.dao.DataSourceType"
           ]
+        },
+        {
+          "name": "toString",
+          "parameterTypes": []
         }
       ]
     },
@@ -2069,6 +2091,31 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.controller.rest.BurnNoteController",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.service.impl.BurnNoteService",
+            "com.jmal.clouddisk.dao.BurnNoteFileService",
+            "com.jmal.clouddisk.service.impl.UserLoginHolder",
+            "com.jmal.clouddisk.interceptor.AuthInterceptor"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.controller.rest.BurnNoteController$$SpringCGLIB$$0",
+      "fields": [
+        {
+          "name": "CGLIB$CALLBACK_FILTER"
+        },
+        {
+          "name": "CGLIB$FACTORY_DATA"
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.controller.rest.CategoryController",
       "fields": [
         {
@@ -2258,6 +2305,28 @@
     },
     {
       "type": "com.jmal.clouddisk.controller.rest.FileVersionController$$SpringCGLIB$$0",
+      "fields": [
+        {
+          "name": "CGLIB$CALLBACK_FILTER"
+        },
+        {
+          "name": "CGLIB$FACTORY_DATA"
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.controller.rest.GroupController",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.service.impl.GroupService"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.controller.rest.GroupController$$SpringCGLIB$$0",
       "fields": [
         {
           "name": "CGLIB$CALLBACK_FILTER"
@@ -2482,6 +2551,19 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.controller.rest.ShareUploadFileController",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.service.IFileService",
+            "com.jmal.clouddisk.service.IShareService",
+            "com.jmal.clouddisk.service.IUserService"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.controller.rest.TagController",
       "fields": [
         {
@@ -2651,6 +2733,17 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.dao.BurnNoteFileService",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.FilePersistenceService"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.dao.DataSourceType"
     },
     {
@@ -2661,6 +2754,9 @@
     },
     {
       "type": "com.jmal.clouddisk.dao.IArticleDAO"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.IBurnNoteDAO"
     },
     {
       "type": "com.jmal.clouddisk.dao.ICategoryDAO"
@@ -2682,6 +2778,9 @@
     },
     {
       "type": "com.jmal.clouddisk.dao.IFolderSizeDAO"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.IGroupDAO"
     },
     {
       "type": "com.jmal.clouddisk.dao.IHeartwingsDAO"
@@ -2727,6 +2826,21 @@
     },
     {
       "type": "com.jmal.clouddisk.dao.IWebsiteSettingDAO"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.BurnNoteCleanupService",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.IBurnNoteDAO"
+          ]
+        },
+        {
+          "name": "cleanupExpiredNotes",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "com.jmal.clouddisk.dao.impl.jpa.AccessTokenDAOJpaImpl",
@@ -2803,6 +2917,34 @@
     },
     {
       "type": "com.jmal.clouddisk.dao.impl.jpa.ArticleDAOJpaImpl$$SpringCGLIB$$0",
+      "fields": [
+        {
+          "name": "CGLIB$CALLBACK_FILTER"
+        },
+        {
+          "name": "CGLIB$FACTORY_DATA"
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.BurnNoteDAOJpaImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.write.IWriteService",
+            "com.jmal.clouddisk.dao.impl.jpa.repository.BurnNoteJpaRepository",
+            "com.jmal.clouddisk.dao.BurnNoteFileService"
+          ]
+        },
+        {
+          "name": "existData",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.BurnNoteDAOJpaImpl$$SpringCGLIB$$0",
       "fields": [
         {
           "name": "CGLIB$CALLBACK_FILTER"
@@ -3133,6 +3275,7 @@
         {
           "name": "getShareBaseByPath",
           "parameterTypes": [
+            "java.lang.String",
             "java.lang.String"
           ]
         },
@@ -3361,6 +3504,30 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.GroupDAOJpaImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.repository.GroupRepository",
+            "com.jmal.clouddisk.config.jpa.DataSourceProperties",
+            "com.jmal.clouddisk.dao.impl.jpa.write.IWriteService"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.GroupDAOJpaImpl$$SpringCGLIB$$0",
+      "fields": [
+        {
+          "name": "CGLIB$CALLBACK_FILTER"
+        },
+        {
+          "name": "CGLIB$FACTORY_DATA"
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.dao.impl.jpa.HeartwingsDAOJpaImpl",
       "methods": [
         {
@@ -3458,7 +3625,8 @@
             "com.jmal.clouddisk.dao.impl.jpa.write.IWriteService",
             "com.jmal.clouddisk.dao.impl.jpa.repository.MenuRepository",
             "com.jmal.clouddisk.dao.impl.jpa.repository.RoleRepository",
-            "com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository"
+            "com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository",
+            "com.jmal.clouddisk.dao.impl.jpa.repository.GroupRepository"
           ]
         },
         {
@@ -3466,10 +3634,8 @@
           "parameterTypes": []
         },
         {
-          "name": "existsById",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
+          "name": "findIdsAll",
+          "parameterTypes": []
         },
         {
           "name": "saveAll",
@@ -3565,15 +3731,6 @@
           "parameterTypes": []
         },
         {
-          "name": "findByUserIdAndEndpointAndBucketAndPlatform",
-          "parameterTypes": [
-            "java.lang.String",
-            "java.lang.String",
-            "java.lang.String",
-            "com.jmal.clouddisk.oss.PlatformOSS"
-          ]
-        },
-        {
           "name": "updateOssConfigBy",
           "parameterTypes": [
             "com.jmal.clouddisk.oss.web.model.OssConfigDO"
@@ -3606,12 +3763,6 @@
           "name": "existsById",
           "parameterTypes": [
             "java.lang.String"
-          ]
-        },
-        {
-          "name": "findAllByIdIn",
-          "parameterTypes": [
-            "java.util.List"
           ]
         },
         {
@@ -3935,6 +4086,9 @@
       "type": "com.jmal.clouddisk.dao.impl.jpa.repository.ArticleRepository"
     },
     {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.repository.BurnNoteJpaRepository"
+    },
+    {
       "type": "com.jmal.clouddisk.dao.impl.jpa.repository.CategoryRepository"
     },
     {
@@ -3954,6 +4108,9 @@
     },
     {
       "type": "com.jmal.clouddisk.dao.impl.jpa.repository.FolderSizeRepository"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.repository.GroupRepository"
     },
     {
       "type": "com.jmal.clouddisk.dao.impl.jpa.repository.HeartwingsRepository"
@@ -4309,6 +4466,62 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.burnnote.BurnNoteOperation$Create"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.burnnote.BurnNoteOperation$CreateAll"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.burnnote.BurnNoteOperation$Delete"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.burnnote.BurnNoteOperation$DeleteAllByIds"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.burnnote.CreateAllHandler",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.repository.BurnNoteJpaRepository"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.burnnote.CreateHandler",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.repository.BurnNoteJpaRepository"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.burnnote.DeleteAllByIdsHandler",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.repository.BurnNoteJpaRepository"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.burnnote.DeleteHandler",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.repository.BurnNoteJpaRepository"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.category.CategoryOperation$CreateAll"
     },
     {
@@ -4412,6 +4625,28 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.consumer.ResetAdminPasswordHandler",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.consumer.ResetMfaForAllUsersHandler",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.repository.UserRepository"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.consumer.UserOperation$Create"
     },
     {
@@ -4419,6 +4654,12 @@
     },
     {
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.consumer.UserOperation$DeleteAllById"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.consumer.UserOperation$ResetAdminPassword"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.consumer.UserOperation$ResetMfaForAllUsers"
     },
     {
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.directlink.CreateAllHandler",
@@ -5172,6 +5413,48 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.group.CreateAllHandler",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.repository.GroupRepository"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.group.CreateHandler",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.repository.GroupRepository"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.group.GroupOperation$Create"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.group.GroupOperation$CreateAll"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.group.GroupOperation$RemoveByIdIn"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.group.RemoveByIdInHandler",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.repository.GroupRepository"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.ldapconfig.LdapConfigAllHandler",
       "methods": [
         {
@@ -5543,6 +5826,17 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.setting.UpdatePersonalizationHandler",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.jpa.repository.WebsiteSettingRepository"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.setting.WebSiteSettingOperation$Create"
     },
     {
@@ -5562,6 +5856,9 @@
     },
     {
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.setting.WebSiteSettingOperation$UpdateNetdiskName"
+    },
+    {
+      "type": "com.jmal.clouddisk.dao.impl.jpa.write.setting.WebSiteSettingOperation$UpdatePersonalization"
     },
     {
       "type": "com.jmal.clouddisk.dao.impl.jpa.write.share.CreateAllHandler",
@@ -5881,6 +6178,9 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.interceptor.PreFileInterceptor$ParsedPath"
+    },
+    {
       "type": "com.jmal.clouddisk.interceptor.ShareFileInterceptor",
       "methods": [
         {
@@ -5892,6 +6192,9 @@
           ]
         }
       ]
+    },
+    {
+      "type": "com.jmal.clouddisk.interceptor.ShareFileInterceptor$ParsedPath"
     },
     {
       "type": "com.jmal.clouddisk.listener.FileListener",
@@ -5928,6 +6231,7 @@
             "com.jmal.clouddisk.config.FileProperties",
             "com.jmal.clouddisk.service.IFileService",
             "com.jmal.clouddisk.service.impl.CommonFileService",
+            "com.jmal.clouddisk.config.jpa.DataSourceProperties",
             "com.jmal.clouddisk.listener.FileListener"
           ]
         },
@@ -5967,7 +6271,8 @@
           "parameterTypes": [
             "com.jmal.clouddisk.dao.IEtagDAO",
             "com.jmal.clouddisk.config.FileProperties",
-            "com.jmal.clouddisk.service.impl.CommonUserService"
+            "com.jmal.clouddisk.service.impl.CommonUserService",
+            "org.springframework.context.ApplicationEventPublisher"
           ]
         },
         {
@@ -6097,6 +6402,19 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.lucene.LuceneReconciliationService",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.context.ApplicationEventPublisher",
+            "org.apache.lucene.search.SearcherManager",
+            "com.jmal.clouddisk.dao.IFileDAO"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.lucene.LuceneService",
       "methods": [
         {
@@ -6150,6 +6468,9 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.lucene.RebuildIndexEvent"
+    },
+    {
       "type": "com.jmal.clouddisk.lucene.RebuildIndexTaskService",
       "methods": [
         {
@@ -6165,7 +6486,8 @@
             "com.jmal.clouddisk.service.impl.CommonUserFileService",
             "com.jmal.clouddisk.service.impl.MessageService",
             "com.jmal.clouddisk.dao.IFileDAO",
-            "com.jmal.clouddisk.ocr.OcrService"
+            "com.jmal.clouddisk.ocr.OcrService",
+            "com.jmal.clouddisk.lucene.LuceneReconciliationService"
           ]
         },
         {
@@ -6187,7 +6509,6 @@
           "name": "<init>",
           "parameterTypes": [
             "com.jmal.clouddisk.lucene.LuceneQueryService",
-            "org.apache.lucene.search.SearcherManager",
             "com.jmal.clouddisk.service.impl.UserLoginHolder",
             "com.jmal.clouddisk.service.impl.TagService",
             "com.jmal.clouddisk.dao.ISearchHistoryDAO",
@@ -6437,6 +6758,18 @@
           "parameterTypes": []
         }
       ]
+    },
+    {
+      "type": "com.jmal.clouddisk.model.BurnNoteDO"
+    },
+    {
+      "type": "com.jmal.clouddisk.model.BurnNoteDO$HibernateInstantiator"
+    },
+    {
+      "type": "com.jmal.clouddisk.model.BurnNoteDO$HibernateProxy"
+    },
+    {
+      "type": "com.jmal.clouddisk.model.BurnNoteDO_"
     },
     {
       "type": "com.jmal.clouddisk.model.CategoryDO"
@@ -6811,6 +7144,9 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.model.NetdiskPersonalization"
+    },
+    {
       "type": "com.jmal.clouddisk.model.OperationPermission"
     },
     {
@@ -7118,6 +7454,9 @@
       "type": "com.jmal.clouddisk.model.UploadImageDTO"
     },
     {
+      "type": "com.jmal.clouddisk.model.UploadImageResult"
+    },
+    {
       "type": "com.jmal.clouddisk.model.UploadResponse"
     },
     {
@@ -7278,6 +7617,9 @@
           "name": "operatingButtons"
         },
         {
+          "name": "personalization"
+        },
+        {
           "name": "recordPermissionNum"
         },
         {
@@ -7359,6 +7701,10 @@
         },
         {
           "name": "getOperatingButtons",
+          "parameterTypes": []
+        },
+        {
+          "name": "getPersonalization",
           "parameterTypes": []
         },
         {
@@ -7454,22 +7800,7 @@
       ]
     },
     {
-      "type": "com.jmal.clouddisk.model.WebsiteSettingDO$HibernateAccessOptimizer5alonePages5archiveBackground5backgroundDescSite5backgroundSite5backgroundTextSite5categoryBackground5copyright5footerHtml5iframe5mfaForceEnable5netdiskLogo5netdiskName5networkRecordNumber5networkRecordNumberStr5operatingButtons5recordPermissionNum5siteIco5siteLogo5siteName5siteUrl5tagBackground",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
-    },
-    {
-      "type": "com.jmal.clouddisk.model.WebsiteSettingDO$HibernateInstantiator",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        }
-      ]
+      "type": "com.jmal.clouddisk.model.WebsiteSettingDO$HibernateInstantiator"
     },
     {
       "type": "com.jmal.clouddisk.model.WebsiteSettingDO$HibernateProxy"
@@ -7550,6 +7881,10 @@
         },
         {
           "name": "getOperatingButtons",
+          "parameterTypes": []
+        },
+        {
+          "name": "getPersonalization",
           "parameterTypes": []
         },
         {
@@ -7681,6 +8016,12 @@
           ]
         },
         {
+          "name": "setPersonalization",
+          "parameterTypes": [
+            "com.jmal.clouddisk.model.NetdiskPersonalization"
+          ]
+        },
+        {
           "name": "setRecordPermissionNum",
           "parameterTypes": [
             "java.lang.String"
@@ -7734,6 +8075,15 @@
           "parameterTypes": []
         }
       ]
+    },
+    {
+      "type": "com.jmal.clouddisk.model.dto.BurnNoteCreateDTO"
+    },
+    {
+      "type": "com.jmal.clouddisk.model.dto.BurnNoteResponseDTO"
+    },
+    {
+      "type": "com.jmal.clouddisk.model.dto.BurnNoteVO"
     },
     {
       "type": "com.jmal.clouddisk.model.file.ArticleDO",
@@ -8059,10 +8409,6 @@
         },
         {
           "name": "getCover",
-          "parameterTypes": []
-        },
-        {
-          "name": "getEtag",
           "parameterTypes": []
         },
         {
@@ -8562,6 +8908,12 @@
       "type": "com.jmal.clouddisk.model.package-info"
     },
     {
+      "type": "com.jmal.clouddisk.model.query.QueryBaseDTO"
+    },
+    {
+      "type": "com.jmal.clouddisk.model.query.QueryGroupDTO"
+    },
+    {
       "type": "com.jmal.clouddisk.model.query.QueryMenuDTO",
       "methods": [
         {
@@ -8717,6 +9069,9 @@
           "name": "creator"
         },
         {
+          "name": "groups"
+        },
+        {
           "name": "introduction"
         },
         {
@@ -8724,6 +9079,9 @@
         },
         {
           "name": "mfaSecret"
+        },
+        {
+          "name": "personalization"
         },
         {
           "name": "quota"
@@ -8757,11 +9115,19 @@
           "parameterTypes": []
         },
         {
+          "name": "getGroups",
+          "parameterTypes": []
+        },
+        {
           "name": "getIntroduction",
           "parameterTypes": []
         },
         {
           "name": "getMfaSecret",
+          "parameterTypes": []
+        },
+        {
+          "name": "getPersonalization",
           "parameterTypes": []
         },
         {
@@ -8799,6 +9165,12 @@
           ]
         },
         {
+          "name": "setGroups",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        },
+        {
           "name": "setIntroduction",
           "parameterTypes": [
             "java.lang.String"
@@ -8808,6 +9180,12 @@
           "name": "setMfaSecret",
           "parameterTypes": [
             "java.lang.String"
+          ]
+        },
+        {
+          "name": "setPersonalization",
+          "parameterTypes": [
+            "com.jmal.clouddisk.model.rbac.Personalization"
           ]
         },
         {
@@ -8864,7 +9242,7 @@
       "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_"
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_la721v",
+      "type": "com.jmal.clouddisk.model.rbac.ConsumerDO_Accessor_iye4si",
       "methods": [
         {
           "name": "<init>",
@@ -8905,7 +9283,11 @@
           "parameterTypes": []
         },
         {
-          "name": "getId",
+          "name": "getGroupList",
+          "parameterTypes": []
+        },
+        {
+          "name": "getGroups",
           "parameterTypes": []
         },
         {
@@ -8938,6 +9320,10 @@
         },
         {
           "name": "getNewVersion",
+          "parameterTypes": []
+        },
+        {
+          "name": "getPersonalization",
           "parameterTypes": []
         },
         {
@@ -8983,9 +9369,9 @@
           ]
         },
         {
-          "name": "setId",
+          "name": "setGroups",
           "parameterTypes": [
-            "java.lang.String"
+            "java.util.List"
           ]
         },
         {
@@ -8998,6 +9384,12 @@
           "name": "setMfaSecret",
           "parameterTypes": [
             "java.lang.String"
+          ]
+        },
+        {
+          "name": "setPersonalization",
+          "parameterTypes": [
+            "com.jmal.clouddisk.model.rbac.Personalization"
           ]
         },
         {
@@ -9043,6 +9435,24 @@
           ]
         }
       ]
+    },
+    {
+      "type": "com.jmal.clouddisk.model.rbac.GroupAssignDTO"
+    },
+    {
+      "type": "com.jmal.clouddisk.model.rbac.GroupDO"
+    },
+    {
+      "type": "com.jmal.clouddisk.model.rbac.GroupDO$HibernateInstantiator"
+    },
+    {
+      "type": "com.jmal.clouddisk.model.rbac.GroupDO$HibernateProxy"
+    },
+    {
+      "type": "com.jmal.clouddisk.model.rbac.GroupDO_"
+    },
+    {
+      "type": "com.jmal.clouddisk.model.rbac.GroupDTO"
     },
     {
       "type": "com.jmal.clouddisk.model.rbac.MenuDO",
@@ -9240,6 +9650,28 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.model.rbac.Personalization",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTheme",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.model.rbac.Personalization$Theme",
+      "methods": [
+        {
+          "name": "toValue",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.model.rbac.RoleDO",
       "fields": [
         {
@@ -9264,26 +9696,6 @@
       "methods": [
         {
           "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "getCode",
-          "parameterTypes": []
-        },
-        {
-          "name": "getCreateTime",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMenuIds",
-          "parameterTypes": []
-        },
-        {
-          "name": "getName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getRemarks",
           "parameterTypes": []
         },
         {
@@ -9349,69 +9761,7 @@
       "type": "com.jmal.clouddisk.model.rbac.RoleDO_"
     },
     {
-      "type": "com.jmal.clouddisk.model.rbac.RoleDTO",
-      "methods": [
-        {
-          "name": "getCode",
-          "parameterTypes": []
-        },
-        {
-          "name": "getCreateTime",
-          "parameterTypes": []
-        },
-        {
-          "name": "getId",
-          "parameterTypes": []
-        },
-        {
-          "name": "getMenuIds",
-          "parameterTypes": []
-        },
-        {
-          "name": "getName",
-          "parameterTypes": []
-        },
-        {
-          "name": "getRemarks",
-          "parameterTypes": []
-        },
-        {
-          "name": "setCode",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setCreateTime",
-          "parameterTypes": [
-            "java.time.LocalDateTime"
-          ]
-        },
-        {
-          "name": "setId",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setMenuIds",
-          "parameterTypes": [
-            "java.util.List"
-          ]
-        },
-        {
-          "name": "setName",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        },
-        {
-          "name": "setRemarks",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
+      "type": "com.jmal.clouddisk.model.rbac.RoleDTO"
     },
     {
       "type": "com.jmal.clouddisk.model.rbac.UserLoginContext"
@@ -9637,7 +9987,7 @@
             "com.jmal.clouddisk.service.impl.MessageService",
             "com.jmal.clouddisk.service.impl.LogService",
             "com.jmal.clouddisk.service.IUserService",
-            "com.jmal.clouddisk.service.IFileVersionService",
+            "com.jmal.clouddisk.oss.web.WebOssService",
             "org.springframework.context.ApplicationEventPublisher"
           ]
         }
@@ -9758,6 +10108,12 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.oss.web.OssController$CompleteMultipartUploadRequest"
+    },
+    {
+      "type": "com.jmal.clouddisk.oss.web.OssController$Result"
+    },
+    {
       "type": "com.jmal.clouddisk.oss.web.WebOssCommonService",
       "methods": [
         {
@@ -9766,7 +10122,6 @@
             "com.jmal.clouddisk.service.impl.CommonUserService",
             "com.jmal.clouddisk.service.impl.CommonUserFileService",
             "com.jmal.clouddisk.service.impl.MessageService",
-            "com.jmal.clouddisk.service.impl.CommonFileService",
             "com.jmal.clouddisk.dao.IFileDAO"
           ]
         }
@@ -9800,7 +10155,6 @@
             "com.jmal.clouddisk.service.impl.CommonUserFileService",
             "com.jmal.clouddisk.config.FileProperties",
             "com.jmal.clouddisk.service.IFileVersionService",
-            "com.jmal.clouddisk.service.impl.UserLoginHolder",
             "com.jmal.clouddisk.service.impl.CommonUserService",
             "com.jmal.clouddisk.dao.IShareDAO"
           ]
@@ -9823,7 +10177,13 @@
           "name": "folderName"
         },
         {
+          "name": "pathStyleAccessEnabled"
+        },
+        {
           "name": "platform"
+        },
+        {
+          "name": "proxyEnabled"
         },
         {
           "name": "region"
@@ -9846,7 +10206,7 @@
       "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_"
     },
     {
-      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Accessor_35lj4b",
+      "type": "com.jmal.clouddisk.oss.web.model.OssConfigDO_Accessor_5ukfwx",
       "methods": [
         {
           "name": "<init>",
@@ -9975,6 +10335,32 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.service.impl.BurnNoteService",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.impl.BurnNoteCleanupService",
+            "com.jmal.clouddisk.service.impl.RoleService",
+            "com.jmal.clouddisk.dao.IBurnNoteDAO",
+            "com.jmal.clouddisk.dao.BurnNoteFileService",
+            "com.jmal.clouddisk.dao.IWebsiteSettingDAO"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.jmal.clouddisk.service.impl.BurnNoteService$$SpringCGLIB$$0",
+      "fields": [
+        {
+          "name": "CGLIB$CALLBACK_FILTER"
+        },
+        {
+          "name": "CGLIB$FACTORY_DATA"
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.service.impl.CategoryService",
       "methods": [
         {
@@ -10093,6 +10479,10 @@
             "com.jmal.clouddisk.service.impl.LogService",
             "org.springframework.context.ApplicationEventPublisher"
           ]
+        },
+        {
+          "name": "init",
+          "parameterTypes": []
         }
       ]
     },
@@ -10117,6 +10507,19 @@
       ]
     },
     {
+      "type": "com.jmal.clouddisk.service.impl.GroupService",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.jmal.clouddisk.dao.IGroupDAO",
+            "com.jmal.clouddisk.dao.IUserDAO",
+            "com.jmal.clouddisk.service.impl.RoleService"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.jmal.clouddisk.service.impl.LogService",
       "methods": [
         {
@@ -10125,8 +10528,13 @@
             "com.jmal.clouddisk.dao.ILogDAO",
             "com.jmal.clouddisk.service.impl.UserLoginHolder",
             "com.jmal.clouddisk.service.impl.CommonUserService",
+            "com.jmal.clouddisk.service.impl.RoleService",
             "com.jmal.clouddisk.config.FileProperties"
           ]
+        },
+        {
+          "name": "destroy",
+          "parameterTypes": []
         },
         {
           "name": "initIpDbSearcher",
@@ -10163,7 +10571,6 @@
         {
           "name": "<init>",
           "parameterTypes": [
-            "com.jmal.clouddisk.config.jpa.DataSourceProperties",
             "com.jmal.clouddisk.util.MessageUtil",
             "com.jmal.clouddisk.dao.IMenuDAO"
           ]
@@ -10219,7 +10626,7 @@
           "parameterTypes": [
             "com.jmal.clouddisk.dao.IRoleDAO",
             "com.jmal.clouddisk.dao.IUserDAO",
-            "com.jmal.clouddisk.config.jpa.DataSourceProperties",
+            "com.jmal.clouddisk.dao.IGroupDAO",
             "com.jmal.clouddisk.service.impl.CommonUserService",
             "com.jmal.clouddisk.service.impl.MenuService",
             "com.jmal.clouddisk.util.MessageUtil"
@@ -10324,6 +10731,8 @@
           "name": "<init>",
           "parameterTypes": [
             "com.jmal.clouddisk.dao.IUserDAO",
+            "com.jmal.clouddisk.dao.IRoleDAO",
+            "com.jmal.clouddisk.dao.IGroupDAO",
             "com.jmal.clouddisk.dao.IWebsiteSettingDAO",
             "com.jmal.clouddisk.service.impl.CommonUserService",
             "com.jmal.clouddisk.service.impl.UserFileService",
@@ -11303,6 +11712,15 @@
             "boolean",
             "com.sun.management.VMOption$Origin"
           ]
+        }
+      ]
+    },
+    {
+      "type": "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
         }
       ]
     },
@@ -12731,9 +13149,6 @@
       "type": "java.lang.constant.ConstantDesc[]"
     },
     {
-      "type": "java.lang.foreign.MemorySegment[]"
-    },
-    {
       "type": "java.lang.invoke.MethodHandle"
     },
     {
@@ -13077,9 +13492,6 @@
     },
     {
       "type": "java.nio.charset.Charset"
-    },
-    {
-      "type": "java.nio.charset.Charset[]"
     },
     {
       "type": "java.nio.file.FileVisitResult"
@@ -13460,6 +13872,9 @@
     },
     {
       "type": "java.util.concurrent.Executor"
+    },
+    {
+      "type": "java.util.concurrent.ExecutorService"
     },
     {
       "type": "java.util.concurrent.Future"
@@ -14797,21 +15212,7 @@
       "type": "org.apache.lucene.store.LockFactory"
     },
     {
-      "type": "org.apache.lucene.store.MMapDirectory"
-    },
-    {
-      "type": "org.apache.lucene.store.MMapDirectory$MMapIndexInputProvider"
-    },
-    {
-      "type": "org.apache.lucene.store.MemorySegmentIndexInputProvider",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "int"
-          ]
-        }
-      ]
+      "type": "org.apache.lucene.store.NIOFSDirectory"
     },
     {
       "type": "org.apache.lucene.store.TrackingDirectoryWrapper"
@@ -14910,6 +15311,9 @@
       "type": "org.apache.lucene.util.packed.PackedLongValues$Builder"
     },
     {
+      "type": "org.apache.poi.hslf.usermodel.HSLFSlideShowFactory"
+    },
+    {
       "type": "org.apache.poi.schemas.vmldrawing.impl.CTXMLImpl",
       "methods": [
         {
@@ -14932,13 +15336,10 @@
       ]
     },
     {
-      "type": "org.apache.poi.ss.usermodel.Cell"
-    },
-    {
-      "type": "org.apache.poi.ss.usermodel.Sheet"
-    },
-    {
       "type": "org.apache.poi.ss.usermodel.Workbook"
+    },
+    {
+      "type": "org.apache.poi.xslf.usermodel.XSLFSlideShowFactory"
     },
     {
       "type": "org.apache.pulsar.client.api.PulsarClient"
@@ -17157,6 +17558,28 @@
       "type": "org.openxmlformats.schemas.drawingml.x2006.main.CTNonVisualDrawingProps[]"
     },
     {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.main.impl.CTGraphicalObjectDataImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.main.impl.CTGraphicalObjectImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
       "type": "org.openxmlformats.schemas.drawingml.x2006.main.impl.CTGroupShapePropertiesImpl",
       "methods": [
         {
@@ -17267,6 +17690,28 @@
       ]
     },
     {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.main.impl.CTTextFieldImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.main.impl.CTTextListStyleImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
       "type": "org.openxmlformats.schemas.drawingml.x2006.main.impl.CTTextParagraphImpl",
       "methods": [
         {
@@ -17322,6 +17767,34 @@
       ]
     },
     {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.picture.CTPicture"
+    },
+    {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.picture.CTPicture[]"
+    },
+    {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.picture.impl.CTPictureImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.picture.impl.CTPictureNonVisualImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
       "type": "org.openxmlformats.schemas.drawingml.x2006.spreadsheetDrawing.impl.CTDrawingImpl",
       "methods": [
         {
@@ -17333,7 +17806,51 @@
       ]
     },
     {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.wordprocessingDrawing.impl.CTAnchorImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.drawingml.x2006.wordprocessingDrawing.impl.CTInlineImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
       "type": "org.openxmlformats.schemas.officeDocument.x2006.relationships.impl.STRelationshipIdImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.impl.STOnOffImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.impl.STStringImpl",
       "methods": [
         {
           "name": "<init>",
@@ -17359,6 +17876,25 @@
     },
     {
       "type": "org.openxmlformats.schemas.presentationml.x2006.main.CTGroupShape[]"
+    },
+    {
+      "type": "org.openxmlformats.schemas.presentationml.x2006.main.STPlaceholderType$Enum",
+      "fields": [
+        {
+          "name": "table"
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.presentationml.x2006.main.impl.CTApplicationNonVisualDrawingPropsImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
     },
     {
       "type": "org.openxmlformats.schemas.presentationml.x2006.main.impl.CTCommonSlideDataImpl",
@@ -17406,6 +17942,17 @@
     },
     {
       "type": "org.openxmlformats.schemas.presentationml.x2006.main.impl.CTNotesSlideImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.presentationml.x2006.main.impl.CTPlaceholderImpl",
       "methods": [
         {
           "name": "<init>",
@@ -17526,6 +18073,17 @@
       ]
     },
     {
+      "type": "org.openxmlformats.schemas.presentationml.x2006.main.impl.CTSlideMasterTextStylesImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
       "type": "org.openxmlformats.schemas.presentationml.x2006.main.impl.NotesDocumentImpl",
       "methods": [
         {
@@ -17549,6 +18107,17 @@
     },
     {
       "type": "org.openxmlformats.schemas.presentationml.x2006.main.impl.PresentationDocumentImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.presentationml.x2006.main.impl.STPlaceholderTypeImpl",
       "methods": [
         {
           "name": "<init>",
@@ -17872,6 +18441,17 @@
       ]
     },
     {
+      "type": "org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTWorkbookPrImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
       "type": "org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTWorksheetImpl",
       "methods": [
         {
@@ -17960,6 +18540,17 @@
       ]
     },
     {
+      "type": "org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.STRefImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
       "type": "org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.SstDocumentImpl",
       "methods": [
         {
@@ -17994,6 +18585,704 @@
     },
     {
       "type": "org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.WorksheetDocumentImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.STFldCharType$Enum",
+      "fields": [
+        {
+          "name": "table"
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.STHdrFtr$Enum",
+      "fields": [
+        {
+          "name": "table"
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTAbstractNumImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTBodyImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTBookmarkImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTBrImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTDocDefaultsImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTDocument1Impl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTDrawingImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTEmptyImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTEndnotesImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTFFCheckBoxImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTFFDataImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTFldCharImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTFootnotesImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTFtnEdnImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTFtnEdnRefImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTHdrFtrImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTHdrFtrRefImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTHyperlinkImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTLatentStylesImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTMarkupRangeImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTNumImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTNumberingImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTObjectImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTOnOffImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTPImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTPPrDefaultImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTPPrGeneralImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTPPrImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTPictureImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTProofErrImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTRImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTRPrDefaultImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTRPrImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTRowImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTSdtBlockImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTSdtContentBlockImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTSdtPrImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTSectPrImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTSettingsImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTSmartTagPrImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTSmartTagRunImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTStringImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTStyleImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTStylesImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTSymImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTTblImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTTblPrExImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTTcImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTTcPrImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTTextImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.CTTrPrImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.DocumentDocumentImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.EndnotesDocumentImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.FootnotesDocumentImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.FtrDocumentImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.HdrDocumentImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.NumberingDocumentImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.STDecimalNumberImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.STFldCharTypeImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.STHdrFtrImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.SettingsDocumentImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.xmlbeans.SchemaType"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.StylesDocumentImpl",
       "methods": [
         {
           "name": "<init>",
@@ -19991,6 +21280,12 @@
           "name": "setLocations",
           "parameterTypes": [
             "java.util.List"
+          ]
+        },
+        {
+          "name": "setMixed",
+          "parameterTypes": [
+            "boolean"
           ]
         },
         {
@@ -23633,9 +24928,6 @@
       "type": "org.springframework.data.annotation.CreatedDate"
     },
     {
-      "type": "org.springframework.data.annotation.Id"
-    },
-    {
       "type": "org.springframework.data.annotation.LastModifiedDate"
     },
     {
@@ -26824,6 +28116,24 @@
       ]
     },
     {
+      "type": "sun.security.provider.JavaKeyStore$DualFormatJKS",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.JavaKeyStore$JKS",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "sun.security.provider.MD5",
       "methods": [
         {
@@ -26890,6 +28200,15 @@
     },
     {
       "type": "sun.security.provider.X509Factory",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.certpath.PKIXCertPathValidator",
       "methods": [
         {
           "name": "<init>",
@@ -27162,6 +28481,17 @@
     {
       "type": {
         "proxy": [
+          "com.jmal.clouddisk.dao.impl.jpa.repository.BurnNoteJpaRepository",
+          "org.springframework.data.repository.Repository",
+          "org.springframework.transaction.interceptor.TransactionalProxy",
+          "org.springframework.aop.framework.Advised",
+          "org.springframework.core.DecoratingProxy"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
           "com.jmal.clouddisk.dao.impl.jpa.repository.CategoryRepository",
           "org.springframework.data.repository.Repository",
           "org.springframework.transaction.interceptor.TransactionalProxy",
@@ -27229,6 +28559,17 @@
       "type": {
         "proxy": [
           "com.jmal.clouddisk.dao.impl.jpa.repository.FolderSizeRepository",
+          "org.springframework.data.repository.Repository",
+          "org.springframework.transaction.interceptor.TransactionalProxy",
+          "org.springframework.aop.framework.Advised",
+          "org.springframework.core.DecoratingProxy"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "com.jmal.clouddisk.dao.impl.jpa.repository.GroupRepository",
           "org.springframework.data.repository.Repository",
           "org.springframework.transaction.interceptor.TransactionalProxy",
           "org.springframework.aop.framework.Advised",
@@ -27829,6 +29170,9 @@
       "glob": "META-INF/services/java.nio.channels.spi.SelectorProvider"
     },
     {
+      "glob": "META-INF/services/java.nio.charset.spi.CharsetProvider"
+    },
+    {
       "glob": "META-INF/services/java.sql.Driver"
     },
     {
@@ -27851,6 +29195,12 @@
     },
     {
       "glob": "META-INF/services/javax.xml.stream.XMLOutputFactory"
+    },
+    {
+      "glob": "META-INF/services/javax.xml.transform.TransformerFactory"
+    },
+    {
+      "glob": "META-INF/services/javax.xml.xpath.XPathFactory"
     },
     {
       "glob": "META-INF/services/kotlin.reflect.jvm.internal.impl.builtins.BuiltInsLoader"
@@ -27878,6 +29228,9 @@
     },
     {
       "glob": "META-INF/services/org.apache.lucene.codecs.PostingsFormat"
+    },
+    {
+      "glob": "META-INF/services/org.apache.poi.sl.usermodel.SlideShowProvider"
     },
     {
       "glob": "META-INF/services/org.apache.tika.detect.Detector"
@@ -28132,6 +29485,9 @@
       "glob": "com/jmal/clouddisk/controller/rest/AuthController.class"
     },
     {
+      "glob": "com/jmal/clouddisk/controller/rest/BurnNoteController.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/controller/rest/CategoryController.class"
     },
     {
@@ -28141,10 +29497,16 @@
       "glob": "com/jmal/clouddisk/controller/rest/DirectLinkController.class"
     },
     {
+      "glob": "com/jmal/clouddisk/controller/rest/FileController$DownloadBeforeResult.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/controller/rest/FileController.class"
     },
     {
       "glob": "com/jmal/clouddisk/controller/rest/FileVersionController.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/controller/rest/GroupController.class"
     },
     {
       "glob": "com/jmal/clouddisk/controller/rest/HealthCheckController.class"
@@ -28174,6 +29536,9 @@
       "glob": "com/jmal/clouddisk/controller/rest/ShareController.class"
     },
     {
+      "glob": "com/jmal/clouddisk/controller/rest/ShareUploadFileController.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/controller/rest/TagController.class"
     },
     {
@@ -28192,10 +29557,16 @@
       "glob": "com/jmal/clouddisk/controller/rest/sse/SseController.class"
     },
     {
+      "glob": "com/jmal/clouddisk/dao/BurnNoteFileService.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/dao/IAccessTokenDAO.class"
     },
     {
       "glob": "com/jmal/clouddisk/dao/IArticleDAO.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/IBurnNoteDAO.class"
     },
     {
       "glob": "com/jmal/clouddisk/dao/ICategoryDAO.class"
@@ -28217,6 +29588,9 @@
     },
     {
       "glob": "com/jmal/clouddisk/dao/IFolderSizeDAO.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/IGroupDAO.class"
     },
     {
       "glob": "com/jmal/clouddisk/dao/IHeartwingsDAO.class"
@@ -28264,10 +29638,16 @@
       "glob": "com/jmal/clouddisk/dao/IWebsiteSettingDAO.class"
     },
     {
+      "glob": "com/jmal/clouddisk/dao/impl/BurnNoteCleanupService.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/AccessTokenDAOJpaImpl.class"
     },
     {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/ArticleDAOJpaImpl.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/BurnNoteDAOJpaImpl.class"
     },
     {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/CategoryDAOJpaImpl.class"
@@ -28298,6 +29678,9 @@
     },
     {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/FolderSizeDAOJpaImpl.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/GroupDAOJpaImpl.class"
     },
     {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/HeartwingsDAOJpaImpl.class"
@@ -28354,6 +29737,9 @@
       "glob": "com/jmal/clouddisk/dao/impl/jpa/repository/ArticleRepository.class"
     },
     {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/repository/BurnNoteJpaRepository.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/repository/CategoryRepository.class"
     },
     {
@@ -28373,6 +29759,9 @@
     },
     {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/repository/FolderSizeRepository.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/repository/GroupRepository.class"
     },
     {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/repository/HeartwingsRepository.class"
@@ -28480,6 +29869,21 @@
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/article/UpdatePageSortByIdHandler.class"
     },
     {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/burnnote/CreateAllHandler.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/burnnote/CreateHandler.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/burnnote/DeleteAllByIdsHandler.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/burnnote/DeleteHandler.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/burnnote/IBurnNoteOperation.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/category/CreateAllHandler.class"
     },
     {
@@ -28508,6 +29912,12 @@
     },
     {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/consumer/IUserOperation.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/consumer/ResetAdminPasswordHandler.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/consumer/ResetMfaForAllUsersHandler.class"
     },
     {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/directlink/CreateAllHandler.class"
@@ -28678,6 +30088,18 @@
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/filehistory/UpdateFileIdHandler.class"
     },
     {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/group/CreateAllHandler.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/group/CreateHandler.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/group/IGroupOperation.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/group/RemoveByIdInHandler.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/ldapconfig/ILdapConfigOperation.class"
     },
     {
@@ -28789,6 +30211,9 @@
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/setting/UpdateNetdiskNameHandler.class"
     },
     {
+      "glob": "com/jmal/clouddisk/dao/impl/jpa/write/setting/UpdatePersonalizationHandler.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/dao/impl/jpa/write/share/CreateAllHandler.class"
     },
     {
@@ -28864,7 +30289,13 @@
       "glob": "com/jmal/clouddisk/interceptor/FileInterceptor.class"
     },
     {
+      "glob": "com/jmal/clouddisk/interceptor/PreFileInterceptor$ParsedPath.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/interceptor/PreFileInterceptor.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/interceptor/ShareFileInterceptor$ParsedPath.class"
     },
     {
       "glob": "com/jmal/clouddisk/interceptor/ShareFileInterceptor.class"
@@ -28886,6 +30317,9 @@
     },
     {
       "glob": "com/jmal/clouddisk/lucene/LuceneQueryService.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/lucene/LuceneReconciliationService.class"
     },
     {
       "glob": "com/jmal/clouddisk/lucene/LuceneService.class"
@@ -28925,6 +30359,9 @@
     },
     {
       "glob": "com/jmal/clouddisk/media/VideoProcessService.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/model/BurnNoteDO.class"
     },
     {
       "glob": "com/jmal/clouddisk/model/CategoryDO.class"
@@ -28984,6 +30421,9 @@
       "glob": "com/jmal/clouddisk/model/rbac/ConsumerDO.class"
     },
     {
+      "glob": "com/jmal/clouddisk/model/rbac/GroupDO.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/model/rbac/MenuDO.class"
     },
     {
@@ -29041,6 +30481,12 @@
       "glob": "com/jmal/clouddisk/oss/OssConfigService.class"
     },
     {
+      "glob": "com/jmal/clouddisk/oss/web/OssController$CompleteMultipartUploadRequest.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/oss/web/OssController$Result.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/oss/web/OssController.class"
     },
     {
@@ -29077,6 +30523,9 @@
       "glob": "com/jmal/clouddisk/service/impl/AuthServiceImpl.class"
     },
     {
+      "glob": "com/jmal/clouddisk/service/impl/BurnNoteService.class"
+    },
+    {
       "glob": "com/jmal/clouddisk/service/impl/CategoryService.class"
     },
     {
@@ -29099,6 +30548,9 @@
     },
     {
       "glob": "com/jmal/clouddisk/service/impl/FileVersionServiceImpl.class"
+    },
+    {
+      "glob": "com/jmal/clouddisk/service/impl/GroupService.class"
     },
     {
       "glob": "com/jmal/clouddisk/service/impl/LogService.class"
@@ -29236,6 +30688,9 @@
       "glob": "config/application.yml"
     },
     {
+      "glob": "custom-mimetypes.xml"
+    },
+    {
       "glob": "data-all.sql"
     },
     {
@@ -29251,10 +30706,34 @@
       "glob": "db/migration/sqlite"
     },
     {
+      "glob": "db/migration/sqlite/V10__add_oss_config_proxy_enabled_and_path_style_access_enabled.sql"
+    },
+    {
       "glob": "db/migration/sqlite/V1__Initial_Schema.sql"
     },
     {
       "glob": "db/migration/sqlite/V2__add_depth_and_children_count_and_retry_at.sql"
+    },
+    {
+      "glob": "db/migration/sqlite/V3__add_personalization.sql"
+    },
+    {
+      "glob": "db/migration/sqlite/V4__update_log_column.sql"
+    },
+    {
+      "glob": "db/migration/sqlite/V5__change_suffix_length_to_255.sql"
+    },
+    {
+      "glob": "db/migration/sqlite/V6__change_log_url_to_text.sql"
+    },
+    {
+      "glob": "db/migration/sqlite/V7__add_netdisk_personalization.sql"
+    },
+    {
+      "glob": "db/migration/sqlite/V8__create_burn_notes_table.sql"
+    },
+    {
+      "glob": "db/migration/sqlite/V9__add_user_groups.sql"
     },
     {
       "glob": "db/role.json"
@@ -29785,10 +31264,28 @@
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/comments4c11doctype.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctabstractnum588etype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctanchorff8atype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctapplicationnonvisualdrawingprops2fb6type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctbody0f06type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctbookmarkd672type.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctborderf935type.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctborders0d66type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctbr7dd8type.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctcell842btype.xsb"
@@ -29803,6 +31300,9 @@
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctcellxfs1322type.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctchartc108type.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctcola95ftype.xsb"
     },
     {
@@ -29815,10 +31315,31 @@
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctcommonslidedata8c7ftype.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctdocdefaults2ea8type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctdocument64adtype.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctdrawing2748type.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctdrawing8d34type.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctdxfsb26atype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctempty3fa5type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctendnotescee2type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctffcheckboxf3a5type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctffdataaa7etype.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctfill550ctype.xsb"
@@ -29827,10 +31348,28 @@
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctfills2c6ftype.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctfldchare83etype.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctfont14d8type.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctfonts6623type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctfootnotes691ftype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctftnedncad9type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctftnednref89eetype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctgraphicalobject1ce3type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctgraphicalobjectdata66adtype.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctgroupshape5b43type.xsb"
@@ -29840,6 +31379,24 @@
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctgroupshapeproperties8690type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cthdrftr26datype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cthdrftrref224dtype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cthyperlink38actype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctinline5726type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctlatentstyles2e3atype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctmarkuprangeba3dtype.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctnonvisualdrawingprops8fb0type.xsb"
@@ -29854,25 +31411,91 @@
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctnotesslideab75type.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctnumberingfdf9type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctnume94ctype.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctnumfmtsb58btype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctobject47c9type.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctofficestylesheetce25type.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctonoff04c2type.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctoutershadoweffect7b5dtype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctpa1e2type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctpicture1054type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctpicture1d48type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctpicturenonvisual05adtype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctplaceholder9efctype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctppr01c0type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctpprdefaultf839type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctpprgenerald6f2type.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctpresentation56cbtype.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctprooferr1e07type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctr8120type.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctregulartextrun7e3dtype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctrow3b78type.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctrowdd39type.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctrpr097etype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctrprdefault5ebbtype.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctrsta472type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctsdtblock221etype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctsdtcontentblockb37btype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctsdtpre24dtype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctsectpr1123type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctsettingsd6a5type.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctshape5cb5type.xsb"
@@ -29923,10 +31546,31 @@
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctslidemasteridlistentryae7ftype.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctslidemastertextstylesb48dtype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctsmarttagprf715type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctsmarttagrune098type.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctsst44f3type.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctstring9c37type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctstyle41c1type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctstyles8506type.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctstylesheet4257type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctsym0dabtype.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cttablestylelist4bdctype.xsb"
@@ -29935,10 +31579,31 @@
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cttablestyles872ftype.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cttblc014type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cttblprex863ftype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cttc4019type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cttcpree37type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cttext7f5btype.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cttextbodya3catype.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cttextcharacterproperties76c0type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cttextfield187etype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cttextliststyleab77type.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cttextparagraphcaf2type.xsb"
@@ -29947,7 +31612,13 @@
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cttextparagraphpropertiesdd05type.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/cttrpr2848type.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctworkbook83c3type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctworkbookpr03a5type.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctworksheet530dtype.xsb"
@@ -29959,6 +31630,21 @@
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ctxml2989type.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/document2bd9doctype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/endnotes960edoctype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/footnotes8773doctype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ftre182doctype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/hdra530doctype.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/index.xsb"
     },
     {
@@ -29968,7 +31654,19 @@
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/notesmaster8840doctype.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/numbering1c4ddoctype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/pic8010doctype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/picelement.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/presentation02f7doctype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/settings9dd1doctype.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/shapeaee1doctype.xsb"
@@ -30001,6 +31699,9 @@
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/sstf81fdoctype.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/stborderd7ectype.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/stcellformulatypee2cdtype.xsb"
     },
     {
@@ -30013,16 +31714,46 @@
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/stcelltypebf95type.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/stdecimalnumber8d28type.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/stdrawingelementid75a4type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/stfldchartype1eb4type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/sthdrftr30catype.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/stnumfmtid76fbtype.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/stonoff18ddbtype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/stonoff9300type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/stplaceholdertypeca72type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/stref90a2type.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/strelationshipid1e94type.xsb"
     },
     {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/ststring76cbtype.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/stverticaljc3629type.xsb"
+    },
+    {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/stxstringf179type.xsb"
+    },
+    {
+      "glob": "org/apache/poi/schemas/ooxml/system/ooxml/styles2732doctype.xsb"
     },
     {
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/stylesheet5d8bdoctype.xsb"
@@ -30043,7 +31774,10 @@
       "glob": "org/apache/poi/schemas/ooxml/system/ooxml/xml2eb5doctype.xsb"
     },
     {
-      "glob": "org/apache/tika/mime/custom-mimetypes.xml"
+      "glob": "org/apache/poi/ss/formula/function/functionMetadata.txt"
+    },
+    {
+      "glob": "org/apache/poi/ss/formula/function/functionMetadataCetab.txt"
     },
     {
       "glob": "org/apache/tika/mime/tika-mimetypes.xml"
@@ -30218,6 +31952,15 @@
     },
     {
       "glob": "org/apache/xmlbeans/metadata/system/sXMLLANG/index.xsb"
+    },
+    {
+      "glob": "org/apache/xmlbeans/metadata/system/sXMLLANG/space9344attrtypetype.xsb"
+    },
+    {
+      "glob": "org/apache/xmlbeans/metadata/system/sXMLLANG/spaceattribute.xsb"
+    },
+    {
+      "glob": "org/apache/xmlbeans/metadata/system/sXMLLANG/spaceb986attrtype.xsb"
     },
     {
       "glob": "org/apache/xmlbeans/metadata/system/sXMLSCHEMA/index.xsb"
@@ -31470,6 +33213,10 @@
     },
     {
       "module": "java.base",
+      "glob": "jdk/internal/icu/impl/data/icudt76b/nfkc.nrm"
+    },
+    {
+      "module": "java.base",
       "glob": "jdk/internal/icu/impl/data/icudt76b/uprops.icu"
     },
     {
@@ -31479,6 +33226,10 @@
     {
       "module": "java.base",
       "glob": "sun/text/resources/SentenceBreakIteratorData"
+    },
+    {
+      "module": "java.xml",
+      "glob": "com/sun/org/apache/xml/internal/serializer/Encodings.properties"
     },
     {
       "bundle": "i18n/messages"
@@ -31585,21 +33336,5 @@
     {
       "bundle": "org.aspectj.weaver.weaver-messages"
     }
-  ],
-  "foreign": {
-    "downcalls": [
-      {
-        "returnType": "jint",
-        "parameterTypes": [
-          "void*",
-          "jlong",
-          "jint"
-        ]
-      },
-      {
-        "returnType": "jint",
-        "parameterTypes": []
-      }
-    ]
-  }
+  ]
 }
