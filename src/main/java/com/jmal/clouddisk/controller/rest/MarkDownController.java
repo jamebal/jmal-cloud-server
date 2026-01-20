@@ -14,7 +14,6 @@ import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
-import com.jmal.clouddisk.util.FileNameUtils;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -95,7 +94,6 @@ public class MarkDownController {
     public ResponseResult<Object> editTextByPath(@RequestBody UploadApiParamDTO upload) {
         ResultUtil.checkParamIsNull(upload.getUsername(), upload.getUserId(), upload.getRelativePath(),
                 upload.getContentText());
-        FileNameUtils.checkPath(upload.getRelativePath());
         if (!CharSequenceUtil.isBlank(upload.getMountFileId())) {
             FileDocument fileDocument = commonFileService.getById(upload.getMountFileId());
             upload.setUserId(fileDocument.getUserId());

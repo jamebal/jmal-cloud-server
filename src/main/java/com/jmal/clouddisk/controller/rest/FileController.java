@@ -214,7 +214,6 @@ public class FileController {
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> previewTextByPath(@RequestParam String path, @RequestParam String username) {
-        FileNameUtils.checkPath(path);
         Path prePth = Paths.get(username, path);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
