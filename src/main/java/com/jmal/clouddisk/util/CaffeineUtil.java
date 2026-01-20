@@ -104,15 +104,6 @@ public class CaffeineUtil {
         return AUTHORITIES_CACHE.getIfPresent(username);
     }
 
-    /***
-     * 缓存中是否存在该username的权限
-     * @param username username
-     * @return bool
-     */
-    public static boolean existsAuthoritiesCache(String username) {
-        return AUTHORITIES_CACHE.getIfPresent(username) != null;
-    }
-
     public static void setAuthoritiesCache(String username, List<String> authorities) {
         AUTHORITIES_CACHE.put(username, authorities);
     }
@@ -254,7 +245,7 @@ public class CaffeineUtil {
      * @return oss path
      */
     public static String getOssPath(Path path) {
-        path = Paths.get(FileNameUtils.safeDecode(path.toString()));
+        path = Paths.get(FileNameUtils.decodeAndCheckPath(path.toString()));
         String prePath;
         if (path.getNameCount() >= 2) {
             prePath = MyWebdavServlet.PATH_DELIMITER + path.subpath(0, 2);

@@ -61,13 +61,13 @@ public class ArticleParamDTO implements Reflective {
     private LocalDateTime uploadDate;
 
     public String getFilename() {
-        return FileNameUtils.safeDecode(filename);
+        return FileNameUtils.decodeAndCheckPath(filename);
     }
 
     public String getCurrentDirectory() {
         if (currentDirectory == null || "undefined".equals(currentDirectory)) {
             return null;
         }
-        return FileNameUtils.safeDecode(currentDirectory);
+        return FileNameUtils.decodeAndCheckPath(currentDirectory);
     }
 }

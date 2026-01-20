@@ -189,7 +189,7 @@ public class MyWebdavServlet extends WebdavServlet {
     }
 
     private void deleteFile(HttpServletRequest req, HttpServletResponse resp) {
-        String uri = FileNameUtils.safeDecode(req.getRequestURI());
+        String uri = FileNameUtils.decodeAndCheckPath(req.getRequestURI());
         Path uriPath = Paths.get(uri);
         if (uriPath.getNameCount() > 1) {
             String ossPath = CaffeineUtil.getOssPath(uriPath.subpath(1, uriPath.getNameCount()));
@@ -204,7 +204,7 @@ public class MyWebdavServlet extends WebdavServlet {
     }
 
     private void createFile(HttpServletRequest req, HttpServletResponse resp) {
-        String uri = FileNameUtils.safeDecode(req.getRequestURI());
+        String uri = FileNameUtils.decodeAndCheckPath(req.getRequestURI());
         Path uriPath = Paths.get(uri);
         if (uriPath.getNameCount() > 1) {
             String ossPath = CaffeineUtil.getOssPath(uriPath.subpath(1, uriPath.getNameCount()));
