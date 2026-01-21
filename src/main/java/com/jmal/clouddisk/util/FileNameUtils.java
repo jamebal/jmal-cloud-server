@@ -9,6 +9,32 @@ import com.jmal.clouddisk.exception.ExceptionType;
 public class FileNameUtils {
 
     /**
+     * 解码并检查路径
+     * 
+     * @param path 路径
+     * @return 解码后的路径
+     */
+    public static String decodeAndCheckPath(String path) {
+        String decoded = safeDecode(path);
+        checkPath(decoded);
+        return decoded;
+    }
+
+    /**
+     * 检查路径是否安全
+     * 
+     * @param path 路径
+     */
+    public static void checkPath(String path) {
+        if (StrUtil.isBlank(path)) {
+            return;
+        }
+        if (path.contains("../") || path.contains("..\\")) {
+            throw new CommonException(ExceptionType.PARAMETERS_VALUE.getCode(), "非法路径");
+        }
+    }
+
+    /**
      * 安全地解码一个可能经过URL编码的文件名或路径。
      * 这个方法修复了 java.net.URLDecoder 会错误地将 '+' 转换为空格的问题。
      * 它正确地处理了 '+' 字符，同时解码其他的 %xx 序列。

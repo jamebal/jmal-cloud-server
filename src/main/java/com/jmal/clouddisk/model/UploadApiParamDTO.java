@@ -276,7 +276,7 @@ public class UploadApiParamDTO implements Reflective {
     private LocalDateTime uploadDate;
 
     public String getFilename() {
-        return FileNameUtils.safeDecode(filename);
+        return FileNameUtils.decodeAndCheckPath(filename);
     }
 
     public String getRelativePath() {
@@ -284,7 +284,7 @@ public class UploadApiParamDTO implements Reflective {
             // Windows 系统
             relativePath = relativePath.replace("/", "\\");
         }
-        return FileNameUtils.safeDecode(relativePath);
+        return FileNameUtils.decodeAndCheckPath(relativePath);
     }
 
     public String getCurrentDirectory() {
@@ -295,7 +295,7 @@ public class UploadApiParamDTO implements Reflective {
             // Windows 系统
             currentDirectory = currentDirectory.replace("/", "\\");
         }
-        return FileNameUtils.safeDecode(currentDirectory);
+        return FileNameUtils.decodeAndCheckPath(currentDirectory);
     }
 
     public String getFolderPath() {
@@ -306,7 +306,7 @@ public class UploadApiParamDTO implements Reflective {
             // Windows 系统
             folderPath = folderPath.replace("/", "\\");
         }
-        return FileNameUtils.safeDecode(folderPath);
+        return FileNameUtils.decodeAndCheckPath(folderPath);
     }
 
     public SearchDTO toSearchDTO() {

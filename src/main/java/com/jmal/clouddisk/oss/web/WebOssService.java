@@ -126,7 +126,7 @@ public class WebOssService {
     public static String getObjectName(Path prePath, String ossPath, boolean isFolder) {
         // 判断prePath是否为url编码过的，如果是则解码
         String prePathStr = prePath.toString();
-        String decodedPathStr = FileNameUtils.safeDecode(prePathStr);
+        String decodedPathStr = FileNameUtils.decodeAndCheckPath(prePathStr);
         if (!prePathStr.equals(decodedPathStr)) {
             prePath = Paths.get(decodedPathStr);
         }
@@ -138,7 +138,7 @@ public class WebOssService {
                 name = name + "/";
             }
         }
-        return FileNameUtils.safeDecode(name);
+        return FileNameUtils.decodeAndCheckPath(name);
     }
 
     public static String getFilenameFromObjectName(String objectName) {

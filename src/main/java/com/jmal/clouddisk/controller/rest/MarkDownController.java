@@ -92,7 +92,8 @@ public class MarkDownController {
     @PostMapping("/markdown/edit1")
     @Permission("cloud:file:update")
     public ResponseResult<Object> editTextByPath(@RequestBody UploadApiParamDTO upload) {
-        ResultUtil.checkParamIsNull(upload.getUsername(), upload.getUserId(), upload.getRelativePath(), upload.getContentText());
+        ResultUtil.checkParamIsNull(upload.getUsername(), upload.getUserId(), upload.getRelativePath(),
+                upload.getContentText());
         if (!CharSequenceUtil.isBlank(upload.getMountFileId())) {
             FileDocument fileDocument = commonFileService.getById(upload.getMountFileId());
             upload.setUserId(fileDocument.getUserId());
@@ -113,7 +114,7 @@ public class MarkDownController {
     @PostMapping("/upload-markdown-image")
     @Permission("cloud:file:upload")
     public ResponseResult<Object> uploadMarkdownImage(UploadImageDTO upload) {
-        if(CharSequenceUtil.isBlank(upload.getUserId()) || CharSequenceUtil.isBlank(upload.getUsername())) {
+        if (CharSequenceUtil.isBlank(upload.getUserId()) || CharSequenceUtil.isBlank(upload.getUsername())) {
             return ResultUtil.warning("参数里缺少 userId 或 username");
         }
         return markdownService.uploadMarkdownImage(upload);
@@ -123,18 +124,19 @@ public class MarkDownController {
     @PostMapping("/upload-markdown-link-image")
     @Permission("cloud:file:upload")
     @LogOperatingFun
-    public ResponseResult<Object> uploadMarkdownLinkImage(HttpServletRequest request, @RequestBody UploadImageDTO uploadImageDTO) {
+    public ResponseResult<Object> uploadMarkdownLinkImage(HttpServletRequest request,
+            @RequestBody UploadImageDTO uploadImageDTO) {
         String userId = uploadImageDTO.getUserId();
         String username = uploadImageDTO.getUsername();
-        if(CharSequenceUtil.isBlank(userId)){
+        if (CharSequenceUtil.isBlank(userId)) {
             userId = request.getHeader("userId");
             uploadImageDTO.setUserId(userId);
         }
-        if(CharSequenceUtil.isBlank(username)){
+        if (CharSequenceUtil.isBlank(username)) {
             username = request.getHeader("username");
             uploadImageDTO.setUsername(username);
         }
-        if(CharSequenceUtil.isBlank(userId) || CharSequenceUtil.isBlank(username)) {
+        if (CharSequenceUtil.isBlank(userId) || CharSequenceUtil.isBlank(username)) {
             return ResultUtil.warning("请求头里或参数里必须含有userId和username");
         }
         return markdownService.uploadMarkdownLinkImage(uploadImageDTO);

@@ -254,7 +254,7 @@ public class FileVersionServiceImpl implements IFileVersionService, ApplicationL
             String objectName = WebOssService.getObjectName(prePth, ossPath, false);
             return getS3VersionListResult(pageSize, pageIndex, ossPath, objectName);
         } else {
-            Path filePath = Paths.get(FileNameUtils.safeDecode(path));
+            Path filePath = Paths.get(FileNameUtils.decodeAndCheckPath(path));
             String relativePath = File.separator;
             if (filePath.getNameCount() > 1) {
                 relativePath += filePath.subpath(0, filePath.getNameCount() - 1) + File.separator;
