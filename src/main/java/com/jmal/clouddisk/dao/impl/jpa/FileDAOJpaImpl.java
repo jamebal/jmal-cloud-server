@@ -690,6 +690,27 @@ public class FileDAOJpaImpl implements IFileDAO {
         return fileMetadataRepository.findMountFileBaseDTOByUserId(userId);
     }
 
+    @Override
+    public List<String> searchFileIdsByKeyword(String keyword, String userId, int limit) {
+        if (CharSequenceUtil.isBlank(keyword)) {
+            return List.of();
+        }
+        String searchPattern = "%" + MyQuery.escapeLikeSpecialChars(keyword) + "%";
+        return fileMetadataRepository.findIdsByUserIdAndNameLike(userId, searchPattern, PageRequest.of(0, limit))
+                .stream()
+                .toList();
+    }
+
+    @Override
+    public String getFileSummary(String fileId) {
+        return fileMetadataRepository.findSummaryById(fileId);
+    }
+
+    @Override
+    public void updateFileSummary(String fileId, String summary) {
+        writeService.submit(new FileOperation.UpdateSummary(fileId, summary));
+    }
+
     private List<FileDocument> getFileDocuments(List<FileMetadataDO> fileMetadataDOList, boolean readContent) {
         return fileMetadataDOList.stream().map(fileMetadataDO -> {
             FileDocument fileDocument = fileMetadataDO.toFileDocument();

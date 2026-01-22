@@ -359,4 +359,19 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadataDO, Lo
 
     @EntityGraph(attributePaths = "props")
     Page<FileMetadataDO> findAllByUserIdAndIsFolder(String userId, Boolean isFolder, Pageable pageable);
+
+    @Query("SELECT f.publicId FROM FileMetadataDO f " +
+            "WHERE f.userId = :userId " +
+            "AND LOWER(f.name) LIKE LOWER(:pattern) ESCAPE '\\\\'")
+    Page<String> findIdsByUserIdAndNameLike(
+            @Param("userId") String userId,
+            @Param("pattern") String pattern,
+            Pageable pageable);
+
+    @Query("SELECT f.summary FROM FileMetadataDO f WHERE f.publicId = :id")
+    String findSummaryById(@Param("id") String id);
+
+    @Modifying
+    @Query("UPDATE FileMetadataDO f SET f.summary = :summary WHERE f.publicId = :id")
+    int updateSummaryById(@Param("id") String id, @Param("summary") String summary);
 }

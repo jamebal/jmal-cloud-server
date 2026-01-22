@@ -250,6 +250,11 @@ public class FileDocument extends FileBase implements Reflective {
     private String lastEtagUpdateError;
 
     /**
+     * AI生成的文件摘要
+     */
+    private String summary;
+
+    /**
      * 临时字段，不存数据库，表示是否有草稿
      */
     @Transient
