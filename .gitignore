@@ -1,4 +1,5 @@
 ## myproject
+.worktrees/
 push.sh
 update.sh
 HELP.md
