@@ -133,7 +133,7 @@ class StunControllerTest {
         StunGostNode.Connector connector = new StunGostNode.Connector();
         connector.setType("ss");
         StunGostNode.Auth auth = new StunGostNode.Auth();
-        auth.setUsername("chacha20-ietf-poly1305");
+        auth.setUsername("username");
         auth.setPassword("pwd");
         connector.setAuth(auth);
         node.setConnector(connector);
@@ -146,11 +146,11 @@ class StunControllerTest {
         mockMvc.perform(get("/stun/home/gost/nodes")
                         .param("connector", "ss")
                         .param("dialer", "tcp")
-                        .param("username", "chacha20-ietf-poly1305")
+                        .param("username", "username")
                         .param("password", "pwd"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].connector.type").value("ss"))
-                .andExpect(jsonPath("$[0].connector.auth.username").value("chacha20-ietf-poly1305"))
+                .andExpect(jsonPath("$[0].connector.auth.username").value("username"))
                 .andExpect(jsonPath("$[0].dialer.type").value("tcp"))
                 .andExpect(jsonPath("$[0].dialer.tls").doesNotExist());
     }

@@ -91,7 +91,7 @@ class StunChannelServiceTest {
         StunGostNodesQuery query = new StunGostNodesQuery();
         query.setConnector("ss");
         query.setDialer("tcp");
-        query.setUsername("chacha20-ietf-poly1305");
+        query.setUsername("username");
         query.setPassword("pwd");
 
         List<StunGostNode> nodes = service.getGostNodes("home", query);
@@ -100,7 +100,7 @@ class StunChannelServiceTest {
         StunGostNode node = nodes.getFirst();
         assertThat(node.getConnector().getType()).isEqualTo("ss");
         assertThat(node.getConnector().getAuth()).isNotNull();
-        assertThat(node.getConnector().getAuth().getUsername()).isEqualTo("chacha20-ietf-poly1305");
+        assertThat(node.getConnector().getAuth().getUsername()).isEqualTo("username");
         assertThat(node.getConnector().getAuth().getPassword()).isEqualTo("pwd");
         assertThat(node.getDialer().getType()).isEqualTo("tcp");
         assertThat(node.getDialer().getTls()).isNull();

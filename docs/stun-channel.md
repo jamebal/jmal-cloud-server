@@ -145,7 +145,7 @@ curl 'http://127.0.0.1:8088/api/stun/home/get?access-token=YOUR_TOKEN'
 `ss + tcp`：
 
 ```bash
-curl 'http://127.0.0.1:8088/api/stun/home/gost/nodes?access-token=0ca30c584a57d7c7681edd2a60ac9f83&connector=ss&dialer=tcp&username=chacha20-ietf-poly1305&password=pwd'
+curl 'http://127.0.0.1:8088/api/stun/home/gost/nodes?access-token=0ca30c584a57d7c7681edd2a60ac9f83&connector=ss&dialer=tcp&username=username&password=pwd'
 ```
 
 示例响应：
@@ -158,7 +158,7 @@ curl 'http://127.0.0.1:8088/api/stun/home/gost/nodes?access-token=0ca30c584a57d7
     "connector": {
       "type": "ss",
       "auth": {
-        "username": "chacha20-ietf-poly1305",
+        "username": "username",
         "password": "pwd"
       }
     },
