@@ -5,6 +5,7 @@ import com.jmal.clouddisk.util.ResultUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.web.ErrorResponse;
@@ -97,5 +98,12 @@ public class CommonExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleNoResourceException() {
         return new ErrorResponseException(HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(ErrorResponseException.class)
+    public ResponseEntity<Object> handleErrorResponseException(ErrorResponseException e) {
+        return ResponseEntity.status(e.getStatusCode())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(e.getBody());
     }
 }

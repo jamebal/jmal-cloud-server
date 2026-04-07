@@ -5,6 +5,7 @@ import com.jmal.clouddisk.dao.IWebsiteSettingDAO;
 import com.jmal.clouddisk.dao.impl.jpa.repository.WebsiteSettingRepository;
 import com.jmal.clouddisk.dao.impl.jpa.write.IWriteService;
 import com.jmal.clouddisk.dao.impl.jpa.write.setting.WebSiteSettingOperation;
+import com.jmal.clouddisk.model.DynamicAddressConfig;
 import com.jmal.clouddisk.model.NetdiskPersonalization;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 import lombok.RequiredArgsConstructor;
@@ -116,6 +117,29 @@ public class WebsiteSettingDAOJpaImpl implements IWebsiteSettingDAO, IWriteCommo
             log.error("更新网站个性化配置失败: personalization={}, error={}",
                      personalization, e.getMessage(), e);
             throw new RuntimeException("更新网站个性化配置失败", e);
+        }
+    }
+
+    @Override
+    public void updateDynamicAddressConfig(DynamicAddressConfig dynamicAddressConfig) {
+        log.debug("更新动态地址配置: dynamicAddressConfig={}", dynamicAddressConfig);
+
+        try {
+            CompletableFuture<Integer> future = writeService.submit(new WebSiteSettingOperation.UpdateDynamicAddress(dynamicAddressConfig));
+            int updatedCount = future.get(10, TimeUnit.SECONDS);
+
+            if (updatedCount == 0) {
+                WebsiteSettingDO setting = createDefaultWebsiteSetting();
+                setting.setDynamicAddress(dynamicAddressConfig);
+                writeService.submit(new WebSiteSettingOperation.Create(setting));
+                log.debug("创建带动态地址配置的默认设置成功: dynamicAddressConfig={}", dynamicAddressConfig);
+            } else {
+                log.debug("动态地址配置更新成功，影响行数: {}", updatedCount);
+            }
+        } catch (Exception e) {
+            log.error("更新动态地址配置失败: dynamicAddressConfig={}, error={}",
+                    dynamicAddressConfig, e.getMessage(), e);
+            throw new RuntimeException("更新动态地址配置失败", e);
         }
     }
 
@@ -236,6 +260,7 @@ public class WebsiteSettingDAOJpaImpl implements IWebsiteSettingDAO, IWriteCommo
         existing.setBackgroundDescSite(newSettings.getBackgroundDescSite());
         existing.setNetdiskLogo(newSettings.getNetdiskLogo());
         existing.setNetdiskName(newSettings.getNetdiskName());
+        existing.setDynamicAddress(newSettings.getDynamicAddress());
         existing.setSiteUrl(newSettings.getSiteUrl());
         existing.setSiteIco(newSettings.getSiteIco());
         existing.setSiteLogo(newSettings.getSiteLogo());

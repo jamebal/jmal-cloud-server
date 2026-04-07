@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.dao.impl.jpa.repository;
 
 import com.jmal.clouddisk.config.jpa.RelationalDataSourceCondition;
+import com.jmal.clouddisk.model.DynamicAddressConfig;
 import com.jmal.clouddisk.model.NetdiskPersonalization;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 import org.springframework.context.annotation.Conditional;
@@ -53,4 +54,11 @@ public interface WebsiteSettingRepository extends JpaRepository<WebsiteSettingDO
     @Modifying
     @Query("UPDATE WebsiteSettingDO w SET w.personalization = :personalization")
     int updatePersonalization(NetdiskPersonalization personalization);
+
+    /**
+     * 更新动态地址配置
+     */
+    @Modifying
+    @Query("UPDATE WebsiteSettingDO w SET w.dynamicAddress = :dynamicAddress")
+    int updateDynamicAddress(@Param("dynamicAddress") DynamicAddressConfig dynamicAddress);
 }
