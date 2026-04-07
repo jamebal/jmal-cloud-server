@@ -30,7 +30,7 @@ public class StunController {
     @Permission("cloud:set:sync")
     @LogOperatingFun
     public ResponseResult<Object> updateChannelAddress(@PathVariable String channelId,
-                                                       @RequestBody(required = false) StunChannelUpdateDTO requestBody) {
+                                                       @RequestBody StunChannelUpdateDTO requestBody) {
         stunChannelService.updateChannelAddress(channelId, requestBody == null ? null : requestBody.getAddr());
         return ResultUtil.success();
     }
@@ -56,24 +56,7 @@ public class StunController {
     @Operation(summary = "获取适配 gost 3.x 的动态节点")
     @GetMapping(value = "/{channelId}/gost/nodes", produces = MediaType.APPLICATION_JSON_VALUE)
     @Permission("cloud:set:sync")
-    public List<StunGostNode> getGostNodes(@PathVariable String channelId,
-                                           @RequestParam(required = false) String username,
-                                           @RequestParam(required = false) String password,
-                                           @RequestParam(required = false) String connector,
-                                           @RequestParam(required = false) String dialer,
-                                           @RequestParam(required = false) String name,
-                                           @RequestParam(required = false) String serverName,
-                                           @RequestParam(required = false) String caFile,
-                                           @RequestParam(required = false) String secure) {
-        StunGostNodesQuery query = new StunGostNodesQuery();
-        query.setUsername(username);
-        query.setPassword(password);
-        query.setConnector(connector);
-        query.setDialer(dialer);
-        query.setName(name);
-        query.setServerName(serverName);
-        query.setCaFile(caFile);
-        query.setSecure(secure);
+    public List<StunGostNode> getGostNodes(@PathVariable String channelId, StunGostNodesQuery query) {
         return stunChannelService.getGostNodes(channelId, query);
     }
 }
