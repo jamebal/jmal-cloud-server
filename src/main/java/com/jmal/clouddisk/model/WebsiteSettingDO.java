@@ -52,6 +52,12 @@ public class WebsiteSettingDO extends AuditableEntity implements Reflective {
      */
     String netdiskName;
     /**
+     * 动态地址配置
+     */
+    @Column(name = "dynamic_address")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private DynamicAddressConfig dynamicAddress;
+    /**
      * 网盘个性化配置
      */
     @Column(name = "personalization")
@@ -135,6 +141,7 @@ public class WebsiteSettingDO extends AuditableEntity implements Reflective {
         websiteSettingDTO.setBackgroundDescSite(this.backgroundDescSite);
         websiteSettingDTO.setNetdiskLogo(this.netdiskLogo);
         websiteSettingDTO.setNetdiskName(this.netdiskName);
+        websiteSettingDTO.setDynamicAddress(this.dynamicAddress);
         websiteSettingDTO.setPersonalization(this.personalization);
         websiteSettingDTO.setSiteUrl(this.siteUrl);
         websiteSettingDTO.setSiteIco(this.siteIco);

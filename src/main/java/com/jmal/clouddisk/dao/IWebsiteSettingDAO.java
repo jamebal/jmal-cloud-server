@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.dao;
 
+import com.jmal.clouddisk.model.DynamicAddressConfig;
 import com.jmal.clouddisk.model.NetdiskPersonalization;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 
@@ -20,4 +21,6 @@ public interface IWebsiteSettingDAO {
     void setMfaForceEnable(Boolean mfaForceEnable);
 
     void updatePersonalization(NetdiskPersonalization personalization);
+
+    void updateDynamicAddressConfig(DynamicAddressConfig dynamicAddressConfig);
 }

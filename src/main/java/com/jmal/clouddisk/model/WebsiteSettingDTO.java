@@ -39,6 +39,10 @@ public class WebsiteSettingDTO implements Reflective {
      * 网盘名称
      */
     String netdiskName;
+    /**
+     * 动态地址配置
+     */
+    private DynamicAddressConfig dynamicAddress;
     private NetdiskPersonalization personalization;
     /***
      * 站点地址

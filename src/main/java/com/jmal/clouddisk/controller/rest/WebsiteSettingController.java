@@ -2,16 +2,19 @@ package com.jmal.clouddisk.controller.rest;
 
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
+import com.jmal.clouddisk.model.DynamicAddressConfig;
 import com.jmal.clouddisk.model.HeartwingsDO;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.WebsiteSettingDO;
 import com.jmal.clouddisk.model.WebsiteSettingDTO;
+import com.jmal.clouddisk.service.impl.DynamicAddressConfigService;
 import com.jmal.clouddisk.service.impl.SettingService;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,12 +30,20 @@ import java.util.List;
 public class WebsiteSettingController {
 
     private final SettingService settingService;
+    private final DynamicAddressConfigService dynamicAddressConfigService;
 
     @Operation(summary = "获取网站设置")
     @GetMapping("/website/setting")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<WebsiteSettingDTO> getWebsiteSetting() {
         return ResultUtil.success(settingService.getWebsiteSetting());
+    }
+
+    @Operation(summary = "获取动态地址配置")
+    @GetMapping(value = "/website/setting/dynamic-address", produces = MediaType.APPLICATION_JSON_VALUE)
+    @LogOperatingFun(logType = LogOperation.Type.BROWSE)
+    public ResponseResult<DynamicAddressConfig> getDynamicAddressConfig() {
+        return ResultUtil.success(dynamicAddressConfigService.getDynamicAddressConfig());
     }
 
     @Operation(summary = "获取网站备案信息")
@@ -57,5 +68,13 @@ public class WebsiteSettingController {
         return settingService.websiteUpdate(websiteSettingDO);
     }
 
-}
+    @Operation(summary = "更新动态地址配置")
+    @PutMapping(value = "/website/setting/dynamic-address", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Permission("website:set:update")
+    @LogOperatingFun
+    public ResponseResult<Object> updateDynamicAddressConfig(@RequestBody(required = false) DynamicAddressConfig dynamicAddressConfig) {
+        dynamicAddressConfigService.updateDynamicAddressConfig(dynamicAddressConfig);
+        return ResultUtil.success();
+    }
 
+}
