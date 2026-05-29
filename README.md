@@ -4,6 +4,47 @@
 
 - [STUN 通道地址与 gost 3.x 动态节点](docs/stun-channel.md)
 
+## jmalcloud CLI
+
+Rust 命令行上传工具位于 `cli/jmal-cloud-cli`，二进制名为 `jmalcloud`。
+
+安装最新发布版：
+
+```bash
+curl -fsSL https://github.com/jamebal/jmal-cloud-server/releases/latest/download/install.sh | sh
+```
+
+本地构建：
+
+```bash
+cargo build --manifest-path cli/jmal-cloud-cli/Cargo.toml --release
+```
+
+使用用户名密码登录，2FA 用户会提示输入 TOTP：
+
+```bash
+jmalcloud login --server http://127.0.0.1:8088 --username admin
+```
+
+上传文件或目录：
+
+```bash
+jmalcloud upload ./file.txt --server http://127.0.0.1:8088 --remote /
+JMAL_CLOUD_SERVER=http://127.0.0.1:8088 jmalcloud upload ./dir --remote /
+```
+
+使用访问令牌上传：
+
+```bash
+jmalcloud upload ./file.txt --server http://127.0.0.1:8088 --remote / --access-token <token> --username admin
+```
+
+分享目录上传：
+
+```bash
+jmalcloud upload ./dir --server http://127.0.0.1:8088 --remote / --share-id <id> --share-token <token>
+```
+
 ### 许可
 
 [MIT](https://github.com/jamebal/jmal-cloud-view/blob/master/LICENSE) license.
