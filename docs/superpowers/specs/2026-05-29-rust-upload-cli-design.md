@@ -13,24 +13,26 @@ The CLI will not implement OSS presigned upload APIs or markdown/image-specializ
 
 ## User Experience
 
-The binary name is `jmal-cloud`. The primary command is:
+The binary name is `jmalcloud`. The primary command is:
 
 ```bash
-jmal-cloud upload <local-path> --server http://127.0.0.1:8088 --remote /Documents
+jmalcloud upload <local-path> --server http://127.0.0.1:8088 --remote /Documents
 ```
 
 Authentication can be supplied in two ways:
 
 ```bash
-jmal-cloud login --server http://127.0.0.1:8088 --username admin
-jmal-cloud upload ./file.zip --server http://127.0.0.1:8088 --remote / --username admin
+jmalcloud login --server http://127.0.0.1:8088 --username admin
+jmalcloud upload ./file.zip --server http://127.0.0.1:8088 --remote / --username admin
 ```
 
 or:
 
 ```bash
-jmal-cloud upload ./file.zip --server http://127.0.0.1:8088 --remote / --access-token <token>
+jmalcloud upload ./file.zip --server http://127.0.0.1:8088 --remote / --access-token <token>
 ```
+
+The `--server` value is required unless `JMAL_CLOUD_SERVER` is set. The CLI must not silently use a hard-coded default server. When neither the flag nor the environment variable is present, it exits non-zero with a message telling the user to pass `--server` or set `JMAL_CLOUD_SERVER`.
 
 The login command prompts for password and, when the server returns `mfaToken`, prompts for a TOTP code and completes `/api/public/verify-totp`. Tokens are stored in a config file under the user's config directory with mode `0600` on Unix. CLI flags and environment variables can override stored values:
 
@@ -53,7 +55,7 @@ The crate is split into focused modules:
 - `api.rs`: typed HTTP client for JmalCloud response envelopes and upload endpoints.
 - `upload.rs`: upload orchestration for files, folders, chunk checks, chunk upload, merge, retries, and progress.
 - `path.rs`: remote/local path normalization and relative path generation.
-- `hash.rs`: resumable upload identifier generation.
+- `identifier.rs`: resumable upload identifier generation compatible with the existing uploader.
 - `errors.rs`: shared error type and readable messages.
 
 Use `clap` for CLI parsing, `reqwest` with multipart and blocking APIs for HTTP, `serde` for JSON envelopes, `rpassword` for password/TOTP prompts, `indicatif` for progress, `dirs` for config locations, and `walkdir` for folder traversal.
@@ -66,7 +68,7 @@ Before uploading a batch, call `checkExist` with `filenames` and the destination
 
 For each file:
 
-1. Build a stable identifier from file metadata and content hash. Prefer full MD5 for correctness; this also works with server-side duplicate checks.
+1. Build `identifier` the same way the existing uploader does, not as a file-content MD5. The formula is `"<file_size>-<relative_path_sanitized>"`, where `relative_path_sanitized` is the upload relative path with every character outside `[0-9A-Za-z_-]` removed. This mirrors `simple-uploader.js` default `file.size + '-' + relativePath.replace(/[^0-9a-zA-Z_-]/g, '')` and matches this repository's `upload.sh` behavior for single-file uploads.
 2. Compute `totalChunks = ceil(totalSize / chunkSize)`.
 3. Call `GET /api/upload` or `GET /api/public/upload` with the chunk metadata to retrieve `pass` and `resume`.
 4. If `pass` is true, treat the file as uploaded.
@@ -80,7 +82,7 @@ Small files are represented as one chunk where `currentChunkSize == totalSize`, 
 Public upload is enabled with:
 
 ```bash
-jmal-cloud upload ./dir --server http://host --remote / --share-id <id> --share-token <token>
+jmalcloud upload ./dir --server http://host --remote / --share-id <id> --share-token <token>
 ```
 
 The CLI uses the `/api/public/...` endpoints and sends `shareId` and `share-token` headers. The server derives username, userId, currentDirectory, and permission metadata from the share target.
@@ -100,7 +102,7 @@ Add a GitHub Actions workflow that builds release binaries for:
 - `x86_64-apple-darwin`
 - `aarch64-apple-darwin`
 
-Artifacts are archived as `jmal-cloud-<target>.tar.gz` and attached to GitHub releases. Add `cli/jmal-cloud-cli/install.sh`, which detects OS and architecture, downloads the matching archive from GitHub releases, and installs `jmal-cloud` into `/usr/local/bin` or `$HOME/.local/bin`.
+Artifacts are archived as `jmalcloud-<target>.tar.gz` and attached to GitHub releases. Add `cli/jmal-cloud-cli/install.sh`, which detects OS and architecture, downloads the matching archive from GitHub releases, and installs `jmalcloud` into `/usr/local/bin` or `$HOME/.local/bin`.
 
 ## Testing
 
