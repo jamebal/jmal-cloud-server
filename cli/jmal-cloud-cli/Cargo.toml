@@ -1,0 +1,26 @@
+[package]
+name = "jmal-cloud-cli"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Command-line uploader for JmalCloud"
+
+[[bin]]
+name = "jmalcloud"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+dirs = "6.0"
+indicatif = "0.18"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "multipart", "rustls-tls"] }
+rpassword = "7.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tempfile = "3.23"
+thiserror = "2.0"
+url = "2.5"
+walkdir = "2.5"
+
+[dev-dependencies]
+httpmock = "0.7"

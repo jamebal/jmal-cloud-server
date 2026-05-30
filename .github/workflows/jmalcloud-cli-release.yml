@@ -1,0 +1,138 @@
+name: Build jmalcloud CLI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  resolve-release:
+    name: Resolve release
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - name: Resolve latest release tag
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [ -n "$EVENT_RELEASE_TAG" ]; then
+            tag="$EVENT_RELEASE_TAG"
+          else
+            tag="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          fi
+
+          if [ -z "$tag" ]; then
+            echo "::error::No latest release found for $GITHUB_REPOSITORY"
+            exit 1
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Resolved release tag: $tag"
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: resolve-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            use_cross: false
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            use_cross: true
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            use_cross: false
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            use_cross: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: cli/jmal-cloud-cli
+
+      - name: Install cross
+        if: matrix.use_cross
+        run: cargo install cross --locked
+
+      - name: Build
+        run: |
+          if [ "${{ matrix.use_cross }}" = "true" ]; then
+            cross build --manifest-path cli/jmal-cloud-cli/Cargo.toml --release --target ${{ matrix.target }}
+          else
+            cargo build --manifest-path cli/jmal-cloud-cli/Cargo.toml --release --target ${{ matrix.target }}
+          fi
+
+      - name: Archive
+        run: |
+          mkdir -p dist
+          cp "cli/jmal-cloud-cli/target/${{ matrix.target }}/release/jmalcloud" dist/jmalcloud
+          tar -czf "jmalcloud-${{ matrix.target }}.tar.gz" -C dist jmalcloud
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmalcloud-${{ matrix.target }}
+          path: jmalcloud-${{ matrix.target }}.tar.gz
+
+      - name: Upload release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.resolve-release.outputs.tag }}
+        run: |
+          gh release upload "$RELEASE_TAG" "jmalcloud-${{ matrix.target }}.tar.gz" \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
+
+      - name: Upload installer artifact
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmalcloud-install-script
+          path: cli/jmal-cloud-cli/install.sh
+
+      - name: Upload installer release asset
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.resolve-release.outputs.tag }}
+        run: |
+          gh release upload "$RELEASE_TAG" cli/jmal-cloud-cli/install.sh \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
+
+  verify-installer:
+    name: Verify one-line installer
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install jmalcloud from latest release
+        env:
+          JMALCLOUD_CLI_REPO: ${{ github.repository }}
+          JMALCLOUD_CLI_INSTALL_DIR: ${{ runner.temp }}/jmalcloud-bin
+        run: |
+          mkdir -p "$JMALCLOUD_CLI_INSTALL_DIR"
+          curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/install.sh" | sh
+          "$JMALCLOUD_CLI_INSTALL_DIR/jmalcloud" --help
