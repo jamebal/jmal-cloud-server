@@ -21,6 +21,7 @@ jmalcloud.db
 .settings
 .springBeans
 .sts4-cache
+.codegraph
 
 ### IntelliJ IDEA ###
 .idea
