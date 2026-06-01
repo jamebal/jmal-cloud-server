@@ -4,7 +4,7 @@ use jmal_cloud_cli::auth::{store_session, AuthHeaders};
 use jmal_cloud_cli::config::{first_non_empty, load_config, resolve_server, EnvConfig};
 use jmal_cloud_cli::errors::{CliError, Result};
 use jmal_cloud_cli::upload::{UploadOptions, Uploader};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 const DEFAULT_CHUNK_SIZE: u64 = 1024 * 1024;
 const ROOT_HELP_TEMPLATE: &str = r#"{about-with-newline}
@@ -35,8 +35,9 @@ const HELP_EXAMPLES: &str = r#"常用流程:
   使用用户名、密码登录；如果服务端要求 2FA，会继续提示输入动态验证码:
     jmalcloud login --server http://127.0.0.1:8088 --username jmal
 
-  登录后上传一个文件，使用 JMAL_CLOUD_SERVER 代替 --server:
+  登录后上传一个或多个文件，使用 JMAL_CLOUD_SERVER 代替 --server:
     JMAL_CLOUD_SERVER=http://127.0.0.1:8088 jmalcloud upload ./file.txt --remote /
+    JMAL_CLOUD_SERVER=http://127.0.0.1:8088 jmalcloud upload ./a.txt ./b.txt --remote /
 
   登录后上传一个文件夹:
     JMAL_CLOUD_SERVER=http://127.0.0.1:8088 jmalcloud upload ./dir --remote /
@@ -101,7 +102,7 @@ enum Commands {
     #[command(
         about = "上传本地文件或文件夹",
         help_template = COMMAND_WITH_ARGS_HELP_TEMPLATE,
-        override_usage = "jmalcloud upload [选项] <路径>",
+        override_usage = "jmalcloud upload [选项] <路径>...",
         disable_help_flag = true
     )]
     Upload(UploadArgs),
@@ -149,8 +150,12 @@ struct LoginArgs {
 struct UploadArgs {
     #[command(flatten)]
     _help: HelpFlag,
-    #[arg(value_name = "路径", help = "本地要上传的文件或文件夹")]
-    path: PathBuf,
+    #[arg(
+        value_name = "路径",
+        num_args = 1..,
+        help = "本地要上传的文件或文件夹，可一次传多个路径"
+    )]
+    paths: Vec<PathBuf>,
     #[arg(
         long,
         value_name = "服务地址",
@@ -294,7 +299,7 @@ fn run_upload(args: UploadArgs) -> Result<()> {
     let stored = load_config().unwrap_or_default();
     let server = resolve_server(args.server.as_deref(), &env)?;
     let api = JmalApiClient::new(&server)?;
-    let local_path = args.path.clone();
+    let local_paths = args.paths.clone();
     let remote = args.remote.clone();
     let mut username = first_non_empty(&[
         args.username.clone(),
@@ -322,36 +327,47 @@ fn run_upload(args: UploadArgs) -> Result<()> {
     } else {
         return Err(CliError::MissingAuth);
     };
-    if !auth.is_public() && username.is_none() {
+    let mut user_id = args.user_id.or(stored.user_id);
+    if !auth.is_public() && (username.is_none() || user_id.is_none()) {
         let info = api.user_info(&auth)?;
-        username = info.username;
+        if username.is_none() {
+            username = info.username;
+        }
+        if user_id.is_none() {
+            user_id = info.id;
+        }
     }
     let uploader = Uploader::new(api, auth);
-    uploader.upload_path(UploadOptions {
-        local_path: args.path,
-        remote: args.remote,
-        username,
-        user_id: args.user_id.or(stored.user_id),
-        folder: None,
-        file_id: None,
-        chunk_size: args.chunk_size,
-        overwrite: args.overwrite,
-        retries: args.retries,
-        verbose: args.verbose,
-    })?;
-    println!("{}", upload_success_message(&local_path, &remote));
+    for local_path in args.paths {
+        uploader.upload_path(UploadOptions {
+            local_path,
+            remote: args.remote.clone(),
+            username: username.clone(),
+            user_id: user_id.clone(),
+            folder: None,
+            file_id: None,
+            chunk_size: args.chunk_size,
+            overwrite: args.overwrite,
+            retries: args.retries,
+            verbose: args.verbose,
+        })?;
+    }
+    println!("{}", upload_success_message(&local_paths, &remote));
     Ok(())
 }
 
-fn upload_success_message(path: &Path, remote: &str) -> String {
-    format!("Upload completed: {} -> {}", path.display(), remote)
+fn upload_success_message(paths: &[PathBuf], remote: &str) -> String {
+    if let [path] = paths {
+        format!("Upload completed: {} -> {}", path.display(), remote)
+    } else {
+        format!("Upload completed: {} paths -> {}", paths.len(), remote)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use clap::CommandFactory;
-    use std::path::Path;
 
     #[test]
     fn command_name_is_jmalcloud() {
@@ -403,7 +419,8 @@ mod tests {
 
         assert!(help.contains("上传本地文件或文件夹"));
         assert!(help.contains("参数:"));
-        assert!(help.contains("本地要上传的文件或文件夹"));
+        assert!(help.contains("jmalcloud upload [选项] <路径>..."));
+        assert!(help.contains("本地要上传的文件或文件夹，可一次传多个路径"));
         assert!(help.contains("JmalCloud 服务地址"));
         assert!(help.contains("远端目标目录"));
         assert!(help.contains("显示帮助信息"));
@@ -413,6 +430,30 @@ mod tests {
         assert!(!help.contains("Usage:"));
         assert!(!help.contains("Arguments:"));
         assert!(!help.contains("Options:"));
+    }
+
+    #[test]
+    fn upload_accepts_multiple_paths() {
+        let result = Cli::try_parse_from([
+            "jmalcloud",
+            "upload",
+            "a.txt",
+            "b.txt",
+            "--server",
+            "http://127.0.0.1:8088",
+            "--access-token",
+            "token",
+        ]);
+
+        match result.unwrap().command {
+            Commands::Upload(args) => {
+                assert_eq!(
+                    args.paths,
+                    vec![PathBuf::from("a.txt"), PathBuf::from("b.txt")]
+                );
+            }
+            _ => panic!("expected upload command"),
+        }
     }
 
     #[test]
@@ -435,10 +476,22 @@ mod tests {
 
     #[test]
     fn upload_success_message_names_path_and_remote() {
-        let message = upload_success_message(Path::new("/tmp/file.txt"), "/Documents");
+        let message = upload_success_message(&[PathBuf::from("/tmp/file.txt")], "/Documents");
 
         assert!(message.contains("Upload completed"));
         assert!(message.contains("/tmp/file.txt"));
+        assert!(message.contains("/Documents"));
+    }
+
+    #[test]
+    fn upload_success_message_summarizes_multiple_paths() {
+        let message = upload_success_message(
+            &[PathBuf::from("/tmp/a.txt"), PathBuf::from("/tmp/b.txt")],
+            "/Documents",
+        );
+
+        assert!(message.contains("Upload completed"));
+        assert!(message.contains("2 paths"));
         assert!(message.contains("/Documents"));
     }
 }
