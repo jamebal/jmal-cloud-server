@@ -37,10 +37,11 @@ cargo build --manifest-path cli/jmal-cloud-cli/Cargo.toml --release
 jmalcloud login --server http://127.0.0.1:8088 --username admin
 ```
 
-上传文件或目录：
+上传一个或多个文件、目录：
 
 ```bash
 jmalcloud upload ./file.txt --server http://127.0.0.1:8088 --remote /
+JMAL_CLOUD_SERVER=http://127.0.0.1:8088 jmalcloud upload ./a.txt ./b.txt --remote /
 JMAL_CLOUD_SERVER=http://127.0.0.1:8088 jmalcloud upload ./dir --remote /
 ```
 
