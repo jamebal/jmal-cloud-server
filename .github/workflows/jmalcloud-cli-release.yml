@@ -2,6 +2,9 @@ name: Build jmalcloud CLI
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master
   release:
     types: [published]
 
@@ -9,8 +12,35 @@ permissions:
   contents: write
 
 jobs:
+  resolve-release:
+    name: Resolve release
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - name: Resolve latest release tag
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [ -n "$EVENT_RELEASE_TAG" ]; then
+            tag="$EVENT_RELEASE_TAG"
+          else
+            tag="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          fi
+
+          if [ -z "$tag" ]; then
+            echo "::error::No latest release found for $GITHUB_REPOSITORY"
+            exit 1
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Resolved release tag: $tag"
+
   build:
     name: Build ${{ matrix.target }}
+    needs: resolve-release
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -68,10 +98,13 @@ jobs:
           path: jmalcloud-${{ matrix.target }}.tar.gz
 
       - name: Upload release asset
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: jmalcloud-${{ matrix.target }}.tar.gz
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.resolve-release.outputs.tag }}
+        run: |
+          gh release upload "$RELEASE_TAG" "jmalcloud-${{ matrix.target }}.tar.gz" \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
 
       - name: Upload installer artifact
         if: matrix.target == 'x86_64-unknown-linux-gnu'
@@ -81,7 +114,25 @@ jobs:
           path: cli/jmal-cloud-cli/install.sh
 
       - name: Upload installer release asset
-        if: github.event_name == 'release' && matrix.target == 'x86_64-unknown-linux-gnu'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: cli/jmal-cloud-cli/install.sh
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.resolve-release.outputs.tag }}
+        run: |
+          gh release upload "$RELEASE_TAG" cli/jmal-cloud-cli/install.sh \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
+
+  verify-installer:
+    name: Verify one-line installer
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install jmalcloud from latest release
+        env:
+          JMALCLOUD_CLI_REPO: ${{ github.repository }}
+          JMALCLOUD_CLI_INSTALL_DIR: ${{ runner.temp }}/jmalcloud-bin
+        run: |
+          mkdir -p "$JMALCLOUD_CLI_INSTALL_DIR"
+          curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/install.sh" | sh
+          "$JMALCLOUD_CLI_INSTALL_DIR/jmalcloud" --help
