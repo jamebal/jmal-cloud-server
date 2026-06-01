@@ -128,6 +128,12 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test installer script
+        run: sh cli/jmal-cloud-cli/tests/install.sh
+
       - name: Install jmalcloud from latest release
         env:
           JMALCLOUD_CLI_REPO: ${{ github.repository }}

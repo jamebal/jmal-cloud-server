@@ -14,6 +14,17 @@ Rust 命令行上传工具位于 `cli/jmal-cloud-cli`，二进制名为 `jmalclo
 curl -fsSL https://github.com/jamebal/jmal-cloud-server/releases/latest/download/install.sh | sh
 ```
 
+无法访问 GitHub 的环境，可以把对应平台的 `jmalcloud-<target>.tar.gz` 和 `install.sh`
+上传到已有 JmalCloud 网盘，然后在安装时指定压缩包完整地址：
+
+```bash
+curl -fsSL "https://your-jmalcloud.example.com/path/install.sh" \
+  | JMALCLOUD_CLI_ARCHIVE_URL="https://your-jmalcloud.example.com/path/jmalcloud-x86_64-unknown-linux-gnu.tar.gz" sh
+```
+
+安装脚本会在安装目录不在 `PATH` 中时自动写入当前 shell 配置文件。写入后执行提示中的
+`source` 命令，或重新打开终端即可直接使用 `jmalcloud`。
+
 本地构建：
 
 ```bash
