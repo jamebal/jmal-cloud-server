@@ -188,15 +188,11 @@ impl Uploader {
                 ));
             }
         }
-        let progress = ProgressBar::new(files.len() as u64);
-        progress.set_style(
-            ProgressStyle::with_template("{pos}/{len} {wide_msg}")
-                .unwrap_or_else(|_| ProgressStyle::default_bar()),
-        );
+        let progress = ProgressBar::new(total_upload_size(files)?);
+        progress.set_style(upload_progress_style());
         for file in files {
             progress.set_message(file.display().to_string());
-            self.upload_one_file(options, root, file)?;
-            progress.inc(1);
+            self.upload_one_file(options, root, file, &progress)?;
         }
         progress.finish_and_clear();
         Ok(())
@@ -230,7 +226,13 @@ impl Uploader {
         self.api.upload_folder(&self.auth, &params)
     }
 
-    fn upload_one_file(&self, options: &UploadOptions, root: &Path, file: &Path) -> Result<()> {
+    fn upload_one_file(
+        &self,
+        options: &UploadOptions,
+        root: &Path,
+        file: &Path,
+        progress: &ProgressBar,
+    ) -> Result<()> {
         let metadata = fs::metadata(file)?;
         let total_size = metadata.len();
         let relative = if root == file.parent().unwrap_or(root) {
@@ -266,9 +268,11 @@ impl Uploader {
         };
         let test = self.api.test_chunk(&self.auth, &base_params)?;
         if test.pass {
+            progress.inc(total_size);
             return Ok(());
         }
         let resume: HashSet<u32> = test.resume.into_iter().collect();
+        progress.inc(resumed_bytes(&chunks, &resume));
         let mut needs_merge = false;
         for chunk in chunks {
             if resume.contains(&chunk.number) {
@@ -292,6 +296,7 @@ impl Uploader {
             if response.merge {
                 needs_merge = true;
             }
+            progress.inc(chunk.size);
         }
         if needs_merge {
             let _ = self.api.merge(&self.auth, &base_params)?;
@@ -317,6 +322,72 @@ where
             Err(err) => return Err(err),
         }
     }
+}
+
+fn total_upload_size(files: &[PathBuf]) -> Result<u64> {
+    files.iter().try_fold(0u64, |total, file| {
+        Ok(total.saturating_add(fs::metadata(file)?.len()))
+    })
+}
+
+fn upload_progress_style() -> ProgressStyle {
+    ProgressStyle::with_template("{bytes}/{total_bytes} {upload_rate} ETA {upload_eta} {wide_msg}")
+        .map(|style| {
+            style
+                .with_key(
+                    "upload_rate",
+                    |state: &indicatif::ProgressState, writer: &mut dyn std::fmt::Write| {
+                        let _ = writer.write_str(&format_upload_rate(state.per_sec()));
+                    },
+                )
+                .with_key(
+                    "upload_eta",
+                    |state: &indicatif::ProgressState, writer: &mut dyn std::fmt::Write| {
+                        let _ = writer.write_str(&format_upload_eta(state.eta()));
+                    },
+                )
+        })
+        .unwrap_or_else(|_| ProgressStyle::default_bar())
+}
+
+fn format_upload_rate(bytes_per_second: f64) -> String {
+    let bytes_per_second = if bytes_per_second.is_finite() && bytes_per_second > 0.0 {
+        bytes_per_second
+    } else {
+        0.0
+    };
+    const KB: f64 = 1024.0;
+    const MB: f64 = KB * 1024.0;
+    const GB: f64 = MB * 1024.0;
+
+    if bytes_per_second < KB {
+        format!("{:.0} B/s", bytes_per_second.floor())
+    } else if bytes_per_second < MB {
+        format!("{:.2} KB/s", bytes_per_second / KB)
+    } else if bytes_per_second < GB {
+        format!("{:.2} MB/s", bytes_per_second / MB)
+    } else {
+        format!("{:.2} GB/s", bytes_per_second / GB)
+    }
+}
+
+fn format_upload_eta(duration: std::time::Duration) -> String {
+    let seconds = duration.as_secs();
+    if seconds < 60 {
+        format!("{seconds}s")
+    } else if seconds < 3600 {
+        format!("{:02}m{:02}s", seconds / 60, seconds % 60)
+    } else {
+        format!("{:02}h{:02}m", seconds / 3600, (seconds % 3600) / 60)
+    }
+}
+
+fn resumed_bytes(chunks: &[ChunkPlan], resume: &HashSet<u32>) -> u64 {
+    chunks
+        .iter()
+        .filter(|chunk| resume.contains(&chunk.number))
+        .map(|chunk| chunk.size)
+        .sum()
 }
 
 fn write_temp_chunk(file: &Path, start: u64, size: u64) -> Result<NamedTempFile> {
@@ -417,6 +488,40 @@ mod tests {
                 },
             ]
         );
+    }
+
+    #[test]
+    fn upload_rate_uses_byte_units() {
+        assert_eq!(format_upload_rate(0.0), "0 B/s");
+        assert_eq!(format_upload_rate(999.4), "999 B/s");
+        assert_eq!(format_upload_rate(1024.0), "1.00 KB/s");
+        assert_eq!(format_upload_rate(1024.0 * 1024.0 * 1.5), "1.50 MB/s");
+        assert_eq!(
+            format_upload_rate(1024.0 * 1024.0 * 1024.0 * 2.0),
+            "2.00 GB/s"
+        );
+    }
+
+    #[test]
+    fn upload_eta_uses_compact_time_units() {
+        assert_eq!(format_upload_eta(std::time::Duration::from_secs(0)), "0s");
+        assert_eq!(format_upload_eta(std::time::Duration::from_secs(12)), "12s");
+        assert_eq!(
+            format_upload_eta(std::time::Duration::from_secs(80)),
+            "01m20s"
+        );
+        assert_eq!(
+            format_upload_eta(std::time::Duration::from_secs(3900)),
+            "01h05m"
+        );
+    }
+
+    #[test]
+    fn resumed_chunks_count_as_uploaded_bytes() {
+        let chunks = plan_chunks(5, 3);
+        let resume: HashSet<u32> = [1].into_iter().collect();
+
+        assert_eq!(resumed_bytes(&chunks, &resume), 3);
     }
 
     #[test]
