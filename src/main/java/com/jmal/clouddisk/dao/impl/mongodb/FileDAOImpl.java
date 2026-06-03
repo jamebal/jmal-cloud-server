@@ -965,4 +965,40 @@ public class FileDAOImpl implements IFileDAO {
         return query;
     }
 
+    @Override
+    public List<String> searchFileIdsByKeyword(String keyword, String userId, int limit) {
+        if (CharSequenceUtil.isBlank(keyword)) {
+            return Collections.emptyList();
+        }
+        Query query = new Query();
+        query.addCriteria(Criteria.where(USER_ID).is(userId));
+        query.addCriteria(Criteria.where(Constants.FILENAME_FIELD).regex(keyword, "i"));
+        query.fields().include("_id");
+        query.limit(limit);
+        List<FileDocument> docs = mongoTemplate.find(query, FileDocument.class, COLLECTION_NAME);
+        return docs.stream().map(FileDocument::getId).toList();
+    }
+
+    @Override
+    public String getFileSummary(String fileId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        query.fields().include("summary");
+        FileDocument doc = mongoTemplate.findOne(query, FileDocument.class, COLLECTION_NAME);
+        return doc != null ? doc.getSummary() : null;
+    }
+
+    @Override
+    public void updateFileSummary(String fileId, String summary) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(fileId));
+        Update update = new Update();
+        if (summary == null) {
+            update.unset("summary");
+        } else {
+            update.set("summary", summary);
+        }
+        mongoTemplate.updateFirst(query, update, FileDocument.class, COLLECTION_NAME);
+    }
+
 }

@@ -101,6 +101,12 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
     @Column(columnDefinition = "TEXT")
     private String lastEtagUpdateError;
 
+    /**
+     * AI生成的文件摘要
+     */
+    @Column(columnDefinition = "TEXT")
+    private String summary;
+
     public FileMetadataDO(FileDocument fileDocument) {
         if (fileDocument.getId() == null) {
             fileDocument.setId(new ObjectId().toHexString());
@@ -161,6 +167,7 @@ public class FileMetadataDO extends AuditablePerformanceEntity implements Reflec
         fileDocument.setChildrenCount(this.childrenCount);
         fileDocument.setSuffix(this.suffix);
         fileDocument.setIsFavorite(this.isFavorite);
+        fileDocument.setSummary(this.summary);
         if (this.props != null) {
             fileDocument.setShareId(this.props.getShareId());
             fileDocument.setRemark(this.props.getRemark());
