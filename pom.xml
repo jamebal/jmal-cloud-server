@@ -10,13 +10,13 @@
     </parent>
     <groupId>com.jmal</groupId>
     <artifactId>jmalcloud</artifactId>
-    <version>2.16.8</version>
+    <version>2.16.9</version>
     <name>jmalcloud</name>
     <description>Cloud Disk</description>
     <packaging>jar</packaging>
 
     <properties>
-        <java.version>24</java.version>
+        <java.version>25</java.version>
         <maven-jar-plugin.version>3.0.0</maven-jar-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lucene.version>10.2.2</lucene.version>
@@ -286,7 +286,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.38</version>
+            <version>1.18.42</version>
             <scope>provided</scope>
         </dependency>
 
@@ -482,7 +482,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.38</version>
+                            <version>1.18.42</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
