@@ -56,6 +56,7 @@ import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.CompressUtils;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
 import com.jmal.clouddisk.util.FileContentUtil;
+import com.jmal.clouddisk.util.FileNameUtils;
 import com.jmal.clouddisk.util.MyFileUtils;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -385,7 +386,8 @@ public class FileServiceImpl implements IFileService {
     @Override
     public String imgUpload(String baseUrl, String filepath, MultipartFile file) {
         String username = userLoginHolder.getUsername();
-        String fileName = file.getOriginalFilename();
+        FileNameUtils.checkPath(filepath);
+        String fileName = FileNameUtils.validateAndSanitizeFilename(file.getOriginalFilename());
         Path path = Paths.get(fileProperties.getRootDir(), username, filepath, fileName);
         try {
             File newFile = path.toFile();

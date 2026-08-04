@@ -22,15 +22,26 @@ public class FileNameUtils {
 
     /**
      * 检查路径是否安全
-     * 
+     * <p>
+     * 不能使用简单的子串黑名单(如 path.contains("../")), 因为末尾裸 ".."
+     * (例如 "/.."、"/subdir/..") 不含分隔符却仍会被文件系统解释为上一级目录,
+     * 从而绕过检查造成路径穿越 (CWE-22)。这里按分隔符逐段解析, 拒绝任何 ".." 段。
+     *
      * @param path 路径
      */
     public static void checkPath(String path) {
         if (StrUtil.isBlank(path)) {
             return;
         }
-        if (path.contains("../") || path.contains("..\\")) {
+        // 空字节会被底层文件系统 API 截断, 直接拒绝
+        if (path.indexOf('\0') >= 0) {
             throw new CommonException(ExceptionType.PARAMETERS_VALUE.getCode(), "非法路径");
+        }
+        // 同时按 '/' 和 '\' 分段, 兼容不同平台及客户端传入的分隔符
+        for (String segment : path.split("[/\\\\]")) {
+            if ("..".equals(segment)) {
+                throw new CommonException(ExceptionType.PARAMETERS_VALUE.getCode(), "非法路径");
+            }
         }
     }
 

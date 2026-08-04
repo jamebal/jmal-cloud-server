@@ -1,4 +1,4 @@
-package com.jmal.clouddisk.oss.s3; // 建议为 AWS S3 创建一个新的包
+package com.jmal.clouddisk.oss.s3;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.file.PathUtil;
@@ -27,6 +27,8 @@ import org.springframework.util.StreamUtils;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
+import software.amazon.awssdk.core.checksums.RequestChecksumCalculation;
+import software.amazon.awssdk.core.checksums.ResponseChecksumValidation;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -61,6 +63,7 @@ import software.amazon.awssdk.services.s3.model.ObjectVersion;
 import software.amazon.awssdk.services.s3.model.Part;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.S3Error;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.UploadPartRequest;
 import software.amazon.awssdk.services.s3.paginators.ListMultipartUploadsIterable;
@@ -96,41 +99,47 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AwsS3Service implements IOssService {
 
+    private static final String DEFAULT_REGION = "us-east-1";
+    private static final int MAX_DELETE_OBJECTS = 1000;
+
     private final String bucketName;
     private final S3Client s3Client;
     private final S3Presigner s3Presigner; // 用于生成预签名URL
     private final BaseOssService baseOssService;
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
-    private boolean hasHistoryVersion = true;
+    private volatile boolean hasHistoryVersion = true;
 
     Consumer<AwsRequestOverrideConfiguration.Builder> unlimitTimeoutBuilderConsumer = builder -> builder.apiCallTimeout(Duration.ofDays(30)).build();
 
     public AwsS3Service(FileProperties fileProperties, OssConfigDTO ossConfigDTO) {
         this.bucketName = ossConfigDTO.getBucket();
-        URI endpointUri = URI.create(ossConfigDTO.getEndpoint());
+        URI endpointUri = normalizeEndpoint(ossConfigDTO.getEndpoint());
 
-        String region = CharSequenceUtil.isBlank(ossConfigDTO.getRegion()) ? "Auto" : ossConfigDTO.getRegion();
+        String region = CharSequenceUtil.isBlank(ossConfigDTO.getRegion()) ? DEFAULT_REGION : ossConfigDTO.getRegion().trim();
+        boolean pathStyleAccessEnabled = BooleanUtil.isTrue(ossConfigDTO.getPathStyleAccessEnabled());
+        AwsBasicCredentials credentials = AwsBasicCredentials.create(ossConfigDTO.getAccessKey(), ossConfigDTO.getSecretKey());
+        S3Configuration s3Configuration = S3Configuration.builder()
+                .pathStyleAccessEnabled(pathStyleAccessEnabled)
+                // 部分 S3-compatible 服务不支持 AWS 的流式分块签名。
+                .chunkedEncodingEnabled(false)
+                .build();
 
         // AWS SDK v2 的 S3Client 是线程安全的，推荐作为单例使用
         this.s3Client = S3Client.builder()
                 .endpointOverride(endpointUri)
-                .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(ossConfigDTO.getAccessKey(), ossConfigDTO.getSecretKey())))
+                .credentialsProvider(StaticCredentialsProvider.create(credentials))
                 .region(Region.of(region))
-                .forcePathStyle(BooleanUtil.isTrue(ossConfigDTO.getPathStyleAccessEnabled()))
-                .serviceConfiguration(S3Configuration.builder()
-                        // 启用无签名负载。这会设置 x-amz-content-sha256: UNSIGNED-PAYLOAD
-                        .chunkedEncodingEnabled(false) // 对于MinIO，禁用分块编码通常更稳定
-                        .build())
+                // 仅在 S3 协议强制要求时发送 checksum，兼容尚未实现新版 AWS 默认 CRC32 的服务。
+                .requestChecksumCalculation(RequestChecksumCalculation.WHEN_REQUIRED)
+                .responseChecksumValidation(ResponseChecksumValidation.WHEN_REQUIRED)
+                .serviceConfiguration(s3Configuration)
                 .build();
 
         // S3Presigner 用于生成预签名URL，也应作为单例
         this.s3Presigner = S3Presigner.builder()
                 .endpointOverride(endpointUri)
-                .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(ossConfigDTO.getAccessKey(), ossConfigDTO.getSecretKey())))
-                .serviceConfiguration(S3Configuration.builder()
-                        .pathStyleAccessEnabled(BooleanUtil.isTrue(ossConfigDTO.getPathStyleAccessEnabled())).build())
+                .credentialsProvider(StaticCredentialsProvider.create(credentials))
+                .serviceConfiguration(s3Configuration)
                 .region(Region.of(region))
                 .build();
 
@@ -138,6 +147,21 @@ public class AwsS3Service implements IOssService {
         this.baseOssService = new BaseOssService(this, bucketName, fileProperties, scheduledThreadPoolExecutor, ossConfigDTO);
 
         Completable.fromAction(this::getMultipartUploads).subscribeOn(Schedulers.io()).doOnError(e -> log.error(e.getMessage(), e)).onErrorComplete().subscribe();
+    }
+
+    static URI normalizeEndpoint(String endpoint) {
+        if (CharSequenceUtil.isBlank(endpoint)) {
+            throw new IllegalArgumentException("S3 endpoint 不能为空");
+        }
+        String normalizedEndpoint = endpoint.trim();
+        if (!normalizedEndpoint.contains("://")) {
+            normalizedEndpoint = "http://" + normalizedEndpoint;
+        }
+        URI endpointUri = URI.create(normalizedEndpoint);
+        if (endpointUri.getHost() == null) {
+            throw new IllegalArgumentException("无效的 S3 endpoint: " + endpoint);
+        }
+        return endpointUri;
     }
 
     @Override
@@ -193,6 +217,7 @@ public class AwsS3Service implements IOssService {
             HeadObjectRequest headRequest = HeadObjectRequest.builder()
                     .bucket(bucketName)
                     .key(objectName)
+                    .versionId(CharSequenceUtil.isBlank(versionId) ? null : versionId)
                     .build();
             HeadObjectResponse headResponse = s3Client.headObject(headRequest);
 
@@ -214,6 +239,12 @@ public class AwsS3Service implements IOssService {
 
         } catch (NoSuchKeyException e) {
             log.warn("Object not found: {}", objectName);
+            return null;
+        } catch (S3Exception e) {
+            if (isNotFound(e)) {
+                return null;
+            }
+            log.error("Error getting object: {}", objectName, e);
             return null;
         } catch (Exception e) {
             log.error("Error getting object: {}", objectName, e);
@@ -261,34 +292,35 @@ public class AwsS3Service implements IOssService {
                 .prefix(objectName)
                 .build();
 
-        ListObjectVersionsIterable listObjectVersionsIterable = s3Client.listObjectVersionsPaginator(listRequest);
-        listObjectVersionsIterable.forEach(response -> {
-            response.versions().forEach(objectVersion -> {
-                if (objectVersion.key().equals(objectName)) {
-                    toDelete.add(ObjectIdentifier.builder()
-                            .key(objectName)
-                            .versionId(objectVersion.versionId())
-                            .build());
-                }
+        try {
+            ListObjectVersionsIterable listObjectVersionsIterable = s3Client.listObjectVersionsPaginator(listRequest);
+            listObjectVersionsIterable.forEach(response -> {
+                response.versions().forEach(objectVersion -> {
+                    if (objectVersion.key().equals(objectName)) {
+                        toDelete.add(ObjectIdentifier.builder()
+                                .key(objectName)
+                                .versionId(objectVersion.versionId())
+                                .build());
+                    }
+                });
+                response.deleteMarkers().forEach(marker -> {
+                    if (marker.key().equals(objectName)) {
+                        toDelete.add(ObjectIdentifier.builder()
+                                .key(objectName)
+                                .versionId(marker.versionId())
+                                .build());
+                    }
+                });
             });
-            response.deleteMarkers().forEach(marker -> {
-                if (marker.key().equals(objectName)) {
-                    toDelete.add(ObjectIdentifier.builder()
-                            .key(objectName)
-                            .versionId(marker.versionId())
-                            .build());
-                }
-            });
-        });
+        } catch (S3Exception e) {
+            // Versioning API 并非所有 S3-compatible 服务都实现，退化为标准删除当前对象。
+            log.debug("无法列举对象版本，改为删除当前对象: {}, error: {}", objectName, errorCode(e));
+        }
 
         if (!toDelete.isEmpty()) {
-            DeleteObjectsRequest deleteRequest = DeleteObjectsRequest.builder()
-                    .bucket(bucketName)
-                    .delete(Delete.builder()
-                            .objects(toDelete)
-                            .build())
-                    .build();
-            s3Client.deleteObjects(deleteRequest);
+            deleteObjectsInBatches(bucketName, toDelete);
+        } else {
+            s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(objectName).build());
         }
     }
 
@@ -329,35 +361,52 @@ public class AwsS3Service implements IOssService {
                 return true;
             }
 
-            // 2. 批量删除
-            DeleteObjectsRequest deleteRequest = DeleteObjectsRequest.builder()
-                    .bucket(bucketName)
-                    .delete(Delete.builder().objects(keysToDelete).build())
-                    .build();
-            DeleteObjectsResponse response = s3Client.deleteObjects(deleteRequest);
-
-            // 3. 删除自身（如果有的话）
-            try {
-                DeleteObjectRequest selfDeleteRequest = DeleteObjectRequest.builder()
-                        .bucket(bucketName)
-                        .key(objectName)
-                        .build();
-                s3Client.deleteObject(selfDeleteRequest);
-            } catch (Exception e) {
-                log.debug("No self object to delete for directory: {}", objectName);
-            }
-
-            // 检查是否有删除失败的对象
-            if (response.hasErrors()) {
-                response.errors().forEach(error ->
-                        log.error("Error deleting object {}: {}", error.key(), error.message()));
-                return false;
-            }
-            return true;
+            // S3 DeleteObjects 每次最多允许 1000 个 key。
+            return deleteObjectsInBatches(bucketName, keysToDelete);
         } catch (Exception e) {
             log.error("Error deleting directory: {}", objectName, e);
             return false;
         }
+    }
+
+    private boolean deleteObjectsInBatches(String targetBucket, List<ObjectIdentifier> objectIdentifiers) {
+        boolean success = true;
+        for (int start = 0; start < objectIdentifiers.size(); start += MAX_DELETE_OBJECTS) {
+            List<ObjectIdentifier> batch = objectIdentifiers.subList(start,
+                    Math.min(start + MAX_DELETE_OBJECTS, objectIdentifiers.size()));
+            try {
+                DeleteObjectsRequest deleteRequest = DeleteObjectsRequest.builder()
+                        .bucket(targetBucket)
+                        .delete(Delete.builder().objects(batch).quiet(true).build())
+                        .build();
+                DeleteObjectsResponse response = s3Client.deleteObjects(deleteRequest);
+                if (response.hasErrors()) {
+                    for (S3Error error : response.errors()) {
+                        log.error("删除 S3 对象失败, key: {}, code: {}, message: {}",
+                                error.key(), error.code(), error.message());
+                        success = false;
+                    }
+                }
+            } catch (S3Exception e) {
+                // 少数 S3-compatible 服务没有实现批量删除，逐个删除仍属于基础 S3 能力。
+                log.debug("批量删除不可用，改为逐个删除 {} 个对象, error: {}", batch.size(), errorCode(e));
+                for (ObjectIdentifier objectIdentifier : batch) {
+                    try {
+                        DeleteObjectRequest.Builder request = DeleteObjectRequest.builder()
+                                .bucket(targetBucket)
+                                .key(objectIdentifier.key());
+                        if (CharSequenceUtil.isNotBlank(objectIdentifier.versionId())) {
+                            request.versionId(objectIdentifier.versionId());
+                        }
+                        s3Client.deleteObject(request.build());
+                    } catch (S3Exception deleteException) {
+                        log.error("删除 S3 对象失败: {}", objectIdentifier.key(), deleteException);
+                        success = false;
+                    }
+                }
+            }
+        }
+        return success;
     }
 
     @Override
@@ -369,22 +418,19 @@ public class AwsS3Service implements IOssService {
                     .prefix(objectName)
                     .delimiter("/")
                     .build();
-            ListObjectsV2Response response = s3Client.listObjectsV2(listRequest);
+            for (ListObjectsV2Response response : s3Client.listObjectsV2Paginator(listRequest)) {
+                for (S3Object s3Object : response.contents()) {
+                    S3ObjectSummary summary = new S3ObjectSummary(s3Object.size(), s3Object.key(), s3Object.eTag(), Date.from(s3Object.lastModified()), bucketName);
+                    baseOssService.addFileInfoList(objectName, fileInfoList, summary);
+                }
 
-            // 处理文件
-            for (S3Object s3Object : response.contents()) {
-                S3ObjectSummary summary = new S3ObjectSummary(s3Object.size(), s3Object.key(), s3Object.eTag(), Date.from(s3Object.lastModified()), bucketName);
-                baseOssService.addFileInfoList(objectName, fileInfoList, summary);
-            }
-
-            // 处理子目录 (CommonPrefixes)
-            for (CommonPrefix commonPrefix : response.commonPrefixes()) {
-                String key = commonPrefix.prefix();
-                if (fileInfoList.stream().noneMatch(fileInfo -> key.equals(fileInfo.getKey()))) {
-                    fileInfoList.add(baseOssService.newFileInfo(key));
+                for (CommonPrefix commonPrefix : response.commonPrefixes()) {
+                    String key = commonPrefix.prefix();
+                    if (fileInfoList.stream().noneMatch(fileInfo -> key.equals(fileInfo.getKey()))) {
+                        fileInfoList.add(baseOssService.newFileInfo(key));
+                    }
                 }
             }
-            // AWS SDK 直接返回 LastModified，通常不需要二次查询
         } catch (Exception e) {
             log.error("Error listing files for prefix: {}", objectName, e);
         }
@@ -503,6 +549,12 @@ public class AwsS3Service implements IOssService {
             HeadObjectResponse headObjectResponse = s3Client.headObject(request);
             return BooleanUtil.isFalse(headObjectResponse.deleteMarker());
         } catch (NoSuchKeyException e) {
+            return false;
+        } catch (S3Exception e) {
+            if (isNotFound(e)) {
+                return false;
+            }
+            log.error("Error checking object existence: {}", objectName, e);
             return false;
         } catch (Exception e) {
             log.error("Error checking object existence: {}", objectName, e);
@@ -865,12 +917,12 @@ public class AwsS3Service implements IOssService {
                 }
             }
         } catch (S3Exception e) {
-            if (e.awsErrorDetails().errorMessage().contains("not implemented")) {
-                log.warn("Bucket versioning not enabled for bucket: {}. Cannot list object versions.", bucketName);
+            if (isUnsupported(e)) {
+                log.warn("当前 S3-compatible 服务不支持对象版本列表, bucket: {}", bucketName);
                 this.hasHistoryVersion = false;
                 return Page.empty();
             }
-            log.warn("Error listing object versions for: {}, {}", objectName, e.awsErrorDetails());
+            log.warn("列举对象版本失败: {}, code: {}", objectName, errorCode(e));
         } catch (Exception e) {
             log.error("Unexpected error listing object versions for: {}", objectName, e);
         }
@@ -917,6 +969,12 @@ public class AwsS3Service implements IOssService {
             s3Client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
             return true;
         } catch (NoSuchBucketException e) {
+            return false;
+        } catch (S3Exception e) {
+            if (isNotFound(e)) {
+                return false;
+            }
+            log.error("Error checking bucket existence: {}", bucketName, e);
             return false;
         } catch (Exception e) {
             log.error("Error checking bucket existence: {}", bucketName, e);
@@ -967,5 +1025,22 @@ public class AwsS3Service implements IOssService {
         if (scheduledThreadPoolExecutor != null) scheduledThreadPoolExecutor.shutdown();
         if (s3Client != null) s3Client.close();
         if (s3Presigner != null) s3Presigner.close();
+    }
+
+    private static boolean isNotFound(S3Exception exception) {
+        return exception.statusCode() == 404
+                || "NoSuchKey".equalsIgnoreCase(errorCode(exception))
+                || "NoSuchBucket".equalsIgnoreCase(errorCode(exception));
+    }
+
+    private static boolean isUnsupported(S3Exception exception) {
+        String code = errorCode(exception);
+        return exception.statusCode() == 501
+                || "NotImplemented".equalsIgnoreCase(code)
+                || "UnsupportedOperation".equalsIgnoreCase(code);
+    }
+
+    private static String errorCode(S3Exception exception) {
+        return exception.awsErrorDetails() == null ? null : exception.awsErrorDetails().errorCode();
     }
 }
