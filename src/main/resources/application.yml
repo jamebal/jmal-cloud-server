@@ -123,3 +123,24 @@ logging:
           repository:
             config:
               RepositoryConfigurationDelegate: warn
+# JmalCloud AI Configuration
+jmalcloud:
+  ai:
+    enabled: false
+    provider: openai
+    # API key for OpenAI or compatible service
+    # api-key: your-api-key
+    # Base URL for the API (optional for OpenAI, required for Ollama or other providers)
+    # base-url: https://api.openai.com
+    model: gpt-4o-mini
+    embedding-model: text-embedding-3-small
+    temperature: 0.7
+    max-tokens: 2000
+    vector-dimension: 1536
+    vector-search-enabled: true
+    summary-enabled: true
+    classification-enabled: true
+    chunk-size: 500
+    chunk-overlap: 50
+    summary-max-length: 200
+    search-top-k: 10
