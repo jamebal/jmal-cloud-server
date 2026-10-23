@@ -1,13 +1,14 @@
 package com.jmal.clouddisk.model.stun;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class StunGostNode {
+public class StunGostNode implements Reflective {
 
     private String name;
 

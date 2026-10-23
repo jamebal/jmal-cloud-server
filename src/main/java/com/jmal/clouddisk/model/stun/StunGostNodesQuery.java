@@ -1,11 +1,12 @@
 package com.jmal.clouddisk.model.stun;
 
+import com.jmal.clouddisk.config.Reflective;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class StunGostNodesQuery {
+public class StunGostNodesQuery implements Reflective {
 
     private String username;
 
