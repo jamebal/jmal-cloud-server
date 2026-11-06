@@ -6,6 +6,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.URLUtil;
 import com.jmal.clouddisk.config.FileProperties;
+import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.oss.web.WebOssService;
@@ -14,6 +15,7 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.FileContentTypeUtils;
+import com.jmal.clouddisk.util.FileNameUtils;
 import com.jmal.clouddisk.util.MyFileUtils;
 import com.jmal.clouddisk.util.UrlEncodingChecker;
 import jakarta.servlet.ServletOutputStream;
@@ -75,6 +77,8 @@ public class FileInterceptor implements HandlerInterceptor {
      */
     private static final int MIN_COUNT = 3;
 
+    private static final String VALIDATED_PATH = FileInterceptor.class.getName() + ".path";
+
     private final FileProperties fileProperties;
 
     private final IFileService fileService;
@@ -89,6 +93,21 @@ public class FileInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) throws IOException {
+        Path validatedPath;
+        try {
+            String decodedPath = URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8);
+            FileNameUtils.checkPath(decodedPath);
+            validatedPath = Paths.get(decodedPath).normalize();
+            if (validatedPath.getNameCount() < MIN_COUNT) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return false;
+            }
+        } catch (CommonException | IllegalArgumentException e) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return false;
+        }
+        // 鉴权和本地读取必须使用同一份已校验路径，包括内部转发。
+        request.setAttribute(VALIDATED_PATH, validatedPath);
         if (!internalValid(request, response)) {
             if (fileAuthError(request, response)) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
@@ -131,7 +150,7 @@ public class FileInterceptor implements HandlerInterceptor {
     }
 
     private void setHeader(HttpServletRequest request, HttpServletResponse response) {
-        FileDocument fileDocument = getFileDocument(Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8)));
+        FileDocument fileDocument = getFileDocument((Path) request.getAttribute(VALIDATED_PATH));
         if (fileDocument == null) {
             return;
         }
@@ -241,7 +260,7 @@ public class FileInterceptor implements HandlerInterceptor {
     private boolean fileAuthError(HttpServletRequest request, HttpServletResponse response) {
         String path = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
         request.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE, URLDecoder.decode(path, StandardCharsets.UTF_8));
-        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
+        Path uriPath = (Path) request.getAttribute(VALIDATED_PATH);
         String shareKey = request.getParameter(SHARE_KEY);
         if (!CharSequenceUtil.isBlank(shareKey)) {
             return validShareFile(request, uriPath, shareKey);
@@ -310,7 +329,7 @@ public class FileInterceptor implements HandlerInterceptor {
     }
 
     private void thumbnail(HttpServletRequest request, HttpServletResponse response) throws FileNotFoundException {
-        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
+        Path uriPath = (Path) request.getAttribute(VALIDATED_PATH);
         if (uriPath.getNameCount() < MIN_COUNT) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return;
@@ -372,7 +391,7 @@ public class FileInterceptor implements HandlerInterceptor {
     }
 
     private File getFileByRequest(HttpServletRequest request) {
-        Path uriPath = Paths.get(URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8));
+        Path uriPath = (Path) request.getAttribute(VALIDATED_PATH);
         uriPath = uriPath.subpath(MIN_COUNT - 1, uriPath.getNameCount());
         return Paths.get(fileProperties.getRootDir(), uriPath.toString()).toFile();
     }
