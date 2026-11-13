@@ -7,6 +7,7 @@ import com.jmal.clouddisk.interceptor.FileInterceptor;
 import com.jmal.clouddisk.interceptor.PreFileInterceptor;
 import com.jmal.clouddisk.interceptor.ShareFileInterceptor;
 import com.jmal.clouddisk.model.ShareDO;
+import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.oss.BucketInfo;
 import com.jmal.clouddisk.oss.web.WebOssService;
@@ -18,6 +19,7 @@ import com.jmal.clouddisk.service.impl.UserFileService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -106,6 +108,80 @@ class FileControllerAccessTest {
             case "avatar" -> controller.thumbnailByUsername("bob", false);
             case "cover" -> controller.coverOfMedia("victim-file");
             default -> throw new AssertionError(endpoint);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void pathPreviewRejectsOtherUsersPrivateFile(boolean stream) {
+        when(files.getFileDocumentByPathAndName("/", "secret.txt", "bob", true)).thenReturn(document);
+        assertThrows(CommonException.class, () -> {
+            if (stream) controller.previewTextByPathStream("/secret.txt", "bob");
+            else controller.previewTextByPath("/secret.txt", "bob");
+        });
+        verify(files, never()).previewTextByPath("/secret.txt", "bob");
+        verify(files, never()).previewTextByPathStream("/secret.txt", "bob");
+        verifyNoInteractions(oss);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void pathPreviewAllowsOwnerOrPublicFile(boolean owner) {
+        when(login.getUsername()).thenReturn(owner ? "bob" : "alice");
+        document.setIsPublic(true);
+        when(files.getFileDocumentByPathAndName("/", "secret.txt", "bob", true)).thenReturn(document);
+        controller.previewTextByPath("/secret.txt", "bob");
+        controller.previewTextByPathStream("/secret.txt", "bob");
+        verify(files).previewTextByPath("/secret.txt", "bob");
+        verify(files).previewTextByPathStream("/secret.txt", "bob");
+    }
+
+    @Test
+    void listRejectsAnotherUsersRoot() {
+        UploadApiParamDTO upload = new UploadApiParamDTO();
+        upload.setUsername("bob");
+        upload.setUserId("alice");
+        assertThrows(CommonException.class, () -> controller.list(upload));
+        verifyNoInteractions(files, oss);
+    }
+
+    @Test
+    void listDerivesUserIdInsteadOfTrustingRequest() {
+        when(login.getUsername()).thenReturn("alice");
+        when(users.getUserIdByUserName("alice")).thenReturn("alice-id");
+        UploadApiParamDTO upload = new UploadApiParamDTO();
+        upload.setUsername("alice");
+        upload.setUserId("victim-id");
+        controller.list(upload);
+        assertEquals("alice-id", upload.getUserId());
+        verify(files).listFiles(upload);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void mountedListingRequiresAccessAndUsesResolvedDirectory(boolean allowed) {
+        document.setIsPublic(allowed);
+        document.setIsFolder(true);
+        document.setPath("/shared/");
+        document.setName("docs");
+        when(users.getUserNameById("bob")).thenReturn("bob");
+        when(users.getUserIdByUserName("bob")).thenReturn("bob");
+        UploadApiParamDTO upload = new UploadApiParamDTO();
+        upload.setUsername("another-victim");
+        upload.setCurrentDirectory("/unrelated-private-dir");
+        upload.setFolder("victim-file");
+        upload.setQueryFileType("trash");
+        if (allowed) {
+            controller.list(upload);
+            assertEquals("bob", upload.getUsername());
+            assertEquals("bob", upload.getUserId());
+            assertEquals("/shared/docs", upload.getCurrentDirectory());
+            assertNull(upload.getFolder());
+            assertEquals("path", upload.getQueryFileType());
+            verify(files).listFiles(upload);
+        } else {
+            assertThrows(CommonException.class, () -> controller.list(upload));
+            verifyNoInteractions(files, oss);
         }
     }
 

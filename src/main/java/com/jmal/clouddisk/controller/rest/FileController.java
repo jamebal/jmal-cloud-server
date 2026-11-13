@@ -45,6 +45,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -79,7 +80,10 @@ public class FileController {
     private final HttpServletRequest request;
 
     private FileDocument getReadableFile(String id) {
-        FileDocument file = commonFileService.getById(id);
+        return checkReadableFile(commonFileService.getById(id));
+    }
+
+    private FileDocument checkReadableFile(FileDocument file) {
         if (file == null) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
@@ -89,6 +93,25 @@ public class FileController {
             throw new CommonException(ExceptionType.ACCESS_FORBIDDEN);
         }
         return file;
+    }
+
+    private void checkReadablePath(String username, String path) {
+        if (CharSequenceUtil.isNotBlank(username) && username.equals(userLoginHolder.getUsername())) {
+            return;
+        }
+        Path relativePath = Paths.get(FileNameUtils.decodeAndCheckPath(path)).normalize();
+        if (relativePath.getFileName() == null) {
+            throw new CommonException(ExceptionType.ACCESS_FORBIDDEN);
+        }
+        String parent = relativePath.getParent() == null ? File.separator : relativePath.getParent().toString();
+        if (!parent.startsWith(File.separator)) {
+            parent = File.separator + parent;
+        }
+        if (!parent.endsWith(File.separator)) {
+            parent += File.separator;
+        }
+        checkReadableFile(fileService.getFileDocumentByPathAndName(parent,
+                relativePath.getFileName().toString(), username, true));
     }
 
     public record DownloadBeforeResult(boolean allowDownload, boolean isRedirect, String redirectUrl)
@@ -107,6 +130,28 @@ public class FileController {
     @GetMapping("/list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> list(UploadApiParamDTO upload) {
+        if (CharSequenceUtil.isNotBlank(upload.getFolder())
+                && Paths.get(upload.getCurrentDirectory()).getFileName() != null) {
+            FileDocument folder = getReadableFile(upload.getFolder());
+            if (!Boolean.TRUE.equals(folder.getIsFolder())) {
+                throw new CommonException(ExceptionType.ACCESS_FORBIDDEN);
+            }
+            upload.setUsername(userService.getUserNameById(folder.getUserId()));
+            upload.setCurrentDirectory(folder.getPath() + folder.getName());
+            upload.setFolder(null);
+            upload.setProps(java.util.Map.of("fileUsername", upload.getUsername()));
+        } else {
+            checkReadablePath(upload.getUsername(), upload.getCurrentDirectory());
+        }
+        // 查询使用的 userId 必须与实际目录的 username 一致。
+        upload.setUserId(userService.getUserIdByUserName(upload.getUsername()));
+        if (CharSequenceUtil.isBlank(upload.getUserId())) {
+            throw new CommonException(ExceptionType.ACCESS_FORBIDDEN);
+        }
+        if (!upload.getUserId().equals(userLoginHolder.getUserId())) {
+            // 分享目录不能通过分类/回收站筛选扩大为整个用户空间的查询。
+            upload.setQueryFileType(Constants.PATH_FIELD);
+        }
         return fileService.listFiles(upload);
     }
 
@@ -233,6 +278,7 @@ public class FileController {
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> previewTextByPath(@RequestParam String path, @RequestParam String username) {
+        checkReadablePath(username, path);
         Path prePth = Paths.get(username, path);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
@@ -247,6 +293,7 @@ public class FileController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseEntity<StreamingResponseBody> previewTextByPathStream(@RequestParam String path,
             @RequestParam String username) {
+        checkReadablePath(username, path);
         Path prePth = Paths.get(username, path);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         StreamingResponseBody responseBody;

@@ -3,6 +3,10 @@ package com.jmal.clouddisk.controller.rest;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
+import com.jmal.clouddisk.exception.CommonException;
+import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.interceptor.FileInterceptor;
+import com.jmal.clouddisk.model.OperationPermission;
 import com.jmal.clouddisk.model.ArticleDTO;
 import com.jmal.clouddisk.model.ArticleParamDTO;
 import com.jmal.clouddisk.model.LogOperation;
@@ -13,6 +17,7 @@ import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.IMarkdownService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -50,6 +55,10 @@ public class MarkDownController {
     private final CommonFileService commonFileService;
 
     private final IUserService userService;
+
+    private final FileInterceptor fileInterceptor;
+    private final UserLoginHolder userLoginHolder;
+    private final HttpServletRequest request;
 
     @Operation(summary = "获取markdown内容")
     @GetMapping("/markdown/p")
@@ -94,13 +103,24 @@ public class MarkDownController {
     public ResponseResult<Object> editTextByPath(@RequestBody UploadApiParamDTO upload) {
         ResultUtil.checkParamIsNull(upload.getUsername(), upload.getUserId(), upload.getRelativePath(),
                 upload.getContentText());
+        // 操作权限只能来自已授权的分享，不能信任请求体中的权限列表。
+        upload.setOperationPermissionList(null);
         if (!CharSequenceUtil.isBlank(upload.getMountFileId())) {
             FileDocument fileDocument = commonFileService.getById(upload.getMountFileId());
+            if (fileDocument == null) {
+                throw new CommonException(ExceptionType.FILE_NOT_FIND);
+            }
+            if (!fileDocument.getUserId().equals(userLoginHolder.getUserId())
+                    && fileInterceptor.isNotAllowAccess(fileDocument, request)) {
+                throw new CommonException(ExceptionType.ACCESS_FORBIDDEN);
+            }
             upload.setUserId(fileDocument.getUserId());
             upload.setUsername(userService.getUserNameById(fileDocument.getUserId()));
             upload.setRelativePath(fileDocument.getPath() + fileDocument.getName());
             upload.setOperationPermissionList(fileDocument.getOperationPermissionList());
         }
+        commonFileService.checkPermissionUsername(upload.getUsername(), upload.getOperationPermissionList(), OperationPermission.PUT);
+        upload.setUserId(userService.getUserIdByUserName(upload.getUsername()));
         Path prePth = Paths.get(upload.getUsername(), upload.getRelativePath());
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
