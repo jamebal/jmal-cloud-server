@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -104,6 +105,60 @@ class FileAccessTest {
         assertEquals(!denied, interceptor.preHandle(request, response, new Object()));
         assertEquals(denied ? 403 : 200, response.getStatus());
         verify(shares).validShareFile(document, null, request);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "alice-id, /, secret.jpg, false, bob-id, /, secret.jpg, false",
+            "bob-id, /, shared.jpg, false, bob-id, /, secret.jpg, false",
+            "bob-id, /, secret.jpg, false, bob-id, /, secret.jpg, true",
+            "bob-id, /, photos, true, alice-id, /photos/, secret.jpg, false",
+            "bob-id, /, photos, true, bob-id, /, secret.jpg, false",
+            "bob-id, /, photos, true, bob-id, /photos-private/, secret.jpg, false",
+            "bob-id, /, photos, true, bob-id, /photos/, secret.jpg, true",
+            "bob-id, /, photos, true, bob-id, /photos/trip/, secret.jpg, true",
+            "bob-id, /, photos, true, bob-id, /, photos, true",
+            "bob-id, /, photos, false, bob-id, /photos/, secret.jpg, false"
+    })
+    void shareKeyOnlyGrantsAccessToItsOwnerAndScope(String sharedOwner, String sharedPath,
+            String sharedName, boolean folder, String targetOwner, String targetPath,
+            String targetName, boolean allowed) throws Exception {
+        document.setUserId(sharedOwner);
+        document.setPath(sharedPath);
+        document.setName(sharedName);
+        document.setIsFolder(folder);
+        document.setIsShare(true);
+        FileDocument target = new FileDocument();
+        target.setUserId(targetOwner);
+        target.setPath(targetPath);
+        target.setName(targetName);
+        when(files.getFileDocumentByPathAndName(targetPath, targetName, "target", true)).thenReturn(target);
+        MockHttpServletRequest request = request("/api/file/target" + targetPath + targetName);
+        request.setParameter("shareKey", "file-id");
+        request.setParameter("o", "download");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        assertEquals(allowed, interceptor.preHandle(request, response, new Object()));
+        assertEquals(allowed ? 200 : 403, response.getStatus());
+        verify(shares).validShareFile(document, null, request);
+        verifyNoInteractions(auth, oss);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void invalidShareKeyCannotGrantAccess(boolean missing) throws Exception {
+        if (missing) {
+            when(common.getById("file-id")).thenReturn(null);
+        } else {
+            document.setIsShare(true);
+            when(shares.validShareFile(eq(document), isNull(), any())).thenReturn(true);
+        }
+        MockHttpServletRequest request = request("/api/file/bob/photos/secret.jpg");
+        request.setParameter("shareKey", "file-id");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        assertFalse(interceptor.preHandle(request, response, new Object()));
+        assertEquals(403, response.getStatus());
+        verifyNoInteractions(files, oss);
     }
 
     @ParameterizedTest

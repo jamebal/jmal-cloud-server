@@ -288,14 +288,17 @@ public class FileInterceptor implements HandlerInterceptor {
         if (!isNotAllowAccess(fileDocument, request)) {
             // 判断当前uri所属的文件是否为已分享的文件或其子文件
             FileDocument thisFile = getFileDocument(uriPath);
-            if (thisFile == null) {
+            if (thisFile == null || CharSequenceUtil.isBlank(fileDocument.getUserId())
+                    || !fileDocument.getUserId().equals(thisFile.getUserId())) {
                 return true;
             }
-            if (thisFile.getPath().equals(fileDocument.getPath())) {
+            if (thisFile.getPath().equals(fileDocument.getPath())
+                    && thisFile.getName().equals(fileDocument.getName())) {
                 return false;
             }
             if (Boolean.TRUE.equals(fileDocument.getIsFolder())) {
-                String parentPath = fileDocument.getPath() + fileDocument.getName();
+                // 保留目录分隔符，避免 /photos 的分享授权到 /photos-private。
+                String parentPath = fileDocument.getPath() + fileDocument.getName() + File.separator;
                 return !thisFile.getPath().startsWith(parentPath);
             }
         }
