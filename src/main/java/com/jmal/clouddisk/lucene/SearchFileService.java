@@ -277,14 +277,34 @@ public class SearchFileService {
         if (searchDTO.getTagId() != null) {
             TagDO tagDO = tagService.getTagInfo(searchDTO.getTagId());
             if (tagDO != null) {
-                builder.add(new TermQuery(new Term(FIELD_TAG_NAME_FUZZY, tagDO.getName())), BooleanClause.Occur.MUST);
+                Query tagQuery = new TermQuery(new Term(FIELD_TAG_NAME_FUZZY, tagDO.getName()));
+                builder.add(queryPath ? tagQuery : includeFolderContents(searchDTO, tagQuery), BooleanClause.Occur.MUST);
             }
         }
 
         // 是否收藏
         if (searchDTO.getIsFavorite() != null && !queryPath) {
-            builder.add(IntPoint.newExactQuery(Constants.IS_FAVORITE, searchDTO.getIsFavorite() ? 1 : 0), BooleanClause.Occur.MUST);
+            Query favoriteQuery = IntPoint.newExactQuery(Constants.IS_FAVORITE, searchDTO.getIsFavorite() ? 1 : 0);
+            builder.add(BooleanUtil.isTrue(searchDTO.getIsFavorite())
+                    ? includeFolderContents(searchDTO, favoriteQuery) : favoriteQuery, BooleanClause.Occur.MUST);
         }
+    }
+
+    private Query includeFolderContents(SearchDTO searchDTO, Query condition) {
+        Query folderQuery = new BooleanQuery.Builder()
+                .add(new TermQuery(new Term(IUserService.USER_ID, searchDTO.getSearchUserId())), BooleanClause.Occur.MUST)
+                .add(IntPoint.newExactQuery(Constants.IS_FOLDER, 1), BooleanClause.Occur.MUST)
+                .add(condition, BooleanClause.Occur.MUST)
+                .build();
+        List<String> folderIds = luceneQueryService.find(folderQuery);
+        if (folderIds.isEmpty()) {
+            return condition;
+        }
+        BooleanQuery.Builder scope = new BooleanQuery.Builder().add(condition, BooleanClause.Occur.SHOULD);
+        for (FileBaseDTO folder : fileDAO.findAllFileBaseDTOByIdIn(folderIds)) {
+            scope.add(LuceneQueryService.getPathQueryBuilder(folder.getPath() + folder.getName()), BooleanClause.Occur.SHOULD);
+        }
+        return scope.build();
     }
 
 }
