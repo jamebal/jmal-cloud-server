@@ -1,6 +1,7 @@
 package com.jmal.clouddisk.config.hints;
 
 import com.jmal.clouddisk.config.Reflective;
+import jakarta.servlet.http.HttpServletRequest;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -19,6 +20,9 @@ public class AppRuntimeHints implements RuntimeHintsRegistrar {
 
     @Override
     public void registerHints(@NotNull RuntimeHints hints, ClassLoader classLoader) {
+        // Spring 注入当前请求时需要创建该接口的 JDK 动态代理。
+        hints.proxies().registerJdkProxy(HttpServletRequest.class);
+
         // --- 注册 @Document 实体 ---
         System.out.println("Scanning for @Document entities...");
         registerByAnnotation(hints, classLoader);
