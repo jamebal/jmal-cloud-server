@@ -87,7 +87,8 @@ public class PreFileInterceptor implements HandlerInterceptor {
         request.setAttribute("filename", parsedPath.filename);
 
         // 构造内部路径
-        internalFilePath(request, response, fileDocument);
+        // 普通预览必须由转发目标执行文件鉴权，不能签发内部绕过令牌。
+        forwardFilePath(request, response, fileDocument);
 
         // 阻止原始请求继续处理
         return false;
@@ -145,6 +146,11 @@ public class PreFileInterceptor implements HandlerInterceptor {
     public void internalFilePath(HttpServletRequest request, HttpServletResponse response,
                                  FileDocument fileDocument) {
         setInternal(request, fileDocument.getId());
+        forwardFilePath(request, response, fileDocument);
+    }
+
+    private void forwardFilePath(HttpServletRequest request, HttpServletResponse response,
+                                 FileDocument fileDocument) {
         String internalFilePath = constructInternalFilePath(fileDocument);
         try {
             request.setAttribute("forward", true);

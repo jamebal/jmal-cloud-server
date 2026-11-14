@@ -590,6 +590,11 @@ public class ShareServiceImpl implements IShareService {
     }
 
     public Page<ShareDO> getShareList(UploadApiParamDTO upload) {
+        String userId = userLoginHolder.getUserId();
+        if (CharSequenceUtil.isBlank(userId)) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
+        }
+        upload.setUserId(userId);
         Page<ShareDO> shareDOPage = shareDAO.findShareList(upload);
         if (shareDOPage.isEmpty()) {
             return shareDOPage;

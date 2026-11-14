@@ -7,12 +7,12 @@ import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.config.Reflective;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
+import com.jmal.clouddisk.interceptor.FileInterceptor;
 import com.jmal.clouddisk.model.EditTagDTO;
 import com.jmal.clouddisk.model.LogOperation;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
 import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.file.FileIntroVO;
-import com.jmal.clouddisk.oss.web.WebOssCommonService;
 import com.jmal.clouddisk.oss.web.WebOssService;
 import com.jmal.clouddisk.service.Constants;
 import com.jmal.clouddisk.service.IFileService;
@@ -45,6 +45,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -74,6 +75,45 @@ public class FileController {
 
     private final IUserService userService;
 
+    private final FileInterceptor fileInterceptor;
+
+    private final HttpServletRequest request;
+
+    private FileDocument getReadableFile(String id) {
+        return checkReadableFile(commonFileService.getById(id));
+    }
+
+    private FileDocument checkReadableFile(FileDocument file) {
+        if (file == null) {
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
+        String userId = userLoginHolder.getUserId();
+        if ((CharSequenceUtil.isBlank(userId) || !userId.equals(file.getUserId()))
+                && fileInterceptor.isNotAllowAccess(file, request)) {
+            throw new CommonException(ExceptionType.ACCESS_FORBIDDEN);
+        }
+        return file;
+    }
+
+    private void checkReadablePath(String username, String path) {
+        if (CharSequenceUtil.isNotBlank(username) && username.equals(userLoginHolder.getUsername())) {
+            return;
+        }
+        Path relativePath = Paths.get(FileNameUtils.decodeAndCheckPath(path)).normalize();
+        if (relativePath.getFileName() == null) {
+            throw new CommonException(ExceptionType.ACCESS_FORBIDDEN);
+        }
+        String parent = relativePath.getParent() == null ? File.separator : relativePath.getParent().toString();
+        if (!parent.startsWith(File.separator)) {
+            parent = File.separator + parent;
+        }
+        if (!parent.endsWith(File.separator)) {
+            parent += File.separator;
+        }
+        checkReadableFile(fileService.getFileDocumentByPathAndName(parent,
+                relativePath.getFileName().toString(), username, true));
+    }
+
     public record DownloadBeforeResult(boolean allowDownload, boolean isRedirect, String redirectUrl)
             implements Reflective {
     }
@@ -83,13 +123,35 @@ public class FileController {
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<FileDocument> getFileById(@RequestParam String id) {
-        return ResultUtil.success(commonFileService.getById(id));
+        return ResultUtil.success(getReadableFile(id));
     }
 
     @Operation(summary = "文件列表")
     @GetMapping("/list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> list(UploadApiParamDTO upload) {
+        if (CharSequenceUtil.isNotBlank(upload.getFolder())
+                && Paths.get(upload.getCurrentDirectory()).getFileName() != null) {
+            FileDocument folder = getReadableFile(upload.getFolder());
+            if (!Boolean.TRUE.equals(folder.getIsFolder())) {
+                throw new CommonException(ExceptionType.ACCESS_FORBIDDEN);
+            }
+            upload.setUsername(userService.getUserNameById(folder.getUserId()));
+            upload.setCurrentDirectory(folder.getPath() + folder.getName());
+            upload.setFolder(null);
+            upload.setProps(java.util.Map.of("fileUsername", upload.getUsername()));
+        } else {
+            checkReadablePath(upload.getUsername(), upload.getCurrentDirectory());
+        }
+        // 查询使用的 userId 必须与实际目录的 username 一致。
+        upload.setUserId(userService.getUserIdByUserName(upload.getUsername()));
+        if (CharSequenceUtil.isBlank(upload.getUserId())) {
+            throw new CommonException(ExceptionType.ACCESS_FORBIDDEN);
+        }
+        if (!upload.getUserId().equals(userLoginHolder.getUserId())) {
+            // 分享目录不能通过分类/回收站筛选扩大为整个用户空间的查询。
+            upload.setQueryFileType(Constants.PATH_FIELD);
+        }
         return fileService.listFiles(upload);
     }
 
@@ -184,9 +246,10 @@ public class FileController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> previewText(@RequestParam String id, @RequestParam String path,
             @RequestParam String fileName, Boolean content) {
+        getReadableFile(id);
         String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
         if (ossPath != null) {
-            Path prePth = Paths.get(WebOssCommonService.getUsernameByOssPath(ossPath), path, fileName);
+            Path prePth = Paths.get(id);
             return ResultUtil.success(webOssService.readToText(ossPath, prePth, content));
         }
         return ResultUtil.success(fileService.getById(id, content));
@@ -198,10 +261,11 @@ public class FileController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseEntity<StreamingResponseBody> previewTextStream(@RequestParam String id, @RequestParam String path,
             @RequestParam String fileName) {
+        getReadableFile(id);
         String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
         StreamingResponseBody responseBody;
         if (ossPath != null) {
-            Path prePth = Paths.get(WebOssCommonService.getUsernameByOssPath(ossPath), path, fileName);
+            Path prePth = Paths.get(id);
             responseBody = webOssService.readToTextStream(ossPath, prePth);
         } else {
             responseBody = fileService.getStreamById(id);
@@ -214,6 +278,7 @@ public class FileController {
     @Permission("cloud:file:list")
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseResult<Object> previewTextByPath(@RequestParam String path, @RequestParam String username) {
+        checkReadablePath(username, path);
         Path prePth = Paths.get(username, path);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
@@ -228,6 +293,7 @@ public class FileController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseEntity<StreamingResponseBody> previewTextByPathStream(@RequestParam String path,
             @RequestParam String username) {
+        checkReadablePath(username, path);
         Path prePth = Paths.get(username, path);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         StreamingResponseBody responseBody;
@@ -277,6 +343,7 @@ public class FileController {
         if (CharSequenceUtil.isBlank(id)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
+        getReadableFile(id);
         String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
         if (ossPath != null) {
             return webOssService.thumbnail(ossPath, id);
@@ -309,6 +376,7 @@ public class FileController {
     @LogOperatingFun(logType = LogOperation.Type.BROWSE)
     public ResponseEntity<InputStreamResource> coverOfMedia(String id) {
         ResultUtil.checkParamIsNull(id);
+        getReadableFile(id);
         Optional<FileDocument> file = fileService.coverOfMedia(id, null);
         return file.map(fileService::getImageInputStreamResourceEntity)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());

@@ -482,6 +482,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
 
     @Override
     public ResponseResult<Object> editTextByPath(UploadApiParamDTO upload) {
+        commonFileService.checkPermissionUsername(upload.getUsername(), upload.getOperationPermissionList(), OperationPermission.PUT);
         File file = new File(Paths.get(fileProperties.getRootDir(), upload.getUsername(), upload.getRelativePath()).toString());
         if (!file.exists()) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
@@ -489,8 +490,7 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (CommonFileService.isLock(file, fileProperties.getRootDir(), upload.getUsername())) {
             throw new CommonException(ExceptionType.LOCKED_RESOURCES);
         }
-        String userId = upload.getUserId();
-        commonFileService.checkPermissionUserId(userId, upload.getOperationPermissionList(), OperationPermission.PUT);
+        String userId = userService.getUserIdByUserName(upload.getUsername());
         FileUtil.writeString(upload.getContentText(), file, StandardCharsets.UTF_8);
         // 文件操作日志
         logService.asyncAddLogFileOperation(upload.getUsername(), upload.getRelativePath(), "修改文件");

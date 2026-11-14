@@ -1,5 +1,6 @@
 package com.jmal.clouddisk.controller.rest;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.annotation.LogOperatingFun;
 import com.jmal.clouddisk.annotation.Permission;
 import com.jmal.clouddisk.exception.CommonException;
@@ -17,6 +18,7 @@ import com.jmal.clouddisk.service.IFileService;
 import com.jmal.clouddisk.service.IShareService;
 import com.jmal.clouddisk.service.IUserService;
 import com.jmal.clouddisk.service.impl.CommonFileService;
+import com.jmal.clouddisk.service.impl.UserLoginHolder;
 import com.jmal.clouddisk.util.CaffeineUtil;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
@@ -59,6 +61,17 @@ public class ShareController {
 
     private final WebOssService webOssService;
 
+    private final UserLoginHolder userLoginHolder;
+
+    private ShareDO checkShareOwner(ShareDO share) {
+        String userId = userLoginHolder.getUserId();
+        if (CharSequenceUtil.isBlank(userId)
+                || (share != null && !userId.equals(share.getUserId()))) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
+        }
+        return share;
+    }
+
     @Operation(summary = "该分享已失效")
     @GetMapping("/public/s/invalid")
     public String invalid() {
@@ -86,7 +99,7 @@ public class ShareController {
     @Permission("cloud:file:list")
     @LogOperatingFun
     public ResponseResult<ShareDO> getShare(@RequestParam String shareId) {
-        return ResultUtil.success(shareService.getShare(shareId));
+        return ResultUtil.success(checkShareOwner(shareService.getShare(shareId)));
     }
 
     @Operation(summary = "获取分享信息")
@@ -94,7 +107,7 @@ public class ShareController {
     @Permission("cloud:file:list")
     @LogOperatingFun
     public ResponseResult<ShareDO> getShareByFileId(@RequestParam String fileId) {
-        return ResultUtil.success(shareService.getShareByFileId(fileId));
+        return ResultUtil.success(checkShareOwner(shareService.getShareByFileId(fileId)));
     }
 
     @Operation(summary = "是否含有子分享")
