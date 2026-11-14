@@ -1093,8 +1093,16 @@ public class FileServiceImpl implements IFileService {
         }
     }
 
+    // 按路径操作没有经过共享文件授权，只允许操作当前登录用户的存储目录。
+    private void checkPathOwner(String username) {
+        if (CharSequenceUtil.isBlank(username) || !username.equals(userLoginHolder.getUsername())) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
+        }
+    }
+
     @Override
     public ResponseResult<Object> listFiles(String path, String username, boolean tempDir) {
+        checkPathOwner(username);
         Path prePth = Paths.get(username, path);
         String ossPath = CaffeineUtil.getOssPath(prePth);
         if (ossPath != null) {
@@ -1146,6 +1154,7 @@ public class FileServiceImpl implements IFileService {
 
     @Override
     public ResponseResult<Object> delFile(String path, String username) throws CommonException {
+        checkPathOwner(username);
         Path p = Paths.get(fileProperties.getRootDir(), username, path);
         if (CommonFileService.isLock(p.toFile(), fileProperties.getRootDir(), username)) {
             throw new CommonException(ExceptionType.LOCKED_RESOURCES);
