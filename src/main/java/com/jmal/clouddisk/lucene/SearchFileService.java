@@ -42,7 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.jmal.clouddisk.lucene.LuceneService.FIELD_TAG_NAME_FUZZY;
+import static com.jmal.clouddisk.lucene.LuceneService.FIELD_TAG_ID;
 
 @Service
 @RequiredArgsConstructor
@@ -277,7 +277,8 @@ public class SearchFileService {
         if (searchDTO.getTagId() != null) {
             TagDO tagDO = tagService.getTagInfo(searchDTO.getTagId());
             if (tagDO != null) {
-                Query tagQuery = new TermQuery(new Term(FIELD_TAG_NAME_FUZZY, tagDO.getName()));
+                // 标签名会被分词，按稳定且未分词的标签 ID 过滤。
+                Query tagQuery = new TermQuery(new Term(FIELD_TAG_ID, searchDTO.getTagId()));
                 builder.add(queryPath ? tagQuery : includeFolderContents(searchDTO, tagQuery), BooleanClause.Occur.MUST);
             }
         }
@@ -297,11 +298,14 @@ public class SearchFileService {
                 .add(condition, BooleanClause.Occur.MUST)
                 .build();
         List<String> folderIds = luceneQueryService.find(folderQuery);
+        log.debug("扩展文件夹搜索: 索引命中文件夹数={}", folderIds.size());
         if (folderIds.isEmpty()) {
             return condition;
         }
         BooleanQuery.Builder scope = new BooleanQuery.Builder().add(condition, BooleanClause.Occur.SHOULD);
-        for (FileBaseDTO folder : fileDAO.findAllFileBaseDTOByIdIn(folderIds)) {
+        List<FileBaseDTO> folders = fileDAO.findAllFileBaseDTOByIdIn(folderIds);
+        log.debug("扩展文件夹搜索: 数据库返回文件夹数={}", folders.size());
+        for (FileBaseDTO folder : folders) {
             scope.add(LuceneQueryService.getPathQueryBuilder(folder.getPath() + folder.getName()), BooleanClause.Occur.SHOULD);
         }
         return scope.build();

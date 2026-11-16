@@ -2,10 +2,12 @@ package com.jmal.clouddisk.controller.rest;
 
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.http.HttpUtil;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import com.jmal.clouddisk.media.ImageMagickProcessor;
 import com.jmal.clouddisk.ocr.OcrService;
 import com.jmal.clouddisk.service.impl.UserLoginHolder;
+import com.jmal.clouddisk.util.SsrfProtectionUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @RestController
 @RequiredArgsConstructor
@@ -28,9 +32,17 @@ public class OcrController {
 
     @GetMapping("/ocr")
     public String performOcr(@RequestParam String fileUrl) {
+        String safeUrl = SsrfProtectionUtil.checkUrlSafe(fileUrl);
         String tempImagePath = imageMagickProcessor.generateOrcTempImagePath(userLoginHolder.getUsername());
         try (StringWriter contentWriter = new StringWriter()) {
-            HttpUtil.downloadFile(fileUrl, tempImagePath);
+            try (HttpResponse response = HttpRequest.get(safeUrl).setFollowRedirects(false).execute()) {
+                if (!response.isOk()) {
+                    throw new IOException("Image download failed with status " + response.getStatus());
+                }
+                try (var inputStream = response.bodyStream()) {
+                    Files.copy(inputStream, Path.of(tempImagePath), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
             TimeInterval timeInterval = new TimeInterval();
             timeInterval.start();
             ocrService.doOCR(contentWriter, tempImagePath, null, "tesseract");
