@@ -83,7 +83,7 @@ public class ShareController {
     @Permission("cloud:file:update")
     @LogOperatingFun
     public ResponseResult<Object> generateLink(@RequestBody ShareDO share) {
-        ResultUtil.checkParamIsNull(share.getFileId(), share.getUserId());
+        ResultUtil.checkParamIsNull(share.getFileId());
         return shareService.generateLink(share);
     }
 

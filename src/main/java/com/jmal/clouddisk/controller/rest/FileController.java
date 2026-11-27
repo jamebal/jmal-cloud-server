@@ -509,7 +509,7 @@ public class FileController {
             String to) throws IOException {
         if (froms != null && froms.length > 0) {
             List<String> list = Arrays.asList(froms);
-            return fileService.checkMoveOrCopy(upload, list, to);
+            return fileService.checkMoveOrCopy(upload, list, to, request.getHeader(Constants.SHARE_TOKEN));
         } else {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(),
                     ExceptionType.MISSING_PARAMETERS.getMsg());
@@ -523,7 +523,7 @@ public class FileController {
             throws IOException {
         if (froms != null && froms.length > 0) {
             List<String> list = Arrays.asList(froms);
-            return fileService.move(upload, list, to);
+            return fileService.move(upload, list, to, request.getHeader(Constants.SHARE_TOKEN));
         } else {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(),
                     ExceptionType.MISSING_PARAMETERS.getMsg());
@@ -537,7 +537,7 @@ public class FileController {
             throws IOException {
         if (froms != null && froms.length > 0) {
             List<String> list = Arrays.asList(froms);
-            return fileService.copy(upload, list, to);
+            return fileService.copy(upload, list, to, request.getHeader(Constants.SHARE_TOKEN));
         } else {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS.getCode(),
                     ExceptionType.MISSING_PARAMETERS.getMsg());

@@ -60,6 +60,7 @@ import com.jmal.clouddisk.util.FileNameUtils;
 import com.jmal.clouddisk.util.MyFileUtils;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.ShortSignedIdUtil;
 import com.jmal.clouddisk.util.TimeUntils;
 import com.jmal.clouddisk.webdav.MyWebdavServlet;
 import io.reactivex.rxjava3.core.Completable;
@@ -858,35 +859,29 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseResult<List<FileDocument>> checkMoveOrCopy(UploadApiParamDTO upload, List<String> froms, String to) {
+    public ResponseResult<List<FileDocument>> checkMoveOrCopy(UploadApiParamDTO upload, List<String> froms, String to,
+            String shareToken) {
         if (CharSequenceUtil.isBlank(to) && CharSequenceUtil.isBlank(upload.getTargetPath())) {
             throw new CommonException(ExceptionType.MISSING_PARAMETERS);
         }
-        List<String> fromFilenameList = getFromFilenameList(froms);
-
-        String ossPathTo = getPreOssPath(upload, to);
-        if (ossPathTo != null) {
+        setTransferCaller(upload);
+        List<String> fromFilenameList = froms.stream()
+                .map(from -> getCopySource(upload, from, shareToken, OperationPermission.DOWNLOAD, OperationPermission.DELETE))
+                .map(source -> source.document() == null ? Paths.get(source.id()).getFileName().toString() : source.document().getName())
+                .toList();
+        FileDocument destination = getTransferDestination(upload, to, shareToken);
+        if (destination == null || getPreOssPath(upload, to) != null) {
             return ResultUtil.success();
         }
-
-        FileDocument toFileDocument = getToFileDocument(upload, to);
-        if (toFileDocument == null) {
-            return ResultUtil.error(ExceptionType.FILE_NOT_FIND);
-        }
-        String toPath = getRelativePath(toFileDocument);
-        List<FileDocument> fileDocuments = fileDAO.findAllByUserIdAndPathAndNameIn(toFileDocument.getUserId(), toPath,
-                fromFilenameList);
-        // 只保留name, path, suffix
-        fileDocuments.forEach(fileDocument -> {
-            fileDocument.setIsShare(null);
-            fileDocument.setShareId(null);
-            fileDocument.setShareBase(null);
-            fileDocument.setIsFavorite(null);
-            fileDocument.setTags(null);
-            fileDocument.setMountFileId(null);
-            fileDocument.setOssFolder(null);
-        });
-        return ResultUtil.success(fileDocuments).setCount(fileDocuments.size());
+        List<FileDocument> conflicts = fileDAO.findAllByUserIdAndPathAndNameIn(destination.getUserId(),
+                getRelativePath(destination), fromFilenameList).stream().map(file -> {
+                    FileDocument conflict = new FileDocument();
+                    conflict.setName(file.getName());
+                    conflict.setPath(file.getPath());
+                    conflict.setSuffix(file.getSuffix());
+                    return conflict;
+                }).toList();
+        return ResultUtil.success(conflicts).setCount(conflicts.size());
     }
 
     @Nullable
@@ -900,115 +895,135 @@ public class FileServiceImpl implements IFileService {
         return CaffeineUtil.getOssPath(prePath);
     }
 
-    private List<String> getFromFilenameList(List<String> froms) {
-        return fileDAO.findFilenameListByIdIn(froms);
+    @Override
+    public ResponseResult<Object> move(UploadApiParamDTO upload, List<String> froms, String to, String shareToken) {
+        return transfer(upload, froms, to, shareToken, true);
     }
 
     @Override
-    public ResponseResult<Object> move(UploadApiParamDTO upload, List<String> froms, String to) throws IOException {
-        // 复制
-        upload.setUserId(userLoginHolder.getUserId());
-        upload.setUsername(userLoginHolder.getUsername());
+    public ResponseResult<Object> copy(UploadApiParamDTO upload, List<String> froms, String to, String shareToken) {
+        return transfer(upload, froms, to, shareToken, false);
+    }
+
+    private ResponseResult<Object> transfer(UploadApiParamDTO upload, List<String> froms, String to, String shareToken,
+            boolean move) {
+        setTransferCaller(upload);
+        OperationPermission permission = move ? OperationPermission.DELETE : OperationPermission.DOWNLOAD;
+        List<CopySource> sources = froms.stream().map(from -> getCopySource(upload, from, shareToken, permission)).toList();
+        FileDocument destination = getTransferDestination(upload, to, shareToken);
+        String target = getTransferTarget(upload, to);
         LogOperation logOperation = logService.getLogOperation();
+        String operation = move ? "移动" : "复制";
         Completable.fromAction(() -> {
             try {
-                String currentDirectory = getOssFileCurrentDirectory(upload, froms);
-                String fromFileIdOne = froms.getFirst();
-                FileDocument formFileDocument = getOriginalFileDocumentById(fromFileIdOne);
-                if (formFileDocument == null) {
-                    String ossPathFormOne = CaffeineUtil.getOssPath(Paths.get(fromFileIdOne));
-                    if (ossPathFormOne != null) {
-                        // 移动
-                        move(upload, froms, to, currentDirectory, logOperation);
+                for (CopySource source : sources) {
+                    ResponseResult<Object> result = copyOrMove(upload, source, target, destination, move, logOperation);
+                    if (result != null && result.getCode() != 0) {
+                        throw new CommonException(result.getCode(), Convert.toStr(result.getMessage(), Constants.UNKNOWN_ERROR));
                     }
+                }
+                if (move) {
+                    for (CopySource source : sources) {
+                        deleteMovedSource(source.id());
+                    }
+                }
+            } catch (CommonException e) {
+                if (!move || e.getCode() != -3) {
+                    commonFileService.pushMessageOperationFileError(upload.getUsername(),
+                            Convert.toStr(e.getMsg(), Constants.UNKNOWN_ERROR), operation);
+                }
+            } catch (Exception e) {
+                commonFileService.pushMessageOperationFileError(upload.getUsername(),
+                        ExceptionType.SYSTEM_ERROR.getMsg(), operation);
+            }
+        }).subscribeOn(Schedulers.io())
+                .doOnError(e -> log.error(e.getMessage(), e))
+                .onErrorComplete()
+                .subscribe();
+        return ResultUtil.success();
+    }
+
+    private void setTransferCaller(UploadApiParamDTO upload) {
+        upload.setUserId(userLoginHolder.getUserId());
+        upload.setUsername(userLoginHolder.getUsername());
+        if (CharSequenceUtil.isBlank(upload.getUserId()) || CharSequenceUtil.isBlank(upload.getUsername())) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
+        }
+    }
+
+    private static String getTransferTarget(UploadApiParamDTO upload, String to) {
+        return CharSequenceUtil.isBlank(to)
+                ? MyWebdavServlet.PATH_DELIMITER + upload.getUsername() + upload.getTargetPath() + MyWebdavServlet.PATH_DELIMITER
+                : to;
+    }
+
+    private FileDocument getTransferDestination(UploadApiParamDTO upload, String to, String shareToken) {
+        FileDocument destination = getToFileDocument(upload, to);
+        if (destination != null) {
+            checkTransferPermission(upload.getUserId(), destination, shareToken, OperationPermission.UPLOAD);
+        } else {
+            checkRawOssOwner(getTransferTarget(upload, to), upload.getUsername());
+        }
+        return destination;
+    }
+
+    private record CopySource(String id, FileDocument document) {
+    }
+
+    private CopySource getCopySource(UploadApiParamDTO upload, String id, String shareToken, OperationPermission... permissions) {
+        FileDocument file = commonFileService.getFileDocumentById(id, true);
+        if (file == null) {
+            checkRawOssOwner(id, upload.getUsername());
+        } else {
+            if (file.getMountFileId() != null) {
+                if (!upload.getUserId().equals(file.getUserId())) {
+                    throw new CommonException(ExceptionType.PERMISSION_DENIED);
+                }
+                file = commonFileService.getFileDocumentById(file.getMountFileId(), true);
+                if (file == null) {
+                    throw new CommonException(ExceptionType.FILE_NOT_FIND);
+                }
+            }
+            checkTransferPermission(upload.getUserId(), file, shareToken, permissions);
+        }
+        return new CopySource(id, file);
+    }
+
+    private static void checkRawOssOwner(String id, String username) {
+        if (CharSequenceUtil.isBlank(id)) {
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
+        String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
+        if (ossPath == null) {
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
+        if (!username.equals(WebOssCommonService.getUsernameByOssPath(ossPath))) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
+        }
+    }
+
+    private void checkTransferPermission(String userId, FileDocument file, String shareToken, OperationPermission... permissions) {
+        if (userId.equals(file.getUserId())) {
+            return;
+        }
+        // A file ID or a mount alone doesn't prove access to a private share.
+        if (BooleanUtil.isTrue(file.getIsShare()) && file.getShareId() != null
+                && file.getExpiresAt() != null && file.getExpiresAt() > System.currentTimeMillis()) {
+            ShareDO share = shareDAO.findById(file.getShareId());
+            if (share != null && file.getUserId() != null && file.getUserId().equals(share.getUserId())
+                    && (share.getExpireDate() == null || share.getExpireDate().isAfter(LocalDateTime.now(TimeUntils.ZONE_ID)))
+                    && share.getOperationPermissionList() != null
+                    && Arrays.stream(permissions).anyMatch(share.getOperationPermissionList()::contains)) {
+                if (Boolean.FALSE.equals(share.getIsPrivacy())) {
                     return;
                 }
-                String formUsername = userService.getUserNameById(formFileDocument.getUserId());
-                if (!upload.getUsername().equals(formUsername)) {
-                    commonFileService.checkPermissionUsername(formUsername,
-                            formFileDocument.getOperationPermissionList(), OperationPermission.DELETE);
+                var verification = ShortSignedIdUtil.verifyToken(shareToken, share.getExtractionCode());
+                if (verification.isValid() && file.getShareId().equals(verification.getKey())) {
+                    return;
                 }
-                // 移动
-                move(upload, froms, to, currentDirectory, logOperation);
-            } catch (CommonException e) {
-                if (e.getCode() != -3) {
-                    commonFileService.pushMessageOperationFileError(upload.getUsername(),
-                            Convert.toStr(e.getMsg(), Constants.UNKNOWN_ERROR), "移动");
-                }
-            } catch (Exception e) {
-                commonFileService.pushMessageOperationFileError(upload.getUsername(),
-                        Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR), "移动");
-            }
-        }).subscribeOn(Schedulers.io())
-                .doOnError(e -> log.error(e.getMessage(), e))
-                .onErrorComplete()
-                .subscribe();
-        return ResultUtil.success();
-    }
-
-    private void move(UploadApiParamDTO upload, List<String> froms, String to, String currentDirectory,
-            LogOperation logOperation) {
-        // 复制
-        getCopyResult(upload, froms, to, true, logOperation);
-        // 删除
-        deleteOnlyDoc(upload.getUsername(), currentDirectory, froms, upload.getUsername());
-    }
-
-    private String getOssFileCurrentDirectory(UploadApiParamDTO upload, List<String> froms) {
-        String currentDirectory = "/";
-        String from = froms.getFirst();
-        FileDocument fileDocumentFrom = commonFileService.getFileDocumentById(from, true);
-        if (fileDocumentFrom != null && fileDocumentFrom.getOssFolder() != null) {
-            from = upload.getUsername() + MyWebdavServlet.PATH_DELIMITER + fileDocumentFrom.getOssFolder()
-                    + MyWebdavServlet.PATH_DELIMITER;
-        }
-        Path fromPath = Paths.get(from);
-        if (CaffeineUtil.getOssPath(fromPath) != null) {
-            currentDirectory = fromPath.toString().substring(upload.getUsername().length());
-        }
-        return currentDirectory;
-    }
-
-    private void getCopyResult(UploadApiParamDTO upload, List<String> froms, String to, boolean move,
-            LogOperation logOperation) {
-        for (String from : froms) {
-            ResponseResult<Object> result;
-            try {
-                result = copyOrMove(upload, from, to, move, logOperation);
-            } catch (CommonException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new CommonException(ExceptionType.SYSTEM_ERROR);
-            }
-            if (result != null && result.getCode() != 0) {
-                throw new CommonException(result.getCode(),
-                        Convert.toStr(result.getMessage(), Constants.UNKNOWN_ERROR));
             }
         }
-    }
-
-    @Override
-    public ResponseResult<Object> copy(UploadApiParamDTO upload, List<String> froms, String to) throws IOException {
-        // 复制
-        upload.setUserId(userLoginHolder.getUserId());
-        upload.setUsername(userLoginHolder.getUsername());
-        LogOperation logOperation = logService.getLogOperation();
-        Completable.fromAction(() -> {
-            try {
-                // 复制成功
-                getCopyResult(upload, froms, to, false, logOperation);
-            } catch (CommonException e) {
-                commonFileService.pushMessageOperationFileError(upload.getUsername(),
-                        Convert.toStr(e.getMsg(), Constants.UNKNOWN_ERROR), "复制");
-            } catch (Exception e) {
-                commonFileService.pushMessageOperationFileError(upload.getUsername(),
-                        Convert.toStr(e.getMessage(), Constants.UNKNOWN_ERROR), "复制");
-            }
-        }).subscribeOn(Schedulers.io())
-                .doOnError(e -> log.error(e.getMessage(), e))
-                .onErrorComplete()
-                .subscribe();
-        return ResultUtil.success();
+        throw new CommonException(ExceptionType.PERMISSION_DENIED);
     }
 
     @Override
@@ -1497,23 +1512,15 @@ public class FileServiceImpl implements IFileService {
      * @param from   来源文件id
      * @param to     目标文件id
      */
-    private ResponseResult<Object> copyOrMove(UploadApiParamDTO upload, String from, String to, boolean move,
-            LogOperation logOperation) {
-        FileDocument formFileDocument = getOriginalFileDocumentById(from);
-        String fromPath = getRelativePath(formFileDocument);
-        FileDocument toFileDocument = getToFileDocument(upload, to);
-
-        if (CharSequenceUtil.isNotBlank(to) || CharSequenceUtil.isNotBlank(upload.getTargetPath())) {
-            if (CharSequenceUtil.isBlank(to)) {
-                to = MyWebdavServlet.PATH_DELIMITER + upload.getUsername() + upload.getTargetPath()
-                        + MyWebdavServlet.PATH_DELIMITER;
-            }
-            ResponseResult<Object> result = ossCopy(formFileDocument, toFileDocument, from, to, move);
-            if (result != null) {
-                return result;
-            }
+    private ResponseResult<Object> copyOrMove(UploadApiParamDTO upload, CopySource source, String to,
+            FileDocument toFileDocument, boolean move, LogOperation logOperation) {
+        FileDocument formFileDocument = source.document();
+        String from = formFileDocument == null ? source.id() : formFileDocument.getId();
+        ResponseResult<Object> result = ossCopy(formFileDocument, toFileDocument, from, to, move);
+        if (result != null) {
+            return result;
         }
-
+        String fromPath = getRelativePath(formFileDocument);
         String toPath = getRelativePath(toFileDocument);
 
         if (formFileDocument != null) {
@@ -1527,13 +1534,8 @@ public class FileServiceImpl implements IFileService {
             Path pathFrom = Paths.get(formFileDocument.getPath(), formFileDocument.getName());
             if (toFileDocument != null) {
                 String toUsername = userService.getUserNameById(toFileDocument.getUserId());
-                if (!upload.getUsername().equals(toUsername)) {
-                    commonFileService.checkPermissionUsername(toUsername, toFileDocument.getOperationPermissionList(),
-                            OperationPermission.UPLOAD);
-                }
                 String toFilePath = Paths.get(getUserDir(toUsername), toPath).toString();
                 Path pathTo = Paths.get(toFileDocument.getPath(), toFileDocument.getName());
-                formFileDocument.setUserId(toFileDocument.getUserId());
 
                 if (Paths.get(toFilePath).equals(Paths.get(fromFilePath).getParent())) {
                     return ResultUtil.ignore("相同位置");
@@ -1635,12 +1637,20 @@ public class FileServiceImpl implements IFileService {
                 return webOssCopyFileService.copyOssToOss(ossPathFrom, from, ossPathTo, to, isMove);
             } else {
                 // 从 oss 复制到 本地存储
-                return webOssCopyFileService.copyOssToLocal(ossPathFrom, from, to, isMove);
+                if (fileDocumentTo == null) {
+                    throw new CommonException(ExceptionType.DIR_NOT_FIND);
+                }
+                String destinationUsername = userService.getUserNameById(fileDocumentTo.getUserId());
+                return webOssCopyFileService.copyOssToLocal(ossPathFrom, from, to, destinationUsername, isMove);
             }
         } else {
             if (ossPathTo != null) {
                 // 从 本地存储 复制 到 oss
-                return webOssCopyFileService.copyLocalToOss(ossPathTo, from, to, isMove);
+                if (fileDocumentFrom == null) {
+                    throw new CommonException(ExceptionType.FILE_NOT_FIND);
+                }
+                String sourceUsername = userService.getUserNameById(fileDocumentFrom.getUserId());
+                return webOssCopyFileService.copyLocalToOss(ossPathTo, from, sourceUsername, to, isMove);
             }
         }
         return null;
@@ -1863,24 +1873,18 @@ public class FileServiceImpl implements IFileService {
         return ResultUtil.success();
     }
 
-    /**
-     * 仅删除文件基本信息, 不删除实际文件, 一般用于移动操作
-     *
-     * @param username username
-     * @param fileIds  fileIds
-     */
-    public void deleteOnlyDoc(String username, String currentDirectory, List<String> fileIds, String operator) {
-        username = deleteOss(username, currentDirectory, fileIds, operator);
-        if (username == null) {
+    private void deleteMovedSource(String id) {
+        String ossPath = CaffeineUtil.getOssPath(Paths.get(id));
+        if (ossPath != null) {
+            commonFileService.deleteDependencies(WebOssCommonService.getUsernameByOssPath(ossPath), List.of(id));
+            webOssService.delete(ossPath, List.of(id));
             return;
         }
-        List<FileBaseDTO> fileBaseDTOS = fileDAO.findAllFileBaseDTOAndRemoveByIdIn(fileIds);
-        for (FileBaseDTO fileBaseDTO : fileBaseDTOS) {
-            // 删除文件夹及其下的所有文件
-            List<String> delFileIds = fileDAO.findAllIdsAndRemoveByFolder(fileBaseDTO);
-            // 提取出delFileDocumentList中文件id
+        for (FileBaseDTO file : fileDAO.findAllFileBaseDTOAndRemoveByIdIn(List.of(id))) {
+            String username = userService.getUserNameById(file.getUserId());
+            List<String> delFileIds = fileDAO.findAllIdsAndRemoveByFolder(file);
             commonFileService.deleteDependencies(username, delFileIds);
-            messageService.pushMessage(username, fileBaseDTO, Constants.DELETE_FILE);
+            messageService.pushMessage(username, file, Constants.DELETE_FILE);
         }
     }
 

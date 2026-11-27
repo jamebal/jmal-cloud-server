@@ -62,16 +62,24 @@ public class ShareServiceImpl implements IShareService {
 
     @Override
     public ResponseResult<Object> generateLink(ShareDO share) {
-        ShareDO shareDO = findByFileId(share.getFileId());
-        share.setCreateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
         FileDocument file = commonFileService.getById(share.getFileId());
         if (file == null) {
             return ResultUtil.warning("文件不存在");
         }
+        String userId = userLoginHolder.getUserId();
+        if (CharSequenceUtil.isBlank(userId) || !userId.equals(file.getUserId()) || file.getMountFileId() != null) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
+        }
+        share.setUserId(userId);
+        share.setId(null);
+        share.setFatherShareId(null);
+        share.setExtractionCode(null);
+        share.setCreateDate(LocalDateTime.now(TimeUntils.ZONE_ID));
         if (BooleanUtil.isTrue(file.getIsShare()) && !BooleanUtil.isTrue(file.getShareBase())) {
             // 设置子分享,继承上级分享
             return subShare(share.getShortId(), file);
         }
+        ShareDO shareDO = findByFileId(share.getFileId());
         long expireAt = Long.MAX_VALUE;
         if (share.getExpireDate() != null) {
             expireAt = TimeUntils.getMilli(share.getExpireDate());
@@ -135,6 +143,7 @@ public class ShareServiceImpl implements IShareService {
         }
         BeanUtils.copyProperties(fatherShare, share);
         share.setId(null);
+        share.setUserId(file.getUserId());
         share.setShortId(shortId);
         share.setFileId(file.getId());
 
@@ -232,6 +241,7 @@ public class ShareServiceImpl implements IShareService {
     }
 
     private void updateShare(ShareDO share, ShareDO shareDO, FileDocument file) {
+        shareDO.setUserId(share.getUserId());
         shareDO.setFileName(file.getName());
         shareDO.setShortId(share.getShortId());
         shareDO.setExpireDate(share.getExpireDate());

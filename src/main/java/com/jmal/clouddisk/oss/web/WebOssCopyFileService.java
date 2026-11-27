@@ -191,9 +191,10 @@ public class WebOssCopyFileService {
      * @param ossPathFrom          源ossPath
      * @param sourceObjectNamePath 源objectPath
      * @param fileId               目标文件fileId
+     * @param destinationUsername  目标文件的用户名
      * @param isMove               是否为移动操作
      */
-    public ResponseResult<Object> copyOssToLocal(String ossPathFrom, String sourceObjectNamePath, String fileId, boolean isMove) {
+    public ResponseResult<Object> copyOssToLocal(String ossPathFrom, String sourceObjectNamePath, String fileId, String destinationUsername, boolean isMove) {
         IOssService ossServiceFrom = OssConfigService.getOssStorageService(ossPathFrom);
         String objectNameFrom = sourceObjectNamePath.substring(ossPathFrom.length());
         boolean isFolder = objectNameFrom.endsWith("/");
@@ -210,7 +211,7 @@ public class WebOssCopyFileService {
                 throw new CommonException(ExceptionType.DIR_NOT_FIND);
             }
         }
-        destFileDocument.setUsername(WebOssCommonService.getUsernameByOssPath(ossPathFrom));
+        destFileDocument.setUsername(destinationUsername);
         if (isFolder) {
             // 复制文件夹
             copyDir(ossServiceFrom, objectNameFrom, destFileDocument);
@@ -304,17 +305,18 @@ public class WebOssCopyFileService {
      *
      * @param ossPathTo          目标ossPath
      * @param fileId             源fileId
+     * @param sourceUsername     源文件的用户名
      * @param destObjectNamePath 目标objectNamePath
      * @param isMove             是否为移动操作
      */
-    public ResponseResult<Object> copyLocalToOss(String ossPathTo, String fileId, String destObjectNamePath, boolean isMove) {
+    public ResponseResult<Object> copyLocalToOss(String ossPathTo, String fileId, String sourceUsername, String destObjectNamePath, boolean isMove) {
         IOssService ossServiceTo = OssConfigService.getOssStorageService(ossPathTo);
         FileBaseDTO fromFileDocument = fileDAO.findFileBaseDTOById(fileId);
         if (fromFileDocument == null) {
             throw new CommonException(ExceptionType.FILE_NOT_FIND);
         }
         boolean isFolder = fromFileDocument.getIsFolder();
-        fromFileDocument.setUsername(WebOssCommonService.getUsernameByOssPath(ossPathTo));
+        fromFileDocument.setUsername(sourceUsername);
         // 目标objectName
         String objectNameTo = destObjectNamePath.substring(ossPathTo.length()) + fromFileDocument.getName();
         // 判断目标文件/夹是否存在
@@ -335,7 +337,7 @@ public class WebOssCopyFileService {
         }
         Completable.fromAction(() -> {
                     TimeUnit.SECONDS.sleep(1);
-                    webOssCommonService.notifyCreateFile(fromFileDocument.getUsername(), objectNameTo, WebOssCommonService.getOssRootFolderName(ossPathTo));
+                    webOssCommonService.notifyCreateFile(WebOssCommonService.getUsernameByOssPath(ossPathTo), objectNameTo, WebOssCommonService.getOssRootFolderName(ossPathTo));
                     Path fromPath = Paths.get(fromFileDocument.getPath(), fromFileDocument.getName());
                     Path toPath = Paths.get(WebOssCommonService.getOssRootFolderName(ossPathTo), objectNameTo);
                     commonFileService.pushMessageOperationFileSuccess(fromPath.toString(), toPath.toString(), fromFileDocument.getUsername(), isMove ? "移动" : "复制");
