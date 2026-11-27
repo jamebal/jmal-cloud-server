@@ -230,6 +230,9 @@ public class UserServiceImpl implements IUserService {
         String fileId = "";
         if (!CharSequenceUtil.isBlank(user.getAvatar())) {
             fileId = user.getAvatar();
+            if (blobAvatar == null && !fileId.equals(consumerDO.getAvatar())) {
+                userFileService.setPublic(fileId);
+            }
             update.set("avatar", fileId);
             consumerDO.setAvatar(fileId);
         }
@@ -278,9 +281,6 @@ public class UserServiceImpl implements IUserService {
                 update.set("avatar", fileId);
                 consumerDO.setAvatar(fileId);
             }
-        } else {
-            // 设置头像文件为public
-            userFileService.setPublic(fileId);
         }
         return fileId;
     }

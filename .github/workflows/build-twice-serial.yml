@@ -16,7 +16,7 @@ jobs:
       profiles_active: "dev-sqlite"
       aot_build_mode: "jpa"
       arch: "arm64"
-      node_version: "16.20.2"
+      node_version: "20.20.2"
       graal_version: "25"
       dockerfile: "./Dockerfile"
     secrets: inherit
@@ -31,7 +31,7 @@ jobs:
       profiles_active: "dev-sqlite"
       aot_build_mode: "jpa"
       arch: "amd64"
-      node_version: "16.20.2"
+      node_version: "20.20.2"
       graal_version: "25"
       dockerfile: "./Dockerfile"
     secrets: inherit
@@ -84,7 +84,7 @@ jobs:
       profiles_active: "default"
       aot_build_mode: "mongo"
       arch: "amd64"
-      node_version: "16.20.2"
+      node_version: "20.20.2"
       graal_version: "25"
       dockerfile: "./Dockerfile"
     secrets: inherit
@@ -99,7 +99,7 @@ jobs:
       profiles_active: "default"
       aot_build_mode: "mongo"
       arch: "arm64"
-      node_version: "16.20.2"
+      node_version: "20.20.2"
       graal_version: "25"
       dockerfile: "./Dockerfile"
     secrets: inherit

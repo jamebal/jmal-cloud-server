@@ -78,6 +78,7 @@ jobs:
         working-directory: ./frontend
         run: |
           npm install
+          npm install --save core-js@2
           npm run build:prod
 
       - name: rename frontend dist

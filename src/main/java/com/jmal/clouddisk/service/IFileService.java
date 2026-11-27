@@ -218,27 +218,30 @@ public interface IFileService {
      * @param upload 上传参数
      * @param froms 从哪里来
      * @param to    要到哪里去
+     * @param shareToken 私密分享凭证
      * @return ResponseResult<Object>
      */
-    ResponseResult<List<FileDocument>> checkMoveOrCopy(UploadApiParamDTO upload, List<String> froms, String to) throws IOException;
+    ResponseResult<List<FileDocument>> checkMoveOrCopy(UploadApiParamDTO upload, List<String> froms, String to, String shareToken) throws IOException;
 
     /**
      * 移动文件/文件夹
      * @param upload 上传参数
      * @param froms 从哪里移动
      * @param to   移动到哪里
+     * @param shareToken 私密分享凭证
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> move(UploadApiParamDTO upload, List<String> froms, String to) throws IOException;
+    ResponseResult<Object> move(UploadApiParamDTO upload, List<String> froms, String to, String shareToken) throws IOException;
 
     /**
      * 复制文件/文件夹
      * @param upload 上传参数
      * @param froms 从哪里复制
      * @param to  复制到哪里
+     * @param shareToken 私密分享凭证
      * @return ResponseResult<Object>
      */
-    ResponseResult<Object> copy(UploadApiParamDTO upload, List<String> froms, String to) throws IOException;
+    ResponseResult<Object> copy(UploadApiParamDTO upload, List<String> froms, String to, String shareToken) throws IOException;
 
     /**
      * 创建文件/文件夹(mongodb)

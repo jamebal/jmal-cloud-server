@@ -46,6 +46,7 @@ import com.jmal.clouddisk.util.JacksonUtil;
 import com.jmal.clouddisk.util.MyFileUtils;
 import com.jmal.clouddisk.util.ResponseResult;
 import com.jmal.clouddisk.util.ResultUtil;
+import com.jmal.clouddisk.util.SsrfProtectionUtil;
 import com.jmal.clouddisk.util.TimeUntils;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -525,22 +526,23 @@ public class MarkdownServiceImpl implements IMarkdownService {
         if (CharSequenceUtil.isBlank(upload.getUrl())) {
             return ResultUtil.warning("url不能为空");
         }
+        String imageUrl = SsrfProtectionUtil.checkUrlSafe(upload.getUrl());
         String username = upload.getUsername();
         String userId = upload.getUserId();
         Path docImagePaths = getDocImagePaths(upload);
         // docImagePaths 不存在则新建
         commonUserFileService.upsertFolder(docImagePaths, username, userId);
         File newFile = null;
-        try (HttpResponse response = HttpRequest.get(upload.getUrl()).setFollowRedirects(true).executeAsync();
+        try (HttpResponse response = HttpRequest.get(imageUrl).setFollowRedirects(false).executeAsync();
              InputStream inputStream = response.bodyStream()) {
             if (!response.isOk()) {
                 throw new HttpException("Server response error with status code: [{}]", response.getStatus());
             }
-            String fileName = FileNameUtils.validateAndSanitizeFilename(getFileName(upload.getUrl(), response));
+            String fileName = FileNameUtils.validateAndSanitizeFilename(getFileName(imageUrl, response));
             newFile = commonUserFileService.createFileWithConversion(fileName, username, docImagePaths, inputStream);
             String fileId = commonUserFileService.createFile(username, newFile, userId, true);
             String filepath = getFileShareUrl(fileId, newFile);
-            return ResultUtil.success(new UploadImageResult(filepath, upload.getUrl(), fileId, newFile.getName(), filepath));
+            return ResultUtil.success(new UploadImageResult(filepath, imageUrl, fileId, newFile.getName(), filepath));
         } catch (IOException e) {
             if (newFile != null && newFile.exists()) {
                 FileUtil.del(newFile);

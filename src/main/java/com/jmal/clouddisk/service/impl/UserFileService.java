@@ -4,9 +4,11 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.jmal.clouddisk.config.FileProperties;
 import com.jmal.clouddisk.dao.IFileDAO;
+import com.jmal.clouddisk.dao.IFileQueryDAO;
 import com.jmal.clouddisk.exception.CommonException;
 import com.jmal.clouddisk.exception.ExceptionType;
 import com.jmal.clouddisk.model.UploadApiParamDTO;
+import com.jmal.clouddisk.model.file.FileDocument;
 import com.jmal.clouddisk.model.rbac.ConsumerDO;
 import com.jmal.clouddisk.util.FileNameUtils;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,10 @@ public class UserFileService {
     private final IFileDAO fileDAO;
 
     private final CommonUserFileService commonUserFileService;
+
+    private final IFileQueryDAO fileQueryDAO;
+
+    private final UserLoginHolder userLoginHolder;
 
     public void deleteAllByUser(List<ConsumerDO> userList) {
         if (userList == null || userList.isEmpty()) {
@@ -83,6 +89,14 @@ public class UserFileService {
     public void setPublic(String fileId) {
         if (CharSequenceUtil.isBlank(fileId)) {
             return;
+        }
+        FileDocument file = fileQueryDAO.findBaseFileDocumentById(fileId, true);
+        if (file == null) {
+            throw new CommonException(ExceptionType.FILE_NOT_FIND);
+        }
+        String userId = userLoginHolder.getUserId();
+        if (CharSequenceUtil.isBlank(userId) || !userId.equals(file.getUserId()) || file.getMountFileId() != null) {
+            throw new CommonException(ExceptionType.PERMISSION_DENIED);
         }
         fileDAO.updateIsPublicById(fileId);
     }
